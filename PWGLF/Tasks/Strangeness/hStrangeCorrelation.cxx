@@ -63,6 +63,7 @@ struct correlateStrangeness {
   Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
   Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
   Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
+  Configurable<bool> doLambdaPrimary{"doLambdaPrimary", false, "do primary selection for lambda"};
   Configurable<bool> doAutocorrelationRejection{"doAutocorrelationRejection", true, "reject pairs where trigger Id is the same as daughter particle Id"};
 
   // Axes - configurable for smaller sizes
@@ -193,7 +194,10 @@ struct correlateStrangeness {
         hEfficiencyV0[2] = hEfficiencyAntiLambda;
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
-          float efficiency = hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyV0[index]->GetYaxis()->FindBin(assoc.eta()));
+          float efficiency = 1.0f;
+          if(applyEfficiencyCorrection){
+            efficiency = hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyV0[index]->GetYaxis()->FindBin(assoc.eta()));
+          }
           float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
           if (bitcheck(doCorrelation, index) && (!applyEfficiencyCorrection || efficiency != 0)) {
             if (assocCandidate.compatible(index) && (!doMCassociation || assocCandidate.mcTrue(index)) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
@@ -264,7 +268,10 @@ struct correlateStrangeness {
 
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
-          float efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyCascade[index]->GetYaxis()->FindBin(assoc.eta()));
+          float efficiency = 1.0f;
+          if(applyEfficiencyCorrection){
+            efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyCascade[index]->GetYaxis()->FindBin(assoc.eta()));
+          }
           float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
           if (bitcheck(doCorrelation, index + 3) && (!applyEfficiencyCorrection || efficiency != 0)) {
             if (assocCandidate.compatible(index) && (!doMCassociation || assocCandidate.mcTrue(index)) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
@@ -657,8 +664,10 @@ struct correlateStrangeness {
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
     // Do basic QA
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initEfficiencyFromCCDB(bc);
+    if(applyEfficiencyCorrection){
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initEfficiencyFromCCDB(bc);
+    }
     TH2F* hEfficiencyV0[3];
     hEfficiencyV0[0] = hEfficiencyK0Short;
     hEfficiencyV0[1] = hEfficiencyLambda;
@@ -668,7 +677,10 @@ struct correlateStrangeness {
       auto v0Data = v0.v0Core_as<V0DatasWithoutTrackX>();
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
-        float efficiency = hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(v0Data.pt()), hEfficiencyV0[index]->GetYaxis()->FindBin(v0Data.eta()));
+          float efficiency = 1.0f;
+        if(applyEfficiencyCorrection){
+          efficiency = hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(v0Data.pt()), hEfficiencyV0[index]->GetYaxis()->FindBin(v0Data.eta()));
+        }
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
         if (v0.compatible(index) && (!doMCassociation || v0.mcTrue(index)) && bitcheck(doCorrelation, index) && (!applyEfficiencyCorrection || efficiency != 0)) {
           histos.fill(HIST("h3d") + HIST(v0names[index]) + HIST("Spectrum"), v0Data.pt(), collision.centFT0M(), v0.invMassRegion(index), weight);
@@ -676,9 +688,9 @@ struct correlateStrangeness {
             histos.fill(HIST("h3d") + HIST(v0names[index]) + HIST("SpectrumY"), v0Data.pt(), collision.centFT0M(), v0.invMassRegion(index), weight);
           }
           if (v0.invMassRegionCheck(index, 2))
-            histos.fill(HIST("h") + HIST(v0names[index]) + HIST("EtaVsPtVsPhi"), v0Data.pt(), v0Data.eta(), v0Data.phi());
+            histos.fill(HIST("h") + HIST(v0names[index]) + HIST("EtaVsPtVsPhi"), v0Data.pt(), v0Data.eta(), v0Data.phi(), weight);
           if (v0.invMassRegionCheck(index, 1) || v0.invMassRegionCheck(index, 3))
-            histos.fill(HIST("h") + HIST(v0names[index]) + HIST("EtaVsPtVsPhiBg"), v0Data.pt(), v0Data.eta(), v0Data.phi());
+            histos.fill(HIST("h") + HIST(v0names[index]) + HIST("EtaVsPtVsPhiBg"), v0Data.pt(), v0Data.eta(), v0Data.phi(), weight);
         }
       });
     }
@@ -714,8 +726,10 @@ struct correlateStrangeness {
     histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
     histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     // Do basic QA
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initEfficiencyFromCCDB(bc);
+    if(applyEfficiencyCorrection){
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initEfficiencyFromCCDB(bc);
+    }
     TH2F* hEfficiencyCascade[4];
     hEfficiencyCascade[0] = hEfficiencyXiMinus;
     hEfficiencyCascade[1] = hEfficiencyXiPlus;
@@ -726,7 +740,10 @@ struct correlateStrangeness {
       auto cascData = casc.cascData();
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
-        float efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(cascData.pt()), hEfficiencyCascade[index]->GetYaxis()->FindBin(cascData.eta()));
+        float efficiency = 1.0f;
+        if(applyEfficiencyCorrection){
+          efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(cascData.pt()), hEfficiencyCascade[index]->GetYaxis()->FindBin(cascData.eta()));
+        }
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
         if (casc.compatible(index) && (!doMCassociation || casc.mcTrue(index)) && bitcheck(doCorrelation, index + 3) && (!applyEfficiencyCorrection || efficiency != 0)) {
           histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("Spectrum"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index), weight);
@@ -734,9 +751,9 @@ struct correlateStrangeness {
             histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("SpectrumY"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index), weight);
           }
           if (casc.invMassRegionCheck(index, 2))
-            histos.fill(HIST("h") + HIST(cascadenames[index]) + HIST("EtaVsPtVsPhi"), cascData.pt(), cascData.eta(), cascData.phi());
+            histos.fill(HIST("h") + HIST(cascadenames[index]) + HIST("EtaVsPtVsPhi"), cascData.pt(), cascData.eta(), cascData.phi(), weight);
           if (casc.invMassRegionCheck(index, 1) || casc.invMassRegionCheck(index, 3))
-            histos.fill(HIST("h") + HIST(cascadenames[index]) + HIST("EtaVsPtVsPhiBg"), cascData.pt(), cascData.eta(), cascData.phi());
+            histos.fill(HIST("h") + HIST(cascadenames[index]) + HIST("EtaVsPtVsPhiBg"), cascData.pt(), cascData.eta(), cascData.phi(), weight);
         }
       });
     }
