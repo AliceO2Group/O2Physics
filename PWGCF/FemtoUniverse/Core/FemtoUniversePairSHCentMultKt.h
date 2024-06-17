@@ -8,6 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file FemtoUniversePairSHCentMultKt.h
+/// \brief FemtoUniversePairSHCentMultKt - Spherical Harmonics in mult, kT bins
 /// \author Pritam Chakraborty, WUT, pritam.chakraborty@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
@@ -69,8 +72,8 @@ public:
 
       fels[il] = el;
       fems[il] = em;
-      felsi[il] = static_cast<int> el;
-      femsi[il] = static_cast<int> em;
+      felsi[il] = static_cast<int>(el);
+      femsi[il] = static_cast<int>(em);
       em++;
       il++;
       if (em > el) {
