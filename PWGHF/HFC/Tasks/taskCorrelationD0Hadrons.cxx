@@ -90,7 +90,7 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{vecSidebandRightInner}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{vecSidebandRightOuter}, "Outer values of right sideband vs pT"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D meson specie under study"};
-  Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Is toward transverse away"};
+  Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
   Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
   Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying efficiency weights"};
 
@@ -270,6 +270,7 @@ struct HfTaskCorrelationD0Hadrons {
       }
       //==============================================================================================================
       if (isTowardTransverseAway) {
+        // Divide into three regions: toward, transverse, and away
         if (ptHadron < leadingParticlePtMin) {
           continue;
         }
