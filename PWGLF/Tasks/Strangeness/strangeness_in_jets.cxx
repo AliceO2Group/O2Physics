@@ -210,7 +210,7 @@ struct strangeness_in_jets {
     registryMC.add("pi_minus_gen", "pi_minus_gen", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("pi_minus_rec_tpc", "pi_minus_rec_tpc", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("pi_minus_rec_tof", "pi_minus_rec_tof", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-      
+
     // MC Templates
     registryMC.add("piplus_dcaxy_prim", "piplus_dcaxy_prim", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
     registryMC.add("piminus_dcaxy_prim", "piminus_dcaxy_prim", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
@@ -1037,7 +1037,7 @@ struct strangeness_in_jets {
         if (isInUe)
           registryData.fill(HIST("piplus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
       }
-        
+
       if (isHighPurityPion(track) && track.sign() < 0) {
         if (isInJet)
           registryData.fill(HIST("piminus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
@@ -1221,28 +1221,28 @@ struct strangeness_in_jets {
           registryMC.fill(HIST("OmegaNeg_reconstructed"), multiplicity, casc.pt());
         }
       }
-        
+
       // Reconstructed Tracks
       for (auto track : tracks_per_coll) {
-            
+
         // Get MC Particle
         if (!track.has_mcParticle())
           continue;
         // Track Selection
         if (!passedTrackSelectionForPions(track))
           continue;
-            
+
         const auto particle = track.mcParticle();
         if (abs(particle.pdgCode()) != 211)
           continue;
-            
+
         if (particle.isPhysicalPrimary())  {
           if (track.sign() > 0)
             registryMC.fill(HIST("piplus_dcaxy_prim"), multiplicity, track.pt(), track.dcaXY());
           if (track.sign() < 0)
             registryMC.fill(HIST("piminus_dcaxy_prim"), multiplicity, track.pt(), track.dcaXY());
         }
-       
+
         if (!particle.isPhysicalPrimary()) {
           if (track.sign() > 0)
             registryMC.fill(HIST("piplus_dcaxy_sec"), multiplicity, track.pt(), track.dcaXY());
