@@ -54,7 +54,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Task to produce the response table
-struct tpcPidFull {
+struct tpcPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
   using Coll = soa::Join<aod::Collisions, aod::PIDMults>;
 
@@ -146,7 +146,7 @@ struct tpcPidFull {
   {
     // Protection for process flags
     if ((doprocessStandard && doprocessMcTuneOnData) || (!doprocessStandard && !doprocessMcTuneOnData)) {
-      LOG(fatal) << "pid-tpc-full must have only one of the options 'processStandard' OR 'processMcTuneOnData' enabled. Please check your configuration.";
+      LOG(fatal) << "pid-tpc must have only one of the options 'processStandard' OR 'processMcTuneOnData' enabled. Please check your configuration.";
     }
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
@@ -513,7 +513,7 @@ struct tpcPidFull {
     }
   }
 
-  PROCESS_SWITCH(tpcPidFull, processStandard, "Creating PID tables without MC TuneOnData", true);
+  PROCESS_SWITCH(tpcPid, processStandard, "Creating PID tables without MC TuneOnData", true);
 
   Partition<TrksMC> mcnotTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterSizes > (uint32_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
   Partition<TrksMC> mctracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -638,7 +638,7 @@ struct tpcPidFull {
     }
   }
 
-  PROCESS_SWITCH(tpcPidFull, processMcTuneOnData, "Creating PID tables with MC TuneOnData", false);
+  PROCESS_SWITCH(tpcPid, processMcTuneOnData, "Creating PID tables with MC TuneOnData", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tpcPidFull>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)}; }
