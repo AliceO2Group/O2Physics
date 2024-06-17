@@ -124,9 +124,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \tparam centEstimator centrality estimator
   /// \param collision collision to test against the selection criteria
   /// \param centrality collision centrality variable to be set in this function
+  /// \param ccdb ccdb service needed to retrieve the needed info for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
-  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename BCs>
-  uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, const BCs& /*bcs*/, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb)
+  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
+  uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb)
   {
     uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
