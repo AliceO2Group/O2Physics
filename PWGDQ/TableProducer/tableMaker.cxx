@@ -55,6 +55,7 @@
 #include "TGeoGlobalMagField.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
+#include "EventFiltering/Zorro.h"
 
 using std::cout;
 using std::endl;
@@ -63,6 +64,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+
+Zorro zorro;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -178,6 +181,7 @@ struct TableMaker {
   Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
   Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
   Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
+  Configurable<std::string> fConfigZorroSelection{"cfgZorroSelection", "", "Filter tag for skimmed dataset (fDiMuon,fDiElectron,...)"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> grpmagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
@@ -374,6 +378,10 @@ struct TableMaker {
       fCurrentRun = bc.runNumber();
     }
 
+    if (fConfigZorroSelection.value != "") {
+      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroSelection.value);
+    }
+
     // store the selection decisions
     uint64_t tag = 0;
     // store some more information in the tag
@@ -408,10 +416,15 @@ struct TableMaker {
     }
     (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
-    if (!fEventCut->IsSelected(VarManager::fgValues)) {
-      return;
+    if (fConfigZorroSelection.value != "") {
+      if (!zorro.isSelected(bc.globalBC())) {
+        return;
+      }
+    } else {
+      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+        return;
+      }
     }
-
     // fill stats information, after selections
     for (int i = 0; i < kNaliases; i++) {
       if (triggerAliases & (uint32_t(1) << i)) {
@@ -805,6 +818,10 @@ struct TableMaker {
       fCurrentRun = bc.runNumber();
     }
 
+    if (fConfigZorroSelection.value != "") {
+      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroSelection.value);
+    }
+
     // get the trigger aliases
     uint32_t triggerAliases = collision.alias_raw();
     // store the selection decisions
@@ -840,8 +857,14 @@ struct TableMaker {
     }
     (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
-    if (!fEventCut->IsSelected(VarManager::fgValues)) {
-      return;
+    if (fConfigZorroSelection.value != "") {
+      if (!zorro.isSelected(bc.globalBC())) {
+        return;
+      }
+    } else {
+      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+        return;
+      }
     }
 
     // fill stats information, after selections

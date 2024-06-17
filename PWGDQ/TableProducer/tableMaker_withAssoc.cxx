@@ -54,11 +54,14 @@
 #include "TGeoGlobalMagField.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
+#include "EventFiltering/Zorro.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+
+Zorro zorro;
 
 // TODO: Since DCA depends on which collision the track is associated to, we should remove writing and subscribing to DCA tables, to optimize on CPU / memory
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
@@ -158,6 +161,7 @@ struct TableMaker {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+  Configurable<std::string> fConfigZorroSelection{"cfgZorroSelection", "", "Filter tag for skimmed dataset (fDiMuon,fDiElectron,...)"};
 
   // Steer QA output
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
@@ -480,6 +484,10 @@ struct TableMaker {
         tag |= (collision.eventFilter() << 56);
       }
 
+      if (fConfigZorroSelection.value != "") {
+        zorro.initCCDB(fCCDB.service, fCurrentRun, bcEvSel.timestamp(), fConfigZorroSelection.value);
+      }
+
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillBC(bc);
       VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
@@ -518,8 +526,14 @@ struct TableMaker {
       }
       (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
 
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
-        continue;
+      if (fConfigZorroSelection.value != "") {
+        if (!zorro.isSelected(bc.globalBC())) {
+          return;
+        }
+      } else {
+        if (!fEventCut->IsSelected(VarManager::fgValues)) {
+          return;
+        }
       }
 
       // fill stats information, after selections
