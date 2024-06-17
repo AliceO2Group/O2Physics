@@ -355,7 +355,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
 DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
 
-
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
 DECLARE_SOA_COLUMN(PtSigned, ptSigned, float);                                   //! Pt (signed) of the track
