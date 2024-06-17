@@ -18,16 +18,16 @@
 
 #include "Framework/HistogramRegistry.h"
 #include <iostream>
-#include <memory>
-#include <string>
 #include <vector>
+#include <string>
+#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
 
 namespace o2::analysis::femtoUniverse {
 
-/// \class femtoUniverseSHContainer
+/// \class FemtoUniversePairSHCentMultKt
 /// \brief Container for all histogramming related to the spherical harmonics of
 /// the correlation function. The two particles of the pair are passed here, and
 /// the correlation function are filled according to the specified observable
@@ -35,8 +35,9 @@ namespace o2::analysis::femtoUniverse {
 /// \tparam obs Observable to be computed (k*/Q_inv/...)
 template <femtoUniverseSHContainer::EventType eventType,
           femtoUniverseSHContainer::Observable obs>
-class PairSHCentMultKt {
-public:
+class PairSHCentMultKt
+{
+ public:
   virtual ~PairSHCentMultKt() = default;
   /// @brief
   /// \tparam t1
@@ -363,7 +364,7 @@ public:
     }
   }
 
-private:
+ private:
   std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
       fnumsreal{};
   std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
@@ -387,7 +388,7 @@ private:
   std::array<std::array<std::shared_ptr<TH3>, 10>, 10> fcovnum{};
   std::array<std::array<std::shared_ptr<TH3>, 10>, 10> fcovden{};
 
-protected:
+ protected:
   HistogramRegistry *PairSHCentMultKtRegistry = nullptr;
   static constexpr std::string_view mFolderSuffix[2] = {
       "SameEvent",
