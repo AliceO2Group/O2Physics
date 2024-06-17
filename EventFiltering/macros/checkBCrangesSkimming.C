@@ -26,7 +26,8 @@ struct selectedFrames : public IRFrame {
   ULong64_t triMask[2]{0ull}, selMask[2]{0ull};
 };
 
-std::vector<selectedFrames> getSelectedFrames(TFile& file) {
+std::vector<selectedFrames> getSelectedFrames(TFile& file)
+{
   std::vector<selectedFrames> selectedFrames;
   ULong64_t bcAO2D{0ull}, bcEvSel{0ull}, triMask[2]{0ull}, selMask[2]{0ull};
   for (auto key : *file.GetListOfKeys()) {
@@ -65,31 +66,32 @@ std::vector<selectedFrames> getSelectedFrames(TFile& file) {
   return selectedFrames;
 }
 
-void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root", std::string skimmedFileName = "bcRanges_fullrun_skimmed.root") {
-    TFile originalFile(originalFileName.c_str(), "READ");
-    TFile skimmedFile(skimmedFileName.c_str(), "READ");
+void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root", std::string skimmedFileName = "bcRanges_fullrun_skimmed.root")
+{
+  TFile originalFile(originalFileName.c_str(), "READ");
+  TFile skimmedFile(skimmedFileName.c_str(), "READ");
 
-    auto originalFrames = getSelectedFrames(originalFile);
-    auto skimmedFrames = getSelectedFrames(skimmedFile);
+  auto originalFrames = getSelectedFrames(originalFile);
+  auto skimmedFrames = getSelectedFrames(skimmedFile);
 
-    std::sort(originalFrames.begin(), originalFrames.end(), [](const selectedFrames& a, const selectedFrames& b) {
-      return a.getMin() < b.getMin();
-    });
-    std::sort(skimmedFrames.begin(), skimmedFrames.end(), [](const selectedFrames& a, const selectedFrames& b) {
-      return a.getMin() < b.getMin();
-    });
+  std::sort(originalFrames.begin(), originalFrames.end(), [](const selectedFrames& a, const selectedFrames& b) {
+    return a.getMin() < b.getMin();
+  });
+  std::sort(skimmedFrames.begin(), skimmedFrames.end(), [](const selectedFrames& a, const selectedFrames& b) {
+    return a.getMin() < b.getMin();
+  });
 
-    for (auto frame : originalFrames) {
-      bool found = false;
-      frame.getMin() -= 1000;
-      frame.getMax() += 1000;
-      for (auto& skimmedFrame : skimmedFrames) {
-        if (skimmedFrame.getMin() > frame.getMax()) {
-          break;
-        }
-        if (!frame.isOutside(skimmedFrame)) {
-          found = frame.selMask[0] & skimmedFrame.selMask[0] || frame.selMask[1] & skimmedFrame.selMask[1];
-        }
+  for (auto frame : originalFrames) {
+    bool found = false;
+    frame.getMin() -= 1000;
+    frame.getMax() += 1000;
+    for (auto& skimmedFrame : skimmedFrames) {
+      if (skimmedFrame.getMin() > frame.getMax()) {
+        break;
+      }
+      if (!frame.isOutside(skimmedFrame)) {
+        found = frame.selMask[0] & skimmedFrame.selMask[0] || frame.selMask[1] & skimmedFrame.selMask[1];
       }
     }
+  }
 }
