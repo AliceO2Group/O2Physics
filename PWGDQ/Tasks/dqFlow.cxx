@@ -100,6 +100,7 @@ struct DQEventQvector {
   Produces<ReducedEventsQvectorExtra> eventQvectorExtra;
   Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
   Produces<ReducedEventsRefFlow> eventRefFlow;
+  Produces<ReducedEventsQvectorZN> eventQvectorZN;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
@@ -479,6 +480,7 @@ struct DQEventQvector {
       if (fEventCut->IsSelected(VarManager::fgValues)) {
         eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
                           collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
+        eventQvectorZN(VarManager::fgValues[VarManager::kQ1ZNAX], VarManager::fgValues[VarManager::kQ1ZNAY], VarManager::fgValues[VarManager::kQ1ZNCX], VarManager::fgValues[VarManager::kQ1ZNCY]);
       }
     }
   }
