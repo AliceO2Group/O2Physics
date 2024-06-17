@@ -16,6 +16,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <memory>
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2;
@@ -69,8 +70,8 @@ class PairSHCentMultKt
 
       fels[il] = el;
       fems[il] = em;
-      felsi[il] = (int)el;
-      femsi[il] = (int)em;
+      felsi[il] = static_cast<int>el;
+      femsi[il] = static_cast<int>em;
       em++;
       il++;
       if (em > el) {
@@ -174,8 +175,7 @@ class PairSHCentMultKt
       ktbinval = 0;
     } else if (ktval <= KtBins[2]) {
       ktbinval = 1;
-    } // else {return;}
-    else if (ktval <= KtBins[3]) {
+    } else if (ktval <= KtBins[3]) {
       ktbinval = 2;
     } else if (ktval <= KtBins[4]) {
       ktbinval = 3;
