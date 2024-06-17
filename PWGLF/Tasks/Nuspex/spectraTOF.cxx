@@ -900,10 +900,10 @@ struct tofSpectra {
       histos.fill(HIST("evsel"), 1.f);
     }
     if constexpr (fillHistograms) {
-      if (collision.isInelGt0()) {
+      if (collision.multNTracksPVeta1() >= 1) {
         histos.fill(HIST("evsel"), 2.f);
       }
-      if (collision.isInelGt1()) {
+      if (collision.multNTracksPVeta1() >= 2) {
         histos.fill(HIST("evsel"), 3.f);
       }
     }
