@@ -600,7 +600,11 @@ struct IdentifiedBfFilterTracks {
   Configurable<int> pidKa{"pidKa", -1, "Identify Kaon Tracks"};
   Configurable<int> pidPr{"pidPr", -1, "Identify Proton Tracks"};
 
-  Configurable<float> minPIDSigma{"minpidsigma", 3.0, "Minimum required sigma for PID"};
+  Configurable<float> minPIDSigma{"minpidsigma", -3.0, "Minimum required sigma for PID Acceptance"}; 
+  Configurable<float> maxPIDSigma{"maxpidsigma", 3.0, "Maximum required sigma for PID Acceptance"};
+
+  Configurable<float> minRejectSigma{"minrejectsigma", -1.0, "Minimum required sigma for PID double match rejection"}; 
+  Configurable<float> maxRejectSigma{"maxrejectsigma", 1.0, "Maximum required sigma for PID double match rejection"};
 
   OutputObj<TList> fOutput{"IdentifiedBfFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
   bool checkAmbiguousTracks = false;
@@ -1204,17 +1208,17 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   float min_nsigma = 999.0f;
   MatchRecoGenSpecies sp_min_nsigma = kWrongSpecies;
   for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
-    if (abs(nsigmas[sp]) < min_nsigma) {            // Check if species nsigma is less than current nsigma
+    if (abs(nsigmas[sp])< abs(min_nsigma)) {            // Check if species nsigma is less than current nsigma
       min_nsigma = nsigmas[sp];                // If yes, set species nsigma to current nsigma
       sp_min_nsigma = MatchRecoGenSpecies(sp); // set current species sp number to current sp
     }
   }
   bool doublematch = false;
   MatchRecoGenSpecies spDouble = kWrongSpecies;
-  if (min_nsigma < minPIDSigma) {                                     // Check that current nsigma is less than required minimum
+  if (min_nsigma < maxPIDSigma && min_nsigma > minPIDSigma) {                                     // Check that current nsigma is in accpetance range
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) { // iterate over all species while there's no double match and we're in the list
       if (sp != sp_min_nsigma) {                                      // for species not current minimum nsigma species
-        if (abs(nsigmas[sp]) < minPIDSigma) {                         // If secondary species nsigma ALSO less than required minimum
+        if (nsigmas[sp] < maxRejectSigma && min_nsigma > minRejectSigma) {                         // If secondary species is in rejection range
           doublematch = true;                                         // Set double match true
           spDouble = MatchRecoGenSpecies(sp);
         }
