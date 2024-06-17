@@ -99,6 +99,8 @@ class VarManager : public TObject
     ReducedEventRefFlow = BIT(15),
     Zdc = BIT(16),
     ReducedZdc = BIT(17),
+    CollisionMultExtra = BIT(18),
+    ReducedEventMultExtra = BIT(19),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -221,6 +223,22 @@ class VarManager : public TObject
     kMultZNC,
     kMultTracklets,
     kMultDimuons,
+    kMultNTracksHasITS,
+    kMultNTracksHasTPC,
+    kMultNTracksHasTOF,
+    kMultNTracksHasTRD,
+    kMultNTracksITSOnly,
+    kMultNTracksTPCOnly,
+    kMultNTracksITSTPC,
+    kTrackOccupancyInTimeRange,
+    kMultAllTracksTPCOnly,
+    kMultAllTracksITSTPC,
+    kNTPCpileupContribA,
+    kNTPCpileupContribC,
+    kNTPCpileupZA,
+    kNTPCpileupZC,
+    kNTPCtracksInPast,
+    kNTPCtracksInFuture,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -1322,6 +1340,27 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultTracklets] = event.multTracklets();
     values[kVtxNcontribReal] = event.multNTracksPV();
   }
+
+  if constexpr ((fillMap & CollisionMultExtra) > 0 || (fillMap & ReducedEventMultExtra) > 0) {
+    values[kMultNTracksHasITS] = event.multNTracksHasITS();
+    values[kMultNTracksHasTPC] = event.multNTracksHasTPC();
+    values[kMultNTracksHasTOF] = event.multNTracksHasTOF();
+    values[kMultNTracksHasTRD] = event.multNTracksHasTRD();
+    values[kMultNTracksITSOnly] = event.multNTracksITSOnly();
+    values[kMultNTracksTPCOnly] = event.multNTracksTPCOnly();
+    values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
+    values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
+    values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
+    if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
+      values[kNTPCpileupContribA] = event.nTPCpileupContribA();
+      values[kNTPCpileupContribC] = event.nTPCpileupContribC();
+      values[kNTPCpileupZA] = event.nTPCpileupZA();
+      values[kNTPCpileupZC] = event.nTPCpileupZC();
+      values[kNTPCtracksInPast] = event.nTPCtracksInPast();
+      values[kNTPCtracksInFuture] = event.nTPCtracksInFuture();
+    }
+  }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
@@ -1511,6 +1550,19 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ4Y0B] = -999;
     values[kQ4X0C] = -999;
     values[kQ4Y0C] = -999;
+
+    EventPlaneHelper epHelper;
+    float Psi2A = epHelper.GetEventPlane(values[kQ2X0A], values[kQ2Y0A], 2);
+    float Psi2APOS = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2);
+    float Psi2ANEG = epHelper.GetEventPlane(values[kQ2X0ANEG], values[kQ2Y0ANEG], 2);
+    float Psi2B = epHelper.GetEventPlane(values[kQ2X0B], values[kQ2Y0B], 2);
+    float Psi2C = epHelper.GetEventPlane(values[kQ2X0C], values[kQ2Y0C], 2);
+
+    values[kPsi2A] = Psi2A;
+    values[kPsi2APOS] = Psi2APOS;
+    values[kPsi2ANEG] = Psi2ANEG;
+    values[kPsi2B] = Psi2B;
+    values[kPsi2C] = Psi2C;
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {

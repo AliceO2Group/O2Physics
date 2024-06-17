@@ -1147,6 +1147,39 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
 
+    if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 5 /* Contains at least one ITS-TPC track */);
+
+    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 6 /* PV position consistency check */);
+
+    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 7 /* PV with at least one contributor matched with TOF */);
+
+    if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TRD */);
+
+    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
+
+    if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 10 /* Below min occupancy */);
+    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+      return;
+    }
+
     float centrality = collision.centFT0C();
     if (qaCentrality) {
       auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));

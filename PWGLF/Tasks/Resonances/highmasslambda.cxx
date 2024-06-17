@@ -74,6 +74,8 @@ struct highmasslambda {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // fill output
+  Configurable<bool> useOldDCAV0{"useOldDCAV0", true, "useOldDCAV0"};
+  Configurable<bool> useSignDCAV0{"useSignDCAV0", true, "useSignDCAV0"};
   Configurable<bool> additionalEvSel{"additionalEvSel", true, "additionalEvSel"};
   Configurable<bool> fillDefault{"fillDefault", false, "fill Occupancy"};
   Configurable<bool> fillOccupancy{"fillOccupancy", true, "fill Occupancy"};
@@ -605,10 +607,21 @@ struct highmasslambda {
         }
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
-
+        auto anglesign = (v0.x() - collision.posX()) * v0.px() + (v0.y() - collision.posY()) * v0.py() + (v0.z() - collision.posZ()) * v0.pz();
+        anglesign = anglesign / TMath::Abs(anglesign);
+        auto dcasum = 0.0;
+        if (useSignDCAV0) {
+          dcasum = TMath::Sqrt((track1.dcaXY() - anglesign * (v0.dcav0topv())) * (track1.dcaXY() - anglesign * (v0.dcav0topv())));
+        }
+        if (!useSignDCAV0) {
+          dcasum = TMath::Sqrt((track1.dcaXY() + (v0.dcav0topv())) * (track1.dcaXY() + (v0.dcav0topv())));
+        }
+        if (useOldDCAV0) {
+          dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
+        }
         // auto diffangle = Proton.Phi() - Lambdac.Phi();
         // auto decaylength = std::abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
-        auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
+        // auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
         histos.fill(HIST("hMassvsDecaySum"), Lambdac.M(), dcasum);
         if (fillDefault && Lambdac.M() > 2.15 && Lambdac.M() <= 2.45) {
           if (fillDecayLength) {
@@ -728,9 +741,21 @@ struct highmasslambda {
         }
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
+        auto anglesign = (v0.x() - collision1.posX()) * v0.px() + (v0.y() - collision1.posY()) * v0.py() + (v0.z() - collision1.posZ()) * v0.pz();
+        anglesign = anglesign / TMath::Abs(anglesign);
+        auto dcasum = 0.0;
+        if (useSignDCAV0) {
+          dcasum = TMath::Sqrt((track1.dcaXY() - anglesign * (v0.dcav0topv())) * (track1.dcaXY() - anglesign * (v0.dcav0topv())));
+        }
+        if (!useSignDCAV0) {
+          dcasum = TMath::Sqrt((track1.dcaXY() + (v0.dcav0topv())) * (track1.dcaXY() + (v0.dcav0topv())));
+        }
+        if (useOldDCAV0) {
+          dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
+        }
         // auto diffangle = Proton.Phi() - Lambdac.Phi();
         // auto decaylength = std::abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
-        auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
+        // auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
         if (fillDefault && Lambdac.M() > 2.15 && Lambdac.M() <= 2.45) {
           if (fillDecayLength) {
             histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcasum);

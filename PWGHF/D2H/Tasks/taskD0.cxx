@@ -522,13 +522,17 @@ struct HfTaskD0 {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hYGenPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
-          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1);
+          if constexpr (applyMl) {
+            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1);
+          }
         } else {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
           registry.fill(HIST("hYGenNonPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
-          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2);
+          if constexpr (applyMl) {
+            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2);
+          }
         }
         registry.fill(HIST("hEtaGen"), particle.eta());
       }

@@ -175,8 +175,8 @@ struct dielectronQC {
     const AxisSpec axis_pt{ConfPteeBins, "p_{T,ee} (GeV/c)"};
     const AxisSpec axis_dca{ConfDCAeeBins, "DCA_{ee}^{3D} (#sigma)"};
 
-    fRegistry.add("Pair/same/uls/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dca}, true);
-    fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
+    fRegistry.add("Pair/same/uls/hs", "hs pair", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
+    fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
     fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
     fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
     fRegistry.addClone("Pair/same/", "Pair/mix/");
