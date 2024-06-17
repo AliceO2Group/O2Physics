@@ -326,8 +326,8 @@ struct MultiplicityCounter {
       auto pertracks = tSample3->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto Ntrk = 0;
 
-      //if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-      //if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      // if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      // if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       if (collision.sel8()) {
         btrigc[kSel8] = true;
         registry.fill(HIST("Selection"), 2.);
@@ -543,8 +543,8 @@ struct MultiplicityCounter {
 
         Bool_1d btrigc(kTrigend, false);
         auto z = collision.posZ();
-        //if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-        //if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+        // if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        // if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
         if (collision.sel8()) {
           btrigc[kSel8] = true;
           registry.fill(HIST("Selection"), 2.);
@@ -787,7 +787,7 @@ struct MultiplicityCounter {
         auto pTrack = v0.template posTrack_as<DaughterTracks>();
         auto nTrack = v0.template negTrack_as<DaughterTracks>();
         if (std::abs(z) < 10) {
-          if (v0.v0radius() >v0radius)
+          if (v0.v0radius() > v0radius)
             continue;
           if (v0.dcapostopv() > dcapostopv)
             continue;
@@ -800,7 +800,8 @@ struct MultiplicityCounter {
           if (fabs(nTrack.eta()) > 0.9)
             continue;
 
-          if (fabs(v0.eta())<0.5) registry.fill(HIST("hv0k0s"), v0.mK0Short());
+          if (fabs(v0.eta()) < 0.5)
+            registry.fill(HIST("hv0k0s"), v0.mK0Short());
           registry.fill(HIST("hv0mass"), cent, Double_t(kK0short), v0.eta(), Double_t(v0.mK0Short()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kLambda), v0.eta(), Double_t(v0.mLambda()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kAntilambda), v0.eta(), Double_t(v0.mAntiLambda()));
@@ -843,7 +844,7 @@ struct MultiplicityCounter {
             v0.v0cosPA() > v0cospa &&
             abs(pTrack.eta()) < etadau &&
             abs(nTrack.eta()) < etadau) {
-          
+
           registry.fill(HIST("hv0mass"), cent, Double_t(kK0short), v0.eta(), Double_t(v0.mK0Short()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kLambda), v0.eta(), Double_t(v0.mLambda()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kAntilambda), v0.eta(), Double_t(v0.mAntiLambda()));
