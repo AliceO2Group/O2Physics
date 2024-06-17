@@ -145,8 +145,8 @@ struct tracked_cascade_properties {
       if (r < minimumCascRadius || r > maximumCascRadius)
         continue;
 
-      registryData.fill(HIST("matchingChi2"), trackedCascade.matchingChi2());
-      registryData.fill(HIST("topologyChi2"), trackedCascade.topologyChi2());
+      registryQC.fill(HIST("matchingChi2"), trackedCascade.matchingChi2());
+      registryQC.fill(HIST("topologyChi2"), trackedCascade.topologyChi2());
 
       // Calculate (Average) Cluster Size
       int nITScls(0);
