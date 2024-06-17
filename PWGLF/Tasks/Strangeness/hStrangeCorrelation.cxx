@@ -726,7 +726,7 @@ struct correlateStrangeness {
     histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
     histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     // Do basic QA
-    if(applyEfficiencyCorrection){
+    if (applyEfficiencyCorrection) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initEfficiencyFromCCDB(bc);
     }
