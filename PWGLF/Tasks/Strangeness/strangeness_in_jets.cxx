@@ -685,9 +685,9 @@ struct strangeness_in_jets {
   template <typename pionTrack>
   bool isHighPurityPion(const pionTrack& track)
   {
-    if (track.p() < 0.6 && abs(track.tpcNSigmaPi() < 3.0))
+    if (track.p() < 0.6 && abs(track.tpcNSigmaPi()) < 3.0)
       return true;
-    if (track.p() > 0.6 && abs(track.tpcNSigmaPi() < 3.0 && abs(track.tofNSigmaPi() < 3.0))
+    if (track.p() > 0.6 && abs(track.tpcNSigmaPi()) < 3.0 && abs(track.tofNSigmaPi()) < 3.0)
       return true;
     return false;
   }
@@ -1025,7 +1025,7 @@ struct strangeness_in_jets {
       float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
       bool isInJet = false;
-      bool isInUE = false;
+      bool isInUe = false;
       if (deltaR_jet < Rmax)
         isInJet = true;
       if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax)
