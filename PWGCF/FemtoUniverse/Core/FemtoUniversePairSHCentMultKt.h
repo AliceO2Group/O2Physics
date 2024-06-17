@@ -1,6 +1,6 @@
 // Copyright 2019-2022 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -16,16 +16,17 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
 
-#include "Framework/HistogramRegistry.h"
+#include <vector>
+#include <string>
 #include <complex>
 #include <memory>
-#include <string>
-#include <vector>
+#include "Framework/HistogramRegistry.h"
 
 using namespace o2;
 using namespace o2::framework;
 
-namespace o2::analysis::femtoUniverse {
+namespace o2::analysis::femtoUniverse
+{
 
 /// \class FemtoUniversePairSHCentMultKt
 /// \brief Container for all histogramming related to the spherical harmonics of
@@ -35,8 +36,9 @@ namespace o2::analysis::femtoUniverse {
 /// \tparam obs Observable to be computed (k*/Q_inv/...)
 template <femtoUniverseSHContainer::EventType eventType,
           femtoUniverseSHContainer::Observable obs>
-class PairSHCentMultKt {
-public:
+class PairSHCentMultKt
+{
+ public:
   virtual ~PairSHCentMultKt() = default;
   /// @brief
   /// \tparam t1
@@ -46,8 +48,9 @@ public:
   /// \param ktbins Number of kT bins
   /// \param maxl Maximum valie of L component of the spherical harmonics
   template <typename t1>
-  void init(HistogramRegistry *registry, t1 &kstarbins, t1 &centmultbins,
-            t1 &ktbins, int maxl) {
+  void init(HistogramRegistry* registry, t1& kstarbins, t1& centmultbins,
+            t1& ktbins, int maxl)
+  {
     PairSHCentMultKtRegistry = registry;
     AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};
     KStarBins = kstarbins;
@@ -91,11 +94,11 @@ public:
       int highBin = static_cast<int>((CentMultBins[i + 1]));
 
       std::string HistTitle =
-          "mult_" + std::to_string(lowBin) + "-" + std::to_string(highBin);
+        "mult_" + std::to_string(lowBin) + "-" + std::to_string(highBin);
       std::string HistSuffix1 =
-          std::to_string(static_cast<int>(CentMultBins[i]));
+        std::to_string(static_cast<int>(CentMultBins[i]));
       std::string HistSuffix2 =
-          std::to_string(static_cast<int>(CentMultBins[i + 1]));
+        std::to_string(static_cast<int>(CentMultBins[i + 1]));
       std::string HistFolderMult = "mult_" + HistSuffix1 + "_" + HistSuffix2;
 
       for (int j = 0; j < static_cast<int>(KtBins.size() - 1); j++) {
@@ -103,20 +106,20 @@ public:
         int kthighBin = static_cast<int>(KtBins[j + 1]);
 
         std::string HistTitlekT =
-            "kT_" + std::to_string(ktlowBin) + "-" + std::to_string(kthighBin);
+          "kT_" + std::to_string(ktlowBin) + "-" + std::to_string(kthighBin);
         std::string HistSuffixkT1 =
-            std::to_string(static_cast<int>(KtBins[j] * 100.0));
+          std::to_string(static_cast<int>(KtBins[j] * 100.0));
         std::string HistSuffixkT2 =
-            std::to_string(static_cast<int>(KtBins[j + 1] * 100.0));
+          std::to_string(static_cast<int>(KtBins[j + 1] * 100.0));
         std::string HistFolderkT = "kT_" + HistSuffixkT1 + "_" + HistSuffixkT2;
 
         std::string suffix;
         fbinctn[i][j] = new TH1D(
-            TString("BinCountNum"), "Bin Occupation (Numerator)",
-            static_cast<int>(KStarBins[0]), KStarBins[1], KStarBins[2]);
+          TString("BinCountNum"), "Bin Occupation (Numerator)",
+          static_cast<int>(KStarBins[0]), KStarBins[1], KStarBins[2]);
         fbinctd[i][j] = new TH1D(
-            TString("BinCountDen"), "Bin Occupation (Denominator)",
-            static_cast<int>(KStarBins[0]), KStarBins[1], KStarBins[2]);
+          TString("BinCountDen"), "Bin Occupation (Denominator)",
+          static_cast<int>(KStarBins[0]), KStarBins[1], KStarBins[2]);
 
         for (int ihist = 0; ihist < fMaxJM; ihist++) {
           if (femsi[ihist] < 0) {
@@ -128,47 +131,47 @@ public:
           }
           if (mFolderSuffix[mEventType] == mFolderSuffix[0]) {
             fnumsreal[i][j][ihist] = PairSHCentMultKtRegistry->add<TH1>(
-                (HistFolderMult + "/" + HistFolderkT + "/" + "NumRe" + suffix)
-                    .c_str(),
-                ("; " + femtoObs1D + "; Entries").c_str(), kTH1D,
-                {femtoObsAxis1D});
+              (HistFolderMult + "/" + HistFolderkT + "/" + "NumRe" + suffix)
+                .c_str(),
+              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D,
+              {femtoObsAxis1D});
             fnumsimag[i][j][ihist] = PairSHCentMultKtRegistry->add<TH1>(
-                (HistFolderMult + "/" + HistFolderkT + "/" + "NumIm" + suffix)
-                    .c_str(),
-                ("; " + femtoObs1D + "; Entries").c_str(), kTH1D,
-                {femtoObsAxis1D});
+              (HistFolderMult + "/" + HistFolderkT + "/" + "NumIm" + suffix)
+                .c_str(),
+              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D,
+              {femtoObsAxis1D});
           } else {
             fdensreal[i][j][ihist] = PairSHCentMultKtRegistry->add<TH1>(
-                (HistFolderMult + "/" + HistFolderkT + "/" + "DenRe" + suffix)
-                    .c_str(),
-                ("; " + femtoObs1D + "; Entries").c_str(), kTH1D,
-                {femtoObsAxis1D});
+              (HistFolderMult + "/" + HistFolderkT + "/" + "DenRe" + suffix)
+                .c_str(),
+              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D,
+              {femtoObsAxis1D});
             fdensimag[i][j][ihist] = PairSHCentMultKtRegistry->add<TH1>(
-                (HistFolderMult + "/" + HistFolderkT + "/" + "DenIm" + suffix)
-                    .c_str(),
-                ("; " + femtoObs1D + "; Entries").c_str(), kTH1D,
-                {femtoObsAxis1D});
+              (HistFolderMult + "/" + HistFolderkT + "/" + "DenIm" + suffix)
+                .c_str(),
+              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D,
+              {femtoObsAxis1D});
           }
         }
 
         if (mFolderSuffix[mEventType] == mFolderSuffix[0]) {
           std::string bufnameNum = "CovNum";
           fcovnum[i][j] = PairSHCentMultKtRegistry->add<TH3>(
-              (HistFolderMult + "/" + HistFolderkT + "/" + bufnameNum).c_str(),
-              "; x; y; z", kTH3D,
-              {{kstarbins},
-               {(fMaxJM * 2), -0.5, ((static_cast<float>(fMaxJM) * 2.0 - 0.5))},
-               {(fMaxJM * 2), -0.5,
-                ((static_cast<float>(fMaxJM) * 2.0 - 0.5))}});
+            (HistFolderMult + "/" + HistFolderkT + "/" + bufnameNum).c_str(),
+            "; x; y; z", kTH3D,
+            {{kstarbins},
+             {(fMaxJM * 2), -0.5, ((static_cast<float>(fMaxJM) * 2.0 - 0.5))},
+             {(fMaxJM * 2), -0.5,
+              ((static_cast<float>(fMaxJM) * 2.0 - 0.5))}});
         } else if (mFolderSuffix[mEventType] == mFolderSuffix[1]) {
           std::string bufnameDen = "CovDen";
           fcovden[i][j] = PairSHCentMultKtRegistry->add<TH3>(
-              (HistFolderMult + "/" + HistFolderkT + "/" + bufnameDen).c_str(),
-              "; x; y; z", kTH3D,
-              {{kstarbins},
-               {(fMaxJM * 2), -0.5, ((static_cast<float>(fMaxJM) * 2.0 - 0.5))},
-               {(fMaxJM * 2), -0.5,
-                ((static_cast<float>(fMaxJM) * 2.0 - 0.5))}});
+            (HistFolderMult + "/" + HistFolderkT + "/" + bufnameDen).c_str(),
+            "; x; y; z", kTH3D,
+            {{kstarbins},
+             {(fMaxJM * 2), -0.5, ((static_cast<float>(fMaxJM) * 2.0 - 0.5))},
+             {(fMaxJM * 2), -0.5,
+              ((static_cast<float>(fMaxJM) * 2.0 - 0.5))}});
         }
       }
     }
@@ -180,8 +183,9 @@ public:
   /// component of the spherical harmonics \param multval Multiplicity value
   /// \param ktval kT value
   template <typename T>
-  void fill_mult_NumDen(T const &part1, T const &part2, uint8_t ChosenEventType,
-                        int maxl, int multval, float ktval) {
+  void fill_mult_NumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
+                        int maxl, int multval, float ktval)
+  {
     int multbinval;
     int absmultval = multval;
 
@@ -208,8 +212,9 @@ public:
   /// \param multval Multiplicity value
   /// \param ktval kT value
   template <typename T>
-  void fill_kT_NumDen(T const &part1, T const &part2, uint8_t ChosenEventType,
-                      int maxl, int multval, float ktval) {
+  void fill_kT_NumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
+                      int maxl, int multval, float ktval)
+  {
     int ktbinval = -1;
     if ((ktval > KtBins[0]) && (ktval <= KtBins[1])) {
       ktbinval = 0;
@@ -228,7 +233,8 @@ public:
   /// Set the PDG codes of the two particles involved
   /// \param pdg1 PDG code of particle one
   /// \param pdg2 PDG code of particle two
-  void setPDGCodes(const int pdg1, const int pdg2) {
+  void setPDGCodes(const int pdg1, const int pdg2)
+  {
     mMassOne = TDatabasePDG::Instance()->GetParticle(pdg1)->Mass();
     mMassTwo = TDatabasePDG::Instance()->GetParticle(pdg2)->Mass();
     mPDGOne = pdg1;
@@ -241,7 +247,8 @@ public:
   /// \param zeroimag
   /// \param ilmprim
   /// \param primimag
-  int GetBin(int qbin, int ilmzero, int zeroimag, int ilmprim, int primimag) {
+  int GetBin(int qbin, int ilmzero, int zeroimag, int ilmprim, int primimag)
+  {
     return qbin * fMaxJM * fMaxJM * 4 + (ilmprim * 2 + primimag) * fMaxJM * 2 +
            ilmzero * 2 + zeroimag;
   }
@@ -254,8 +261,9 @@ public:
   /// \param multval Multiplicity value
   /// \param ktval kT value
   template <typename T>
-  void AddEventPair(T const &part1, T const &part2, uint8_t ChosenEventType,
-                    int maxl, int multval, int ktval) {
+  void AddEventPair(T const& part1, T const& part2, uint8_t ChosenEventType,
+                    int maxl, int multval, int ktval)
+  {
     int fMultBin = multval;
     int fKtBin = ktval;
     std::vector<std::complex<double>> fYlmBuffer(fMaxJM);
@@ -283,13 +291,13 @@ public:
         for (int ilmzero = 0; ilmzero < fMaxJM; ilmzero++) {
           for (int ilmprim = 0; ilmprim < fMaxJM; ilmprim++) {
             fcovmnum[fMultBin][fKtBin][GetBin(nqbin, ilmzero, 0, ilmprim, 0)] +=
-                (real(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
+              (real(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
             fcovmnum[fMultBin][fKtBin][GetBin(nqbin, ilmzero, 0, ilmprim, 1)] +=
-                (real(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
+              (real(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
             fcovmnum[fMultBin][fKtBin][GetBin(nqbin, ilmzero, 1, ilmprim, 0)] +=
-                (-imag(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
+              (-imag(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
             fcovmnum[fMultBin][fKtBin][GetBin(nqbin, ilmzero, 1, ilmprim, 1)] +=
-                (-imag(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
+              (-imag(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
           }
         }
       }
@@ -303,13 +311,13 @@ public:
         for (int ilmzero = 0; ilmzero < fMaxJM; ilmzero++) {
           for (int ilmprim = 0; ilmprim < fMaxJM; ilmprim++) {
             fcovmden[fMultBin][fKtBin][GetBin(nqbin, ilmzero, 0, ilmprim, 0)] +=
-                (real(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
+              (real(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
             fcovmden[fMultBin][fKtBin][GetBin(nqbin, ilmzero, 0, ilmprim, 1)] +=
-                (real(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
+              (real(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
             fcovmden[fMultBin][fKtBin][GetBin(nqbin, ilmzero, 1, ilmprim, 0)] +=
-                (-imag(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
+              (-imag(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
             fcovmden[fMultBin][fKtBin][GetBin(nqbin, ilmzero, 1, ilmprim, 1)] +=
-                (-imag(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
+              (-imag(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
           }
         }
       }
@@ -321,7 +329,8 @@ public:
   /// \param MaxJM Maximum value of J
   /// \param multval Multiplicity value
   /// \param ktval kT value
-  void PackCov(uint8_t ChosenEventType, int MaxJM, int multval, int ktval) {
+  void PackCov(uint8_t ChosenEventType, int MaxJM, int multval, int ktval)
+  {
     int fMultBin = multval;
     int fKtBin = ktval;
     if (ChosenEventType == femtoUniverseSHContainer::EventType::same) {
@@ -352,7 +361,8 @@ public:
   /// Function to acces each multiplicity and kT directory and call PackCov
   /// \param ChosenEventType same or mixed event
   /// \param MaxJM Maximum value of J
-  void fill_mult_kT_Cov(uint8_t ChosenEventType, int MaxJM) {
+  void fill_mult_kT_Cov(uint8_t ChosenEventType, int MaxJM)
+  {
     for (int multbinvalcov = 0;
          multbinvalcov < static_cast<int>(CentMultBins.size() - 2);
          multbinvalcov++) {
@@ -363,37 +373,37 @@ public:
     }
   }
 
-private:
+ private:
   std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
-      fnumsreal{};
+    fnumsreal{};
   std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
-      fnumsimag{};
+    fnumsimag{};
   std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
-      fdensreal{};
+    fdensreal{};
   std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
-      fdensimag{};
+    fdensimag{};
 
-  TH1D *fbinctn[10][10];
-  TH1D *fbinctd[10][10];
+  TH1D* fbinctn[10][10];
+  TH1D* fbinctd[10][10];
 
   static constexpr int fMaxL = 2;
   static constexpr int fMaxJM = (fMaxL + 1) * (fMaxL + 1);
 
   std::array<std::array<std::array<float, (fMaxJM * fMaxJM * 4 * 100)>, 10>, 10>
-      fcovmnum{}; ///< Covariance matrix for the numerator
+    fcovmnum{}; ///< Covariance matrix for the numerator
   std::array<std::array<std::array<float, (fMaxJM * fMaxJM * 4 * 100)>, 10>, 10>
-      fcovmden{}; ///< Covariance matrix for the numerator
+    fcovmden{}; ///< Covariance matrix for the numerator
 
   std::array<std::array<std::shared_ptr<TH3>, 10>, 10> fcovnum{};
   std::array<std::array<std::shared_ptr<TH3>, 10>, 10> fcovden{};
 
-protected:
-  HistogramRegistry *PairSHCentMultKtRegistry = nullptr;
+ protected:
+  HistogramRegistry* PairSHCentMultKtRegistry = nullptr;
   static constexpr std::string_view mFolderSuffix[2] = {
-      "SameEvent",
-      "MixedEvent"}; ///< Folder naming for the output according to mEventType
+    "SameEvent",
+    "MixedEvent"}; ///< Folder naming for the output according to mEventType
   static constexpr int mEventType =
-      eventType;        ///< Type of the event (same/mixed, according to
+    eventType;          ///< Type of the event (same/mixed, according to
                         ///< FEMTOUNIVERSESHCONTAINER::EventType)
   float mMassOne = 0.f; ///< PDG mass of particle 1
   float mMassTwo = 0.f; ///< PDG mass of particle 2
