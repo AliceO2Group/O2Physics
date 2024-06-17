@@ -336,6 +336,7 @@ struct derivedlambdakzeroanalysis {
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, axisNch});
 
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
+    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2F, {axisCentrality, axisOccupancy});
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
@@ -1148,6 +1149,7 @@ struct derivedlambdakzeroanalysis {
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
 
     // __________________________________________
     // perform main analysis
@@ -1276,6 +1278,7 @@ struct derivedlambdakzeroanalysis {
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
 
     // __________________________________________
     // perform main analysis
