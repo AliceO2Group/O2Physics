@@ -16,12 +16,12 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
 
-#include "Framework/HistogramRegistry.h"
-#include <fairlogger/Logger.h>
 #include <vector>
 #include <string>
 #include <complex>
 #include <memory>
+#include "Framework/HistogramRegistry.h"
+#include <fairlogger/Logger.h>
 
 using namespace o2;
 using namespace o2::framework;
