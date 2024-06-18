@@ -2049,18 +2049,18 @@ DECLARE_SOA_TABLE(HfCandOmegaC, "AOD", "HFCANDOMEGAC",
                   hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfOmegaCMCRec, "AOD", "HFOMEGACMCREC", //!
+DECLARE_SOA_TABLE(HfOmegacMCRec, "AOD", "HFOMEGACMCREC", //!
                   hf_cand_omegac::FlagMcMatchRec,
                   hf_cand_omegac::DebugMcRec,
                   hf_cand_omegac::OriginRec,
                   hf_cand_omegac::CollisionMatched);
 
 // table with results of generator level MC matching
-DECLARE_SOA_TABLE(HfOmegaCMCGen, "AOD", "HFOMEGACMCGEN", //!
+DECLARE_SOA_TABLE(HfOmegacMCGen, "AOD", "HFOMEGACMCGEN", //!
                   hf_cand_omegac::FlagMcMatchGen, hf_cand_omegac::DebugGenCharmBar, hf_cand_omegac::DebugGenOmega, hf_cand_omegac::DebugGenLambda, hf_cand_omegac::PtCharmBaryonGen, hf_cand_omegac::EtaCharmBaryonGen, hf_cand_omegac::OriginGen);
 
 // table with results of KFParticle
-DECLARE_SOA_TABLE(HfOmegaCKF, "AOD", "HFOMEGACKF", //!
+DECLARE_SOA_TABLE(HfOmegacKF, "AOD", "HFOMEGACKF", //!
                   hf_cand_omegac::NSigmaTPCPiFromOmegac, hf_cand_omegac::NSigmaTOFPiFromOmegac,
                   hf_cand_omegac::NSigmaTPCKaFromCasc, hf_cand_omegac::NSigmaTOFKaFromCasc,
                   hf_cand_omegac::NSigmaTPCPiFromV0, hf_cand_omegac::NSigmaTPCPrFromV0,
