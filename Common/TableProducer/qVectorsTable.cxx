@@ -78,7 +78,7 @@ struct qVectorsTable {
 
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
-//  Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
+  Configurable<int> cfgCorrLevel{"cfgCorrLevel", 4, "calibration step: 0 = no corr, 1 = gain corr, 2 = rectr, 3 = twist, 4 = full"};
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest"};
 
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
@@ -219,7 +219,7 @@ struct qVectorsTable {
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
     auto objft0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
-    if (!objft0Gain) {
+    if (!objft0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 208; i++) {
         FT0RelGainConst.push_back(1.);
       }
@@ -230,7 +230,7 @@ struct qVectorsTable {
     fullPath = cfgGainEqPath;
     fullPath += "/FV0";
     auto objfv0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
-    if (!objfv0Gain) {
+    if (!objfv0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 48; i++) {
         FV0RelGainConst.push_back(1.);
       }
@@ -528,20 +528,21 @@ struct qVectorsTable {
                            objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
         }
       }
-      qvecReFT0C.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0C * 4 + 3]);
-      qvecImFT0C.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0C * 4 + 3]);
-      qvecReFT0A.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0A * 4 + 3]);
-      qvecImFT0A.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0A * 4 + 3]);
-      qvecReFT0M.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0M * 4 + 3]);
-      qvecImFT0M.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0M * 4 + 3]);
-      qvecReFV0A.push_back(qvecRe[(kBTot + 1) * 4 * id + kFV0A * 4 + 3]);
-      qvecImFV0A.push_back(qvecIm[(kBTot + 1) * 4 * id + kFV0A * 4 + 3]);
-      qvecReBPos.push_back(qvecRe[(kBTot + 1) * 4 * id + kBPos * 4 + 3]);
-      qvecImBPos.push_back(qvecIm[(kBTot + 1) * 4 * id + kBPos * 4 + 3]);
-      qvecReBNeg.push_back(qvecRe[(kBTot + 1) * 4 * id + kBNeg * 4 + 3]);
-      qvecImBNeg.push_back(qvecIm[(kBTot + 1) * 4 * id + kBNeg * 4 + 3]);
-      qvecReBTot.push_back(qvecRe[(kBTot + 1) * 4 * id + kBTot * 4 + 3]);
-      qvecImBTot.push_back(qvecIm[(kBTot + 1) * 4 * id + kBTot * 4 + 3]);
+      int CorrLevel = cfgCorrLevel == 0 ? 0 : cfgCorrLevel - 1;
+      qvecReFT0C.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0C * 4 + cfgCorrLevel]);
+      qvecImFT0C.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0C * 4 + cfgCorrLevel]);
+      qvecReFT0A.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0A * 4 + cfgCorrLevel]);
+      qvecImFT0A.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0A * 4 + cfgCorrLevel]);
+      qvecReFT0M.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0M * 4 + cfgCorrLevel]);
+      qvecImFT0M.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0M * 4 + cfgCorrLevel]);
+      qvecReFV0A.push_back(qvecRe[(kBTot + 1) * 4 * id + kFV0A * 4 + cfgCorrLevel]);
+      qvecImFV0A.push_back(qvecIm[(kBTot + 1) * 4 * id + kFV0A * 4 + cfgCorrLevel]);
+      qvecReBPos.push_back(qvecRe[(kBTot + 1) * 4 * id + kBPos * 4 + cfgCorrLevel]);
+      qvecImBPos.push_back(qvecIm[(kBTot + 1) * 4 * id + kBPos * 4 + cfgCorrLevel]);
+      qvecReBNeg.push_back(qvecRe[(kBTot + 1) * 4 * id + kBNeg * 4 + cfgCorrLevel]);
+      qvecImBNeg.push_back(qvecIm[(kBTot + 1) * 4 * id + kBNeg * 4 + cfgCorrLevel]);
+      qvecReBTot.push_back(qvecRe[(kBTot + 1) * 4 * id + kBTot * 4 + cfgCorrLevel]);
+      qvecImBTot.push_back(qvecIm[(kBTot + 1) * 4 * id + kBTot * 4 + cfgCorrLevel]);
     }
 
     // Fill the columns of the Qvectors table.
