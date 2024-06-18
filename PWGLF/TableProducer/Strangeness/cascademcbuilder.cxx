@@ -96,7 +96,7 @@ struct cascademcbuilder {
   {
 
     // to be used if using the asymmetric mode, kept empty otherwise
-    std::vector<mcCascinfo> mcCascinfos; // V0MCCore information
+    std::vector<mcCascinfo> mcCascinfos;                           // V0MCCore information
     std::vector<bool> mcParticleIsReco(mcParticles.size(), false); // mc Particle not recoed by V0s
 
     for (auto& casc : cascTable) {
@@ -111,9 +111,9 @@ struct cascademcbuilder {
       thisInfo.bachP[0] = -999.0f, thisInfo.bachP[1] = -999.0f, thisInfo.bachP[2] = -999.0f;
       thisInfo.momentum[0] = -999.0f, thisInfo.momentum[1] = -999.0f, thisInfo.momentum[2] = -999.0f;
       thisInfo.label = -1, thisInfo.motherLabel = -1;
-      thisInfo.mcParticlePositive=-1;
-      thisInfo.mcParticleNegative=-1;
-      thisInfo.mcParticleBachelor=-1;
+      thisInfo.mcParticlePositive = -1;
+      thisInfo.mcParticleNegative = -1;
+      thisInfo.mcParticleBachelor = -1;
 
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.template bachelor_as<aod::McTrackLabels>();
@@ -162,7 +162,7 @@ struct cascademcbuilder {
                       if (lV0Mother == lBachMother) {
                         thisInfo.label = lV0Mother.globalIndex();
 
-                        if(lV0Mother.has_mcCollision()){
+                        if (lV0Mother.has_mcCollision()) {
                           thisInfo.mcCollision = lV0Mother.mcCollisionId(); // save this reference, please
                         }
 
@@ -194,19 +194,19 @@ struct cascademcbuilder {
         thisInfo.label, thisInfo.motherLabel);
 
       // Mark mcParticle as recoed (no searching necessary afterwards)
-      if(thisInfo.motherLabel>-1){
-        mcParticleIsReco[thisInfo.motherLabel] = true; 
+      if (thisInfo.motherLabel > -1) {
+        mcParticleIsReco[thisInfo.motherLabel] = true;
       }
 
       if (populateCascMCCoresSymmetric) {
         cascmccores(
           thisInfo.pdgCode, thisInfo.pdgCodeMother, thisInfo.pdgCodeV0, thisInfo.isPhysicalPrimary,
           thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative, thisInfo.pdgCodeBachelor,
-          thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2], 
+          thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
           thisInfo.lxyz[0], thisInfo.lxyz[1], thisInfo.lxyz[2],
-          thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2], 
-          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2], 
-          thisInfo.bachP[0], thisInfo.bachP[1], thisInfo.bachP[2], 
+          thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
+          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
+          thisInfo.bachP[0], thisInfo.bachP[1], thisInfo.bachP[2],
           thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
         cascmccollrefs(thisInfo.mcCollision);
       }
@@ -219,10 +219,9 @@ struct cascademcbuilder {
           if (
             thisInfo.mcParticlePositive == mcCascinfos[ii].mcParticlePositive && mcCascinfos[ii].mcParticlePositive > 0 &&
             thisInfo.mcParticleNegative == mcCascinfos[ii].mcParticleNegative && mcCascinfos[ii].mcParticleNegative > 0 &&
-            thisInfo.mcParticleBachelor == mcCascinfos[ii].mcParticleBachelor && mcCascinfos[ii].mcParticleBachelor > 0
-          ) {
+            thisInfo.mcParticleBachelor == mcCascinfos[ii].mcParticleBachelor && mcCascinfos[ii].mcParticleBachelor > 0) {
             thisCascMCCoreIndex = ii;
-            break;                                          // this exists already in list
+            break; // this exists already in list
           }
         }
         if (thisCascMCCoreIndex < 0) {
@@ -236,8 +235,8 @@ struct cascademcbuilder {
 
     // now populate V0MCCores if in asymmetric mode
     if (populateCascMCCoresAsymmetric) {
-        // first step: add any un-recoed v0mmcores that were requested 
-        for (auto & mcParticle : mcParticles) {
+      // first step: add any un-recoed v0mmcores that were requested
+      for (auto& mcParticle : mcParticles) {
         thisInfo.pdgCode = -1, thisInfo.pdgCodeMother = -1;
         thisInfo.pdgCodePositive = -1, thisInfo.pdgCodeNegative = -1;
         thisInfo.pdgCodeBachelor = -1, thisInfo.pdgCodeV0 = -1;
@@ -249,32 +248,31 @@ struct cascademcbuilder {
         thisInfo.bachP[0] = 0.0f, thisInfo.bachP[1] = 0.0f, thisInfo.bachP[2] = 0.0f;
         thisInfo.momentum[0] = 0.0f, thisInfo.momentum[1] = 0.0f, thisInfo.momentum[2] = 0.0f;
         thisInfo.label = -1, thisInfo.motherLabel = -1;
-        thisInfo.mcParticlePositive=-1;
-        thisInfo.mcParticleNegative=-1;
-        thisInfo.mcParticleBachelor=-1;
+        thisInfo.mcParticlePositive = -1;
+        thisInfo.mcParticleNegative = -1;
+        thisInfo.mcParticleBachelor = -1;
 
-        if(mcParticleIsReco[mcParticle.globalIndex()] == true)
+        if (mcParticleIsReco[mcParticle.globalIndex()] == true)
           continue; // skip if already created in list
-          
-        if(TMath::Abs(mcParticle.y()) > rapidityWindow)
+
+        if (TMath::Abs(mcParticle.y()) > rapidityWindow)
           continue; // skip outside midrapidity
 
-        if(
-          (addGeneratedXiMinus && mcParticle.pdgCode() == 3312) || 
+        if (
+          (addGeneratedXiMinus && mcParticle.pdgCode() == 3312) ||
           (addGeneratedXiPlus && mcParticle.pdgCode() == -3312) ||
           (addGeneratedOmegaMinus && mcParticle.pdgCode() == 3334) ||
-          (addGeneratedOmegaPlus && mcParticle.pdgCode() == -3334)
-          ){
+          (addGeneratedOmegaPlus && mcParticle.pdgCode() == -3334)) {
           thisInfo.pdgCode = mcParticle.pdgCode();
           thisInfo.isPhysicalPrimary = mcParticle.isPhysicalPrimary();
 
-          if(mcParticle.has_mcCollision()){
+          if (mcParticle.has_mcCollision()) {
             thisInfo.mcCollision = mcParticle.mcCollisionId(); // save this reference, please
           }
           thisInfo.momentum[0] = mcParticle.px();
           thisInfo.momentum[1] = mcParticle.py();
           thisInfo.momentum[2] = mcParticle.pz();
-          
+
           // if I got here, it means this MC particle was not recoed and is of interest. Add it please
           mcCascinfos.push_back(thisInfo);
         }
@@ -284,11 +282,11 @@ struct cascademcbuilder {
         cascmccores( // a lot of the info below will be compressed in case of not-recoed MC (good!)
           thisInfo.pdgCode, thisInfo.pdgCodeMother, thisInfo.pdgCodeV0, thisInfo.isPhysicalPrimary,
           thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative, thisInfo.pdgCodeBachelor,
-          thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2], 
+          thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
           thisInfo.lxyz[0], thisInfo.lxyz[1], thisInfo.lxyz[2],
-          thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2], 
-          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2], 
-          thisInfo.bachP[0], thisInfo.bachP[1], thisInfo.bachP[2], 
+          thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
+          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
+          thisInfo.bachP[0], thisInfo.bachP[1], thisInfo.bachP[2],
           thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
         cascmccollrefs(thisInfo.mcCollision);
       }

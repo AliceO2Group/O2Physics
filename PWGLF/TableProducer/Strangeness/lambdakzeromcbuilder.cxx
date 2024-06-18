@@ -45,7 +45,7 @@ struct lambdakzeromcbuilder {
   Produces<aod::McV0Labels> v0labels; // MC labels for V0s
   Produces<aod::V0MCCores> v0mccores; // optionally aggregate information from MC side for posterior analysis (derived data)
   Produces<aod::V0CoreMCLabels> v0CoreMCLabels; // interlink V0Cores -> V0MCCores in asymmetric mode
-  Produces<aod::V0MCCollRefs> v0mccollref;         // references collisions from V0MCCores
+  Produces<aod::V0MCCollRefs> v0mccollref;      // references collisions from V0MCCores
 
   Configurable<bool> populateV0MCCoresSymmetric{"populateV0MCCoresSymmetric", false, "populate V0MCCores table for derived data analysis, keep V0MCCores joinable with V0Cores"};
   Configurable<bool> populateV0MCCoresAsymmetric{"populateV0MCCoresAsymmetric", false, "populate V0MCCores table for derived data analysis, create V0Cores -> V0MCCores interlink. Saves only labeled V0s."};
@@ -147,7 +147,7 @@ struct lambdakzeromcbuilder {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
                 thisInfo.label = lNegMother.globalIndex();
 
-                if(lNegMother.has_mcCollision()){
+                if (lNegMother.has_mcCollision()) {
                   thisInfo.mcCollision = lNegMother.mcCollisionId(); // save this reference, please
                 }
 
@@ -173,8 +173,8 @@ struct lambdakzeromcbuilder {
         thisInfo.label, thisInfo.motherLabel);
 
       // Mark mcParticle as recoed (no searching necessary afterwards)
-      if(thisInfo.motherLabel>-1){
-        mcParticleIsReco[thisInfo.motherLabel] = true; 
+      if (thisInfo.motherLabel > -1) {
+        mcParticleIsReco[thisInfo.motherLabel] = true;
       }
 
       // ---] Symmetric populate [---
@@ -222,8 +222,8 @@ struct lambdakzeromcbuilder {
 
     // now populate V0MCCores if in asymmetric mode
     if (populateV0MCCoresAsymmetric) {
-      // first step: add any un-recoed v0mmcores that were requested 
-      for (auto & mcParticle : mcParticles) {
+      // first step: add any un-recoed v0mmcores that were requested
+      for (auto& mcParticle : mcParticles) {
         thisInfo.packedMcParticleIndices = 0;
         thisInfo.label = -1;
         thisInfo.motherLabel = -1;
@@ -236,31 +236,30 @@ struct lambdakzeromcbuilder {
         thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
         thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
 
-        if(mcParticleIsReco[mcParticle.globalIndex()] == true)
+        if (mcParticleIsReco[mcParticle.globalIndex()] == true)
           continue; // skip if already created in list
-          
-        if(TMath::Abs(mcParticle.y()) > rapidityWindow)
+
+        if (TMath::Abs(mcParticle.y()) > rapidityWindow)
           continue; // skip outside midrapidity
 
-        if(
-          (addGeneratedK0Short && mcParticle.pdgCode() == 310) || 
+        if (
+          (addGeneratedK0Short && mcParticle.pdgCode() == 310) ||
           (addGeneratedLambda && mcParticle.pdgCode() == 3122) ||
           (addGeneratedAntiLambda && mcParticle.pdgCode() == -3122) ||
-          (addGeneratedGamma && mcParticle.pdgCode() == 22)
-          ){
+          (addGeneratedGamma && mcParticle.pdgCode() == 22)) {
           thisInfo.pdgCode = mcParticle.pdgCode();
           thisInfo.isPhysicalPrimary = mcParticle.isPhysicalPrimary();
 
-          if(mcParticle.has_mcCollision()){
+          if (mcParticle.has_mcCollision()) {
             thisInfo.mcCollision = mcParticle.mcCollisionId(); // save this reference, please
           }
 
-          // guarantee compressibility: keep momentum entirely in the positive prong 
+          // guarantee compressibility: keep momentum entirely in the positive prong
           // WARNING: THIS IS AS ARBITRARY AS IT GETS but should be ok
           thisInfo.posP[0] = mcParticle.px();
           thisInfo.posP[1] = mcParticle.py();
           thisInfo.posP[2] = mcParticle.pz();
-          
+
           // if I got here, it means this MC particle was not recoed and is of interest. Add it please
           mcV0infos.push_back(thisInfo);
         }
