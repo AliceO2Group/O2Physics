@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file
-/// \brief Reconstruction of Omegac0  -> omega pi candidates
-/// \author
+/// \file candidateCreatorOmegacToOmegaPiWithKFP.cxx
+/// \brief Reconstruction of Omegac0  -> omega pi candidates using KFParticle
+/// \author Yunfan Liu <yunfan.liu@cern.ch>
 #include <cmath>
 #include <array>
 #include <cstdlib>
