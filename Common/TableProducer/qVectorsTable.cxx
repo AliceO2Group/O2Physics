@@ -529,20 +529,20 @@ struct qVectorsTable {
         }
       }
       int CorrLevel = cfgCorrLevel == 0 ? 0 : cfgCorrLevel - 1;
-      qvecReFT0C.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0C * 4 + cfgCorrLevel]);
-      qvecImFT0C.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0C * 4 + cfgCorrLevel]);
-      qvecReFT0A.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0A * 4 + cfgCorrLevel]);
-      qvecImFT0A.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0A * 4 + cfgCorrLevel]);
-      qvecReFT0M.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0M * 4 + cfgCorrLevel]);
-      qvecImFT0M.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0M * 4 + cfgCorrLevel]);
-      qvecReFV0A.push_back(qvecRe[(kBTot + 1) * 4 * id + kFV0A * 4 + cfgCorrLevel]);
-      qvecImFV0A.push_back(qvecIm[(kBTot + 1) * 4 * id + kFV0A * 4 + cfgCorrLevel]);
-      qvecReBPos.push_back(qvecRe[(kBTot + 1) * 4 * id + kBPos * 4 + cfgCorrLevel]);
-      qvecImBPos.push_back(qvecIm[(kBTot + 1) * 4 * id + kBPos * 4 + cfgCorrLevel]);
-      qvecReBNeg.push_back(qvecRe[(kBTot + 1) * 4 * id + kBNeg * 4 + cfgCorrLevel]);
-      qvecImBNeg.push_back(qvecIm[(kBTot + 1) * 4 * id + kBNeg * 4 + cfgCorrLevel]);
-      qvecReBTot.push_back(qvecRe[(kBTot + 1) * 4 * id + kBTot * 4 + cfgCorrLevel]);
-      qvecImBTot.push_back(qvecIm[(kBTot + 1) * 4 * id + kBTot * 4 + cfgCorrLevel]);
+      qvecReFT0C.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0C * 4 + CorrLevel]);
+      qvecImFT0C.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0C * 4 + CorrLevel]);
+      qvecReFT0A.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0A * 4 + CorrLevel]);
+      qvecImFT0A.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0A * 4 + CorrLevel]);
+      qvecReFT0M.push_back(qvecRe[(kBTot + 1) * 4 * id + kFT0M * 4 + CorrLevel]);
+      qvecImFT0M.push_back(qvecIm[(kBTot + 1) * 4 * id + kFT0M * 4 + CorrLevel]);
+      qvecReFV0A.push_back(qvecRe[(kBTot + 1) * 4 * id + kFV0A * 4 + CorrLevel]);
+      qvecImFV0A.push_back(qvecIm[(kBTot + 1) * 4 * id + kFV0A * 4 + CorrLevel]);
+      qvecReBPos.push_back(qvecRe[(kBTot + 1) * 4 * id + kBPos * 4 + CorrLevel]);
+      qvecImBPos.push_back(qvecIm[(kBTot + 1) * 4 * id + kBPos * 4 + CorrLevel]);
+      qvecReBNeg.push_back(qvecRe[(kBTot + 1) * 4 * id + kBNeg * 4 + CorrLevel]);
+      qvecImBNeg.push_back(qvecIm[(kBTot + 1) * 4 * id + kBNeg * 4 + CorrLevel]);
+      qvecReBTot.push_back(qvecRe[(kBTot + 1) * 4 * id + kBTot * 4 + CorrLevel]);
+      qvecImBTot.push_back(qvecIm[(kBTot + 1) * 4 * id + kBTot * 4 + CorrLevel]);
     }
 
     // Fill the columns of the Qvectors table.
