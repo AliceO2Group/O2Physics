@@ -2010,7 +2010,7 @@ enum DecayType { DecayToOmegaPi = 0,
 } // end of namespace hf_cand_omegac
 
 // declare dedicated Omegac  to omega Pi candidate table
-DECLARE_SOA_TABLE(HfCandOmegaC, "AOD", "HFCANDOMEGAC",
+DECLARE_SOA_TABLE(HfCandOmegac, "AOD", "HFCANDOMEGAC",
                   o2::soa::Index<>,
                   hf_cand_xic0_omegac0::CollisionId, hf_cand_xic0_omegac0::XPv, hf_cand_xic0_omegac0::YPv, hf_cand_xic0_omegac0::ZPv,
                   hf_cand_xic0_omegac0::XDecayVtxCharmBaryon, hf_cand_xic0_omegac0::YDecayVtxCharmBaryon, hf_cand_xic0_omegac0::ZDecayVtxCharmBaryon,
@@ -2060,7 +2060,7 @@ DECLARE_SOA_TABLE(HfOmegacMCGen, "AOD", "HFOMEGACMCGEN", //!
                   hf_cand_omegac::FlagMcMatchGen, hf_cand_omegac::DebugGenCharmBar, hf_cand_omegac::DebugGenOmega, hf_cand_omegac::DebugGenLambda, hf_cand_omegac::PtCharmBaryonGen, hf_cand_omegac::EtaCharmBaryonGen, hf_cand_omegac::OriginGen);
 
 // table with results of KFParticle
-DECLARE_SOA_TABLE(HfOmegacKF, "AOD", "HFOMEGACKF", //!
+DECLARE_SOA_TABLE(HfOmegacKf, "AOD", "HFOMEGACKF", //!
                   hf_cand_omegac::NSigmaTPCPiFromOmegac, hf_cand_omegac::NSigmaTOFPiFromOmegac,
                   hf_cand_omegac::NSigmaTPCKaFromCasc, hf_cand_omegac::NSigmaTOFKaFromCasc,
                   hf_cand_omegac::NSigmaTPCPiFromV0, hf_cand_omegac::NSigmaTPCPrFromV0,
