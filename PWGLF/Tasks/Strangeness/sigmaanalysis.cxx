@@ -399,7 +399,7 @@ struct sigmaanalysis {
 
       histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
       histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
-      histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());  
+      histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
       histos.fill(HIST("h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
 
       histos.fill(HIST("Gamma/hMassGamma"), sigma.lambdaMass());
