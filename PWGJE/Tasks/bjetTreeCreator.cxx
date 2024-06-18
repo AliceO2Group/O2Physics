@@ -49,9 +49,6 @@ DECLARE_SOA_COLUMN(JetEta, jeteta, float);     //! jet eta
 DECLARE_SOA_COLUMN(JetPhi, jetphi, float);     //! jet phi
 DECLARE_SOA_COLUMN(NTracks, nTracks, int16_t); //! number of charged tracks inside the jet
 DECLARE_SOA_COLUMN(NSV, nSV, int16_t);         //! Number of secondary vertices in the jet
-DECLARE_SOA_COLUMN(NSD, nSD, int16_t);         //! Number of softdrop splittings in the jet
-DECLARE_SOA_COLUMN(Zg, zg, float);             //! The momentum assymetry between the splittings
-DECLARE_SOA_COLUMN(Rg, rg, float);             //! The grooming radius
 DECLARE_SOA_COLUMN(JetMass, mass, float);      //! The jet mass
 DECLARE_SOA_COLUMN(JetFlavor, jetFl, int16_t); //! The jet flavor (b, c, or lf)
 DECLARE_SOA_COLUMN(JetR, jetR, int16_t);       //! The jet radius
@@ -64,9 +61,6 @@ DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAMS",
                   jetInfo::JetPhi,
                   jetInfo::NTracks,
                   jetInfo::NSV,
-                  jetInfo::NSD,
-                  jetInfo::Zg,
-                  jetInfo::Rg,
                   jetInfo::JetMass,
                   jetInfo::JetFlavor,
                   jetInfo::JetR);
@@ -185,14 +179,9 @@ struct BJetTreeCreator {
 
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
 
-  Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
-  Configurable<float> beta{"beta", 0.0, "soft drop beta"};
-
   Configurable<bool> produceTree{"produceTree", true, "produce the jet TTree"};
 
   int eventSelection = -1;
-
-  std::vector<fastjet::PseudoJet> jetConstituents;
 
   std::vector<double> jetRadiiValues;
 
@@ -244,30 +233,6 @@ struct BJetTreeCreator {
       registry.add("h_jetpT_particle_cjet", "Jet transverse momentum particle level c-jets;#it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH1F, {{200, 0., 200.0}}});
       registry.add("h_jetpT_particle_lfjet", "Jet transverse momentum particle level lf-jet;#it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH1F, {{200, 0., 200.0}}});
 
-      registry.add("h2_Zg_jetpT_particle_bjet", "jet #it{Z}_{g} particle level b-jets;#it{p}_{T,jet} (GeV/#it{c});#it{Z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-      registry.add("h2_Zg_jetpT_particle_cjet", "jet #it{Z}_{g} particle level c-jets;#it{p}_{T,jet} (GeV/#it{c});#it{Z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-      registry.add("h2_Zg_jetpT_particle_lfjet", "jet #it{Z}_{g} particle level lf-jet;#it{p}_{T,jet} (GeV/#it{c});#it{Z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-
-      registry.add("h2_Rg_jetpT_particle_bjet", "jet #it{R}_{g} particle level b-jets;#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-      registry.add("h2_Rg_jetpT_particle_cjet", "jet #it{R}_{g} particle level c-jets;#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-      registry.add("h2_Rg_jetpT_particle_lfjet", "jet #it{R}_{g} particle level lf-jet;#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-
-      registry.add("h2_nSD_jetpT_particle_bjet", "Jet #it{n}_{SD} particle level b-jets;#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {7, -0.5, 6.5}}});
-      registry.add("h2_nSD_jetpT_particle_cjet", "Jet #it{n}_{SD} particle level c-jets;#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {7, -0.5, 6.5}}});
-      registry.add("h2_nSD_jetpT_particle_lfjet", "Jet #it{n}_{SD} particle level lf-jet;#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {7, -0.5, 6.5}}});
-
-      registry.add("h2_Zg_jetpT_detector_bjet", "jet #it{Z}_{g} b-jets;#it{p}_{T,jet} (GeV/#it{c});#it{Z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-      registry.add("h2_Zg_jetpT_detector_cjet", "jet #it{Z}_{g} c-jets;#it{p}_{T,jet} (GeV/#it{c});#it{Z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-      registry.add("h2_Zg_jetpT_detector_lfjet", "jet #it{Z}_{g} lf-jet;#it{p}_{T,jet} (GeV/#it{c});#it{Z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-
-      registry.add("h2_Rg_jetpT_detector_bjet", "jet #it{R}_{g} b-jets;#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-      registry.add("h2_Rg_jetpT_detector_cjet", "jet #it{R}_{g} c-jets;#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-      registry.add("h2_Rg_jetpT_detector_lfjet", "jet #it{R}_{g} lf-jet;#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {10, 0.0, 0.5}}});
-
-      registry.add("h2_nSD_jetpT_detector_bjet", "Jet #it{n}_{SD} b-jets;#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {7, -0.5, 6.5}}});
-      registry.add("h2_nSD_jetpT_detector_cjet", "Jet #it{n}_{SD} c-jets;#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {7, -0.5, 6.5}}});
-      registry.add("h2_nSD_jetpT_detector_lfjet", "Jet #it{n}_{SD} lf-jet;#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {7, -0.5, 6.5}}});
-
       registry.add("h2_Response_DetjetpT_PartjetpT_bjet", "Response matrix b-jets;#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}});
       registry.add("h2_Response_DetjetpT_PartjetpT_cjet", "Response matrix c-jets;#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}});
       registry.add("h2_Response_DetjetpT_PartjetpT_lfjet", "Response matrix lf-jet;#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}});
@@ -285,44 +250,6 @@ struct BJetTreeCreator {
   using JetTracksMCDwID = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>;
   using DataJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::DataSecondaryVertex3ProngIndices>>;
-
-  template <typename T>
-  std::tuple<double, double, double> jetReclustering(T const& jet)
-  {
-    std::vector<fastjet::PseudoJet> jetReclustered;
-    fastjet::ClusterSequence clusterSeq(jetConstituents, fastjet::JetDefinition(fastjet::JetAlgorithm::cambridge_algorithm, (jet.r() / 100.f) * 5.0));
-    jetReclustered = sorted_by_pt(clusterSeq.inclusive_jets());
-    fastjet::PseudoJet daughterSubJet = jetReclustered[0];
-    fastjet::PseudoJet parentSubJet1;
-    fastjet::PseudoJet parentSubJet2;
-    bool softDropped = false;
-    double nSD = 0.0;
-    double Zg = -1.0;
-    double Rg = -1.0;
-    while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
-      if (parentSubJet1.perp() < parentSubJet2.perp()) {
-        std::swap(parentSubJet1, parentSubJet2);
-      }
-
-      // delta_R_vec.push_back(delta_R);
-      // xkt_vec.push_back(xkt);
-      // z_vec.push_back(z);
-
-      auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
-      auto theta = parentSubJet1.delta_R(parentSubJet2); // TODO add the lund plane
-      // double xkt = parentSubJet2.perp() * sin(theta);  // TODO add the lund plane
-      if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
-        if (!softDropped) {
-          Zg = z;
-          Rg = theta;
-          softDropped = true;
-        }
-        nSD++;
-      }
-      daughterSubJet = parentSubJet1;
-    }
-    return std::make_tuple(nSD, Zg, Rg);
-  }
 
   // Looping over the SV info and writing them to a table
   template <typename AnalysisJet, typename SecondaryVertices>
@@ -368,10 +295,8 @@ struct BJetTreeCreator {
   template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
   void analyzeJetTrackInfo(AnyCollision const& collision, AnalysisJet const& analysisJet, AnyTracks const& allTracks, SecondaryVertices const& allSVs, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
   {
-    jetConstituents.clear();
 
     for (auto& jconstituent : analysisJet.template tracks_as<AnyTracks>()) {
-      fastjetutilities::fillTracks(jconstituent, jetConstituents, jconstituent.globalIndex());
 
       if (jconstituent.pt() < trackPtMin) {
         continue;
@@ -455,11 +380,9 @@ struct BJetTreeCreator {
       registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), tracksIndices.size());
       registry.fill(HIST("h2_nSV_jetpT"), analysisJet.pt(), SVsIndices.size() < 250 ? SVsIndices.size() : 249);
 
-      auto [nSD, Zg, Rg] = jetReclustering(analysisJet);
-
       if (produceTree) {
         bjetConstituentsTable(bjetParamsTable.lastIndex(), tracksIndices, SVsIndices);
-        bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), tracksIndices.size(), SVsIndices.size(), nSD, Zg, Rg, analysisJet.mass(), 0, analysisJet.r());
+        bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), tracksIndices.size(), SVsIndices.size(), analysisJet.mass(), 0, analysisJet.r());
       }
     }
   }
@@ -514,8 +437,6 @@ struct BJetTreeCreator {
       analyzeJetSVInfo(analysisJet, allSVs, SVsIndices, jetFlavor, eventWeight);
       analyzeJetTrackInfo(collision, analysisJet, allTracks, allSVs, tracksIndices, jetFlavor, eventWeight);
 
-      auto [nSD, Zg, Rg] = jetReclustering(analysisJet);
-
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
 
       registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), tracksIndices.size());
@@ -524,21 +445,12 @@ struct BJetTreeCreator {
       if (jetFlavor == 2) {
         registry.fill(HIST("h2_jetMass_jetpT_bjet"), analysisJet.pt(), analysisJet.mass(), eventWeight);
         registry.fill(HIST("h_jetpT_detector_bjet"), analysisJet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_detector_bjet"), analysisJet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_detector_bjet"), analysisJet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_detector_bjet"), analysisJet.pt(), nSD, eventWeight);
       } else if (jetFlavor == 1) {
         registry.fill(HIST("h2_jetMass_jetpT_cjet"), analysisJet.pt(), analysisJet.mass(), eventWeight);
         registry.fill(HIST("h_jetpT_detector_cjet"), analysisJet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_detector_cjet"), analysisJet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_detector_cjet"), analysisJet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_detector_cjet"), analysisJet.pt(), nSD, eventWeight);
       } else {
         registry.fill(HIST("h2_jetMass_jetpT_lfjet"), analysisJet.pt(), analysisJet.mass(), eventWeight);
         registry.fill(HIST("h_jetpT_detector_lfjet"), analysisJet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_detector_lfjet"), analysisJet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_detector_lfjet"), analysisJet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_detector_lfjet"), analysisJet.pt(), nSD, eventWeight);
       }
 
       for (auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
@@ -553,51 +465,7 @@ struct BJetTreeCreator {
 
       if (produceTree) {
         bjetConstituentsTable(bjetParamsTable.lastIndex(), tracksIndices, SVsIndices);
-        bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), tracksIndices.size(), SVsIndices.size(), nSD, Zg, Rg, analysisJet.mass(), jetFlavor, analysisJet.r());
-      }
-    }
-
-    for (const auto& mcpjet : mcPJetsPerColl) {
-
-      bool jetIncluded = false;
-      for (auto jetR : jetRadiiValues) {
-        if (mcpjet.r() == static_cast<int>(jetR * 100)) {
-          jetIncluded = true;
-          break;
-        }
-      }
-
-      if (!jetIncluded) {
-        continue;
-      }
-
-      int16_t jetFlavor = 0;
-      jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, mcParticlesPerColl);
-      // jetFlavor = jettaggingutilities::mcpJetFromHFShower(mcpjet, mcParticlesPerColl, (float)(mcpjet.r() / 100.));
-
-      float eventWeight = mcpjet.eventWeight();
-      jetConstituents.clear();
-      for (auto& constituent : mcpjet.template tracks_as<JetParticles>()) {
-        fastjetutilities::fillTracks(constituent, jetConstituents, constituent.globalIndex());
-      }
-
-      auto [nSD, Zg, Rg] = jetReclustering(mcpjet);
-
-      if (jetFlavor == 2) {
-        registry.fill(HIST("h_jetpT_particle_bjet"), mcpjet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_particle_bjet"), mcpjet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_particle_bjet"), mcpjet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_particle_bjet"), mcpjet.pt(), nSD, eventWeight);
-      } else if (jetFlavor == 1) {
-        registry.fill(HIST("h_jetpT_particle_cjet"), mcpjet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_particle_cjet"), mcpjet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_particle_cjet"), mcpjet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_particle_cjet"), mcpjet.pt(), nSD, eventWeight);
-      } else {
-        registry.fill(HIST("h_jetpT_particle_lfjet"), mcpjet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_particle_lfjet"), mcpjet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_particle_lfjet"), mcpjet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_particle_lfjet"), mcpjet.pt(), nSD, eventWeight);
+        bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), tracksIndices.size(), SVsIndices.size(), analysisJet.mass(), jetFlavor, analysisJet.r());
       }
     }
   }
@@ -628,28 +496,13 @@ struct BJetTreeCreator {
       // jetFlavor = jettaggingutilities::mcpJetFromHFShower(mcpjet, mcParticlesPerColl, (float)(mcpjet.r() / 100.));
 
       float eventWeight = mcpjet.eventWeight();
-      jetConstituents.clear();
-      for (auto& constituent : mcpjet.template tracks_as<JetParticles>()) {
-        fastjetutilities::fillTracks(constituent, jetConstituents, constituent.globalIndex());
-      }
-
-      auto [nSD, Zg, Rg] = jetReclustering(mcpjet);
 
       if (jetFlavor == 2) {
         registry.fill(HIST("h_jetpT_particle_bjet"), mcpjet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_particle_bjet"), mcpjet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_particle_bjet"), mcpjet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_particle_bjet"), mcpjet.pt(), nSD, eventWeight);
       } else if (jetFlavor == 1) {
         registry.fill(HIST("h_jetpT_particle_cjet"), mcpjet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_particle_cjet"), mcpjet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_particle_cjet"), mcpjet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_particle_cjet"), mcpjet.pt(), nSD, eventWeight);
       } else {
         registry.fill(HIST("h_jetpT_particle_lfjet"), mcpjet.pt(), eventWeight);
-        registry.fill(HIST("h2_Zg_jetpT_particle_lfjet"), mcpjet.pt(), Zg, eventWeight);
-        registry.fill(HIST("h2_Rg_jetpT_particle_lfjet"), mcpjet.pt(), Rg, eventWeight);
-        registry.fill(HIST("h2_nSD_jetpT_particle_lfjet"), mcpjet.pt(), nSD, eventWeight);
       }
     }
   }
