@@ -743,15 +743,15 @@ struct IdentifiedBfFilterTracks {
                                TString::Format("dE/dx vs P reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
         fhdEdxIPTPCA[sp] = new TH2F(TString::Format("fhdEdxIPTPCA_%s", speciesName[sp]).Data(),
-                               TString::Format("dE/dx vs P_{IP} reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
-                               ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                    TString::Format("dE/dx vs P_{IP} reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
+                                    ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       }
       fhdEdxA[kIdBfNoOfSpecies] = new TH2F(TString::Format("fhdEdxA_WrongSpecies").Data(),
                                            TString::Format("dE/dx vs P reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
                                            ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       fhdEdxIPTPCA[kIdBfNoOfSpecies] = new TH2F(TString::Format("fhdEdxIPTPCA_WrongSpecies").Data(),
-                                           TString::Format("dE/dx vs P_{IP} reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
-                                           ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                                TString::Format("dE/dx vs P_{IP} reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
+                                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       /* add the hstograms to the output list */
       fOutputList->Add(fhPB);
       fOutputList->Add(fhPtB);
@@ -1150,7 +1150,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
 {
   using namespace o2::analysis::identifiedbffilter;
 
-  if(!onlyTOF){
+  if (!onlyTOF) {
     fhNSigmaTPC[kIdBfElectron]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
     fhNSigmaTPC[kIdBfPion]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
     fhNSigmaTPC[kIdBfKaon]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
@@ -1192,33 +1192,33 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
     }
   }
 
-  if(!pidEl){
+  if (!pidEl) {
     nsigmas[kIdBfElectron] = 999.0f;
   }
-  if(!pidPi){
+  if (!pidPi) {
     nsigmas[kIdBfPion] = 999.0f;
   }
-  if(!pidKa){
+  if (!pidKa) {
     nsigmas[kIdBfKaon] = 999.0f;
   }
-  if(!pidPr){
+  if (!pidPr) {
     nsigmas[kIdBfProton] = 999.0f;
   }
 
   float min_nsigma = 999.0f;
   MatchRecoGenSpecies sp_min_nsigma = kWrongSpecies;
   for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
-    if (abs(nsigmas[sp])< abs(min_nsigma)) {            // Check if species nsigma is less than current nsigma
+    if (abs(nsigmas[sp]) < abs(min_nsigma)) {  // Check if species nsigma is less than current nsigma
       min_nsigma = nsigmas[sp];                // If yes, set species nsigma to current nsigma
       sp_min_nsigma = MatchRecoGenSpecies(sp); // set current species sp number to current sp
     }
   }
   bool doublematch = false;
   MatchRecoGenSpecies spDouble = kWrongSpecies;
-  if (min_nsigma < maxPIDSigma && min_nsigma > minPIDSigma) {                                     // Check that current nsigma is in accpetance range
+  if (min_nsigma < maxPIDSigma && min_nsigma > minPIDSigma) {         // Check that current nsigma is in accpetance range
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) { // iterate over all species while there's no double match and we're in the list
       if (sp != sp_min_nsigma) {                                      // for species not current minimum nsigma species
-        if (nsigmas[sp] < maxRejectSigma && min_nsigma > minRejectSigma) {                         // If secondary species is in rejection range
+        if (nsigmas[sp] < maxRejectSigma && min_nsigma > minRejectSigma) { // If secondary species is in rejection range
           doublematch = true;                                         // Set double match true
           spDouble = MatchRecoGenSpecies(sp);
         }
@@ -1231,17 +1231,17 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       fhDoublePID->Fill(sp_min_nsigma, spDouble);
       return kWrongSpecies; // Return wrong species value
     } else {
-      if(track.hasTOF() && onlyTOF){
-        if (sp_min_nsigma==0){
+      if (track.hasTOF() && onlyTOF) {
+        if (sp_min_nsigma == 0) {
           fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
         }
-        if (sp_min_nsigma==1){
+        if (sp_min_nsigma == 1) {
           fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
         }
-        if (sp_min_nsigma==2){
+        if (sp_min_nsigma == 2) {
           fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
         }
-        if (sp_min_nsigma==3){
+        if (sp_min_nsigma == 3) {
           fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaPr(), track.tpcInnerParam());
         }
       }
