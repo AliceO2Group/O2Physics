@@ -600,10 +600,10 @@ struct IdentifiedBfFilterTracks {
   Configurable<int> pidKa{"pidKa", -1, "Identify Kaon Tracks"};
   Configurable<int> pidPr{"pidPr", -1, "Identify Proton Tracks"};
 
-  Configurable<float> minPIDSigma{"minpidsigma", -3.0, "Minimum required sigma for PID Acceptance"}; 
+  Configurable<float> minPIDSigma{"minpidsigma", -3.0, "Minimum required sigma for PID Acceptance"};
   Configurable<float> maxPIDSigma{"maxpidsigma", 3.0, "Maximum required sigma for PID Acceptance"};
 
-  Configurable<float> minRejectSigma{"minrejectsigma", -1.0, "Minimum required sigma for PID double match rejection"}; 
+  Configurable<float> minRejectSigma{"minrejectsigma", -1.0, "Minimum required sigma for PID double match rejection"};
   Configurable<float> maxRejectSigma{"maxrejectsigma", 1.0, "Maximum required sigma for PID double match rejection"};
 
   OutputObj<TList> fOutput{"IdentifiedBfFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
@@ -1204,7 +1204,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   if(!pidPr){
     nsigmas[kIdBfProton] = 999.0f;
   }
-  
+
   float min_nsigma = 999.0f;
   MatchRecoGenSpecies sp_min_nsigma = kWrongSpecies;
   for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
