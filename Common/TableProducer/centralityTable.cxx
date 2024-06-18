@@ -25,7 +25,7 @@
 #include "Common/DataModel/EventSelection.h"
 
 #include "TableHelper.h"
-#include "THashList.h"
+#include "TList.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -162,7 +162,7 @@ struct CentralityTable {
 
   // Debug output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  OutputObj<THashList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
+  OutputObj<TList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
 
   void init(InitContext& context)
   {
@@ -233,7 +233,7 @@ struct CentralityTable {
     histos.addClone("FT0C/", "sel8FT0C/");
     histos.addClone("FT0A/", "sel8FT0A/");
 
-    listCalib.setObject(new THashList);
+    listCalib.setObject(new TList);
   }
 
   using BCsWithTimestampsAndRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
