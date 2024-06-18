@@ -2172,7 +2172,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(PiFromCharmBaryon, piFromCharmBaryon, int, Tracks,
 DECLARE_SOA_COLUMN(EtaKaFromCasc, etaKaFromCasc, double);
 DECLARE_SOA_COLUMN(EtaPiFromCharmBaryon, etaPiFromCharmBaryon, double);
 
-//KFParticle results
+// KFParticle results
 DECLARE_SOA_COLUMN(NSigmaTPCPiFromOmegac, nSigmaTPCPiFromOmegac, float);
 DECLARE_SOA_COLUMN(NSigmaTOFPiFromOmegac, nSigmaTOFPiFromOmegac, float);
 DECLARE_SOA_COLUMN(NSigmaTPCKaFromCasc, nSigmaTPCKaFromCasc, float);
@@ -2216,7 +2216,7 @@ DECLARE_SOA_COLUMN(CtOmegac, ctOmegac, float);
 DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, float);
 DECLARE_SOA_COLUMN(V0Ndf, v0Ndf, float);
 DECLARE_SOA_COLUMN(CascNdf, cascNdf, float);
-DECLARE_SOA_COLUMN(OmegacNdf,omegacNdf, float);
+DECLARE_SOA_COLUMN(OmegacNdf, omegacNdf, float);
 DECLARE_SOA_COLUMN(MassV0Ndf, massV0Ndf, float);
 DECLARE_SOA_COLUMN(MassCascNdf, massCascNdf, float);
 DECLARE_SOA_COLUMN(V0Chi2OverNdf, v0Chi2OverNdf, float);
@@ -2225,8 +2225,6 @@ DECLARE_SOA_COLUMN(OmegacChi2OverNdf, omegacChi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
 
-
-						   
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
@@ -2239,18 +2237,18 @@ DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
 DECLARE_SOA_COLUMN(PtCharmBaryonGen, ptCharmBaryonGen, float);
 DECLARE_SOA_COLUMN(EtaCharmBaryonGen, etaCharmBaryonGen, float);
-//dynamic columns
+// dynamic columns
 
 DECLARE_SOA_DYNAMIC_COLUMN(PtCharmBaryon, ptCharmBaryon,
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtCasc, ptCasc,
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtLambda, ptLambda,
-                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });	
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtPiFromCharmBaryon, ptPiFromCharmBaryon,
-                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });	
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtKaFromCasc, ptKaFromCasc,
-                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });	
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 
 // mapping of decay types
 enum DecayType { DecayToOmegaPi = 0,
@@ -2272,30 +2270,29 @@ DECLARE_SOA_TABLE(HfCandOmegaC, "AOD", "HFCANDOMEGAC",
                   hf_cand_xic0_omegac0::PxLambda, hf_cand_xic0_omegac0::PyLambda, hf_cand_xic0_omegac0::PzLambda,
                   hf_cand_omegac::PxKaFromCasc, hf_cand_omegac::PyKaFromCasc, hf_cand_omegac::PzKaFromCasc,
                   hf_cand_xic0_omegac0::PxPosV0Dau, hf_cand_xic0_omegac0::PyPosV0Dau, hf_cand_xic0_omegac0::PzPosV0Dau,
-                  hf_cand_xic0_omegac0::PxNegV0Dau, hf_cand_xic0_omegac0::PyNegV0Dau, hf_cand_xic0_omegac0::PzNegV0Dau,				  
-				  //hf_cand_omegac::PtCharmBaryon,hf_cand_omegac::PtCasc,hf_cand_omegac::PtPiFromCharmBaryon,
-				  //dynamic 
-				  
-				  hf_cand_omegac::PtCharmBaryon<hf_cand_xic0_omegac0::PxCharmBaryon, hf_cand_xic0_omegac0::PyCharmBaryon>,
-				  hf_cand_omegac::PtCasc<hf_cand_xic0_omegac0::PxCasc, hf_cand_xic0_omegac0::PyCasc>,
-				  hf_cand_omegac::PtPiFromCharmBaryon<hf_cand_omegac::PxPiFromCharmBaryon, hf_cand_omegac::PyPiFromCharmBaryon>,
-				  hf_cand_omegac::PtLambda<hf_cand_xic0_omegac0::PxLambda, hf_cand_xic0_omegac0::PyLambda>,
-				  hf_cand_omegac::PtKaFromCasc<hf_cand_omegac::PxKaFromCasc, hf_cand_omegac::PxKaFromCasc>,
-				  
+                  hf_cand_xic0_omegac0::PxNegV0Dau, hf_cand_xic0_omegac0::PyNegV0Dau, hf_cand_xic0_omegac0::PzNegV0Dau,
+                  // hf_cand_omegac::PtCharmBaryon,hf_cand_omegac::PtCasc,hf_cand_omegac::PtPiFromCharmBaryon,
+                  // dynamic
+
+                  hf_cand_omegac::PtCharmBaryon<hf_cand_xic0_omegac0::PxCharmBaryon, hf_cand_xic0_omegac0::PyCharmBaryon>,
+                  hf_cand_omegac::PtCasc<hf_cand_xic0_omegac0::PxCasc, hf_cand_xic0_omegac0::PyCasc>,
+                  hf_cand_omegac::PtPiFromCharmBaryon<hf_cand_omegac::PxPiFromCharmBaryon, hf_cand_omegac::PyPiFromCharmBaryon>,
+                  hf_cand_omegac::PtLambda<hf_cand_xic0_omegac0::PxLambda, hf_cand_xic0_omegac0::PyLambda>,
+                  hf_cand_omegac::PtKaFromCasc<hf_cand_omegac::PxKaFromCasc, hf_cand_omegac::PxKaFromCasc>,
+
                   hf_cand_xic0_omegac0::ImpactParCascXY, hf_cand_omegac::ImpactParPiFromCharmBaryonXY, hf_cand_xic0_omegac0::ImpactParCascZ, hf_cand_omegac::ImpactParPiFromCharmBaryonZ,
                   hf_cand_xic0_omegac0::ErrImpactParCascXY, hf_cand_omegac::ErrImpactParPiFromCharmBaryonXY,
                   hf_cand_xic0_omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0_omegac0::CascadeId, hf_cand_omegac::PiFromCharmBaryonId, cascdata::BachelorId,
                   hf_cand_xic0_omegac0::InvMassLambda, hf_cand_xic0_omegac0::InvMassCascade, hf_cand_xic0_omegac0::InvMassCharmBaryon,
                   hf_cand_xic0_omegac0::CosPAV0, hf_cand_xic0_omegac0::CosPACharmBaryon, hf_cand_xic0_omegac0::CosPACasc, hf_cand_xic0_omegac0::CosPAXYV0, hf_cand_xic0_omegac0::CosPAXYCharmBaryon, hf_cand_xic0_omegac0::CosPAXYCasc,
-                  hf_cand_xic0_omegac0::CTauOmegac, hf_cand_xic0_omegac0::CTauCascade, hf_cand_xic0_omegac0::CTauV0, 
+                  hf_cand_xic0_omegac0::CTauOmegac, hf_cand_xic0_omegac0::CTauCascade, hf_cand_xic0_omegac0::CTauV0,
                   hf_cand_xic0_omegac0::EtaV0PosDau, hf_cand_xic0_omegac0::EtaV0NegDau, hf_cand_omegac::EtaKaFromCasc, hf_cand_omegac::EtaPiFromCharmBaryon,
                   hf_cand_xic0_omegac0::EtaCharmBaryon, hf_cand_xic0_omegac0::EtaCascade, hf_cand_xic0_omegac0::EtaV0,
                   hf_cand_xic0_omegac0::DcaXYToPvV0Dau0, hf_cand_xic0_omegac0::DcaXYToPvV0Dau1, hf_cand_xic0_omegac0::DcaXYToPvCascDau,
                   hf_cand_xic0_omegac0::DcaZToPvV0Dau0, hf_cand_xic0_omegac0::DcaZToPvV0Dau1, hf_cand_xic0_omegac0::DcaZToPvCascDau,
                   hf_cand_xic0_omegac0::DcaCascDau, hf_cand_xic0_omegac0::DcaV0Dau, hf_cand_xic0_omegac0::DcaCharmBaryonDau,
                   hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon,
-                  hf_track_index::HFflag
-				  );
+                  hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfOmegaCMCRec, "AOD", "HFOMEGACMCREC", //!
@@ -2310,29 +2307,28 @@ DECLARE_SOA_TABLE(HfOmegaCMCGen, "AOD", "HFOMEGACMCGEN", //!
 
 // table with results of KFParticle
 DECLARE_SOA_TABLE(HfOmegaCKF, "AOD", "HFOMEGACKF", //!
-				  hf_cand_omegac::NSigmaTPCPiFromOmegac,hf_cand_omegac::NSigmaTOFPiFromOmegac,
-				  hf_cand_omegac::NSigmaTPCKaFromCasc,hf_cand_omegac::NSigmaTOFKaFromCasc,
-				  hf_cand_omegac::NSigmaTPCPiFromV0,hf_cand_omegac::NSigmaTPCPrFromV0,
-				  hf_cand_omegac::KfDcaXYPiFromOmegac,hf_cand_omegac::KfDcaCascDau,hf_cand_omegac::KfDcaOmegacDau,hf_cand_omegac::KfDcaXYCascToPv,
-				  hf_cand_omegac::Chi2GeoV0,hf_cand_omegac::Chi2GeoCasc,hf_cand_omegac::Chi2GeoOmegac,
-				  hf_cand_omegac::Chi2MassV0,hf_cand_omegac::Chi2MassCasc,
-				  hf_cand_omegac::V0ldl,hf_cand_omegac::Cascldl,hf_cand_omegac::Omegacldl,
-				  hf_cand_omegac::Chi2TopoV0ToPv,hf_cand_omegac::Chi2TopoCascToPv,hf_cand_omegac::Chi2TopoPiFromOmegacToPv,hf_cand_omegac::Chi2TopoOmegacToPv,
-				  hf_cand_omegac::Chi2TopoV0ToCasc,hf_cand_omegac::Chi2TopoCascToOmegac,
-				  hf_cand_omegac::DecayLenXYLambda,hf_cand_omegac::DecayLenXYCasc,hf_cand_omegac::DecayLenXYOmegac,
-				  hf_cand_omegac::CosPaV0ToCasc,hf_cand_omegac::CosPaV0ToPv,hf_cand_omegac::CosPaCascToOmegac,hf_cand_omegac::CosPaCascToPv,
-				  hf_cand_omegac::CosPaOmegacToPv,
-				  hf_cand_omegac::KfMassV0,hf_cand_omegac::KfMassCasc,hf_cand_omegac::KfMassOmegac,
-				  hf_cand_omegac::KfRapOmegac,
-				  hf_cand_omegac::KfptPiFromOmegac,hf_cand_omegac::KfptOmegac,
-				  hf_cand_omegac::CosThetaStarPiFromOmegac,
-				  hf_cand_omegac::CtOmegac,hf_cand_omegac::EtaOmegac,
-				  hf_cand_omegac::V0Ndf,hf_cand_omegac::CascNdf,hf_cand_omegac::OmegacNdf,
-				  hf_cand_omegac::MassV0Ndf,hf_cand_omegac::MassCascNdf,
-				  hf_cand_omegac::V0Chi2OverNdf,hf_cand_omegac::CascChi2OverNdf,hf_cand_omegac::OmegacChi2OverNdf,
-				  hf_cand_omegac::MassV0Chi2OverNdf,hf_cand_omegac::MassCascChi2OverNdf
-				  );
-//OmegaC end
+                  hf_cand_omegac::NSigmaTPCPiFromOmegac, hf_cand_omegac::NSigmaTOFPiFromOmegac,
+                  hf_cand_omegac::NSigmaTPCKaFromCasc, hf_cand_omegac::NSigmaTOFKaFromCasc,
+                  hf_cand_omegac::NSigmaTPCPiFromV0, hf_cand_omegac::NSigmaTPCPrFromV0,
+                  hf_cand_omegac::KfDcaXYPiFromOmegac, hf_cand_omegac::KfDcaCascDau, hf_cand_omegac::KfDcaOmegacDau, hf_cand_omegac::KfDcaXYCascToPv,
+                  hf_cand_omegac::Chi2GeoV0, hf_cand_omegac::Chi2GeoCasc, hf_cand_omegac::Chi2GeoOmegac,
+                  hf_cand_omegac::Chi2MassV0, hf_cand_omegac::Chi2MassCasc,
+                  hf_cand_omegac::V0ldl, hf_cand_omegac::Cascldl, hf_cand_omegac::Omegacldl,
+                  hf_cand_omegac::Chi2TopoV0ToPv, hf_cand_omegac::Chi2TopoCascToPv, hf_cand_omegac::Chi2TopoPiFromOmegacToPv, hf_cand_omegac::Chi2TopoOmegacToPv,
+                  hf_cand_omegac::Chi2TopoV0ToCasc, hf_cand_omegac::Chi2TopoCascToOmegac,
+                  hf_cand_omegac::DecayLenXYLambda, hf_cand_omegac::DecayLenXYCasc, hf_cand_omegac::DecayLenXYOmegac,
+                  hf_cand_omegac::CosPaV0ToCasc, hf_cand_omegac::CosPaV0ToPv, hf_cand_omegac::CosPaCascToOmegac, hf_cand_omegac::CosPaCascToPv,
+                  hf_cand_omegac::CosPaOmegacToPv,
+                  hf_cand_omegac::KfMassV0, hf_cand_omegac::KfMassCasc, hf_cand_omegac::KfMassOmegac,
+                  hf_cand_omegac::KfRapOmegac,
+                  hf_cand_omegac::KfptPiFromOmegac, hf_cand_omegac::KfptOmegac,
+                  hf_cand_omegac::CosThetaStarPiFromOmegac,
+                  hf_cand_omegac::CtOmegac, hf_cand_omegac::EtaOmegac,
+                  hf_cand_omegac::V0Ndf, hf_cand_omegac::CascNdf, hf_cand_omegac::OmegacNdf,
+                  hf_cand_omegac::MassV0Ndf, hf_cand_omegac::MassCascNdf,
+                  hf_cand_omegac::V0Chi2OverNdf, hf_cand_omegac::CascChi2OverNdf, hf_cand_omegac::OmegacChi2OverNdf,
+                  hf_cand_omegac::MassV0Chi2OverNdf, hf_cand_omegac::MassCascChi2OverNdf);
+// OmegaC end
 
 #undef HFCAND_COLUMNS
 
