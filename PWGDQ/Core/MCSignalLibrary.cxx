@@ -501,7 +501,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eFromPromptHc")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "Electrons from open charmed hadron decays", {prong}, {-1});
+    signal = new MCSignal(name, "Electrons from open charmed hadron decays without beauty in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHbtoHc")) {

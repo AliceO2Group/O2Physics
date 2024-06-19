@@ -85,6 +85,7 @@ struct FemtoCorrelations {
   Configurable<float> _deta{"deta", 0.01, "minimum allowed defference in eta between two tracks in a pair"};
   Configurable<float> _dphi{"dphi", 0.01, "minimum allowed defference in phi_star between two tracks in a pair"};
   Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
+  Configurable<float> _avgSepTPC{"avgSepTPC", 10, "average sep. (cm) in TPC"};
 
   Configurable<int> _vertexNbinsToMix{"vertexNbinsToMix", 10, "Number of vertexZ bins for the mixing"};
   Configurable<std::vector<float>> _centBins{"multBins", std::vector<float>{0.0f, 100.0f}, "multiplicity percentile/centrality binning (min:0, max:100)"};
@@ -281,7 +282,9 @@ struct FemtoCorrelations {
         if (_fillDetaDphi % 2 == 0)
           DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
 
-        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+        if (_deta > 0 && _dphi > 0 && Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
+        if (_avgSepTPC > 0 && Pair->IsClosePair(_avgSepTPC))
           continue;
 
         if (_fillDetaDphi > 0)
@@ -331,7 +334,9 @@ struct FemtoCorrelations {
             DoubleTrack_ME_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         }
 
-        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+        if (_deta > 0 && _dphi > 0 && Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
+        if (_avgSepTPC > 0 && Pair->IsClosePair(_avgSepTPC))
           continue;
 
         if (_fillDetaDphi > 0) {

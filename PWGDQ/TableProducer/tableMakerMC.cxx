@@ -80,9 +80,9 @@ using MyMuonsColl = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTra
 using MyMuonsCollWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>;
+using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
-using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::McCollisionLabels>;
+using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
 
 namespace o2::aod
 {
@@ -111,6 +111,8 @@ struct TableMakerMC {
   Produces<ReducedEvents> event;
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
+  Produces<ReducedEventsMultPV> multPV;
+  Produces<ReducedEventsMultAll> multAll;
   Produces<ReducedMCEventLabels> eventMClabels;
   Produces<ReducedMCEvents> eventMC;
   Produces<ReducedTracks> trackBasic;
@@ -459,6 +461,12 @@ struct TableMakerMC {
         fCounters[1]++;
       }
       eventMClabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
+        multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
+               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+        multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
+                0, 0, 0.0, 0.0, 0, 0);
+      }
 
       // loop over the MC truth tracks and find those that need to be written
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
@@ -803,6 +811,12 @@ struct TableMakerMC {
                         muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                         muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
                         muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
+                        muon.trackTime(), muon.trackTimeRes());
+            } else {
+              muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
+                        muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                        muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
+                        muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
                         muon.trackTime(), muon.trackTimeRes());
             }
             muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],

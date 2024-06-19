@@ -188,6 +188,8 @@ struct TagTwoProngDisplacedVertices {
 
   SliceCache cache;
   Configurable<int> fillTopoVarsTable{"fillTopoVarsTable", 0, "flag to fill tag table with topological variables (0 -> disabled, 1 -> signal only, 2 -> bkg only, 3 -> both)"};
+  Configurable<float> downsamplingForTopoVarTable{"downsamplingForTopoVarTable", 1.1, "fraction of tag candidates to downscale in filling table with topological variables"};
+  Configurable<float> ptTagMaxForDownsampling{"ptTagMaxForDownsampling", 5., "maximum pT for downscaling of tag candidates in filling table with topological variables"};
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
   Configurable<bool> studyDzeroReflections{"studyDzeroReflections", false, "flag to study Dzero reflections"};
   Configurable<float> trackNumSigmaTof{"trackNumSigmaTof", 3.f, "number of sigma for TOF PID compatibility"};
@@ -676,6 +678,10 @@ struct TagTwoProngDisplacedVertices {
           } else if (fillTopoVarsTable == 2 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
             fillTable = false;
           }
+          float pseudoRndm = trackFirst.pt() * 1000. - (int64_t)(trackFirst.pt() * 1000);
+          if (ptTag < ptTagMaxForDownsampling && pseudoRndm >= downsamplingForTopoVarTable) {
+            fillTable = false;
+          }
           if (fillTable) {
             tagVarsTable(ptTag, invMass, topoVars[0], topoVars[1], topoVars[2], topoVars[3], trackDcaXy[0], trackDcaXy[1], topoVars[6], topoVars[7], topoVars[8], isSignal, channel);
           }
@@ -812,6 +818,10 @@ struct TagTwoProngDisplacedVertices {
           if (fillTopoVarsTable == 1 && !(TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt) || TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt))) { // only signal
             fillTable = false;
           } else if (fillTopoVarsTable == 2 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
+            fillTable = false;
+          }
+          float pseudoRndm = trackPos.pt() * 1000. - (int64_t)(trackPos.pt() * 1000);
+          if (ptTag < ptTagMaxForDownsampling && pseudoRndm >= downsamplingForTopoVarTable) {
             fillTable = false;
           }
           if (fillTable) {

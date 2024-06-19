@@ -293,6 +293,7 @@ struct Pi0EtaToGammaGamma {
     // for track
     fV0PhotonCut.SetTrackPtRange(pcmcuts.cfg_min_pt_v0 * 0.4, 1e+10f);
     fV0PhotonCut.SetTrackEtaRange(-pcmcuts.cfg_max_eta_v0, +pcmcuts.cfg_max_eta_v0);
+    fV0PhotonCut.SetMinNClustersTPC(pcmcuts.cfg_min_ncluster_tpc);
     fV0PhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfg_min_ncrossedrows);
     fV0PhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     fV0PhotonCut.SetChi2PerClusterTPC(0.0, pcmcuts.cfg_max_chi2tpc);
@@ -553,7 +554,7 @@ struct Pi0EtaToGammaGamma {
             used_photonIds.emplace_back(pair_tmp_id1);
           }
           if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id2) == used_photonIds.end()) {
-            emh2->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0, 0, 0, std::vector<int>{}));
+            emh1->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0, 0, 0, std::vector<int>{}));
             used_photonIds.emplace_back(pair_tmp_id2);
           }
           ndiphoton++;
@@ -724,8 +725,6 @@ struct Pi0EtaToGammaGamma {
       auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
       if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) { // same kinds pairing
-        selected_photons1_in_this_event.insert(selected_photons1_in_this_event.end(), selected_photons2_in_this_event.begin(), selected_photons2_in_this_event.end());
-
         for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
@@ -735,8 +734,6 @@ struct Pi0EtaToGammaGamma {
           }
 
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
-          auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
-          photons1_from_event_pool.insert(photons1_from_event_pool.end(), photons2_from_event_pool.begin(), photons2_from_event_pool.end());
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
           for (auto& g1 : selected_photons1_in_this_event) {
@@ -753,7 +750,6 @@ struct Pi0EtaToGammaGamma {
         } // end of loop over mixed event pool
 
       } else { //[photon1 from event1, photon2 from event2] and [photon1 from event2, photon2 from event1]
-
         for (auto& mix_dfId_collisionId : collisionIds2_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
@@ -780,7 +776,6 @@ struct Pi0EtaToGammaGamma {
             }
           }
         } // end of loop over mixed event pool
-
         for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;

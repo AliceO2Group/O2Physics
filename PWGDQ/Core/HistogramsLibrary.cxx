@@ -122,6 +122,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MultFT0C_VtxNContrib", "MultFT0C vs VtxNContrib", false, 100, 0, 60000.0, VarManager::kMultFT0C, 100, 0, 10000.0, VarManager::kVtxNcontrib);
       hm->AddHistogram(histClass, "MultFT0A_VtxNContrib", "MultFT0A vs VtxNContrib", false, 100, 0, 180000.0, VarManager::kMultFT0A, 100, 0, 10000.0, VarManager::kVtxNcontrib);
     }
+    if (subGroupStr.Contains("occupancy")) {
+      hm->AddHistogram(histClass, "ITStrackOccupancy", "ITStrackOccupancy", false, 300, 0.0, 30000.0, VarManager::kTrackOccupancyInTimeRange);
+    }
     if (subGroupStr.Contains("mc")) {
       hm->AddHistogram(histClass, "MCVtxX_VtxX", "Vtx X (MC vs rec)", false, 100, -0.5, 0.5, VarManager::kVtxX, 100, -0.5, 0.5, VarManager::kMCVtxX);
       hm->AddHistogram(histClass, "MCVtxY_VtxY", "Vtx Y (MC vs rec)", false, 100, -0.5, 0.5, VarManager::kVtxY, 100, -0.5, 0.5, VarManager::kMCVtxY);
@@ -147,6 +150,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       double maxBins[3] = {10, 10, 90};
       hm->AddHistogram(histClass, "Q1ZNAX_Q1ZNAY_CentFT0C", "", 3, varZNA, bins, minBins, maxBins, 0, -1, kTRUE);
       hm->AddHistogram(histClass, "Q1ZNCX_Q1ZNCY_CentFT0C", "", 3, varZNC, bins, minBins, maxBins, 0, -1, kTRUE);
+
+      hm->AddHistogram(histClass, "IntercalibZNA_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -50.0, 50.0, VarManager::KIntercalibZNA);
+      hm->AddHistogram(histClass, "IntercalibZNC_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -50.0, 50.0, VarManager::KIntercalibZNC);
 
       hm->AddHistogram(histClass, "Q2X0A", "", false, 500, -10.0, 10.0, VarManager::kQ2X0A);
       hm->AddHistogram(histClass, "Q2Y0A", "", false, 500, -10.0, 10.0, VarManager::kQ2Y0A);
@@ -625,8 +631,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("dca")) {
       hm->AddHistogram(histClass, "DCAxy", "DCA_{xy}", false, 400, -2.0, 2.0, VarManager::kTrackDCAxy);
       hm->AddHistogram(histClass, "DCAz", "DCA_{z}", false, 800, -4.0, 4.0, VarManager::kTrackDCAz);
-      hm->AddHistogram(histClass, "DCAsigXY", "DCA_{XY} [#sigma]", false, 100, -10.0, 10.0, VarManager::kTrackDCAsigXY);
-      hm->AddHistogram(histClass, "DCAsigZ", "DCA_{Z} [#sigma]", false, 100, -10.0, 10.0, VarManager::kTrackDCAsigZ);
+      hm->AddHistogram(histClass, "DCAsigXY", "DCA_{XY} [#sigma]", false, 200, -20.0, 20.0, VarManager::kTrackDCAsigXY);
+      hm->AddHistogram(histClass, "DCAsigZ", "DCA_{Z} [#sigma]", false, 200, -20.0, 20.0, VarManager::kTrackDCAsigZ);
       if (subGroupStr.Contains("pt")) {
         hm->AddHistogram(histClass, "Pt_DCAxy", "p_{T} vs DCA_{xy}", false, 200, 0.0, 20.0, VarManager::kPt, 400, -2.0, 2.0, VarManager::kTrackDCAxy);
         hm->AddHistogram(histClass, "Pt_DCAz", "p_{T} vs DCA_{z}", false, 200, 0.0, 20.0, VarManager::kPt, 800, -4.0, 4.0, VarManager::kTrackDCAz);

@@ -58,6 +58,7 @@ class svPoolCreator
     svCandPool.clear();
   }
 
+  void setTimeMargin(float timeMargin) { timeMarginNS = timeMargin; }
   void setFitter(const o2::vertexing::DCAFitterN<2>& fitter) { this->fitter = fitter; }
   o2::vertexing::DCAFitterN<2>* getFitter() { return &fitter; }
   std::array<std::vector<TrackCand>, 4> getTrackCandPool() { return trackCandPool; }

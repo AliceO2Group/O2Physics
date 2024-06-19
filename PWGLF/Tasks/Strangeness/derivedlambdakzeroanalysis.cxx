@@ -75,11 +75,18 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
 
-  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", true, "require events with at least one ITS-TPC track"};
+  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
   Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
-  Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", true, "require events with at least one of vertex contributors matched to TOF"};
-  Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", true, "require events with at least one of vertex contributors matched to TRD"};
+  Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
+  Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+  Configurable<bool> requireNoHighOccupancyAgressive{"requireNoHighOccupancyAgressive", false, "reject collisions with high occupancies according to the aggressive cuts"};
+  Configurable<bool> requireNoHighOccupancyStrict{"requireNoHighOccupancyStrict", false, "reject collisions with high occupancies according to the strict cuts"};
+  Configurable<bool> requireNoHighOccupancyMedium{"requireNoHighOccupancyMedium", false, "reject collisions with high occupancies according to the medium cuts"};
+  Configurable<bool> requireNoHighOccupancyRelaxed{"requireNoHighOccupancyRelaxed", false, "reject collisions with high occupancies according to the relaxed cuts"};
+  Configurable<bool> requireNoHighOccupancyGentle{"requireNoHighOccupancyGentle", false, "reject collisions with high occupancies according to the gentle cuts"};
+  Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
 
   Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
@@ -304,7 +311,7 @@ struct derivedlambdakzeroanalysis {
     secondaryMaskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{12, -0.5f, +11.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +19.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -315,13 +322,21 @@ struct derivedlambdakzeroanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "Below min occup.");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "Above max occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoHighOccupancyAgressive");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoHighOccupancyStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoHighOccupancyMedium");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoHighOccupancyRelaxed");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoHighOccupancyGentle");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInTimeRangeStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Below min occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Above max occup.");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, axisNch});
 
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
+    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2F, {axisCentrality, axisOccupancy});
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
@@ -1079,14 +1094,49 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
 
+    if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 10 /* No occupancy according to the aggressive cuts */);
+
+    if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 11 /* No occupancy according to the strict cuts */);
+
+    if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 12 /* No occupancy according to the medium cuts */);
+
+    if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 13 /* No occupancy according to the relaxed cuts */);
+
+    if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 14 /* No occupancy according to the gentle cuts */);
+
+    if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 15 /* No other collision within +/- 10 microseconds */);
+
+    if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 16 /* No other collision within +/- 4 microseconds */);
+
     if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 10 /* Below min occupancy */);
+    histos.fill(HIST("hEventSelection"), 17 /* Below min occupancy */);
     if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 11 /* Above max occupancy */);
+    histos.fill(HIST("hEventSelection"), 18 /* Above max occupancy */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -1099,6 +1149,7 @@ struct derivedlambdakzeroanalysis {
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
 
     // __________________________________________
     // perform main analysis
@@ -1147,6 +1198,75 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
 
+    if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 5 /* Contains at least one ITS-TPC track */);
+
+    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 6 /* PV position consistency check */);
+
+    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 7 /* PV with at least one contributor matched with TOF */);
+
+    if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TRD */);
+
+    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
+
+    if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 10 /* No occupancy according to the aggressive cuts */);
+
+    if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 11 /* No occupancy according to the strict cuts */);
+
+    if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 12 /* No occupancy according to the medium cuts */);
+
+    if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 13 /* No occupancy according to the relaxed cuts */);
+
+    if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 14 /* No occupancy according to the gentle cuts */);
+
+    if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 15 /* No other collision within +/- 10 microseconds */);
+
+    if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 16 /* No other collision within +/- 4 microseconds */);
+
+    if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 17 /* Below min occupancy */);
+    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 18 /* Above max occupancy */);
+
     float centrality = collision.centFT0C();
     if (qaCentrality) {
       auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
@@ -1158,6 +1278,7 @@ struct derivedlambdakzeroanalysis {
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
 
     // __________________________________________
     // perform main analysis
