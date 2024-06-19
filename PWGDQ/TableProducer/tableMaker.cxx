@@ -67,13 +67,13 @@ using namespace o2::aod;
 
 // DQ triggers
 enum DQTriggers {
-  kSingleE      = 1 << 0, // 0000001
-  kLMeeIMR      = 1 << 1, // 0000010
-  kLMeeHMR      = 1 << 2, // 0000100
-  kDiElectron   = 1 << 3, // 0001000
-  kSingleMuLow  = 1 << 4, // 0010000
+  kSingleE = 1 << 0,      // 0000001
+  kLMeeIMR = 1 << 1,      // 0000010
+  kLMeeHMR = 1 << 2,      // 0000100
+  kDiElectron = 1 << 3,   // 0001000
+  kSingleMuLow = 1 << 4,  // 0010000
   kSingleMuHigh = 1 << 5, // 0100000
-  kDiMuon       = 1 << 6, // 1000000
+  kDiMuon = 1 << 6,       // 1000000
   kNTriggersDQ
 };
 
@@ -1688,13 +1688,13 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processMuonsAndMFTWithFilter, "Build MFT and muons DQ skimmed data model, w/ event filter", false);
 
   // List of process functions removed because they are not using cov matrix
-  //PROCESS_SWITCH(TableMaker, processMuonOnlyWithCent, "Build muon-only DQ skimmed data model, w/ centrality", false);
-  //PROCESS_SWITCH(TableMaker, processMuonOnlyWithMults, "Build muon-only DQ skimmed data model, w/ multiplicity", false);
-  //PROCESS_SWITCH(TableMaker, processMuonOnlyWithMultsAndEventFilter, "Build muon-only DQ skimmed data model, w/ multiplicity, w/ event filter", false);
-  //PROCESS_SWITCH(TableMaker, processMuonOnlyWithCentAndMults, "Build muon-only DQ skimmed data model, w/ centrality and multiplicities", false);
-  //PROCESS_SWITCH(TableMaker, processMuonOnly, "Build muon-only DQ skimmed data model", false);
-  //PROCESS_SWITCH(TableMaker, processMuonOnlyWithEventFilter, "Build muon-only DQ skimmed data model, w/ event filter", false);
-  //PROCESS_SWITCH(TableMaker, processAssociatedMuonOnly, "Build muon-only DQ skimmed data model using track-collision association tables", false);
+  // PROCESS_SWITCH(TableMaker, processMuonOnlyWithCent, "Build muon-only DQ skimmed data model, w/ centrality", false);
+  // PROCESS_SWITCH(TableMaker, processMuonOnlyWithMults, "Build muon-only DQ skimmed data model, w/ multiplicity", false);
+  // PROCESS_SWITCH(TableMaker, processMuonOnlyWithMultsAndEventFilter, "Build muon-only DQ skimmed data model, w/ multiplicity, w/ event filter", false);
+  // PROCESS_SWITCH(TableMaker, processMuonOnlyWithCentAndMults, "Build muon-only DQ skimmed data model, w/ centrality and multiplicities", false);
+  // PROCESS_SWITCH(TableMaker, processMuonOnly, "Build muon-only DQ skimmed data model", false);
+  // PROCESS_SWITCH(TableMaker, processMuonOnlyWithEventFilter, "Build muon-only DQ skimmed data model, w/ event filter", false);
+  // PROCESS_SWITCH(TableMaker, processAssociatedMuonOnly, "Build muon-only DQ skimmed data model using track-collision association tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -63,13 +63,13 @@ using namespace o2::aod;
 
 // DQ triggers
 enum DQTriggers {
-  kSingleE      = 1 << 0, // 0000001
-  kLMeeIMR      = 1 << 1, // 0000010
-  kLMeeHMR      = 1 << 2, // 0000100
-  kDiElectron   = 1 << 3, // 0001000
-  kSingleMuLow  = 1 << 4, // 0010000
+  kSingleE = 1 << 0,      // 0000001
+  kLMeeIMR = 1 << 1,      // 0000010
+  kLMeeHMR = 1 << 2,      // 0000100
+  kDiElectron = 1 << 3,   // 0001000
+  kSingleMuLow = 1 << 4,  // 0010000
   kSingleMuHigh = 1 << 5, // 0100000
-  kDiMuon       = 1 << 6, // 1000000
+  kDiMuon = 1 << 6,       // 1000000
   kNTriggersDQ
 };
 
