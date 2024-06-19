@@ -96,6 +96,11 @@ DECLARE_SOA_COLUMN(IsNoSameBunchPileup, isNoSameBunchPileup, bool);
 DECLARE_SOA_COLUMN(IsGoodZvtxFT0vsPV, isGoodZvtxFT0vsPV, bool);
 DECLARE_SOA_COLUMN(IsVertexITSTPC, isVertexITSTPC, bool);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int);
+
+DECLARE_SOA_DYNAMIC_COLUMN(dIsNoSameBunchPileup, isNoSameBunchPileup, [](uint64_t selBit) -> bool { return TESTBIT(selBit, evsel::kNoSameBunchPileup); });
+DECLARE_SOA_DYNAMIC_COLUMN(dIsGoodZvtxFT0vsPV, isGoodZvtxFT0vsPV, [](uint64_t selBit) -> bool { return TESTBIT(selBit, evsel::kIsGoodZvtxFT0vsPV); });
+DECLARE_SOA_DYNAMIC_COLUMN(dIsVertexITSTPC, isVertexITSTPC, [](uint64_t selBit) -> bool { return TESTBIT(selBit, evsel::kIsVertexITSTPC); });
 
 } // namespace singletrackselector
 
@@ -106,11 +111,22 @@ DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variab
                   singletrackselector::PosZ,
                   singletrackselector::MagField);
 
-DECLARE_SOA_TABLE(SingleCollExtras, "AOD", "SINGLECOLLEXTRA", // Joinable collision table with Pile-Up flags
+DECLARE_SOA_TABLE(SingleCollExtras_v0, "AOD", "SINGLECOLLEXTRA", // Joinable collision table with Pile-Up flags
                   singletrackselector::IsNoSameBunchPileup,
                   singletrackselector::IsGoodZvtxFT0vsPV,
                   singletrackselector::IsVertexITSTPC,
                   singletrackselector::HadronicRate);
+
+DECLARE_SOA_TABLE(SingleCollExtras_v1, "AOD", "SINGLECOLLEXTRA", // Joinable collision table with Pile-Up flags
+                  evsel::Selection,
+                  singletrackselector::HadronicRate,
+                  singletrackselector::Occupancy,
+
+                  singletrackselector::dIsNoSameBunchPileup<evsel::Selection>,
+                  singletrackselector::dIsGoodZvtxFT0vsPV<evsel::Selection>,
+                  singletrackselector::dIsVertexITSTPC<evsel::Selection>);
+
+using SingleCollExtras = SingleCollExtras_v1;
 
 namespace singletrackselector
 {
