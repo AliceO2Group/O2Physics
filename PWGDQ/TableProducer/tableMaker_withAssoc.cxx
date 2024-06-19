@@ -54,11 +54,27 @@
 #include "TGeoGlobalMagField.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
+#include "EventFiltering/Zorro.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+
+// DQ triggers
+enum DQTriggers {
+  kSingleE      = 1 << 0, // 0000001
+  kLMeeIMR      = 1 << 1, // 0000010
+  kLMeeHMR      = 1 << 2, // 0000100
+  kDiElectron   = 1 << 3, // 0001000
+  kSingleMuLow  = 1 << 4, // 0010000
+  kSingleMuHigh = 1 << 5, // 0100000
+  kDiMuon       = 1 << 6, // 1000000
+  kNTriggersDQ
+};
+
+Zorro zorro;
+std::string zorroTriggerMask[7] = {"fSingleE", "fLMeeIMR", "fLMeeHMR", "fDiElectron", "fSingleMuLow", "fSingleMuHigh", "fDiMuon"};
 
 // TODO: Since DCA depends on which collision the track is associated to, we should remove writing and subscribing to DCA tables, to optimize on CPU / memory
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
@@ -158,6 +174,7 @@ struct TableMaker {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+  Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
 
   // Steer QA output
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
@@ -518,8 +535,17 @@ struct TableMaker {
       }
       (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
 
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
-        continue;
+      if (fConfigRunZorro) {
+        for (int i = 0; i < kNTriggersDQ; ++i) {
+          zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), zorroTriggerMask[i]);
+          if (!zorro.isSelected(bc.globalBC())) {
+            tag |= static_cast<uint64_t>(1 << i);
+          }
+        }
+      } else {
+        if (!fEventCut->IsSelected(VarManager::fgValues)) {
+          return;
+        }
       }
 
       // fill stats information, after selections
