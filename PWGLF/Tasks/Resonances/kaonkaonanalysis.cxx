@@ -67,6 +67,7 @@ struct kaonkaonAnalysisRun3 {
   Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> otherQAplots{"otherQAplots", true, "Other QA plots"};
+  Configurable<bool> cfgMultFT0M{"cfgMultFT0M", true, "true for pp (FT0M estimator) and false for PbPb (FT0C estimator)"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -84,7 +85,6 @@ struct kaonkaonAnalysisRun3 {
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "isEtaAssym"};
-  Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
@@ -93,9 +93,9 @@ struct kaonkaonAnalysisRun3 {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-  Configurable<float> cmultLow{"cmultLow", -0.5f, "Low centrality percentile"};
-  Configurable<float> cmultHigh{"cmultHigh", 200.5f, "High centrality percentile"};
-  Configurable<int> cmultBins{"cmultBins", 201, "Number of centrality bins"};
+  Configurable<float> cmultLow{"cmultLow", 0.0f, "Low centrality percentile"};
+  Configurable<float> cmultHigh{"cmultHigh", 150.0f, "High centrality percentile"};
+  Configurable<int> cmultBins{"cmultBins", 150, "Number of centrality bins"};
   Configurable<float> cpTlow{"cpTlow", 0.0f, "Low pT"};
   Configurable<float> cpThigh{"cpThigh", 10.0f, "High pT"};
   Configurable<int> cpTbins{"cpTbins", 100, "Number of pT bins"};
@@ -116,8 +116,12 @@ struct kaonkaonAnalysisRun3 {
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
-    histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
+    histos.add("hNsigmaKaonTPC_before", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+    histos.add("hNsigmaKaonTOF_before", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+    histos.add("hNsigmaKaonTPC_after", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+    histos.add("hNsigmaKaonTOF_after", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+    histos.add("hNsigmaKaonTOF_TPC_before", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
+    histos.add("hNsigmaKaonTOF_TPC_after", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
     if (otherQAplots) {
       histos.add("Chi2perclusterITS", "Chi2 / cluster for the ITS track segment", kTH1F, {{50, 0.0f, 50.0f}});
       histos.add("Chi2perclusterTPC", "Chi2 / cluster for the TPC track segment", kTH1F, {{50, 0.0f, 50.0f}});
@@ -333,28 +337,11 @@ struct kaonkaonAnalysisRun3 {
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::Mults>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                                  aod::pidTPCFullKa, aod::pidTOFFullKa>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
   // using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::McCollisionLabels>;
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                                    aod::pidTPCFullKa, aod::pidTOFFullKa,
-                                                    aod::McTrackLabels>>;
-
-  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
-  ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
-
-  // using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-  // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
-
-  // using BinningTypeTPCMultiplicity =  ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  // using BinningTypeCentrality = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-
-  // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  // BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true};
+  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::McTrackLabels>>;
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
@@ -362,10 +349,10 @@ struct kaonkaonAnalysisRun3 {
       return;
     }
     float multiplicity;
-    // if (cfgMultFT0)
-    multiplicity = collision.centFT0M();
-    // if (!cfgMultFT0)
-    //   multiplicity = collision.numContrib();
+    if (cfgMultFT0M == true)
+      multiplicity = collision.centFT0M();
+    else
+      multiplicity = collision.centFT0C();
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -376,8 +363,9 @@ struct kaonkaonAnalysisRun3 {
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
       histos.fill(HIST("hDcaz"), track1.dcaZ());
-      histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
-      histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
+      histos.fill(HIST("hNsigmaKaonTPC_before"), track1.pt(), track1.tpcNSigmaKa());
+      histos.fill(HIST("hNsigmaKaonTOF_before"), track1.pt(), track1.tofNSigmaKa());
+      histos.fill(HIST("hNsigmaKaonTOF_TPC_before"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
       auto track1ID = track1.index();
       for (auto track2 : tracks) {
         if (!selectionTrack(track2)) {
@@ -390,6 +378,7 @@ struct kaonkaonAnalysisRun3 {
         if (!selectionPair(track1, track2)) {
           continue;
         }
+
         bool unlike = true;
         bool mix = false;
         bool likesign = true;
@@ -399,50 +388,92 @@ struct kaonkaonAnalysisRun3 {
         }
         if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
           FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+          histos.fill(HIST("hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
+          histos.fill(HIST("hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
+          histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
         }
       }
     }
   }
+
+  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
+  ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
+  using BinningTypeVertexContributor1 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningTypeVertexContributor2 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
   PROCESS_SWITCH(kaonkaonAnalysisRun3, processSameEvent, "Process Same event", false);
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
     //////// currently mixing the event with similar TPC multiplicity ////////
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
-    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      if (!eventselection(c1, c1.centFT0M())) {
-        continue;
-      }
-      if (!eventselection(c2, c2.centFT0M())) {
-        continue;
-      }
-      float multiplicity;
-      // if (cfgMultFT0)
-      multiplicity = c1.centFT0M();
-      // if (!cfgMultFT0)
-      //   multiplicity = c1.numContrib();
+    BinningTypeVertexContributor1 binningOnPositions1{{axisVertex, axisMultiplicity}, true};
+    BinningTypeVertexContributor2 binningOnPositions2{{axisVertex, axisMultiplicity}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor1> pair1{binningOnPositions1, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor2> pair2{binningOnPositions2, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    if (cfgMultFT0M == true) {
+      for (auto& [c1, tracks1, c2, tracks2] : pair1) {
+        float multiplicity = c1.centFT0M();
 
-      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        bool unlike = false;
-        bool mix = true;
-        bool likesign = false;
-        bool rotation = false;
-        if (!selectionTrack(t1)) {
+        if (!eventselection(c1, multiplicity)) {
           continue;
         }
-        if (!selectionTrack(t2)) {
+        if (!eventselection(c2, multiplicity)) {
           continue;
         }
-        if (!selectionPair(t1, t2)) {
+
+        for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+          bool unlike = false;
+          bool mix = true;
+          bool likesign = false;
+          bool rotation = false;
+          if (!selectionTrack(t1)) {
+            continue;
+          }
+          if (!selectionTrack(t2)) {
+            continue;
+          }
+          if (!selectionPair(t1, t2)) {
+            continue;
+          }
+          if (isITSOnlycut) {
+            FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+          }
+          if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
+            FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+          }
+        }
+      }
+    } else {
+      for (auto& [c1, tracks1, c2, tracks2] : pair2) {
+        float multiplicity = c1.centFT0C();
+
+        if (!eventselection(c1, multiplicity)) {
           continue;
         }
-        if (isITSOnlycut) {
-          FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+        if (!eventselection(c2, multiplicity)) {
+          continue;
         }
-        if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-          FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+        for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+          bool unlike = false;
+          bool mix = true;
+          bool likesign = false;
+          bool rotation = false;
+          if (!selectionTrack(t1)) {
+            continue;
+          }
+          if (!selectionTrack(t2)) {
+            continue;
+          }
+          if (!selectionPair(t1, t2)) {
+            continue;
+          }
+          if (isITSOnlycut) {
+            FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+          }
+          if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
+            FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+          }
         }
       }
     }
