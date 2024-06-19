@@ -101,6 +101,8 @@ struct HfCandidateSelectorLc {
 
   HistogramRegistry registry{"registry"};
 
+  double massK0Star892 = 0.89555; // M(K*0(892)) = 895.55 Mev/c2
+
   void init(InitContext const&)
   {
     std::array<bool, 2> processes = {doprocessNoBayesPid, doprocessBayesPid};
@@ -225,12 +227,21 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
+    // cut on Lc->pKpi, piKp mass values
     if (trackProton.globalIndex() == candidate.prong0Id()) {
       if (std::abs(hfHelper.invMassLcToPKPi(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
       if (std::abs(hfHelper.invMassLcToPiKP(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
+        return false;
+      }
+    }
+
+    /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
+    const double cutMassKPi = cuts->get(pTBin, "mass (Kpi)");
+    if (cutMassKPi > 0) {
+      if (std::abs(RecoDecay::m(std::array{trackKaon.pVector(), trackPion.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}) - massK0Star892) > cutMassKPi) {
         return false;
       }
     }

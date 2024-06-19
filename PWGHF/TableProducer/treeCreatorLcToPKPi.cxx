@@ -48,6 +48,7 @@ DECLARE_SOA_COLUMN(PProng2, pProng2, float);
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float);
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(MassKPi, massKPi, float); // invariant mass of the candidate Kpi daughters
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -82,6 +83,7 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+DECLARE_SOA_COLUMN(Channel, channel, int8_t); // direct or resonant
 // Events
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -144,7 +146,9 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   full::Y,
                   full::FlagMc,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped);
+                  full::IsCandidateSwapped,
+                  full::Channel,
+                  full::MassKPi);
 
 DECLARE_SOA_TABLE(HfCollIdLCLite, "AOD", "HFCOLLIDLCLITE",
                   full::CollisionId);
@@ -219,7 +223,9 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::FlagMc,
                   full::OriginMcRec,
                   full::IsCandidateSwapped,
-                  full::CandidateId);
+                  full::CandidateId,
+                  full::Channel,
+                  full::MassKPi);
 
 DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   full::CollisionId,
@@ -344,7 +350,8 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
-                           float FunctionE) {
+                           float FunctionE,
+                           float FunctionInvMassKPi) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           if (fillCandidateLiteTable) {
@@ -398,7 +405,9 @@ struct HfTreeCreatorLcToPKPi {
               FunctionY,
               candidate.flagMcMatchRec(),
               candidate.originMcRec(),
-              candidate.isCandidateSwapped());
+              candidate.isCandidateSwapped(),
+              candidate.flagMcDecayChanRec(),
+              FunctionInvMassKPi);
             // candidate.globalIndex());
 
             if (fillCollIdTable) {
@@ -477,13 +486,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.flagMcMatchRec(),
               candidate.originMcRec(),
               candidate.isCandidateSwapped(),
-              candidate.globalIndex());
+              candidate.globalIndex(),
+              candidate.flagMcDecayChanRec(),
+              FunctionInvMassKPi);
           }
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
+      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), RecoDecay::m(std::array{trackNeg.pVector(), trackPos2.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}));
+      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), RecoDecay::m(std::array{trackNeg.pVector(), trackPos1.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}));
     }
 
     // Filling particle properties
@@ -598,7 +609,8 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
-                           float FunctionE) {
+                           float FunctionE,
+                           float FunctionInvMassKPi) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
@@ -652,7 +664,9 @@ struct HfTreeCreatorLcToPKPi {
               FunctionY,
               0.,
               0.,
-              0.);
+              0.,
+              -1,
+              FunctionInvMassKPi);
             // candidate.globalIndex());
 
             if (fillCollIdTable) {
@@ -731,13 +745,15 @@ struct HfTreeCreatorLcToPKPi {
               0.,
               0.,
               0.,
-              candidate.globalIndex());
+              candidate.globalIndex(),
+              -1,
+              FunctionInvMassKPi);
           }
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
+      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), RecoDecay::m(std::array{trackNeg.pVector(), trackPos2.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}));
+      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), RecoDecay::m(std::array{trackNeg.pVector(), trackPos1.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}));
     }
   }
 
