@@ -60,7 +60,7 @@ class svPoolCreator
 
   void setTimeMargin(float timeMargin) { timeMarginNS = timeMargin; }
   void setFitter(const o2::vertexing::DCAFitterN<2>& fitter) { this->fitter = fitter; }
-  void setSkipAmbiTracks(){ skipAmbiTracks = true; }
+  void setSkipAmbiTracks() { skipAmbiTracks = true; }
   o2::vertexing::DCAFitterN<2>* getFitter() { return &fitter; }
   std::array<std::vector<TrackCand>, 4> getTrackCandPool() { return trackCandPool; }
 

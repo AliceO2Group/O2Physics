@@ -500,7 +500,7 @@ struct hyperRecoTask {
       }
       auto& heTrack = isHe ? posTrack : negTrack;
       auto& piTrack = isHe ? negTrack : posTrack;
-      if (heTrack.tpcNClsFound() < nTPCClusMin || piTrack.tpcNClsFound() < nTPCClusMin){
+      if (heTrack.tpcNClsFound() < nTPCClusMin || piTrack.tpcNClsFound() < nTPCClusMin) {
         continue;
       }
 
