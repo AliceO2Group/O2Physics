@@ -77,6 +77,7 @@ struct highmasslambda {
   Configurable<bool> useOldDCAV0{"useOldDCAV0", true, "useOldDCAV0"};
   Configurable<bool> useSignDCAV0{"useSignDCAV0", true, "useSignDCAV0"};
   Configurable<bool> additionalEvSel{"additionalEvSel", true, "additionalEvSel"};
+  Configurable<bool> additionalEvSel2{"additionalEvSel2", true, "additionalEvSel2"};
   Configurable<bool> fillDefault{"fillDefault", false, "fill Occupancy"};
   Configurable<bool> fillOccupancy{"fillOccupancy", true, "fill Occupancy"};
   Configurable<bool> fillDecayLength{"fillDecayLength", true, "fill decay length"};
@@ -165,10 +166,10 @@ struct highmasslambda {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 3000.0, 6000.0, 50000.0};
+    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     // std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.02, 0.03, 0.05, 0.1, 0.5, 1.0};
     std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.0015, 0.002, 0.003, 0.004, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 1.0};
-    std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 1.0, 1.5, 2.0, 3.0, 100.0};
+    std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 100.0};
     std::vector<double> ptLambdaBinning = {2.0, 3.0, 4.0, 5.0, 8.0, 16.0};
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -211,11 +212,11 @@ struct highmasslambda {
     histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {80, 0.0f, 8.0f}});
     histos.add("hNsigmaProtonTOF", "NsigmaProton TOF distribution", kTH2F, {{100, -5.0f, 5.0f}, {80, 0.0f, 8.0f}});
     histos.add("hMassvsDecaySum", "hMassvsDecaySum", kTH2F, {thnAxisInvMass, thnAxisDCASum});
-    histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiTPCR", "PsiTPCR", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiTPCL", "PsiTPCL", kTH2F, {centAxis, phiAxis});
+    histos.add("hPsiFT0C", "PsiFT0C", kTH3F, {centAxis, phiAxis, occupancyAxis});
+    histos.add("hPsiFT0A", "PsiFT0A", kTH3F, {centAxis, phiAxis, occupancyAxis});
+    histos.add("hPsiTPC", "PsiTPC", kTH3F, {centAxis, phiAxis, occupancyAxis});
+    histos.add("hPsiTPCR", "PsiTPCR", kTH3F, {centAxis, phiAxis, occupancyAxis});
+    histos.add("hPsiTPCL", "PsiTPCL", kTH3F, {centAxis, phiAxis, occupancyAxis});
     if (fillDefault) {
       if (fillDecayLength) {
         histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum});
@@ -372,14 +373,12 @@ struct highmasslambda {
     if (candidate.pt() < 0.8 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 10.0) {
       return true;
     }
-
-    if (candidate.pt() >= 0.8 && candidate.pt() < 1.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -1.5 && candidate.tpcNSigmaPr() < 3.0) {
+    if (candidate.pt() >= 0.8 && candidate.pt() < 1.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
       return true;
     }
     if (candidate.pt() >= 0.8 && candidate.pt() < 3.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
       return true;
     }
-
     if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
       return true;
     }
@@ -517,6 +516,9 @@ struct highmasslambda {
     if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
+    if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+      return;
+    }
     int occupancy = collision.trackOccupancyInTimeRange();
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
@@ -532,11 +534,11 @@ struct highmasslambda {
 
     histos.fill(HIST("hFTOCvsTPC"), centrality, multTPC);
     histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
-    histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
-    histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
-    histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
-    histos.fill(HIST("hPsiTPCR"), centrality, psiTPCR);
-    histos.fill(HIST("hPsiTPCL"), centrality, psiTPCL);
+    histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C, occupancy);
+    histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A, occupancy);
+    histos.fill(HIST("hPsiTPC"), centrality, psiTPC, occupancy);
+    histos.fill(HIST("hPsiTPCR"), centrality, psiTPCR, occupancy);
+    histos.fill(HIST("hPsiTPCL"), centrality, psiTPCL, occupancy);
     histos.fill(HIST("ResFT0CTPC"), centrality, QFT0C * QTPC * TMath::Cos(2.0 * (psiFT0C - psiTPC)));
     histos.fill(HIST("ResFT0CTPCR"), centrality, QFT0C * QTPCR * TMath::Cos(2.0 * (psiFT0C - psiTPCR)));
     histos.fill(HIST("ResFT0CTPCL"), centrality, QFT0C * QTPCL * TMath::Cos(2.0 * (psiFT0C - psiTPCL)));
@@ -705,6 +707,12 @@ struct highmasslambda {
       }
       if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
+      }
+      if (additionalEvSel2 && (!collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        return;
+      }
+      if (additionalEvSel2 && (!collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        return;
       }
       auto centrality = collision1.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
