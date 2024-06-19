@@ -135,7 +135,7 @@ struct hyperRecoTask {
   Configurable<float> TPCRigidityMinHe{"TPCRigidityMinHe", 0.2, "Minimum rigidity of the helium candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> nSigmaMaxHe{"nSigmaMaxHe", 5, "helium dEdx cut (n sigma)"};
-  Configurable<float> nTPCClusMinHe{"nTPCClusMinHe", 80, "helium NTPC clusters cut"};
+  Configurable<float> nTPCClusMin{"nTPCClusMin", 70, "helium NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -148,6 +148,7 @@ struct hyperRecoTask {
   float piMass = o2::constants::physics::MassPionCharged;
 
   Configurable<bool> useCustomVertexer{"useCustomVertexer", false, "Use custom vertexer"};
+  Configurable<bool> skipAmbiTracks{"skipAmbiTracks", false, "Skip ambiguous tracks"};
   Configurable<float> customVertexerTimeMargin{"customVertexerTimeMargin", 800, "Time margin for custom vertexer (ns)"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", true, "If true, divide tpcInnerParam by the electric charge"};
@@ -209,6 +210,9 @@ struct hyperRecoTask {
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
     svCreator.setTimeMargin(customVertexerTimeMargin);
+    if (skipAmbiTracks) {
+      svCreator.setSkipAmbiTracks();
+    }
 
     const AxisSpec rigidityAxis{rigidityBins, "#it{p}^{TPC}/#it{z}"};
     const AxisSpec dedxAxis{dedxBins, "d#it{E}/d#it{x}"};
@@ -496,7 +500,7 @@ struct hyperRecoTask {
       }
       auto& heTrack = isHe ? posTrack : negTrack;
       auto& piTrack = isHe ? negTrack : posTrack;
-      if (heTrack.tpcNClsFound() < nTPCClusMinHe) {
+      if (heTrack.tpcNClsFound() < nTPCClusMin || piTrack.tpcNClsFound() < nTPCClusMin){
         continue;
       }
 
@@ -521,17 +525,12 @@ struct hyperRecoTask {
       if (std::abs(track.eta()) > etaMax)
         continue;
 
-      if (!track.hasITS())
+      if (!track.hasITS() || track.tpcNClsFound() < nTPCClusMin)
         continue;
 
       auto nSigmaHe = computeNSigmaHe3(track);
       bool isHe = nSigmaHe > -1 * nSigmaMaxHe;
       int pdgHypo = isHe ? heDauPdg : 211;
-
-      if (isHe && track.tpcNClsFound() < nTPCClusMinHe) {
-        continue;
-      }
-
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
     auto& svPool = svCreator.getSVCandPool(collisions);
