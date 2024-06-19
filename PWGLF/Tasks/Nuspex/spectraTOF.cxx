@@ -49,6 +49,9 @@ std::array<std::shared_ptr<TH3>, NpCharge> hDcaXYZ;
 std::array<std::shared_ptr<TH3>, NpCharge> hDcaXYZPrm;
 std::array<std::shared_ptr<TH3>, NpCharge> hDcaXYZStr;
 std::array<std::shared_ptr<TH3>, NpCharge> hDcaXYZMat;
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionPrm;
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionStr;
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionMat;
 
 // Spectra task
 struct tofSpectra {
@@ -585,6 +588,9 @@ struct tofSpectra {
             histos.add(hdcaxyprmgoodevs[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
           }
         } else {
+          hDcaXYWrongCollisionPrm[i] = histos.add<TH2>(Form("dcaxywrongcollprm/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          hDcaXYWrongCollisionStr[i] = histos.add<TH2>(Form("dcaxywrongcollstr/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          hDcaXYWrongCollisionMat[i] = histos.add<TH2>(Form("dcaxywrongcollmat/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           histos.add(hdcazprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
           histos.add(hdcaxystr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
@@ -660,7 +666,7 @@ struct tofSpectra {
         histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY());      // RD
       } else {                                                                                      // RD
         histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY()); // RD
-      }                                                                                             // RD
+      }
     } else {
       if (track.sign() > 0) {
         histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity);
@@ -781,7 +787,7 @@ struct tofSpectra {
           histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY());      // RD
         } else {                                                                                      // RD
           histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY()); // RD
-        }                                                                                             // RD
+        }
       } else {
         if (track.sign() > 0) {
           histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity);
@@ -1492,6 +1498,18 @@ struct tofSpectra {
           histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcazprmgoodevs[i]), track.pt(), track.dcaZ());
         }
+      }
+    }
+
+    if ((collision.has_mcCollision() && (mcParticle.mcCollisionId() != collision.mcCollisionId())) || !collision.has_mcCollision()) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        if (mcParticle.getProcess() == 4) {
+          hDcaXYWrongCollisionStr[i]->Fill(track.pt(), track.dcaXY());
+        } else {
+          hDcaXYWrongCollisionMat[i]->Fill(track.pt(), track.dcaXY());
+        }
+      } else {
+        hDcaXYWrongCollisionPrm[i]->Fill(track.pt(), track.dcaXY());
       }
     }
 
