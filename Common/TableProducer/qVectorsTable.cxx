@@ -142,7 +142,6 @@ struct qVectorsTable {
     {"QvectorFT0As", cfgUseFT0A},
     {"QvectorFT0Cs", cfgUseFT0C}};
 
-
   void init(InitContext& initContext)
   {
     // Check the sub-detector used
@@ -220,7 +219,7 @@ struct qVectorsTable {
     }
 
     objQvec.clear();
-    for (auto i=0; i<cfgnMods->size(); i++){
+    for (auto i = 0; i < cfgnMods->size(); i++) {
       int ind = cfgnMods->at(i);
       fullPath = cfgQvecCalibPath;
       fullPath += "/v";
@@ -523,25 +522,25 @@ struct qVectorsTable {
       cent = 110.;
       IsCalibrated = false;
     }
-    for (auto id=0; id<cfgnMods->size(); id++){
+    for (auto id = 0; id < cfgnMods->size(); id++) {
       int ind = cfgnMods->at(id);
       CalQvec(ind, coll, tracks, qvecRe, qvecIm, qvecAmp, TrkBPosLabel, TrkBNegLabel, TrkBTotLabel);
       if (cent < 80) {
         for (auto i{0u}; i < 6; i++) {
           helperEP.DoRecenter(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 1], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 1],
-                            objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
 
           helperEP.DoRecenter(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 2], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 2],
-                            objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
           helperEP.DoTwist(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 2], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 2],
-                         objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+                           objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
 
           helperEP.DoRecenter(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 3], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 3],
-                            objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
           helperEP.DoTwist(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 3], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 3],
-                         objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+                           objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
           helperEP.DoRescale(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 3], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 3],
-                           objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
+                             objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
         }
       }
       int CorrLevel = cfgCorrLevel == 0 ? 0 : cfgCorrLevel - 1;
