@@ -97,7 +97,6 @@ DECLARE_SOA_TABLE(QvectorBPosVecs, "AOD", "QVECTORSBPOSVEC", qvec::IsCalibrated,
 DECLARE_SOA_TABLE(QvectorBNegVecs, "AOD", "QVECTORSBNEGVEC", qvec::IsCalibrated, qvec::QvecBNegReVec, qvec::QvecBNegImVec, qvec::NTrkBNeg, qvec::LabelsBNeg);
 DECLARE_SOA_TABLE(QvectorBTotVecs, "AOD", "QVECTORSBTOTVEC", qvec::IsCalibrated, qvec::QvecBTotReVec, qvec::QvecBTotImVec, qvec::NTrkBTot, qvec::LabelsBTot);
 
-
 using QvectorFT0C = QvectorFT0Cs::iterator;
 using QvectorFT0A = QvectorFT0As::iterator;
 using QvectorFT0M = QvectorFT0Ms::iterator;
