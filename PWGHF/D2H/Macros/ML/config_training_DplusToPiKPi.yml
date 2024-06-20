@@ -4,7 +4,7 @@ seed_split: 42 # seed used for df_bkg sampling and train_test_split(...)
 labels: [Bkg, Prompt, Nonprompt] # class labels, keep the right number of classes
 
 data_prep:
-  indirs: # directories containing outputs of prepare_samples.py (.parquet.gzip or .root labeled files)
+  indirs: # directories containing outputs of prepare_samples.py (.root labeled files)
     Prompt:
       [
         dirPath/

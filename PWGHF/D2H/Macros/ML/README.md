@@ -3,10 +3,9 @@
 In order to execute the training macro in this folder, the following python libraries are needed:
 - [hipe4ml](https://github.com/hipe4ml/hipe4ml)
 - [hipe4ml_converter](https://github.com/hipe4ml/hipe4ml_converter)
-- [alive_progress](https://github.com/rsalmei/alive-progress)
 
 All configurables needed for sample preparation and ML training are respectively embedded in configuration files such as:
-- `config_preparation_DplusToPiKPi.json`;
+- `config_preparation_DplusToPiKPi.yml`;
 - `config_training_DplusToPiKPi.yml`.
 
 ## Training
@@ -17,16 +16,16 @@ Download the derived `AO2D.root` (produced via a treeCreator task for example) a
 
 In order to prepare the samples the following script can be used while being in O2(Physics) environment:
 ```
-root -l 'PrepareSamples.C+("./config_preparation_DplusToPiKPi.json")'
+python3 prepare_samples.py config_preparation_DplusToPiKPi.yml
 ```
 
-Preselections can be applied at this level along with the combination of TPC and TOF PID variables. This macro shall produce `.root` files containing labeled data samples (one file for each label if `store_all` is set to false) for each input `AO2D` file.
+Preselections can be applied at this level. This macro shall produce `.root` files containing labeled data samples for each input `AO2D` file.
 
 
 ### Perform training
 In order to perform the training and produce the BDT models to be used in D2H, the following script can be used:
 ```
-python3 train_d2h.py config_training_DplusToPiKPi.yml
+python3 train_models.py config_training_DplusToPiKPi.yml
 ```
 Given the output directory set in `config_training_DplusToPiKPi.yml`, a directory is created for each pT bin (i.e. each model trained) and filled with:
 - plots at data preparation level: variables distributions and correlations

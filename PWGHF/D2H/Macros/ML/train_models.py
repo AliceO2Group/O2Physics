@@ -13,10 +13,10 @@
 
 
 """
-file: train_d2h.py
+file: train_models.py
 brief: script for the training of ML models to be used in D2H
 note: inspired by EventFiltering/PWGHF/Macros/train_hf_triggers.py and Run2 macros
-usage: python3 train_d2h.py CONFIG
+usage: python3 train_models.py CONFIG
 author: Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
 author: Mingyu Zhang <mingyu.zang@cern.ch>, Central China Normal University
 """
@@ -33,11 +33,14 @@ import xgboost as xgb  # pylint: disable=import-error
 import yaml  # pylint: disable=import-error
 
 # pylint: disable=import-error
-from hipe4ml import plot_utils
-from hipe4ml.model_handler import ModelHandler
-from hipe4ml.tree_handler import TreeHandler
-from hipe4ml_converter.h4ml_converter import H4MLConverter
-from sklearn.model_selection import train_test_split
+try:
+    from hipe4ml import plot_utils
+    from hipe4ml.model_handler import ModelHandler
+    from hipe4ml.tree_handler import TreeHandler
+    from hipe4ml_converter.h4ml_converter import H4MLConverter
+    from sklearn.model_selection import train_test_split
+except ModuleNotFoundError:
+    print("Module 'hipe4ml' is not installed. Please install it to run this macro")
 
 LABEL_BKG = 0
 LABEL_PROMPT = 1
