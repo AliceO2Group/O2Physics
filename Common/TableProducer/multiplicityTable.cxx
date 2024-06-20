@@ -148,6 +148,13 @@ struct MultiplicityTable {
         }
       }
     }
+    // Handle the custom cases
+    if (tEnabled[kMultsExtraMC]) {
+      if (enabledTables->get(tableNames[kMultsExtraMC].c_str(), "Enable") == -1) {
+        doprocessMC.value = true;
+        LOG(info) << "Enabling MC processing due to " << tableNames[kMultsExtraMC] << " table being enabled.";
+      }
+    }
 
     // Check that the tables are enabled consistenly
     if (tEnabled[kFV0MultZeqs] && !tEnabled[kFV0Mults]) { // FV0
@@ -310,8 +317,7 @@ struct MultiplicityTable {
         case kPVMultZeqs: // Equalized multiplicity for PV
           tablePVZeqs.reserve(collisions.size());
           break;
-        case kMultsExtraMC: // MC extra information
-          tableExtraMc.reserve(collisions.size());
+        case kMultsExtraMC: // MC extra information (nothing to do in the data)
           break;
         default:
           LOG(fatal) << "Unknown table requested: " << i;
@@ -386,7 +392,7 @@ struct MultiplicityTable {
             multFV0C = 0.f;
             // using FV0 row index from event selection task
             if (collision.has_foundFV0()) {
-              auto fv0 = collision.foundFV0();
+              const auto& fv0 = collision.foundFV0();
               for (auto amplitude : fv0.amplitude()) {
                 multFV0A += amplitude;
               }
@@ -597,8 +603,9 @@ struct MultiplicityTable {
     int multBarrelEta08 = 0;
     int multBarrelEta10 = 0;
     for (auto const& mcPart : mcParticles) {
-      if (!mcPart.isPhysicalPrimary())
+      if (!mcPart.isPhysicalPrimary()) {
         continue;
+      }
 
       auto charge = 0.;
       auto* p = pdg->GetParticle(mcPart.pdgCode());
