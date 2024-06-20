@@ -148,7 +148,7 @@ struct phosPi0 {
     h2->GetXaxis()->SetBinLabel(8, "PHOSClu&&Trig");
 
     mHistManager.add("contributors", "Contributors per collision", HistType::kTH2F, {{10, 0., 10.}, {10, 0., 100.}});
-    mHistManager.add("vertex", "vertex", HistType::kTH2F, {{10, 0., 10.}, vertexAxis});
+    mHistManager.add("vertex", "vertex", HistType::kTH1F, {vertexAxis});
 
     if (mFillQC) {
       // QC histograms for normal collisions
@@ -235,7 +235,8 @@ struct phosPi0 {
   PROCESS_SWITCH(phosPi0, processData, "processData", true);
   void processMC(SelCollisionsMC::iterator const& col,
                  mcClusters const& clusters,
-                 aod::McParticles const& mcPart)
+                 aod::McParticles const& mcPart,
+                 aod::McCollisions const& mcCol)
   {
     scanAll<true>(col, clusters, &mcPart);
   }
@@ -288,23 +289,43 @@ struct phosPi0 {
     // pion rapidity, pt, phi
     // secondary pi0s
     if constexpr (isMC) {
+      // check current collision Id for clusters
+      int cluMcBCId = -1;
+      for (auto clu : clusters) {
+        auto mcList = clu.labels(); // const std::vector<int>
+        int nParents = mcList.size();
+        for (int iParent = 0; iParent < nParents; iParent++) { // Not found nbar parent yiet
+          int label = mcList[iParent];
+          if (label > -1) {
+            auto parent = mcPart->iteratorAt(label);
+            cluMcBCId = parent.mcCollision().bcId();
+            break;
+          }
+        }
+        if (cluMcBCId > -1) {
+          break;
+        }
+      }
       if (mcPart->begin() != mcPart->end()) {
         if (mcPart->begin().mcCollisionId() != mPrevMCColId) {
           mPrevMCColId = mcPart->begin().mcCollisionId(); // to avoid scanning full MC table each BC
           for (auto part : *mcPart) {
-            if (col.has_mcCollision() && (part.mcCollisionId() != col.mcCollisionId())) {
+            if (part.mcCollision().bcId() != cluMcBCId) {
               continue;
             }
             if (part.pdgCode() == 111) {
+              double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
+              if (r < 0.5) {
+                mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
+              }
               if (abs(part.y()) < .5) {
                 double pt = part.pt();
                 mHistManager.fill(HIST("hMCPi0SpAll"), pt);
-                double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
                 double phiVtx = atan2(part.vy(), part.vx());
-                mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
-                if (r < 0.5) {
+                if (r > 0.5) {
+                  mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
+                } else {
                   mHistManager.fill(HIST("hMCPi0SpPrim"), pt);
-                  mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
                   mHistManager.fill(HIST("hMCPi0PhiPrim"), part.phi());
                 }
               }

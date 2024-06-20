@@ -885,6 +885,8 @@ class VarManager : public TObject
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
+  template <uint32_t fillMap, typename T1, typename T2, typename C>
+  static void FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, const C& collision, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <typename T1, typename T2, typename T3>
@@ -1219,6 +1221,29 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values[kMuonC1Pt2Phi] = cov(4, 2);
     values[kMuonC1Pt2Tgl] = cov(4, 3);
     values[kMuonC1Pt21Pt2] = cov(4, 4);
+  }
+}
+
+template <uint32_t fillMap, typename T1, typename T2, typename C>
+void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, const C& collision, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
+    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
+    double px = propmuon.getP() * sin(M_PI / 2 - atan(mfttrack.tgl())) * cos(mfttrack.phi());
+    double py = propmuon.getP() * sin(M_PI / 2 - atan(mfttrack.tgl())) * sin(mfttrack.phi());
+    double pz = propmuon.getP() * cos(M_PI / 2 - atan(mfttrack.tgl()));
+    double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
+    values[kX] = mfttrack.x();
+    values[kY] = mfttrack.y();
+    values[kZ] = mfttrack.z();
+    values[kTgl] = mfttrack.tgl();
+    values[kPt] = pt;
+    values[kPz] = pz;
+    values[kEta] = mfttrack.eta();
+    values[kPhi] = mfttrack.phi();
   }
 }
 

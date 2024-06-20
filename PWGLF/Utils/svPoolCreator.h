@@ -60,6 +60,7 @@ class svPoolCreator
 
   void setTimeMargin(float timeMargin) { timeMarginNS = timeMargin; }
   void setFitter(const o2::vertexing::DCAFitterN<2>& fitter) { this->fitter = fitter; }
+  void setSkipAmbiTracks() { skipAmbiTracks = true; }
   o2::vertexing::DCAFitterN<2>* getFitter() { return &fitter; }
   std::array<std::vector<TrackCand>, 4> getTrackCandPool() { return trackCandPool; }
 
@@ -76,7 +77,7 @@ class svPoolCreator
       if (trackCand.template collision_as<C>().has_bc()) {
         globalBC = trackCand.template collision_as<C>().template bc_as<aod::BCsWithTimestamps>().globalBC();
       }
-    } else {
+    } else if (!skipAmbiTracks) {
       for (const auto& ambTrack : ambiTracks) {
         if (ambTrack.trackId() != trackCand.globalIndex()) {
           continue;
@@ -88,6 +89,8 @@ class svPoolCreator
         globalBC = ambTrack.bc_as<aod::BCsWithTimestamps>().begin().globalBC();
         break;
       }
+    } else {
+      globalBC = -1;
     }
 
     if (globalBC == -1) {
@@ -219,6 +222,7 @@ class svPoolCreator
   int track0Pdg;
   int track1Pdg;
   float timeMarginNS = 600.;
+  bool skipAmbiTracks = false;
   std::unordered_map<int, std::pair<int, int>> tmap;
 
   std::array<std::vector<TrackCand>, 4> trackCandPool; // Sorting: dau0 pos, dau0 neg, dau1 pos, dau1 neg
