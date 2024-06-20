@@ -837,7 +837,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eeFromXiC0andXiCPlus")) {
     MCProng prongXiCPlus(2, {kElectron, Pdg::kXiCPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     MCProng prongXiC0(2, {kElectron, Pdg::kXiC0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    prongXiCPlus.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    prongXiC0.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "one e from Xi_c+ and one e from Xi_c0 decays, no beauty in history", {prongXiCPlus, prongXiC0}, {-1, -1});
     return signal;
   }
@@ -846,7 +847,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eeFromXiC0andXiCPlusBis")) {
     MCProng prongXiCPlus(2, {kElectron, Pdg::kXiCPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     MCProng prongXiC0(2, {kElectron, Pdg::kXiC0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    prongXiCPlus.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    prongXiC0.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "one e from Xi_c+ and one e from Xi_c0 decays, no beauty in history (inverse signal)", {prongXiC0, prongXiCPlus}, {-1, -1});
     return signal;
   }
