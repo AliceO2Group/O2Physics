@@ -60,16 +60,20 @@ def get_path_input_trees(name_input_files, name_tree):
         myfile.Close()
 
         if len(name_dirs) > 2:
-            print("\033[91mERROR: too many DFs in <name of root file>!"
-                  "Run o2-aod-merger with --max-size <great number> to get only one DF.\033[0m")
+            print(
+                "\033[91mERROR: too many DFs in <name of root file>!"
+                "Run o2-aod-merger with --max-size <great number> to get only one DF.\033[0m"
+            )
             sys.exit()
         if len(name_dirs) == 2:
             # check if the two DFs are are the same (o2-aod-merger artefact)
             name0 = name_dirs[0].split(delimiter)[0]
             name1 = name_dirs[1].split(delimiter)[0]
             if name0 != name1:
-                print("\033[91mERROR: too many DFs in <name of root file>!"
-                      "Run o2-aod-merger with --max-size <great number> to get only one DF.\033[0m")
+                print(
+                    "\033[91mERROR: too many DFs in <name of root file>!"
+                    "Run o2-aod-merger with --max-size <great number> to get only one DF.\033[0m"
+                )
                 sys.exit()
 
         path_input_trees.append(name_file + "/" + name_dirs[0] + "/" + name_tree)
@@ -138,8 +142,9 @@ def main(cfg):
             if os.path.isfile(name_out_file):
                 print(f"\033[93mWARNING: Output file {name_out_file} already exists, overwrite ongoing!\033[0m")
             if idx == ID_BKG:
-                df.Filter(f"{col_tag} == {idx}").Filter(
-                    inv_mass_sidebands).Snapshot(name_out_tree, name_out_file, cols_to_keep)
+                df.Filter(f"{col_tag} == {idx}").Filter(inv_mass_sidebands).Snapshot(
+                    name_out_tree, name_out_file, cols_to_keep
+                )
             else:
                 df.Filter(f"{col_tag} == {idx}").Snapshot(name_out_tree, name_out_file, cols_to_keep)
 
