@@ -101,7 +101,7 @@ struct HfCandidateSelectorLc {
 
   HistogramRegistry registry{"registry"};
 
-  double massK0Star892 = 0.89555; // M(K*0(892)) = 895.55 Mev/c2
+  double massK0Star892;
 
   void init(InitContext const&)
   {
@@ -146,6 +146,8 @@ struct HfCandidateSelectorLc {
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
     }
+
+    massK0Star892 = o2::constants::physics::MassK0Star892;
   }
 
   /// Single track quality cuts
