@@ -23,9 +23,9 @@ import argparse
 import os
 import sys
 
-import yaml
+import yaml  # pylint: disable=import-error
 
-# pylint: disable=no-name-in-module
+# pylint: disable=import-error,no-name-in-module
 from ROOT import EnableImplicitMT, RDataFrame, TChain, TFile
 
 ID_BKG = 0  # index of background class in labeling configuration
