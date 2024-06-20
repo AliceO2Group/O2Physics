@@ -226,6 +226,7 @@ struct MultiplicityCounter {
     registry.add({"hgendndeta", "evntclass;  zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, ZAxis, EtaAxis, IsPbPb ? CentAxisPbPb : CentAxis, ParticleTypeAxis, PtVarAxis, phibin}}});
     registry.add({"hgenzvtx", "evntclass; zvtex", {HistType::kTHnSparseD, {EvtClassAxis, ZAxis, IsPbPb ? CentAxisPbPb : CentAxis}}});
     registry.add({"hv0mass", "etaaxis; invmass", {HistType::kTHnSparseD, {IsPbPb ? CentAxisPbPb : CentAxis, SpeciesAxis, V0EtaAxis, MassAxis}}});
+    registry.add({"hv0k0s", "invmass", {HistType::kTH1D, {{100, 0.4, 0.6}}}});
 
     registry.add({"recetaINELg0Sel8recz10", ";etaresponse", {HistType::kTH2D, {EtaAxis, ZAxis}}});
     registry.add({"genetaINELg0Sel8recz10", ";etaresponse", {HistType::kTH2D, {EtaAxis, ZAxis}}});
@@ -325,6 +326,8 @@ struct MultiplicityCounter {
       auto pertracks = tSample3->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto Ntrk = 0;
 
+      // if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      // if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       if (collision.sel8()) {
         btrigc[kSel8] = true;
         registry.fill(HIST("Selection"), 2.);
@@ -345,7 +348,7 @@ struct MultiplicityCounter {
         if (btrigc[kSel8])
           btrigc[kSel8g0] = true;
       }
-      if (btrigc[kSel8])
+      if (btrigc[kSel8g0])
         registry.fill(HIST("reczINELg0Sel8"), z);
 
       auto cent = -1.f;
@@ -540,6 +543,8 @@ struct MultiplicityCounter {
 
         Bool_1d btrigc(kTrigend, false);
         auto z = collision.posZ();
+        // if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        // if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
         if (collision.sel8()) {
           btrigc[kSel8] = true;
           registry.fill(HIST("Selection"), 2.);
@@ -755,11 +760,12 @@ struct MultiplicityCounter {
     }
   }
   PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
-
+  Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
   void processV0Counting(
     MyCollisionsCent const& collisions,
     aod::V0Datas const& fullV0s,
-    FiTracks const& /*tracks*/)
+    FiTracks const& /*tracks*/,
+    DaughterTracks const& /*Dautrks*/)
   {
     for (auto& collision : collisions) {
       if (!collision.sel8())
@@ -775,8 +781,27 @@ struct MultiplicityCounter {
           cent = collision.centFT0M();
       }
 
-      for (auto& v0 : fullV0s) {
+      auto v0s_per_coll = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
+      for (auto& v0 : v0s_per_coll) {
+
+        auto pTrack = v0.template posTrack_as<DaughterTracks>();
+        auto nTrack = v0.template negTrack_as<DaughterTracks>();
         if (std::abs(z) < 10) {
+          if (v0.v0radius() > v0radius)
+            continue;
+          if (v0.dcapostopv() > dcapostopv)
+            continue;
+          if (v0.dcanegtopv() > dcanegtopv)
+            continue;
+          if (v0.v0cosPA() < v0cospa)
+            continue;
+          if (fabs(pTrack.eta()) > 0.9)
+            continue;
+          if (fabs(nTrack.eta()) > 0.9)
+            continue;
+
+          if (fabs(v0.eta()) < 0.5)
+            registry.fill(HIST("hv0k0s"), v0.mK0Short());
           registry.fill(HIST("hv0mass"), cent, Double_t(kK0short), v0.eta(), Double_t(v0.mK0Short()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kLambda), v0.eta(), Double_t(v0.mLambda()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kAntilambda), v0.eta(), Double_t(v0.mAntiLambda()));

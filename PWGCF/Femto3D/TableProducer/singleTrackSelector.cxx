@@ -293,6 +293,7 @@ struct singleTrackSelector {
     if (fetchRate) {
       hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
     }
+    int occupancy = collision.trackOccupancyInTimeRange();
 
     float centValue = -100.0f;
 
@@ -342,10 +343,9 @@ struct singleTrackSelector {
                    collision.posZ(),
                    d_bz);
 
-      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
-                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
-                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
-                        hadronicRate);
+      tableRowCollExtra(collision.selection_raw(),
+                        hadronicRate,
+                        occupancy);
 
       fillTrackTables<false>(tracks);
     }
@@ -390,6 +390,11 @@ struct singleTrackSelector {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+    double hadronicRate = 0.;
+    if (fetchRate) {
+      hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    }
+    int occupancy = collision.trackOccupancyInTimeRange();
 
     float centValue = -100.0f;
 
@@ -440,10 +445,9 @@ struct singleTrackSelector {
                    collision.posZ(),
                    d_bz);
 
-      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
-                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
-                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
-                        0.);
+      tableRowCollExtra(collision.selection_raw(),
+                        hadronicRate,
+                        occupancy);
 
       fillTrackTables<true>(tracks);
 

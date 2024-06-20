@@ -213,8 +213,8 @@ struct TableMakerMC {
       histClasses += "Event_MCTruth;";
     }
 
-    bool enableBarrelHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processBarrelOnly"));
-    bool enableMuonHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processMuonOnly"));
+    bool enableBarrelHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnly"));
+    bool enableMuonHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPbPbMuonOnly"));
 
     LOG(info) << "enable barrel/muon histograms :: " << enableBarrelHistos << " / " << enableMuonHistos;
 
