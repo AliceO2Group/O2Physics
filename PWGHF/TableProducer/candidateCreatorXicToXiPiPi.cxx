@@ -47,7 +47,6 @@ using namespace o2::analysis;
 using namespace o2::aod::hf_cand_xictoxipipi;
 using namespace o2::constants::physics;
 using namespace o2::framework;
-using namespace o2::framework::expressions;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreatorXic {
@@ -95,14 +94,6 @@ struct HfCandidateCreatorXic {
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
   using KFCascFull = soa::Join<aod::KFCascDatas, aod::KFCascCovs>;
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
-  Filter filterSelectTrackIds = ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(4))) != 0u); // corresponds to CandidateType::CandCascadeBachelor in trackIndexSkimCreator.cxx
-
-  Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<KFCascadesLinked> linkedCascadesPerCollision = aod::cascdata::collisionId;
 
   OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#Xi #pi #pi) (GeV/#it{c}^{2});entries", 500, 2.3, 2.7)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -125,14 +116,13 @@ struct HfCandidateCreatorXic {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
 
-    std::array<bool, 2> doprocessKF{doprocessXicplusWithKFParticleFromDerivedData, doprocessXicplusWithKFParticle};
-    if ((doprocessXicplusWithDcaFitter + std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0)) != 1) {
+    if ((doprocessXicplusWithDcaFitter + doprocessXicplusWithKFParticleFromDerivedData) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
     if ((doprocessXicplusWithDcaFitter == 1) && fillHistograms) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::DCAFitter);
     }
-    if ((std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1) && fillHistograms) {
+    if ((doprocessXicplusWithKFParticleFromDerivedData == 1) && fillHistograms) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
     }
   }
@@ -511,250 +501,6 @@ struct HfCandidateCreatorXic {
     } // loop over track triplets
   }
   PROCESS_SWITCH(HfCandidateCreatorXic, processXicplusWithKFParticleFromDerivedData, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);
-
-  void processXicplusWithKFParticle(SelectedCollisions const& collisions,
-                                    SelectedHfTrackAssoc const& trackIndices,
-                                    KFCascadesLinked const& linkedCascades,
-                                    KFCascFull const&,
-                                    aod::TracksWCovExtra const&,
-                                    aod::BCsWithTimestamps const&)
-  {
-    for (const auto& collision : collisions) {
-      //------------------------- Set the magnetic field from ccdb---------------------------------
-      /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
-      /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      if (runNumber != bc.runNumber()) {
-        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-        bz = o2::base::Propagator::Instance()->getNominalBz();
-        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
-      }
-      KFParticle::SetField(bz);
-
-      // ------------------------------------cascade loop-------------------------------------------
-      auto thisCollId = collision.globalIndex();
-      // auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
-      auto groupedLinkedCascades = linkedCascades.sliceBy(linkedCascadesPerCollision, thisCollId);
-      for (const auto& linkedCasc : groupedLinkedCascades) {
-        if (!linkedCasc.has_kfCascData()) {
-          continue;
-        }
-        auto casc = linkedCasc.kfCascData_as<KFCascFull>();
-
-        //----------------accessing particles in the decay chain-------------
-        // cascade daughter - charged particle
-        auto trackCascDauCharged = casc.bachelor_as<aod::TracksWCovExtra>(); // meson <- xi track
-        // cascade daughter - V0
-        auto trackV0PosDau = casc.posTrack_as<aod::TracksWCovExtra>(); // p <- V0 track (positive track) 0
-        // V0 negative daughter
-        auto trackV0NegDau = casc.negTrack_as<aod::TracksWCovExtra>(); // pion <- V0 track (negative track) 1
-
-        // check that particles come from the same collision
-        if (rejDiffCollTrack) {
-          if (trackV0PosDau.collisionId() != trackV0NegDau.collisionId()) {
-            continue;
-          }
-          if (trackCascDauCharged.collisionId() != trackV0PosDau.collisionId()) {
-            continue;
-          }
-        }
-        // check not to take cascade daughters twice
-        if (trackV0PosDau.globalIndex() == trackV0NegDau.globalIndex() || trackV0PosDau.globalIndex() == trackCascDauCharged.globalIndex() || trackV0NegDau.globalIndex() == trackCascDauCharged.globalIndex()) {
-          continue;
-        }
-
-        // preselect cascade candidates
-        if (doCascadePreselection) {
-          if (std::abs(casc.dcaXYCascToPV()) > dcaXYToPVCascadeMax) {
-            continue;
-          }
-          if (std::abs(casc.mXi() - massXiMinusFromPdg) > massToleranceCascade) {
-            continue;
-          }
-        }
-
-        //--------------------------------------loop over first bachelor-----------------------------------------------------
-        auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-        for (auto trackIdCharmBachelor0 = groupedBachTrackIndices.begin(); trackIdCharmBachelor0 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor0) {
-          auto trackCharmBachelor0 = trackIdCharmBachelor0.track_as<aod::TracksWCovExtra>();
-
-          // check that particles come from the same collision
-          if ((rejDiffCollTrack) && (trackCascDauCharged.collisionId() != trackCharmBachelor0.collisionId())) {
-            continue;
-          }
-          // ask for opposite sign daughters
-          if (trackCharmBachelor0.sign() * trackCascDauCharged.sign() >= 0) {
-            continue;
-          }
-          // check not to take the same particle twice in the decay chain
-          if (trackCharmBachelor0.globalIndex() == trackCascDauCharged.globalIndex() || trackCharmBachelor0.globalIndex() == trackV0PosDau.globalIndex() || trackCharmBachelor0.globalIndex() == trackV0NegDau.globalIndex()) {
-            continue;
-          }
-
-          //-----------------------------------------------loop over second bachelor---------------------------------------------------------------------------
-          for (auto trackIdCharmBachelor1 = trackIdCharmBachelor0 + 1; trackIdCharmBachelor1 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor1) {
-            auto trackCharmBachelor1 = trackIdCharmBachelor1.track_as<aod::TracksWCovExtra>();
-            // check that particles come from the same collision
-            if ((rejDiffCollTrack) && (trackCascDauCharged.collisionId() != trackCharmBachelor1.collisionId())) {
-              continue;
-            }
-            // ask for same sign daughters
-            if (trackCharmBachelor1.sign() * trackCharmBachelor0.sign() <= 0) {
-              continue;
-            }
-            // check not to take the same particle twice in the decay chain
-            if (trackCharmBachelor1.globalIndex() == trackCharmBachelor0.globalIndex() || trackCharmBachelor1.globalIndex() == trackCascDauCharged.globalIndex() || trackCharmBachelor1.globalIndex() == trackV0PosDau.globalIndex() || trackCharmBachelor1.globalIndex() == trackV0NegDau.globalIndex()) {
-              continue;
-            }
-
-            //----------------------info of V0 and cascade tracks from LF-table------------------
-            std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
-            std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
-            std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
-            std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
-
-            //----------------------Create XicPlus as KFParticle object-------------------------------------------
-            // initialize primary vertex
-            KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
-            float covMatrixPV[6];
-            kfpVertex.GetCovarianceMatrix(covMatrixPV);
-            KFParticle KFPV(kfpVertex); // for calculation of DCAs to PV
-
-            // convert pion tracks into KFParticle object
-            KFPTrack kfpTrackCharmBachelor0 = createKFPTrackFromTrack(trackCharmBachelor0);
-            KFPTrack kfpTrackCharmBachelor1 = createKFPTrackFromTrack(trackCharmBachelor1);
-            KFParticle kfCharmBachelor0(kfpTrackCharmBachelor0, kPiPlus);
-            KFParticle kfCharmBachelor1(kfpTrackCharmBachelor1, kPiPlus);
-
-            // create Xi as KFParticle object
-            // read {X,Y,Z,Px,Py,Pz} and corresponding covariance matrix from KF cascade Tables
-            std::array<float, 6> xyzpxpypz = {casc.x(), casc.y(), casc.z(), casc.px(), casc.py(), casc.pz()};
-            float parPosMom[6];
-            for (int i{0}; i < 6; ++i) {
-              parPosMom[i] = xyzpxpypz[i];
-            }
-            // create KFParticle
-            KFParticle kfXi;
-            kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), casc.mXi());
-
-            // create XicPlus as KFParticle object
-            KFParticle kfXicPlus;
-            const KFParticle* kfDaughtersXicPlus[3] = {&kfCharmBachelor0, &kfCharmBachelor1, &kfXi};
-            kfXicPlus.SetConstructMethod(kfConstructMethod);
-            try {
-              kfXicPlus.Construct(kfDaughtersXicPlus, 3);
-            } catch (std::runtime_error& e) {
-              LOG(debug) << "Failed to construct XicPlus : " << e.what();
-              continue;
-            }
-
-            // topological constraint
-            if (constrainXicPlusToPv) {
-              kfXicPlus.SetProductionVertex(KFPV);
-            }
-            auto covMatrixXicPlus = kfXicPlus.CovarianceMatrix();
-
-            // transport daughter particles to XicPlus decay vertex
-            kfCharmBachelor0.TransportToParticle(kfXicPlus);
-            kfCharmBachelor1.TransportToParticle(kfXicPlus);
-            kfXi.TransportToParticle(kfXicPlus);
-
-            //---------------------calculate physical parameters of XicPlus candidate----------------------            
-            // sign of charm baryon
-            int signXic = casc.sign() < 0 ? +1 : -1;
-
-            // get impact parameters of XicPlus daughters
-            float impactParameterPi0XY = 0., errImpactParameterPi0XY = 0.;
-            float impactParameterPi1XY = 0., errImpactParameterPi1XY = 0.;
-            float impactParameterXiXY = 0., errImpactParameterXiXY = 0.;
-            kfCharmBachelor0.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
-            kfCharmBachelor1.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
-            kfXi.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
-
-            // calculate cosine of pointing angle
-            std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
-            double cpaLambda = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-            double cpaXYLambda = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
-            double cpaXi = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
-            double cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
-
-            // get DCAs of Pi0-Pi1, Pi0-Xi, Pi1-Xi
-            float dcaXYPi0Pi1 = kfCharmBachelor0.GetDistanceFromParticleXY(kfCharmBachelor1);
-            float dcaXYPi0Xi = kfCharmBachelor0.GetDistanceFromParticleXY(kfXi);
-            float dcaXYPi1Xi = kfCharmBachelor1.GetDistanceFromParticleXY(kfXi);
-
-            // mass of Xi-Pi0 pair
-            KFParticle kfXiPi0;
-            const KFParticle* kfXiResonanceDaughtersPi0[2] = {&kfXi, &kfCharmBachelor0};
-            kfXiPi0.SetConstructMethod(kfConstructMethod);
-            try {
-              kfXiPi0.Construct(kfXiResonanceDaughtersPi0, 2);
-              massXiPi0 = kfXiPi0.GetMass();
-            } catch(...) {
-              LOG(info) << "Failed to construct Xi(1530) with Pi 0";
-            }
-
-            // mass of Xi-Pi1 pair
-            KFParticle kfXiPi1;
-            const KFParticle* kfXiResonanceDaughtersPi1[2] = {&kfXi, &kfCharmBachelor1};
-            kfXiPi1.SetConstructMethod(kfConstructMethod);
-            try {
-              kfXiPi1.Construct(kfXiResonanceDaughtersPi1, 2);
-              massXiPi1 = kfXiPi1.GetMass();
-            } catch(...){
-              LOG(info) << "Failed to construct Xi(1530) with Pi 1";
-            }
-
-            //-------------------------------fill histograms--------------------------------------------
-            if (fillHistograms) {
-              // invariant mass
-              hMass3->Fill(kfXicPlus.GetMass());
-              // covariance matrix elements of PV
-              hCovPVXX->Fill(covMatrixPV[0]);
-              hCovPVYY->Fill(covMatrixPV[2]);
-              hCovPVXZ->Fill(covMatrixPV[3]);
-              hCovPVZZ->Fill(covMatrixPV[5]);
-              // covariance matrix elements of SV
-              hCovSVXX->Fill(covMatrixXicPlus[0]);
-              hCovSVYY->Fill(covMatrixXicPlus[2]);
-              hCovSVXZ->Fill(covMatrixXicPlus[3]);
-              hCovSVZZ->Fill(covMatrixXicPlus[5]);
-              // DCAs of prongs
-              hDcaXYProngs->Fill(kfCharmBachelor0.GetPt(), impactParameterPi0XY);
-              hDcaXYProngs->Fill(kfCharmBachelor1.GetPt(), impactParameterPi1XY);
-              hDcaXYProngs->Fill(kfXi.GetPt(), impactParameterXiXY);
-            }
-
-            //------------------------------fill candidate table rows--------------------------------------
-            rowCandidateBase(collision.globalIndex(),
-                             KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
-                             covMatrixPV[0], covMatrixPV[2], covMatrixPV[5],
-                             /*3-prong specific columns*/
-                             casc.cascadeId(), trackCharmBachelor0.globalIndex(), trackCharmBachelor1.globalIndex(),
-                             casc.bachelorId(), casc.posTrackId(), casc.negTrackId(),
-                             kfXicPlus.GetX(), kfXicPlus.GetY(), kfXicPlus.GetZ(),
-                             kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
-                             kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
-                             kfXicPlus.GetChi2(), kfXicPlus.GetMass(), signXic,
-                             kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
-                             kfCharmBachelor0.GetPx(), kfCharmBachelor0.GetPy(), kfCharmBachelor0.GetPz(),
-                             kfCharmBachelor1.GetPx(), kfCharmBachelor1.GetPy(), kfCharmBachelor1.GetPz(),
-                             impactParameterXiXY, impactParameterPi0XY, impactParameterPi1XY,
-                             errImpactParameterXiXY, errImpactParameterPi0XY, errImpactParameterPi1XY,
-                             /*cascade specific columns*/
-                             casc.x(), casc.y(), casc.z(),
-                             casc.xlambda(), casc.ylambda(), casc.zlambda(),
-                             cpaXi, cpaXYXi, cpaLambda, cpaXYLambda,
-                             massXiPi0, massXiPi1);
-            rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
-                           dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi);
-          } // bachelor 1
-        } // bachelor 0
-      } // cascades
-    } // collisions
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic, processXicplusWithKFParticle, "Run candidate creator with KFParticle", false);
 }; // struct
 
 /// Performs MC matching.
