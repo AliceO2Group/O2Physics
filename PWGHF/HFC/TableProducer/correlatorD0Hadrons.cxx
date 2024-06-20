@@ -145,8 +145,8 @@ struct HfCorrelatorD0HadronsSelection {
       }
       double yD = RecoDecay::y(particle.pVector(), MassD0);
       if (std::abs(yD) > yCandMax || particle.pt() < ptCandMin) {
-        continue;
-      }
+          continue;
+        }
       isD0Found = 1;
       break;
     }
@@ -199,7 +199,7 @@ struct HfCorrelatorD0Hadrons {
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0candidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+  Filter trackFilter = requireGlobalTrackWoDCAInFilter() && (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   Filter d0Filter = (aod::hf_sel_candidate_d0::isSelD0 >= 1) || (aod::hf_sel_candidate_d0::isSelD0bar >= 1);
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kD0) || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
@@ -321,8 +321,8 @@ struct HfCorrelatorD0Hadrons {
 
     for (const auto& candidate1 : selectedD0CandidatesGrouped) {
       if (std::abs(hfHelper.yD0(candidate1)) >= yCandMax || candidate1.pt() <= ptCandMin || candidate1.pt() >= ptTrackMax) {
-        continue;
-      }
+          continue;
+        }
       // check decay channel flag for candidate1
       if (!TESTBIT(candidate1.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
@@ -370,9 +370,6 @@ struct HfCorrelatorD0Hadrons {
             continue;
           }
           correlationStatus = true;
-        }
-        if (!track.isGlobalTrackWoDCA()) {
-          continue;
         }
 
         registry.fill(HIST("hTrackCounter"), 2); // fill no. of tracks before soft pion removal
@@ -472,8 +469,8 @@ struct HfCorrelatorD0Hadrons {
         continue;
       }
       if (std::abs(hfHelper.yD0(candidate1)) >= yCandMax || candidate1.pt() <= ptCandMin || candidate1.pt() >= ptTrackMax) {
-        continue;
-      }
+          continue;
+        }
 
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
@@ -523,9 +520,7 @@ struct HfCorrelatorD0Hadrons {
 
       for (const auto& track : tracks) {
         registry.fill(HIST("hTrackCounterRec"), 1); // fill total no. of tracks
-        if (!track.isGlobalTrackWoDCA()) {
-          continue;
-        }
+        
         // Removing D0 daughters by checking track indices
         bool correlationStatus = false;
         if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
@@ -694,7 +689,7 @@ struct HfCorrelatorD0Hadrons {
       registry.fill(HIST("hMultFT0M"), collision.multFT0M());
       registry.fill(HIST("hZvtx"), collision.posZ());
     }
-
+    
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelectedCollisions, SelectedCandidatesData, SelectedTracks, BinningType> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
@@ -703,7 +698,7 @@ struct HfCorrelatorD0Hadrons {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        if (!t2.isGlobalTrackWoDCA() || std::abs(hfHelper.yD0(t1)) >= yCandMax) {
+       if (std::abs(hfHelper.yD0(t1)) >= yCandMax) {
           continue;
         }
 
@@ -766,7 +761,7 @@ struct HfCorrelatorD0Hadrons {
 
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        if (!t2.isGlobalTrackWoDCA() || std::abs(hfHelper.yD0(t1)) >= yCandMax) {
+        if (std::abs(hfHelper.yD0(t1)) >= yCandMax) {
           continue;
         }
 
@@ -888,12 +883,12 @@ struct HfCorrelatorD0Hadrons {
           continue;
         }
         if ((std::abs(t2.pdgCode()) != kElectron) && (std::abs(t2.pdgCode()) != kMuonMinus) && (std::abs(t2.pdgCode()) != kPiPlus) && (std::abs(t2.pdgCode()) != kKPlus) && (std::abs(t2.pdgCode()) != kProton)) {
-          continue;
-        }
-        if (!t2.isPhysicalPrimary()) {
-          continue;
-        }
-
+            continue;
+          }
+          if (!t2.isPhysicalPrimary()) {
+            continue;
+          }
+          
         // ==============================soft pion removal================================
         // method used: indexMother = -1 by default if the mother doesn't match with given PID of the mother. We find mother of pion if it is D* and mother of D0 if it is D*. If they are both positive and they both match each other, then it is detected as a soft pion
 
