@@ -56,7 +56,7 @@ struct HfTaskXicToXiPiPi {
   void init(InitContext const&)
   {
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
-    static const AxisSpec axisMassXiRes= {300, 1.0,2.0, "inv. mass (GeV/#it{c}^{2})"};
+    static const AxisSpec axisMassXiRes = {300, 1.0, 2.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
 
     registry.add("hEta", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
@@ -219,8 +219,8 @@ struct HfTaskXicToXiPiPi {
                  aod::TracksWMc const&)
   {
     std::vector<int> arrDaughIndex;
-    int pdgCodeXiMinus = kXiMinus;    // 3312
-    int pdgCodePiPlus = kPiPlus;      // 211
+    int pdgCodeXiMinus = kXiMinus; // 3312
+    int pdgCodePiPlus = kPiPlus;   // 211
 
     // MC rec
     for (const auto& candidate : candidates) {
@@ -287,7 +287,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hCPALambdaRecBg"), candidate.cosPaLambda(), ptCandXic);
         registry.fill(HIST("hCPAxyLambdaRecBg"), candidate.cosPaLambda(), ptCandXic);
       }
-      
+
       if (checkDecayTypeMc) {
         if (TESTBIT(flagMcMatchRecXic, hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
           registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xictoxipipi::DecayType::XicToXiPiPi, candidate.invMassXic(), ptCandXic);

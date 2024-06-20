@@ -30,59 +30,59 @@ namespace o2::aod
 namespace full
 {
 // track indices
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);  //! Selection flag of candidate (output of candidateSelector)
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int); //! Selection flag of candidate (output of candidateSelector)
 DECLARE_SOA_INDEX_COLUMN_FULL(Xi, xi, int, Tracks, "_pi0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Pi0, pi0, int, Tracks, "_pi0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Pi1, pi1, int, Tracks, "_pi1");
-//vertices
+// vertices
 DECLARE_SOA_COLUMN(XPv, xPv, float);
-DECLARE_SOA_COLUMN(YPv, yPv, float);  
+DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
 DECLARE_SOA_COLUMN(XPvErr, xPvErr, float);
-DECLARE_SOA_COLUMN(YPvErr, yPvErr, float);  
-DECLARE_SOA_COLUMN(ZPvErr, zPvErr, float);    
-DECLARE_SOA_COLUMN(XSv, xSv, float);  
-DECLARE_SOA_COLUMN(YSv, ySv, float);  
+DECLARE_SOA_COLUMN(YPvErr, yPvErr, float);
+DECLARE_SOA_COLUMN(ZPvErr, zPvErr, float);
+DECLARE_SOA_COLUMN(XSv, xSv, float);
+DECLARE_SOA_COLUMN(YSv, ySv, float);
 DECLARE_SOA_COLUMN(ZSv, zSv, float);
 DECLARE_SOA_COLUMN(Chi2Sv, chi2Sv, float);
-DECLARE_SOA_COLUMN(XSvErr, xSvErr, float);  
-DECLARE_SOA_COLUMN(YSvErr, ySvErr, float);  
+DECLARE_SOA_COLUMN(XSvErr, xSvErr, float);
+DECLARE_SOA_COLUMN(YSvErr, ySvErr, float);
 DECLARE_SOA_COLUMN(ZSvErr, zSvErr, float);
-DECLARE_SOA_COLUMN(XDecVtxXi, xDecVtxXi, float);  
-DECLARE_SOA_COLUMN(YDecVtxXi, yDecVtxXi, float);  
+DECLARE_SOA_COLUMN(XDecVtxXi, xDecVtxXi, float);
+DECLARE_SOA_COLUMN(YDecVtxXi, yDecVtxXi, float);
 DECLARE_SOA_COLUMN(ZDecVtxXi, zDecVtxXi, float);
 DECLARE_SOA_COLUMN(Chi2XiVtx, chi2XiVtx, float);
-DECLARE_SOA_COLUMN(XDecVtxLam, xDecVtxLam, float);  
-DECLARE_SOA_COLUMN(YDecVtxLam, yDecVtxLam, float);  
+DECLARE_SOA_COLUMN(XDecVtxLam, xDecVtxLam, float);
+DECLARE_SOA_COLUMN(YDecVtxLam, yDecVtxLam, float);
 DECLARE_SOA_COLUMN(ZDecVtxLam, zDecVtxLam, float);
 DECLARE_SOA_COLUMN(Chi2LamVtx, chi2LamVtx, float);
 // properties of XicPlus
 DECLARE_SOA_COLUMN(Sign, sign, float);
-DECLARE_SOA_COLUMN(E, e, float);                                                   //! Energy of candidate (GeV)
-DECLARE_SOA_COLUMN(M, m, float);                                                   //! Invariant mass of candidate (GeV/c2)
-DECLARE_SOA_COLUMN(P, p, float);                                                   //! Momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(Pt, pt, float);                                                 //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(Y, y, float);                                                   //! Rapidity of candidate
-DECLARE_SOA_COLUMN(Eta, eta, float);                                               //! Pseudorapidity of candidate
-DECLARE_SOA_COLUMN(Phi, phi, float);                                               //! Azimuth angle of candidate
-DECLARE_SOA_COLUMN(Ct, ct, float);                                                 //! Proper lifetime time ctau of candidate (cm)
-DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                               //! Decay length of candidate (cm)
-DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! Transverse decay length of candidate (cm)
-DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! Normalised decay length of candidate
-DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);       //! Normalised transverse decay length of candidate
-DECLARE_SOA_COLUMN(Cpa, cpa, float);                                               //! Cosine pointing angle of candidate
-DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                           //! Cosine pointing angle of candidate in transverse plane
-// properties of daughter tracks       
-DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                  //! Transverse momentum of Xi (prong0) (GeV/c)
-DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                        //! Impact parameter of Xi (prong0)
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float);    //! Normalised impact parameter of Xi (prong0)
-DECLARE_SOA_COLUMN(PtPi0, ptPi0, float);                                                //! Transverse momentum of Pi0 (prong1) (GeV/c)
-DECLARE_SOA_COLUMN(ImpactParameterPi0, impactParameterPi0, float);                      //! Impact parameter of Pi0 (prong1)
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi0, impactParameterNormalisedPi0, float);  //! Normalised impact parameter of Pi0 (prong1)
-DECLARE_SOA_COLUMN(PtPi1, ptPi1, float);                                                //! Transverse momentum of Pi1 (prong2) (GeV/c)
-DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                      //! Normalised impact parameter of Pi1 (prong2)
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi1, impactParameterNormalisedPi1, float);  //! Normalised impact parameter of Pi1 (prong2)
-DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                  //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
+DECLARE_SOA_COLUMN(E, e, float);                                             //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                             //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(Ct, ct, float);                                           //! Proper lifetime time ctau of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //! Decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of candidate
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
+// properties of daughter tracks
+DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! Transverse momentum of Xi (prong0) (GeV/c)
+DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! Impact parameter of Xi (prong0)
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float);   //! Normalised impact parameter of Xi (prong0)
+DECLARE_SOA_COLUMN(PtPi0, ptPi0, float);                                               //! Transverse momentum of Pi0 (prong1) (GeV/c)
+DECLARE_SOA_COLUMN(ImpactParameterPi0, impactParameterPi0, float);                     //! Impact parameter of Pi0 (prong1)
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi0, impactParameterNormalisedPi0, float); //! Normalised impact parameter of Pi0 (prong1)
+DECLARE_SOA_COLUMN(PtPi1, ptPi1, float);                                               //! Transverse momentum of Pi1 (prong2) (GeV/c)
+DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                     //! Normalised impact parameter of Pi1 (prong2)
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi1, impactParameterNormalisedPi1, float); //! Normalised impact parameter of Pi1 (prong2)
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                 //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(CpaXi, cpaXi, float);
 DECLARE_SOA_COLUMN(CpaXYXi, cpaXYXi, float);
 DECLARE_SOA_COLUMN(CpaLam, cpaLam, float);
@@ -93,8 +93,8 @@ DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
 DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
 DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
 // PID daughters
-DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                                 //! TPC Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                                 //! TOF Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float); //! TPC Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float); //! TOF Nsigma separation for prong1 with pion mass hypothesis
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
@@ -332,7 +332,7 @@ struct HfTreeCreatorXicToXiPiPi {
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
-  
+
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>>;
   using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicMcRec, aod::HfSelXicToXiPiPi>>;
@@ -344,7 +344,7 @@ struct HfTreeCreatorXicToXiPiPi {
   Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != int8_t(0);
   Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == int8_t(0);
   Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != int8_t(0);
-  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec)  == int8_t(0);
+  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == int8_t(0);
 
   void init(InitContext const&)
   {
@@ -359,9 +359,9 @@ struct HfTreeCreatorXicToXiPiPi {
       collision.posX(),
       collision.posY(),
       collision.posZ(),
-      isEventReject,  //! filled with 0
-      runNumber       //! filled with 1
-      );
+      isEventReject, //! filled with 0
+      runNumber      //! filled with 1
+    );
   }
 
   template <bool doMc = false, bool noKf = true, typename T>
@@ -371,7 +371,7 @@ struct HfTreeCreatorXicToXiPiPi {
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
     }
-    if constexpr (noKf){
+    if constexpr (noKf) {
       if (fillCandidateLiteTable) {
         rowCandidateLite(
           candidate.cascadeId(),
@@ -627,7 +627,7 @@ struct HfTreeCreatorXicToXiPiPi {
           continue;
         }
       }
-      fillCandidateTable<false,false>(candidate);
+      fillCandidateTable<false, false>(candidate);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataKf, "Process data with KF Particle reconstruction", false);
@@ -652,7 +652,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(recSig.size());
       }
       for (const auto& candidate : recSig) {
-        fillCandidateTable<true,true>(candidate);
+        fillCandidateTable<true, true>(candidate);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
@@ -665,7 +665,7 @@ struct HfTreeCreatorXicToXiPiPi {
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        fillCandidateTable<true,true>(candidate);
+        fillCandidateTable<true, true>(candidate);
       }
     } else {
       if (fillCandidateLiteTable) {
@@ -674,7 +674,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        fillCandidateTable<true,true>(candidate);
+        fillCandidateTable<true, true>(candidate);
       }
     }
 
@@ -695,10 +695,10 @@ struct HfTreeCreatorXicToXiPiPi {
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMc, "Process MC", false);
 
   void processMcKf(aod::Collisions const& collisions,
-                 aod::McCollisions const&,
-                 SelectedCandidatesKfMc const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
-                 TracksWPid const&)
+                   aod::McCollisions const&,
+                   SelectedCandidatesKfMc const& candidates,
+                   soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -714,7 +714,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(recSigKf.size());
       }
       for (const auto& candidate : recSigKf) {
-        fillCandidateTable<true,false>(candidate);
+        fillCandidateTable<true, false>(candidate);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
@@ -727,7 +727,7 @@ struct HfTreeCreatorXicToXiPiPi {
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        fillCandidateTable<true,false>(candidate);
+        fillCandidateTable<true, false>(candidate);
       }
     } else {
       if (fillCandidateLiteTable) {
@@ -736,7 +736,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        fillCandidateTable<true,false>(candidate);
+        fillCandidateTable<true, false>(candidate);
       }
     }
 

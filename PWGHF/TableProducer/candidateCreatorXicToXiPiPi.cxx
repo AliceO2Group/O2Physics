@@ -440,7 +440,7 @@ struct HfCandidateCreatorXic {
       try {
         kfXiPi0.Construct(kfXiResonanceDaughtersPi0, 2);
         massXiPi0 = kfXiPi0.GetMass();
-      } catch(...) {
+      } catch (...) {
         LOG(info) << "Failed to construct Xi(1530) with Pi 0";
       }
 
@@ -451,7 +451,7 @@ struct HfCandidateCreatorXic {
       try {
         kfXiPi1.Construct(kfXiResonanceDaughtersPi1, 2);
         massXiPi1 = kfXiPi1.GetMass();
-      } catch(...){
+      } catch (...) {
         LOG(info) << "Failed to construct Xi(1530) with Pi 1";
       }
 
@@ -526,12 +526,12 @@ struct HfCandidateCreatorXicExpressions {
     std::array<int, 2> arrPDGDaugh;
 
     std::array<int, 2> arrXiResonance = {3324, kPiPlus}; // 3324: Ξ(1530)
-    int pdgCodeXicPlus = Pdg::kXiCPlus; // 4232
-    int pdgCodeXiMinus = kXiMinus;      // 3312
-    int pdgCodeLambda = kLambda0;       // 3122
-    int pdgCodePiPlus = kPiPlus;        // 211
-    int pdgCodePiMinus = kPiMinus;      // -211
-    int pdgCodeProton = kProton;        // 2212
+    int pdgCodeXicPlus = Pdg::kXiCPlus;                  // 4232
+    int pdgCodeXiMinus = kXiMinus;                       // 3312
+    int pdgCodeLambda = kLambda0;                        // 3122
+    int pdgCodePiPlus = kPiPlus;                         // 211
+    int pdgCodePiMinus = kPiMinus;                       // -211
+    int pdgCodeProton = kProton;                         // 2212
 
     // Match reconstructed candidates.
     for (const auto& candidate : *rowCandidateXic) {
@@ -621,16 +621,16 @@ struct HfCandidateCreatorXicExpressions {
             RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
             if (arrDaughIndex.size() == 2) {
               for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
-                  auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
-                  arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
-                }
-                if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
-                  flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
-                } else {
-                  debug = 4;
-                }
+                auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+                arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
+              }
+              if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
+                flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
+              } else {
+                debug = 4;
+              }
             } else {
-                flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+              flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
             }
           }
         }
@@ -643,7 +643,7 @@ struct HfCandidateCreatorXicExpressions {
 
       rowMcMatchGen(flag, debug, origin);
     } // close loop over generated particles
-  } // close process
+  }   // close process
   PROCESS_SWITCH(HfCandidateCreatorXicExpressions, processMc, "Process MC", false);
 }; // close struct
 

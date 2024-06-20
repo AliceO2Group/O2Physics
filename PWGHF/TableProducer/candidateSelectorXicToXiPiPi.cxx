@@ -93,7 +93,6 @@ struct HfCandidateSelectorXicToXiPiPi {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     }
-
   }
 
   /// Conjugate-independent topological cuts
@@ -151,8 +150,8 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
 
     // cut on daughter pT
-    if (hfCandXic.ptProng0() < cuts->get(pTBin, "pT Xi")  ||
-        hfCandXic.ptProng1() < cuts->get(pTBin, "pT Pi0") || 
+    if (hfCandXic.ptProng0() < cuts->get(pTBin, "pT Xi") ||
+        hfCandXic.ptProng1() < cuts->get(pTBin, "pT Pi0") ||
         hfCandXic.ptProng2() < cuts->get(pTBin, "pT Pi1")) {
       return false;
     }

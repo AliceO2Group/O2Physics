@@ -721,16 +721,146 @@ constexpr double binsPt[nBinsPt + 1] = {
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts                 m   ptXi ptPi0 ptPi1 chi2PCA dL  dLXY  cosp cospXY impParXY Xi Pi0 Pi1
-constexpr double cuts[nBinsPt][nCutVars] = {{0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},  /* 0  < pT < 1  */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},   /* 1  < pT < 2  */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},   /* 2  < pT < 3  */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},   /* 3  < pT < 4  */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},   /* 4  < pT < 5  */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},   /* 5  < pT < 6  */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},   /* 6  < pT < 8  */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},   /* 8  < pT < 12 */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,},   /* 12 < pT < 24 */
-                                            {0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.005, 0.8, 0.8,  0.1, 0.1, 0.1,}};  /* 24 < pT < 36 */
+constexpr double cuts[nBinsPt][nCutVars] = {{
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 0  < pT < 1  */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 1  < pT < 2  */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 2  < pT < 3  */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 3  < pT < 4  */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 4  < pT < 5  */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 5  < pT < 6  */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 6  < pT < 8  */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 8  < pT < 12 */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }, /* 12 < pT < 24 */
+                                            {
+                                              0.400,
+                                              0.4,
+                                              0.4,
+                                              0.4,
+                                              1e-5,
+                                              0.005,
+                                              0.005,
+                                              0.8,
+                                              0.8,
+                                              0.1,
+                                              0.1,
+                                              0.1,
+                                            }}; /* 24 < pT < 36 */
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -746,7 +876,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 9"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT Xi", "pT Pi0", "pT Pi1", "chi2PCA", "max decay length", "max decay length XY", "cos pointing angle", "cos pointing angle XY",  "max impParXY Xi", "max impParXY Pi0", "max impParXY Pi1"};
+static const std::vector<std::string> labelsCutVar = {"m", "pT Xi", "pT Pi0", "pT Pi1", "chi2PCA", "max decay length", "max decay length XY", "cos pointing angle", "cos pointing angle XY", "max impParXY Xi", "max impParXY Pi0", "max impParXY Pi1"};
 } // namespace hf_cuts_xic_to_xi_pi_pi
 
 namespace hf_cuts_xicc_to_p_k_pi_pi
