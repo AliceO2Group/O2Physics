@@ -815,7 +815,7 @@ struct TaskPolarisationCharmHadrons {
             }
           }
           // invariant mass of the KPi pair
-          invMassKPiLc = RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{massKaon, massPi});
+          invMassKPiLc = hfHelper.invMassKPiPairLcToPKPi(candidate);
         } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
           // reconstructed as piKp
           pxDau = candidate.pxProng2();
@@ -841,7 +841,7 @@ struct TaskPolarisationCharmHadrons {
             }
           }
           // invariant mass of the KPi pair
-          invMassKPiLc = RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng0()}, std::array{massKaon, massPi});
+          invMassKPiLc = hfHelper.invMassKPiPairLcToPiKP(candidate);
         } else {
           // NB: no need to check cases in which candidate.isSelLcToPKPi() and candidate.isSelLcToPiKP() are both false, because they are rejected already by the Filter
           // ... but we need to put this protections here!

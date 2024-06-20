@@ -493,8 +493,8 @@ struct HfTreeCreatorLcToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), RecoDecay::m(std::array{trackNeg.pVector(), trackPos2.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}));
-      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), RecoDecay::m(std::array{trackNeg.pVector(), trackPos1.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}));
+      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPKPi(candidate));
+      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPiKP(candidate));
     }
 
     // Filling particle properties
@@ -752,8 +752,8 @@ struct HfTreeCreatorLcToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), RecoDecay::m(std::array{trackNeg.pVector(), trackPos2.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}));
-      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), RecoDecay::m(std::array{trackNeg.pVector(), trackPos1.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}));
+      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPKPi(candidate));
+      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPiKP(candidate));
     }
   }
 

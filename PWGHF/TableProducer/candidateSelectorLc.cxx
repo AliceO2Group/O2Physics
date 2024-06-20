@@ -241,8 +241,18 @@ struct HfCandidateSelectorLc {
     /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
     const double cutMassKPi = cuts->get(pTBin, "mass (Kpi)");
     if (cutMassKPi > 0) {
-      if (std::abs(RecoDecay::m(std::array{trackKaon.pVector(), trackPion.pVector()}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus}) - massK0Star892) > cutMassKPi) {
-        return false;
+      if (trackProton.globalIndex() == candidate.prong0Id()) {
+        // inspecting the pKpi hypothesis
+        // K: prong1, pi: prong 2
+        if (std::abs(hfHelper.invMassKPiPairLcToPKPi(candidate) - massK0Star892) > cutMassKPi) {
+          return false;
+        }
+      } else {
+        // inspecting the piKp hypothesis
+        // K: prong1, pi: prong 0
+        if (std::abs(hfHelper.invMassKPiPairLcToPiKP(candidate) - massK0Star892) > cutMassKPi) {
+          return false;
+        }
       }
     }
 
