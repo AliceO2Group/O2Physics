@@ -82,8 +82,8 @@ struct tracked_cascade_properties {
 
   void init(InitContext const&)
   {
-    registryQC.add("matchingChi2", "matching Chi2", HistType::kTH1F, {{200, 0, 100, "#chi^{2}"}});
-    registryQC.add("topologyChi2", "topology Chi2", HistType::kTH1F, {{200, 0, 100, "#chi^{2}"}});
+    registryQC.add("matchingChi2", "matching Chi2", HistType::kTH1F, {{200, 0, 400, "#chi^{2}_{matching}"}});
+    registryQC.add("topologyChi2", "topology Chi2", HistType::kTH1F, {{200, 0, 100, "#chi^{2}_{topology}"}});
     registryQC.add("nITS_Xi", "nITS Xi", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
     registryQC.add("nITS_Omega", "nITS Omega", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
 
@@ -149,17 +149,13 @@ struct tracked_cascade_properties {
       registryQC.fill(HIST("topologyChi2"), trackedCascade.topologyChi2());
 
       // Calculate (Average) Cluster Size
-      int nITScls(0);
       int clusterSize[7];
       double averageClusterSize(0);
       for (int i = 0; i < 7; i++) {
-        clusterSize[i] = (((1 << 4) - 1) & (track.itsClusterSizes() >> 4 * i));
+        clusterSize[i] = (track.itsClusterSizes() >> (i * 4)) & 0xf;
         averageClusterSize += static_cast<double>(clusterSize[i]);
-
-        if (hasHitOnITSlayer(track.itsClusterMap(), i))
-          nITScls++;
       }
-      averageClusterSize = averageClusterSize / static_cast<double>(nITScls);
+      averageClusterSize = averageClusterSize / static_cast<double>(track.itsNCls());
 
       // Track Inclination
       double lambda = atan(track.tgl());
@@ -168,7 +164,7 @@ struct tracked_cascade_properties {
 
       // Xi
       if (trackedCascade.xiMass() > mMin_xi && trackedCascade.xiMass() < mMax_xi) {
-        registryQC.fill(HIST("nITS_Xi"), track.p(), nITScls);
+        registryQC.fill(HIST("nITS_Xi"), track.p(), track.itsNCls());
         if (btrack.sign() > 0) {
           for (int i = 0; i < 7; i++) {
             registryData.fill(HIST("xi_pos_clustersize"), clusterSize[i], track.p(), track.eta());
@@ -191,7 +187,7 @@ struct tracked_cascade_properties {
 
       // Omega
       if (trackedCascade.omegaMass() > mMin_omega && trackedCascade.omegaMass() < mMax_omega) {
-        registryQC.fill(HIST("nITS_Omega"), track.p(), nITScls);
+        registryQC.fill(HIST("nITS_Omega"), track.p(), track.itsNCls());
         if (btrack.sign() > 0) {
           for (int i = 0; i < 7; i++) {
             registryData.fill(HIST("omega_pos_clustersize"), clusterSize[i], track.p(), track.eta());
