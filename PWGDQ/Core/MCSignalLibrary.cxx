@@ -841,7 +841,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "one e from Xi_c+ and one e from Xi_c0 decays, no beauty in history", {prongXiCPlus, prongXiC0}, {-1, -1});
     return signal;
   }
-  
+
   // Xi_c+ ->e and Xi_c0 ->e
   if (!nameStr.compare("eeFromXiC0andXiCPlusBis")) {
     MCProng prongXiCPlus(2, {kElectron, Pdg::kXiCPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
