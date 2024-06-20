@@ -360,8 +360,7 @@ struct HfTreeCreatorXicToXiPiPi {
       collision.posY(),
       collision.posZ(),
       isEventReject, //! filled with 0
-      runNumber      //! filled with 1
-    );
+      runNumber);    //! filled with 1
   }
 
   template <bool doMc = false, bool noKf = true, typename T>
