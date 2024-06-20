@@ -1357,7 +1357,7 @@ DECLARE_SOA_COLUMN(DebugMcGen, debugMcGen, int8_t);
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
 // mapping of decay types
-enum DecayType { XicToXiPiPi=0,
+enum DecayType { XicToXiPiPi = 0,
                  XicToXiResPiToXiPiPi,
                  NDecayType };
 } // end of namespace hf_cand_xictoxipipi
@@ -1418,7 +1418,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandXicExt, HfCandXicBase, "HFCANDXICEXT",
 using HfCandXic = HfCandXicExt;
 
 DECLARE_SOA_TABLE(HfCandXicKF, "AOD", "HFCANDXICKF",
-                  cascdata::KFCascadeChi2, cascdata::KFV0Chi2, 
+                  cascdata::KFCascadeChi2, cascdata::KFV0Chi2,
                   hf_cand_xictoxipipi::DcaPi0Pi1, hf_cand_xictoxipipi::DcaPi0Xi, hf_cand_xictoxipipi::DcaPi1Xi);
 
 // table with results of reconstruction level MC matching
