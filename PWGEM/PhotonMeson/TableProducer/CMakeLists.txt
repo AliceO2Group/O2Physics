@@ -58,16 +58,11 @@ o2physics_add_dpl_workflow(skimmer-primary-electron
 
 o2physics_add_dpl_workflow(skimmer-primary-muon
                     SOURCES skimmerPrimaryMuon.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmer-dalitz-ee
                     SOURCES skimmerDalitzEE.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(skimmer-dalitz-mumu
-                    SOURCES skimmerDalitzMuMu.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

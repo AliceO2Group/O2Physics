@@ -27,6 +27,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "Framework/HistogramRegistry.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoUniverse;
@@ -47,6 +48,7 @@ template <o2::aod::femtouniverseparticle::ParticleType partOne, o2::aod::femtoun
 class FemtoUniverseDetaDphiStar
 {
  public:
+  FemtoUniverseTrackSelection trackCuts;
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
@@ -137,6 +139,46 @@ class FemtoUniverseDetaDphiStar
       }
     }
   }
+
+  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
+          return true;
+        }
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
   bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield, uint8_t ChosenEventType)
@@ -321,22 +363,26 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        // REMOVING THE "RING" -- CALCULATING THE INVARIANT MASS
-        TLorentzVector part1Vec;
-        TLorentzVector part2Vec;
-        float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();
-        float mMassTwo = TDatabasePDG::Instance()->GetParticle(321)->Mass();
-        part1Vec.SetPtEtaPhiM(part1.pt(), part1.eta(), part1.phi(), mMassOne);
-        part2Vec.SetPtEtaPhiM(daughter.pt(), daughter.eta(), daughter.phi(), mMassTwo);
-        TLorentzVector sumVec(part1Vec);
-        sumVec += part2Vec;
-        float phiM = sumVec.M();
+        // if proton is kaon reject the ring
+        if (IsKaonNSigma(daughter.pt(), trackCuts.getNsigmaTPC(daughter, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(daughter, o2::track::PID::Kaon))) {
+          // REMOVING THE "RING" -- CALCULATING THE INVARIANT MASS
+          TLorentzVector part1Vec;
+          TLorentzVector part2Vec;
+          float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();
+          float mMassTwo = TDatabasePDG::Instance()->GetParticle(321)->Mass();
+          part1Vec.SetPtEtaPhiM(part1.pt(), part1.eta(), part1.phi(), mMassOne);
+          part2Vec.SetPtEtaPhiM(daughter.pt(), daughter.eta(), daughter.phi(), mMassTwo);
+          TLorentzVector sumVec(part1Vec);
+          sumVec += part2Vec;
+          float phiM = sumVec.M();
+          if ((phiM > CutPhiInvMassLow) && (phiM < CutPhiInvMassHigh)) {
+            pass = true; // pair comes from Phi meson decay
+          }
+        }
 
         // APPLYING THE CUTS
         if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true; // pair is close
-        } else if ((phiM > CutPhiInvMassLow) && (phiM < CutPhiInvMassHigh)) {
-          pass = true; // pair comes from Phi meson decay
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
             histdetadpisame[i][1]->Fill(deta, dphiAvg);

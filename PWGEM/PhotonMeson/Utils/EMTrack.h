@@ -20,7 +20,7 @@
 class EMTrack
 {
  public:
-  EMTrack(int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge, float dca_3d, std::vector<int> amb_ele_self_ids)
+  EMTrack(int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge, float dcaXY, float dcaZ, float cYY, float cZZ, float cZY, std::vector<int> amb_ele_self_ids)
   {
     fCollisionId = collisionId;
     fTrackId = trackId;
@@ -29,7 +29,12 @@ class EMTrack
     fPhi = phi;
     fMass = mass;
     fCharge = charge;
-    fDCA3D = dca_3d;
+    fDCAxy = dcaXY;
+    fDCAz = dcaZ;
+    fCYY = cYY;
+    fCZZ = cZZ;
+    fCZY = cZY;
+
     fAmbEleSelfIds = amb_ele_self_ids;
     if (fAmbEleSelfIds.size() > 0) {
       fIsAmbiguous = true;
@@ -47,7 +52,11 @@ class EMTrack
   float phi() const { return fPhi; }
   float mass() const { return fMass; }
   int8_t sign() const { return fCharge; }
-  float dca3DinSigma() const { return fDCA3D; }
+  float dcaXY() const { return fDCAxy; }
+  float dcaZ() const { return fDCAz; }
+  float cYY() const { return fCYY; }
+  float cZZ() const { return fCZZ; }
+  float cZY() const { return fCZY; }
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }
@@ -62,7 +71,11 @@ class EMTrack
   float fPhi;
   float fMass;
   int8_t fCharge;
-  float fDCA3D;
+  float fDCAxy;
+  float fDCAz;
+  float fCYY;
+  float fCZZ;
+  float fCZY;
   bool fIsAmbiguous;
   std::vector<int> fAmbEleSelfIds;
 };

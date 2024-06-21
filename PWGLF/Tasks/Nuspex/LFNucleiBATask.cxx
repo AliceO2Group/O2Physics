@@ -56,10 +56,12 @@ struct LFNucleiBATask {
   Configurable<bool> enableTrackingEff{"enableTrackingEff", 0, "Flag to enable tracking efficiency hitos."};
 
   // Set the event selection cuts
-  Configurable<bool> useSel8{"useSel8", true, "Use Sel8 for run3 Event Selection"};
-  Configurable<bool> TVXtrigger{"TVXtrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
-  Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
-  Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border (default w/ Sel8)"};
+  struct : ConfigurableGroup {
+    Configurable<bool> useSel8{"useSel8", true, "Use Sel8 for run3 Event Selection"};
+    Configurable<bool> TVXtrigger{"TVXtrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
+    Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
+    Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border (default w/ Sel8)"};
+  } evselOptions;
 
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
@@ -1704,7 +1706,7 @@ struct LFNucleiBATask {
 
     if constexpr (!IsFilteredData) {
       if (!event.selection_bit(aod::evsel::kIsTriggerTVX)) {
-        if (TVXtrigger)
+        if (evselOptions.TVXtrigger)
           return;
       } else {
         histos.fill(HIST("event/eventSelection"), 1);
@@ -1713,7 +1715,7 @@ struct LFNucleiBATask {
       }
 
       if (!event.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-        if (removeTFBorder)
+        if (evselOptions.removeTFBorder)
           return;
       } else {
         histos.fill(HIST("event/eventSelection"), 2);
@@ -1722,7 +1724,7 @@ struct LFNucleiBATask {
       }
 
       if (!event.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-        if (removeITSROFBorder)
+        if (evselOptions.removeITSROFBorder)
           return;
       } else {
         histos.fill(HIST("event/eventSelection"), 3);
@@ -1736,7 +1738,7 @@ struct LFNucleiBATask {
         histos.fill(HIST("event/eventSelection"), 4);
       }
 
-      if (useSel8 && !event.sel8())
+      if (evselOptions.useSel8 && !event.sel8())
         return;
       histos.fill(HIST("event/eventSelection"), 5);
       if (enableDebug)
@@ -1757,7 +1759,7 @@ struct LFNucleiBATask {
     } else {
       if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
         return;
-      if (removeTFBorder && !event.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (evselOptions.removeTFBorder && !event.selection_bit(aod::evsel::kNoTimeFrameBorder))
         return;
     }
 

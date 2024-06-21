@@ -358,6 +358,18 @@ class HfHelper
     return candidate.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
   }
 
+  template <typename T>
+  auto invMassKPiPairLcToPKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  auto invMassKPiPairLcToPiKP(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng0()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
   // Ξc± → p± K∓ π±
 
   template <typename T>
