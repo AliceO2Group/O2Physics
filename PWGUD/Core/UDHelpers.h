@@ -541,6 +541,108 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
 }
 
 // -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoTimeFrameBorder(T const& coll)
+// Reject collisions close to TF borders due to incomplete TPC drift volume.
+// https://its.cern.ch/jira/browse/O2-4623
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoSameBunchPileup(T const& coll)
+// Rejects collisions which are associated with the same "found-by-T0" bunch crossing.
+// Could be partially due to the pileup with another collision in the same foundBC.
+// See more in slides 12-14 of https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoITSROFrameBorder(T const& coll)
+// Reject events affected by the ITS ROF border.
+// https://its.cern.ch/jira/browse/O2-4309
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsGoodZvtxFT0vsPV(T const& coll)
+// Removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
+// The large vertexZ difference can be due to the in-bunch pileup or wrong BC assigned to a collision.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexITSTPC(T const& coll)
+// Selects collisions with at least one ITS-TPC PV track, and thus rejects vertices built from ITS-only tracks.
+// Has an effect only on the pp data, in Pb-Pb ITS-only vertices are already rejected by default.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexTRDmatched(T const& coll)
+// Selects collisions with at least one TRD PV track.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexTOFmatched(T const& coll)
+// Selects collisions with at least one TOF PV track.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
+// Return true if collision is accepted according to user-chosen rules from event selection task
+{
+  bool accepted = true;
+  std::vector<int> sels = diffCuts.collisionSel();
+  if (sels[0])
+    accepted = accepted && cutNoTimeFrameBorder(coll);
+  if (sels[1])
+    accepted = accepted && cutNoSameBunchPileup(coll);
+  if (sels[2])
+    accepted = accepted && cutNoITSROFrameBorder(coll);
+  if (sels[3])
+    accepted = accepted && cutIsGoodZvtxFT0vsPV(coll);
+  if (sels[4])
+    accepted = accepted && cutIsVertexITSTPC(coll);
+  if (sels[5])
+    accepted = accepted && cutIsVertexTRDmatched(coll);
+  if (sels[6])
+    accepted = accepted && cutIsVertexTOFmatched(coll);
+
+  return accepted;
+}
+
+// -----------------------------------------------------------------------------
 // fill BB and BG information into FITInfo
 template <typename BCR>
 void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& bcrange)
@@ -624,7 +726,7 @@ void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, 
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache& cache)
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& /*lims*/, SliceCache& cache)
 {
   const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex(), cache);
   return (ZdcBC.size() == 0);
@@ -632,7 +734,7 @@ bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims, SliceCache& cache)
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& /*lims*/, SliceCache& cache)
 {
   const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex(), cache);
   return (CaloBC.size() == 0);

@@ -188,6 +188,16 @@ DECLARE_SOA_COLUMN(ZPionRec, zpionrec, float);
 DECLARE_SOA_COLUMN(XPionRecErr, xpionrecerr, float);
 DECLARE_SOA_COLUMN(YPionRecErr, ypionrecerr, float);
 DECLARE_SOA_COLUMN(ZPionRecErr, zpionrecerr, float);
+DECLARE_SOA_COLUMN(XProtonIURec, xprotoniurec, float);
+DECLARE_SOA_COLUMN(YProtonIURec, yprotoniurec, float);
+DECLARE_SOA_COLUMN(ZProtonIURec, zprotoniurec, float);
+DECLARE_SOA_COLUMN(XPionIURec, xpioniurec, float);
+DECLARE_SOA_COLUMN(YPionIURec, ypioniurec, float);
+DECLARE_SOA_COLUMN(ZPionIURec, zpioniurec, float);
+DECLARE_SOA_COLUMN(XBachIURec, xbachiurec, float);
+DECLARE_SOA_COLUMN(YBachIURec, ybachiurec, float);
+DECLARE_SOA_COLUMN(ZBachIURec, zbachiurec, float);
+
 // eta
 DECLARE_SOA_COLUMN(EtaProton, etaproton, float);
 DECLARE_SOA_COLUMN(EtaPion, etapion, float);
@@ -285,6 +295,15 @@ DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
                   kfStrangenessStudy::PxPionRecErr,
                   kfStrangenessStudy::PyPionRecErr,
                   kfStrangenessStudy::PzPionRecErr,
+                  kfStrangenessStudy::XProtonIURec,
+                  kfStrangenessStudy::YProtonIURec,
+                  kfStrangenessStudy::ZProtonIURec,
+                  kfStrangenessStudy::XPionIURec,
+                  kfStrangenessStudy::YPionIURec,
+                  kfStrangenessStudy::ZPionIURec,
+                  kfStrangenessStudy::XBachIURec,
+                  kfStrangenessStudy::YBachIURec,
+                  kfStrangenessStudy::ZBachIURec,
                   kfStrangenessStudy::EtaProton,
                   kfStrangenessStudy::EtaPion,
                   kfStrangenessStudy::TPCNClsProton,
@@ -402,6 +421,15 @@ DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
                   kfStrangenessStudy::XPionRecErr,
                   kfStrangenessStudy::YPionRecErr,
                   kfStrangenessStudy::ZPionRecErr,
+                  kfStrangenessStudy::XProtonIURec,
+                  kfStrangenessStudy::YProtonIURec,
+                  kfStrangenessStudy::ZProtonIURec,
+                  kfStrangenessStudy::XPionIURec,
+                  kfStrangenessStudy::YPionIURec,
+                  kfStrangenessStudy::ZPionIURec,
+                  kfStrangenessStudy::XBachIURec,
+                  kfStrangenessStudy::YBachIURec,
+                  kfStrangenessStudy::ZBachIURec,
                   kfStrangenessStudy::EtaProton,
                   kfStrangenessStudy::EtaPion,
                   kfStrangenessStudy::TPCNClsProton,

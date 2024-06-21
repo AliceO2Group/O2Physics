@@ -14,7 +14,7 @@
 /// \author Valentina Mantovani Sarti, TU München valentina.mantovani-sarti@tum.de
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPHISELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPHISELECTION_H_
@@ -619,8 +619,8 @@ std::array<cutContainerType, 5>
 template <o2::aod::femtouniverseparticle::ParticleType part,
           o2::aod::femtouniverseparticle::ParticleType daugh, typename C,
           typename V, typename T, typename Q>
-void FemtoUniversePhiSelection::fillQA(C const& col, V const& phi, T const& posTrack,
-                                       T const& negTrack, Q const& posPID, Q const& negPID)
+void FemtoUniversePhiSelection::fillQA(C const& /*col*/, V const& /*phi*/, T const& posTrack,
+                                       T const& negTrack, Q const& /*posPID*/, Q const& /*negPID*/)
 {
   if (mHistogramRegistry) {
     TLorentzVector part1Vec;

@@ -13,6 +13,8 @@
 // Analysis task to produce smeared pt,eta,phi for electrons/muons in dilepton analysis
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <CCDB/BasicCCDBManager.h>
+#include <chrono>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -39,16 +41,36 @@ struct ApplySmearing {
   Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
   Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
   Configurable<std::string> fConfigResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
+  Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
+  Configurable<std::string> fConfigEffHistName{"cfgEffHistName", "fhwEffpT", "name of efficiency histogram"};
+  Configurable<bool> fFromCcdb{"cfgFromCcdb", false, "get resolution and efficiency histos from CCDB"};
+  Configurable<std::string> fConfigCcdbPathRes{"cfgCcdbPathRes", "", "path to the ccdb object for resolution"};
+  Configurable<std::string> fConfigCcdbPathEff{"cfgCcdbPahtEff", "", "path to the ccdb object for efficiency"};
+  Configurable<std::string> fConfigCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> fConfigCcdbNoLaterThan{"cfgCcdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   MomentumSmearer smearer;
+  Service<ccdb::BasicCCDBManager> ccdb;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     smearer.setResFileName(TString(fConfigResFileName));
     smearer.setResPtHistName(TString(fConfigResPtHistName));
     smearer.setResEtaHistName(TString(fConfigResEtaHistName));
     smearer.setResPhiPosHistName(TString(fConfigResPhiPosHistName));
     smearer.setResPhiNegHistName(TString(fConfigResPhiNegHistName));
+    smearer.setEffFileName(TString(fConfigEffFileName));
+    smearer.setEffHistName(TString(fConfigEffHistName));
+    if (fFromCcdb) {
+      ccdb->setURL(fConfigCcdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(fConfigCcdbNoLaterThan);
+      smearer.setCcdbPathRes(TString(fConfigCcdbPathRes));
+      smearer.setCcdbPathEff(TString(fConfigCcdbPathEff));
+      smearer.setTimestamp(fConfigCcdbNoLaterThan);
+      smearer.setCcdb(ccdb);
+    }
     smearer.init();
   }
 
@@ -59,6 +81,7 @@ struct ApplySmearing {
       float ptgen = mctrack.pt();
       float etagen = mctrack.eta();
       float phigen = mctrack.phi();
+      float efficiency = 1.;
 
       int pdgCode = mctrack.pdgCode();
       if (abs(pdgCode) == fPdgCode) {
@@ -69,10 +92,12 @@ struct ApplySmearing {
         // apply smearing for electrons or muons.
         float ptsmeared, etasmeared, phismeared;
         smearer.applySmearing(ch, ptgen, etagen, phigen, ptsmeared, etasmeared, phismeared);
-        smearedtrack(ptsmeared, etasmeared, phismeared);
+        // get the efficiency
+        efficiency = smearer.getEfficiency(ptgen, etagen, phigen);
+        smearedtrack(ptsmeared, etasmeared, phismeared, efficiency);
       } else {
         // don't apply smearing
-        smearedtrack(ptgen, etagen, phigen);
+        smearedtrack(ptgen, etagen, phigen, efficiency);
       }
     }
   }
@@ -87,9 +112,9 @@ struct ApplySmearing {
     applySmearing(tracksMC);
   }
 
-  void processDummyCocktail(aod::McParticles const& tracksMC) {}
+  void processDummyCocktail(aod::McParticles const&) {}
 
-  void processDummyMCanalysis(ReducedMCTracks const& tracksMC) {}
+  void processDummyMCanalysis(ReducedMCTracks const&) {}
 
   PROCESS_SWITCH(ApplySmearing, processMCanalysis, "Run for MC analysis", false);
   PROCESS_SWITCH(ApplySmearing, processCocktail, "Run for cocktail analysis", false);
@@ -175,8 +200,8 @@ struct CheckSmearing {
     Check(tracksMC);
   }
 
-  void processDummyMCanalysis(ReducedMCTracks const& tracksMC) {}
-  void processDummyCocktail(aod::McParticles const& tracksMC) {}
+  void processDummyMCanalysis(ReducedMCTracks const&) {}
+  void processDummyCocktail(aod::McParticles const&) {}
 
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysis, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckCocktail, "Run for cocktail analysis", false);

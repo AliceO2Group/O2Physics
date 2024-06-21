@@ -44,6 +44,7 @@ static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
 static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
+static const std::vector<std::string> columnsNames{"fH2", "fH3", o2::aod::filtering::He::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel()};
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
@@ -112,6 +113,7 @@ struct nucleiFilter {
   Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", nNuclei + nHyperNuclei + 1, -0.5, nNuclei + nHyperNuclei + 0.5)};
 
   void init(o2::framework::InitContext&)
   {
@@ -130,13 +132,9 @@ struct nucleiFilter {
       h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {{100, -5, 5, "#it{p} /Z (GeV/#it{c})"}, {200, -10., +10., "n#sigma_{He} (a. u.)"}});
     }
 
-    auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + nHyperNuclei + 1, -0.5, nNuclei + nHyperNuclei + 0.5}}))};
-    scalers->GetXaxis()->SetBinLabel(1, "Processed events");
-    for (uint32_t iS{0}; iS < nucleiNames.size(); ++iS) {
-      scalers->GetXaxis()->SetBinLabel(iS + 2, nucleiNames[iS].data());
-    }
-    for (uint32_t iS{0}; iS < hypernucleiNames.size(); ++iS) {
-      scalers->GetXaxis()->SetBinLabel(iS + nucleiNames.size() + 2, hypernucleiNames[iS].data());
+    hProcessedEvents->GetXaxis()->SetBinLabel(1, "Processed events");
+    for (uint32_t iS{0}; iS < columnsNames.size(); ++iS) {
+      hProcessedEvents->GetXaxis()->SetBinLabel(iS + 2, columnsNames[iS].data());
     }
   }
 
@@ -149,7 +147,7 @@ struct nucleiFilter {
     bool keepEvent[nNuclei + nHyperNuclei]{false};
     //
     qaHists.fill(HIST("fCollZpos"), collision.posZ());
-    qaHists.fill(HIST("fProcessedEvents"), 0);
+    hProcessedEvents->Fill(0);
     //
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       tags(keepEvent[2], keepEvent[3]);
@@ -258,7 +256,7 @@ struct nucleiFilter {
 
     for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei; ++iDecision) {
       if (keepEvent[iDecision]) {
-        qaHists.fill(HIST("fProcessedEvents"), iDecision + 1);
+        hProcessedEvents->Fill(iDecision + 1);
       }
     }
     tags(keepEvent[2], keepEvent[3]);

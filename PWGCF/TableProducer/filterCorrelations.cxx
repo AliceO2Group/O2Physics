@@ -46,6 +46,12 @@ using CFMultiplicity = CFMultiplicities::iterator;
 struct FilterCF {
   Service<o2::framework::O2DatabasePDG> pdg;
 
+  enum TrackSelectionCuts : uint8_t {
+    kTrackSelected = BIT(0),
+    kITS5Clusters = BIT(1),
+    kTPC90CrossedRows = BIT(2)
+  };
+
   // Configuration
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks")
@@ -53,9 +59,10 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for particles")
   O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for particles")
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
-  O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8)")
+  O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8, 9 = sel8 + kNoSameBunchPileup + kIsGoodZvtxFT0vsPV, 10 = sel8 before April, 2024, 11 = sel8 for MC)")
   O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)")
   O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs")
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics)")
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -91,11 +98,44 @@ struct FilterCF {
       return collision.alias_bit(kINT7) && collision.sel7();
     } else if (cfgTrigger == 8) {
       return collision.sel8();
+    } else if (cfgTrigger == 9) { // relevant only for Pb-Pb
+      return collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
+    } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024)
+      return collision.selection_bit(aod::evsel::kIsTriggerTVX);
+    } else if (cfgTrigger == 11) { // sel8 selection for MC
+      return collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
     }
     return false;
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+  template <typename TTrack>
+  uint8_t getTrackType(TTrack& track)
+  {
+    if (cfgTrackSelection == 0) {
+      if (track.isGlobalTrack()) {
+        return 1;
+      } else if (track.isGlobalTrackSDD()) {
+        return 2;
+      }
+      return 0;
+    } else if (cfgTrackSelection == 1) {
+      uint8_t trackType = 0;
+      if (track.isGlobalTrack()) {
+        trackType |= kTrackSelected;
+        if (track.itsNCls() >= 5) {
+          trackType |= kITS5Clusters;
+        }
+        if (track.tpcNClsCrossedRows() >= 90) {
+          trackType |= kTPC90CrossedRows;
+        }
+      }
+      return trackType;
+    }
+    LOGF(fatal, "Invalid setting for cfgTrackSelection: %d", cfgTrackSelection.value);
+    return 0;
+  }
+
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {
     if (cfgVerbosity > 0) {
       LOGF(info, "processData: Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d | Multiplicity: %.1f", tracks.size(), collision.posZ(), collision.flags(), collision.sel7(), collision.multiplicity());
@@ -112,14 +152,7 @@ struct FilterCF {
       outputCollRefs(collision.globalIndex());
 
     for (auto& track : tracks) {
-      uint8_t trackType = 0;
-      if (track.isGlobalTrack()) {
-        trackType = 1;
-      } else if (track.isGlobalTrackSDD()) {
-        trackType = 2;
-      }
-
-      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), trackType);
+      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track));
       if (cfgTransientTables)
         outputTrackRefs(collision.globalIndex(), track.globalIndex());
 
@@ -134,7 +167,7 @@ struct FilterCF {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
-                 soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                  aod::BCsWithTimestamps const&)
   {
     bool* reconstructed = new bool[allParticles.size()];
@@ -218,13 +251,6 @@ struct FilterCF {
       outputMcCollisionLabels(collision.mcCollisionId());
 
       for (auto& track : groupedTracks) {
-        uint8_t trackType = 0;
-        if (track.isGlobalTrack()) {
-          trackType = 1;
-        } else if (track.isGlobalTrackSDD()) {
-          trackType = 2;
-        }
-
         int mcParticleId = track.mcParticleId();
         if (mcParticleId >= 0) {
           mcParticleId = mcParticleLabels[track.mcParticleId()];
@@ -233,7 +259,7 @@ struct FilterCF {
           }
         }
         outputTracks(outputCollisions.lastIndex(),
-                     truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), trackType);
+                     truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track));
         outputTrackLabels(mcParticleId);
 
         yields->Fill(collision.multiplicity(), track.pt(), track.eta());
@@ -256,7 +282,7 @@ struct MultiplicitySelector {
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
   Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     int enabledFunctions = 0;
     if (doprocessRun2V0M) {

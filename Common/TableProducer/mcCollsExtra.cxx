@@ -11,6 +11,19 @@
 //
 // Quick and dirty task to correlate MC <-> data
 //
+
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
+#include "Math/Vector4D.h"
+#include <TFile.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TDatabasePDG.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -31,18 +44,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -76,7 +77,7 @@ struct mcCollisionExtra {
     return idx;
   }
 
-  void processNoCentrality(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
+  void processNoCentrality(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
   {
     int biggestNContribs = -1;
     int bestCollisionIndex = -1;
@@ -88,7 +89,7 @@ struct mcCollisionExtra {
     }
     mcCollsExtra(collisions.size(), bestCollisionIndex, 0.0f);
   }
-  void processWithCentrality(aod::McCollision const& mcCollision, soa::SmallGroups<FullCollisions> const& collisions)
+  void processWithCentrality(aod::McCollision const&, soa::SmallGroups<FullCollisions> const& collisions)
   {
     int biggestNContribs = -1;
     int bestCollisionIndex = -1;
@@ -133,8 +134,8 @@ struct mcCollisionExtra {
       auto mcCollision = collision.mcCollision();
       auto iter = std::find(sortedIndices.begin(), sortedIndices.end(), mcCollision.index());
       if (iter != sortedIndices.end()) {
-        int index = iter - sortedIndices.begin();
-        for (int iMcColl = index + 1; iMcColl < index + 17; iMcColl++) {
+        auto index = std::distance(iter, sortedIndices.begin());
+        for (size_t iMcColl = index + 1; iMcColl < index + 17; iMcColl++) {
           if (iMcColl >= sortedIndices.size())
             continue;
           if (mcCollisionHasPoI[sortedIndices[iMcColl]])

@@ -53,7 +53,7 @@ struct JetMatchingSub {
   {
   }
 
-  void processDummy(JetCollisions const& collisions)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingSub, processDummy, "Dummy process", true);
@@ -79,7 +79,7 @@ struct JetMatchingSub {
       const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, collision.globalIndex());
       const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.globalIndex());
 
-      jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, candidates, tracks, tracksSub, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
+      jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, candidates, tracks, tracks, tracksSub, tracksSub, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
     }
 
     for (auto i = 0; i < jetsBase.size(); ++i) {
@@ -104,13 +104,13 @@ using D0ChargedJetMatching = JetMatchingSub<soa::Join<aod::D0ChargedJets, aod::D
                                             aod::D0ChargedEventWiseSubtractedJetsMatchedToD0ChargedJets,
                                             aod::JTrackD0Subs,
                                             CandidatesD0Data>;
-/*using LcChargedJetMatching = JetMatchingSub<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>,
+using LcChargedJetMatching = JetMatchingSub<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>,
                                             soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>,
                                             aod::LcChargedJetsMatchedToLcChargedEventWiseSubtractedJets,
                                             aod::LcChargedEventWiseSubtractedJetsMatchedToLcChargedJets,
                                             aod::JTrackLcSubs,
                                             CandidatesLcData>;
-using BplusChargedJetMatching = JetMatchingSub<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,
+/*using BplusChargedJetMatching = JetMatchingSub<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,
                                                soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>,
                                                aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets,
                                                aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets,
@@ -123,7 +123,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(adaptAnalysisTask<ChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-sub-ch"}));
   tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatching>(cfgc, TaskName{"jet-matching-sub-d0-ch"}));
-  // tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-sub-lc-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-sub-lc-ch"}));
   // tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatching>(cfgc, TaskName{"jet-matching-sub-bplus-ch"}));
 
   return WorkflowSpec{tasks};

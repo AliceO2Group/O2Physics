@@ -338,11 +338,13 @@ struct DptDptCorrelationsTask {
           /* checking the same track id condition */
           if (track1 == track2) {
             /* exclude autocorrelations */
+            index2++;
             continue;
           }
 
           if constexpr (doptorder) {
             if (track2.pt() >= track1.pt()) {
+              index2++;
               continue;
             }
           }
@@ -771,8 +773,8 @@ struct DptDptCorrelationsTask {
     {
       /* self configure the desired species */
       o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
-      std::vector<std::string> cfgnames = {"pipidsel", "kapidsel", "prpidsel"};
-      std::vector<uint8_t> spids = {2, 3, 4};
+      std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
+      std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
       for (uint i = 0; i < cfgnames.size(); ++i) {
         auto includeIt = [&pidselector, &initContext](int spid, auto name) {
           bool mUseIt = false;

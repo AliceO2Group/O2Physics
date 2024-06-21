@@ -92,7 +92,7 @@ DECLARE_SOA_TABLE(MyTracks, "AOD", "MYTRACK", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterMap, track::ITSChi2NCl,
+                  track::TOFChi2, track::ITSClusterMap, track::ITSChi2NCl, track::ITSClusterSizes,
                   mytrack::MCVx, mytrack::MCVy, mytrack::MCVz,
                   mcparticle::PdgCode, mytrack::IsPhysicalPrimary, mytrack::MotherIds, mytrack::MotherPdgCodes);
 
@@ -170,7 +170,7 @@ struct TreeCreatorElectronML {
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -430,7 +430,7 @@ struct TreeCreatorElectronML {
                   track.tpcChi2NCl(), track.tpcInnerParam(),
                   track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                   track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                  track.itsClusterMap(), track.itsChi2NCl(),
+                  track.tofChi2(), track.itsClusterMap(), track.itsChi2NCl(), track.itsClusterSizes(),
                   mctrack.vx(), mctrack.vy(), mctrack.vz(),
                   pdgCode, mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
         }
@@ -515,7 +515,7 @@ struct TreeCreatorElectronML {
                   track.tpcChi2NCl(), track.tpcInnerParam(),
                   track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                   track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                  track.itsClusterMap(), track.itsChi2NCl(),
+                  track.tofChi2(), track.itsClusterMap(), track.itsChi2NCl(), track.itsClusterSizes(),
                   mctrack.vx(), mctrack.vy(), mctrack.vz(),
                   mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
 
@@ -703,7 +703,7 @@ struct TreeCreatorElectronML {
   } // end of process
   PROCESS_SWITCH(TreeCreatorElectronML, processPair, "produce ML input for pair level", false);
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions) {}
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const&) {}
   PROCESS_SWITCH(TreeCreatorElectronML, processDummy, "process dummy", true);
 };
 

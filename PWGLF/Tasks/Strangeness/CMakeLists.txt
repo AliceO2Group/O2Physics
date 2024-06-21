@@ -78,3 +78,23 @@ o2physics_add_dpl_workflow(hstrangecorrelation
     SOURCES hStrangeCorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sigmaanalysis
+    SOURCES sigmaanalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phik0shortanalysis
+    SOURCES phik0sanalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdapolarization
+    SOURCES lambdapolarization.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strangeness-in-jets
+    SOURCES strangeness_in_jets.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

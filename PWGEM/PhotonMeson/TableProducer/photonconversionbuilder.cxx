@@ -112,6 +112,7 @@ struct PhotonConversionBuilder {
   Configurable<float> max_r_itsmft_ss{"max_r_itsmft_ss", 66.0, "max Rxy for ITS/MFT SS"};
   Configurable<float> max_dcatopv_xy_v0{"max_dcatopv_xy_v0", +1e+10, "max. DCAxy to PV for V0"};
   Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
+  Configurable<bool> reject_v0_on_itsib{"reject_v0_on_itsib", true, "flag to reject v0s on ITSib"};
 
   int mRunNumber;
   float d_bz;
@@ -150,9 +151,10 @@ struct PhotonConversionBuilder {
       {"V0Leg/hDCAxyz", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -50.f, 50.f}, {200, -50.f, +50.f}}}},
       {"V0Leg/hdEdx_Pin", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
       {"V0Leg/hTPCNsigmaEl", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
+      {"V0Leg/hXZ", "track iu x vs. z;z (cm);x (cm)", {HistType::kTH2F, {{200, -100.f, 100.f}, {200, 0.f, 100.f}}}},
     }};
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -269,10 +271,12 @@ struct PhotonConversionBuilder {
         return false;
       }
 
-      auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      bool its_ob_only = hits_ib <= its_ib_Requirement.first;
-      if (!its_ob_only) {
-        return false;
+      if (reject_v0_on_itsib) {
+        auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+        bool its_ob_only = hits_ib <= its_ib_Requirement.first;
+        if (!its_ob_only) {
+          return false;
+        }
       }
 
       if (isITSonlyTrack(track)) {
@@ -595,6 +599,7 @@ struct PhotonConversionBuilder {
       for (auto& leg : {pos, ele}) {
         registry.fill(HIST("V0Leg/hdEdx_Pin"), leg.tpcInnerParam(), leg.tpcSignal());
         registry.fill(HIST("V0Leg/hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
+        registry.fill(HIST("V0Leg/hXZ"), leg.z(), leg.x());
       } // end of leg loop
       registry.fill(HIST("V0Leg/hDCAxyz"), posdcaXY, posdcaZ);
       registry.fill(HIST("V0Leg/hDCAxyz"), eledcaXY, eledcaZ);
@@ -621,7 +626,7 @@ struct PhotonConversionBuilder {
   std::vector<std::pair<int64_t, int64_t>> stored_v0Ids;                     //(pos.globalIndex(), ele.globalIndex())
 
   template <bool isMC, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
-  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const&)
+  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& /*tracks*/, TBCs const&)
   {
     for (auto& collision : collisions) {
       if constexpr (isMC) {

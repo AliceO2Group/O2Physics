@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <CCDB/BasicCCDBManager.h> // megalinter thinks this is a C header...
+#include <bitset>
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -16,13 +18,10 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "DataFormatsFIT/Triggers.h"
 #include "TableHelper.h"
-
 #include "CCDB/CcdbApi.h"
 #include "CommonDataFormat/BunchFilling.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
-#include <bitset>
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,6 +31,14 @@ const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct MultiplicityExtraTable {
   Produces<aod::MultsBC> multBC;
+  Produces<aod::MultNeighs> multNeigh;
+
+  // Allow for downscaling of BC table for less space use in derived data
+  Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
+  Configurable<float> minFT0CforBCTable{"minFT0CforBCTable", 25.0f, "Minimum FT0C amplitude to fill BC table to reduce data"};
+
+  // needed for downscale
+  unsigned int randomSeed = 0;
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -40,8 +47,10 @@ struct MultiplicityExtraTable {
   int newRunNumber = -999;
   int oldRunNumber = -999;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -50,8 +59,13 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void process(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const& ft0s, aod::FDDs const&, aod::Zdcs const&)
+  void processBCs(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&)
   {
+    // downscale if requested to do so
+    if (bcDownscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > bcDownscaleFactor) {
+      return;
+    }
+
     bool Tvx = false;
     bool isFV0OrA = false;
     float multFT0C = 0.f;
@@ -78,15 +92,11 @@ struct MultiplicityExtraTable {
     int localBC = bc.globalBC() % nBCsPerOrbit;
 
     if (newRunNumber != oldRunNumber) {
-      uint64_t ts{};
-      std::map<string, string> metadataRCT, headers;
-      headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
-      ts = atol(headers["SOR"].c_str());
+      auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, newRunNumber);
+      auto ts = soreor.first;
 
       LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
       oldRunNumber = newRunNumber;
-      std::map<std::string, std::string> mapMetadata;
-      std::map<std::string, std::string> mapHeader;
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
     } // new run number
@@ -155,8 +165,43 @@ struct MultiplicityExtraTable {
       multZPC = -999.f;
     }
 
+    if (multFT0C < minFT0CforBCTable) {
+      return; // skip this event
+    }
+
     multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
   }
+
+  void processCollisionNeighbors(aod::Collisions const& collisions)
+  {
+    std::vector<float> timeArray;
+    timeArray.resize(collisions.size(), 1e+3);
+
+    for (const auto& collision : collisions) {
+      timeArray[collision.globalIndex()] = collision.collisionTime();
+    }
+
+    float deltaPrevious = 1e+6, deltaPrePrevious = 1e+6;
+    float deltaNext = 1e+6, deltaNeNext = 1e+6;
+    for (const auto& collision : collisions) {
+      int ii = collision.globalIndex();
+
+      if (ii - 1 >= 0)
+        deltaPrevious = timeArray[ii] - timeArray[ii - 1];
+      if (ii - 2 >= 0)
+        deltaPrePrevious = timeArray[ii] - timeArray[ii - 2];
+      if (ii + 1 < collisions.size())
+        deltaNext = timeArray[ii + 1] - timeArray[ii];
+      if (ii + 2 < collisions.size())
+        deltaNeNext = timeArray[ii + 2] - timeArray[ii];
+
+      multNeigh(deltaPrePrevious, deltaPrevious, deltaNext, deltaNeNext);
+    }
+  }
+
+  // Process switches
+  PROCESS_SWITCH(MultiplicityExtraTable, processBCs, "Produce BC tables", true);
+  PROCESS_SWITCH(MultiplicityExtraTable, processCollisionNeighbors, "Produce neighbor timing tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

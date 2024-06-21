@@ -14,8 +14,18 @@ o2physics_add_dpl_workflow(table-reader
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(table-reader-with-assoc
+                    SOURCES tableReader_withAssoc.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(efficiency
                     SOURCES dqEfficiency.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(efficiency-with-assoc
+                    SOURCES dqEfficiency_withAssoc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
@@ -57,6 +67,11 @@ o2physics_add_dpl_workflow(task-muon-mch-trk-eff
 o2physics_add_dpl_workflow(task-j-psi-hf
                     SOURCES taskJpsiHf.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(correlation
+                    SOURCES dqCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-mch-align-record

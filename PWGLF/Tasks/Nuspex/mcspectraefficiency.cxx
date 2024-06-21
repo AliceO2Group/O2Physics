@@ -107,7 +107,7 @@ struct ReconstructedTask {
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
                soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
-               aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+               aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
     for (auto& track : tracks) {

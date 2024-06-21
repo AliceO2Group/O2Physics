@@ -276,9 +276,9 @@ struct FlattenictyCharged {
 
   void process(CollisionTableData::iterator const& collision,
                TrackTableData const& tracks,
-               soa::Join<aod::BCs, aod::Timestamps> const& bcs,
-               /*aod::MFTTracks const& mfttracks,*/ aod::FT0s const& ft0s,
-               aod::FV0As const& fv0s)
+               soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
+               /*aod::MFTTracks const& mfttracks,*/ aod::FT0s const& /*ft0s*/,
+               aod::FV0As const& /*fv0s*/)
   {
     LOGF(debug, "<FlattenictyCharged> Collision %d", collision.globalIndex());
 
