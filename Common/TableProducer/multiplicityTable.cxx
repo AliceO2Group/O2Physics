@@ -21,12 +21,14 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "TableHelper.h"
-#include "iostream"
+#include "MetadataHelper.h"
 #include "TList.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+MetadataHelper metadataInfo; // Metadata helper
 
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;
@@ -129,6 +131,14 @@ struct MultiplicityTable {
   unsigned int randomSeed = 0;
   void init(InitContext& context)
   {
+    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+      if (metadataInfo.isRun3()) {
+        doprocessRun3.value = true;
+      } else {
+        doprocessRun2.value = false;
+      }
+    }
+
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     if (doprocessRun2 == false && doprocessRun3 == false) {
       LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
@@ -193,6 +203,9 @@ struct MultiplicityTable {
 
     listCalib.setObject(new TList);
   }
+
+  /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
+  void process(aod::BCs const&) {}
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision,
                    Run2Tracks const&,
@@ -386,7 +399,7 @@ struct MultiplicityTable {
             multFV0C = 0.f;
             // using FV0 row index from event selection task
             if (collision.has_foundFV0()) {
-              auto fv0 = collision.foundFV0();
+              const auto& fv0 = collision.foundFV0();
               for (auto amplitude : fv0.amplitude()) {
                 multFV0A += amplitude;
               }
@@ -649,4 +662,9 @@ struct MultiplicityTable {
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<MultiplicityTable>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
+  return WorkflowSpec{adaptAnalysisTask<MultiplicityTable>(cfgc)};
+}
