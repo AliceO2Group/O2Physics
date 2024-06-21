@@ -152,7 +152,8 @@ struct tracked_cascade_properties {
       int clusterSize[7];
       double averageClusterSize(0);
       for (int i = 0; i < 7; i++) {
-        clusterSize[i] = (track.itsClusterSizes() >> (i * 4)) & 0xf;
+        clusterSize[i] = track.itsClsSizeInLayer(i);
+        // clusterSize[i] = (track.itsClusterSizes() >> (i * 4)) & 0xf;
         averageClusterSize += static_cast<double>(clusterSize[i]);
       }
       averageClusterSize = averageClusterSize / static_cast<double>(track.itsNCls());
