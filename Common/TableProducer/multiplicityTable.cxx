@@ -148,7 +148,7 @@ struct MultiplicityTable {
         }
       }
     }
-    // Handle the custom cases
+    // Handle the custom cases.
     if (tEnabled[kMultsExtraMC]) {
       if (enabledTables->get(tableNames[kMultsExtraMC].c_str(), "Enable") == -1) {
         doprocessMC.value = true;
