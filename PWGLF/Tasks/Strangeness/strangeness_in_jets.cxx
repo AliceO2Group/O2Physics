@@ -956,7 +956,7 @@ struct strangeness_in_jets {
     // Cascades
     if (particle_of_interest == option::cascades) {
       for (auto& casc : Cascades) {
-              
+
         auto bach = casc.bachelor_as<FullTracks>();
         auto pos = casc.posTrack_as<FullTracks>();
         auto neg = casc.negTrack_as<FullTracks>();
@@ -971,7 +971,7 @@ struct strangeness_in_jets {
         float deltaEta_ue2 = cascade_dir.Eta() - ue_axis2.Eta();
         float deltaPhi_ue2 = GetDeltaPhi(cascade_dir.Phi(), ue_axis2.Phi());
         float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
-              
+
         // Xi+
         if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
           if (deltaR_jet < Rmax) {
