@@ -68,6 +68,7 @@ struct strangeness_in_jets {
     true};
 
   // Global Parameters
+  Configurable<int> particle_of_interest{"particle_of_interest", 0, "0=v0, 1=cascade, 2=pions"};
   Configurable<float> ptLeadingMin{"ptLeadingMin", 5.0f, "pt leading min"};
   Configurable<float> Rjet{"Rjet", 0.3f, "jet resolution parameter R"};
   Configurable<float> Rmax{"Rmax", 0.3f, "radius of the jet and UE cones"};
@@ -113,6 +114,11 @@ struct strangeness_in_jets {
   Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA bachelor to PV"};
   Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA V0 to PV"};
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Daughters"};
+
+  // List of Particles
+  enum option { vzeros,
+                cascades,
+                pions };
 
   void init(InitContext const&)
   {
@@ -899,188 +905,185 @@ struct strangeness_in_jets {
     // Event multiplicity
     float multiplicity = collision.centFT0M();
 
-    for (auto& v0 : fullV0s) {
+    // Vzeros
+    if (particle_of_interest == option::vzeros) {
+      for (auto& v0 : fullV0s) {
 
-      const auto& pos = v0.posTrack_as<FullTracks>();
-      const auto& neg = v0.negTrack_as<FullTracks>();
+        const auto& pos = v0.posTrack_as<FullTracks>();
+        const auto& neg = v0.negTrack_as<FullTracks>();
+        TVector3 v0dir(v0.px(), v0.py(), v0.pz());
 
-      TVector3 v0dir(v0.px(), v0.py(), v0.pz());
+        float deltaEta_jet = v0dir.Eta() - jet_axis.Eta();
+        float deltaPhi_jet = GetDeltaPhi(v0dir.Phi(), jet_axis.Phi());
+        float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        float deltaEta_ue1 = v0dir.Eta() - ue_axis1.Eta();
+        float deltaPhi_ue1 = GetDeltaPhi(v0dir.Phi(), ue_axis1.Phi());
+        float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        float deltaEta_ue2 = v0dir.Eta() - ue_axis2.Eta();
+        float deltaPhi_ue2 = GetDeltaPhi(v0dir.Phi(), ue_axis2.Phi());
+        float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-      float deltaEta_jet = v0dir.Eta() - jet_axis.Eta();
-      float deltaPhi_jet = GetDeltaPhi(v0dir.Phi(), jet_axis.Phi());
-      float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-
-      float deltaEta_ue1 = v0dir.Eta() - ue_axis1.Eta();
-      float deltaPhi_ue1 = GetDeltaPhi(v0dir.Phi(), ue_axis1.Phi());
-      float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-
-      float deltaEta_ue2 = v0dir.Eta() - ue_axis2.Eta();
-      float deltaPhi_ue2 = GetDeltaPhi(v0dir.Phi(), ue_axis2.Phi());
-      float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
-
-      // K0s
-      if (passedK0ShortSelection(v0, pos, neg)) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
+        // K0s
+        if (passedK0ShortSelection(v0, pos, neg)) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
+          }
         }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
+        // Lambda
+        if (passedLambdaSelection(v0, pos, neg)) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("Lambda_in_jet"), multiplicity, v0.pt(), v0.mLambda());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("Lambda_in_ue"), multiplicity, v0.pt(), v0.mLambda());
+          }
         }
-      }
-
-      // Lambda
-      if (passedLambdaSelection(v0, pos, neg)) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("Lambda_in_jet"), multiplicity, v0.pt(), v0.mLambda());
-        }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("Lambda_in_ue"), multiplicity, v0.pt(), v0.mLambda());
-        }
-      }
-
-      // AntiLambda
-      if (passedAntiLambdaSelection(v0, pos, neg)) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("AntiLambda_in_jet"), multiplicity, v0.pt(), v0.mAntiLambda());
-        }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("AntiLambda_in_ue"), multiplicity, v0.pt(), v0.mAntiLambda());
+        // AntiLambda
+        if (passedAntiLambdaSelection(v0, pos, neg)) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("AntiLambda_in_jet"), multiplicity, v0.pt(), v0.mAntiLambda());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("AntiLambda_in_ue"), multiplicity, v0.pt(), v0.mAntiLambda());
+          }
         }
       }
     }
 
     // Cascades
-    for (auto& casc : Cascades) {
+    if (particle_of_interest == option::cascades) {
+      for (auto& casc : Cascades) {
+              
+        auto bach = casc.bachelor_as<FullTracks>();
+        auto pos = casc.posTrack_as<FullTracks>();
+        auto neg = casc.negTrack_as<FullTracks>();
 
-      auto bach = casc.bachelor_as<FullTracks>();
-      auto pos = casc.posTrack_as<FullTracks>();
-      auto neg = casc.negTrack_as<FullTracks>();
-
-      TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
-
-      float deltaEta_jet = cascade_dir.Eta() - jet_axis.Eta();
-      float deltaPhi_jet = GetDeltaPhi(cascade_dir.Phi(), jet_axis.Phi());
-      float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-      float deltaEta_ue1 = cascade_dir.Eta() - ue_axis1.Eta();
-      float deltaPhi_ue1 = GetDeltaPhi(cascade_dir.Phi(), ue_axis1.Phi());
-      float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-      float deltaEta_ue2 = cascade_dir.Eta() - ue_axis2.Eta();
-      float deltaPhi_ue2 = GetDeltaPhi(cascade_dir.Phi(), ue_axis2.Phi());
-      float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
-
-      // Xi+
-      if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
+        TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
+        float deltaEta_jet = cascade_dir.Eta() - jet_axis.Eta();
+        float deltaPhi_jet = GetDeltaPhi(cascade_dir.Phi(), jet_axis.Phi());
+        float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        float deltaEta_ue1 = cascade_dir.Eta() - ue_axis1.Eta();
+        float deltaPhi_ue1 = GetDeltaPhi(cascade_dir.Phi(), ue_axis1.Phi());
+        float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        float deltaEta_ue2 = cascade_dir.Eta() - ue_axis2.Eta();
+        float deltaPhi_ue2 = GetDeltaPhi(cascade_dir.Phi(), ue_axis2.Phi());
+        float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+              
+        // Xi+
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+          }
         }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+        // Xi-
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
+          }
         }
-      }
-      // Xi-
-      if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
+        // Omega+
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+          }
         }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
-        }
-      }
-
-      // Omega+
-      if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
-        }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
-        }
-      }
-      // Omega-
-      if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
-        }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+        // Omega-
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+          }
         }
       }
     }
 
     // Pions
-    for (auto track : tracks) {
+    if (particle_of_interest == option::pions) {
+      for (auto track : tracks) {
 
-      if (!passedTrackSelectionForPions(track))
-        continue;
+        if (!passedTrackSelectionForPions(track))
+          continue;
 
-      TVector3 track_dir(track.px(), track.py(), track.pz());
-      float deltaEta_jet = track_dir.Eta() - jet_axis.Eta();
-      float deltaPhi_jet = GetDeltaPhi(track_dir.Phi(), jet_axis.Phi());
-      float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-      float deltaEta_ue1 = track_dir.Eta() - ue_axis1.Eta();
-      float deltaPhi_ue1 = GetDeltaPhi(track_dir.Phi(), ue_axis1.Phi());
-      float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-      float deltaEta_ue2 = track_dir.Eta() - ue_axis2.Eta();
-      float deltaPhi_ue2 = GetDeltaPhi(track_dir.Phi(), ue_axis2.Phi());
-      float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+        TVector3 track_dir(track.px(), track.py(), track.pz());
+        float deltaEta_jet = track_dir.Eta() - jet_axis.Eta();
+        float deltaPhi_jet = GetDeltaPhi(track_dir.Phi(), jet_axis.Phi());
+        float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        float deltaEta_ue1 = track_dir.Eta() - ue_axis1.Eta();
+        float deltaPhi_ue1 = GetDeltaPhi(track_dir.Phi(), ue_axis1.Phi());
+        float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        float deltaEta_ue2 = track_dir.Eta() - ue_axis2.Eta();
+        float deltaPhi_ue2 = GetDeltaPhi(track_dir.Phi(), ue_axis2.Phi());
+        float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-      bool isInJet = false;
-      bool isInUe = false;
-      if (deltaR_jet < Rmax)
-        isInJet = true;
-      if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax)
-        isInUe = true;
+        bool isInJet = false;
+        bool isInUe = false;
+        if (deltaR_jet < Rmax)
+          isInJet = true;
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax)
+          isInUe = true;
 
-      if (isHighPurityPion(track) && track.sign() > 0) {
-        if (isInJet)
-          registryData.fill(HIST("piplus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
-        if (isInUe)
-          registryData.fill(HIST("piplus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
-      }
+        if (isHighPurityPion(track) && track.sign() > 0) {
+          if (isInJet)
+            registryData.fill(HIST("piplus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
+          if (isInUe)
+            registryData.fill(HIST("piplus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
+        }
+        if (isHighPurityPion(track) && track.sign() < 0) {
+          if (isInJet)
+            registryData.fill(HIST("piminus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
+          if (isInUe)
+            registryData.fill(HIST("piminus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
+        }
 
-      if (isHighPurityPion(track) && track.sign() < 0) {
-        if (isInJet)
-          registryData.fill(HIST("piminus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
-        if (isInUe)
-          registryData.fill(HIST("piminus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
-      }
+        // DCAxy Selection
+        if (TMath::Abs(track.dcaXY()) > dcaxyMax)
+          continue;
 
-      // DCAxy Selection
-      if (TMath::Abs(track.dcaXY()) > dcaxyMax)
-        continue;
+        // TPC
+        if (isInJet && track.sign() > 0) {
+          registryData.fill(HIST("piplus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
+        }
+        if (isInUe && track.sign() > 0) {
+          registryData.fill(HIST("piplus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
+        }
+        if (isInJet && track.sign() < 0) {
+          registryData.fill(HIST("piminus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
+        }
+        if (isInUe && track.sign() < 0) {
+          registryData.fill(HIST("piminus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
+        }
+        if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
+          continue;
+        if (!track.hasTOF())
+          continue;
 
-      // TPC
-      if (isInJet && track.sign() > 0) {
-        registryData.fill(HIST("piplus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
-      }
-      if (isInUe && track.sign() > 0) {
-        registryData.fill(HIST("piplus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
-      }
-      if (isInJet && track.sign() < 0) {
-        registryData.fill(HIST("piminus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
-      }
-      if (isInUe && track.sign() < 0) {
-        registryData.fill(HIST("piminus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
-      }
-
-      if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
-        continue;
-
-      if (!track.hasTOF())
-        continue;
-
-      // TOF
-      if (isInJet && track.sign() > 0) {
-        registryData.fill(HIST("piplus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
-      }
-      if (isInUe && track.sign() > 0) {
-        registryData.fill(HIST("piplus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
-      }
-      if (isInJet && track.sign() < 0) {
-        registryData.fill(HIST("piminus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
-      }
-      if (isInUe && track.sign() < 0) {
-        registryData.fill(HIST("piminus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
+        // TOF
+        if (isInJet && track.sign() > 0) {
+          registryData.fill(HIST("piplus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
+        }
+        if (isInUe && track.sign() > 0) {
+          registryData.fill(HIST("piplus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
+        }
+        if (isInJet && track.sign() < 0) {
+          registryData.fill(HIST("piminus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
+        }
+        if (isInUe && track.sign() < 0) {
+          registryData.fill(HIST("piminus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
+        }
       }
     }
   }
