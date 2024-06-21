@@ -28,6 +28,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using CollBracket = o2::math_utils::Bracket<int>;
+
 constexpr auto bOffsetMax = 241; // track compatibility can never go beyond 6 mus (ITS)
 
 struct TrackCand {
@@ -56,6 +57,7 @@ class svPoolCreator
     }
     tmap.clear();
     svCandPool.clear();
+    bc2Coll.clear();
   }
 
   void setTimeMargin(float timeMargin) { timeMarginNS = timeMargin; }
@@ -63,6 +65,18 @@ class svPoolCreator
   void setSkipAmbiTracks() { skipAmbiTracks = true; }
   o2::vertexing::DCAFitterN<2>* getFitter() { return &fitter; }
   std::array<std::vector<TrackCand>, 4> getTrackCandPool() { return trackCandPool; }
+
+  template <typename C>
+  void fillBC2Coll(const C& collisions, aod::BCsWithTimestamps const&)
+  {
+    for (unsigned i = 0; i < collisions.size(); i++) {
+      auto collision = collisions.rawIteratorAt(i);
+      if (!collision.has_bc()) {
+        continue;
+      }
+      bc2Coll[collision.template bc_as<aod::BCsWithTimestamps>().globalBC()] = i;
+    }
+  }
 
   template <typename T, typename C>
   void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const&)
@@ -96,17 +110,30 @@ class svPoolCreator
     if (globalBC == -1) {
       return;
     }
+
+    uint64_t firstBC = globalBC < bOffsetMax ? 0 : globalBC - bOffsetMax;
+    uint64_t lastBC = globalBC + bOffsetMax;
+    int firstCollIdx = -1;
+    while (firstBC < lastBC) {
+      if (bc2Coll.find(firstBC) != bc2Coll.end()) {
+        firstCollIdx = bc2Coll[firstBC];
+        break;
+      }
+      firstBC++;
+    }
     // now loop over all the collisions to make the pool
-    for (const auto& collision : collisions) {
+    for (int i = firstCollIdx; i < collisions.size(); i++) {
+      const auto& collision = collisions.rawIteratorAt(i);
       float collTime = collision.collisionTime();
       float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
       uint64_t collBC = collision.template bc_as<aod::BCsWithTimestamps>().globalBC();
       int collIdx = collision.globalIndex();
       int64_t bcOffset = globalBC - (int64_t)collBC;
-      if (std::abs(bcOffset) > bOffsetMax) {
+      if (std::abs(bcOffset) > bOffsetMax && bcOffset < 0) {
+        break;
+      } else if (std::abs(bcOffset) > bOffsetMax && bcOffset > 0) {
         continue;
       }
-      // LOG(info) << "Processing collision with index: " << collIdx << " and bcOffset: " << bcOffset;
 
       float trackTime{0.};
       float trackTimeRes{0.};
@@ -132,7 +159,7 @@ class svPoolCreator
         thresholdTime = 4. * std::sqrt(sigmaTimeRes2);
         thresholdTime += timeMarginNS;
       }
-
+      // LOG(info) << "Threshold time: " << thresholdTime << " isPVContributor: " << trackCand.isPVContributor() << " time margin: " << timeMarginNS;
       if (std::abs(deltaTime) > thresholdTime) {
         continue;
       }
@@ -224,6 +251,7 @@ class svPoolCreator
   float timeMarginNS = 600.;
   bool skipAmbiTracks = false;
   std::unordered_map<int, std::pair<int, int>> tmap;
+  std::unordered_map<uint64_t, int> bc2Coll;
 
   std::array<std::vector<TrackCand>, 4> trackCandPool; // Sorting: dau0 pos, dau0 neg, dau1 pos, dau1 neg
   std::vector<SVCand> svCandPool;                      // index of the two tracks in the track table
