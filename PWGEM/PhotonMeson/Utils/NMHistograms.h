@@ -86,13 +86,13 @@ void fillPairInfo(HistogramRegistry* fRegistry, TCollision const& collision, TDi
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
-      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
+      // std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * diphoton.Phi())), static_cast<float>(std::sin(2 * diphoton.Phi()))};
 
       fRegistry->fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_same_SPQ2FT0M"), diphoton.M(), diphoton.Pt(), RecoDecay::dotProd(u2_gg, q2ft0m));
       fRegistry->fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_same_SPQ2FT0A"), diphoton.M(), diphoton.Pt(), RecoDecay::dotProd(u2_gg, q2ft0a));
       fRegistry->fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_same_SPQ2FT0C"), diphoton.M(), diphoton.Pt(), RecoDecay::dotProd(u2_gg, q2ft0c));
-      fRegistry->fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_same_SPQ2FV0A"), diphoton.M(), diphoton.Pt(), RecoDecay::dotProd(u2_gg, q2fv0a));
+      // fRegistry->fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_same_SPQ2FV0A"), diphoton.M(), diphoton.Pt(), RecoDecay::dotProd(u2_gg, q2fv0a));
     } else { // mix
       fRegistry->fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hMggPt"), diphoton.M(), diphoton.Pt());
     }

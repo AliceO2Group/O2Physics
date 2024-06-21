@@ -55,7 +55,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
-struct phianalysisrun3 {
+struct kaonkaonAnalysisRun3 {
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -66,6 +66,7 @@ struct phianalysisrun3 {
   Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+  Configurable<bool> otherQAplots{"otherQAplots", true, "Other QA plots"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -117,6 +118,13 @@ struct phianalysisrun3 {
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
+    if (otherQAplots) {
+      histos.add("Chi2perclusterITS", "Chi2 / cluster for the ITS track segment", kTH1F, {{50, 0.0f, 50.0f}});
+      histos.add("Chi2perclusterTPC", "Chi2 / cluster for the TPC track segment", kTH1F, {{50, 0.0f, 50.0f}});
+      histos.add("Chi2perclusterTRD", "Chi2 / cluster for the TRD track segment", kTH1F, {{50, 0.0f, 50.0f}});
+      histos.add("Chi2perclusterTOF", "Chi2 / cluster for the TOF track segment", kTH1F, {{50, 0.0f, 50.0f}});
+      histos.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {{100, 0.0f, 100.0f}, {axisPt}});
+    }
     if (!isMC) {
       histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
       histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
@@ -155,11 +163,13 @@ struct phianalysisrun3 {
   double rapidity;
   double genMass, recMass, resolution;
   double mass{0.};
-  double massrotation{0.};
+  double massrotation1{0.};
+  double massrotation2{0.};
   double pT{0.};
   array<float, 3> pvec0;
   array<float, 3> pvec1;
   array<float, 3> pvec1rotation;
+  array<float, 3> pvec2rotation;
 
   template <typename Collision>
   bool eventselection(Collision const& collision, const float& multiplicity)
@@ -250,12 +260,15 @@ struct phianalysisrun3 {
     pvec0 = array{candidate1.px(), candidate1.py(), candidate1.pz()};
     pvec1 = array{candidate2.px(), candidate2.py(), candidate2.pz()};
     pvec1rotation = array{-candidate2.px(), -candidate2.py(), candidate2.pz()};
+    pvec2rotation = array{-candidate1.px(), -candidate1.py(), candidate1.pz()};
     auto arrMom = array{pvec0, pvec1};
-    auto arrMomrotation = array{pvec0, pvec1rotation};
+    auto arrMomrotation1 = array{pvec0, pvec1rotation};
+    auto arrMomrotation2 = array{pvec1, pvec2rotation};
     int track1Sign = candidate1.sign();
     int track2Sign = candidate2.sign();
     mass = RecoDecay::m(arrMom, array{massd1, massd2});
-    massrotation = RecoDecay::m(arrMomrotation, array{massd1, massd2});
+    massrotation1 = RecoDecay::m(arrMomrotation1, array{massd1, massd2});
+    massrotation2 = RecoDecay::m(arrMomrotation2, array{massd1, massd2});
     pT = RecoDecay::pt(array{candidate1.px() + candidate2.px(), candidate1.py() + candidate2.py()});
     rapidity = RecoDecay::y(array{candidate1.px() + candidate2.px(), candidate1.py() + candidate2.py(), candidate1.pz() + candidate2.pz()}, mass);
     if (isEtaAssym && unlike && track1Sign * track2Sign < 0) {
@@ -280,6 +293,19 @@ struct phianalysisrun3 {
       }
     }
 
+    if (otherQAplots) {
+      histos.fill(HIST("Chi2perclusterITS"), candidate1.itsChi2NCl());
+      histos.fill(HIST("Chi2perclusterITS"), candidate2.itsChi2NCl());
+      histos.fill(HIST("Chi2perclusterTPC"), candidate1.tpcChi2NCl());
+      histos.fill(HIST("Chi2perclusterTPC"), candidate2.tpcChi2NCl());
+      histos.fill(HIST("Chi2perclusterTRD"), candidate1.trdChi2());
+      histos.fill(HIST("Chi2perclusterTRD"), candidate2.trdChi2());
+      histos.fill(HIST("Chi2perclusterTOF"), candidate1.tofChi2());
+      histos.fill(HIST("Chi2perclusterTOF"), candidate2.tofChi2());
+      histos.fill(HIST("dE_by_dx_TPC"), candidate1.tpcSignal(), candidate1.pt());
+      histos.fill(HIST("dE_by_dx_TPC"), candidate2.tpcSignal(), candidate2.pt());
+    }
+
     // default filling
     if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign < 0) {
       if (unlike) {
@@ -289,7 +315,8 @@ struct phianalysisrun3 {
         histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, pT, mass);
       }
       if (rotation) {
-        histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, pT, massrotation);
+        histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, pT, massrotation1);
+        histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, pT, massrotation2);
       }
     }
     if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign > 0 && likesign) {
@@ -377,7 +404,7 @@ struct phianalysisrun3 {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3, processSameEvent, "Process Same event", false);
+  PROCESS_SWITCH(kaonkaonAnalysisRun3, processSameEvent, "Process Same event", false);
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
@@ -421,7 +448,7 @@ struct phianalysisrun3 {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3, processMixedEvent, "Process Mixed event", false);
+  PROCESS_SWITCH(kaonkaonAnalysisRun3, processMixedEvent, "Process Mixed event", false);
   void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     histos.fill(HIST("hMC"), 0.5);
@@ -483,7 +510,7 @@ struct phianalysisrun3 {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3, processGen, "Process Generated", false);
+  PROCESS_SWITCH(kaonkaonAnalysisRun3, processGen, "Process Generated", false);
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!collision.has_mcCollision()) {
@@ -572,10 +599,10 @@ struct phianalysisrun3 {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3, processRec, "Process Reconstructed", false);
+  PROCESS_SWITCH(kaonkaonAnalysisRun3, processRec, "Process Reconstructed", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<phianalysisrun3>(cfgc, TaskName{"phianalysisrun3"})};
+    adaptAnalysisTask<kaonkaonAnalysisRun3>(cfgc, TaskName{"kaonkaonAnalysisRun3"})};
 }

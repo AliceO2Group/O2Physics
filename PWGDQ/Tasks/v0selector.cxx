@@ -56,6 +56,29 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, a
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackTPCPID;
 
 struct v0selector {
+
+  // Configurables for curved QT cut
+  //  Gamma cuts
+  Configurable<float> cutAlphaG{"cutAlphaG", 0.4, "cutAlphaG"};
+  Configurable<float> cutQTG{"cutQTG", 0.03, "cutQTG"};
+  Configurable<float> cutAlphaGLow{"cutAlphaGLow", 0.4, "cutAlphaGLow"};
+  Configurable<float> cutAlphaGHigh{"cutAlphaGHigh", 0.8, "cutAlphaGHigh"};
+  Configurable<float> cutQTG2{"cutQTG2", 0.02, "cutQTG2"};
+  // K0S cuts
+  Configurable<float> cutQTK0SLow{"cutQTK0SLow", 0.1075, "cutQTK0SLow"};
+  Configurable<float> cutQTK0SHigh{"cutQTK0SHigh", 0.215, "cutQTK0SHigh"};
+  Configurable<float> cutAPK0SLow{"cutAPK0SLow", 0.199, "cutAPK0SLow"};
+  Configurable<float> cutAPK0SHigh{"cutAPK0SHigh", 0.8, "cutAPK0SHigh"};
+  // Lambda & A-Lambda cuts
+  Configurable<float> cutQTL{"cutQTL", 0.03, "cutQTL"};
+  Configurable<float> cutAlphaLLow{"cutAlphaLLow", 0.35, "cutAlphaLLow"};
+  Configurable<float> cutAlphaLHigh{"cutAlphaLHigh", 0.7, "cutAlphaLHigh"};
+  Configurable<float> cutAlphaALLow{"cutAlphaALow", -0.7, "cutAlphaALow"};
+  Configurable<float> cutAlphaALHigh{"cutAlphaAHigh", -0.35, "cutAlphaAHigh"};
+  Configurable<float> cutAPL1{"cutAPL1", 0.107, "cutAPL1"};
+  Configurable<float> cutAPL2{"cutAPL2", -0.69, "cutAPL2"};
+  Configurable<float> cutAPL3{"cutAPL3", 0.5, "cutAPL3"};
+
   enum { // Reconstructed V0
     kUndef = -1,
     kGamma = 0,
@@ -72,26 +95,6 @@ struct v0selector {
   {
     // float alpha = alphav0(ppos, pneg);
     // float qt = qtarmv0(ppos, pneg);
-
-    // Gamma cuts
-    Configurable<float> cutAlphaG{"cutAlphaG", 0.4, "cutAlphaG"};
-    Configurable<float> cutQTG{"cutQTG", 0.03, "cutQTG"};
-    Configurable<float> cutAlphaGLow{"cutAlphaGLow", 0.4, "cutAlphaGLow"};
-    Configurable<float> cutAlphaGHigh{"cutAlphaGHigh", 0.8, "cutAlphaGHigh"};
-    Configurable<float> cutQTG2{"cutQTG2", 0.02, "cutQTG2"};
-    // K0S cuts
-    Configurable<float> cutQTK0SLow{"cutQTK0SLow", 0.1075, "cutQTK0SLow"};
-    Configurable<float> cutQTK0SHigh{"cutQTK0SHigh", 0.215, "cutQTK0SHigh"};
-    Configurable<float> cutAPK0SLow{"cutAPK0SLow", 0.199, "cutAPK0SLow"};
-    Configurable<float> cutAPK0SHigh{"cutAPK0SHigh", 0.8, "cutAPK0SHigh"};
-    // Lambda & A-Lambda cuts
-    Configurable<float> cutQTL{"cutQTL", 0.03, "cutQTL"};
-    Configurable<float> cutAlphaLLow{"cutAlphaLLow", 0.35, "cutAlphaLLow"};
-    Configurable<float> cutAlphaLHigh{"cutAlphaLHigh", 0.7, "cutAlphaLHigh"};
-    Configurable<float> cutAPL1{"cutAPL1", 0.107, "cutAPL1"};
-    Configurable<float> cutAPL2{"cutAPL2", -0.69, "cutAPL2"};
-    Configurable<float> cutAPL3{"cutAPL3", 0.5, "cutAPL3"};
-
     // // Gamma cuts
     // const float cutAlphaG = 0.4;
     // const float cutQTG = 0.03;
@@ -108,7 +111,6 @@ struct v0selector {
     // const float cutAlphaAL[2] = {-0.7, -0.35};
     // const float cutAPL[3] = {0.107, -0.69, 0.5}; // parameters for curved QT cut
 
-    // Check for Gamma candidates
     if (qt < cutQTG) {
       if ((TMath::Abs(alpha) < cutAlphaG)) {
         return kGamma;
@@ -135,7 +137,7 @@ struct v0selector {
 
     // Check for AntiLambda candidates
     q = cutAPL1 * TMath::Sqrt(TMath::Abs(1 - ((alpha - cutAPL2) * (alpha - cutAPL2)) / (cutAPL3 * cutAPL3)));
-    if ((alpha > cutAlphaLLow) && (alpha < cutAlphaLHigh) && (qt > cutQTL) && (qt < q)) {
+    if ((alpha > cutAlphaALLow) && (alpha < cutAlphaALHigh) && (qt > cutQTL) && (qt < q)) {
       return kAntiLambda;
     }
 

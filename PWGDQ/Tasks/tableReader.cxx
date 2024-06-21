@@ -97,6 +97,9 @@ using MyEventsVtxCovSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::Re
 using MyEventsVtxCovSelectedQvectorExtraWithRefFlow = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsVtxCovSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
+using MyEventsQvectorMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr>;
+using MyEventsQvectorCentrMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
@@ -120,7 +123,9 @@ using MyMftTracks = soa::Join<aod::ReducedMFTs, aod::ReducedMFTsExtra>;
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
 constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector;
+constexpr static uint32_t gkEventFillMapWithQvectorMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect;
+constexpr static uint32_t gkEventFillMapWithQvectorCentrMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkEventFillMapWithCovQvectorExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventQvectorExtra;
 constexpr static uint32_t gkEventFillMapWithCovQvectorExtraWithRefFlow = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventQvectorExtra | VarManager::ObjTypes::ReducedEventRefFlow;
@@ -240,13 +245,28 @@ struct AnalysisEventSelection {
   {
     runEventSelection<gkEventFillMapWithQvector>(event);
   }
+  void processSkimmedQVectorCentr(MyEventsQvectorCentr::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithQvectorCentr>(event);
+  }
+  void processSkimmedQVectorMultExtra(MyEventsQvectorMultExtra::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithQvectorMultExtra>(event);
+  }
+  void processSkimmedQVectorCentrMultExtra(MyEventsQvectorCentrMultExtra::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithQvectorCentrMultExtra>(event);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
-  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVector, "Run event selection on DQ skimmed events with Q vector", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVector, "Run event selection on DQ skimmed events with Q vector from GFW", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentr, "Run event selection on DQ skimmed events with Q vector from CFW", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtra, "Run event selection on DQ skimmed events with Q vector from GFW and MultPV", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentrMultExtra, "Run event selection on DQ skimmed events with Q vector from CFW and MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
   // TODO: Add process functions subscribing to Framework Collision
 };
