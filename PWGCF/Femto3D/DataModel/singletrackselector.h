@@ -117,7 +117,7 @@ DECLARE_SOA_TABLE(SingleCollExtras_v0, "AOD", "SINGLECOLLEXTRA", // Joinable col
                   singletrackselector::IsVertexITSTPC,
                   singletrackselector::HadronicRate);
 
-DECLARE_SOA_TABLE(SingleCollExtras_v1, "AOD", "SINGLECOLLEXTRA", // Joinable collision table with Pile-Up flags
+DECLARE_SOA_TABLE(SingleCollExtras_v1, "AOD", "SINGLECOLLEXTR1", // Joinable collision table with Pile-Up flags
                   evsel::Selection,
                   singletrackselector::HadronicRate,
                   singletrackselector::Occupancy,
