@@ -26,6 +26,15 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
+// #include "Tools/ML/MlResponse.h"
+// #include "Tools/ML/model.h"
+
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
@@ -42,6 +51,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::photon;
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsNgPCM, aod::EMEventsNee>;
 using MyCollision = MyCollisions::iterator;
@@ -52,10 +62,17 @@ using MyV0Photon = MyV0Photons::iterator;
 using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
-using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyPrimaryElectron = MyPrimaryElectrons::iterator;
 
 struct PhotonHBT {
+  // Configurables
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
@@ -81,6 +98,11 @@ struct PhotonHBT {
   std::vector<PairCut> fPairCuts;
 
   std::vector<std::string> fPairNames;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber;
+  float d_bz;
+
   void init(InitContext& context)
   {
     if (context.mOptions.get<bool>("processPCMPCM")) {
@@ -109,6 +131,53 @@ struct PhotonHBT {
 
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputPair.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Pair")));
+
+    mRunNumber = 0;
+    d_bz = 0;
+
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+  }
+
+  template <typename TCollision>
+  void initCCDB(TCollision const& collision)
+  {
+    if (mRunNumber == collision.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      mRunNumber = collision.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = collision.timestamp();
+    o2::parameters::GRPObject* grpo = 0x0;
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery)
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    if (grpo) {
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = collision.runNumber();
   }
 
   template <typename TCuts1, typename TCuts2, typename TCuts3>
@@ -269,6 +338,8 @@ struct PhotonHBT {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
     for (auto& collision : collisions) {
+      initCCDB(collision);
+
       if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;
       }
@@ -305,8 +376,8 @@ struct PhotonHBT {
                 auto ele1 = g1.template negTrack_as<TEMPrimaryElectrons>();
                 auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
                 auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
-                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair1 = std::make_tuple(pos1, ele1, collision.bz());
-                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision.bz());
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair1 = std::make_tuple(pos1, ele1, d_bz);
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, d_bz);
                 if (!IsSelectedPair<pairtype>(pair1, pair2, cut, cut)) {
                   continue;
                 }
@@ -340,14 +411,14 @@ struct PhotonHBT {
                 values_3d[0] = g1.mass();
                 values_3d[1] = g2.mass();
 
-                dca_pos1_3d = pos1.dca3DinSigma();
-                dca_ele1_3d = ele1.dca3DinSigma();
+                dca_pos1_3d = dca3DinSigma(pos1);
+                dca_ele1_3d = dca3DinSigma(ele1);
                 dca_ee1_3d = std::sqrt((dca_pos1_3d * dca_pos1_3d + dca_ele1_3d * dca_ele1_3d) / 2.);
                 values_1d[2] = dca_ee1_3d;
                 values_3d[2] = dca_ee1_3d;
 
-                dca_pos2_3d = pos2.dca3DinSigma();
-                dca_ele2_3d = ele2.dca3DinSigma();
+                dca_pos2_3d = dca3DinSigma(pos2);
+                dca_ele2_3d = dca3DinSigma(ele2);
                 dca_ee2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
                 values_1d[3] = dca_ee2_3d;
                 values_3d[3] = dca_ee2_3d;
@@ -410,7 +481,7 @@ struct PhotonHBT {
                 if constexpr (pairtype == PairType::kPCMDalitzEE) {
                   auto pos_pv = g2.template posTrack_as<TEMPrimaryElectrons>();
                   auto ele_pv = g2.template negTrack_as<TEMPrimaryElectrons>();
-                  std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos_pv, ele_pv, collision.bz());
+                  std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos_pv, ele_pv, d_bz);
                   if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
                     continue;
                   }
@@ -443,8 +514,8 @@ struct PhotonHBT {
                   v2.SetM(g2.mass());
                   values_1d[1] = g2.mass();
                   values_3d[1] = g2.mass();
-                  dca_pos2_3d = pos2.dca3DinSigma();
-                  dca_ele2_3d = ele2.dca3DinSigma();
+                  dca_pos2_3d = dca3DinSigma(pos2);
+                  dca_ele2_3d = dca3DinSigma(ele2);
                   dca_ee2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
                   values_1d[3] = dca_ee2_3d;
                   values_3d[3] = dca_ee2_3d;
@@ -546,7 +617,7 @@ struct PhotonHBT {
               if constexpr (pairtype == PairType::kPCMDalitzEE) {
                 auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
                 auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
-                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision1.bz());
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, d_bz);
                 if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
                   continue;
                 }
@@ -555,8 +626,8 @@ struct PhotonHBT {
                 auto ele1 = g1.template negTrack_as<TEMPrimaryElectrons>();
                 auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
                 auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
-                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair1 = std::make_tuple(pos1, ele1, collision1.bz());
-                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision1.bz());
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair1 = std::make_tuple(pos1, ele1, d_bz);
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, d_bz);
                 if (!IsSelectedPair<pairtype>(pair1, pair2, cut1, cut2)) {
                   continue;
                 }
@@ -581,8 +652,8 @@ struct PhotonHBT {
                 v2.SetM(g2.mass());
                 values_1d[1] = g2.mass();
                 values_3d[1] = g2.mass();
-                dca_pos2_3d = pos2.dca3DinSigma();
-                dca_ele2_3d = ele2.dca3DinSigma();
+                dca_pos2_3d = dca3DinSigma(pos2);
+                dca_ele2_3d = dca3DinSigma(ele2);
                 dca_ee2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
                 values_1d[3] = dca_ee2_3d;
                 values_3d[3] = dca_ee2_3d;
@@ -598,14 +669,14 @@ struct PhotonHBT {
                 values_3d[0] = g1.mass();
                 values_3d[1] = g2.mass();
 
-                dca_pos1_3d = pos1.dca3DinSigma();
-                dca_ele1_3d = ele1.dca3DinSigma();
+                dca_pos1_3d = dca3DinSigma(pos1);
+                dca_ele1_3d = dca3DinSigma(ele1);
                 dca_ee1_3d = std::sqrt((dca_pos1_3d * dca_pos1_3d + dca_ele1_3d * dca_ele1_3d) / 2.);
                 values_1d[2] = dca_ee1_3d;
                 values_3d[2] = dca_ee1_3d;
 
-                dca_pos2_3d = pos2.dca3DinSigma();
-                dca_ele2_3d = ele2.dca3DinSigma();
+                dca_pos2_3d = dca3DinSigma(pos2);
+                dca_ele2_3d = dca3DinSigma(ele2);
                 dca_ee2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
                 values_1d[3] = dca_ee2_3d;
                 values_3d[3] = dca_ee2_3d;

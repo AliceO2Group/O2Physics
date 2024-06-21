@@ -44,6 +44,7 @@ using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, aod::QvectorFT0C
 
 struct CreateEMEvent {
   Produces<o2::aod::EMEvents> event;
+  Produces<o2::aod::EMEventsCov> eventcov;
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   Produces<o2::aod::EMEventsQvec> event_qvec;
@@ -144,37 +145,45 @@ struct CreateEMEvent {
       }
 
       // uint64_t tag = collision.selection_raw();
-      event(collision.globalIndex(), bc.globalBC(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
-            collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(), d_bz, collision.trackOccupancyInTimeRange());
+            collision.numContrib(), collision.trackOccupancyInTimeRange());
 
-      event_mult(collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.multFDDA(), collision.multFDDC(),
-                 collision.multZNA(), collision.multZNC(),
-                 collision.multTPC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
+      eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+
+      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
       if constexpr (eventype == EMEventType::kEvent) {
         event_cent(105.f, 105.f, 105.f, 105.f);
-        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   // 999.f, 999.f,
                    999.f, 999.f, 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   // 999.f, 999.f,
                    999.f, 999.f, 999.f, 999.f);
       } else if constexpr (eventype == EMEventType::kEvent_Cent) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
-        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   // 999.f, 999.f,
                    999.f, 999.f, 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   // 999.f, 999.f,
                    999.f, 999.f, 999.f, 999.f);
       } else if constexpr (eventype == EMEventType::kEvent_Cent_Qvec) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
-        event_qvec(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(),
+        event_qvec(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(),
+                   // collision.qvecFV0ARe(), collision.qvecFV0AIm(),
                    collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   // 999.f, 999.f,
                    999.f, 999.f, 999.f, 999.f); // as of 20240416, only 2nd harmonics is supported.
       } else {
         event_cent(105.f, 105.f, 105.f, 105.f);
-        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   // 999.f, 999.f,
                    999.f, 999.f, 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   // 999.f, 999.f,
                    999.f, 999.f, 999.f, 999.f);
       }
     } // end of collision loop
@@ -223,7 +232,7 @@ struct CreateEMEvent {
 struct AssociatePhotonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
-  Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
+  // Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
 
@@ -233,7 +242,7 @@ struct AssociatePhotonToEMEvent {
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
-  PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  // PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -246,9 +255,9 @@ struct AssociatePhotonToEMEvent {
     if (context.mOptions.get<bool>("processDalitzEE")) {
       doDalitzEE = true;
     }
-    if (context.mOptions.get<bool>("processDalitzMuMu")) {
-      doDalitzMuMu = true;
-    }
+    // if (context.mOptions.get<bool>("processDalitzMuMu")) {
+    //   doDalitzMuMu = true;
+    // }
     if (context.mOptions.get<bool>("processPHOS")) {
       doPHOS = true;
     }
@@ -304,10 +313,10 @@ struct AssociatePhotonToEMEvent {
     fillEventId(collisions, tracks, prmeleventid, perCollision_el);
   }
 
-  void processDalitzMuMu(aod::EMEvents const& collisions, aod::EMPrimaryMuons const& tracks)
-  {
-    fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
-  }
+  // void processDalitzMuMu(aod::EMEvents const& collisions, aod::EMPrimaryMuons const& tracks)
+  // {
+  //   fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
+  // }
 
   void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
   {
@@ -334,7 +343,7 @@ struct AssociatePhotonToEMEvent {
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzEE, "process dalitzee-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzMuMu, "process dalitzmumu-event indexing", false);
+  // PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzMuMu, "process dalitzmumu-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processZeroPadding, "process zero padding.", true);
