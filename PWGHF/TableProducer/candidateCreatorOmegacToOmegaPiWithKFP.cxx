@@ -910,20 +910,20 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfpMc {
       // Omegac matching
       if (matchOmegacMc) {
         // Omegac → pi pi pi p
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, int(kOmegaC0), std::array{int(kPiPlus), int(kKMinus), int(kProton), int(kPiMinus)}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, static_cast<int>(kOmegaC0), std::array{int(kPiPlus), static_cast<int>(kKMinus), int(kProton), int(kPiMinus)}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
           debug = 1;
         }
         if (indexRec > -1) {
           // Omega- → kaon pi p
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, int(kOmegaMinus), std::array{int(kKMinus), int(kProton), int(kPiMinus)}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, static_cast<int>t(kOmegaMinus), std::array{static_cast<int>(kKMinus), static_cast<int>(kProton), static_cast<int>(kPiMinus)}, true, &sign, 2);
           if (indexRec == -1) {
             debug = 2;
           }
           if (indexRec > -1) {
             // Lambda → p pi
-            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, int(kLambda0), std::array{int(kProton), int(kPiMinus)}, true, &sign, 1);
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, static_cast<int>(kLambda0), std::array{static_cast<int>(kProton), static_cast<int>(kPiMinus)}, true, &sign, 1);
             if (indexRec == -1) {
               debug = 3;
             }
@@ -959,17 +959,17 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfpMc {
       origin = RecoDecay::OriginType::None;
       if (matchOmegacMc) {
         //  Omegac → Omega pi
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, int(kOmegaC0), std::array{int(kOmegaMinus), int(kPiPlus)}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, static_cast<int>(kOmegaC0), std::array{static_cast<int>(kOmegaMinus), static_cast<int>(kPiPlus)}, true, &sign)) {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
           etaCharmBaryonGen = particle.eta();
           // Omega -> Lambda kaon
           auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, int(kOmegaMinus), std::array{int(kLambda0), int(kKMinus)}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, static_cast<int>(kOmegaMinus), std::array{static_cast<int>(kLambda0), static_cast<int>(kKMinus)}, true)) {
             debugGenOmega = 1;
             // Lambda -> p pi
             auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, int(kLambda0), std::array{int(kProton), int(kPiMinus)}, true)) {
+            if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, static_cast<int>(kLambda0), std::array{intstatic_cast<int>(kProton), static_cast<int>(kPiMinus)}, true)) {
               debugGenLambda = 1;
               flag = sign * (1 << aod::hf_cand_omegac::DecayType::OmegaczeroToOmegaPi);
             }
