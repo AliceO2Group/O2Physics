@@ -127,8 +127,7 @@ struct lambdak0sflattenicity {
     rKzeroShort.add("hV0CosPAK0s", "hV0CosPAK0s", {HistType::kTH1F, {{100, 0.95f, 1.f, "CosPA"}}});
     rKzeroShort.add("hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
-    rKzeroShort.add("hMassK0sLambdapT", "hMassK0sLambdapT", {HistType::kTH3F, {{K0sMassAxis}, {LambdaMassAxis}, {ptAxis}}});
-    rKzeroShort.add("hMassK0sAntiLambdapT", "hMassK0sAntiLambdapT", {HistType::kTH3F, {{K0sMassAxis}, {LambdaMassAxis}, {ptAxis}}});
+    rKzeroShort.add("hMassK0spT", "hMassK0spT", {HistType::kTH2F, {{K0sMassAxis}, {ptAxis}}});
 
     // Lambda reconstruction
     // Mass
@@ -143,7 +142,7 @@ struct lambdak0sflattenicity {
     rLambda.add("hrapidityLambda", "hrapidityLambda", {HistType::kTH1F, {{40, -2.0f, 2.0f, "y"}}});
     rLambda.add("hctauLambda", "hctauLambda", {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rLambda.add("h2DdecayRadiusLambda", "h2DdecayRadiusLambda", {HistType::kTH1F, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
-    rLambda.add("hMassLambdapT", "hMassLambdapT", {HistType::kTH3F, {{LambdaMassAxis}, {K0sMassAxis}, {ptAxis}}});
+    rLambda.add("hMassLambdapT", "hMassLambdapT", {HistType::kTH2F, {{LambdaMassAxis}, {ptAxis}}});
 
     // AntiLambda reconstruction
     // Mass
@@ -158,7 +157,7 @@ struct lambdak0sflattenicity {
     rAntiLambda.add("hrapidityAntiLambda", "hrapidityAntiLambda", {HistType::kTH1F, {{40, -2.0f, 2.0f, "y"}}});
     rAntiLambda.add("hctauAntiLambda", "hctauAntiLambda", {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rAntiLambda.add("h2DdecayRadiusAntiLambda", "h2DdecayRadiusAntiLambda", {HistType::kTH1F, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
-    rAntiLambda.add("hMassAntiLambdapT", "hMassAntiLambdapT", {HistType::kTH3F, {{AntiLambdaMassAxis}, {K0sMassAxis}, {ptAxis}}});
+    rAntiLambda.add("hMassAntiLambdapT", "hMassAntiLambdapT", {HistType::kTH2F, {{AntiLambdaMassAxis}, {ptAxis}}});
 
     rFlattenicity.add("hEv", "Ev", HistType::kTH1F, {{6, -0.5, 5.5, "index activated detector"}});
     rFlattenicity.add("hFV0amplRing1to4", "FV01to4", HistType::kTH1F, {{4000, -0.5, +49999.5, "FV0 amplitude"}});
@@ -359,7 +358,8 @@ struct lambdak0sflattenicity {
     }
     return flat;
   }
-
+  float pdgmassK0s = 0.497614;
+  float pdgmassLambda = 1.115683;
   // V0A signal and flatenicity calculation
   static constexpr float calib[48] = {1.01697, 1.122, 1.03854, 1.108, 1.11634, 1.14971, 1.19321, 1.06866, 0.954675, 0.952695, 0.969853, 0.957557, 0.989784, 1.01549, 1.02182, 0.976005, 1.01865, 1.06871, 1.06264, 1.02969, 1.07378, 1.06622, 1.15057, 1.0433, 0.83654, 0.847178, 0.890027, 0.920814, 0.888271, 1.04662, 0.8869, 0.856348, 0.863181, 0.906312, 0.902166, 1.00122, 1.03303, 0.887866, 0.892437, 0.906278, 0.884976, 0.864251, 0.917221, 1.10618, 1.04028, 0.893184, 0.915734, 0.892676};
   // calibration T0C
@@ -712,9 +712,6 @@ struct lambdak0sflattenicity {
       float massLambda = v0.mLambda();
       float massAntiLambda = v0.mAntiLambda();
 
-      // float pdgmassK0s = 0.497614;
-      // float pdgmassLambda = 1.115683;
-
       rKzeroShort.fill(HIST("hMassK0s"), massK0s);
       rLambda.fill(HIST("hMassLambda"), massLambda);
       rAntiLambda.fill(HIST("hMassAntiLambda"), massAntiLambda);
@@ -732,15 +729,15 @@ struct lambdak0sflattenicity {
 
       // Cut on dynamic columns for K0s
 
-      if (v0.v0cosPA() >= v0setting_cospaK0s && v0.v0radius() >= v0setting_radiusK0s && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5) {
+      if (v0.v0cosPA() >= v0setting_cospaK0s && v0.v0radius() >= v0setting_radiusK0s && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5 && TMath::Abs(massLambda - pdgmassLambda) > 0.005 && TMath::Abs(massAntiLambda - pdgmassLambda) > 0.005) {
+
         rKzeroShort.fill(HIST("hMassK0sSelected"), massK0s);
         rKzeroShort.fill(HIST("hDCAV0DaughtersK0s"), v0.dcaV0daughters());
         rKzeroShort.fill(HIST("hV0CosPAK0s"), v0.v0cosPA());
         rKzeroShort.fill(HIST("hrapidityK0s"), v0.rapidity(0));
         rKzeroShort.fill(HIST("hctauK0s"), ctauK0s);
         rKzeroShort.fill(HIST("h2DdecayRadiusK0s"), v0.v0radius());
-        rKzeroShort.fill(HIST("hMassK0sLambdapT"), massK0s, massLambda, v0.pt());
-        rKzeroShort.fill(HIST("hMassK0sAntiLambdapT"), massK0s, massAntiLambda, v0.pt());
+        rKzeroShort.fill(HIST("hMassK0spT"), massK0s, v0.pt());
 
         // Filling the PID of the V0 daughters in the region of the K0s peak
         if (0.45 < massK0s && massK0s < 0.55) {
@@ -750,7 +747,7 @@ struct lambdak0sflattenicity {
       }
 
       // Cut on dynamic columns for Lambda
-      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5) {
+      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01) {
 
         rLambda.fill(HIST("hMassLambdaSelected"), massLambda);
         rLambda.fill(HIST("hDCAV0DaughtersLambda"), v0.dcaV0daughters());
@@ -758,7 +755,7 @@ struct lambdak0sflattenicity {
         rLambda.fill(HIST("hrapidityLambda"), v0.rapidity(1));
         rLambda.fill(HIST("hctauLambda"), ctauLambda);
         rLambda.fill(HIST("h2DdecayRadiusLambda"), v0.v0radius());
-        rLambda.fill(HIST("hMassLambdapT"), massLambda, massK0s, v0.pt());
+        rLambda.fill(HIST("hMassLambdapT"), massLambda, v0.pt());
 
         // Filling the PID of the V0 daughters in the region of the Lambda peak
         if (1.015 < massLambda && massLambda < 1.215) {
@@ -768,7 +765,7 @@ struct lambdak0sflattenicity {
       }
 
       // Cut on dynamic columns for AntiLambda
-      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5) {
+      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01) {
 
         rAntiLambda.fill(HIST("hMassAntiLambdaSelected"), massAntiLambda);
         rAntiLambda.fill(HIST("hDCAV0DaughtersAntiLambda"), v0.dcaV0daughters());
@@ -776,7 +773,7 @@ struct lambdak0sflattenicity {
         rAntiLambda.fill(HIST("hrapidityAntiLambda"), v0.rapidity(2));
         rAntiLambda.fill(HIST("hctauAntiLambda"), ctauAntiLambda);
         rAntiLambda.fill(HIST("h2DdecayRadiusAntiLambda"), v0.v0radius());
-        rAntiLambda.fill(HIST("hMassAntiLambdapT"), massAntiLambda, massK0s, v0.pt());
+        rAntiLambda.fill(HIST("hMassAntiLambdapT"), massAntiLambda, v0.pt());
 
         // Filling the PID of the V0 daughters in the region of the AntiLambda peak
         if (1.015 < massAntiLambda && massAntiLambda < 1.215) {
