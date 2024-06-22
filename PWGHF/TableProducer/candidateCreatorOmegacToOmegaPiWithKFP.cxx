@@ -917,7 +917,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfpMc {
         }
         if (indexRec > -1) {
           // Omega- → kaon pi p
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, static_cast<int>t(kOmegaMinus), std::array{static_cast<int>(kKMinus), static_cast<int>(kProton), static_cast<int>(kPiMinus)}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, static_cast<int> t(kOmegaMinus), std::array{static_cast<int>(kKMinus), static_cast<int>(kProton), static_cast<int>(kPiMinus)}, true, &sign, 2);
           if (indexRec == -1) {
             debug = 2;
           }
