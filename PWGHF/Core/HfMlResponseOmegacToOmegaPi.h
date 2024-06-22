@@ -78,9 +78,6 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t {
   xPv = 0,
   yPv,
   zPv,
-  xDecayVtxCharmBaryon,
-  yDecayVtxCharmBaryon,
-  zDecayVtxCharmBaryon,
   xDecayVtxCascade,
   yDecayVtxCascade,
   zDecayVtxCascade,
@@ -167,13 +164,13 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t {
 };
 
 template <typename TypeOutputScore = float>
-class HfMlResponseOmegaCToOmegaPi : public HfMlResponse<TypeOutputScore>
+class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  HfMlResponseOmegaCToOmegaPi() = default;
+  HfMlResponseOmegacToOmegaPi() = default;
   /// Default destructor
-  virtual ~HfMlResponseOmegaCToOmegaPi() = default;
+  virtual ~HfMlResponseOmegacToOmegaPi() = default;
 
   HfHelper hfHelper;
 
@@ -193,9 +190,6 @@ class HfMlResponseOmegaCToOmegaPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_OMEGAC0(xPv);
         CHECK_AND_FILL_VEC_OMEGAC0(yPv);
         CHECK_AND_FILL_VEC_OMEGAC0(zPv);
-        CHECK_AND_FILL_VEC_OMEGAC0(xDecayVtxCharmBaryon);
-        CHECK_AND_FILL_VEC_OMEGAC0(yDecayVtxCharmBaryon);
-        CHECK_AND_FILL_VEC_OMEGAC0(zDecayVtxCharmBaryon);
         CHECK_AND_FILL_VEC_OMEGAC0(xDecayVtxCascade);
         CHECK_AND_FILL_VEC_OMEGAC0(yDecayVtxCascade);
         CHECK_AND_FILL_VEC_OMEGAC0(zDecayVtxCascade);
@@ -317,9 +311,6 @@ class HfMlResponseOmegaCToOmegaPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_OMEGAC0(xPv),
       FILL_MAP_OMEGAC0(yPv),
       FILL_MAP_OMEGAC0(zPv),
-      FILL_MAP_OMEGAC0(xDecayVtxCharmBaryon),
-      FILL_MAP_OMEGAC0(yDecayVtxCharmBaryon),
-      FILL_MAP_OMEGAC0(zDecayVtxCharmBaryon),
       FILL_MAP_OMEGAC0(xDecayVtxCascade),
       FILL_MAP_OMEGAC0(yDecayVtxCascade),
       FILL_MAP_OMEGAC0(zDecayVtxCascade),

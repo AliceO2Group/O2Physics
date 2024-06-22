@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file
+/// \file treeCreatorOmegacToOmegaPiWithKFP.cxx
 /// \brief Writer of the omegac0  to Omega Pi candidates in the form of flat tables to be stored in TTrees.
 ///        In this file are defined and filled the output tables
 ///
-/// \author
+/// \author Yunfan Liu <yunfan.liu@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -38,9 +38,6 @@ DECLARE_SOA_COLUMN(IsEventSelZ, isEventSelZ, bool);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
-DECLARE_SOA_COLUMN(XDecayVtxCharmBaryon, xDecayVtxCharmBaryon, float);
-DECLARE_SOA_COLUMN(YDecayVtxCharmBaryon, yDecayVtxCharmBaryon, float);
-DECLARE_SOA_COLUMN(ZDecayVtxCharmBaryon, zDecayVtxCharmBaryon, float);
 DECLARE_SOA_COLUMN(XDecayVtxCascade, xDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(YDecayVtxCascade, yDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
@@ -205,7 +202,6 @@ DECLARE_SOA_TABLE(HfOmegacEvs, "AOD", "HFOMEGACEV",
                   full::IsEventSel8, full::IsEventSelZ);
 DECLARE_SOA_TABLE(HfOmegacFulls, "AOD", "HFOMEGACFULL",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
-                  full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
                   full::SignDecay,
@@ -239,7 +235,6 @@ DECLARE_SOA_TABLE(HfOmegacFulls, "AOD", "HFOMEGACFULL",
 
 DECLARE_SOA_TABLE(HfOmegacLites, "AOD", "HFOMEGACLITE",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
-                  full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
                   full::SignDecay,
@@ -345,9 +340,6 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
       candidate.zPv(),
       candidate.template collision_as<MyEventTable>().numContrib(),
       candidate.template collision_as<MyEventTable>().chi2(),
-      candidate.xDecayVtxCharmBaryon(),
-      candidate.yDecayVtxCharmBaryon(),
-      candidate.zDecayVtxCharmBaryon(),
       candidate.xDecayVtxCascade(),
       candidate.yDecayVtxCascade(),
       candidate.zDecayVtxCascade(),
@@ -472,9 +464,6 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
         candidate.zPv(),
         candidate.template collision_as<MyEventTable>().numContrib(),
         candidate.template collision_as<MyEventTable>().chi2(),
-        candidate.xDecayVtxCharmBaryon(),
-        candidate.yDecayVtxCharmBaryon(),
-        candidate.zDecayVtxCharmBaryon(),
         candidate.xDecayVtxCascade(),
         candidate.yDecayVtxCascade(),
         candidate.zDecayVtxCascade(),
@@ -674,7 +663,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   }
 
   void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi,
+                       soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi,
                                  aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
@@ -692,7 +681,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processDataFull, "Process KFdata with full information", false);
 
   void processKFDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi, aod::HfOmegaCKF> const& candidates)
+                         soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi, aod::HfOmegacKf> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -709,7 +698,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processKFDataFull, "Process KF data with full information", true);
 
   void processKFDataWithMlFull(MyEventTable const& collisions, MyTrackTable const&,
-                               soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi, aod::HfOmegaCKF,
+                               soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi, aod::HfOmegacKf,
                                          aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
@@ -728,8 +717,8 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
 
   void processMcFull(MyEventTable const& collisions,
                      MyTrackTable const&,
-                     soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi,
-                               aod::HfMlSelOmegacToOmegaPi, aod::HfOmegaCMCRec> const& candidates)
+                     soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi,
+                               aod::HfMlSelOmegacToOmegaPi, aod::HfOmegacMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -748,7 +737,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processMcFull, "Process MC with full information", false);
 
   void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi,
+                       soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi,
                                  aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
@@ -766,7 +755,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processDataLite, "Process data and produce lite table version", false);
 
   void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
-                     soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfOmegaCMCRec> const& candidates)
+                     soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfOmegacMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
