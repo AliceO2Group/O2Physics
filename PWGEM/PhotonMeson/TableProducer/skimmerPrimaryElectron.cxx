@@ -53,7 +53,8 @@ struct skimmerPrimaryElectron {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryElectrons> emprimaryelectrons;
-  Produces<o2::aod::EMEventsBz> events_bz;
+  Produces<aod::EMPrimaryElectronsCov> emprimaryelectronscov;
+  // Produces<o2::aod::EMEventsBz> events_bz;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -260,7 +261,7 @@ struct skimmerPrimaryElectron {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
-    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track) || isElectron_TOFrecovery_lowB(track);
+    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track);
   }
 
   template <typename TTrack>
@@ -289,13 +290,6 @@ struct skimmerPrimaryElectron {
       return false;
     }
     return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
-  }
-
-  template <typename TTrack>
-  bool isElectron_TOFrecovery_lowB(TTrack const& track)
-  {
-    // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T. This is for electron recovery in pion rejection band.
-    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && track.tpcInnerParam() < 0.4; // TOF recovery only at low pin.
   }
 
   template <bool isMC, typename TCollision, typename TTracks>
@@ -331,10 +325,10 @@ struct skimmerPrimaryElectron {
       float pt_recalc = track_par_cov_recalc.getPt();
       float eta_recalc = track_par_cov_recalc.getEta();
       float phi_recalc = track_par_cov_recalc.getPhi();
-      float tgl_recalc = track_par_cov_recalc.getTgl();
-      float cYY_recalc = track_par_cov_recalc.getSigmaY2();
-      float cZZ_recalc = track_par_cov_recalc.getSigmaZ2();
-      float cZY_recalc = track_par_cov_recalc.getSigmaZY();
+      // float tgl_recalc = track_par_cov_recalc.getTgl();
+      // float cYY_recalc = track_par_cov_recalc.getSigmaY2();
+      // float cZZ_recalc = track_par_cov_recalc.getSigmaZ2();
+      // float cZY_recalc = track_par_cov_recalc.getSigmaZY();
 
       // if (collision.globalIndex() != track.collisionId()) {
       //   LOGF(info, "dca_xy: before = %f , after = %f | pT: before = %f , after = %f | cYY : before = %f , after = %f", track.dcaXY(), dcaInfo[0], track.pt(), pt_recalc, track.cYY(), cYY_recalc);
@@ -346,7 +340,26 @@ struct skimmerPrimaryElectron {
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                          track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                         track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), tgl_recalc, cYY_recalc, cZZ_recalc, cZY_recalc);
+                         track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
+                         track_par_cov_recalc.getX(), track_par_cov_recalc.getAlpha(), track_par_cov_recalc.getY(), track_par_cov_recalc.getZ(), track_par_cov_recalc.getSnp(), track_par_cov_recalc.getTgl());
+
+      emprimaryelectronscov(
+        track_par_cov_recalc.getSigmaY2(),
+        track_par_cov_recalc.getSigmaZY(),
+        track_par_cov_recalc.getSigmaZ2(),
+        track_par_cov_recalc.getSigmaSnpY(),
+        track_par_cov_recalc.getSigmaSnpZ(),
+        track_par_cov_recalc.getSigmaSnp2(),
+        track_par_cov_recalc.getSigmaTglY(),
+        track_par_cov_recalc.getSigmaTglZ(),
+        track_par_cov_recalc.getSigmaTglSnp(),
+        track_par_cov_recalc.getSigmaTgl2(),
+        track_par_cov_recalc.getSigma1PtY(),
+        track_par_cov_recalc.getSigma1PtZ(),
+        track_par_cov_recalc.getSigma1PtSnp(),
+        track_par_cov_recalc.getSigma1PtTgl(),
+        track_par_cov_recalc.getSigma1Pt2());
+
       fRegistry.fill(HIST("Track/hTPCdEdx_Pin_after"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta_Pin_after"), track.tpcInnerParam(), track.beta());
       fRegistry.fill(HIST("Track/hTPCNsigmaEl_after"), track.tpcInnerParam(), track.tpcNSigmaEl());
@@ -447,7 +460,7 @@ struct skimmerPrimaryElectron {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      events_bz(d_bz);
+      // events_bz(d_bz);
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
@@ -474,7 +487,7 @@ struct skimmerPrimaryElectron {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      events_bz(d_bz);
+      // events_bz(d_bz);
 
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       std::vector<MyTrack> posTracks_per_coll;
@@ -530,7 +543,7 @@ struct skimmerPrimaryElectron {
       }
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      events_bz(d_bz);
+      // events_bz(d_bz);
 
       auto posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
@@ -559,7 +572,7 @@ struct skimmerPrimaryElectron {
       }
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      events_bz(d_bz);
+      // events_bz(d_bz);
 
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       std::vector<MyTrackMC> posTracks_per_coll;

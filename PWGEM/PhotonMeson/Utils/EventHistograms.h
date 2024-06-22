@@ -126,7 +126,7 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
     std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
     std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
-    std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
+    // std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
     std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
     std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
 
@@ -136,8 +136,8 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yFT0A_CentFT0C"), collision.centFT0C(), collision.q2yft0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xFT0C_CentFT0C"), collision.centFT0C(), collision.q2xft0c());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yFT0C_CentFT0C"), collision.centFT0C(), collision.q2yft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xFV0A_CentFT0C"), collision.centFT0C(), collision.q2xfv0a());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yFV0A_CentFT0C"), collision.centFT0C(), collision.q2yfv0a());
+    // fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xFV0A_CentFT0C"), collision.centFT0C(), collision.q2xfv0a());
+    // fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yFV0A_CentFT0C"), collision.centFT0C(), collision.q2yfv0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xBPos_CentFT0C"), collision.centFT0C(), collision.q2xbpos());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yBPos_CentFT0C"), collision.centFT0C(), collision.q2ybpos());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xBNeg_CentFT0C"), collision.centFT0C(), collision.q2xbneg());
@@ -146,7 +146,7 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2FT0M_CentFT0C"), collision.centFT0C(), collision.ep2ft0m());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2FT0A_CentFT0C"), collision.centFT0C(), collision.ep2ft0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2FT0C_CentFT0C"), collision.centFT0C(), collision.ep2ft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2FV0A_CentFT0C"), collision.centFT0C(), collision.ep2fv0a());
+    // fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2FV0A_CentFT0C"), collision.centFT0C(), collision.ep2fv0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2BPos_CentFT0C"), collision.centFT0C(), collision.ep2bpos());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2BNeg_CentFT0C"), collision.centFT0C(), collision.ep2bneg());
 
@@ -156,8 +156,8 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FT0AQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bneg));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FT0CQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bpos));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FT0CQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FV0AQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FV0AQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bneg));
+    // fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FV0AQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bpos));
+    // fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FV0AQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bneg));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2BPosQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2bpos, q2bneg));
   }
 }

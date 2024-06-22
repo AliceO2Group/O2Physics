@@ -266,7 +266,7 @@ struct BJetTreeCreator {
       double energySV = candSV.e();
 
       if (produceTree) {
-        bjetSVParamsTable(bjetParamsTable.lastIndex(), candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength());
+        bjetSVParamsTable(bjetParamsTable.lastIndex() + 1, candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength());
       }
       svIndices.push_back(bjetSVParamsTable.lastIndex());
 
@@ -336,7 +336,7 @@ struct BJetTreeCreator {
       }
 
       if (produceTree) {
-        bjetTracksParamsTable(bjetParamsTable.lastIndex(), constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, TMath::Abs(constituent.dcaXY()) * sign, TMath::Sqrt(constituent.sigmaDcaXY2()), dcaXYZ * sign, TMath::Sqrt(sigmaDcaXYZ2), constituent.p() / analysisJet.p(), RClosestSV);
+        bjetTracksParamsTable(bjetParamsTable.lastIndex() + 1, constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, TMath::Abs(constituent.dcaXY()) * sign, TMath::Sqrt(constituent.sigmaDcaXY2()), dcaXYZ * sign, TMath::Sqrt(sigmaDcaXYZ2), constituent.p() / analysisJet.p(), RClosestSV);
       }
       trackIndices.push_back(bjetTracksParamsTable.lastIndex());
     }
@@ -381,7 +381,7 @@ struct BJetTreeCreator {
       registry.fill(HIST("h2_nSV_jetpT"), analysisJet.pt(), SVsIndices.size() < 250 ? SVsIndices.size() : 249);
 
       if (produceTree) {
-        bjetConstituentsTable(bjetParamsTable.lastIndex(), tracksIndices, SVsIndices);
+        bjetConstituentsTable(bjetParamsTable.lastIndex() + 1, tracksIndices, SVsIndices);
         bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), tracksIndices.size(), SVsIndices.size(), analysisJet.mass(), 0, analysisJet.r());
       }
     }
@@ -464,7 +464,7 @@ struct BJetTreeCreator {
       }
 
       if (produceTree) {
-        bjetConstituentsTable(bjetParamsTable.lastIndex(), tracksIndices, SVsIndices);
+        bjetConstituentsTable(bjetParamsTable.lastIndex() + 1, tracksIndices, SVsIndices);
         bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), tracksIndices.size(), SVsIndices.size(), analysisJet.mass(), jetFlavor, analysisJet.r());
       }
     }

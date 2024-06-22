@@ -1438,7 +1438,7 @@ struct AnalysisSameEventPairing {
 
           dielectronList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
                          VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
-                         t1.sign() + t2.sign(), twoTrackFilter, 0);
+                         t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
 
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
             dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
@@ -1479,7 +1479,7 @@ struct AnalysisSameEventPairing {
 
           dimuonList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
                      VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
-                     t1.sign() + t2.sign(), twoTrackFilter, 0);
+                     t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
             dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
           }
