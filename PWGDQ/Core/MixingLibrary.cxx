@@ -97,11 +97,11 @@ void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible
     mh->AddMixingVariable(VarManager::kPsi2A, fPsi2A.size(), fPsi2A);
   }
   if (!nameStr.compare("Psi2A4")) {
-    std::vector<float> fPsi2A =  {-8 * TMath::Pi() / 16., -7 * TMath::Pi() / 16., -6 * TMath::Pi() / 16., -5 * TMath::Pi() / 16., -4 * TMath::Pi() / 16., -3 * TMath::Pi() / 16., -2 * TMath::Pi() / 16., -TMath::Pi() / 16., 0.0f, TMath::Pi() / 16., 2 * TMath::Pi() / 16., 3 * TMath::Pi() / 16., 4 * TMath::Pi() / 16., 5 * TMath::Pi() / 16., 6 * TMath::Pi() / 16., 7 * TMath::Pi() / 16., 8 * TMath::Pi() / 16.};
+    std::vector<float> fPsi2A = {-8 * TMath::Pi() / 16., -7 * TMath::Pi() / 16., -6 * TMath::Pi() / 16., -5 * TMath::Pi() / 16., -4 * TMath::Pi() / 16., -3 * TMath::Pi() / 16., -2 * TMath::Pi() / 16., -TMath::Pi() / 16., 0.0f, TMath::Pi() / 16., 2 * TMath::Pi() / 16., 3 * TMath::Pi() / 16., 4 * TMath::Pi() / 16., 5 * TMath::Pi() / 16., 6 * TMath::Pi() / 16., 7 * TMath::Pi() / 16., 8 * TMath::Pi() / 16.};
     mh->AddMixingVariable(VarManager::kPsi2A, fPsi2A.size(), fPsi2A);
   }
   if (!nameStr.compare("Psi2A5")) {
-    std::vector<float> fPsi2A =  {-12 * TMath::Pi() / 24., -11 * TMath::Pi() / 24., -10 * TMath::Pi() / 24., -9 * TMath::Pi() / 24., -8 * TMath::Pi() / 24., -7 * TMath::Pi() / 24., -6 * TMath::Pi() / 24., -5 * TMath::Pi() / 24., -4 * TMath::Pi() / 24., -3 * TMath::Pi() / 24., -2 * TMath::Pi() / 24., -TMath::Pi() / 24., 0.0f, TMath::Pi() / 24., 2 * TMath::Pi() / 24., 3 * TMath::Pi() / 24., 4 * TMath::Pi() / 24., 5 * TMath::Pi() / 24., 6 * TMath::Pi() / 24., 7 * TMath::Pi() / 24., 8 * TMath::Pi() / 24., 9 * TMath::Pi() / 24., 10 * TMath::Pi() / 24., 11 * TMath::Pi() / 24., 12 * TMath::Pi() / 24.};
+    std::vector<float> fPsi2A = {-12 * TMath::Pi() / 24., -11 * TMath::Pi() / 24., -10 * TMath::Pi() / 24., -9 * TMath::Pi() / 24., -8 * TMath::Pi() / 24., -7 * TMath::Pi() / 24., -6 * TMath::Pi() / 24., -5 * TMath::Pi() / 24., -4 * TMath::Pi() / 24., -3 * TMath::Pi() / 24., -2 * TMath::Pi() / 24., -TMath::Pi() / 24., 0.0f, TMath::Pi() / 24., 2 * TMath::Pi() / 24., 3 * TMath::Pi() / 24., 4 * TMath::Pi() / 24., 5 * TMath::Pi() / 24., 6 * TMath::Pi() / 24., 7 * TMath::Pi() / 24., 8 * TMath::Pi() / 24., 9 * TMath::Pi() / 24., 10 * TMath::Pi() / 24., 11 * TMath::Pi() / 24., 12 * TMath::Pi() / 24.};
     mh->AddMixingVariable(VarManager::kPsi2A, fPsi2A.size(), fPsi2A);
   }
   if (!nameStr.compare("Psi2B1")) {
@@ -117,11 +117,11 @@ void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible
     mh->AddMixingVariable(VarManager::kPsi2B, fPsi2B.size(), fPsi2B);
   }
   if (!nameStr.compare("Psi2B4")) {
-    std::vector<float> fPsi2B =  {-8 * TMath::Pi() / 16., -7 * TMath::Pi() / 16., -6 * TMath::Pi() / 16., -5 * TMath::Pi() / 16., -4 * TMath::Pi() / 16., -3 * TMath::Pi() / 16., -2 * TMath::Pi() / 16., -TMath::Pi() / 16., 0.0f, TMath::Pi() / 16., 2 * TMath::Pi() / 16., 3 * TMath::Pi() / 16., 4 * TMath::Pi() / 16., 5 * TMath::Pi() / 16., 6 * TMath::Pi() / 16., 7 * TMath::Pi() / 16., 8 * TMath::Pi() / 16.};
+    std::vector<float> fPsi2B = {-8 * TMath::Pi() / 16., -7 * TMath::Pi() / 16., -6 * TMath::Pi() / 16., -5 * TMath::Pi() / 16., -4 * TMath::Pi() / 16., -3 * TMath::Pi() / 16., -2 * TMath::Pi() / 16., -TMath::Pi() / 16., 0.0f, TMath::Pi() / 16., 2 * TMath::Pi() / 16., 3 * TMath::Pi() / 16., 4 * TMath::Pi() / 16., 5 * TMath::Pi() / 16., 6 * TMath::Pi() / 16., 7 * TMath::Pi() / 16., 8 * TMath::Pi() / 16.};
     mh->AddMixingVariable(VarManager::kPsi2B, fPsi2B.size(), fPsi2B);
   }
   if (!nameStr.compare("Psi2B5")) {
-    std::vector<float> fPsi2B =  {-12 * TMath::Pi() / 24., -11 * TMath::Pi() / 24., -10 * TMath::Pi() / 24., -9 * TMath::Pi() / 24., -8 * TMath::Pi() / 24., -7 * TMath::Pi() / 24., -6 * TMath::Pi() / 24., -5 * TMath::Pi() / 24., -4 * TMath::Pi() / 24., -3 * TMath::Pi() / 24., -2 * TMath::Pi() / 24., -TMath::Pi() / 24., 0.0f, TMath::Pi() / 24., 2 * TMath::Pi() / 24., 3 * TMath::Pi() / 24., 4 * TMath::Pi() / 24., 5 * TMath::Pi() / 24., 6 * TMath::Pi() / 24., 7 * TMath::Pi() / 24., 8 * TMath::Pi() / 24., 9 * TMath::Pi() / 24., 10 * TMath::Pi() / 24., 11 * TMath::Pi() / 24., 12 * TMath::Pi() / 24.};
+    std::vector<float> fPsi2B = {-12 * TMath::Pi() / 24., -11 * TMath::Pi() / 24., -10 * TMath::Pi() / 24., -9 * TMath::Pi() / 24., -8 * TMath::Pi() / 24., -7 * TMath::Pi() / 24., -6 * TMath::Pi() / 24., -5 * TMath::Pi() / 24., -4 * TMath::Pi() / 24., -3 * TMath::Pi() / 24., -2 * TMath::Pi() / 24., -TMath::Pi() / 24., 0.0f, TMath::Pi() / 24., 2 * TMath::Pi() / 24., 3 * TMath::Pi() / 24., 4 * TMath::Pi() / 24., 5 * TMath::Pi() / 24., 6 * TMath::Pi() / 24., 7 * TMath::Pi() / 24., 8 * TMath::Pi() / 24., 9 * TMath::Pi() / 24., 10 * TMath::Pi() / 24., 11 * TMath::Pi() / 24., 12 * TMath::Pi() / 24.};
     mh->AddMixingVariable(VarManager::kPsi2B, fPsi2B.size(), fPsi2B);
   }
   if (!nameStr.compare("Psi2C1")) {
@@ -137,11 +137,11 @@ void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible
     mh->AddMixingVariable(VarManager::kPsi2C, fPsi2C.size(), fPsi2C);
   }
   if (!nameStr.compare("Psi2C4")) {
-    std::vector<float> fPsi2C =  {-8 * TMath::Pi() / 16., -7 * TMath::Pi() / 16., -6 * TMath::Pi() / 16., -5 * TMath::Pi() / 16., -4 * TMath::Pi() / 16., -3 * TMath::Pi() / 16., -2 * TMath::Pi() / 16., -TMath::Pi() / 16., 0.0f, TMath::Pi() / 16., 2 * TMath::Pi() / 16., 3 * TMath::Pi() / 16., 4 * TMath::Pi() / 16., 5 * TMath::Pi() / 16., 6 * TMath::Pi() / 16., 7 * TMath::Pi() / 16., 8 * TMath::Pi() / 16.};
+    std::vector<float> fPsi2C = {-8 * TMath::Pi() / 16., -7 * TMath::Pi() / 16., -6 * TMath::Pi() / 16., -5 * TMath::Pi() / 16., -4 * TMath::Pi() / 16., -3 * TMath::Pi() / 16., -2 * TMath::Pi() / 16., -TMath::Pi() / 16., 0.0f, TMath::Pi() / 16., 2 * TMath::Pi() / 16., 3 * TMath::Pi() / 16., 4 * TMath::Pi() / 16., 5 * TMath::Pi() / 16., 6 * TMath::Pi() / 16., 7 * TMath::Pi() / 16., 8 * TMath::Pi() / 16.};
     mh->AddMixingVariable(VarManager::kPsi2C, fPsi2C.size(), fPsi2C);
   }
   if (!nameStr.compare("Psi2C5")) {
-    std::vector<float> fPsi2C =  {-12 * TMath::Pi() / 24., -11 * TMath::Pi() / 24., -10 * TMath::Pi() / 24., -9 * TMath::Pi() / 24., -8 * TMath::Pi() / 24., -7 * TMath::Pi() / 24., -6 * TMath::Pi() / 24., -5 * TMath::Pi() / 24., -4 * TMath::Pi() / 24., -3 * TMath::Pi() / 24., -2 * TMath::Pi() / 24., -TMath::Pi() / 24., 0.0f, TMath::Pi() / 24., 2 * TMath::Pi() / 24., 3 * TMath::Pi() / 24., 4 * TMath::Pi() / 24., 5 * TMath::Pi() / 24., 6 * TMath::Pi() / 24., 7 * TMath::Pi() / 24., 8 * TMath::Pi() / 24., 9 * TMath::Pi() / 24., 10 * TMath::Pi() / 24., 11 * TMath::Pi() / 24., 12 * TMath::Pi() / 24.};
+    std::vector<float> fPsi2C = {-12 * TMath::Pi() / 24., -11 * TMath::Pi() / 24., -10 * TMath::Pi() / 24., -9 * TMath::Pi() / 24., -8 * TMath::Pi() / 24., -7 * TMath::Pi() / 24., -6 * TMath::Pi() / 24., -5 * TMath::Pi() / 24., -4 * TMath::Pi() / 24., -3 * TMath::Pi() / 24., -2 * TMath::Pi() / 24., -TMath::Pi() / 24., 0.0f, TMath::Pi() / 24., 2 * TMath::Pi() / 24., 3 * TMath::Pi() / 24., 4 * TMath::Pi() / 24., 5 * TMath::Pi() / 24., 6 * TMath::Pi() / 24., 7 * TMath::Pi() / 24., 8 * TMath::Pi() / 24., 9 * TMath::Pi() / 24., 10 * TMath::Pi() / 24., 11 * TMath::Pi() / 24., 12 * TMath::Pi() / 24.};
     mh->AddMixingVariable(VarManager::kPsi2C, fPsi2C.size(), fPsi2C);
   }
 }
