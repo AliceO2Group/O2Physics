@@ -47,7 +47,6 @@
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
-
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
@@ -79,7 +78,6 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
 
-
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -101,7 +99,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
   Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", false, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for Omega"};
   Configurable<bool> kfDoDCAFitterPreMinimCharmBaryon{"kfDoDCAFitterPreMinimCharmBaryon", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for OmegaC0"};
   // hist
-  HistogramRegistry registry{"registry",{}};
+  HistogramRegistry registry{"registry", {}};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -121,7 +119,6 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0)); // filter to use only HF selected collisions
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > static_cast<uint32_t>(0));
 
-  
   Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
   Preslice<MyKfCascTable> KFCascadesPerCollision = aod::cascdata::collisionId;
   Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::collisionId;
@@ -203,8 +200,8 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     mRunNumber = 0;
     bz = 0;
-	
-	// 2-prong vertex fitter to build the omegac vertex
+
+    // 2-prong vertex fitter to build the omegac vertex
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
     df.setMaxDZIni(maxDZIni);
@@ -214,9 +211,8 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
     df.setMaxChi2(maxChi2);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
-
   };
-  
+
   // TrackParCov to KF converter
   // FIXME: could be an utility somewhere else
   // from Carolina Reetz (thank you!)
@@ -294,11 +290,11 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
 
       // set the magnetic field from CCDB
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-	  initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+      initCCDB(bc, mRunNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
       auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
       df.setBz(magneticField);
       KFParticle::SetField(magneticField);
-	  
+
       // loop over cascades reconstructed by cascadebuilder.cxx
       auto thisCollId = collision.globalIndex();
       auto groupedCascades = kfcascades.sliceBy(KFCascadesPerCollision, thisCollId);
@@ -329,9 +325,9 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
         auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
         // kaon <- casc TrackParCov
         auto omegaDauChargedTrackParCov = getTrackParCov(trackOmegaDauCharged);
-		//
+        //
         float massBachelorKaon = o2::constants::physics::MassKaonCharged;
-        float massNegTrack,massPosTrack;
+        float massNegTrack, massPosTrack;
         if (bachCharge < 0) {
           massPosTrack = o2::constants::physics::MassProton;
           massNegTrack = o2::constants::physics::MassPionCharged;
@@ -339,25 +335,25 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
           massPosTrack = o2::constants::physics::MassPionCharged;
           massNegTrack = o2::constants::physics::MassProton;
         }
-		
+
         //__________________________________________
         //*>~<* step 1 : V0 with dca fitter, uses material corrections implicitly
         // This is optional - move close to minima and therefore take material
         if (doDCAfitter) {
-            int nCand = 0;
-            try {
-              nCand = df.process(trackParCovV0Dau0, trackParCovV0Dau1);
-            } catch (...) {
-              LOG(error) << "Exception caught in V0 DCA fitter process call!";
-              continue;
-            }
-            if (nCand == 0) {
-              continue;
-            }
-            // re-acquire from DCA fitter
+          int nCand = 0;
+          try {
+            nCand = df.process(trackParCovV0Dau0, trackParCovV0Dau1);
+          } catch (...) {
+            LOG(error) << "Exception caught in V0 DCA fitter process call!";
+            continue;
+          }
+          if (nCand == 0) {
+            continue;
+          }
+          // re-acquire from DCA fitter
 
-            trackParCovV0Dau0 = df.getTrack(0);
-            trackParCovV0Dau1 = df.getTrack(1);
+          trackParCovV0Dau0 = df.getTrack(0);
+          trackParCovV0Dau1 = df.getTrack(1);
         }
         //__________________________________________
         //*>~<* step 2 : construct V0 with KF
@@ -365,7 +361,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
 
         KFParticle kfpPos = createKFParticleFromTrackParCov(trackParCovV0Dau0, trackParCovV0Dau0.getCharge(), massPosTrack);
         KFParticle kfpNeg = createKFParticleFromTrackParCov(trackParCovV0Dau1, trackParCovV0Dau1.getCharge(), massNegTrack);
-		
+
         const KFParticle* V0Daughters[2] = {&kfpPos, &kfpNeg};
         // construct V0
         KFParticle KFV0;
@@ -382,7 +378,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
         KFV0.GetMass(massLam, sigLam);
         if (TMath::Abs(massLam - MassLambda0) > lambdaMassWindow)
           continue;
-		
+
         if (kfUseV0MassConstraint) {
           KFV0.SetNonlinearMassConstraint(o2::constants::physics::MassLambda);
         }
@@ -403,20 +399,20 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
           //__________________________________________
           //*>~<* step 3 : Cascade with dca fitter
           // OmegaMinus with DCAFitter
-            int nCandCascade = 0;
-            try {
-              nCandCascade = df.process(v0TrackParCov, omegaDauChargedTrackParCov);
-            } catch (...) {
-              LOG(error) << "Exception caught in DCA fitter process call!";
-              continue;
-            }
-            if (nCandCascade == 0)
-              continue;
+          int nCandCascade = 0;
+          try {
+            nCandCascade = df.process(v0TrackParCov, omegaDauChargedTrackParCov);
+          } catch (...) {
+            LOG(error) << "Exception caught in DCA fitter process call!";
+            continue;
+          }
+          if (nCandCascade == 0)
+            continue;
 
-            v0TrackParCov = df.getTrack(0);
-            omegaDauChargedTrackParCov = df.getTrack(1);
+          v0TrackParCov = df.getTrack(0);
+          omegaDauChargedTrackParCov = df.getTrack(1);
         }
-		
+
         //__________________________________________
         //*>~<* step 4 : reconstruc cascade(Omega) with KF
         // create KF particle for V0 and bachelor
@@ -457,7 +453,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
 
         omegaDauChargedTrackParCov = getTrackParCovFromKFP(kfpBachKaon, o2::track::PID::Kaon, bachCharge);
         auto trackCasc = getTrackParCovFromKFP(KFOmega, o2::track::PID::OmegaMinus, bachCharge);
-		
+
         omegaDauChargedTrackParCov.setAbsCharge(1);
         omegaDauChargedTrackParCov.setPID(o2::track::PID::Kaon);
         trackCasc.setAbsCharge(1);
@@ -473,10 +469,10 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
         // pseudorapidity
         double pseudorapKaFromCas = trackOmegaDauCharged.eta();
 
-        // info from KFParticle 
+        // info from KFParticle
         std::array<float, 3> vertexCasc = {KFOmega.GetX(), KFOmega.GetY(), KFOmega.GetZ()};
         std::array<float, 3> pVecCasc = {KFOmega.GetPx(), KFOmega.GetPy(), KFOmega.GetPz()};
-		
+
         std::array<float, 3> pVecPionFromCasc = {casc.pxbach(), casc.pybach(), casc.pzbach()};
 
         //-------------------combining cascade and pion tracks--------------------------
@@ -500,24 +496,24 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
 
           // charm bachelor pion track to be processed with DCAFitter
           o2::track::TrackParCov trackParVarPi = getTrackParCov(trackPion);
-		  //__________________________________________
+          //__________________________________________
           //*>~<* step 5 : OmegaC0 with dca fitter
           // OmegaC0 with DCAFitter
           if (doDCAfitter) {
-              // reconstruct charm baryon with DCAFitter
-              int nVtxFromFitterCharmBaryon = 0;
-              try {
-                nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
-              } catch (...) {
-                LOG(error) << "Exception caught in charm DCA fitter process call!";
-                hFitterStatus->Fill(1);
-                continue;
-              }
-              if (nVtxFromFitterCharmBaryon == 0) {
-                continue;
-              }
-              trackCasc = df.getTrack(0);
-              trackParVarPi = df.getTrack(1);
+            // reconstruct charm baryon with DCAFitter
+            int nVtxFromFitterCharmBaryon = 0;
+            try {
+              nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
+            } catch (...) {
+              LOG(error) << "Exception caught in charm DCA fitter process call!";
+              hFitterStatus->Fill(1);
+              continue;
+            }
+            if (nVtxFromFitterCharmBaryon == 0) {
+              continue;
+            }
+            trackCasc = df.getTrack(0);
+            trackParVarPi = df.getTrack(1);
           }
           hFitterStatus->Fill(0);
 
@@ -548,18 +544,18 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
           // computing info
           std::array<float, 3> pVecCascAsD;
           std::array<float, 3> pVecPionFromCharmBaryon;
-		 
-		  pVecPionFromCharmBaryon[0] =  kfpBachPion.GetPx();
-		  pVecPionFromCharmBaryon[1] =  kfpBachPion.GetPy();
-		  pVecPionFromCharmBaryon[2] =  kfpBachPion.GetPz();
-		  pVecCascAsD[0] =  kfpCasc.GetPx();
-		  pVecCascAsD[1] =  kfpCasc.GetPy();
-		  pVecCascAsD[2] =  kfpCasc.GetPz();
-		  if (doDCAfitter){
-		    df.propagateTracksToVertex();
+
+          pVecPionFromCharmBaryon[0] = kfpBachPion.GetPx();
+          pVecPionFromCharmBaryon[1] = kfpBachPion.GetPy();
+          pVecPionFromCharmBaryon[2] = kfpBachPion.GetPz();
+          pVecCascAsD[0] = kfpCasc.GetPx();
+          pVecCascAsD[1] = kfpCasc.GetPy();
+          pVecCascAsD[2] = kfpCasc.GetPz();
+          if (doDCAfitter) {
+            df.propagateTracksToVertex();
             df.getTrack(0).getPxPyPzGlo(pVecCascAsD);
             df.getTrack(1).getPxPyPzGlo(pVecPionFromCharmBaryon);
-		  }
+          }
 
           float dcaxyV0Dau0 = trackV0Dau0.dcaXY();
           float dcaxyV0Dau1 = trackV0Dau1.dcaXY();
@@ -580,8 +576,8 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
                                                                                                                                                         // KF PVrefit
             kfpVertex.SetXYZ(trackPion.pvRefitX(), trackPion.pvRefitY(), trackPion.pvRefitZ());
             kfpVertex.SetCovarianceMatrix(trackPion.pvRefitSigmaX2(), trackPion.pvRefitSigmaXY(), trackPion.pvRefitSigmaY2(), trackPion.pvRefitSigmaXZ(), trackPion.pvRefitSigmaYZ(), trackPion.pvRefitSigmaZ2());
-            
-			// o2::dataformats::VertexBase Pvtx;
+
+            // o2::dataformats::VertexBase Pvtx;
             primaryVertex.setX(trackPion.pvRefitX());
             primaryVertex.setY(trackPion.pvRefitY());
             primaryVertex.setZ(trackPion.pvRefitZ());
@@ -601,14 +597,14 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
             dcazKaFromCasc = impactParameterKaFromCasc.getZ();
           }
           KFParticle KFPV(kfpVertex);
-		  
-		  pvCoord = {KFPV.GetX(), KFPV.GetY(), KFPV.GetZ()};
-		  std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecPionFromCharmBaryon[0], pVecCascAsD[1] + pVecPionFromCharmBaryon[1], pVecCascAsD[2] + pVecPionFromCharmBaryon[2]};
+
+          pvCoord = {KFPV.GetX(), KFPV.GetY(), KFPV.GetZ()};
+          std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecPionFromCharmBaryon[0], pVecCascAsD[1] + pVecPionFromCharmBaryon[1], pVecCascAsD[2] + pVecPionFromCharmBaryon[2]};
           std::array<float, 3> coordVtxCharmBaryon = {KFOmegaC0.GetX(), KFOmegaC0.GetY(), KFOmegaC0.GetZ()};
           auto covVtxCharmBaryon = KFOmegaC0.CovarianceMatrix();
-		  float covMatrixPV[6];
+          float covMatrixPV[6];
           kfpVertex.GetCovarianceMatrix(covMatrixPV);
-		  
+
           // impact parameters
           o2::dataformats::DCA impactParameterCasc;
           o2::dataformats::DCA impactParameterPiFromCharmBaryon;
@@ -856,8 +852,8 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
                           v0NDF, cascNDF, charmbaryonNDF, v0NDF_m, cascNDF_m,
                           v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdf_m, cascChi2OverNdf_m);
         } // loop over pions
-      } // loop over cascades
-    }   // close loop collisions
+      }   // loop over cascades
+    }     // close loop collisions
 
   } // end of process
   PROCESS_SWITCH(HfCandidateCreatorOmegacToOmegaPiWithKfp, processKfIdxCombinatorics, "Do index combinatorics with KFParticle", true);
