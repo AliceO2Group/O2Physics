@@ -223,7 +223,7 @@ struct HfTaskSingleMuonSource {
   // this muon comes from quarkonium decay
   bool isQuarkoniumDecayMu(const uint8_t& mask)
   {
-    return (isMuon(mask) && TESTBIT(mask, HasQuarkoniumParent) && (!TESTBIT(HasBeautyParent)) && (!TESTBIT(HasCharmParent)));
+    return (isMuon(mask) && TESTBIT(mask, HasQuarkoniumParent) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasCharmParent)));
   }
 
   // this muon comes from transport
