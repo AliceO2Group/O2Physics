@@ -19,10 +19,10 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Utils/utilsAnalysis.h" // findBin function
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h" // findBin function
 
 using namespace o2;
 using namespace o2::aod;
@@ -32,8 +32,8 @@ using namespace o2::analysis;
 struct HfCandidateSelectorXicToXiPiPi {
   Produces<aod::HfSelXicToXiPiPi> hfSelXicToXiPiPiCandidate;
 
-  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
+  Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<float> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_xi_pi_pi::cuts[0], hf_cuts_xic_to_xi_pi_pi::nBinsPt, hf_cuts_xic_to_xi_pi_pi::nCutVars, hf_cuts_xic_to_xi_pi_pi::labelsPt, hf_cuts_xic_to_xi_pi_pi::labelsCutVar}, "Xicplus candidate selection per pT bin"};
@@ -166,9 +166,13 @@ struct HfCandidateSelectorXicToXiPiPi {
   /// \param pidTrackPiLam PID status of trackPiLam (negative daughter of V0 candidate)
   /// \param pidTrackPiXi  PID status of trackPiXi (Bachelor of cascade candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
-  /// \return true if prong1 and prong 2 of Xic candidate pass all selections
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6 = bool>
-  bool selectionPid(const T1& pidTrackPi0, const T2& pidTrackPi1, const T3& pidTrackPr, const T4& pidTrackPiLam, const T5& pidTrackPiXi, const T6& acceptPIDNotApplicable)
+  /// \return true if prongs of Xic candidate pass all selections
+  bool selectionPid(TrackSelectorPID::Status const pidTrackPi0,
+                    TrackSelectorPID::Status const pidTrackPi1,
+                    TrackSelectorPID::Status const pidTrackPr,
+                    TrackSelectorPID::Status const pidTrackPiLam,
+                    TrackSelectorPID::Status const pidTrackPiXi,
+                    bool const acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && (pidTrackPi0 != TrackSelectorPID::Accepted || pidTrackPi1 != TrackSelectorPID::Accepted || pidTrackPr != TrackSelectorPID::Accepted || pidTrackPiLam != TrackSelectorPID::Accepted || pidTrackPiXi != TrackSelectorPID::Accepted)) {
       return false;
@@ -221,11 +225,12 @@ struct HfCandidateSelectorXicToXiPiPi {
           trackPiFromLam = trackV0PosDau;
         }
         // PID info
-        int pidTrackPi0 = selectorPion.statusTpcAndTof(trackPi0);
-        int pidTrackPi1 = selectorPion.statusTpcAndTof(trackPi1);
-        int pidTrackPr = selectorProton.statusTpcAndTof(trackPr);
-        int pidTrackPiLam = selectorPion.statusTpcAndTof(trackPiFromLam);
-        int pidTrackPiXi = selectorPion.statusTpcAndTof(trackPiFromXi);
+        TrackSelectorPID::Status pidTrackPi0 = selectorPion.statusTpcAndTof(trackPi0);
+        TrackSelectorPID::Status pidTrackPi1 = selectorPion.statusTpcAndTof(trackPi1);
+        TrackSelectorPID::Status pidTrackPr = selectorProton.statusTpcAndTof(trackPr);
+        TrackSelectorPID::Status pidTrackPiLam = selectorPion.statusTpcAndTof(trackPiFromLam);
+        TrackSelectorPID::Status pidTrackPiXi = selectorPion.statusTpcAndTof(trackPiFromXi);
+
         if (!selectionPid(pidTrackPi0, pidTrackPi1, pidTrackPr, pidTrackPiLam, pidTrackPiXi, acceptPIDNotApplicable.value)) {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
           continue;
