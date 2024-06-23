@@ -135,7 +135,7 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::CpaXYXi,
                   full::CpaLam,
                   full::CpaXYLam,
-                  hf_cand_xictoxipipi::FlagMcMatchRec);
+                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicLiteKfs, "AOD", "HFCANDXICLITEKF",
                   full::XiId,
@@ -177,7 +177,7 @@ DECLARE_SOA_TABLE(HfCandXicLiteKfs, "AOD", "HFCANDXICLITEKF",
                   full::DcaPi0Pi1,
                   full::DcaPi0Xi,
                   full::DcaPi1Xi,
-                  hf_cand_xictoxipipi::FlagMcMatchRec);
+                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::XiId,
@@ -234,7 +234,7 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::CpaXYLam,
                   full::InvMassXiPi0,
                   full::InvMassXiPi1,
-                  hf_cand_xictoxipipi::FlagMcMatchRec);
+                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicFullKfs, "AOD", "HFCANDXICFULLKF",
                   full::XiId,
@@ -296,16 +296,14 @@ DECLARE_SOA_TABLE(HfCandXicFullKfs, "AOD", "HFCANDXICFULLKF",
                   full::DcaPi0Pi1,
                   full::DcaPi0Xi,
                   full::DcaPi1Xi,
-                  hf_cand_xictoxipipi::FlagMcMatchRec);
+                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
-                  collision::PosZ,
-                  full::IsEventReject,
-                  full::RunNumber);
+                  collision::PosZ);
 
 DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
                   collision::BCId,
@@ -313,7 +311,7 @@ DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_xictoxipipi::FlagMcMatchGen);
+                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -341,26 +339,24 @@ struct HfTreeCreatorXicToXiPiPi {
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != int8_t(0);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == int8_t(0);
-  Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != int8_t(0);
-  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == int8_t(0);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != int8_t(0);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == int8_t(0);
+  Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != int8_t(0);
+  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == int8_t(0);
 
   void init(InitContext const&)
   {
   }
 
   template <typename T>
-  void fillEvent(const T& collision, int isEventReject, int runNumber)
+  void fillEvent(const T& collision)
   {
     rowCandidateFullEvents(
       collision.bcId(),
       collision.numContrib(),
       collision.posX(),
       collision.posY(),
-      collision.posZ(),
-      isEventReject, //! filled with 0
-      runNumber);    //! filled with 1
+      collision.posZ());
   }
 
   template <bool doMc = false, bool noKf = true, typename T>
@@ -582,7 +578,7 @@ struct HfTreeCreatorXicToXiPiPi {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, 0, 1);
+      fillEvent(collision);
     }
 
     // Filling candidate properties
@@ -610,7 +606,7 @@ struct HfTreeCreatorXicToXiPiPi {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, 0, 1);
+      fillEvent(collision);
     }
 
     // Filling candidate properties
@@ -640,7 +636,7 @@ struct HfTreeCreatorXicToXiPiPi {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, 0, 1);
+      fillEvent(collision);
     }
 
     // Filling candidate properties
@@ -680,7 +676,7 @@ struct HfTreeCreatorXicToXiPiPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
@@ -702,7 +698,7 @@ struct HfTreeCreatorXicToXiPiPi {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, 0, 1);
+      fillEvent(collision);
     }
 
     // Filling candidate properties
@@ -742,7 +738,7 @@ struct HfTreeCreatorXicToXiPiPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),

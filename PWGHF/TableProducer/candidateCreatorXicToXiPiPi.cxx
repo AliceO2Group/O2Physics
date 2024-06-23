@@ -30,11 +30,12 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -44,12 +45,12 @@
 
 using namespace o2;
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_xictoxipipi;
+using namespace o2::aod::hf_cand_xic_to_xi_pi_pi;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
-struct HfCandidateCreatorXic {
+struct HfCandidateCreatorXicToXiPiPi {
   Produces<aod::HfCandXicBase> rowCandidateBase;
   Produces<aod::HfCandXicKF> rowCandidateKF;
 
@@ -81,8 +82,7 @@ struct HfCandidateCreatorXic {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
-  double massXiMinusFromPdg = MassXiMinus;
-  double massPionFromPdg = MassPiPlus;
+  o2::vertexing::DCAFitterN<3> df;
 
   int runNumber{0};
   float massXiPiPi{0.};
@@ -95,47 +95,45 @@ struct HfCandidateCreatorXic {
   using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
   using KFCascFull = soa::Join<aod::KFCascDatas, aod::KFCascCovs>;
 
-  OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#Xi #pi #pi) (GeV/#it{c}^{2});entries", 500, 2.3, 2.7)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH1F> hCovPVYY{TH1F("hCovPVYY", "3-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVYY{TH1F("hCovSVYY", "3-prong candidates;YY element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH1F> hCovPVXZ{TH1F("hCovPVXZ", "3-prong candidates;XZ element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, -1.e-4, 1.e-4)};
-  OutputObj<TH1F> hCovSVXZ{TH1F("hCovSVXZ", "3-prong candidates;XZ element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, -1.e-4, 0.2)};
-  OutputObj<TH1F> hCovPVZZ{TH1F("hCovPVZZ", "3-prong candidates;ZZ element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVZZ{TH1F("hCovSVZZ", "3-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
-  OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
-  OutputObj<TH1F> hVertexerType{TH1F("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", 2, -0.5, 1.5)}; // See o2::aod::hf_cand::VertexerType
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
+    // add histograms to registry
+    if (fillHistograms) {
+      registry.add("hMass3", "3-prong candidates;inv. mass (#Xi #pi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2.3, 2.7}}});
+      registry.add("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 1.e-4}}});
+      registry.add("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 0.2}}});
+      registry.add("hCovPVYY", "3-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 1.e-4}}});
+      registry.add("hCovSVYY", "3-prong candidates;YY element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 0.2}}});
+      registry.add("hCovPVXZ", "3-prong candidates;XZ element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, -1.e-4, 1.e-4}}});
+      registry.add("hCovSVXZ", "3-prong candidates;XZ element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, -1.e-4, 0.2}}});
+      registry.add("hCovPVZZ", "3-prong candidates;ZZ element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 1.e-4}}});
+      registry.add("hCovSVZZ", "3-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 0.2}}});
+      registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
+      registry.add("hDcaXYProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2D, {{100, 0., 20.}, {200, -500., 500.}}});
+      registry.add("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2D, {{100, 0., 20.}, {200, -500., 500.}}});
+    }
+
+    // initialize CCDB
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
 
-    if ((doprocessXicplusWithDcaFitter + doprocessXicplusWithKFParticleFromDerivedData) != 1) {
+    // fill hVertexerType histogram
+    if ((doprocessXicPlusWithDcaFitter + doprocessXicPlusWithKFParticleFromDerivedData) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
-    if ((doprocessXicplusWithDcaFitter == 1) && fillHistograms) {
-      hVertexerType->Fill(aod::hf_cand::VertexerType::DCAFitter);
+    if ((doprocessXicPlusWithDcaFitter == 1) && fillHistograms) {
+      registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
     }
-    if ((doprocessXicplusWithKFParticleFromDerivedData == 1) && fillHistograms) {
-      hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
+    if ((doprocessXicPlusWithKFParticleFromDerivedData == 1) && fillHistograms) {
+      registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::KfParticle);
     }
-  }
 
-  void processXicplusWithDcaFitter(aod::Collisions const&,
-                                   aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
-                                   CascadesLinked const&,
-                                   CascFull const&,
-                                   aod::TracksWCovDca const&,
-                                   aod::BCsWithTimestamps const&)
-  {
     // initialize 3-prong vertex fitter
-    o2::vertexing::DCAFitterN<3> df;
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
     df.setMaxDZIni(maxDZIni);
@@ -143,7 +141,15 @@ struct HfCandidateCreatorXic {
     df.setMinRelChi2Change(minRelChi2Change);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
+  }
 
+  void processXicPlusWithDcaFitter(aod::Collisions const&,
+                                   aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
+                                   CascadesLinked const&,
+                                   CascFull const&,
+                                   aod::TracksWCovDca const&,
+                                   aod::BCsWithTimestamps const&)
+  {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexXicPlus : rowsTrackIndexXicPlus) {
       auto cascAodElement = rowTrackIndexXicPlus.cascade_as<CascadesLinked>();
@@ -160,7 +166,7 @@ struct HfCandidateCreatorXic {
         if (std::abs(casc.dcaXYCascToPV()) > dcaXYToPVCascadeMax) {
           continue;
         }
-        if (std::abs(casc.mXi() - massXiMinusFromPdg) > massToleranceCascade) {
+        if (std::abs(casc.mXi() - MassXiMinus) > massToleranceCascade) {
           continue;
         }
       }
@@ -224,9 +230,9 @@ struct HfCandidateCreatorXic {
       auto covMatrixSV = df.calcPCACovMatrixFlat();
 
       // get track momenta
+      trackCasc = df.getTrack(0);
       trackParCovCharmBachelor0 = df.getTrack(1);
       trackParCovCharmBachelor1 = df.getTrack(2);
-      trackCasc = df.getTrack(2);
       std::array<float, 3> pVecXi;
       std::array<float, 3> pVecPi0;
       std::array<float, 3> pVecPi1;
@@ -236,7 +242,7 @@ struct HfCandidateCreatorXic {
 
       // get invariant mass of Xic candidate
       auto arrayMomenta = std::array{pVecXi, pVecPi0, pVecPi1};
-      massXiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{massXiMinusFromPdg, massPionFromPdg, massPionFromPdg});
+      massXiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{MassXiMinus, MassPiPlus, MassPiPlus});
 
       // get track impact parameters
       // This modifies track momenta!
@@ -259,9 +265,9 @@ struct HfCandidateCreatorXic {
 
       // get invariant mass of Xi-pi pairs
       auto arrayMomentaXiPi0 = std::array{pVecXi, pVecPi0};
-      massXiPi0 = RecoDecay::m(std::move(arrayMomentaXiPi0), std::array{massXiMinusFromPdg, massPionFromPdg});
+      massXiPi0 = RecoDecay::m(std::move(arrayMomentaXiPi0), std::array{MassXiMinus, MassPiPlus});
       auto arrayMomentaXiPi1 = std::array{pVecXi, pVecPi1};
-      massXiPi1 = RecoDecay::m(std::move(arrayMomentaXiPi1), std::array{massXiMinusFromPdg, massPionFromPdg});
+      massXiPi1 = RecoDecay::m(std::move(arrayMomentaXiPi1), std::array{MassXiMinus, MassPiPlus});
 
       // get uncertainty of the decay length
       double phi, theta;
@@ -272,24 +278,24 @@ struct HfCandidateCreatorXic {
       //--------------------------------------------fill histograms----------------------------------------------------------------
       if (fillHistograms) {
         // invariant mass
-        hMass3->Fill(massXiPiPi);
+        registry.fill(HIST("hMass3"), massXiPiPi);
         // covariance matrix elements of PV
-        hCovPVXX->Fill(covMatrixPV[0]);
-        hCovPVYY->Fill(covMatrixPV[2]);
-        hCovPVXZ->Fill(covMatrixPV[3]);
-        hCovPVZZ->Fill(covMatrixPV[5]);
+        registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
+        registry.fill(HIST("hCovPVYY"), covMatrixPV[2]);
+        registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
+        registry.fill(HIST("hCovPVZZ"), covMatrixPV[5]);
         // covariance matrix elements of SV
-        hCovSVXX->Fill(covMatrixSV[0]);
-        hCovSVYY->Fill(covMatrixSV[2]);
-        hCovSVXZ->Fill(covMatrixSV[3]);
-        hCovSVZZ->Fill(covMatrixSV[5]);
+        registry.fill(HIST("hCovSVXX"), covMatrixSV[0]);
+        registry.fill(HIST("hCovSVYY"), covMatrixSV[2]);
+        registry.fill(HIST("hCovSVXZ"), covMatrixSV[3]);
+        registry.fill(HIST("hCovSVZZ"), covMatrixSV[5]);
         // DCAs of prongs
-        hDcaXYProngs->Fill(trackCharmBachelor0.pt(), impactParameter0.getY());
-        hDcaXYProngs->Fill(trackCharmBachelor1.pt(), impactParameter1.getY());
-        hDcaXYProngs->Fill(trackCasc.getPt(), impactParameterCasc.getY());
-        hDcaZProngs->Fill(trackCharmBachelor0.pt(), impactParameter0.getZ());
-        hDcaZProngs->Fill(trackCharmBachelor1.pt(), impactParameter1.getZ());
-        hDcaZProngs->Fill(trackCasc.getPt(), impactParameterCasc.getZ());
+        registry.fill(HIST("hDcaXYProngs"), trackCasc.getPt(), impactParameterCasc.getY());
+        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor0.pt(), impactParameter0.getY());
+        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor1.pt(), impactParameter1.getY());
+        registry.fill(HIST("hDcaZProngs"), trackCasc.getPt(), impactParameterCasc.getZ());
+        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor0.pt(), impactParameter0.getZ());
+        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor1.pt(), impactParameter1.getZ());
       }
 
       //---------------------------------fill candidate table rows-------------------------------------------------------------------------------------------
@@ -315,9 +321,9 @@ struct HfCandidateCreatorXic {
                        massXiPi0, massXiPi1);
     } // loop over track triplets
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic, processXicplusWithDcaFitter, "Run candidate creator with DCAFitter.", true);
+  PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicPlusWithDcaFitter, "Run candidate creator with DCAFitter.", true);
 
-  void processXicplusWithKFParticleFromDerivedData(aod::Collisions const&,
+  void processXicPlusWithKFParticleFromDerivedData(aod::Collisions const&,
                                                    aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                                    KFCascadesLinked const&,
                                                    KFCascFull const&,
@@ -340,7 +346,7 @@ struct HfCandidateCreatorXic {
         if (std::abs(casc.dcaXYCascToPV()) > dcaXYToPVCascadeMax) {
           continue;
         }
-        if (std::abs(casc.mXi() - massXiMinusFromPdg) > massToleranceCascade) {
+        if (std::abs(casc.mXi() - MassXiMinus) > massToleranceCascade) {
           continue;
         }
       }
@@ -458,21 +464,21 @@ struct HfCandidateCreatorXic {
       //-------------------------------fill histograms--------------------------------------------
       if (fillHistograms) {
         // invariant mass
-        hMass3->Fill(kfXicPlus.GetMass());
+        registry.fill(HIST("hMass3"), kfXicPlus.GetMass());
         // covariance matrix elements of PV
-        hCovPVXX->Fill(covMatrixPV[0]);
-        hCovPVYY->Fill(covMatrixPV[2]);
-        hCovPVXZ->Fill(covMatrixPV[3]);
-        hCovPVZZ->Fill(covMatrixPV[5]);
+        registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
+        registry.fill(HIST("hCovPVYY"), covMatrixPV[2]);
+        registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
+        registry.fill(HIST("hCovPVZZ"), covMatrixPV[5]);
         // covariance matrix elements of SV
-        hCovSVXX->Fill(covMatrixXicPlus[0]);
-        hCovSVYY->Fill(covMatrixXicPlus[2]);
-        hCovSVXZ->Fill(covMatrixXicPlus[3]);
-        hCovSVZZ->Fill(covMatrixXicPlus[5]);
+        registry.fill(HIST("hCovSVXX"), covMatrixXicPlus[0]);
+        registry.fill(HIST("hCovSVYY"), covMatrixXicPlus[2]);
+        registry.fill(HIST("hCovSVXZ"), covMatrixXicPlus[3]);
+        registry.fill(HIST("hCovSVZZ"), covMatrixXicPlus[5]);
         // DCAs of prongs
-        hDcaXYProngs->Fill(kfCharmBachelor0.GetPt(), impactParameterPi0XY);
-        hDcaXYProngs->Fill(kfCharmBachelor1.GetPt(), impactParameterPi1XY);
-        hDcaXYProngs->Fill(kfXi.GetPt(), impactParameterXiXY);
+        registry.fill(HIST("hDcaXYProngs"), kfXi.GetPt(), impactParameterXiXY);
+        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor0.GetPt(), impactParameterPi0XY);
+        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor1.GetPt(), impactParameterPi1XY);
       }
 
       //------------------------------fill candidate table rows--------------------------------------
@@ -500,11 +506,11 @@ struct HfCandidateCreatorXic {
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi);
     } // loop over track triplets
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic, processXicplusWithKFParticleFromDerivedData, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);
+  PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicPlusWithKFParticleFromDerivedData, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);
 }; // struct
 
 /// Performs MC matching.
-struct HfCandidateCreatorXicExpressions {
+struct HfCandidateCreatorXicToXiPiPiExpressions {
   Spawns<aod::HfCandXicExt> rowCandidateXic;
   Produces<aod::HfCandXicMcRec> rowMcMatchRec;
   Produces<aod::HfCandXicMcGen> rowMcMatchGen;
@@ -522,16 +528,10 @@ struct HfCandidateCreatorXicExpressions {
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t debug = 0;
+    // for resonance matching:
     std::vector<int> arrDaughIndex;
     std::array<int, 2> arrPDGDaugh;
-
     std::array<int, 2> arrXiResonance = {3324, kPiPlus}; // 3324: Ξ(1530)
-    int pdgCodeXicPlus = Pdg::kXiCPlus;                  // 4232
-    int pdgCodeXiMinus = kXiMinus;                       // 3312
-    int pdgCodeLambda = kLambda0;                        // 3122
-    int pdgCodePiPlus = kPiPlus;                         // 211
-    int pdgCodePiMinus = kPiMinus;                       // -211
-    int pdgCodeProton = kProton;                         // 2212
 
     // Match reconstructed candidates.
     for (const auto& candidate : *rowCandidateXic) {
@@ -553,20 +553,20 @@ struct HfCandidateCreatorXicExpressions {
                                          candidate.negTrack_as<aod::TracksWMc>()};
 
       // Xic → pi pi pi pi p
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeXicPlus, std::array{pdgCodePiPlus, pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 4);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
       indexRecXicPlus = indexRec;
       if (indexRec == -1) {
         debug = 1;
       }
       if (indexRec > -1) {
         // Xi- → pi pi p
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &sign, 2);
         if (indexRec == -1) {
           debug = 2;
         }
         if (indexRec > -1) {
           // Lambda → p pi
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &sign, 1);
           if (indexRec == -1) {
             debug = 3;
           }
@@ -578,12 +578,12 @@ struct HfCandidateCreatorXicExpressions {
                 arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
               }
               if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
-                flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
+                flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi);
               } else {
                 debug = 4;
               }
             } else {
-              flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+              flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
             }
           }
         }
@@ -607,15 +607,15 @@ struct HfCandidateCreatorXicExpressions {
       arrDaughIndex.clear();
 
       //  Xic → Xi pi pi
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXicPlus, std::array{pdgCodeXiMinus, pdgCodePiPlus, pdgCodePiPlus}, true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
         debug = 1;
         // Xi- -> Lambda pi
         auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
           debug = 2;
           // Lambda -> p pi
           auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
             debug = 3;
 
             RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
@@ -625,12 +625,12 @@ struct HfCandidateCreatorXicExpressions {
                 arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
               }
               if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
-                flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
+                flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi);
               } else {
                 debug = 4;
               }
             } else {
-              flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+              flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
             }
           }
         }
@@ -644,12 +644,12 @@ struct HfCandidateCreatorXicExpressions {
       rowMcMatchGen(flag, debug, origin);
     } // close loop over generated particles
   }   // close process
-  PROCESS_SWITCH(HfCandidateCreatorXicExpressions, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPiExpressions, processMc, "Process MC", false);
 }; // close struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreatorXic>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorXicExpressions>(cfgc)};
+    adaptAnalysisTask<HfCandidateCreatorXicToXiPiPi>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorXicToXiPiPiExpressions>(cfgc)};
 }

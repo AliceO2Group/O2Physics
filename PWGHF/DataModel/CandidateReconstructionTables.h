@@ -1321,7 +1321,7 @@ DECLARE_SOA_TABLE(HfToOmegaKMCGen, "AOD", "HFTOOMEKMCGEN", //!
                   hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<4>);
 
 // specific Xic to Xi Pi Pi candidate properties
-namespace hf_cand_xictoxipipi
+namespace hf_cand_xic_to_xi_pi_pi
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Pi0, pi0, int, Tracks, "_pi0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Pi1, pi1, int, Tracks, "_pi1");
@@ -1356,34 +1356,35 @@ DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mi
 DECLARE_SOA_COLUMN(DebugMcGen, debugMcGen, int8_t);
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
+
 // mapping of decay types
 enum DecayType { XicToXiPiPi = 0,
                  XicToXiResPiToXiPiPi,
                  NDecayType };
-} // end of namespace hf_cand_xictoxipipi
+} // end of namespace hf_cand_xic_to_xi_pi_pi
 
 // declare dedicated Xic to Xi Pi Pi candidate table
 DECLARE_SOA_TABLE(HfCandXicBase, "AOD", "HFCANDXICBASE",
                   hf_cand::CollisionId,
                   collision::PosX, collision::PosY, collision::PosZ,
-                  hf_cand_xictoxipipi::XPvErr, hf_cand_xictoxipipi::YPvErr, hf_cand_xictoxipipi::ZPvErr,
+                  hf_cand_xic_to_xi_pi_pi::XPvErr, hf_cand_xic_to_xi_pi_pi::YPvErr, hf_cand_xic_to_xi_pi_pi::ZPvErr,
                   // 3-prong specific columns
-                  cascdata::CascadeId, hf_cand_xictoxipipi::Pi0Id, hf_cand_xictoxipipi::Pi1Id,
+                  cascdata::CascadeId, hf_cand_xic_to_xi_pi_pi::Pi0Id, hf_cand_xic_to_xi_pi_pi::Pi1Id,
                   cascdata::BachelorId, cascdata::PosTrackId, cascdata::NegTrackId,
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
-                  hf_cand_xictoxipipi::XSvErr, hf_cand_xictoxipipi::YSvErr, hf_cand_xictoxipipi::ZSvErr,
+                  hf_cand_xic_to_xi_pi_pi::XSvErr, hf_cand_xic_to_xi_pi_pi::YSvErr, hf_cand_xic_to_xi_pi_pi::ZSvErr,
                   hf_cand::ErrorDecayLength, hf_cand::ErrorDecayLengthXY,
-                  hf_cand::Chi2PCA, hf_cand_xictoxipipi::InvMassXic, hf_cand_xictoxipipi::Sign,
+                  hf_cand::Chi2PCA, hf_cand_xic_to_xi_pi_pi::InvMassXic, hf_cand_xic_to_xi_pi_pi::Sign,
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
                   // cascade specific columns
-                  hf_cand_xictoxipipi::XDecayVtxXi, hf_cand_xictoxipipi::YDecayVtxXi, hf_cand_xictoxipipi::ZDecayVtxXi,
-                  hf_cand_xictoxipipi::XDecayVtxLambda, hf_cand_xictoxipipi::YDecayVtxLambda, hf_cand_xictoxipipi::ZDecayVtxLambda,
-                  hf_cand_xictoxipipi::CosPaXi, hf_cand_xictoxipipi::CosPaXYXi, hf_cand_xictoxipipi::CosPaLambda, hf_cand_xictoxipipi::CosPaXYLambda,
-                  hf_cand_xictoxipipi::InvMassXiPi0, hf_cand_xictoxipipi::InvMassXiPi1,
+                  hf_cand_xic_to_xi_pi_pi::XDecayVtxXi, hf_cand_xic_to_xi_pi_pi::YDecayVtxXi, hf_cand_xic_to_xi_pi_pi::ZDecayVtxXi,
+                  hf_cand_xic_to_xi_pi_pi::XDecayVtxLambda, hf_cand_xic_to_xi_pi_pi::YDecayVtxLambda, hf_cand_xic_to_xi_pi_pi::ZDecayVtxLambda,
+                  hf_cand_xic_to_xi_pi_pi::CosPaXi, hf_cand_xic_to_xi_pi_pi::CosPaXYXi, hf_cand_xic_to_xi_pi_pi::CosPaLambda, hf_cand_xic_to_xi_pi_pi::CosPaXYLambda,
+                  hf_cand_xic_to_xi_pi_pi::InvMassXiPi0, hf_cand_xic_to_xi_pi_pi::InvMassXiPi1,
                   /* dynamic columns */
                   hf_cand::RSecondaryVertex<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
                   hf_cand::DecayLength<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex>,
@@ -1419,19 +1420,19 @@ using HfCandXic = HfCandXicExt;
 
 DECLARE_SOA_TABLE(HfCandXicKF, "AOD", "HFCANDXICKF",
                   cascdata::KFCascadeChi2, cascdata::KFV0Chi2,
-                  hf_cand_xictoxipipi::DcaPi0Pi1, hf_cand_xictoxipipi::DcaPi0Xi, hf_cand_xictoxipipi::DcaPi1Xi);
+                  hf_cand_xic_to_xi_pi_pi::DcaPi0Pi1, hf_cand_xic_to_xi_pi_pi::DcaPi0Xi, hf_cand_xic_to_xi_pi_pi::DcaPi1Xi);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandXicMcRec, "AOD", "HFCANDXICMCREC", //!
-                  hf_cand_xictoxipipi::FlagMcMatchRec,
-                  hf_cand_xictoxipipi::DebugMcRec,
-                  hf_cand_xictoxipipi::OriginRec);
+                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
+                  hf_cand_xic_to_xi_pi_pi::DebugMcRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandXicMcGen, "AOD", "HFCANDXICMCGEN", //!
-                  hf_cand_xictoxipipi::FlagMcMatchGen,
-                  hf_cand_xictoxipipi::DebugMcGen,
-                  hf_cand_xictoxipipi::OriginGen);
+                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen,
+                  hf_cand_xic_to_xi_pi_pi::DebugMcGen,
+                  hf_cand_xic_to_xi_pi_pi::OriginGen);
 
 // specific chic candidate properties
 namespace hf_cand_chic
