@@ -147,7 +147,7 @@ struct HfTaskXicToXiPiPi {
       registry.add("hPtGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
       registry.add("hEtaGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);#Xi^{#plus}_{c} candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
       registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);#Xi^{#plus}_{c} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
-    }   
+    }
 
     if (checkDecayTypeMc) {
       constexpr uint8_t kNBinsDecayTypeMc = hf_cand_xic_to_xi_pi_pi::DecayType::NDecayType + 1;
