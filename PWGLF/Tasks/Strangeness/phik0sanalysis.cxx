@@ -623,7 +623,7 @@ struct phik0shortanalysis {
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
-      double countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
+      int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
       // Phi reconstruction
       // Loop over positive candidates
@@ -647,24 +647,25 @@ struct phik0shortanalysis {
           recPhi = recMother(track1, track2, massKa, massKa);
           if (recPhi.Rapidity() > 0.8)
             continue;
-          if (recPhi.M() < lowmPhi->at(iBin) || recPhi.M() > upmPhi->at(iBin))
-            continue;
 
           listrecPhi.push_back(recPhi);
 
-          countInclusive++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) < cfgFirstCutonDeltay) {
+          if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
+            countInclusive++;
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay) 
+            continue;
+          if (lowmPhiFCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiFCut->at(iBin))
             countLtFirstCut++;
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) < cfgSecondCutonDeltay) {
-              countLtSecondCut++;
-            }
-          }
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+            continue;
+          if (lowmPhiSCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiSCut->at(iBin))
+            countLtSecondCut++;
         }
       }
 
-      double weightInclusive = 1. / countInclusive;
-      double weightLtFirstCut = 1. / countLtFirstCut;
-      double weightLtSecondCut = 1. / countLtSecondCut;
+      float weightInclusive = 1. / static_cast<float>(countInclusive);
+      float weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
+      float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
 
       switch (iBin) {
         case 0:
@@ -750,7 +751,7 @@ struct phik0shortanalysis {
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
-      double countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
+      int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
       // Phi reconstruction
       // Loop over positive candidates
@@ -778,18 +779,20 @@ struct phik0shortanalysis {
           listrecPhi.push_back(recPhi);
 
           countInclusive++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) < cfgFirstCutonDeltay) {
-            countLtFirstCut++;
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) < cfgSecondCutonDeltay) {
-              countLtSecondCut++;
-            }
-          }
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay) 
+            continue;
+          countLtFirstCut++;
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+            continue;
+          countLtSecondCut++;
+            
+          
         }
       }
 
-      double weightInclusive = 1. / countInclusive;
-      double weightLtFirstCut = 1. / countLtFirstCut;
-      double weightLtSecondCut = 1. / countLtSecondCut;
+      float weightInclusive = 1. / static_cast<float>(countInclusive);
+      float weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
+      float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
       fillInvMassdEdx<false>(recPi, pi.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
     }
   }
@@ -835,7 +838,7 @@ struct phik0shortanalysis {
           continue;
 
         std::vector<TLorentzVector> listrecPhi;
-        double countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
+        int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
         // Combinatorial background simulation
         for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
@@ -848,18 +851,19 @@ struct phik0shortanalysis {
             continue;
 
           listrecPhi.push_back(recPhi);
+
           countInclusive++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) < cfgFirstCutonDeltay) {
-            countLtFirstCut++;
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) < cfgSecondCutonDeltay) {
-              countLtSecondCut++;
-            }
-          }
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay) 
+            continue;
+          countLtFirstCut++;
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+            continue;
+          countLtSecondCut++;
         }
 
-        double weightInclusive = 1. / countInclusive;
-        double weightLtFirstCut = 1. / countLtFirstCut;
-        double weightLtSecondCut = 1. / countLtSecondCut;
+        float weightInclusive = 1. / static_cast<float>(countInclusive);
+        float weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
+        float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
 
         switch (iBin) {
           case 0:
@@ -949,7 +953,7 @@ struct phik0shortanalysis {
           continue;
 
         std::vector<TLorentzVector> listrecPhi;
-        double countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
+        int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
         // Combinatorial background simulation
         for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
@@ -962,18 +966,19 @@ struct phik0shortanalysis {
             continue;
 
           listrecPhi.push_back(recPhi);
+
           countInclusive++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) < cfgFirstCutonDeltay) {
-            countLtFirstCut++;
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) < cfgSecondCutonDeltay) {
-              countLtSecondCut++;
-            }
-          }
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay) 
+            continue;
+          countLtFirstCut++;
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+            continue;
+          countLtSecondCut++;
         }
 
-        double weightInclusive = 1. / countInclusive;
-        double weightLtFirstCut = 1. / countLtFirstCut;
-        double weightLtSecondCut = 1. / countLtSecondCut;
+        float weightInclusive = 1. / static_cast<float>(countInclusive);
+        float weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
+        float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
         fillInvMassdEdx<true>(recPi, pi.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
       }
     }
