@@ -404,20 +404,20 @@ struct phik0shortanalysis {
       }*/
       if constexpr (!isMix) { // same event
         PhiK0SHist.fill(HIST(PhiK0SSEInc[iBin]), massV0, massPhi, weightInclusive);
-        if (deltay <= cfgFirstCutonDeltay) {
-          PhiK0SHist.fill(HIST(PhiK0SSEFCut[iBin]), massV0, massPhi, weightLtFirstCut);
-          if (deltay <= cfgSecondCutonDeltay) {
-            PhiK0SHist.fill(HIST(PhiK0SSESCut[iBin]), massV0, massPhi, weightLtSecondCut);
-          }
-        }
+        if (deltay > cfgFirstCutonDeltay)
+          continue;
+        PhiK0SHist.fill(HIST(PhiK0SSEFCut[iBin]), massV0, massPhi, weightLtFirstCut);
+        if (deltay > cfgSecondCutonDeltay)
+          continue;
+        PhiK0SHist.fill(HIST(PhiK0SSESCut[iBin]), massV0, massPhi, weightLtSecondCut);
       } else { // mixed event
         PhiK0SHist.fill(HIST("h3PhiK0SInvMassMixedEventInclusive"), multiplicity, massV0, massPhi, weightInclusive);
-        if (deltay <= cfgFirstCutonDeltay) {
-          PhiK0SHist.fill(HIST("h3PhiK0SInvMassMixedEventFirstCut"), multiplicity, massV0, massPhi, weightLtFirstCut);
-          if (deltay <= cfgSecondCutonDeltay) {
-            PhiK0SHist.fill(HIST("h3PhiK0SInvMassMixedEventSecondCut"), multiplicity, massV0, massPhi, weightLtSecondCut);
-          }
-        }
+        if (deltay > cfgFirstCutonDeltay)
+          continue;
+        PhiK0SHist.fill(HIST("h3PhiK0SInvMassMixedEventFirstCut"), multiplicity, massV0, massPhi, weightLtFirstCut);
+        if (deltay > cfgSecondCutonDeltay)
+          continue;
+        PhiK0SHist.fill(HIST("h3PhiK0SInvMassMixedEventSecondCut"), multiplicity, massV0, massPhi, weightLtSecondCut);
       }
     }
   }
@@ -436,20 +436,20 @@ struct phik0shortanalysis {
 
       if constexpr (!isMix) { // same event
         PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxSameEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
-        if (deltay <= cfgFirstCutonDeltay) {
-          PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxSameEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
-          if (deltay <= cfgSecondCutonDeltay) {
-            PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxsSameEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
-          }
-        }
+        if (deltay > cfgFirstCutonDeltay)
+          continue;
+        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxSameEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
+        if (deltay > cfgSecondCutonDeltay)
+          continue;
+        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxsSameEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
       } else { // mixed event
         PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
-        if (deltay <= cfgFirstCutonDeltay) {
-          PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
-          if (deltay <= cfgSecondCutonDeltay) {
-            PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
-          }
-        }
+        if (deltay > cfgFirstCutonDeltay)
+          continue;
+        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
+        if (deltay > cfgSecondCutonDeltay)
+          continue;
+        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
       }
     }
   }
@@ -536,17 +536,17 @@ struct phik0shortanalysis {
             PhipurHist.fill(HIST("h2PhipurK0SInvMassInclusive"), multiplicity, recPhi.M());
             isCountedK0SInclusive = true;
           }
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) < cfgFirstCutonDeltay) {
-            if (!isCountedK0SFirstCut) {
-              PhipurHist.fill(HIST("h2PhipurK0SInvMassFirstCut"), multiplicity, recPhi.M());
-              isCountedK0SFirstCut = true;
-            }
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) < cfgSecondCutonDeltay) {
-              if (!isCountedK0SSecondCut) {
-                PhipurHist.fill(HIST("h2PhipurK0SInvMassSecondCut"), multiplicity, recPhi.M());
-                isCountedK0SSecondCut = true;
-              }
-            }
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedK0SFirstCut) {
+            PhipurHist.fill(HIST("h2PhipurK0SInvMassFirstCut"), multiplicity, recPhi.M());
+            isCountedK0SFirstCut = true;
+          }
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) < cfgSecondCutonDeltay) 
+            continue;
+          if (!isCountedK0SSecondCut) {
+            PhipurHist.fill(HIST("h2PhipurK0SInvMassSecondCut"), multiplicity, recPhi.M());
+            isCountedK0SSecondCut = true;
           }
         }
         isFilledhV0 = true;
@@ -569,18 +569,18 @@ struct phik0shortanalysis {
             PhipurHist.fill(HIST("h3PhipurPiInvMassInclusive"), multiplicity, recPi.Pt(), recPhi.M());
             isCountedPiInclusive = true;
           }
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) < cfgFirstCutonDeltay) {
-            if (!isCountedPiFirstCut) {
-              PhipurHist.fill(HIST("h3PhipurPiInvMassFirstCut"), multiplicity, recPi.Pt(), recPhi.M());
-              isCountedPiFirstCut = true;
-            }
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) < cfgSecondCutonDeltay) {
-              if (!isCountedPiSecondCut) {
-                PhipurHist.fill(HIST("h3PhipurPiInvMassSecondCut"), multiplicity, recPi.Pt(), recPhi.M());
-                isCountedPiSecondCut = true;
-              }
-            }
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedPiFirstCut) {
+            PhipurHist.fill(HIST("h3PhipurPiInvMassFirstCut"), multiplicity, recPi.Pt(), recPhi.M());
+            isCountedPiFirstCut = true;
           }
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) < cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedPiSecondCut) {
+            PhipurHist.fill(HIST("h3PhipurPiInvMassSecondCut"), multiplicity, recPi.Pt(), recPhi.M());
+            isCountedPiSecondCut = true;
+          } 
         }
       }
     }
