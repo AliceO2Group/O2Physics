@@ -374,13 +374,11 @@ struct RofBorderQaTask {
       }
 
       // ### vs cluster size
-      int clusterSize[7];
-      double averageClusterSize = 0.;
+      float averageClusterSize = 0.;
       for (int i = 0; i < 7; i++) { // info stored in 4 bits
-        clusterSize[i] = (((1 << 4) - 1) & (track.itsClusterSizes() >> 4 * i));
-        averageClusterSize += static_cast<double>(clusterSize[i]);
+        averageClusterSize += (((1 << 4) - 1) & (track.itsClusterSizes() >> 4 * i));
       }
-      averageClusterSize /= 7.;
+      averageClusterSize /= track.itsNCls();
       histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_clsSizeBins"), globalFoundBC, averageClusterSize, track.itsNCls());
       histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_clsSizeBins"), globalFoundBC, averageClusterSize);
     }
