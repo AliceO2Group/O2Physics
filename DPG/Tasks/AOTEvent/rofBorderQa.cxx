@@ -134,11 +134,11 @@ struct RofBorderQaTask {
                             79.5,
                             199.5,
                           },
-                          "p_{T}"};
+                          "n PV ITSTPC tracks"};
     histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_multBins", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_multBins", kTH2D, {axisBC, axisMultBins});
     histos.add("hFoundBC_kTVX_counter_ITSTPCtracks_multBins", "hFoundBC_kTVX_counter_ITSTPCtracks_multBins", kTH2D, {axisBC, axisMultBins});
 
-    AxisSpec axisClusterSizes{15, 0, 15, "cluster size #times cos(#Lambda)"};
+    AxisSpec axisClusterSizes{15, 0.5, 15.5, "cluster size #times cos(#Lambda)"};
     histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_clsSizeBins", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_clsSizeBins", kTH2D, {axisBC, axisClusterSizes});
     histos.add("hFoundBC_kTVX_counter_ITSTPCtracks_clsSizeBins", "hFoundBC_kTVX_counter_ITSTPCtracks_clsSizeBins", kTH2D, {axisBC, axisClusterSizes});
 
@@ -374,13 +374,15 @@ struct RofBorderQaTask {
       }
 
       // ### vs cluster size
-      float averageClusterSize = 0.;
-      for (int i = 0; i < 7; i++) { // info stored in 4 bits
-        averageClusterSize += (((1 << 4) - 1) & (track.itsClusterSizes() >> 4 * i));
+      if (track.itsNCls() >= 4) {
+        float averageClusterSize = 0.;
+        for (int i = 0; i < 7; i++) { // info stored in 4 bits
+          averageClusterSize += (((1 << 4) - 1) & (track.itsClusterSizes() >> 4 * i));
+        }
+        averageClusterSize /= track.itsNCls();
+        histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_clsSizeBins"), globalFoundBC, averageClusterSize, track.itsNCls());
+        histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_clsSizeBins"), globalFoundBC, averageClusterSize);
       }
-      averageClusterSize /= track.itsNCls();
-      histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_clsSizeBins"), globalFoundBC, averageClusterSize, track.itsNCls());
-      histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_clsSizeBins"), globalFoundBC, averageClusterSize);
     }
 
     // all collisions
