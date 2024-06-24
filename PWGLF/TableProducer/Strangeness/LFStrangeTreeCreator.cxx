@@ -77,7 +77,6 @@ float qtAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
   float p2A = momA[0] * momA[0] + momA[1] * momA[1] + momA[2] * momA[2];
   float p2B = momB[0] * momB[0] + momB[1] * momB[1] + momB[2] * momB[2];
   return std::sqrt(p2B - dp * dp / p2A);
-  
 }
 
 float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
