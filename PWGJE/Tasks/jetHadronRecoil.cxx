@@ -347,7 +347,7 @@ struct hJetAnalysis {
         }
         registry.fill(HIST("hPtMatched"), jetBase.pt(), jetTag.pt());
         registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi());
-        registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - jetBase.pt())/jetTag.pt());
+        registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - jetBase.pt()) / jetTag.pt());
         registry.fill(HIST("hPhiResolution"), jetTag.pt(), jetTag.phi() - jetBase.phi());
         if (jetBase.pt() > 5 || jetTag.pt() > 5) {
           registry.fill(HIST("hDeltaRMatched"), dR, dRp);
@@ -359,9 +359,9 @@ struct hJetAnalysis {
   }
 
   void processData(soa::Filtered<JetCollisions>::iterator const& collision,
-                  soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToCharged1Jets>> const& jets,
-                  soa::Filtered<soa::Join<aod::Charged1Jets, aod::Charged1JetConstituents, aod::Charged1JetsMatchedToChargedJets>> const& jetsWTA,
-                  soa::Filtered<JetTracks> const& tracks)
+                   soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToCharged1Jets>> const& jets,
+                   soa::Filtered<soa::Join<aod::Charged1Jets, aod::Charged1JetConstituents, aod::Charged1JetsMatchedToChargedJets>> const& jetsWTA,
+                   soa::Filtered<JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
