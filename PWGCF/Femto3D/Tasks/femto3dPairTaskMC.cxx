@@ -328,7 +328,7 @@ struct FemtoCorrelationsMC {
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() < _IRcut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() >= _IRcut.value.second)
         continue;
-      if (track.template singleCollSel_as<ColsType>().occupancy() < _OccupancyCut.value.first || track.template singleCollSel_as<ColsType>().occupancy() >= _OccupancyCut.value.second)
+      if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() < _OccupancyCut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() >= _OccupancyCut.value.second)
         continue;
       if (_removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
         continue;
@@ -336,7 +336,7 @@ struct FemtoCorrelationsMC {
         continue;
       if (_requestVertexITSTPC && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexITSTPC())
         continue;
-      if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<ColsType>().noCollInTimeRangeStandard())
+      if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().noCollInTimeRangeStandard())
         continue;
 
       unsigned int centBin = o2::aod::singletrackselector::getBinIndex<unsigned int>(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc(), _centBins);
