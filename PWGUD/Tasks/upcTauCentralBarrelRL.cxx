@@ -158,8 +158,6 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> doFourTracks{"doFourTracks", false, {"Define histos for four tracks and allow to fill them"}};
   Configurable<bool> doSixTracks{"doSixTracks", false, {"Define histos for six tracks and allow to fill them"}};
 
-
-
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
   using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions>::iterator;
@@ -233,7 +231,7 @@ struct UpcTauCentralBarrelRL {
     histos.add("Tracks/GoodTrack/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {axisTPCxRwsFrac});
     histos.add("Tracks/GoodTrack/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {axisTPCchi2});
 
-    if (doTwoTracks){
+    if (doTwoTracks) {
       histos.add("EventTwoTracks/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventTwoTracks/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
       histos.add("EventTwoTracks/hInvariantMassWideNoMothers", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -393,7 +391,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronOther/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
       histos.add("EventTwoTracks/ElectronOther/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
 
-      if(doPionStudy){
+      if (doPionStudy) {
         histos.add("EventTwoTracks/PionsSelection/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
         histos.add("EventTwoTracks/PionsSelection/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/PionsSelection/hInvariantMassWideITS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -429,7 +427,7 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/PionsSelection/hDaughtersPvsITSclusterSizeXcos", ";Average ITS cluster size x cos(#lambda);Daughter #it{p} (GeV/c)", HistType::kTH2D, {axisAvgITSclsSizes, axisMomSigned});
       }
 
-      if(doMuonStudy){
+      if (doMuonStudy) {
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWideITS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -577,10 +575,9 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWidePtFitPlot", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWideCS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
       }
-
     }
 
-    if(doFourTracks){
+    if (doFourTracks) {
       histos.add("EventFourTracks/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventFourTracks/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
       histos.add("EventFourTracks/hInvariantMassWideNoMothers", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -615,7 +612,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventFourTracks/WithPion/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
     }
 
-    if(doSixTracks){
+    if (doSixTracks) {
       histos.add("EventSixTracks/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventSixTracks/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
       histos.add("EventSixTracks/hInvariantMassWideNoMothers", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
