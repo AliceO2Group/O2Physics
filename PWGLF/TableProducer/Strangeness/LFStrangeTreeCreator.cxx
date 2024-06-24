@@ -70,6 +70,16 @@ float alphaAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB
   float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
 }
+
+float qtAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
+{
+  float dp = momA[0] * momB[0] + momA[1] * momB[1] + momA[2] * momB[2];
+  float p2A = momA[0] * momA[0] + momA[1] * momA[1] + momA[2] * momA[2];
+  float p2B = momB[0] * momB[0] + momB[1] * momB[1] + momB[2] * momB[2];
+  return std::sqrt(p2B - dp * dp / p2A);
+  
+}
+
 float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
 {
   if (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
@@ -104,6 +114,8 @@ struct CandidateV0 {
   float mass = -999.f;
   float radius = -999.f;
   float cpa = -999.f;
+  float alphaAP = -999.f;
+  float qtAP = -999.f;
   uint8_t isFD = 0u;
   o2::track::TrackParCov trackv0;
   std::array<float, 3> mompos;
@@ -120,6 +132,8 @@ struct CandidateV0 {
   float genlen = -999.f;
   int pdgcode = -999;
   int pdgcodemother = -999;
+  int pdgposdau = -999;
+  int pdgnegdau = -999;
   bool isreco = 0;
   int64_t mcIndex = -999;
   int64_t globalIndex = -999;
@@ -398,6 +412,8 @@ struct LFStrangeTreeCreator {
       candV0.mass = mLambda;
       candV0.radius = radiusV0;
       candV0.cpa = cosPA;
+      candV0.alphaAP = alpha;
+      candV0.qtAP = qtAP(momV0, momPos);
       candV0.trackv0 = fitter.createParentTrackParCov();
       candV0.mompos = std::array{momPos[0], momPos[1], momPos[2]};
       candV0.momneg = std::array{momNeg[0], momNeg[1], momNeg[2]};
@@ -484,11 +500,14 @@ struct LFStrangeTreeCreator {
       if (mcLabPos.has_mcParticle() && mcLabNeg.has_mcParticle()) {
         auto mcTrackPos = mcLabPos.template mcParticle_as<aod::McParticles>();
         auto mcTrackNeg = mcLabNeg.template mcParticle_as<aod::McParticles>();
+        candidateV0.pdgposdau = mcTrackPos.pdgCode();
+        candidateV0.pdgnegdau = mcTrackNeg.pdgCode();
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
           for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
             for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
               if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
+              candidateV0.pdgcode = posMother.pdgCode();
               if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
                 continue;
               if (std::abs(posMother.pdgCode()) != 3122) {
@@ -516,7 +535,6 @@ struct LFStrangeTreeCreator {
               candidateV0.genpt = genPt;
               candidateV0.genlen = len;
               candidateV0.genct = len / (mom + 1e-10) * o2::constants::physics::MassLambda0;
-              candidateV0.pdgcode = posMother.pdgCode();
               candidateV0.pdgcodemother = pdgCodeMother;
               candidateV0.geneta = posMother.eta();
               candidateV0.mcIndex = posMother.globalIndex();
@@ -635,6 +653,8 @@ struct LFStrangeTreeCreator {
           candidateV0.dcanegpv,
           candidateV0.dcav0daugh,
           candidateV0.cpa,
+          candidateV0.alphaAP,
+          candidateV0.qtAP,
           candidateV0.tpcnsigmapos,
           candidateV0.tpcnsigmaneg,
           candidateV0.isFD);
@@ -700,11 +720,15 @@ struct LFStrangeTreeCreator {
           candidateV0.dcanegpv,
           candidateV0.dcav0daugh,
           candidateV0.cpa,
+          candidateV0.alphaAP,
+          candidateV0.qtAP,
           candidateV0.tpcnsigmapos,
           candidateV0.tpcnsigmaneg,
           candidateV0.genpt,
           candidateV0.geneta,
           candidateV0.genct,
+          candidateV0.pdgposdau,
+          candidateV0.pdgnegdau,
           candidateV0.pdgcode,
           candidateV0.pdgcodemother,
           candidateV0.isreco);
