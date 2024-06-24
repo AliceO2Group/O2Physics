@@ -84,6 +84,18 @@ void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible
     std::vector<float> fZLimsHashing = {-10.0f, -9.0f, -8.0f, -7.0f, -6.0f, -5.0f, -4.0f, -3.0f, -2.0f, -1.0f, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f};
     mh->AddMixingVariable(VarManager::kVtxZ, fZLimsHashing.size(), fZLimsHashing);
   }
+  if (!nameStr.compare("Occupancy1")) {
+    std::vector<float> fOccLimsHashing = {0.0f, 500.0f, 1000.0f, 2000.0f, 3000.0f, 6000.0f, 50000.0f};
+    mh->AddMixingVariable(VarManager::kTrackOccupancyInTimeRange, fOccLimsHashing.size(), fOccLimsHashing);
+  }
+  if (!nameStr.compare("Occupancy2")) {
+    std::vector<float> fOccLimsHashing = {0.0f, 250.0f, 500.0f, 750.0f, 1000.0f, 1500.0f, 2000.0f, 3000.0f, 6000.0f, 50000.0f};
+    mh->AddMixingVariable(VarManager::kTrackOccupancyInTimeRange, fOccLimsHashing.size(), fOccLimsHashing);
+  }
+  if (!nameStr.compare("Occupancy3")) {
+    std::vector<float> fOccLimsHashing = {0.0f, 250.0f, 500.0f, 750.0f, 1000.0f, 1500.0f, 2000.0f, 3000.0f, 4500.0f, 6000.0f, 8000.0f, 10000.0f, 50000.0f};
+    mh->AddMixingVariable(VarManager::kTrackOccupancyInTimeRange, fOccLimsHashing.size(), fOccLimsHashing);
+  }
   if (!nameStr.compare("Psi2A1")) {
     std::vector<float> fPsi2A = {-TMath::Pi() / 2., 0.0f, TMath::Pi() / 2.};
     mh->AddMixingVariable(VarManager::kPsi2A, fPsi2A.size(), fPsi2A);
