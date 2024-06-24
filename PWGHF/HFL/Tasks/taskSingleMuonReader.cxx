@@ -51,11 +51,9 @@ struct HfTaskSingleMuonReader {
   Configurable<int> trkType{"trkType", 0, "Muon track type, valid values are 0, 1, 2, 3 and 4"};
   Configurable<float> etaMin{"etaMin", -3.6, "eta minimum value"};
   Configurable<float> etaMax{"etaMax", -2.5, "eta maximum value"};
-  Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA maximum value for small Rabs"};
   Configurable<float> pDcaMax{"pDcaMax", 594., "p*DCA maximum value"};
   Configurable<float> rAbsMax{"rAbsMax", 89.5, "R at absorber end maximum value"};
-  Configurable<float> rAbsMid{"rAbsMid", 26.5, "R at absorber end minimum 2 value"};
-  Configurable<float> rAbsMin{"rAbsMin", 17.6, "R at absorber end minimum value"};
+  Configurable<float> rAbsMin{"rAbsMin", 26.5, "R at absorber end minimum value"};
   Configurable<float> zVtx{"zVtx", 10., "Z edge of primary vertex [cm]"};
   Configurable<bool> fillMcHist{"fillMcHist", false, "fill MC-related histograms"};
 
@@ -108,10 +106,10 @@ struct HfTaskSingleMuonReader {
         continue;
       }
 
-      if ((rAbs < rAbsMid) && (pDca >= pDcaMin)) {
+      if ((rAbs >= rAbsMax) || (rAbs < rAbsMin)) {
         continue;
       }
-      if ((rAbs >= rAbsMid) && (pDca >= pDcaMax)) {
+      if (pDca >= pDcaMax) {
         continue;
       }
 
@@ -145,10 +143,10 @@ struct HfTaskSingleMuonReader {
         continue;
       }
 
-      if ((rAbs < rAbsMid) && (pDca >= pDcaMin)) {
+      if ((rAbs >= rAbsMax) || (rAbs < rAbsMin)) {
         continue;
       }
-      if ((rAbs >= rAbsMid) && (pDca >= pDcaMax)) {
+      if (pDca >= pDcaMax) {
         continue;
       }
 
