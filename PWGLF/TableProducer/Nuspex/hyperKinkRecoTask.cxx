@@ -118,7 +118,6 @@ struct kinkCandidate {
   int pdgCode = 0;              // pdg code of the mother particle
 };
 
-
 struct hyperKinkRecoTask {
 
   Produces<aod::DataHypKinkCands> outputDataTable;
