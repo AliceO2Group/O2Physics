@@ -374,7 +374,7 @@ struct RofBorderQaTask {
       }
 
       // ### vs cluster size
-      if (track.itsNCls() >= 4) {
+      if (track.itsNCls() >= 5) {
         float averageClusterSize = 0.;
         for (int i = 0; i < 7; i++) { // info stored in 4 bits
           averageClusterSize += (((1 << 4) - 1) & (track.itsClusterSizes() >> 4 * i));
