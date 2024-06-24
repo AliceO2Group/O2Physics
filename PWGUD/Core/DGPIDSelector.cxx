@@ -161,86 +161,103 @@ void DGAnaparHolder::Print()
 
 // -----------------------------------------------------------------------------
 // setter
-void DGAnaparHolder::SetNTracks(int min, int max) {
-	mMinNTracks = min;
-	mMaxNTracks = max;
+void DGAnaparHolder::SetNTracks(int min, int max)
+{
+  mMinNTracks = min;
+  mMaxNTracks = max;
 }
 
-void DGAnaparHolder::SetMinRgtrwTOF(float rgtrwTOF) {
-	mMinRgtrwTOF = rgtrwTOF;
+void DGAnaparHolder::SetMinRgtrwTOF(float rgtrwTOF)
+{
+  mMinRgtrwTOF = rgtrwTOF;
 }
 
-void DGAnaparHolder::SetmaxDCA(float maxxy, float maxz) {
-	mMaxDCAxy = maxxy;
-	mMaxDCAz = maxz;
+void DGAnaparHolder::SetmaxDCA(float maxxy, float maxz)
+{
+  mMaxDCAxy = maxxy;
+  mMaxDCAz = maxz;
 }
 
-void DGAnaparHolder::SetdBC(int min, int max) {
-	mdBCMin = min;
-	mdBCMax = max;
+void DGAnaparHolder::SetdBC(int min, int max)
+{
+  mdBCMin = min;
+  mdBCMax = max;
 }
 
-void DGAnaparHolder::SetFITvetoes(std::vector<int> vetoes) {
-	
-	if (vetoes.size() == 5) {
-		mFITvetoes = vetoes;
-	} else {
-		LOGF(info, "Wrong number of vetoes. Vetoes are not set!");
-	}
+void DGAnaparHolder::SetFITvetoes(std::vector<int> vetoes)
+{
+
+  if (vetoes.size() == 5) {
+    mFITvetoes = vetoes;
+  } else {
+    LOGF(info, "Wrong number of vetoes. Vetoes are not set!");
+  }
 }
 
-void DGAnaparHolder::SetITSOnlyTracks(bool itsOnly) {
-	mITSOnlyTracks = itsOnly;
+void DGAnaparHolder::SetITSOnlyTracks(bool itsOnly)
+{
+  mITSOnlyTracks = itsOnly;
 }
 
-void DGAnaparHolder::SetNClTPC(int min, int max) {
-	mMinNClTPC = min;
-	mMaxNClTPC = max;
+void DGAnaparHolder::SetNClTPC(int min, int max)
+{
+  mMinNClTPC = min;
+  mMaxNClTPC = max;
 }
 
-void DGAnaparHolder::SetChi2NClTPC(float min, float max) {
-	mMinChi2NClTPC = min;
-	mMaxChi2NClTPC = max;
+void DGAnaparHolder::SetChi2NClTPC(float min, float max)
+{
+  mMinChi2NClTPC = min;
+  mMaxChi2NClTPC = max;
 }
 
-void DGAnaparHolder::Setpt(float min, float max) {
-	mMinpt = min;
-	mMaxpt = max;
+void DGAnaparHolder::Setpt(float min, float max)
+{
+  mMinpt = min;
+  mMaxpt = max;
 }
 
-void DGAnaparHolder::Seteta(float min, float max) {
-	mMineta = min;
-	mMaxeta = max;
+void DGAnaparHolder::Seteta(float min, float max)
+{
+  mMineta = min;
+  mMaxeta = max;
 }
 
-void DGAnaparHolder::SetAlpha(float min, float max) {
-	mMinAlpha = min;
-	mMaxAlpha = max;
+void DGAnaparHolder::SetAlpha(float min, float max)
+{
+  mMinAlpha = min;
+  mMaxAlpha = max;
 }
 
-void DGAnaparHolder::Setptsys(float min, float max) {
-	mMinptsys = min;
-	mMaxptsys = max;
+void DGAnaparHolder::Setptsys(float min, float max)
+{
+  mMinptsys = min;
+  mMaxptsys = max;
 }
 
-void DGAnaparHolder::SetnCombine(int nComb) {
-	mNCombine = nComb;
+void DGAnaparHolder::SetnCombine(int nComb)
+{
+  mNCombine = nComb;
 }
 
-void DGAnaparHolder::SetnetCharges(std::vector<int> charges) {
-	mNetCharges = charges;
+void DGAnaparHolder::SetnetCharges(std::vector<int> charges)
+{
+  mNetCharges = charges;
 }
 
-void DGAnaparHolder::SetunlikeCharges(std::vector<int> charges) {
-	mUnlikeCharges = charges;
+void DGAnaparHolder::SetunlikeCharges(std::vector<int> charges)
+{
+  mUnlikeCharges = charges;
 }
 
-void DGAnaparHolder::SetlikeCharges(std::vector<int> charges) {
-	mLikeCharges = charges;
+void DGAnaparHolder::SetlikeCharges(std::vector<int> charges)
+{
+  mLikeCharges = charges;
 }
 
-void DGAnaparHolder::SetPIDs(std::vector<int> pids) {
-	mDGPIDs = pids;
+void DGAnaparHolder::SetPIDs(std::vector<int> pids)
+{
+  mDGPIDs = pids;
 }
 
 // -----------------------------------------------------------------------------
