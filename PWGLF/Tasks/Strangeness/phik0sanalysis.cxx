@@ -51,17 +51,17 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-  static constexpr int nMultBin = 10;
+static constexpr int nMultBin = 10;
 
-  constexpr float mPhi[nMultBin] = {};
+constexpr float mPhi[nMultBin] = {};
 
-  static constexpr float multBin[nMultBin+1] = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
+static constexpr float multBin[nMultBin+1] = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
 
-  static constexpr std::string_view PhiK0SSEInc[nMultBin] = {"h2PhiK0SSEInc_0_1", "h2PhiK0SSEInc_1_5", "h2PhiK0SSEInc_5_10", "h2PhiK0SSEInc_10_15", "h2PhiK0SSEInc_15_20",
+static constexpr std::string_view PhiK0SSEInc[nMultBin] = {"h2PhiK0SSEInc_0_1", "h2PhiK0SSEInc_1_5", "h2PhiK0SSEInc_5_10", "h2PhiK0SSEInc_10_15", "h2PhiK0SSEInc_15_20",
                                                              "h2PhiK0SSEInc_20_30", "h2PhiK0SSEInc_30_40", "h2PhiK0SSEInc_40_50", "h2PhiK0SSEInc_50_70", "h2PhiK0SSEInc_70_100"};
-  static constexpr std::string_view PhiK0SSEFCut[nMultBin] = {"h2PhiK0SSEFCut_0_1", "h2PhiK0SSEFCut_1_5", "h2PhiK0SSEFCut_5_10", "h2PhiK0SSEFCut_10_15", "h2PhiK0SSEFCut_15_20",
+static constexpr std::string_view PhiK0SSEFCut[nMultBin] = {"h2PhiK0SSEFCut_0_1", "h2PhiK0SSEFCut_1_5", "h2PhiK0SSEFCut_5_10", "h2PhiK0SSEFCut_10_15", "h2PhiK0SSEFCut_15_20",
                                                               "h2PhiK0SSEFCut_20_30", "h2PhiK0SSEFCut_30_40", "h2PhiK0SSEFCut_40_50", "h2PhiK0SSEFCut_50_70", "h2PhiK0SSEFCut_70_100"};
-  static constexpr std::string_view PhiK0SSESCut[nMultBin] = {"h2PhiK0SSESCut_0_1", "h2PhiK0SSESCut_1_5", "h2PhiK0SSESCut_5_10", "h2PhiK0SSESCut_10_15", "h2PhiK0SSESCut_15_20",
+static constexpr std::string_view PhiK0SSESCut[nMultBin] = {"h2PhiK0SSESCut_0_1", "h2PhiK0SSESCut_1_5", "h2PhiK0SSESCut_5_10", "h2PhiK0SSESCut_10_15", "h2PhiK0SSESCut_15_20",
                                                               "h2PhiK0SSESCut_20_30", "h2PhiK0SSESCut_30_40", "h2PhiK0SSESCut_40_50", "h2PhiK0SSESCut_50_70", "h2PhiK0SSESCut_70_100"};
 }
 
@@ -573,7 +573,7 @@ struct phik0shortanalysis {
 
     int iBin = 0;
     for (int i = 0; i < nMultBin; i++) {
-      if (multBin[i] < multiplicity && multiplicity <= multBin[i+1]) {
+      if (multBin[i] < multiplicity && multiplicity <= multBin[i + 1]) {
         iBin = i;
         break;
       }
@@ -617,7 +617,6 @@ struct phik0shortanalysis {
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
 
-
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
           if (recPhi.Rapidity() > 0.8)
@@ -643,53 +642,43 @@ struct phik0shortanalysis {
       float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
 
       switch (iBin) {
-        case 0:
-        {
+        case 0: {
           fillInvMass2D<false, 0>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 1:
-        {
+        case 1: {
           fillInvMass2D<false, 1>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 2:
-        {
+        case 2: {
           fillInvMass2D<false, 2>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 3:
-        {
+        case 3: {
           fillInvMass2D<false, 3>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 4:
-        {
+        case 4: {
           fillInvMass2D<false, 4>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 5:
-        {
+        case 5: {
           fillInvMass2D<false, 5>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 6:
-        {
+        case 6: {
           fillInvMass2D<false, 6>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 7:
-        {
+        case 7: {
           fillInvMass2D<false, 7>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 8:
-        {
+        case 8: {
           fillInvMass2D<false, 8>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
-        case 9:
-        {
+        case 9: {
           fillInvMass2D<false, 9>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
@@ -745,7 +734,6 @@ struct phik0shortanalysis {
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
 
-
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
           if (recPhi.Rapidity() > 0.8)
@@ -784,7 +772,7 @@ struct phik0shortanalysis {
 
       int iBin = 0;
       for (int i = 0; i < nMultBin; i++) {
-        if (multBin[i] < multiplicity && multiplicity <= multBin[i+1]) {
+        if (multBin[i] < multiplicity && multiplicity <= multBin[i + 1]) {
           iBin = i;
           break;
         }
@@ -839,53 +827,43 @@ struct phik0shortanalysis {
         float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
 
         switch (iBin) {
-          case 0:
-          {
+          case 0: {
             fillInvMass2D<true, 0>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 1:
-          {
+          case 1: {
             fillInvMass2D<true, 1>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 2:
-          {
+          case 2: {
             fillInvMass2D<true, 2>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 3:
-          {
+          case 3: {
             fillInvMass2D<true, 3>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 4:
-          {
+          case 4: {
             fillInvMass2D<true, 4>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 5:
-          {
+          case 5: {
             fillInvMass2D<true, 5>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 6:
-          {
+          case 6: {
             fillInvMass2D<true, 6>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 7:
-          {
+          case 7: {
             fillInvMass2D<true, 7>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 8:
-          {
+          case 8: {
             fillInvMass2D<true, 8>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
-          case 9:
-          {
+          case 9: {
             fillInvMass2D<true, 9>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
