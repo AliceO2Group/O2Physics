@@ -37,8 +37,6 @@
 #include "PWGLF/Utils/svPoolCreator.h"
 #include "PWGLF/DataModel/LFHypernucleiTables.h"
 
-static constexpr int POS = 0, NEG = 1;
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
