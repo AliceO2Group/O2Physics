@@ -156,6 +156,7 @@ struct hyperKinkRecoTask {
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<float> customVertexerTimeMargin{"customVertexerTimeMargin", 800, "Time margin for custom vertexer (ns)"};
   Configurable<bool> skipAmbiTracks{"skipAmbiTracks", false, "Skip ambiguous tracks"};
+  Configurable<bool> unlikeSignBkg{"unlikeSignBkg", false, "Use unlike sign background"};
 
   // CCDB options
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -371,7 +372,7 @@ struct hyperKinkRecoTask {
 
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
-    auto& kinkPool = svCreator.getSVCandPool(collisions);
+    auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
     LOG(debug) << "SV pool size: " << kinkPool.size();
 
     for (auto& svCand : kinkPool) {
