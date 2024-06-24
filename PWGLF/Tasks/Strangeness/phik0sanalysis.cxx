@@ -49,7 +49,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace 
+namespace
 {
   static constexpr int nMultBin = 10;
 
@@ -96,11 +96,11 @@ struct phik0shortanalysis {
 
   // Configurables on Phi mass
   Configurable<int> nBins{"nBins", 50, "N bins in cfgPhimassaxis"};
-  Configurable<std::vector<float>> lowmPhiInc{"lowmPhiInc", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass Inclusive"}; 
+  Configurable<std::vector<float>> lowmPhiInc{"lowmPhiInc", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass Inclusive"};
   Configurable<std::vector<float>> upmPhiInc{"upmPhiInc", std::vector<float>{mPhi, mPhi + nMultBin}, "Upper limits on Phi mass Inclusive"};
-  Configurable<std::vector<float>> lowmPhiFCut{"lowmPhiFCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass First Cut"}; 
+  Configurable<std::vector<float>> lowmPhiFCut{"lowmPhiFCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass First Cut"};
   Configurable<std::vector<float>> upmPhiFCut{"upmPhiFCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Upper limits on Phi mass First Cut"};
-  Configurable<std::vector<float>> lowmPhiSCut{"lowmPhiSCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass Second Cut"}; 
+  Configurable<std::vector<float>> lowmPhiSCut{"lowmPhiSCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass Second Cut"};
   Configurable<std::vector<float>> upmPhiSCut{"upmPhiSCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Upper limits on Phi mass Second Cut"};
 
   // Configurables for phi selection
@@ -233,7 +233,7 @@ struct phik0shortanalysis {
   using V0DaughterCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
 
   // Defining the type of the Pions
-  using PionCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>; 
+  using PionCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>;
 
   // Defining the binning policy for mixed event
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
@@ -517,7 +517,7 @@ struct phik0shortanalysis {
             PhipurHist.fill(HIST("h2PhipurK0SInvMassFirstCut"), multiplicity, recPhi.M());
             isCountedK0SFirstCut = true;
           }
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
           if (!isCountedK0SSecondCut) {
             PhipurHist.fill(HIST("h2PhipurK0SInvMassSecondCut"), multiplicity, recPhi.M());
@@ -555,7 +555,7 @@ struct phik0shortanalysis {
           if (!isCountedPiSecondCut) {
             PhipurHist.fill(HIST("h3PhipurPiInvMassSecondCut"), multiplicity, recPi.Pt(), recPhi.M());
             isCountedPiSecondCut = true;
-          } 
+          }
         }
       }
     }
@@ -627,11 +627,11 @@ struct phik0shortanalysis {
 
           if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
             countInclusive++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay) 
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
           if (lowmPhiFCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiFCut->at(iBin))
             countLtFirstCut++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
           if (lowmPhiSCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiSCut->at(iBin))
             countLtSecondCut++;
@@ -754,14 +754,12 @@ struct phik0shortanalysis {
           listrecPhi.push_back(recPhi);
 
           countInclusive++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay) 
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
           countLtFirstCut++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
           countLtSecondCut++;
-            
-          
         }
       }
 
@@ -828,10 +826,10 @@ struct phik0shortanalysis {
           listrecPhi.push_back(recPhi);
 
           countInclusive++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay) 
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
           countLtFirstCut++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
           countLtSecondCut++;
         }
@@ -943,10 +941,10 @@ struct phik0shortanalysis {
           listrecPhi.push_back(recPhi);
 
           countInclusive++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay) 
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
           countLtFirstCut++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay) 
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
           countLtSecondCut++;
         }
