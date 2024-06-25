@@ -589,7 +589,7 @@ struct dielectronQC {
         centbin = static_cast<int>(cent_bin_edges.size()) - 2;
       }
 
-      float ep2 = collision.ep2ft0c();
+      float ep2 = collision.ep2btot();
       int epbin = lower_bound(ep_bin_edges.begin(), ep_bin_edges.end(), ep2) - ep_bin_edges.begin() - 1;
       if (epbin < 0) {
         epbin = 0;

@@ -574,6 +574,11 @@ struct Pi0EtaToGammaGamma {
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
       const std::array<float, 2> q2vector[3] = {q2ft0m, q2ft0a, q2ft0c};
 
+      std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
+      std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
+      std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
+      const std::array<float, 2> q3vector[3] = {q3ft0m, q3ft0a, q3ft0c};
+
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;
       if (zbin < 0) {
         zbin = 0;
@@ -589,7 +594,7 @@ struct Pi0EtaToGammaGamma {
         centbin = static_cast<int>(cent_bin_edges.size()) - 2;
       }
 
-      float ep2 = collision.ep2ft0c();
+      float ep2 = collision.ep2btot();
       int epbin = lower_bound(ep_bin_edges.begin(), ep_bin_edges.end(), ep2) - ep_bin_edges.begin() - 1;
       if (epbin < 0) {
         epbin = 0;
@@ -627,9 +632,10 @@ struct Pi0EtaToGammaGamma {
 
           if (cfgDoFlow) {
             std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]));
+            std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
+            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
           } else {
-            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), 0.0);
+            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
           }
 
           if constexpr (pairtype == PairType::kEMCEMC) {
@@ -694,9 +700,10 @@ struct Pi0EtaToGammaGamma {
             }
             if (cfgDoFlow) {
               std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * veeg.Phi())), static_cast<float>(std::sin(2 * veeg.Phi()))};
-              fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]));
+              std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * veeg.Phi())), static_cast<float>(std::sin(3 * veeg.Phi()))};
+              fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
             } else {
-              fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt(), 0.0);
+              fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt(), 0.0, 0.0);
             }
 
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
@@ -728,9 +735,10 @@ struct Pi0EtaToGammaGamma {
           }
           if (cfgDoFlow) {
             std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]));
+            std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
+            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
           } else {
-            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), 0.0);
+            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
           }
           std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
           std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, g2.globalIndex());
@@ -781,9 +789,10 @@ struct Pi0EtaToGammaGamma {
               }
               if (cfgDoFlow) {
                 std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]));
+                std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
               } else {
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0);
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
               }
             }
           }
@@ -814,9 +823,10 @@ struct Pi0EtaToGammaGamma {
               }
               if (cfgDoFlow) {
                 std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]));
+                std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
               } else {
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0);
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
               }
             }
           }
@@ -845,9 +855,10 @@ struct Pi0EtaToGammaGamma {
               }
               if (cfgDoFlow) {
                 std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]));
+                std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
               } else {
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0);
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
               }
             }
           }
