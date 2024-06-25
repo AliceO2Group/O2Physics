@@ -155,6 +155,7 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> doTwoTracks{"doTwoTracks", false, {"Define histos for two tracks and allow to fill them"}};
   Configurable<bool> doPionStudy{"doPionStudy", false, {"Define histos for two pions and allow to fill them"}};
   Configurable<bool> doMuonStudy{"doMuonStudy", false, {"Define histos for two muons and allow to fill them"}};
+  Configurable<bool> doJpsiMuMuTests{"doJpsiMuMuTests", false, {"Define specific-tests histos for two muons and allow to fill them"}};
   Configurable<bool> doFourTracks{"doFourTracks", false, {"Define histos for four tracks and allow to fill them"}};
   Configurable<bool> doSixTracks{"doSixTracks", false, {"Define histos for six tracks and allow to fill them"}};
 
@@ -436,110 +437,114 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap05", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap03", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+        if (doJpsiMuMuTests) {
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap05", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap03", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+        }
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap05", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap03", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi6", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi7", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi8", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi9", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi11", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi13", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi14", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi15", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi16", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi6", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi7", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi8", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi9", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi11", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi13", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi14", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi15", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi16", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC6", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC7", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC8", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC9", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC11", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC13", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC14", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC15", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC16", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC6", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC7", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC8", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC9", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC11", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC13", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC14", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC15", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC16", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+        if (doJpsiMuMuTests) {
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap05", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap03", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi6", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi7", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi8", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi9", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi11", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi13", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi14", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi15", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi16", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi6", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi7", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi8", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi9", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi11", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi13", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi14", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi15", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi16", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC6", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC7", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC8", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC9", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC11", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC13", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC14", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC15", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC16", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC1", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC2", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC3", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC4", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC5", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC6", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC7", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC8", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC9", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC11", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC13", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC14", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC15", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+          histos.add("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC16", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+        }
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutLSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {axisAcoplanarity});
         histos.add("EventTwoTracks/MuonsSelection/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
@@ -552,18 +557,22 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut1", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut2", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut3", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut4", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut5", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+        if (doJpsiMuMuTests) {
+          histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut1", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+          histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut2", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+          histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut3", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+          histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut4", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+          histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut5", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+        }
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut1", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut2", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut3", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut4", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut5", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+        if (doJpsiMuMuTests) {
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut1", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut2", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut3", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut4", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+          histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut5", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+        }
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXY", ";Daughter #it{p_{T}} (GeV/c);Daughter DCA_{XY} (cm)", HistType::kTH2D, {axisPt, axisDCA});
@@ -1412,26 +1421,28 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXY"))->Fill(trkDaug2.pt(), trkDaug2.dcaXY());
         histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhi"))->Fill(muon[0].Pt(), phiModNtrk1);
         histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhi"))->Fill(muon[1].Pt(), phiModNtrk2);
-        if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[0].Pt(), phiModNtrk1);
-        if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN1))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[1].Pt(), phiModNtrk2);
-        if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN2))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut2"))->Fill(muon[0].Pt(), phiModNtrk1);
-        if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN2))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut2"))->Fill(muon[1].Pt(), phiModNtrk2);
-        if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN3))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut3"))->Fill(muon[0].Pt(), phiModNtrk1);
-        if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN3))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut3"))->Fill(muon[1].Pt(), phiModNtrk2);
-        if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN4))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut4"))->Fill(muon[0].Pt(), phiModNtrk1);
-        if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN4))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut4"))->Fill(muon[1].Pt(), phiModNtrk2);
-        if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN5))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut5"))->Fill(muon[0].Pt(), phiModNtrk1);
-        if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN5))
-          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut5"))->Fill(muon[1].Pt(), phiModNtrk2);
+        if (doJpsiMuMuTests) {
+          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[0].Pt(), phiModNtrk1);
+          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN1))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[1].Pt(), phiModNtrk2);
+          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN2))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut2"))->Fill(muon[0].Pt(), phiModNtrk1);
+          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN2))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut2"))->Fill(muon[1].Pt(), phiModNtrk2);
+          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN3))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut3"))->Fill(muon[0].Pt(), phiModNtrk1);
+          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN3))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut3"))->Fill(muon[1].Pt(), phiModNtrk2);
+          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN4))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut4"))->Fill(muon[0].Pt(), phiModNtrk1);
+          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN4))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut4"))->Fill(muon[1].Pt(), phiModNtrk2);
+          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN5))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut5"))->Fill(muon[0].Pt(), phiModNtrk1);
+          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN5))
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut5"))->Fill(muon[1].Pt(), phiModNtrk2);
+        }
         if (motherOfMuons.Pt() < 0.2) {
           histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassPtCut"))->Fill(motherOfMuons.M());
           histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCut"))->Fill(motherOfMuons.M());
@@ -1441,213 +1452,217 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXYPtCut"))->Fill(trkDaug2.pt(), trkDaug2.dcaXY());
           if (sign < 0) {
             histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUS"))->Fill(motherOfMuons.M());
-            if (muon[0].Eta() < 0.0 && muon[1].Eta() < 0.0)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
-            if (muon[0].Eta() > 0.0 && muon[1].Eta() > 0.0)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta"))->Fill(motherOfMuons.M());
-            if (motherOfMuons.Rapidity() < 0.0)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegRap"))->Fill(motherOfMuons.M());
-            if (motherOfMuons.Rapidity() > 0.0)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposRap"))->Fill(motherOfMuons.M());
-            if (std::abs(motherOfMuons.Rapidity()) < 1.2)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap12"))->Fill(motherOfMuons.M());
-            if (std::abs(motherOfMuons.Rapidity()) < 1.0)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap10"))->Fill(motherOfMuons.M());
-            if (std::abs(motherOfMuons.Rapidity()) < 0.8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap08"))->Fill(motherOfMuons.M());
-            if (std::abs(motherOfMuons.Rapidity()) < 0.5)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap05"))->Fill(motherOfMuons.M());
-            if (std::abs(motherOfMuons.Rapidity()) < 0.3)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap03"))->Fill(motherOfMuons.M());
-            if (countTPCcls70 == 2)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls70"))->Fill(motherOfMuons.M());
-            if (countTPCcls100 == 2)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls100"))->Fill(motherOfMuons.M());
-            if (countTPCxRws70 == 2)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws70"))->Fill(motherOfMuons.M());
-            if (countTPCxRws100 == 2)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws100"))->Fill(motherOfMuons.M());
-            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN1))
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut1"))->Fill(motherOfMuons.M());
-            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN2) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN2))
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut2"))->Fill(motherOfMuons.M());
-            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN3) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN3))
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut3"))->Fill(motherOfMuons.M());
-            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN4) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN4))
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut4"))->Fill(motherOfMuons.M());
-            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN5) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN5))
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut5"))->Fill(motherOfMuons.M());
-            if (-8 * o2::constants::math::PI / 8 <= phiPos && phiPos <= -7 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi1"))->Fill(motherOfMuons.M());
-            if (-7 * o2::constants::math::PI / 8 < phiPos && phiPos <= -6 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi2"))->Fill(motherOfMuons.M());
-            if (-6 * o2::constants::math::PI / 8 < phiPos && phiPos <= -5 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi3"))->Fill(motherOfMuons.M());
-            if (-5 * o2::constants::math::PI / 8 < phiPos && phiPos <= -4 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi4"))->Fill(motherOfMuons.M());
-            if (-4 * o2::constants::math::PI / 8 < phiPos && phiPos <= -3 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi5"))->Fill(motherOfMuons.M());
-            if (-3 * o2::constants::math::PI / 8 < phiPos && phiPos <= -2 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi6"))->Fill(motherOfMuons.M());
-            if (-2 * o2::constants::math::PI / 8 < phiPos && phiPos <= -1 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi7"))->Fill(motherOfMuons.M());
-            if (-1 * o2::constants::math::PI / 8 < phiPos && phiPos <= -0 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi8"))->Fill(motherOfMuons.M());
-            if (0 * o2::constants::math::PI / 8 < phiPos && phiPos <= 1 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi9"))->Fill(motherOfMuons.M());
-            if (1 * o2::constants::math::PI / 8 < phiPos && phiPos <= 2 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi10"))->Fill(motherOfMuons.M());
-            if (2 * o2::constants::math::PI / 8 < phiPos && phiPos <= 3 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi11"))->Fill(motherOfMuons.M());
-            if (3 * o2::constants::math::PI / 8 < phiPos && phiPos <= 4 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi12"))->Fill(motherOfMuons.M());
-            if (4 * o2::constants::math::PI / 8 < phiPos && phiPos <= 5 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi13"))->Fill(motherOfMuons.M());
-            if (5 * o2::constants::math::PI / 8 < phiPos && phiPos <= 6 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi14"))->Fill(motherOfMuons.M());
-            if (6 * o2::constants::math::PI / 8 < phiPos && phiPos <= 7 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi15"))->Fill(motherOfMuons.M());
-            if (7 * o2::constants::math::PI / 8 < phiPos && phiPos <= 8 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi16"))->Fill(motherOfMuons.M());
-            if (-8 * o2::constants::math::PI / 8 <= phiNeg && phiNeg <= -7 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi1"))->Fill(motherOfMuons.M());
-            if (-7 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -6 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi2"))->Fill(motherOfMuons.M());
-            if (-6 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -5 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi3"))->Fill(motherOfMuons.M());
-            if (-5 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -4 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi4"))->Fill(motherOfMuons.M());
-            if (-4 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -3 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi5"))->Fill(motherOfMuons.M());
-            if (-3 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -2 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi6"))->Fill(motherOfMuons.M());
-            if (-2 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -1 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi7"))->Fill(motherOfMuons.M());
-            if (-1 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -0 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi8"))->Fill(motherOfMuons.M());
-            if (0 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 1 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi9"))->Fill(motherOfMuons.M());
-            if (1 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 2 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi10"))->Fill(motherOfMuons.M());
-            if (2 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 3 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi11"))->Fill(motherOfMuons.M());
-            if (3 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 4 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi12"))->Fill(motherOfMuons.M());
-            if (4 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 5 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi13"))->Fill(motherOfMuons.M());
-            if (5 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 6 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi14"))->Fill(motherOfMuons.M());
-            if (6 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 7 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi15"))->Fill(motherOfMuons.M());
-            if (7 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 8 * o2::constants::math::PI / 8)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi16"))->Fill(motherOfMuons.M());
+            if (doJpsiMuMuTests) {
+              if (muon[0].Eta() < 0.0 && muon[1].Eta() < 0.0)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
+              if (muon[0].Eta() > 0.0 && muon[1].Eta() > 0.0)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta"))->Fill(motherOfMuons.M());
+              if (motherOfMuons.Rapidity() < 0.0)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegRap"))->Fill(motherOfMuons.M());
+              if (motherOfMuons.Rapidity() > 0.0)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposRap"))->Fill(motherOfMuons.M());
+              if (std::abs(motherOfMuons.Rapidity()) < 1.2)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap12"))->Fill(motherOfMuons.M());
+              if (std::abs(motherOfMuons.Rapidity()) < 1.0)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap10"))->Fill(motherOfMuons.M());
+              if (std::abs(motherOfMuons.Rapidity()) < 0.8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap08"))->Fill(motherOfMuons.M());
+              if (std::abs(motherOfMuons.Rapidity()) < 0.5)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap05"))->Fill(motherOfMuons.M());
+              if (std::abs(motherOfMuons.Rapidity()) < 0.3)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap03"))->Fill(motherOfMuons.M());
+              if (countTPCcls70 == 2)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls70"))->Fill(motherOfMuons.M());
+              if (countTPCcls100 == 2)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls100"))->Fill(motherOfMuons.M());
+              if (countTPCxRws70 == 2)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws70"))->Fill(motherOfMuons.M());
+              if (countTPCxRws100 == 2)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws100"))->Fill(motherOfMuons.M());
+              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN1))
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut1"))->Fill(motherOfMuons.M());
+              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN2) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN2))
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut2"))->Fill(motherOfMuons.M());
+              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN3) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN3))
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut3"))->Fill(motherOfMuons.M());
+              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN4) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN4))
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut4"))->Fill(motherOfMuons.M());
+              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN5) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN5))
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcBordersCut5"))->Fill(motherOfMuons.M());
+              if (-8 * o2::constants::math::PI / 8 <= phiPos && phiPos <= -7 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi1"))->Fill(motherOfMuons.M());
+              if (-7 * o2::constants::math::PI / 8 < phiPos && phiPos <= -6 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi2"))->Fill(motherOfMuons.M());
+              if (-6 * o2::constants::math::PI / 8 < phiPos && phiPos <= -5 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi3"))->Fill(motherOfMuons.M());
+              if (-5 * o2::constants::math::PI / 8 < phiPos && phiPos <= -4 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi4"))->Fill(motherOfMuons.M());
+              if (-4 * o2::constants::math::PI / 8 < phiPos && phiPos <= -3 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi5"))->Fill(motherOfMuons.M());
+              if (-3 * o2::constants::math::PI / 8 < phiPos && phiPos <= -2 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi6"))->Fill(motherOfMuons.M());
+              if (-2 * o2::constants::math::PI / 8 < phiPos && phiPos <= -1 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi7"))->Fill(motherOfMuons.M());
+              if (-1 * o2::constants::math::PI / 8 < phiPos && phiPos <= -0 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi8"))->Fill(motherOfMuons.M());
+              if (0 * o2::constants::math::PI / 8 < phiPos && phiPos <= 1 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi9"))->Fill(motherOfMuons.M());
+              if (1 * o2::constants::math::PI / 8 < phiPos && phiPos <= 2 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi10"))->Fill(motherOfMuons.M());
+              if (2 * o2::constants::math::PI / 8 < phiPos && phiPos <= 3 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi11"))->Fill(motherOfMuons.M());
+              if (3 * o2::constants::math::PI / 8 < phiPos && phiPos <= 4 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi12"))->Fill(motherOfMuons.M());
+              if (4 * o2::constants::math::PI / 8 < phiPos && phiPos <= 5 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi13"))->Fill(motherOfMuons.M());
+              if (5 * o2::constants::math::PI / 8 < phiPos && phiPos <= 6 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi14"))->Fill(motherOfMuons.M());
+              if (6 * o2::constants::math::PI / 8 < phiPos && phiPos <= 7 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi15"))->Fill(motherOfMuons.M());
+              if (7 * o2::constants::math::PI / 8 < phiPos && phiPos <= 8 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhi16"))->Fill(motherOfMuons.M());
+              if (-8 * o2::constants::math::PI / 8 <= phiNeg && phiNeg <= -7 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi1"))->Fill(motherOfMuons.M());
+              if (-7 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -6 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi2"))->Fill(motherOfMuons.M());
+              if (-6 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -5 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi3"))->Fill(motherOfMuons.M());
+              if (-5 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -4 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi4"))->Fill(motherOfMuons.M());
+              if (-4 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -3 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi5"))->Fill(motherOfMuons.M());
+              if (-3 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -2 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi6"))->Fill(motherOfMuons.M());
+              if (-2 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -1 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi7"))->Fill(motherOfMuons.M());
+              if (-1 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= -0 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi8"))->Fill(motherOfMuons.M());
+              if (0 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 1 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi9"))->Fill(motherOfMuons.M());
+              if (1 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 2 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi10"))->Fill(motherOfMuons.M());
+              if (2 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 3 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi11"))->Fill(motherOfMuons.M());
+              if (3 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 4 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi12"))->Fill(motherOfMuons.M());
+              if (4 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 5 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi13"))->Fill(motherOfMuons.M());
+              if (5 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 6 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi14"))->Fill(motherOfMuons.M());
+              if (6 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 7 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi15"))->Fill(motherOfMuons.M());
+              if (7 * o2::constants::math::PI / 8 < phiNeg && phiNeg <= 8 * o2::constants::math::PI / 8)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhi16"))->Fill(motherOfMuons.M());
 
-            if (-8 * o2::constants::math::PI / 256 <= phiPosTPC && phiPosTPC <= -7 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC1"))->Fill(motherOfMuons.M());
-            if (-7 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -6 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC2"))->Fill(motherOfMuons.M());
-            if (-6 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -5 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC3"))->Fill(motherOfMuons.M());
-            if (-5 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -4 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC4"))->Fill(motherOfMuons.M());
-            if (-4 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -3 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC5"))->Fill(motherOfMuons.M());
-            if (-3 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -2 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC6"))->Fill(motherOfMuons.M());
-            if (-2 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -1 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC7"))->Fill(motherOfMuons.M());
-            if (-1 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -0 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC8"))->Fill(motherOfMuons.M());
-            if (0 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 1 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC9"))->Fill(motherOfMuons.M());
-            if (1 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 2 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC10"))->Fill(motherOfMuons.M());
-            if (2 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 3 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC11"))->Fill(motherOfMuons.M());
-            if (3 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 4 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC12"))->Fill(motherOfMuons.M());
-            if (4 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 5 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC13"))->Fill(motherOfMuons.M());
-            if (5 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 6 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC14"))->Fill(motherOfMuons.M());
-            if (6 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 7 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC15"))->Fill(motherOfMuons.M());
-            if (7 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 8 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC16"))->Fill(motherOfMuons.M());
-            if (-8 * o2::constants::math::PI / 256 <= phiNegTPC && phiNegTPC <= -7 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC1"))->Fill(motherOfMuons.M());
-            if (-7 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -6 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC2"))->Fill(motherOfMuons.M());
-            if (-6 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -5 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC3"))->Fill(motherOfMuons.M());
-            if (-5 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -4 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC4"))->Fill(motherOfMuons.M());
-            if (-4 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -3 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC5"))->Fill(motherOfMuons.M());
-            if (-3 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -2 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC6"))->Fill(motherOfMuons.M());
-            if (-2 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -1 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC7"))->Fill(motherOfMuons.M());
-            if (-1 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -0 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC8"))->Fill(motherOfMuons.M());
-            if (0 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 1 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC9"))->Fill(motherOfMuons.M());
-            if (1 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 2 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC10"))->Fill(motherOfMuons.M());
-            if (2 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 3 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC11"))->Fill(motherOfMuons.M());
-            if (3 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 4 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC12"))->Fill(motherOfMuons.M());
-            if (4 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 5 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC13"))->Fill(motherOfMuons.M());
-            if (5 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 6 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC14"))->Fill(motherOfMuons.M());
-            if (6 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 7 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC15"))->Fill(motherOfMuons.M());
-            if (7 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 8 * o2::constants::math::PI / 256)
-              histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC16"))->Fill(motherOfMuons.M());
+              if (-8 * o2::constants::math::PI / 256 <= phiPosTPC && phiPosTPC <= -7 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC1"))->Fill(motherOfMuons.M());
+              if (-7 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -6 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC2"))->Fill(motherOfMuons.M());
+              if (-6 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -5 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC3"))->Fill(motherOfMuons.M());
+              if (-5 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -4 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC4"))->Fill(motherOfMuons.M());
+              if (-4 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -3 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC5"))->Fill(motherOfMuons.M());
+              if (-3 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -2 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC6"))->Fill(motherOfMuons.M());
+              if (-2 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -1 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC7"))->Fill(motherOfMuons.M());
+              if (-1 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= -0 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC8"))->Fill(motherOfMuons.M());
+              if (0 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 1 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC9"))->Fill(motherOfMuons.M());
+              if (1 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 2 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC10"))->Fill(motherOfMuons.M());
+              if (2 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 3 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC11"))->Fill(motherOfMuons.M());
+              if (3 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 4 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC12"))->Fill(motherOfMuons.M());
+              if (4 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 5 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC13"))->Fill(motherOfMuons.M());
+              if (5 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 6 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC14"))->Fill(motherOfMuons.M());
+              if (6 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 7 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC15"))->Fill(motherOfMuons.M());
+              if (7 * o2::constants::math::PI / 256 < phiPosTPC && phiPosTPC <= 8 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmupPhiTPC16"))->Fill(motherOfMuons.M());
+              if (-8 * o2::constants::math::PI / 256 <= phiNegTPC && phiNegTPC <= -7 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC1"))->Fill(motherOfMuons.M());
+              if (-7 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -6 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC2"))->Fill(motherOfMuons.M());
+              if (-6 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -5 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC3"))->Fill(motherOfMuons.M());
+              if (-5 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -4 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC4"))->Fill(motherOfMuons.M());
+              if (-4 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -3 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC5"))->Fill(motherOfMuons.M());
+              if (-3 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -2 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC6"))->Fill(motherOfMuons.M());
+              if (-2 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -1 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC7"))->Fill(motherOfMuons.M());
+              if (-1 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= -0 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC8"))->Fill(motherOfMuons.M());
+              if (0 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 1 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC9"))->Fill(motherOfMuons.M());
+              if (1 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 2 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC10"))->Fill(motherOfMuons.M());
+              if (2 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 3 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC11"))->Fill(motherOfMuons.M());
+              if (3 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 4 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC12"))->Fill(motherOfMuons.M());
+              if (4 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 5 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC13"))->Fill(motherOfMuons.M());
+              if (5 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 6 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC14"))->Fill(motherOfMuons.M());
+              if (6 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 7 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC15"))->Fill(motherOfMuons.M());
+              if (7 * o2::constants::math::PI / 256 < phiNegTPC && phiNegTPC <= 8 * o2::constants::math::PI / 256)
+                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Ruben/hInvariantMassWidePtCutUSmumPhiTPC16"))->Fill(motherOfMuons.M());
+            }
           }
           if (sign > 0)
             histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutLS"))->Fill(motherOfMuons.M());
           if (countTOFtracks == 2) {
             if (sign < 0) {
               histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUS"))->Fill(motherOfMuons.M());
-              if (muon[0].Eta() < 0.0 && muon[1].Eta() < 0.0)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
-              if (muon[0].Eta() > 0.0 && muon[1].Eta() > 0.0)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta"))->Fill(motherOfMuons.M());
-              if (motherOfMuons.Rapidity() < 0.0)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegRap"))->Fill(motherOfMuons.M());
-              if (motherOfMuons.Rapidity() > 0.0)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposRap"))->Fill(motherOfMuons.M());
-              if (std::abs(motherOfMuons.Rapidity()) < 1.2)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap12"))->Fill(motherOfMuons.M());
-              if (std::abs(motherOfMuons.Rapidity()) < 1.0)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap10"))->Fill(motherOfMuons.M());
-              if (std::abs(motherOfMuons.Rapidity()) < 0.8)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap08"))->Fill(motherOfMuons.M());
-              if (std::abs(motherOfMuons.Rapidity()) < 0.5)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap05"))->Fill(motherOfMuons.M());
-              if (std::abs(motherOfMuons.Rapidity()) < 0.3)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap03"))->Fill(motherOfMuons.M());
-              if (countTPCcls70 == 2)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls70"))->Fill(motherOfMuons.M());
-              if (countTPCcls100 == 2)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls100"))->Fill(motherOfMuons.M());
-              if (countTPCxRws70 == 2)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws70"))->Fill(motherOfMuons.M());
-              if (countTPCxRws100 == 2)
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws100"))->Fill(motherOfMuons.M());
-              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN1))
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut1"))->Fill(motherOfMuons.M());
-              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN2) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN2))
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut2"))->Fill(motherOfMuons.M());
-              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN3) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN3))
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut3"))->Fill(motherOfMuons.M());
-              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN4) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN4))
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut4"))->Fill(motherOfMuons.M());
-              if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN5) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN5))
-                histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut5"))->Fill(motherOfMuons.M());
+              if (doJpsiMuMuTests) {
+                if (muon[0].Eta() < 0.0 && muon[1].Eta() < 0.0)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
+                if (muon[0].Eta() > 0.0 && muon[1].Eta() > 0.0)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta"))->Fill(motherOfMuons.M());
+                if (motherOfMuons.Rapidity() < 0.0)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegRap"))->Fill(motherOfMuons.M());
+                if (motherOfMuons.Rapidity() > 0.0)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposRap"))->Fill(motherOfMuons.M());
+                if (std::abs(motherOfMuons.Rapidity()) < 1.2)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap12"))->Fill(motherOfMuons.M());
+                if (std::abs(motherOfMuons.Rapidity()) < 1.0)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap10"))->Fill(motherOfMuons.M());
+                if (std::abs(motherOfMuons.Rapidity()) < 0.8)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap08"))->Fill(motherOfMuons.M());
+                if (std::abs(motherOfMuons.Rapidity()) < 0.5)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap05"))->Fill(motherOfMuons.M());
+                if (std::abs(motherOfMuons.Rapidity()) < 0.3)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap03"))->Fill(motherOfMuons.M());
+                if (countTPCcls70 == 2)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls70"))->Fill(motherOfMuons.M());
+                if (countTPCcls100 == 2)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls100"))->Fill(motherOfMuons.M());
+                if (countTPCxRws70 == 2)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws70"))->Fill(motherOfMuons.M());
+                if (countTPCxRws100 == 2)
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws100"))->Fill(motherOfMuons.M());
+                if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN1))
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut1"))->Fill(motherOfMuons.M());
+                if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN2) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN2))
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut2"))->Fill(motherOfMuons.M());
+                if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN3) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN3))
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut3"))->Fill(motherOfMuons.M());
+                if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN4) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN4))
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut4"))->Fill(motherOfMuons.M());
+                if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN5) && isNotCloseToTPCBorder(phiModNtrk2, muon[0].Pt(), cutPhiModN5))
+                  histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcBordersCut5"))->Fill(motherOfMuons.M());
+              }
             }
             if (sign > 0)
               histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutLS"))->Fill(motherOfMuons.M());
@@ -1667,26 +1682,28 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWide"))->Fill(motherOfMuons.M());
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhi"))->Fill(muon[0].Pt(), phiModNtrk1);
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhi"))->Fill(muon[1].Pt(), phiModNtrk2);
-          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[0].Pt(), phiModNtrk1);
-          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN1))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[1].Pt(), phiModNtrk2);
-          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN2))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut2"))->Fill(muon[0].Pt(), phiModNtrk1);
-          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN2))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut2"))->Fill(muon[1].Pt(), phiModNtrk2);
-          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN3))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut3"))->Fill(muon[0].Pt(), phiModNtrk1);
-          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN3))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut3"))->Fill(muon[1].Pt(), phiModNtrk2);
-          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN4))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut4"))->Fill(muon[0].Pt(), phiModNtrk1);
-          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN4))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut4"))->Fill(muon[1].Pt(), phiModNtrk2);
-          if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN5))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut5"))->Fill(muon[0].Pt(), phiModNtrk1);
-          if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN5))
-            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut5"))->Fill(muon[1].Pt(), phiModNtrk2);
+          if (doJpsiMuMuTests) {
+            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[0].Pt(), phiModNtrk1);
+            if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN1))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[1].Pt(), phiModNtrk2);
+            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN2))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut2"))->Fill(muon[0].Pt(), phiModNtrk1);
+            if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN2))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut2"))->Fill(muon[1].Pt(), phiModNtrk2);
+            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN3))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut3"))->Fill(muon[0].Pt(), phiModNtrk1);
+            if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN3))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut3"))->Fill(muon[1].Pt(), phiModNtrk2);
+            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN4))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut4"))->Fill(muon[0].Pt(), phiModNtrk1);
+            if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN4))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut4"))->Fill(muon[1].Pt(), phiModNtrk2);
+            if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN5))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut5"))->Fill(muon[0].Pt(), phiModNtrk1);
+            if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN5))
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut5"))->Fill(muon[1].Pt(), phiModNtrk2);
+          }
         }
         if (reinstallRun2JpsiEventSelection(reconstructedCollision, trkDaug1, trkDaug2, motherOfMuons.Rapidity(), acoplanarity)) {
           histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWide"))->Fill(motherOfMuons.M());
