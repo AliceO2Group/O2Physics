@@ -68,8 +68,8 @@ static constexpr int nCharges = 2;
 static constexpr int nParticles = nSpecies * nCharges;
 static constexpr const char* particleTitle[nParticles] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha",
                                                           "e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
-static constexpr int PDGs[nParticles] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040,
-                                         -kElectron, -kMuonMinus, -kPiPlus, -kKPlus, -kProton, -1000010020, -1000010030, -1000020030, -1000020040};
+static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040,
+                                         -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
 // Histograms
 
