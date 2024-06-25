@@ -350,6 +350,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
                            [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(SelectionBit, selection_bit, //! Dummy
                            [](aod::evsel::EventSelectionFlags /*v*/) -> bool { return true; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
+                           [](int multPveta1) -> bool { return multPveta1 > 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
+                           [](int multPveta1) -> bool { return multPveta1 > 1; });
 
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
@@ -427,6 +431,8 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   spectra::Sel8,
                   spectra::MultNTracksPVeta1,
                   spectra::RunNumber,
+                  spectra::IsInelGt0<spectra::MultNTracksPVeta1>,
+                  spectra::IsInelGt1<spectra::MultNTracksPVeta1>,
                   spectra::CentFV0A<spectra::Sel8>,
                   spectra::CentFT0A<spectra::Sel8>,
                   spectra::CentFT0C<spectra::Sel8>,

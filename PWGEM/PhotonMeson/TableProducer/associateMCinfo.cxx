@@ -46,7 +46,7 @@ struct AssociateMCInfo {
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::V0LegMCLabels> v0legmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
-  Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
+  // Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
   Produces<o2::aod::EMEMCClusterMCLabels> ememcclustermclabels;
 
   Produces<o2::aod::BinnedGenPts> binned_gen_pt;
@@ -155,7 +155,7 @@ struct AssociateMCInfo {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   Preslice<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
-  Preslice<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  // Preslice<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<MyEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -529,56 +529,56 @@ struct AssociateMCInfo {
 
         } // end of em primary track loop
       }
-      if constexpr (static_cast<bool>(system & kDalitzMuMu)) {
-        // for dalitz mumu
-        auto emprimarymuons_coll = emprimarymuons.sliceBy(perCollision_mu, collision.globalIndex());
-        for (auto& emprimarymuon : emprimarymuons_coll) {
-          auto o2track = o2tracks.iteratorAt(emprimarymuon.trackId());
-          if (!o2track.has_mcParticle()) {
-            continue; // If no MC particle is found, skip the dilepton
-          }
-          auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
+      // if constexpr (static_cast<bool>(system & kDalitzMuMu)) {
+      //   // for dalitz mumu
+      //   auto emprimarymuons_coll = emprimarymuons.sliceBy(perCollision_mu, collision.globalIndex());
+      //   for (auto& emprimarymuon : emprimarymuons_coll) {
+      //     auto o2track = o2tracks.iteratorAt(emprimarymuon.trackId());
+      //     if (!o2track.has_mcParticle()) {
+      //       continue; // If no MC particle is found, skip the dilepton
+      //     }
+      //     auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
 
-          // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
-            fNewLabels[mctrack.globalIndex()] = fCounters[0];
-            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
-            // fMCFlags[mctrack.globalIndex()] = mcflags;
-            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-            fCounters[0]++;
-          }
-          emprimarymuonmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
+      //     // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+      //     if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+      //       fNewLabels[mctrack.globalIndex()] = fCounters[0];
+      //       fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+      //       // fMCFlags[mctrack.globalIndex()] = mcflags;
+      //       fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+      //       fCounters[0]++;
+      //     }
+      //     emprimarymuonmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
 
-          // Next, store mother-chain of this reconstructed track.
-          int motherid = -999; // first mother index
-          if (mctrack.has_mothers()) {
-            motherid = mctrack.mothersIds()[0]; // first mother index
-          }
-          while (motherid > -1) {
-            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
-              auto mp = mcTracks.iteratorAt(motherid);
+      //     // Next, store mother-chain of this reconstructed track.
+      //     int motherid = -999; // first mother index
+      //     if (mctrack.has_mothers()) {
+      //       motherid = mctrack.mothersIds()[0]; // first mother index
+      //     }
+      //     while (motherid > -1) {
+      //       if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+      //         auto mp = mcTracks.iteratorAt(motherid);
 
-              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
-                fNewLabels[mp.globalIndex()] = fCounters[0];
-                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
-                // fMCFlags[mp.globalIndex()] = mcflags;
-                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-                fCounters[0]++;
-              }
+      //         // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+      //         if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+      //           fNewLabels[mp.globalIndex()] = fCounters[0];
+      //           fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+      //           // fMCFlags[mp.globalIndex()] = mcflags;
+      //           fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+      //           fCounters[0]++;
+      //         }
 
-              if (mp.has_mothers()) {
-                motherid = mp.mothersIds()[0]; // first mother index
-              } else {
-                motherid = -999;
-              }
-            } else {
-              motherid = -999;
-            }
-          } // end of mother chain loop
+      //         if (mp.has_mothers()) {
+      //           motherid = mp.mothersIds()[0]; // first mother index
+      //         } else {
+      //           motherid = -999;
+      //         }
+      //       } else {
+      //         motherid = -999;
+      //       }
+      //     } // end of mother chain loop
 
-        } // end of em primary track loop
-      }
+      //   } // end of em primary track loop
+      // }
       if constexpr (static_cast<bool>(system & kEMC)) {
         // for emc photons
         auto ememcclusters_coll = emcclusters.sliceBy(perCollision_emc, collision.globalIndex());
@@ -692,11 +692,12 @@ struct AssociateMCInfo {
     const uint8_t sysflag = kDalitzEE;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, nullptr, nullptr, nullptr, emprimaryelectrons, nullptr);
   }
-  void processMC_PCM_DalitzEE_DalitzMuMu(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons, aod::EMPrimaryMuons const& emprimarymuons)
-  {
-    const uint8_t sysflag = kPCM | kDalitzEE | kDalitzMuMu;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons, emprimarymuons);
-  }
+
+  // void processMC_PCM_DalitzEE_DalitzMuMu(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons, aod::EMPrimaryMuons const& emprimarymuons)
+  // {
+  //   const uint8_t sysflag = kPCM | kDalitzEE | kDalitzMuMu;
+  //   skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons, emprimarymuons);
+  // }
 
   void processMC_PHOS(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, aod::PHOSClusters const& phosclusters)
   {
@@ -747,7 +748,7 @@ struct AssociateMCInfo {
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM, "create em mc event table for PCM", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE, "create em mc event table for PCM, DalitzEE", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_DalitzEE, "create em mc event table for DalitzEE", false);
-  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE_DalitzMuMu, "create em mc event table for PCM, DalitzEE, DalitzMuMu", false);
+  // PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE_DalitzMuMu, "create em mc event table for PCM, DalitzEE, DalitzMuMu", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PHOS, "create em mc event table for PHOS", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_EMC, "create em mc event table for EMCal", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_PHOS, "create em mc event table for PCM, PHOS", false);

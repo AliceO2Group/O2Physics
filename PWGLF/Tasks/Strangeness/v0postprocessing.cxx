@@ -44,6 +44,9 @@ struct v0postprocessing {
   Configurable<float> ntpcsigma{"ntpcsigma", 5, "N sigma TPC"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
   Configurable<bool> isMC{"isMC", 1, "isMC"};
+  Configurable<bool> evSel{"evSel", 1, "evSel"};
+  Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
+  Configurable<bool> hasTOF1Leg{"hasTOF1Leg", 1, "hasTOF1Leg"};
 
   HistogramRegistry registry{"registry"};
 
@@ -136,6 +139,12 @@ struct v0postprocessing {
       if (TMath::Abs(candidate.ntpcsigmanegpi()) > ntpcsigma)
         continue;
       if (TMath::Abs(candidate.ntpcsigmapospi()) > ntpcsigma)
+        continue;
+      if (evSel && candidate.evflag() < 1)
+        continue;
+      if (hasTOF1Leg && !candidate.poshastof() && !candidate.neghastof())
+        continue;
+      if (hasTOF2Leg && (!candidate.poshastof() || !candidate.neghastof()))
         continue;
 
       // K0Short analysis
