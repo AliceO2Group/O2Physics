@@ -155,8 +155,11 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> doTwoTracks{"doTwoTracks", false, {"Define histos for two tracks and allow to fill them"}};
   Configurable<bool> doPionStudy{"doPionStudy", false, {"Define histos for two pions and allow to fill them"}};
   Configurable<bool> doMuonStudy{"doMuonStudy", false, {"Define histos for two muons and allow to fill them"}};
+  Configurable<bool> doJpsiMuMuTests{"doJpsiMuMuTests", false, {"Define specific-tests histos for two muons and allow to fill them"}};
   Configurable<bool> doFourTracks{"doFourTracks", false, {"Define histos for four tracks and allow to fill them"}};
   Configurable<bool> doSixTracks{"doSixTracks", false, {"Define histos for six tracks and allow to fill them"}};
+
+
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
