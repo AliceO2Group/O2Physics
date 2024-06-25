@@ -66,9 +66,9 @@ struct TimestampTask {
       orbitResetTimestamp = mapRunToOrbitReset[runNumber];
     } else { // The run was not requested before: need to acccess CCDB!
       LOGF(debug, "Getting start-of-run and end-of-run timestamps from CCDB");
-      auto timestamps = ccdb->getRunDuration(runNumber, true);  /// fatalise if timestamps are not found
-      int64_t sorTimestamp = timestamps.first;  // timestamp of the SOR in ms
-      int64_t eorTimestamp = timestamps.second; // timestamp of the EOR in ms
+      auto timestamps = ccdb->getRunDuration(runNumber, true); /// fatalise if timestamps are not found
+      int64_t sorTimestamp = timestamps.first;                 // timestamp of the SOR in ms
+      int64_t eorTimestamp = timestamps.second;                // timestamp of the EOR in ms
 
       bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
       if (isRun2MC || isUnanchoredRun3MC) {
