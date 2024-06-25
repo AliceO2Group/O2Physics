@@ -145,13 +145,13 @@ struct CreateEMEvent {
       }
 
       // uint64_t tag = collision.selection_raw();
-      event(collision.globalIndex(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange());
 
       eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
-      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
+      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
       if constexpr (eventype == EMEventType::kEvent) {
         event_cent(105.f, 105.f, 105.f, 105.f);
@@ -232,7 +232,7 @@ struct CreateEMEvent {
 struct AssociatePhotonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
-  // Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
+  Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
 
@@ -242,22 +242,22 @@ struct AssociatePhotonToEMEvent {
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
-  // PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  bool doPCM = false, doDalitzEE = false, doDalitzMuMu = false, doPHOS = false, doEMC = false;
+  bool doPCM = false, doElectron = false, doFwdMuon = false, doPHOS = false, doEMC = false;
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processPCM")) {
       doPCM = true;
     }
-    if (context.mOptions.get<bool>("processDalitzEE")) {
-      doDalitzEE = true;
+    if (context.mOptions.get<bool>("processElectron")) {
+      doElectron = true;
     }
-    // if (context.mOptions.get<bool>("processDalitzMuMu")) {
-    //   doDalitzMuMu = true;
-    // }
+    if (context.mOptions.get<bool>("processFwdMuon")) {
+      doFwdMuon = true;
+    }
     if (context.mOptions.get<bool>("processPHOS")) {
       doPHOS = true;
     }
@@ -308,15 +308,15 @@ struct AssociatePhotonToEMEvent {
     fillEventId_Ng(collisions, photons, v0kfeventid, event_ng_pcm, perCollision_pcm);
   }
 
-  void processDalitzEE(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
+  void processElectron(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollision_el);
   }
 
-  // void processDalitzMuMu(aod::EMEvents const& collisions, aod::EMPrimaryMuons const& tracks)
-  // {
-  //   fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
-  // }
+  void processFwdMuon(aod::EMEvents const& collisions, aod::EMPrimaryMuons const& tracks)
+  {
+    fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
+  }
 
   void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
   {
@@ -342,8 +342,8 @@ struct AssociatePhotonToEMEvent {
   }
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzEE, "process dalitzee-event indexing", false);
-  // PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzMuMu, "process dalitzmumu-event indexing", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectron, "process dalitzee-event indexing", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processFwdMuon, "process forward muon indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processZeroPadding, "process zero padding.", true);
