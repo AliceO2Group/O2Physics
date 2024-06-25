@@ -52,6 +52,7 @@ struct HfCorrelatorDsHadronsSelCollision {
   Produces<aod::DmesonSelection> collisionsWithSelDs;
 
   Configurable<bool> useSel8{"useSel8", true, "Flag for applying sel8 for collision selection"};
+  Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
   Configurable<bool> doSelDsCollision{"doSelDsCollision", true, "Select collisions with at least one Ds"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -71,24 +72,28 @@ struct HfCorrelatorDsHadronsSelCollision {
   void processDsSelCollisionsData(SelCollisions::iterator const& collision,
                                   CandDsData const& candidates)
   {
-    bool isDsFound = false;
-    bool isSel8 = false;
+    bool isSelColl = true;
+    bool isDsFound = true;
+    bool isSel8 = true;
+    bool isNosameBunchPileUp = true;
     if (doSelDsCollision) {
       for (const auto& candidate : candidates) {
         if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
+          isDsFound = false;
           continue;
         }
         isDsFound = true;
         break;
       }
-    } else {
-      isDsFound = true;
     }
     if (useSel8) {
       isSel8 = collision.sel8();
-      isDsFound = isDsFound && isSel8;
     }
-    collisionsWithSelDs(isDsFound);
+    if (selNoSameBunchPileUpColl) {
+      isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+    }
+    isSelColl = isDsFound && isSel8 && isNosameBunchPileUp;
+    collisionsWithSelDs(isSelColl);
   }
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsData, "Process Ds Collision Selection Data", true);
 
@@ -96,24 +101,28 @@ struct HfCorrelatorDsHadronsSelCollision {
   void processDsSelCollisionsMcRec(SelCollisions::iterator const& collision,
                                    CandDsMcReco const& candidates)
   {
-    bool isDsFound = false;
-    bool isSel8 = false;
+    bool isSelColl = true;
+    bool isDsFound = true;
+    bool isSel8 = true;
+    bool isNosameBunchPileUp = true;
     if (doSelDsCollision) {
       for (const auto& candidate : candidates) {
         if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
+          isDsFound = false;
           continue;
         }
         isDsFound = true;
         break;
       }
-    } else {
-      isDsFound = true;
     }
     if (useSel8) {
       isSel8 = collision.sel8();
-      isDsFound = isDsFound && isSel8;
     }
-    collisionsWithSelDs(isDsFound);
+    if (selNoSameBunchPileUpColl) {
+      isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+    }
+    isSelColl = isDsFound && isSel8 && isNosameBunchPileUp;
+    collisionsWithSelDs(isSelColl);
   }
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsMcRec, "Process Ds Collision Selection MCRec", false);
 
@@ -121,23 +130,25 @@ struct HfCorrelatorDsHadronsSelCollision {
   void processDsSelCollisionsMcGen(aod::McCollision const&,
                                    CandDsMcGen const& mcParticles)
   {
-    bool isDsFound = false;
+    bool isSelColl = true;
+    bool isDsFound = true;
     if (doSelDsCollision) {
       for (const auto& particle : mcParticles) {
         if (std::abs(particle.pdgCode()) != Pdg::kDS) {
+          isDsFound = false;
           continue;
         }
         double yD = RecoDecay::y(particle.pVector(), MassDS);
         if (std::abs(yD) > yCandMax || particle.pt() < ptCandMin) {
+          isDsFound = false;
           continue;
         }
         isDsFound = true;
         break;
       }
-    } else {
-      isDsFound = true;
     }
-    collisionsWithSelDs(isDsFound);
+    isSelColl = isDsFound;
+    collisionsWithSelDs(isSelColl);
   }
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsMcGen, "Process Ds Collision Selection MCGen", false);
 };

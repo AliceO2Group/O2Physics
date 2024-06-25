@@ -14,6 +14,7 @@ o2physics_add_library(PWGEMPhotonMesonCore
                         V0PhotonCut.cxx
                         PHOSPhotonCut.cxx
                         DalitzEECut.cxx
+                        DimuonCut.cxx
                         EMCPhotonCut.cxx
                         PairCut.cxx
                         CutsLibrary.cxx
@@ -24,6 +25,7 @@ o2physics_target_root_dictionary(PWGEMPhotonMesonCore
               HEADERS   EMEventCut.h
                         V0PhotonCut.h
                         DalitzEECut.h
+                        DimuonCut.h
                         PHOSPhotonCut.h
                         EMCPhotonCut.h
                         PairCut.h

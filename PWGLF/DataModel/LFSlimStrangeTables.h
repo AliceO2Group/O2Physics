@@ -31,6 +31,8 @@ DECLARE_SOA_COLUMN(DcaPosPV, dcaPosPv, float);
 DECLARE_SOA_COLUMN(DcaNegPV, dcaNegPv, float);
 DECLARE_SOA_COLUMN(DcaV0Tracks, dcaV0tracks, float);
 DECLARE_SOA_COLUMN(CosPA, cosPa, double);
+DECLARE_SOA_COLUMN(AlphaAP, alphaAP, double);
+DECLARE_SOA_COLUMN(QtAP, qtAP, double);
 DECLARE_SOA_COLUMN(TpcNsigmaPos, tpcNsigmaPos, float);
 DECLARE_SOA_COLUMN(TpcNsigmaNeg, tpcNsigmaNeg, float);
 DECLARE_SOA_COLUMN(PxPos, pxPos, float);
@@ -43,6 +45,8 @@ DECLARE_SOA_COLUMN(GenPt, gentPt, float);
 DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(GenCt, genCt, float);
 DECLARE_SOA_COLUMN(GenLen, genLen, float);
+DECLARE_SOA_COLUMN(PDGCodeDauPos, pdgCodeDauPos, int);
+DECLARE_SOA_COLUMN(PDGCodeDauNeg, pdgCodeDauNeg, int);
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);
 DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
@@ -60,6 +64,8 @@ DECLARE_SOA_TABLE(LambdaTableML, "AOD", "LAMBDATABLEML",
                   SlimLambdaTables::DcaNegPV,
                   SlimLambdaTables::DcaV0Tracks,
                   SlimLambdaTables::CosPA,
+                  SlimLambdaTables::AlphaAP,
+                  SlimLambdaTables::QtAP,
                   SlimLambdaTables::TpcNsigmaPos,
                   SlimLambdaTables::TpcNsigmaNeg,
                   SlimLambdaTables::IsFD);
@@ -75,11 +81,15 @@ DECLARE_SOA_TABLE(McLambdaTableML, "AOD", "MCLAMBDATABLEML",
                   SlimLambdaTables::DcaNegPV,
                   SlimLambdaTables::DcaV0Tracks,
                   SlimLambdaTables::CosPA,
+                  SlimLambdaTables::AlphaAP,
+                  SlimLambdaTables::QtAP,
                   SlimLambdaTables::TpcNsigmaPos,
                   SlimLambdaTables::TpcNsigmaNeg,
                   SlimLambdaTables::GenPt,
                   SlimLambdaTables::GenEta,
                   SlimLambdaTables::GenCt,
+                  SlimLambdaTables::PDGCodeDauPos,
+                  SlimLambdaTables::PDGCodeDauNeg,
                   SlimLambdaTables::PDGCode,
                   SlimLambdaTables::PDGCodeMother,
                   SlimLambdaTables::IsReco);

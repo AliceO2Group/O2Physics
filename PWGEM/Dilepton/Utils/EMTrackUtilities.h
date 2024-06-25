@@ -39,5 +39,23 @@ float dca3DinSigma(T const& track)
   }
 }
 //_______________________________________________________________________
+template <typename T>
+float fwdDcaXYinSigma(T const& track)
+{
+  float cXX = track.cXX();
+  float cYY = track.cYY();
+  float cXY = track.cXY();
+  float dcaX = track.fwdDcaX(); // in cm
+  float dcaY = track.fwdDcaY(); // in cm
+
+  float det = cXX * cYY - cXY * cXY; // determinant
+  if (det < 0) {
+    return 999.f;
+  } else {
+    return std::sqrt(std::abs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
+  }
+}
+//_______________________________________________________________________
+//_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 #endif // PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_

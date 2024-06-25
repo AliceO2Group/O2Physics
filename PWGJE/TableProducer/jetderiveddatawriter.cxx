@@ -34,23 +34,25 @@ using namespace o2::framework::expressions;
 
 struct JetDerivedDataWriter {
 
-  Configurable<float> chargedJetPtMin{"chargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
-  Configurable<float> chargedEventWiseSubtractedJetPtMin{"chargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
-  Configurable<float> chargedMCPJetPtMin{"chargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
-  Configurable<float> neutralJetPtMin{"neutralJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
-  Configurable<float> fullJetPtMin{"fullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
-  Configurable<float> chargedEventWiseSubtractedD0JetPtMin{"chargedEventWiseSubtractedD0JetPtMin", 0.0, "Minimum charged event-wise subtracted D0 jet pt to accept event"};
-  Configurable<float> chargedD0JetPtMin{"chargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
-  Configurable<float> chargedEventWiseSubtractedLcJetPtMin{"chargedEventWiseSubtractedLcJetPtMin", 0.0, "Minimum charged event-wise subtracted Lc jet pt to accept event"};
-  Configurable<float> chargedLcJetPtMin{"chargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
+  struct : ConfigurableGroup {
+    Configurable<float> chargedJetPtMin{"chargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
+    Configurable<float> chargedEventWiseSubtractedJetPtMin{"chargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
+    Configurable<float> chargedMCPJetPtMin{"chargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
+    Configurable<float> neutralJetPtMin{"neutralJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
+    Configurable<float> fullJetPtMin{"fullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
+    Configurable<float> chargedEventWiseSubtractedD0JetPtMin{"chargedEventWiseSubtractedD0JetPtMin", 0.0, "Minimum charged event-wise subtracted D0 jet pt to accept event"};
+    Configurable<float> chargedD0JetPtMin{"chargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
+    Configurable<float> chargedEventWiseSubtractedLcJetPtMin{"chargedEventWiseSubtractedLcJetPtMin", 0.0, "Minimum charged event-wise subtracted Lc jet pt to accept event"};
+    Configurable<float> chargedLcJetPtMin{"chargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
 
-  Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
-  Configurable<bool> saveBCsTable{"saveBCsTable", true, "save the bunch crossing table to the output"};
-  Configurable<bool> saveClustersTable{"saveClustersTable", true, "save the clusters table to the output"};
-  Configurable<bool> saveD0Table{"saveD0Table", false, "save the D0 table to the output"};
-  Configurable<bool> saveLcTable{"saveLcTable", false, "save the Lc table to the output"};
+    Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
+    Configurable<bool> saveBCsTable{"saveBCsTable", true, "save the bunch crossing table to the output"};
+    Configurable<bool> saveClustersTable{"saveClustersTable", true, "save the clusters table to the output"};
+    Configurable<bool> saveD0Table{"saveD0Table", false, "save the D0 table to the output"};
+    Configurable<bool> saveLcTable{"saveLcTable", false, "save the Lc table to the output"};
 
-  Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
+    Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
+  } config;
 
   Produces<aod::StoredCollisionCounts> storedCollisionCountsTable;
   Produces<aod::StoredJDummys> storedJDummysTable;
@@ -129,7 +131,7 @@ struct JetDerivedDataWriter {
   {
     precisionPositionMask = 0xFFFFFC00; // 13 bits
     precisionMomentumMask = 0xFFFFFC00; // 13 bits  this is currently keept at 13 bits wihich gives roughly a resolution of 1/8000. This can be increased to 15 bits if really needed
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelectionForCounting));
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(config.eventSelectionForCounting));
   }
 
   bool acceptCollision(aod::JCollision const&)
@@ -156,23 +158,23 @@ struct JetDerivedDataWriter {
   {
     float jetPtMin = 0.0;
     if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelJets>) {
-      jetPtMin = chargedJetPtMin;
+      jetPtMin = config.chargedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedEventWiseSubtractedJets>) {
-      jetPtMin = chargedEventWiseSubtractedJetPtMin;
+      jetPtMin = config.chargedEventWiseSubtractedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets>) {
-      jetPtMin = chargedMCPJetPtMin;
+      jetPtMin = config.chargedMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralJets>) {
-      jetPtMin = neutralJetPtMin;
+      jetPtMin = config.neutralJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::FullJets>) {
-      jetPtMin = fullJetPtMin;
+      jetPtMin = config.fullJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedJets>) {
-      jetPtMin = chargedD0JetPtMin;
+      jetPtMin = config.chargedD0JetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedEventWiseSubtractedJets>) {
-      jetPtMin = chargedEventWiseSubtractedD0JetPtMin;
+      jetPtMin = config.chargedEventWiseSubtractedD0JetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedJets>) {
-      jetPtMin = chargedLcJetPtMin;
+      jetPtMin = config.chargedLcJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedEventWiseSubtractedJets>) {
-      jetPtMin = chargedEventWiseSubtractedLcJetPtMin;
+      jetPtMin = config.chargedEventWiseSubtractedLcJetPtMin;
     } else {
       jetPtMin = 0.0;
     }
@@ -253,7 +255,7 @@ struct JetDerivedDataWriter {
     std::map<int32_t, int32_t> trackMapping;
 
     if (collisionFlag[collision.globalIndex()]) {
-      if (saveBCsTable) {
+      if (config.saveBCsTable) {
         auto bc = collision.bc_as<soa::Join<aod::JBCs, aod::JBCPIs>>();
         if (std::find(bcIndicies.begin(), bcIndicies.end(), bc.globalIndex()) == bcIndicies.end()) {
           storedJBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp());
@@ -265,7 +267,7 @@ struct JetDerivedDataWriter {
 
       storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw());
       storedJCollisionsParentIndexTable(collision.collisionId());
-      if (saveBCsTable) {
+      if (config.saveBCsTable) {
         int32_t storedBCID = -1;
         auto JBCIndex = bcMapping.find(collision.bcId());
         if (JBCIndex != bcMapping.end()) {
@@ -278,7 +280,7 @@ struct JetDerivedDataWriter {
       storedJChargedHFTriggerSelsTable(collision.chargedHFTriggerSel());
 
       for (const auto& track : tracks) {
-        if (performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
+        if (config.performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
           continue;
         }
         storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(track.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(track.phi(), precisionPositionMask), track.trackSel());
@@ -286,7 +288,7 @@ struct JetDerivedDataWriter {
         storedJTracksParentIndexTable(track.trackId());
         trackMapping.insert(std::make_pair(track.globalIndex(), storedJTracksTable.lastIndex()));
       }
-      if (saveClustersTable) {
+      if (config.saveClustersTable) {
         for (const auto& cluster : clusters) {
           storedJClustersTable(storedJCollisionsTable.lastIndex(), cluster.id(), cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(),
                                cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(),
@@ -304,7 +306,7 @@ struct JetDerivedDataWriter {
         }
       }
 
-      if (saveD0Table) {
+      if (config.saveD0Table) {
         int32_t collisionD0Index = -1;
         for (const auto& D0Collision : D0Collisions) { // should only ever be one
           jethfutilities::fillD0CollisionTable(D0Collision, storedD0CollisionsTable, collisionD0Index);
@@ -328,7 +330,7 @@ struct JetDerivedDataWriter {
         }
       }
 
-      if (saveLcTable) {
+      if (config.saveLcTable) {
         int32_t collisionLcIndex = -1;
         for (const auto& LcCollision : LcCollisions) { // should only ever be one
           jethfutilities::fillLcCollisionTable(LcCollision, storedLcCollisionsTable, collisionLcIndex);
@@ -422,7 +424,7 @@ struct JetDerivedDataWriter {
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
 
-        if (saveD0Table) {
+        if (config.saveD0Table) {
           const auto d0McCollisionsPerMcCollision = D0McCollisions.sliceBy(D0McCollisionsPerMcCollision, mcCollision.globalIndex());
           int32_t mcCollisionD0Index = -1;
           for (const auto& d0McCollisionPerMcCollision : d0McCollisionsPerMcCollision) { // should only ever be one
@@ -441,7 +443,7 @@ struct JetDerivedDataWriter {
           }
         }
 
-        if (saveLcTable) {
+        if (config.saveLcTable) {
           const auto lcMcCollisionsPerMcCollision = LcMcCollisions.sliceBy(LcMcCollisionsPerMcCollision, mcCollision.globalIndex());
           int32_t mcCollisionLcIndex = -1;
           for (const auto& lcMcCollisionPerMcCollision : lcMcCollisionsPerMcCollision) { // should only ever be one
@@ -475,7 +477,7 @@ struct JetDerivedDataWriter {
 
         for (auto collision : collisionsPerMcCollision) {
           std::map<int32_t, int32_t> trackMapping;
-          if (saveBCsTable) {
+          if (config.saveBCsTable) {
             auto bc = collision.bc_as<soa::Join<aod::JBCs, aod::JBCPIs>>();
             if (std::find(bcIndicies.begin(), bcIndicies.end(), bc.globalIndex()) == bcIndicies.end()) {
               storedJBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp());
@@ -492,7 +494,7 @@ struct JetDerivedDataWriter {
           if (JMcCollisionIndex != mcCollisionMapping.end()) {
             storedJMcCollisionsLabelTable(JMcCollisionIndex->second);
           }
-          if (saveBCsTable) {
+          if (config.saveBCsTable) {
             int32_t storedBCID = -1;
             auto JBCIndex = bcMapping.find(collision.bcId());
             if (JBCIndex != bcMapping.end()) {
@@ -506,7 +508,7 @@ struct JetDerivedDataWriter {
 
           const auto tracksPerCollision = tracks.sliceBy(TracksPerCollision, collision.globalIndex());
           for (const auto& track : tracksPerCollision) {
-            if (performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
+            if (config.performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
               continue;
             }
             storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(track.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(track.phi(), precisionPositionMask), track.trackSel());
@@ -525,7 +527,7 @@ struct JetDerivedDataWriter {
             }
             trackMapping.insert(std::make_pair(track.globalIndex(), storedJTracksTable.lastIndex()));
           }
-          if (saveClustersTable) {
+          if (config.saveClustersTable) {
             const auto clustersPerCollision = clusters.sliceBy(ClustersPerCollision, collision.globalIndex());
             for (const auto& cluster : clustersPerCollision) {
               storedJClustersTable(storedJCollisionsTable.lastIndex(), cluster.id(), cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(),
@@ -556,7 +558,7 @@ struct JetDerivedDataWriter {
             }
           }
 
-          if (saveD0Table) {
+          if (config.saveD0Table) {
             const auto d0CollisionsPerCollision = D0Collisions.sliceBy(D0CollisionsPerCollision, collision.globalIndex());
             int32_t collisionD0Index = -1;
             for (const auto& d0CollisionPerCollision : d0CollisionsPerCollision) { // should only ever be one
@@ -583,7 +585,7 @@ struct JetDerivedDataWriter {
             }
           }
 
-          if (saveLcTable) {
+          if (config.saveLcTable) {
 
             const auto lcCollisionsPerCollision = LcCollisions.sliceBy(LcCollisionsPerCollision, collision.globalIndex());
             int32_t collisionLcIndex = -1;
@@ -617,7 +619,7 @@ struct JetDerivedDataWriter {
           }
         }
 
-        if (saveD0Table) {
+        if (config.saveD0Table) {
           const auto d0McCollisionsPerMcCollision = D0McCollisions.sliceBy(D0McCollisionsPerMcCollision, mcCollision.globalIndex());
           for (const auto& d0McCollisionPerMcCollision : d0McCollisionsPerMcCollision) { // should just be one
             std::vector<int32_t> d0CollisionIDs;
@@ -631,7 +633,7 @@ struct JetDerivedDataWriter {
           }
         }
 
-        if (saveLcTable) {
+        if (config.saveLcTable) {
           const auto lcMcCollisionsPerMcCollision = LcMcCollisions.sliceBy(LcMcCollisionsPerMcCollision, mcCollision.globalIndex());
           for (const auto& lcMcCollisionPerMcCollision : lcMcCollisionsPerMcCollision) { // should just be one
             std::vector<int32_t> lcCollisionIDs;
@@ -698,7 +700,7 @@ struct JetDerivedDataWriter {
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
 
-        if (saveD0Table) {
+        if (config.saveD0Table) {
           const auto d0McCollisionsPerMcCollision = D0McCollisions.sliceBy(D0McCollisionsPerMcCollision, mcCollision.globalIndex());
           int32_t mcCollisionD0Index = -1;
           for (const auto& d0McCollisionPerMcCollision : d0McCollisionsPerMcCollision) { // should only ever be one
@@ -716,7 +718,7 @@ struct JetDerivedDataWriter {
             storedD0ParticleIdsTable(storedJMcCollisionsTable.lastIndex(), d0ParticleId);
           }
         }
-        if (saveLcTable) {
+        if (config.saveLcTable) {
           const auto lcMcCollisionsPerMcCollision = LcMcCollisions.sliceBy(LcMcCollisionsPerMcCollision, mcCollision.globalIndex());
           int32_t mcCollisionLcIndex = -1;
           for (const auto& lcMcCollisionPerMcCollision : lcMcCollisionsPerMcCollision) { // should only ever be one
