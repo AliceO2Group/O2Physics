@@ -1331,16 +1331,16 @@ struct QaEfficiency {
         return false;
       }
 
-      if (noFakesHits) {              // Selecting tracks with no fake hits
-        for (int i = 0; i < 7; i++) { // ITS
-          if (track.mcMismatchInITS(i)) {
-            return false;
+      if (noFakesHits) { // Selecting tracks with no fake hits
+        bool hasFakeHit = false;
+        for (int i = 0; i < 10; i++) { // From ITS to TPC
+          if (track.mcMask() & 1 << i) {
+            hasFakeHit = true;
+            break;
           }
         }
-        for (int i = 7; i < 10; i++) { // TPC
-          if (track.mcMismatchInTPC(i)) {
-            return false;
-          }
+        if (hasFakeHit) {
+          return false;
         }
       }
       if constexpr (doFillHisto) {
