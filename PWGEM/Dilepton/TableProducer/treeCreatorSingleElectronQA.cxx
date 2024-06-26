@@ -313,7 +313,7 @@ struct TreeCreatorSingleElectronQA {
                        track.tpcChi2NCl(), track.tpcInnerParam(),
                        track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                        track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                       track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), track.tgl(), track.cYY(), track.cZZ(), track.cZY());
+                       track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl());
   }
 
   SliceCache cache;
@@ -343,12 +343,10 @@ struct TreeCreatorSingleElectronQA {
       }
       fRegistry.fill(HIST("hCollisionCounter"), 1.f);
 
-      event(collision.globalIndex(), bc.globalBC(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
-            collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(), d_bz, collision.trackOccupancyInTimeRange());
-      event_mult(collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.multFDDA(), collision.multFDDC(),
-                 collision.multZNA(), collision.multZNC(),
-                 collision.multTPC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
+            collision.numContrib(), collision.trackOccupancyInTimeRange());
+      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
       event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
 
       auto tracks_per_collision = tracks.sliceBy(perCollision_track, collision.globalIndex());
@@ -388,12 +386,10 @@ struct TreeCreatorSingleElectronQA {
       }
       fRegistry.fill(HIST("hCollisionCounter"), 1.f);
 
-      event(collision.globalIndex(), bc.globalBC(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
-            collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(), d_bz, collision.trackOccupancyInTimeRange());
-      event_mult(collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.multFDDA(), collision.multFDDC(),
-                 collision.multZNA(), collision.multZNC(),
-                 collision.multTPC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
+            collision.numContrib(), collision.trackOccupancyInTimeRange());
+      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
       event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
 
       auto tracks_per_collision = tracks.sliceBy(perCollision_track, collision.globalIndex());
