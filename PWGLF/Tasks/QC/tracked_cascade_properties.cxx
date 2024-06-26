@@ -87,6 +87,11 @@ struct tracked_cascade_properties {
     registryQC.add("nITS_Xi", "nITS Xi", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
     registryQC.add("nITS_Omega", "nITS Omega", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
     registryQC.add("tgl_Distr", "tgl_Distr", HistType::kTH1F, {{200, 0, 200, "tan (#lambda)"}});
+    registryQC.add("nITSclusters", "nITSclusters", HistType::kTH1F, {{7, 0, 7, "n_{cls}^{ITS}"}});
+    registryQC.add("clusterSize", "clusterSize", HistType::kTH1F, {{200, 0, 200, "cluster size ITS"}});
+    registryQC.add("decayXY", "decayXY", HistType::kTH2F, {{200, -50, 50, "x"}, {200, -50, 50, "y"}});
+    registryQC.add("signBachelor", "signBachelor", HistType::kTH1F, {{4, -2, 2, "sign"}});
+    registryQC.add("ITSclusterSizeTrkCasc", "ITSclusterSizeTrkCasc", HistType::kTH1F, {{200, 0, 20, "ITS cluster Size"}});
 
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{5, 0, 5, "Event Cuts"}});
     registryData.add("xi_pos_clustersize", "xi_pos_clustersize", HistType::kTH3F, {{100, 0.0, 100, "ITS cluster size"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
@@ -141,13 +146,17 @@ struct tracked_cascade_properties {
 
       registryQC.fill(HIST("matchingChi2"), trackedCascade.matchingChi2());
       registryQC.fill(HIST("topologyChi2"), trackedCascade.topologyChi2());
+      registryQC.fill(HIST("nITSclusters"), track.itsNCls());
+      registryQC.fill(HIST("ITSclusterSizeTrkCasc"), trackedCascade.itsClsSize());
+      registryQC.fill(HIST("decayXY"), dx, dy);
+      registryQC.fill(HIST("signBachelor"), btrack.sign());
 
       // Calculate (Average) Cluster Size
       int clusterSize[7];
       double averageClusterSize(0);
       for (int i = 0; i < 7; i++) {
         clusterSize[i] = track.itsClsSizeInLayer(i);
-        // clusterSize[i] = (track.itsClusterSizes() >> (i * 4)) & 0xf;
+        registryQC.fill(HIST("clusterSize"), clusterSize[i]);
         averageClusterSize += static_cast<double>(clusterSize[i]);
       }
       averageClusterSize = averageClusterSize / static_cast<double>(track.itsNCls());
