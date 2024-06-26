@@ -376,12 +376,14 @@ struct PhotonConversionBuilder {
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
-    auto pTrack = getTrackPar(pos);
+    auto pTrack = getTrackParCov(pos);
+    pTrack.setPID(o2::track::PID::Electron);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrack, 2.f, matCorr, &dcaInfo);
     auto posdcaXY = dcaInfo[0];
     auto posdcaZ = dcaInfo[1];
 
-    auto nTrack = getTrackPar(ele);
+    auto nTrack = getTrackParCov(ele);
+    nTrack.setPID(o2::track::PID::Electron);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrack, 2.f, matCorr, &dcaInfo);
     auto eledcaXY = dcaInfo[0];
     auto eledcaZ = dcaInfo[1];

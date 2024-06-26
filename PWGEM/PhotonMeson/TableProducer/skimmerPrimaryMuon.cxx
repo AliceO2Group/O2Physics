@@ -42,9 +42,13 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
 using MyTracks = soa::Join<aod::FwdTracks, aod::FwdTracksCov>; // muon tracks are repeated. i.e. not exclusive.
+using MyTrack = MyTracks::iterator;
+
 using MyTracksMC = soa::Join<MyTracks, aod::McFwdTrackLabels>;
+using MyTrackMC = MyTracksMC::iterator;
 
 using MFTTracksMC = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
+using MFTTrackMC = MFTTracksMC::iterator;
 
 struct skimmerPrimaryMuon {
   enum class EM_MuMuPairType : int {
@@ -358,7 +362,7 @@ struct skimmerPrimaryMuon {
     return true;
   }
 
-  template <typename TMuon, typename TCollision>
+  template <typename TMFTsaTracks, typename TMuon, typename TCollision>
   void fillMuonTable(TMuon const& muon, TCollision const& collision, const int new_muon_sa_id)
   {
     o2::dataformats::GlobalFwdTrack propmuonAtPV = PropagateMuon(muon, collision, skimmerPrimaryMuon::MuonExtrapolation::kToVertex);
@@ -388,7 +392,7 @@ struct skimmerPrimaryMuon {
 
     auto fwdcov = propmuonAtDCA.getCovariances();
     if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
-      auto mftsa_track = muon.template matchMFTTrack_as<aod::MFTTracks>();
+      auto mftsa_track = muon.template matchMFTTrack_as<TMFTsaTracks>();
 
       emprimarymuons(collision.globalIndex(), muon.globalIndex(), muon.trackType(), pt, eta, phi, muon.sign(), dcaX, dcaY,
                      propmuonAtDCA.getX(), propmuonAtDCA.getY(), propmuonAtDCA.getZ(), propmuonAtDCA.getTgl(),
@@ -478,9 +482,9 @@ struct skimmerPrimaryMuon {
         // LOGF(info, "collisionId = %d, fwdtrackId = %d, new_fwdtrackId = %d", collisionId, fwdtrackId, new_fwdtrackId);
         auto track = tracks.iteratorAt(std::get<1>(key));
         if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
-          fillMuonTable(track, collision, value);
+          fillMuonTable<aod::MFTTracks>(track, collision, value);
         } else if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
-          fillMuonTable(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
+          fillMuonTable<aod::MFTTracks>(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
         }
       }
 
@@ -546,9 +550,9 @@ struct skimmerPrimaryMuon {
         // int new_fwdtrackId = value;
         auto track = tracks.iteratorAt(std::get<1>(key));
         if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
-          fillMuonTable(track, collision, value);
+          fillMuonTable<aod::MFTTracks>(track, collision, value);
         } else if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
-          fillMuonTable(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
+          fillMuonTable<aod::MFTTracks>(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
         }
       }
 
@@ -560,7 +564,7 @@ struct skimmerPrimaryMuon {
   Partition<MyTracksMC> global_muons_mc = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack); // MFT-MCH-MID
   Partition<MyTracksMC> sa_muons_mc = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack); // MCH-MID
 
-  void processMC_SA(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const&)
+  void processMC_SA(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const& mftsatracks)
   {
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -613,9 +617,9 @@ struct skimmerPrimaryMuon {
         // LOGF(info, "collisionId = %d, fwdtrackId = %d, new_fwdtrackId = %d", collisionId, fwdtrackId, new_fwdtrackId);
         auto track = tracks.iteratorAt(std::get<1>(key));
         if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
-          fillMuonTable(track, collision, value);
+          fillMuonTable<MFTTracksMC>(track, collision, value);
         } else if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
-          fillMuonTable(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
+          fillMuonTable<MFTTracksMC>(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
         }
       }
 
@@ -630,7 +634,7 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processMC_SA, "process reconstructed and MC info", false);
 
-  void processMC_TTCA(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processMC_TTCA(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const& mftsatracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -663,7 +667,7 @@ struct skimmerPrimaryMuon {
             continue;
           }
           fillTrackHistogram<0>(track, collision);
-          auto mftsa_track = track.template matchMFTTrack_as<MFTTracksMC>();
+          auto mftsa_track = mftsatracks.iteratorAt(track.matchMFTTrackId());
           fRegistry.fill(HIST("Track/MFTMCHMID/hNclustersMFT"), mftsa_track.nClusters());
 
           if (map_new_sa_muon_index.find(std::make_pair(collision.globalIndex(), track.matchMCHTrackId())) == map_new_sa_muon_index.end()) {
@@ -683,9 +687,9 @@ struct skimmerPrimaryMuon {
         // int new_fwdtrackId = value;
         auto track = tracks.iteratorAt(std::get<1>(key));
         if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
-          fillMuonTable(track, collision, value);
+          fillMuonTable<MFTTracksMC>(track, collision, value);
         } else if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
-          fillMuonTable(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
+          fillMuonTable<MFTTracksMC>(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
         }
       }
 
