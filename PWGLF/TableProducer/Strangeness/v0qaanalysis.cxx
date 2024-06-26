@@ -246,9 +246,6 @@ struct LfV0qaanalysis {
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
   SliceCache cache1;
-  SliceCache cache2;
-  SliceCache cache3;
-  SliceCache cache4;
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
@@ -391,8 +388,8 @@ struct LfV0qaanalysis {
   PROCESS_SWITCH(LfV0qaanalysis, processMCReco, "Process MC Reco", false);
 
   void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
-                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions,
-                    aod::McParticles const& mcParticles)
+                    aod::McParticles const& mcParticles,
+                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions)
   {
     //====================================
     //===== Event Loss Denominator =======
@@ -406,11 +403,9 @@ struct LfV0qaanalysis {
     registry.fill(HIST("hNEventsMCGen"), 1.5);
     registry.fill(HIST("hCentFT0M_GenColl_MC"), mcCollision.centFT0M());
 
-    const auto particlesInMCCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache3);
-
     bool isINELgt0true = false;
 
-    if (pwglf::isINELgtNmc(particlesInMCCollision, 0, pdgDB)) {
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       isINELgt0true = true;
       registry.fill(HIST("hNEventsMCGen"), 2.5);
       registry.fill(HIST("hCentFT0M_GenColl_MC_INELgt0"), mcCollision.centFT0M());
@@ -420,7 +415,7 @@ struct LfV0qaanalysis {
     //===== Signal Loss Denominator =======
     //=====================================
 
-    for (auto& mcParticle : particlesInMCCollision) {
+    for (auto& mcParticle : mcParticles) {
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
@@ -462,6 +457,7 @@ struct LfV0qaanalysis {
       if (!AcceptEvent(collision)) {
         continue;
       }
+
       registry.fill(HIST("hNEvents"), 6.5);
       registry.fill(HIST("hNEventsMCReco"), 1.5);
       registry.fill(HIST("hCentFT0M_RecoColl_MC"), mcCollision.centFT0M());
@@ -479,7 +475,7 @@ struct LfV0qaanalysis {
       //======== Sgn Split Numerator ========
       //=====================================
 
-      for (auto& mcParticle : particlesInMCCollision) {
+      for (auto& mcParticle : mcParticles) {
 
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
@@ -531,9 +527,7 @@ struct LfV0qaanalysis {
     //===== Signal Loss Numerator =========
     //=====================================
 
-    const auto particlesInMCRecoCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache4);
-
-    for (auto& mcParticle : particlesInMCRecoCollision) {
+    for (auto& mcParticle : mcParticles) {
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
