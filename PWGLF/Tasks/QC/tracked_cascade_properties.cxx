@@ -83,9 +83,10 @@ struct tracked_cascade_properties {
   void init(InitContext const&)
   {
     registryQC.add("matchingChi2", "matching Chi2", HistType::kTH1F, {{200, 0, 400, "#chi^{2}_{matching}"}});
-    registryQC.add("topologyChi2", "topology Chi2", HistType::kTH1F, {{200, 0, 100, "#chi^{2}_{topology}"}});
+    registryQC.add("topologyChi2", "topology Chi2", HistType::kTH1F, {{200, 0, 20, "#chi^{2}_{topology}"}});
     registryQC.add("nITS_Xi", "nITS Xi", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
     registryQC.add("nITS_Omega", "nITS Omega", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
+    registryQC.add("tgl_Distr", "tgl_Distr", HistType::kTH1F, {{200, 0, 200, "tan (#lambda)"}});
 
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{5, 0, 5, "Event Cuts"}});
     registryData.add("xi_pos_clustersize", "xi_pos_clustersize", HistType::kTH3F, {{100, 0.0, 100, "ITS cluster size"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
@@ -112,13 +113,6 @@ struct tracked_cascade_properties {
     registryData.add("xi_mass_neg", "xi_mass_neg", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("omega_mass_pos", "omega_mass_pos", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
     registryData.add("omega_mass_neg", "omega_mass_neg", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
-  }
-
-  // Hits on ITS Layer
-  bool hasHitOnITSlayer(uint8_t itsClsmap, int layer)
-  {
-    unsigned char test_bit = 1 << layer;
-    return (itsClsmap & test_bit);
   }
 
   void processData(SelectedCollisions::iterator const& collision, aod::AssignedTrackedCascades const& trackedCascades,
@@ -159,6 +153,7 @@ struct tracked_cascade_properties {
       averageClusterSize = averageClusterSize / static_cast<double>(track.itsNCls());
 
       // Track Inclination
+      registryQC.fill(HIST("tgl_Distr"), track.tgl());
       double lambda = atan(track.tgl());
       double cosL = cos(lambda);
       double sinL = sin(lambda);
