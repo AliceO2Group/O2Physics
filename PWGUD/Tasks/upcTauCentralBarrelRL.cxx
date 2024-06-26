@@ -159,6 +159,8 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> doFourTracks{"doFourTracks", false, {"Define histos for four tracks and allow to fill them"}};
   Configurable<bool> doSixTracks{"doSixTracks", false, {"Define histos for six tracks and allow to fill them"}};
 
+
+
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
   using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions>::iterator;
@@ -247,6 +249,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventTwoTracks/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventTwoTracks/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventTwoTracks/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
       histos.add("EventTwoTracks/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
@@ -264,6 +267,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/TwoElectrons/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventTwoTracks/TwoElectrons/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventTwoTracks/TwoElectrons/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventTwoTracks/TwoElectrons/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/TwoElectrons/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/TwoElectrons/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
       histos.add("EventTwoTracks/TwoElectrons/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
@@ -288,6 +292,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/TwoMuons/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventTwoTracks/TwoMuons/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventTwoTracks/TwoMuons/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventTwoTracks/TwoMuons/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/TwoMuons/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/TwoMuons/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
       histos.add("EventTwoTracks/TwoMuons/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
@@ -311,6 +316,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/TwoPions/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
       histos.add("EventTwoTracks/TwoPions/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
       histos.add("EventTwoTracks/TwoPions/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
+      histos.add("EventTwoTracks/TwoPions/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/TwoPions/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
       histos.add("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiTOF", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
       histos.add("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
@@ -325,6 +331,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronMuon/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventTwoTracks/ElectronMuon/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventTwoTracks/ElectronMuon/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventTwoTracks/ElectronMuon/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/ElectronMuon/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/ElectronMuon/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
       histos.add("EventTwoTracks/ElectronMuon/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
@@ -339,6 +346,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronPion/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventTwoTracks/ElectronPion/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventTwoTracks/ElectronPion/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventTwoTracks/ElectronPion/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/ElectronPion/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/ElectronPion/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
       histos.add("EventTwoTracks/ElectronPion/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
@@ -354,6 +362,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/MuonPion/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventTwoTracks/MuonPion/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventTwoTracks/MuonPion/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventTwoTracks/MuonPion/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/MuonPion/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/MuonPion/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
       histos.add("EventTwoTracks/MuonPion/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
@@ -369,6 +378,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronMuPi/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventTwoTracks/ElectronMuPi/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventTwoTracks/ElectronMuPi/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventTwoTracks/ElectronMuPi/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronPtWide", ";Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMomWide});
       histos.add("EventTwoTracks/ElectronMuPi/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/ElectronMuPi/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
@@ -385,6 +395,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronOther/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventTwoTracks/ElectronOther/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventTwoTracks/ElectronOther/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventTwoTracks/ElectronOther/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
       histos.add("EventTwoTracks/ElectronOther/hElectronPtWide", ";Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMomWide});
       histos.add("EventTwoTracks/ElectronOther/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/ElectronOther/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
@@ -413,6 +424,7 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/PionsSelection/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
         histos.add("EventTwoTracks/PionsSelection/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
         histos.add("EventTwoTracks/PionsSelection/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+        histos.add("EventTwoTracks/PionsSelection/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
         histos.add("EventTwoTracks/PionsSelection/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
         histos.add("EventTwoTracks/PionsSelection/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
         histos.add("EventTwoTracks/PionsSelection/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
@@ -437,7 +449,7 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        if (doJpsiMuMuTests) {
+        if (doJpsiMuMuTests){
           histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
           histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
           histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -461,7 +473,7 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-        if (doJpsiMuMuTests) {
+        if (doJpsiMuMuTests){
           histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
           histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
           histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -550,14 +562,16 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/MuonsSelection/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
         histos.add("EventTwoTracks/MuonsSelection/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMomWide});
         histos.add("EventTwoTracks/MuonsSelection/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
+        histos.add("EventTwoTracks/MuonsSelection/hJpsiPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
         histos.add("EventTwoTracks/MuonsSelection/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
         histos.add("EventTwoTracks/MuonsSelection/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+        histos.add("EventTwoTracks/MuonsSelection/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        if (doJpsiMuMuTests) {
+        if (doJpsiMuMuTests){
           histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut1", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
           histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut2", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
           histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut3", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
@@ -566,7 +580,7 @@ struct UpcTauCentralBarrelRL {
         }
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
         histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-        if (doJpsiMuMuTests) {
+        if (doJpsiMuMuTests){
           histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut1", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
           histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut2", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
           histos.add("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut3", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
@@ -595,6 +609,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventFourTracks/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventFourTracks/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventFourTracks/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventFourTracks/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
 
       histos.add("EventFourTracks/WithElectron/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventFourTracks/WithElectron/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -603,6 +618,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventFourTracks/WithElectron/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventFourTracks/WithElectron/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventFourTracks/WithElectron/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventFourTracks/WithElectron/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
 
       histos.add("EventFourTracks/WithMuon/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventFourTracks/WithMuon/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -611,6 +627,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventFourTracks/WithMuon/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventFourTracks/WithMuon/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventFourTracks/WithMuon/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventFourTracks/WithMuon/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
 
       histos.add("EventFourTracks/WithPion/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventFourTracks/WithPion/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -619,6 +636,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventFourTracks/WithPion/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventFourTracks/WithPion/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventFourTracks/WithPion/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventFourTracks/WithPion/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
     }
 
     if (doSixTracks) {
@@ -630,6 +648,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventSixTracks/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventSixTracks/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventSixTracks/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventSixTracks//hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
 
       histos.add("EventSixTracks/SixPions/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventSixTracks/SixPions/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -638,6 +657,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventSixTracks/SixPions/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
       histos.add("EventSixTracks/SixPions/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventSixTracks/SixPions/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+      histos.add("EventSixTracks/SixPions/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
     }
 
   } // end init
@@ -1069,6 +1089,7 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
+      histos.get<TH2>(HIST("EventTwoTracks/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       if (motherOfPions.Pt() < 0.2) {
         histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassPtCut"))->Fill(motherOfPions.M());
         if (passAvgITSclsSizesCut) {
@@ -1097,6 +1118,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
@@ -1133,6 +1155,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
@@ -1164,6 +1187,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
@@ -1180,6 +1204,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
@@ -1211,6 +1236,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
@@ -1227,6 +1253,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
@@ -1246,6 +1273,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hElectronPtWide"))->Fill(electronPt);
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
@@ -1290,6 +1318,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hElectronPtWide"))->Fill(electronPt);
         histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
@@ -1331,6 +1360,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hMotherPt"))->Fill(motherOfPions.Pt());
         histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hMotherPhi"))->Fill(motherOfPions.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hMotherRapidity"))->Fill(motherOfPions.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hMotherMassVsPt"))->Fill(motherOfPions.M(), motherOfPions.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersP"))->Fill(pion[0].P(), pion[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPwide"))->Fill(pion[0].P(), pion[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPt"))->Fill(pion[0].Pt(), pion[1].Pt());
@@ -1421,7 +1451,10 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXY"))->Fill(trkDaug2.pt(), trkDaug2.dcaXY());
         histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhi"))->Fill(muon[0].Pt(), phiModNtrk1);
         histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhi"))->Fill(muon[1].Pt(), phiModNtrk2);
-        if (doJpsiMuMuTests) {
+        histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hMotherMassVsPt"))->Fill(motherOfMuons.M(), motherOfMuons.Pt());
+        if (motherOfMuons.M() > 2.9 && motherOfMuons.M() < 3.2)
+          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hJpsiPt"))->Fill(motherOfMuons.Pt());
+        if (doJpsiMuMuTests){
           if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1))
             histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[0].Pt(), phiModNtrk1);
           if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN1))
@@ -1452,7 +1485,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXYPtCut"))->Fill(trkDaug2.pt(), trkDaug2.dcaXY());
           if (sign < 0) {
             histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUS"))->Fill(motherOfMuons.M());
-            if (doJpsiMuMuTests) {
+            if (doJpsiMuMuTests){
               if (muon[0].Eta() < 0.0 && muon[1].Eta() < 0.0)
                 histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
               if (muon[0].Eta() > 0.0 && muon[1].Eta() > 0.0)
@@ -1625,7 +1658,7 @@ struct UpcTauCentralBarrelRL {
           if (countTOFtracks == 2) {
             if (sign < 0) {
               histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUS"))->Fill(motherOfMuons.M());
-              if (doJpsiMuMuTests) {
+              if (doJpsiMuMuTests){
                 if (muon[0].Eta() < 0.0 && muon[1].Eta() < 0.0)
                   histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
                 if (muon[0].Eta() > 0.0 && muon[1].Eta() > 0.0)
@@ -1682,7 +1715,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWide"))->Fill(motherOfMuons.M());
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhi"))->Fill(muon[0].Pt(), phiModNtrk1);
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhi"))->Fill(muon[1].Pt(), phiModNtrk2);
-          if (doJpsiMuMuTests) {
+          if (doJpsiMuMuTests){
             if (isNotCloseToTPCBorder(phiModNtrk1, muon[0].Pt(), cutPhiModN1))
               histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhiTPCbordersCut1"))->Fill(muon[0].Pt(), phiModNtrk1);
             if (isNotCloseToTPCBorder(phiModNtrk2, muon[1].Pt(), cutPhiModN1))
@@ -1779,6 +1812,7 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH1>(HIST("EventFourTracks/hMotherPt"))->Fill(mother.Pt());
       histos.get<TH1>(HIST("EventFourTracks/hMotherPhi"))->Fill(mother.Phi());
       histos.get<TH1>(HIST("EventFourTracks/hMotherRapidity"))->Fill(mother.Rapidity());
+      histos.get<TH2>(HIST("EventFourTracks/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
 
       // ee, mm, em, pp, ep, mp, pppp, eppp, mppp, pppppp
       if (countPVGTpions == 4) {
@@ -1790,6 +1824,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventFourTracks/WithPion/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventFourTracks/WithPion/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventFourTracks/WithPion/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventFourTracks/WithPion/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       }
       if (countPVGTelectrons == 1 && countPVGTpions == 3) {
         histos.get<TH1>(HIST("Events/hChannelsRatio"))->Fill(7);
@@ -1800,6 +1835,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventFourTracks/WithElectron/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventFourTracks/WithElectron/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventFourTracks/WithElectron/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventFourTracks/WithElectron/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       }
       if (countPVGTpions == 3 && countPVGTmuons == 1) {
         histos.get<TH1>(HIST("Events/hChannelsRatio"))->Fill(8);
@@ -1810,6 +1846,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventFourTracks/WithMuon/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventFourTracks/WithMuon/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventFourTracks/WithMuon/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventFourTracks/WithMuon/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       }
     } else if (countPVGTselected == 6 && doSixTracks) {
       TLorentzVector mother, daug[6];
@@ -1865,6 +1902,7 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH1>(HIST("EventSixTracks/hMotherPt"))->Fill(mother.Pt());
       histos.get<TH1>(HIST("EventSixTracks/hMotherPhi"))->Fill(mother.Phi());
       histos.get<TH1>(HIST("EventSixTracks/hMotherRapidity"))->Fill(mother.Rapidity());
+      histos.get<TH2>(HIST("EventSixTracks/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
 
       // ee, mm, em, pp, ep, mp, pppp, eppp, mppp, pppppp
       if (countPVGTpions == 6) {
@@ -1876,6 +1914,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventSixTracks/SixPions/hMotherPt"))->Fill(mother.Pt());
         histos.get<TH1>(HIST("EventSixTracks/SixPions/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventSixTracks/SixPions/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventSixTracks/SixPions/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       }
     } else {
       if (verboseDebug) {
