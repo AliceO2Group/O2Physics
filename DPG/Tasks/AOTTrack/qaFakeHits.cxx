@@ -113,6 +113,8 @@ struct QaFakeHits {
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
     const int histogramIndex = id + pdgSign * nSpecies;
 
+    const TString tagPt = Form("%s ", partName);
+
     hPtAll[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/all", PDGs[histogramIndex]), "All tracks " + tagPt, kTH1D, {axisPt});
     hPtITS[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/its", PDGs[histogramIndex]), "ITS mismatch " + tagPt, kTH1D, {axisPt});
     hPtTPC[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/tpc", PDGs[histogramIndex]), "TPC mismatch " + tagPt, kTH1D, {axisPt});
@@ -187,7 +189,7 @@ struct QaFakeHits {
     hPtAll[histogramIndex]->Fill(mcParticle.pt());
     bool mismatchInITS = false;
     for (int i = 0; i < 7; i++) {
-      if (isMismatched(i)) {
+      if (isMismatched(track, i)) {
         mismatchInITS = true;
         break;
       }
@@ -195,14 +197,14 @@ struct QaFakeHits {
 
     bool mismatchInTPC = false;
     for (int i = 7; i < 10; i++) {
-      if (isMismatched(i)) {
+      if (isMismatched(track, i)) {
         mismatchInTPC = true;
         break;
       }
     }
-    const bool mismatchInTRD = isMismatched(10);
-    const bool mismatchInTOF = isMismatched(11);
-    const bool overallMismatch = isMismatched(15);
+    const bool mismatchInTRD = isMismatched(track, 10);
+    const bool mismatchInTOF = isMismatched(track, 11);
+    const bool overallMismatch = isMismatched(track, 15);
 
     if (mismatchInITS) {
       hPtITS[histogramIndex]->Fill(mcParticle.pt());
