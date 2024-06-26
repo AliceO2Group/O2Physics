@@ -162,9 +162,6 @@ struct lambdapolarization {
 
   void init(o2::framework::InitContext&)
   {
-    if (cfgnMods > 1)
-      LOGF(fatal, "multiple harmonics not implemented yet"); // FIXME: will be updated after Qvector task updates
-
     AxisSpec massAxis = {100, 1.065, 1.165};
     AxisSpec ptAxis = {100, 0.0, 10.0};
     AxisSpec cosAxis = {110, -1.05, 1.05};
