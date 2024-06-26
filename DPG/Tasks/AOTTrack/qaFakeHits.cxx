@@ -46,6 +46,9 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtTOF;
 std::array<std::shared_ptr<TH1>, nParticles> hPtOverall;
 
 struct QaFakeHits {
+  // Charge selection
+  Configurable<bool> doPositivePDG{"doPositivePDG", false, "Flag to fill histograms for positive PDG codes."};
+  Configurable<bool> doNegativePDG{"doNegativePDG", false, "Flag to fill histograms for negative PDG codes."};
   // Particle only selection
   Configurable<bool> doEl{"do-el", false, "Flag to run with the PDG code of electrons"};
   Configurable<bool> doMu{"do-mu", false, "Flag to run with the PDG code of muons"};
@@ -67,6 +70,15 @@ struct QaFakeHits {
   ConfigurableAxis ptBins{"ptBins", {200, 0.f, 5.f}, "Pt binning"};
   // Histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  static const char* particleName(int pdgSign, o2::track::PID::ID id)
+  {
+    if (pdgSign == 0) { // Positive PDG
+      return particleTitle[id];
+    }
+    // Negative PDG
+    return particleTitle[id + o2::track::PID::NIDs];
+  }
 
   void makeMCHistograms(const bool doMakeHistograms,
                         const int pdgSign,
@@ -135,7 +147,11 @@ struct QaFakeHits {
     return mcParticle.pdgCode() == PDGs[index];
   }
 
-  bool isMismatched(int layer) { return (mcMask & 1 << layer); }
+  template <typename TrackType>
+  bool isMismatched(TrackType const& track, int layer)
+  {
+    return (track.mcMask() & 1 << layer);
+  }
 
   template <int pdgSign, o2::track::PID::ID id, typename trackType>
   void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
@@ -204,6 +220,9 @@ struct QaFakeHits {
       hPtOverall[histogramIndex]->Fill(mcParticle.pt());
     }
   }
+
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
+  using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
 
   // MC process
   void process(o2::aod::Collision const& collision,
