@@ -45,8 +45,9 @@ class CollisonCuts
     kFlagZvtxFT0vsPV
   };
 
-  inline int binLabel(int index) {
-  return index + 1;
+  inline int binLabel(int index)
+  {
+    return index + 1;
   }
 
   /// \brief Pass the selection criteria to the class
@@ -78,8 +79,8 @@ class CollisonCuts
       LOGF(error, "Event selection not set - quitting!");
     }
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});       //z-vertex histogram after event selections
-    mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}}); //z-vertex histogram before all selections
+    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
+    mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}}); // z-vertex histogram before all selections
     if (mCheckIsRun3) {
       mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", kTH1F, {{110, 0, 110}});
