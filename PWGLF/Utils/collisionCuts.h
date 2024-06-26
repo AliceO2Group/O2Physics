@@ -35,19 +35,20 @@ class CollisonCuts
   virtual ~CollisonCuts() = default;
 
   enum EvtSel {
-    kFlagZvertex = 0,
+    kAllEvent = 0,
+    kFlagZvertex,
     kFlagTrigerTVX,
     kFlagTimeFrameBorder,
     kFlagITSROFrameBorder,
     kFlagSel8,
     kFlagVertexITSTPC,
     kFlagBunchPileup,
-    kFlagZvtxFT0vsPV
+    kFlagZvtxFT0vsPV,
+    kAllpassed
   };
 
-  inline int binLabel(int index)
-  {
-    return index + 1;
+  inline int binLabel(int index) {
+  return index + 1;
   }
 
   /// \brief Pass the selection criteria to the class
@@ -79,8 +80,8 @@ class CollisonCuts
       LOGF(error, "Event selection not set - quitting!");
     }
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
-    mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}}); // z-vertex histogram before all selections
+    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});       //z-vertex histogram after event selections
+    mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}}); //z-vertex histogram before all selections
     if (mCheckIsRun3) {
       mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", kTH1F, {{110, 0, 110}});
@@ -89,14 +90,16 @@ class CollisonCuts
       mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
       mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
       mHistogramRegistry->add("CollCutCounts", "; ; Entries", kTH1F, {{10, 0., 10.}});
-      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvertex), "all");
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllEvent), "all");
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvertex), "Zvtx");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagTrigerTVX), "IsTriggerTVX");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagTimeFrameBorder), "NoTimeFrameBorder");
-      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagITSROFrameBorder), "NoITSROFrameBorder)");
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagITSROFrameBorder), "NoITSROFrameBorder");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagSel8), "sel8");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagVertexITSTPC), "IsVertexITSTPC");
-      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagBunchPileup), "NoSameBunchPileup)");
-      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvtxFT0vsPV), "IsGoodZvtxFT0vsPV)");
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagBunchPileup), "NoSameBunchPileup");
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvtxFT0vsPV), "IsGoodZvtxFT0vsPV");
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllpassed), "Allpassed");
     } else {
       mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", kTH1F, {{110, 0, 110}});
     }
@@ -138,6 +141,7 @@ class CollisonCuts
   bool isSelected(T const& col)
   {
     mHistogramRegistry->fill(HIST("Event/posZ_noCut"), col.posZ());
+    mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllEvent);
     if (std::abs(col.posZ()) > mZvtxMax) {
       LOGF(debug, "Vertex out of range");
       return false;
@@ -198,6 +202,7 @@ class CollisonCuts
       }
       return false;
     }
+    mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllpassed);
     return true;
   }
 
