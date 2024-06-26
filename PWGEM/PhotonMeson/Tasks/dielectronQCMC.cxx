@@ -216,8 +216,8 @@ struct dielectronQCMC {
     fRegistry.add("Track/lf/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
     fRegistry.add("Track/lf/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/lf/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-    fRegistry.add("Track/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
-    fRegistry.add("Track/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
+    fRegistry.add("Track/lf/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
+    fRegistry.add("Track/lf/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
     fRegistry.add("Track/lf/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
     fRegistry.add("Track/lf/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
     fRegistry.add("Track/lf/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -436,6 +436,9 @@ struct dielectronQCMC {
 
     auto t1mc = t1.template emmcparticle_as<TMCParticles>();
     auto t2mc = t2.template emmcparticle_as<TMCParticles>();
+    if (abs(t1mc.pdgCode()) != 11 || abs(t2mc.pdgCode()) != 11) {
+      return false;
+    }
 
     int mother_id = FindLF(t1mc, t2mc, mcparticles);
     int hfee_type = IsHF(t1mc, t2mc, mcparticles);
