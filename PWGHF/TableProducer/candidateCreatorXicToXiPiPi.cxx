@@ -99,6 +99,10 @@ struct HfCandidateCreatorXicToXiPiPi {
 
   void init(InitContext const&)
   {
+    if ((doprocessXicplusWithDcaFitter + doprocessXicplusWithKFParticle) != 1) {
+      LOGP(fatal, "Only one process function can be enabled at a time.");
+    }
+
     // add histograms to registry
     if (fillHistograms) {
       registry.add("hMass3", "3-prong candidates;inv. mass (#Xi #pi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2.3, 2.7}}});
@@ -115,23 +119,20 @@ struct HfCandidateCreatorXicToXiPiPi {
       registry.add("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2D, {{100, 0., 20.}, {200, -500., 500.}}});
     }
 
+    // fill hVertexerType histogram
+    if ((doprocessXicplusWithDcaFitter == 1) && fillHistograms) {
+      registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
+    }
+    if ((doprocessXicplusWithKFParticle == 1) && fillHistograms) {
+      registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::KfParticle);
+    }
+
     // initialize CCDB
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
-
-    // fill hVertexerType histogram
-    if ((doprocessXicPlusWithDcaFitter + doprocessXicPlusWithKFParticleFromDerivedData) != 1) {
-      LOGP(fatal, "Only one process function can be enabled at a time.");
-    }
-    if ((doprocessXicPlusWithDcaFitter == 1) && fillHistograms) {
-      registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
-    }
-    if ((doprocessXicPlusWithKFParticleFromDerivedData == 1) && fillHistograms) {
-      registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::KfParticle);
-    }
 
     // initialize 3-prong vertex fitter
     df.setPropagateToPCA(propagateToPCA);
@@ -143,7 +144,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     df.setWeightedFinalPCA(useWeightedFinalPCA);
   }
 
-  void processXicPlusWithDcaFitter(aod::Collisions const&,
+  void processXicplusWithDcaFitter(aod::Collisions const&,
                                    aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                    CascadesLinked const&,
                                    CascFull const&,
@@ -321,14 +322,14 @@ struct HfCandidateCreatorXicToXiPiPi {
                        massXiPi0, massXiPi1);
     } // loop over track triplets
   }
-  PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicPlusWithDcaFitter, "Run candidate creator with DCAFitter.", true);
+  PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicplusWithDcaFitter, "Run candidate creator with DCAFitter.", true);
 
-  void processXicPlusWithKFParticleFromDerivedData(aod::Collisions const&,
-                                                   aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
-                                                   KFCascadesLinked const&,
-                                                   KFCascFull const&,
-                                                   aod::TracksWCovExtra const&,
-                                                   aod::BCsWithTimestamps const&)
+  void processXicplusWithKFParticle(aod::Collisions const&,
+                                    aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
+                                    KFCascadesLinked const&,
+                                    KFCascFull const&,
+                                    aod::TracksWCovExtra const&,
+                                    aod::BCsWithTimestamps const&)
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexXicPlus : rowsTrackIndexXicPlus) {
@@ -506,7 +507,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi);
     } // loop over track triplets
   }
-  PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicPlusWithKFParticleFromDerivedData, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);
+  PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicplusWithKFParticle, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);
 }; // struct
 
 /// Performs MC matching.

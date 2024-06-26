@@ -92,15 +92,9 @@ DECLARE_SOA_COLUMN(DcaPi0Xi, dcaPi0Xi, float);
 DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
 DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
 DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
-// PID daughters
-DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float); //! TPC Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float); //! TOF Nsigma separation for prong1 with pion mass hypothesis
-// Events
-DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
                   full::XiId,
                   full::Pi0Id,
                   full::Pi1Id,
@@ -137,7 +131,7 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::CpaXYLam,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
-DECLARE_SOA_TABLE(HfCandXicLiteKfs, "AOD", "HFCANDXICLITEKF",
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   full::XiId,
                   full::Pi0Id,
                   full::Pi1Id,
@@ -179,7 +173,7 @@ DECLARE_SOA_TABLE(HfCandXicLiteKfs, "AOD", "HFCANDXICLITEKF",
                   full::DcaPi1Xi,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
-DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::XiId,
                   full::Pi0Id,
                   full::Pi1Id,
@@ -236,7 +230,7 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::InvMassXiPi1,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
-DECLARE_SOA_TABLE(HfCandXicFullKfs, "AOD", "HFCANDXICFULLKF",
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::XiId,
                   full::Pi0Id,
                   full::Pi1Id,
@@ -298,14 +292,14 @@ DECLARE_SOA_TABLE(HfCandXicFullKfs, "AOD", "HFCANDXICFULLKF",
                   full::DcaPi1Xi,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
-DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullEvs, "AOD", "HFXICXI2PIFULEV",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ);
 
-DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -316,12 +310,12 @@ DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorXicToXiPiPi {
-  Produces<o2::aod::HfCandXicLites> rowCandidateLite;
-  Produces<o2::aod::HfCandXicLiteKfs> rowCandidateLiteKf;
-  Produces<o2::aod::HfCandXicFulls> rowCandidateFull;
-  Produces<o2::aod::HfCandXicFullKfs> rowCandidateFullKf;
-  Produces<o2::aod::HfCandXicFullEvs> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandXicFullPs> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandXicToXiPiPiLites> rowCandidateLite;
+  Produces<o2::aod::HfCandXicToXiPiPiLiteKfs> rowCandidateLiteKf;
+  Produces<o2::aod::HfCandXicToXiPiPiFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandXicToXiPiPiFullKfs> rowCandidateFullKf;
+  Produces<o2::aod::HfCandXicToXiPiPiFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandXicToXiPiPiFullPs> rowCandidateFullParticles;
 
   Configurable<int> selectionFlagXic{"selectionXic", 1, "Selection Flag for Xic"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
@@ -359,14 +353,14 @@ struct HfTreeCreatorXicToXiPiPi {
       collision.posZ());
   }
 
-  template <bool doMc = false, bool noKf = true, typename T>
+  template <bool doMc, bool doKf, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
     }
-    if constexpr (noKf) {
+    if constexpr (!doKf) {
       if (fillCandidateLiteTable) {
         rowCandidateLite(
           candidate.cascadeId(),
@@ -594,7 +588,7 @@ struct HfTreeCreatorXicToXiPiPi {
           continue;
         }
       }
-      fillCandidateTable(candidate);
+      fillCandidateTable<false, false>(candidate);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processData, "Process data", true);
@@ -622,7 +616,7 @@ struct HfTreeCreatorXicToXiPiPi {
           continue;
         }
       }
-      fillCandidateTable<false, false>(candidate);
+      fillCandidateTable<false, true>(candidate);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataKf, "Process data with KF Particle reconstruction", false);
@@ -647,7 +641,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(recSig.size());
       }
       for (const auto& candidate : recSig) {
-        fillCandidateTable<true, true>(candidate);
+        fillCandidateTable<true, false>(candidate);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
@@ -660,7 +654,7 @@ struct HfTreeCreatorXicToXiPiPi {
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        fillCandidateTable<true, true>(candidate);
+        fillCandidateTable<true, false>(candidate);
       }
     } else {
       if (fillCandidateLiteTable) {
@@ -669,7 +663,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        fillCandidateTable<true, true>(candidate);
+        fillCandidateTable<true, false>(candidate);
       }
     }
 
@@ -709,7 +703,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(recSigKf.size());
       }
       for (const auto& candidate : recSigKf) {
-        fillCandidateTable<true, false>(candidate);
+        fillCandidateTable<true, true>(candidate);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
@@ -722,7 +716,7 @@ struct HfTreeCreatorXicToXiPiPi {
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        fillCandidateTable<true, false>(candidate);
+        fillCandidateTable<true, true>(candidate);
       }
     } else {
       if (fillCandidateLiteTable) {
@@ -731,7 +725,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        fillCandidateTable<true, false>(candidate);
+        fillCandidateTable<true, true>(candidate);
       }
     }
 
