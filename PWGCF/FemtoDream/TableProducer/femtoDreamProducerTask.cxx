@@ -14,6 +14,7 @@
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
 #include <CCDB/BasicCCDBManager.h>
+#include <fairlogger/Logger.h>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -327,27 +328,37 @@ struct femtoDreamProducerTask {
       auto pdgCode = particleMC.pdgCode();
       int particleOrigin = 99;
       int pdgCodeMother = -1;
-      // get list of mothers
-      // could be empty (for example in case of injected light nuclei)
+      // get list of mothers, but it could be empty (for example in case of injected light nuclei)
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
       // check pdg code
+      // if this fails, the particle is a fake
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
+        // check first if particle is from pile up
+        // check if the collision associated with the particle is the same as the analyzed collision by checking their Ids
         if ((col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
+          // check if particle is primary
         } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (particleMC.getGenStatusCode() == -1) {
-          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
-        } else if (!motherparticlesMC.empty()) {
-          // get direct mother of the particle
+          // check if particle is secondary
+          // particle is from a decay -> getProcess() == 4
+          // particle is generated during transport -> getGenStatusCode() == -1
+          // list of mothers is not empty
+        } else if (particleMC.getProcess() == 4 && particleMC.getGenStatusCode() == -1 && !motherparticlesMC.empty()) {
+          // get direct mother
           auto motherparticleMC = motherparticlesMC.front();
           pdgCodeMother = motherparticleMC.pdgCode();
-          if (motherparticleMC.isPhysicalPrimary() && particleMC.getProcess() == 4) {
-            particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-          }
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+          // check if particle is material
+          // particle is from inelastic hadronic interaction -> getProcess() == 23
+          // particle is generated during transport -> getGenStatusCode() == -1
+        } else if (particleMC.getProcess() == 23 && particleMC.getGenStatusCode() == -1) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+          // cross check to see if we missed a case
         } else {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;
         }
+        // if pdg code is wrong, particle is fake
       } else {
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
       }

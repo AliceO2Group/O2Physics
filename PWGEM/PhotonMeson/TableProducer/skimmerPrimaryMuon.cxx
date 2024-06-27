@@ -78,14 +78,14 @@ struct skimmerPrimaryMuon {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<float> minpt{"minpt", 0.1, "min pt for track"};
+  // Configurable<float> minpt{"minpt", 0.1, "min pt for track"};
   Configurable<float> mineta{"mineta", -4.0, "eta acceptance"};
   Configurable<float> maxeta{"maxeta", -2.5, "eta acceptance"};
   Configurable<float> mineta_mft{"mineta_mft", -3.6, "eta acceptance"};
   Configurable<float> maxeta_mft{"maxeta_mft", -2.5, "eta acceptance"};
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
-  Configurable<float> maxPDCA{"maxPDCA", 1e+3, "max. p DCA to reject beam-gas background"};
+  // Configurable<float> maxPDCA{"maxPDCA", 1e+3, "max. p DCA to reject beam-gas background"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -168,16 +168,10 @@ struct skimmerPrimaryMuon {
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(track, collision, skimmerPrimaryMuon::MuonExtrapolation::kToDCA);
     o2::dataformats::GlobalFwdTrack propmuonAtRabs = PropagateMuon(track, collision, skimmerPrimaryMuon::MuonExtrapolation::kToRabs);
 
-    float p = propmuonAtDCA.getP();
-    float pt = propmuonAtDCA.getPt();
-    float eta = propmuonAtDCA.getEta();
-    float phi = propmuonAtDCA.getPhi();
-    if (static_cast<int>(track.trackType()) > 2) { // only for MUON standalone
-      p = propmuonAtPV.getP();
-      pt = propmuonAtPV.getPt();
-      eta = propmuonAtPV.getEta();
-      phi = propmuonAtPV.getPhi();
-    }
+    float p = propmuonAtPV.getP();
+    float pt = propmuonAtPV.getPt();
+    float eta = propmuonAtPV.getEta();
+    float phi = propmuonAtPV.getPhi();
 
     o2::math_utils::bringTo02Pi(phi);
     if (phi < 0.f || 2.f * M_PI < phi) {
@@ -322,14 +316,9 @@ struct skimmerPrimaryMuon {
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(muon, collision, skimmerPrimaryMuon::MuonExtrapolation::kToDCA);
     o2::dataformats::GlobalFwdTrack propmuonAtRabs = PropagateMuon(muon, collision, skimmerPrimaryMuon::MuonExtrapolation::kToRabs);
 
-    // float pt = propmuonAtDCA.getPt();
-    float eta = propmuonAtDCA.getEta();
-    float phi = propmuonAtDCA.getPhi();
-    if (static_cast<int>(muon.trackType()) > 2) { // only for MUON standalone
-      // pt = propmuonAtPV.getPt();
-      eta = propmuonAtPV.getEta();
-      phi = propmuonAtPV.getPhi();
-    }
+    // float pt = propmuonAtPV.getPt();
+    float eta = propmuonAtPV.getEta();
+    float phi = propmuonAtPV.getPhi();
 
     if (eta < mineta || maxeta < eta) {
       return false;
@@ -369,14 +358,9 @@ struct skimmerPrimaryMuon {
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(muon, collision, skimmerPrimaryMuon::MuonExtrapolation::kToDCA);
     o2::dataformats::GlobalFwdTrack propmuonAtRabs = PropagateMuon(muon, collision, skimmerPrimaryMuon::MuonExtrapolation::kToRabs);
 
-    float pt = propmuonAtDCA.getPt();
-    float eta = propmuonAtDCA.getEta();
-    float phi = propmuonAtDCA.getPhi();
-    if (static_cast<int>(muon.trackType()) > 2) { // only for MUON standalone
-      pt = propmuonAtPV.getPt();
-      eta = propmuonAtPV.getEta();
-      phi = propmuonAtPV.getPhi();
-    }
+    float pt = propmuonAtPV.getPt();
+    float eta = propmuonAtPV.getEta();
+    float phi = propmuonAtPV.getPhi();
 
     o2::math_utils::bringTo02Pi(phi);
 
