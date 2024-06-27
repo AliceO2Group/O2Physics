@@ -924,6 +924,25 @@ struct QaEfficiency {
     }
     return mcParticle.isPhysicalPrimary();
   }
+bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
+{
+    // Example conditions to determine if a particle is final (tertiary)
+   // Here, we assume that final state particles are those not originating from primary vertex
+    // and not further decaying into other particles
+
+    // Check if the particle has no daughters
+    if (!mcParticle.has_daughters()) {
+        // Check if the particle is not a primary particle
+        if (!mcParticle.isPhysicalPrimary()) {
+            // Check if the particle is produced in a secondary decay
+            if (mcParticle.getProcess() == 4) {
+                return true; // Consider it as a tertiary particle
+            }
+        }
+    }
+
+    return false; // Otherwise, not considered a tertiary particle
+}
 
   template <int pdgSign, o2::track::PID::ID id, typename trackType>
   void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
