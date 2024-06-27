@@ -337,8 +337,7 @@ struct QaEfficiency {
     hPtItsTpcTofMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from material) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/generated", PDGs[histogramIndex]), "Generated ( from material) " + tagPt, kTH1D, {axisPt});
 
-    
-    // P
+   // P
     hPItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPt, kTH1D, {axisP});
     hPTrkItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco) " + tagPt, kTH1D, {axisP});
     hPItsTpcTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPt, kTH1D, {axisP});
@@ -929,7 +928,6 @@ bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
     // Example conditions to determine if a particle is final (tertiary)
    // Here, we assume that final state particles are those not originating from primary vertex
     // and not further decaying into other particles
-
     // Check if the particle has no daughters
     if (!mcParticle.has_daughters()) {
         // Check if the particle is not a primary particle
@@ -1062,14 +1060,13 @@ bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
       }
       if (isFinal(mcParticle)) {
         if (passedITS && passedTPC && motherIsAccepted) {
-        hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
-        hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
-      
-         if (passedTOF) {
+         hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
+         hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
+          if (passedTOF) {
           hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
-          }
         }
-       } 
+       }
+      }
     } else { // Material
       if (passedITS && passedTPC) {
         hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
@@ -1143,11 +1140,11 @@ bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
           if (isFinal(mcParticle)) {
         hPtGeneratedTer[histogramIndex]->Fill(mcParticle.pt());
-      }
+         }
         }   
       } else { // Material
         hPtGeneratedMat[histogramIndex]->Fill(mcParticle.pt());
-      }
+     }
     }
 
     hEtaGenerated[histogramIndex]->Fill(mcParticle.eta());
