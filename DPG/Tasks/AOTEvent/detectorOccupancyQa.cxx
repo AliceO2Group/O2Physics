@@ -162,6 +162,7 @@ struct DetectorOccupancyQaTask {
       AxisSpec axisNtracks{nBinsTracks, -0.5, nMaxTracks - 0.5, "n tracks"};
       AxisSpec axisNtracksGlobal{nMaxGlobalTracks, -0.5, nMaxGlobalTracks - 0.5, "n tracks"};
       AxisSpec axisMultFw{nBinsMultFwd, 0., static_cast<float>(nMaxMultFwd), "mult Fwd"};
+      AxisSpec axisOccupancy{60, 0., 15000, "occupancy (n ITS tracks weighted)"};
 
       histos.add("nTracksPV_vs_V0A_kNoHighOccupancyAgressive", "nTracksPV_vs_V0A_kNoHighOccupancyAgressive", kTH2F, {axisMultFw, axisNtracks});
       histos.add("nTracksPV_vs_V0A_kNoHighOccupancyStrict", "nTracksPV_vs_V0A_kNoHighOccupancyStrict", kTH2F, {axisMultFw, axisNtracks});
@@ -200,6 +201,29 @@ struct DetectorOccupancyQaTask {
       histos.add("nTracksGlobal_vs_V0A_occup_Minus1", "nTracksGlobal_vs_V0A_occup_Minus1", kTH2F, {axisMultFw, axisNtracksGlobal});
       histos.add("nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeStandard", "nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeStandard", kTH2F, {axisMultFw, axisNtracksGlobal});
       histos.add("nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeNarrow", "nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeNarrow", kTH2F, {axisMultFw, axisNtracksGlobal});
+
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyAgressive", "nTracksGlobal_vs_nPV_kNoHighOccupancyAgressive", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyStrict", "nTracksGlobal_vs_nPV_kNoHighOccupancyStrict", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyMedium", "nTracksGlobal_vs_nPV_kNoHighOccupancyMedium", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyRelaxed", "nTracksGlobal_vs_nPV_kNoHighOccupancyRelaxed", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyGentle", "nTracksGlobal_vs_nPV_kNoHighOccupancyGentle", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoCollInTimeRangeStandard", "nTracksGlobal_vs_nPV_kNoCollInTimeRangeStandard", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoCollInTimeRangeNarrow", "nTracksGlobal_vs_nPV_kNoCollInTimeRangeNarrow", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_250", "nTracksGlobal_vs_nPV_occup_0_250", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_500", "nTracksGlobal_vs_nPV_occup_0_500", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_750", "nTracksGlobal_vs_nPV_occup_0_750", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard", "nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeNarrow", "nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeNarrow", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_noOccupSel", "nTracksGlobal_vs_nPV_noOccupSel", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard_extraCuts", "nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard_extraCuts", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_ABOVE_750", "nTracksGlobal_vs_nPV_occup_ABOVE_750", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_Minus1", "nTracksGlobal_vs_nPV_occup_Minus1", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeStandard", "nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeStandard", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeNarrow", "nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeNarrow", kTH2F, {axisNtracks, axisNtracksGlobal});
+
+      histos.add("nTracksGlobal_vs_nPV_vs_occup_pure", "nTracksGlobal_vs_nPV_vs_occup_pure", kTH3F, {axisNtracks, axisNtracksGlobal, axisOccupancy});
+      histos.add("nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeStandard", "nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeStandard", kTH3F, {axisNtracks, axisNtracksGlobal, axisOccupancy});
+      histos.add("nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeNarrow", "nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeNarrow", kTH3F, {axisNtracks, axisNtracksGlobal, axisOccupancy});
     }
   }
 
@@ -565,76 +589,101 @@ struct DetectorOccupancyQaTask {
       // nPV tracks vs fwd amplitude
       histos.fill(HIST("nTracksPV_vs_V0A_noOccupSel"), multV0A, nPV);
       histos.fill(HIST("nTracksGlobal_vs_V0A_noOccupSel"), multV0A, nGlobalTracks);
+      histos.fill(HIST("nTracksGlobal_vs_nPV_noOccupSel"), nPV, nGlobalTracks);
+
+      if (occupancy >= 0)
+        histos.fill(HIST("nTracksGlobal_vs_nPV_vs_occup_pure"), nPV, nGlobalTracks, occupancy);
 
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyAgressive"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyAgressive"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyAgressive"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyStrict"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyStrict"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyStrict"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyMedium"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyMedium"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyMedium"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyRelaxed"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyRelaxed"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyRelaxed"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyGentle"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyGentle"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyGentle"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoCollInTimeRangeStandard"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoCollInTimeRangeStandard"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoCollInTimeRangeStandard"), nPV, nGlobalTracks);
+        if (occupancy >= 0)
+          histos.fill(HIST("nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeStandard"), nPV, nGlobalTracks, occupancy);
       }
       if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoCollInTimeRangeNarrow"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoCollInTimeRangeNarrow"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoCollInTimeRangeNarrow"), nPV, nGlobalTracks);
+        if (occupancy >= 0)
+          histos.fill(HIST("nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeNarrow"), nPV, nGlobalTracks, occupancy);
       }
       if (occupancy >= 0 && occupancy < 250) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_250"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_250"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_250"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 500) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_500"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_500"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_500"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 750) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_750"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_750"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_750"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 500 && col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_500_kNoCollInTimeRangeStandard"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_500_kNoCollInTimeRangeStandard"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 500 && col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_500_kNoCollInTimeRangeNarrow"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_500_kNoCollInTimeRangeNarrow"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeNarrow"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 500 && col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && col.selection_bit(kNoSameBunchPileup) && col.selection_bit(kIsGoodZvtxFT0vsPV)) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_500_kNoCollInTimeRangeStandard_extraCuts"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_500_kNoCollInTimeRangeStandard_extraCuts"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard_extraCuts"), nPV, nGlobalTracks);
       }
 
       // more checks
       if (occupancy >= 750) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_ABOVE_750"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_ABOVE_750"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_ABOVE_750"), nPV, nGlobalTracks);
       }
       if (occupancy == -1) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_Minus1"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_Minus1"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_Minus1"), nPV, nGlobalTracks);
       }
       if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         histos.fill(HIST("nTracksPV_vs_V0A_AntiNoCollInTimeRangeStandard"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeStandard"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeStandard"), nPV, nGlobalTracks);
       }
       if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         histos.fill(HIST("nTracksPV_vs_V0A_AntiNoCollInTimeRangeNarrow"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeNarrow"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeNarrow"), nPV, nGlobalTracks);
       }
     }
   }
