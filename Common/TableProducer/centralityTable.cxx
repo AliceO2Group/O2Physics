@@ -83,7 +83,6 @@ struct CentralityTable {
     Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
     Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
     Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
-    Configurable<bool> fatalizeMultCalibSanity{"fatalizeMultCalibSanity", false, {"Option to do fatalize the sanity check on the multiplicity calibration"}};
     Configurable<std::string> reconstructionPass{"reconstructionPass", "metadata", {"Apass to use when fetching the calibration tables. `metadata` to fetch it from the AO2D metadata. Empty does not check for any pass. Otherwise it will override the metadata."}};
   } ccdbConfig;
 
