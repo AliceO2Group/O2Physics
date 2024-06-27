@@ -196,6 +196,7 @@ struct MultiplicityCounter {
   Configurable<float> v0radius{"v0radius", 0.5, "Radius"};
   Configurable<float> etadau{"etadau", 4, "Eta Daughters"};
   Configurable<float> rapidity{"v0rapidity", 0.5, "V0 rapidity"};
+  ConfigurableAxis centBinning{"centrality", {VARIABLE_WIDTH, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100}, ""};
 
   // Configurable<bool> mftanalysis{"mftanalysis", false, "mft analysis switch"};
   Configurable<bool> zvtxcut{"zvtxcut", false, "z vtx cut < 10cm"};
@@ -210,7 +211,6 @@ struct MultiplicityCounter {
   void init(InitContext&)
   {
 
-    ConfigurableAxis centBinning{"centrality", {VARIABLE_WIDTH, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24,26,28,30,35,40,45,50,60,70,80,90,100}, ""};
     AxisSpec CentAxis = {centBinning, "", "centrality"};
     AxisSpec CentAxisPbPb = {centBinningPbPb, "", "centrality"};
     registry.add({"hetaresponse", ";etaresponse", {HistType::kTH2D, {{80, -4, 4}, {80, -4, 4}}}});
