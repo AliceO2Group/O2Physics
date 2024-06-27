@@ -152,11 +152,12 @@ struct UpcTauCentralBarrelRL {
   Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRowsMin", 70, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcChi2NclMax{"cutMyGTtpcChi2NclMax", 4.f, {"MyGlobalTrack cut"}};
-  Configurable<bool> doTwoTracks{"doTwoTracks", false, {"Define histos for two tracks and allow to fill them"}};
+  Configurable<bool> doTwoTracks{"doTwoTracks", true, {"Define histos for two tracks and allow to fill them"}};
   Configurable<bool> doPionStudy{"doPionStudy", false, {"Define histos for two pions and allow to fill them"}};
   Configurable<bool> doMuonStudy{"doMuonStudy", false, {"Define histos for two muons and allow to fill them"}};
   Configurable<bool> doJpsiMuMuTests{"doJpsiMuMuTests", false, {"Define specific-tests histos for two muons and allow to fill them"}};
   Configurable<bool> doFourTracks{"doFourTracks", false, {"Define histos for four tracks and allow to fill them"}};
+  Configurable<bool> doFourTrackPsi2S{"doFourTrackPsi2S", true, {"Define histos for Psi2S into four charged tracks (pi/mu) and allow to fill them"}};
   Configurable<bool> doSixTracks{"doSixTracks", false, {"Define histos for six tracks and allow to fill them"}};
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
@@ -635,6 +636,25 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventFourTracks/WithPion/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventFourTracks/WithPion/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
       histos.add("EventFourTracks/WithPion/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
+      if (doFourTrackPsi2S) {
+        histos.add("EventFourTracks/MuonsPions/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
+        histos.add("EventFourTracks/MuonsPions/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+        histos.add("EventFourTracks/MuonsPions/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
+        histos.add("EventFourTracks/MuonsPions/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMomWide});
+        histos.add("EventFourTracks/MuonsPions/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
+        histos.add("EventFourTracks/MuonsPions/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
+        histos.add("EventFourTracks/MuonsPions/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+        histos.add("EventFourTracks/MuonsPions/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
+
+        histos.add("EventFourTracks/Psi2S/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
+        histos.add("EventFourTracks/Psi2S/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+        histos.add("EventFourTracks/Psi2S/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
+        histos.add("EventFourTracks/Psi2S/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMomWide});
+        histos.add("EventFourTracks/Psi2S/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
+        histos.add("EventFourTracks/Psi2S/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
+        histos.add("EventFourTracks/Psi2S/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
+        histos.add("EventFourTracks/Psi2S/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
+      }
     }
 
     if (doSixTracks) {
@@ -1845,6 +1865,34 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("EventFourTracks/WithMuon/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventFourTracks/WithMuon/hMotherRapidity"))->Fill(mother.Rapidity());
         histos.get<TH2>(HIST("EventFourTracks/WithMuon/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
+      }
+      // Hunting down psi2s: broad acceptance
+      if (doFourTrackPsi2S) {
+        if (countPVGTpions == 4 ||
+            (countPVGTpions == 3 && countPVGTmuons == 1) ||
+            (countPVGTpions == 2 && countPVGTmuons == 2) ||
+            (countPVGTpions == 1 && countPVGTmuons == 3) ||
+            countPVGTmuons == 4) {
+          histos.get<TH1>(HIST("EventFourTracks/MuonsPions/hInvariantMass"))->Fill(mother.M());
+          histos.get<TH1>(HIST("EventFourTracks/MuonsPions/hInvariantMassWide"))->Fill(mother.M());
+          histos.get<TH1>(HIST("EventFourTracks/MuonsPions/hMotherP"))->Fill(mother.P());
+          histos.get<TH1>(HIST("EventFourTracks/MuonsPions/hMotherPwide"))->Fill(mother.P());
+          histos.get<TH1>(HIST("EventFourTracks/MuonsPions/hMotherPt"))->Fill(mother.Pt());
+          histos.get<TH1>(HIST("EventFourTracks/MuonsPions/hMotherPhi"))->Fill(mother.Phi());
+          histos.get<TH1>(HIST("EventFourTracks/MuonsPions/hMotherRapidity"))->Fill(mother.Rapidity());
+          histos.get<TH2>(HIST("EventFourTracks/MuonsPions/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
+        }
+        // Hunting down psi2s: ideal case
+        if (countPVGTpionsSelection == 2 && countPVGTmuonsSelection == 2) {
+          histos.get<TH1>(HIST("EventFourTracks/Psi2S/hInvariantMass"))->Fill(mother.M());
+          histos.get<TH1>(HIST("EventFourTracks/Psi2S/hInvariantMassWide"))->Fill(mother.M());
+          histos.get<TH1>(HIST("EventFourTracks/Psi2S/hMotherP"))->Fill(mother.P());
+          histos.get<TH1>(HIST("EventFourTracks/Psi2S/hMotherPwide"))->Fill(mother.P());
+          histos.get<TH1>(HIST("EventFourTracks/Psi2S/hMotherPt"))->Fill(mother.Pt());
+          histos.get<TH1>(HIST("EventFourTracks/Psi2S/hMotherPhi"))->Fill(mother.Phi());
+          histos.get<TH1>(HIST("EventFourTracks/Psi2S/hMotherRapidity"))->Fill(mother.Rapidity());
+          histos.get<TH2>(HIST("EventFourTracks/Psi2S/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
+        }
       }
     } else if (countPVGTselected == 6 && doSixTracks) {
       TLorentzVector mother, daug[6];
