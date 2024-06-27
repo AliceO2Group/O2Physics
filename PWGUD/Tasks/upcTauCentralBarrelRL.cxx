@@ -636,7 +636,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventFourTracks/WithPion/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
       histos.add("EventFourTracks/WithPion/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
       histos.add("EventFourTracks/WithPion/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisInvMassWide, axisPt});
-      if (doFourTrackPsi2S){
+      if (doFourTrackPsi2S) {
         histos.add("EventFourTracks/MuonsPions/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
         histos.add("EventFourTracks/MuonsPions/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventFourTracks/MuonsPions/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
@@ -1867,7 +1867,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH2>(HIST("EventFourTracks/WithMuon/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       }
       // Hunting down psi2s: broad acceptance
-      if (doFourTrackPsi2S){
+      if (doFourTrackPsi2S) {
         if (countPVGTpions == 4 ||
             (countPVGTpions == 3 && countPVGTmuons == 1) ||
             (countPVGTpions == 2 && countPVGTmuons == 2) ||
