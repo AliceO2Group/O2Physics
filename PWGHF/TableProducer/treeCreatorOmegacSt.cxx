@@ -99,18 +99,20 @@ DECLARE_SOA_COLUMN(DecayLengthCharmedBaryon, decayLengthCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryon, decayLengthXYCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
+DECLARE_SOA_COLUMN(IdMotherCasc, idMotherCasc, int);
+DECLARE_SOA_COLUMN(IdMotherPion, idMotherPion, int);
 } // namespace st_omegac
 
 namespace st_omegac_gen
 {
-DECLARE_SOA_COLUMN(PxOmegac, pxOmegac, float);
-DECLARE_SOA_COLUMN(PyOmegac, pyOmegac, float);
-DECLARE_SOA_COLUMN(PzOmegac, pzOmegac, float);
-DECLARE_SOA_COLUMN(IsPositiveOmegac, isPositiveOmegac, bool);
-DECLARE_SOA_COLUMN(PxOmega, pxOmega, float);
-DECLARE_SOA_COLUMN(PyOmega, pyOmega, float);
-DECLARE_SOA_COLUMN(PzOmega, pzOmega, float);
-DECLARE_SOA_COLUMN(IsPositiveOmega, isPositiveOmega, bool);
+DECLARE_SOA_COLUMN(PxCharmedBaryon, pxCharmedBaryon, float);
+DECLARE_SOA_COLUMN(PyCharmedBaryon, pyCharmedBaryon, float);
+DECLARE_SOA_COLUMN(PzCharmedBaryon, pzCharmedBaryon, float);
+DECLARE_SOA_COLUMN(PdgCodeCharmedBaryon, pdgCodeCharmedBaryon, int);
+DECLARE_SOA_COLUMN(PxCasc, pxCasc, float);
+DECLARE_SOA_COLUMN(PyCasc, pyCasc, float);
+DECLARE_SOA_COLUMN(PzCasc, pzCasc, float);
+DECLARE_SOA_COLUMN(IsPositiveCasc, isPositiveCasc, bool);
 DECLARE_SOA_COLUMN(DecayLengthOmegac, decayLengthOmegac, float);
 DECLARE_SOA_COLUMN(DecayLengthXYOmegac, decayLengthXYOmegac, float);
 DECLARE_SOA_COLUMN(DecayLengthOmega, decayLengthOmega, float);
@@ -163,17 +165,19 @@ DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
                   st_omegac::DecayLengthCharmedBaryon,
                   st_omegac::DecayLengthXYCharmedBaryon,
                   st_omegac::DecayLengthCasc,
-                  st_omegac::DecayLengthXYCasc);
+                  st_omegac::DecayLengthXYCasc,
+                  st_omegac::IdMotherCasc,
+                  st_omegac::IdMotherPion);
 
 DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
-                  st_omegac_gen::PxOmegac,
-                  st_omegac_gen::PyOmegac,
-                  st_omegac_gen::PzOmegac,
-                  st_omegac_gen::IsPositiveOmegac,
-                  st_omegac_gen::PxOmega,
-                  st_omegac_gen::PyOmega,
-                  st_omegac_gen::PzOmega,
-                  st_omegac_gen::IsPositiveOmega,
+                  st_omegac_gen::PxCharmedBaryon,
+                  st_omegac_gen::PyCharmedBaryon,
+                  st_omegac_gen::PzCharmedBaryon,
+                  st_omegac_gen::PdgCodeCharmedBaryon,
+                  st_omegac_gen::PxCasc,
+                  st_omegac_gen::PyCasc,
+                  st_omegac_gen::PzCasc,
+                  st_omegac_gen::IsPositiveCasc,
                   st_omegac_gen::DecayLengthOmegac,
                   st_omegac_gen::DecayLengthXYOmegac,
                   st_omegac_gen::DecayLengthOmega,
@@ -218,6 +222,7 @@ struct HfTreeCreatorOmegacSt {
 
   float bz = 0.;
   int runNumber{0};
+  std::vector<std::tuple<int, int>> mapMcPartToGenTable;
 
   using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
@@ -227,15 +232,16 @@ struct HfTreeCreatorOmegacSt {
                            (filterCollisions.node() == 8 && o2::aod::evsel::sel8 == true);
 
   // Preslice<aod::Tracks> perCol = aod::track::collisionId;
-  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::AssignedTrackedCascades> assignedTrackedCascadesPerCollision = aod::track::collisionId;
+  PresliceUnsorted<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+  PresliceUnsorted<aod::AssignedTrackedCascades> assignedTrackedCascadesPerCollision = aod::track::collisionId;
 
   std::shared_ptr<TH1> hCandidatesPrPi, hCandidatesV0Pi, hCandidatesCascPi;
   HistogramRegistry registry{
     "registry",
     {
       {"hDca", "DCA;DCA (cm)", {HistType::kTH1D, {{200, 0., .5}}}},
-      {"hDcaXY", "DCA;DCA_{xy} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
+      {"hDcaXY", "DCA;DCA_{xy} (cm)", {HistType::kTH1D, {
+        {200, -.5, .5}}}},
       {"hDcaXYVsPt", "DCA;p_{T} (GeV/#it{c};DCA_{xy} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
       {"hDcaZ", "DCA;DCA_{z} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
       {"hDcaZVsPt", "DCA;p_{T} (GeV/#it{c});DCA_{z} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
@@ -293,21 +299,52 @@ struct HfTreeCreatorOmegacSt {
                  aod::McParticles const& mcParticles)
   {
     for (const auto& mcParticle : mcParticles) {
-      if ((mcParticle.pdgCode() == kOmegaMinus) &&
-          mcParticle.has_mothers() &&
-          (mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == constants::physics::Pdg::kOmegaC0)) {
-        const auto& mcColl = mcParticle.mcCollision();
-        std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
-        std::array<double, 3> secondaryVertexGen = {mcParticle.vx(), mcParticle.vy(), mcParticle.vz()};
-        const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
-        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::constants::physics::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+      int idxOut = -1;
+      if (std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kOmegaC0) {
+        const auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        if (daughters.size() == 2) {
+          int idxPiDaughter = -1;
+          int idxOmegaDaughter = -1;
+          for (const auto& daughter: mcParticle.daughters_as<aod::McParticles>()) {
+            if (idxOmegaDaughter < 0 && (std::abs(daughter.pdgCode()) == kOmegaMinus)) {
+              idxOmegaDaughter = daughter.index();
+            }
+            if (idxPiDaughter < 0 && (std::abs(daughter.pdgCode()) == kPiPlus)) {
+              idxPiDaughter = daughter.index();
+            }
+            // TODO: check for opposite signs
+          }
+          if ((idxPiDaughter > 0) && (idxOmegaDaughter > 0)) {
+            const auto &omegaDaughter = mcParticles.iteratorAt(idxOmegaDaughter);
+            const auto& mcColl = mcParticle.mcCollision();
+            std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
+            std::array<double, 3> secondaryVertexGen = {omegaDaughter.vx(), omegaDaughter.vy(), omegaDaughter.vz()};
+            const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
+            registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::constants::physics::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+            outputTableGen(
+                           mcParticle.px(),
+                           mcParticle.py(),
+                           mcParticle.pz(),
+                           mcParticle.pdgCode(),
+                           omegaDaughter.px(),
+                           omegaDaughter.py(),
+                           omegaDaughter.pz(),
+                           omegaDaughter.pdgCode() > 0 ? true : false,
+                           decayLengthGen,
+                           0.,
+                           0.,
+                           0.);
+            idxOut = outputTableGen.lastIndex();
+          }
+        }
       }
+      mapMcPartToGenTable.push_back(std::make_tuple(mcParticle.globalIndex(), idxOut));
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
 
   void processData(Collisions const& collisions,
-                   aod::AssignedTrackedCascades const& trackedCascades,
+                   soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
                    aod::TrackAssoc const& trackIndices,
                    aod::Cascades const&,
                    aod::V0s const&,
@@ -545,7 +582,9 @@ struct HfTreeCreatorOmegacSt {
                                   decayLength,
                                   decayLengthXY,
                                   decayLengthCasc,
-                                  decayLengthCascXY);
+                                  decayLengthCascXY,
+                                  -1,
+                                  -1);
                     }
                   } else {
                     continue;
@@ -567,7 +606,7 @@ struct HfTreeCreatorOmegacSt {
 
   void processMcGen(aod::Collision const& collision,
                     aod::McCollisions const&,
-                    aod::AssignedTrackedCascades const& trackedCascades,
+                    soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
                     aod::Cascades const&,
                     aod::V0s const&,
                     TracksExtMc const& tracks,
