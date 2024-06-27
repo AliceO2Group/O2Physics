@@ -112,7 +112,6 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcTer;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofTer;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedTer;
 
-
 // P
 std::array<std::shared_ptr<TH1>, nParticles> hPItsTpc;
 std::array<std::shared_ptr<TH1>, nParticles> hPTrkItsTpc;
@@ -325,7 +324,7 @@ struct QaEfficiency {
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
 
-     // Ter
+    // Ter
     hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
     hPtTrkItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from secondary weak decays) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcTofTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
@@ -337,7 +336,7 @@ struct QaEfficiency {
     hPtItsTpcTofMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from material) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/generated", PDGs[histogramIndex]), "Generated ( from material) " + tagPt, kTH1D, {axisPt});
 
-   // P
+    // P
     hPItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPt, kTH1D, {axisP});
     hPTrkItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco) " + tagPt, kTH1D, {axisP});
     hPItsTpcTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPt, kTH1D, {axisP});
@@ -443,7 +442,6 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPt_Prm_Trk", hPtTrkItsTpcPrm[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPt_Prm", hPtItsTpcTofPrm[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", hPtTrkItsTpcTofPrm[histogramIndex]);
-
     makeEfficiency("ITS-TPC_vsPt_Prm_RecoEv", hPtItsTpcPrm[histogramIndex]);
 
     makeEfficiency("ITS-TPC_vsPt_Str", hPtItsTpcStr[histogramIndex]);
@@ -923,24 +921,27 @@ struct QaEfficiency {
     }
     return mcParticle.isPhysicalPrimary();
   }
-bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
-{
-    // Example conditions to determine if a particle is final (tertiary)
-   // Here, we assume that final state particles are those not originating from primary vertex
-    // and not further decaying into other particles
-    // Check if the particle has no daughters
-    if (!mcParticle.has_daughters()) {
-        // Check if the particle is not a primary particle
-        if (!mcParticle.isPhysicalPrimary()) {
-            // Check if the particle is produced in a secondary decay
-            if (mcParticle.getProcess() == 4) {
-                return true; // Consider it as a tertiary particle
-            }
-        }
-    }
+    bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
+   {
+       // Example conditions to determine if a particle is final (tertiary)
+      // Here, we assume that final state particles are those not originating from primary vertex
+      // and not further decaying into other particles
+      // Check if the particle has no daughters
+     if (!mcParticle.has_daughters()) {
 
-    return false; // Otherwise, not considered a tertiary particle
-}
+       // Check if the particle is not a primary particle
+      if (!mcParticle.isPhysicalPrimary()) {
+       // Check if the particle is produced in a secondary decay
+       if (mcParticle.getProcess() == 4) {
+          return true; // Consider it as a tertiary particle
+         }
+      }
+     }
+ 
+     return false; // Otherwise, not considered a tertiary particle
+
+   }
+ 
 
   template <int pdgSign, o2::track::PID::ID id, typename trackType>
   void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
@@ -1054,19 +1055,19 @@ bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
       if (passedITS && passedTPC && motherIsAccepted) {
         hPtItsTpcStr[histogramIndex]->Fill(mcParticle.pt());
         hPtTrkItsTpcStr[histogramIndex]->Fill(track.pt());
-         if (passedTOF) {
+       if (passedTOF) {
           hPtItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt());
-          }
+        }
       }
       if (isFinal(mcParticle)) {
         if (passedITS && passedTPC && motherIsAccepted) {
-         hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
-         hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
+          hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
+          hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
           if (passedTOF) {
-          hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
+           hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
         }
        }
-      }
+     }
     } else { // Material
       if (passedITS && passedTPC) {
         hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
@@ -1139,12 +1140,12 @@ bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
         if (motherIsAccepted) {
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
           if (isFinal(mcParticle)) {
-        hPtGeneratedTer[histogramIndex]->Fill(mcParticle.pt());
+           hPtGeneratedTer[histogramIndex]->Fill(mcParticle.pt());
          }
         }   
       } else { // Material
         hPtGeneratedMat[histogramIndex]->Fill(mcParticle.pt());
-     }
+      }
     }
 
     hEtaGenerated[histogramIndex]->Fill(mcParticle.eta());
