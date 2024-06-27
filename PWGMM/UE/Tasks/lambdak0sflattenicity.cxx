@@ -208,7 +208,7 @@ struct lambdak0sflattenicity {
     if (!doprocessDataRun3 && !(doprocessRecMC || doprocessGenMC)) {
       LOGF(fatal, "Both Data and MC set to false; try again with only one of them set to false");
     }
-        if ((doprocessRecMC && !doprocessGenMC) || (!doprocessRecMC && doprocessGenMC)) {
+    if ((doprocessRecMC && !doprocessGenMC) || (!doprocessRecMC && doprocessGenMC)) {
       LOGF(fatal, "MCRec and MCGen are set to opposite switches, try again with both set to either true or false");
     }
   }
