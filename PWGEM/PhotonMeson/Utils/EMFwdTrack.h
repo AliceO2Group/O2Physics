@@ -34,6 +34,7 @@ class EMFwdTrack
     fCharge = charge;
     fDCAx = dcaX;
     fDCAy = dcaY;
+    fPairDCAXYinSigmaOTF = 0;
 
     fAmbMuonSelfIds = amb_muon_self_ids;
     if (fAmbMuonSelfIds.size() > 0) {
@@ -63,6 +64,9 @@ class EMFwdTrack
   std::vector<int> ambiguousMuonsIds() const { return fAmbMuonSelfIds; }
   float signed1Pt() const { return fCharge * 1.f / fPt; }
 
+  float pairDcaXYinSigmaOTF() const { return fPairDCAXYinSigmaOTF; }
+  void setPairDcaXYinSigmaOTF(float dca) { fPairDCAXYinSigmaOTF = dca; }
+
  protected:
   int fGlobalId;
   int fCollisionId;
@@ -74,6 +78,7 @@ class EMFwdTrack
   int8_t fCharge;
   float fDCAx;
   float fDCAy;
+  float fPairDCAXYinSigmaOTF;
   bool fIsAmbiguous;
   std::vector<int> fAmbMuonSelfIds;
 };
@@ -130,6 +135,10 @@ class EMFwdTrackWithCov : public EMFwdTrack
   float c1PtTgl() const { return fC1PtTgl; }
   float c1Pt21Pt2() const { return fC1Pt21Pt2; }
   float chi2() const { return fChi2; }
+
+  void setCXX(float cXX) { fCXX = cXX; }
+  void setCXY(float cXY) { fCXY = cXY; }
+  void setCYY(float cYY) { fCYY = cYY; }
 
  protected:
   float fX;
