@@ -611,15 +611,10 @@ struct CentralityTable {
                 histos.fill(HIST("FT0M/percentile"), perC);
                 histos.fill(HIST("FT0M/percentilevsPV"), perC, collision.multNTracksPV());
                 histos.fill(HIST("FT0M/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
-                if (sel8) {
+                if (collision.sel8()) {
                   histos.fill(HIST("sel8FT0M/percentile"), perC);
                   histos.fill(HIST("sel8FT0M/percentilevsPV"), perC, collision.multNTracksPV());
                   histos.fill(HIST("sel8FT0M/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
-                }
-                if (sel8 && isBBT0A && isBBT0C) {
-                  histos.fill(HIST("isT0ANDFT0M/percentile"), perC, collision.multZeqFT0A() + collision.multZeqFT0C());
-                  histos.fill(HIST("isT0ANDFT0M/percentilevsPV"), perC, collision.multNTracksPV());
-                  histos.fill(HIST("isT0ANDFT0M/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
                 }
               }
             }
@@ -631,15 +626,10 @@ struct CentralityTable {
                 histos.fill(HIST("FT0A/percentile"), perC);
                 histos.fill(HIST("FT0A/percentilevsPV"), perC, collision.multNTracksPV());
                 histos.fill(HIST("FT0A/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
-                if (sel8) {
+                if (collision.sel8()) {
                   histos.fill(HIST("sel8FT0A/percentile"), perC);
                   histos.fill(HIST("sel8FT0A/percentilevsPV"), perC, collision.multNTracksPV());
                   histos.fill(HIST("sel8FT0A/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
-                }
-                if (sel8 && isBBT0A && isBBT0C) {
-                  histos.fill(HIST("isT0ANDFT0A/percentile"), perC);
-                  histos.fill(HIST("isT0ANDFT0A/percentilevsPV"), perC, collision.multNTracksPV());
-                  histos.fill(HIST("isT0ANDFT0A/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
                 }
               }
             }
@@ -651,15 +641,10 @@ struct CentralityTable {
                 histos.fill(HIST("FT0C/percentile"), perC);
                 histos.fill(HIST("FT0C/percentilevsPV"), perC, collision.multNTracksPV());
                 histos.fill(HIST("FT0C/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
-                if (sel8) {
+                if (collision.sel8()) {
                   histos.fill(HIST("sel8FT0C/percentile"), perC);
                   histos.fill(HIST("sel8FT0C/percentilevsPV"), perC, collision.multNTracksPV());
                   histos.fill(HIST("sel8FT0C/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
-                }
-                if (sel8 && isBBT0A && isBBT0C) {
-                  histos.fill(HIST("isT0ANDFT0C/percentile"), perC);
-                  histos.fill(HIST("isT0ANDFT0C/percentilevsPV"), perC, collision.multNTracksPV());
-                  histos.fill(HIST("isT0ANDFT0C/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
                 }
               }
             }
