@@ -189,7 +189,7 @@ struct dielectronQCMC {
 
     // reconstructed pair info
     fRegistry.add("Pair/sm/Photon/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dca, axis_pca}, true);
-    fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, false);
+    fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Pi0/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Eta/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/EtaPrime/");
@@ -229,7 +229,8 @@ struct dielectronQCMC {
     fRegistry.add("Track/lf/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/lf/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/lf/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/lf/hTOFbeta", "TOF beta;p_{in} (GeV/c);TOF #beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
+    fRegistry.add("Track/lf/hTOFbeta", "TOF #beta;p_{in} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
+    fRegistry.add("Track/lf/h1overTOFbeta", "TOF 1/#beta;p_{in} (GeV/c);1/#beta", kTH2F, {{1000, 0, 10}, {1000, 0.8, 1.8}}, false);
     fRegistry.add("Track/lf/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/lf/hTOFNsigmaMu", "TOF n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/lf/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -241,6 +242,9 @@ struct dielectronQCMC {
     fRegistry.add("Track/lf/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/lf/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
     fRegistry.add("Track/lf/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
+    fRegistry.add("Track/lf/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
+    fRegistry.add("Track/lf/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
+    fRegistry.add("Track/lf/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.addClone("Track/lf/", "Track/Photon/");
     fRegistry.addClone("Track/lf/", "Track/PromptJPsi/");
     fRegistry.addClone("Track/lf/", "Track/NonPromptJPsi/");
@@ -398,7 +402,11 @@ struct dielectronQCMC {
       FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 223, mcparticles),
       FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 333, mcparticles),
       FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 443, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 100443, mcparticles)};
+      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 100443, mcparticles),
+      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 553, mcparticles),
+      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 100553, mcparticles),
+      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 200553, mcparticles),
+      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 300553, mcparticles)};
     int size = sizeof(arr) / sizeof(*arr);
     int max = *std::max_element(arr, arr + size);
     return max;
@@ -411,6 +419,50 @@ struct dielectronQCMC {
       return true;
     } else {
       return false;
+    }
+  }
+
+  template <int e_source_id, typename TMCParticles, typename TTrack>
+  void fillTrackInfo(TTrack const& track)
+  {
+    // fill track info that belong to true pairs.
+    if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
+      auto mctrack = track.template emmcparticle_as<TMCParticles>();
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPt"), track.pt());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hQoverPt"), track.sign() / track.pt());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hEtaPhi"), track.phi(), track.eta());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyz"), track.dcaXY(), track.dcaZ());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxy_Pt"), track.pt(), track.dcaXY());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAz_Pt"), track.pt(), track.dcaZ());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAzRes_Pt"), track.pt(), sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hNclsITS"), track.itsNCls());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hNclsTPC"), track.tpcNClsFound());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hNcrTPC"), track.tpcNClsCrossedRows());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hChi2TPC"), track.tpcChi2NCl());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hChi2ITS"), track.itsChi2NCl());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hITSClusterMap"), track.itsClusterMap());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hMeanClusterSizeITS"), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFbeta"), track.tpcInnerParam(), track.beta());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("h1overTOFbeta"), track.tpcInnerParam(), 1. / track.beta());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+      used_trackIds.emplace_back(track.globalIndex());
     }
   }
 
@@ -466,50 +518,50 @@ struct dielectronQCMC {
             case 111:
               fRegistry.fill(HIST("Pair/sm/Pi0/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPhiV"), phiv, v12.M());
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 221:
               fRegistry.fill(HIST("Pair/sm/Eta/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               fRegistry.fill(HIST("Pair/sm/Eta/hMvsPhiV"), phiv, v12.M());
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 331:
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hMvsPhiV"), phiv, v12.M());
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 113:
               fRegistry.fill(HIST("Pair/sm/Rho/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               fRegistry.fill(HIST("Pair/sm/Rho/hMvsPhiV"), phiv, v12.M());
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 223:
               fRegistry.fill(HIST("Pair/sm/Omega/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               fRegistry.fill(HIST("Pair/sm/Omega/hMvsPhiV"), phiv, v12.M());
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               fRegistry.fill(HIST("Pair/sm/Phi/hMvsPhiV"), phiv, v12.M());
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
                 fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hMvsPhiV"), phiv, v12.M());
-                fillTrackInfo<3>(t1);
-                fillTrackInfo<3>(t2);
+                fillTrackInfo<3, TMCParticles>(t1);
+                fillTrackInfo<3, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/sm/PromptJPsi/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
                 fRegistry.fill(HIST("Pair/sm/PromptJPsi/hMvsPhiV"), phiv, v12.M());
-                fillTrackInfo<2>(t1);
-                fillTrackInfo<2>(t2);
+                fillTrackInfo<2, TMCParticles>(t1);
+                fillTrackInfo<2, TMCParticles>(t2);
               }
               break;
             }
@@ -517,13 +569,13 @@ struct dielectronQCMC {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fRegistry.fill(HIST("Pair/sm/NonPromptPsi2S/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
                 fRegistry.fill(HIST("Pair/sm/NonPromptPsi2S/hMvsPhiV"), phiv, v12.M());
-                fillTrackInfo<5>(t1);
-                fillTrackInfo<5>(t2);
+                fillTrackInfo<5, TMCParticles>(t1);
+                fillTrackInfo<5, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/sm/PromptPsi2S/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
                 fRegistry.fill(HIST("Pair/sm/PromptPsi2S/hMvsPhiV"), phiv, v12.M());
-                fillTrackInfo<4>(t1);
-                fillTrackInfo<4>(t2);
+                fillTrackInfo<4, TMCParticles>(t1);
+                fillTrackInfo<4, TMCParticles>(t2);
               }
               break;
             }
@@ -536,8 +588,8 @@ struct dielectronQCMC {
             case 22:
               fRegistry.fill(HIST("Pair/sm/Photon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               fRegistry.fill(HIST("Pair/sm/Photon/hMvsPhiV"), phiv, v12.M());
-              fillTrackInfo<1>(t1);
-              fillTrackInfo<1>(t2);
+              fillTrackInfo<1, TMCParticles>(t1);
+              fillTrackInfo<1, TMCParticles>(t2);
               break;
             default:
               break;
@@ -554,16 +606,16 @@ struct dielectronQCMC {
               fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/meson_meson/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<6>(t1);
-                fillTrackInfo<6>(t2);
+                fillTrackInfo<6, TMCParticles>(t1);
+                fillTrackInfo<6, TMCParticles>(t2);
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
                 fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<6>(t1);
-                fillTrackInfo<6>(t2);
+                fillTrackInfo<6, TMCParticles>(t1);
+                fillTrackInfo<6, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<6>(t1);
-                fillTrackInfo<6>(t2);
+                fillTrackInfo<6, TMCParticles>(t1);
+                fillTrackInfo<6, TMCParticles>(t2);
               }
               break;
             }
@@ -571,16 +623,16 @@ struct dielectronQCMC {
               fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               if (isBeautyMeson(mp1) && isBeautyMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/meson_meson/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               } else if (isBeautyBaryon(mp1) && isBeautyBaryon(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               }
               break;
             }
@@ -588,16 +640,16 @@ struct dielectronQCMC {
               fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/meson_meson/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<8>(t1);
-                fillTrackInfo<8>(t2);
+                fillTrackInfo<8, TMCParticles>(t1);
+                fillTrackInfo<8, TMCParticles>(t2);
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<8>(t1);
-                fillTrackInfo<8>(t2);
+                fillTrackInfo<8, TMCParticles>(t1);
+                fillTrackInfo<8, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
-                fillTrackInfo<8>(t1);
-                fillTrackInfo<8>(t2);
+                fillTrackInfo<8, TMCParticles>(t1);
+                fillTrackInfo<8, TMCParticles>(t2);
               }
               break;
             }
@@ -611,11 +663,11 @@ struct dielectronQCMC {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               }
               if ((isCharmMeson(mp1) || isCharmBaryon(mp1)) && (isBeautyMeson(mp2) || isBeautyBaryon(mp2))) {
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<8>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<8, TMCParticles>(t2);
               } else {
-                fillTrackInfo<8>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<8, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               }
               break;
             }
@@ -649,11 +701,11 @@ struct dielectronQCMC {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d, pca);
               }
               if ((isCharmMeson(mp1) || isCharmBaryon(mp1)) && (isBeautyMeson(mp2) || isBeautyBaryon(mp2))) {
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<8>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<8, TMCParticles>(t2);
               } else {
-                fillTrackInfo<8>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<8, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               }
               break;
             }
@@ -664,45 +716,6 @@ struct dielectronQCMC {
       }
     } // end of HF evaluation
     return true;
-  }
-
-  template <int e_source_id, typename TTrack>
-  void fillTrackInfo(TTrack const& track)
-  {
-    // fill track info that belong to true pairs.
-    if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPt"), track.pt());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hQoverPt"), track.sign() / track.pt());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hEtaPhi"), track.phi(), track.eta());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyz"), track.dcaXY(), track.dcaZ());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxy_Pt"), track.pt(), track.dcaXY());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAz_Pt"), track.pt(), track.dcaZ());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAzRes_Pt"), track.pt(), sqrt(track.cZZ()) * 1e+4);  // convert cm to um
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hNclsITS"), track.itsNCls());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hNclsTPC"), track.tpcNClsFound());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hNcrTPC"), track.tpcNClsCrossedRows());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hChi2TPC"), track.tpcChi2NCl());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hChi2ITS"), track.itsChi2NCl());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hITSClusterMap"), track.itsClusterMap());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hMeanClusterSizeITS"), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFbeta"), track.tpcInnerParam(), track.beta());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
-      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
-      used_trackIds.emplace_back(track.globalIndex());
-    }
   }
 
   std::vector<int> used_trackIds;
