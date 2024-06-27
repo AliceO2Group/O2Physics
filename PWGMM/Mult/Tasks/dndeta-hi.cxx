@@ -155,7 +155,7 @@ AxisSpec EvtClassAxis = {kECend - 1, +kECbegin + 0.5, +kECend - 0.5, "", "event 
 AxisSpec TrigClassAxis = {kTrigend - 1, +kTrigbegin + 0.5, +kTrigend - 0.5, "", "trigger class"};
 AxisSpec ParticleTypeAxis = {kParTypeend - 1, +kParTypebegin + 0.5, +kParTypeend - 0.5, "", "Particle type"};
 std::vector<double> centBinningPbPb = {0, 1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100};
-std::vector<double> centBinning = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24,26,28,30,35,40,45,50,60,70,80,90,100};
+ConfigurableAxis centBinning{"centrality", {VARIABLE_WIDTH, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24,26,28,30,35,40,45,50,60,70,80,90,100}, ""};
 AxisSpec CentAxis = {centBinning, "", "centrality"};
 AxisSpec CentAxisPbPb = {centBinningPbPb, "", "centrality"};
 AxisSpec SpeciesAxis = {kSpeciesend - 1, +kSpeciesbegin + 0.5, +kSpeciesend - 0.5, "", "species class"};
