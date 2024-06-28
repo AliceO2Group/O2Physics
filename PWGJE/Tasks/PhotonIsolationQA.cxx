@@ -112,8 +112,8 @@ struct PhotonIsolationQA {
     const o2Axis PtIso_Axis{100, -10, 15, "P_{T, Iso} (GeV/c)"};
     const o2Axis Rho_Axis{100, 0, 100, "#rho (#frac{GeV/c}{A})"};
     const o2Axis ABCD_Axis{5, 0, 5, "ABCD"};
-    const o2Axis NLM_Axis{3,0,3, "NLM"};
-    const o2Axis Fraction_Axis{50, 0,2};
+    const o2Axis NLM_Axis{3, 0, 3, "NLM"};
+    const o2Axis Fraction_Axis{50, 0, 2};
 
     Data_Info.add("hPosZ", "Z Position of collision", o2HistType::kTH1F, {PosZ_Axis});
     Data_Info.add("hNumClusters", "Number of cluster per collision", o2HistType::kTH1F, {Num_Cluster_Axis});
@@ -163,7 +163,7 @@ struct PhotonIsolationQA {
     MC_Info.add("hMcParticlesToCluster", "Energy of particles linked to mc cluster", o2HistType::kTH1F, {{100, 0, 100}});
     MC_Info.add("hMcParticleStatusCode", "generator status code of mc particle linked to mc cluster", o2HistType::kTH1F, {{200, 0, 200}});
     MC_Info.add("hMcParticleProcessCode", "physical process code of mc particle linked to mc cluster", o2HistType::kTH1F, {{200, 0, 200}});
-    
+
     std::vector<std::string> bin_names = {"A", "B", "C", "D", "True Bckgr A"};
     for (int i = 0; i < bin_names.size(); i++) {
       MC_Info.get<TH2>(HIST("hABCDControlRegion"))->GetXaxis()->SetBinLabel(i + 1, bin_names[i].c_str());
@@ -175,11 +175,11 @@ struct PhotonIsolationQA {
   bool track_matching(const auto& cluster, o2::aod::EMCALMatchedTracks const& matched_tracks)
   {
     for (const auto& match : matched_tracks) {
-        double abs_pt = abs(match.track_as<myGlobTracks>().pt());
-        if ((cluster.energy() / abs_pt) < 1.75) {
-          return true;
-        }
+      double abs_pt = abs(match.track_as<myGlobTracks>().pt());
+      if ((cluster.energy() / abs_pt) < 1.75) {
+        return true;
       }
+    }
     return false;
   }
 
