@@ -402,7 +402,7 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollision().globalIndex());
+    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
     for (const auto& mcdjet : mcdjets) {
       fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets);
     }
