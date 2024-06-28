@@ -691,14 +691,14 @@ struct lambdak0sflattenicity {
           continue;
         }
         float pt = track.pt();
-        rFlattenicity.fill(HIST(nhEst[0]), estimator[0], pt);
-        rFlattenicity.fill(HIST(nhEst[1]), estimator[1], pt);
-        rFlattenicity.fill(HIST(nhEst[2]), estimator[2], pt);
-        rFlattenicity.fill(HIST(nhEst[3]), estimator[3], pt);
-        rFlattenicity.fill(HIST(nhEst[4]), estimator[4], pt);
-        rFlattenicity.fill(HIST(nhEst[5]), estimator[5], pt);
-        rFlattenicity.fill(HIST(nhEst[6]), estimator[6], pt);
-        rFlattenicity.fill(HIST(nhEst[7]), estimator[7], pt);
+        rFlattenicity.fill(HIST(nhPtEst[0]), estimator[0], pt);
+        rFlattenicity.fill(HIST(nhPtEst[1]), estimator[1], pt);
+        rFlattenicity.fill(HIST(nhPtEst[2]), estimator[2], pt);
+        rFlattenicity.fill(HIST(nhPtEst[3]), estimator[3], pt);
+        rFlattenicity.fill(HIST(nhPtEst[4]), estimator[4], pt);
+        rFlattenicity.fill(HIST(nhPtEst[5]), estimator[5], pt);
+        rFlattenicity.fill(HIST(nhPtEst[6]), estimator[6], pt);
+        rFlattenicity.fill(HIST(nhPtEst[7]), estimator[7], pt);
       }
 
       for (int iCh = 0; iCh < 48; ++iCh) {
