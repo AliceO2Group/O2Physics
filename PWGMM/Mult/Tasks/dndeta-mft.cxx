@@ -83,7 +83,7 @@ struct PseudorapidityDensityMFT {
     "maxZDiff", 1.0f,
     "max allowed Z difference for reconstruced collisions (cm)"};
 
-  Configurable<bool> usePhiCut{"usePhiCut", true, "use azimuthal angle cut"};
+  Configurable<bool> usePhiCut{"usePhiCut", false, "use azimuthal angle cut"};
   Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f,
                                 "Cut on azimuthal angle of MFT tracks"};
 

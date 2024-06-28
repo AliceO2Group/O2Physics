@@ -43,37 +43,44 @@ struct PCMQC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
 
   EMEventCut fEMEventCut;
-  Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
-  Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
-  Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
-  Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
-  Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
-  Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
-  Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
-  Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+  struct : ConfigurableGroup {
+    std::string prefix = "eventcut_group";
+    Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
+    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
+    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
+    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
+    Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
+    Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
+    Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
+    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+  } eventcuts;
 
   V0PhotonCut fV0PhotonCut;
-  Configurable<bool> cfg_require_v0_with_itstpc{"cfg_require_v0_with_itstpc", false, "flag to select V0s with ITS-TPC matched tracks"};
-  Configurable<bool> cfg_require_v0_with_itsonly{"cfg_require_v0_with_itsonly", false, "flag to select V0s with ITSonly tracks"};
-  Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
-  Configurable<bool> cfg_require_v0_on_wwire_ib{"cfg_require_v0_on_wwire_ib", false, "flag to select V0s on W wires ITSib"};
-  Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
-  Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", 0.9, "max eta for v0 photons at PV"};
-  Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 4.0, "min v0 radius"};
-  Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
-  Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
-  Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
-  Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.99, "min V0 CosPA"};
-  Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
-  Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
-  Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
-
-  Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 10, "min ncluster tpc"};
-  Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 20, "min ncrossed rows"};
-  Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-  Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-  Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
-  Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
+  struct : ConfigurableGroup {
+    std::string prefix = "pcmcut_group";
+    Configurable<bool> cfg_require_v0_with_itstpc{"cfg_require_v0_with_itstpc", false, "flag to select V0s with ITS-TPC matched tracks"};
+    Configurable<bool> cfg_require_v0_with_itsonly{"cfg_require_v0_with_itsonly", false, "flag to select V0s with ITSonly tracks"};
+    Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
+    Configurable<bool> cfg_require_v0_on_wwire_ib{"cfg_require_v0_on_wwire_ib", false, "flag to select V0s on W wires ITSib"};
+    Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
+    Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", 0.9, "max eta for v0 photons at PV"};
+    Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 4.0, "min v0 radius"};
+    Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
+    Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
+    Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.997, "min V0 CosPA"};
+    Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
+    Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
+    Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
+    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
+    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
+    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
+    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
+    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
+  } pcmcuts;
 
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -156,14 +163,15 @@ struct PCMQC {
   void DefineEMEventCut()
   {
     fEMEventCut = EMEventCut("fEMEventCut", "fEMEventCut");
-    fEMEventCut.SetRequireSel8(cfgRequireSel8);
-    fEMEventCut.SetRequireFT0AND(cfgRequireFT0AND);
-    fEMEventCut.SetZvtxRange(-cfgZvtxMax, +cfgZvtxMax);
-    fEMEventCut.SetRequireNoTFB(cfgRequireNoTFB);
-    fEMEventCut.SetRequireNoITSROFB(cfgRequireNoITSROFB);
-    fEMEventCut.SetRequireNoSameBunchPileup(cfgRequireNoSameBunchPileup);
-    fEMEventCut.SetRequireVertexITSTPC(cfgRequireVertexITSTPC);
-    fEMEventCut.SetRequireGoodZvtxFT0vsPV(cfgRequireGoodZvtxFT0vsPV);
+    fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
+    fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
+    fEMEventCut.SetZvtxRange(-eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);
+    fEMEventCut.SetRequireNoTFB(eventcuts.cfgRequireNoTFB);
+    fEMEventCut.SetRequireNoITSROFB(eventcuts.cfgRequireNoITSROFB);
+    fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
+    fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
+    fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
+    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefinePCMCut()
@@ -171,46 +179,47 @@ struct PCMQC {
     fV0PhotonCut = V0PhotonCut("fV0PhotonCut", "fV0PhotonCut");
 
     // for v0
-    fV0PhotonCut.SetV0PtRange(cfg_min_pt_v0, 1e10f);
-    fV0PhotonCut.SetV0EtaRange(-cfg_max_eta_v0, +cfg_max_eta_v0);
-    fV0PhotonCut.SetMinCosPA(cfg_min_cospa);
-    fV0PhotonCut.SetMaxPCA(cfg_max_pca);
-    fV0PhotonCut.SetRxyRange(cfg_min_v0radius, cfg_max_v0radius);
-    fV0PhotonCut.SetAPRange(cfg_max_alpha_ap, cfg_max_qt_ap);
-    fV0PhotonCut.RejectITSib(cfg_reject_v0_on_itsib);
+    fV0PhotonCut.SetV0PtRange(pcmcuts.cfg_min_pt_v0, 1e10f);
+    fV0PhotonCut.SetV0EtaRange(-pcmcuts.cfg_max_eta_v0, +pcmcuts.cfg_max_eta_v0);
+    fV0PhotonCut.SetMinCosPA(pcmcuts.cfg_min_cospa);
+    fV0PhotonCut.SetMaxPCA(pcmcuts.cfg_max_pca);
+    fV0PhotonCut.SetRxyRange(pcmcuts.cfg_min_v0radius, pcmcuts.cfg_max_v0radius);
+    fV0PhotonCut.SetAPRange(pcmcuts.cfg_max_alpha_ap, pcmcuts.cfg_max_qt_ap);
+    fV0PhotonCut.RejectITSib(pcmcuts.cfg_reject_v0_on_itsib);
 
     // for track
-    fV0PhotonCut.SetTrackPtRange(cfg_min_pt_v0 * 0.4, 1e+10f);
-    fV0PhotonCut.SetTrackEtaRange(-cfg_max_eta_v0, +cfg_max_eta_v0);
-    fV0PhotonCut.SetMinNCrossedRowsTPC(cfg_min_ncrossedrows);
+    fV0PhotonCut.SetTrackPtRange(pcmcuts.cfg_min_pt_v0 * 0.4, 1e+10f);
+    fV0PhotonCut.SetTrackEtaRange(-pcmcuts.cfg_max_eta_v0, +pcmcuts.cfg_max_eta_v0);
+    fV0PhotonCut.SetMinNClustersTPC(pcmcuts.cfg_min_ncluster_tpc);
+    fV0PhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfg_min_ncrossedrows);
     fV0PhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    fV0PhotonCut.SetChi2PerClusterTPC(0.0, cfg_max_chi2tpc);
-    fV0PhotonCut.SetTPCNsigmaElRange(cfg_min_TPCNsigmaEl, cfg_max_TPCNsigmaEl);
-    fV0PhotonCut.SetChi2PerClusterITS(-1e+10, cfg_max_chi2its);
-    if (cfg_reject_v0_on_itsib) {
+    fV0PhotonCut.SetChi2PerClusterTPC(0.0, pcmcuts.cfg_max_chi2tpc);
+    fV0PhotonCut.SetTPCNsigmaElRange(pcmcuts.cfg_min_TPCNsigmaEl, pcmcuts.cfg_max_TPCNsigmaEl);
+    fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
+    if (pcmcuts.cfg_reject_v0_on_itsib) {
       fV0PhotonCut.SetNClustersITS(2, 4);
     } else {
       fV0PhotonCut.SetNClustersITS(0, 7);
     }
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
-    fV0PhotonCut.SetIsWithinBeamPipe(cfg_require_v0_with_correct_xz);
+    fV0PhotonCut.SetIsWithinBeamPipe(pcmcuts.cfg_require_v0_with_correct_xz);
 
-    if (cfg_require_v0_with_itstpc) {
+    if (pcmcuts.cfg_require_v0_with_itstpc) {
       fV0PhotonCut.SetRequireITSTPC(true);
       fV0PhotonCut.SetMaxPCA(1.0);
       fV0PhotonCut.SetRxyRange(4, 40);
     }
-    if (cfg_require_v0_with_itsonly) {
+    if (pcmcuts.cfg_require_v0_with_itsonly) {
       fV0PhotonCut.SetRequireITSonly(true);
       fV0PhotonCut.SetMaxPCA(1.0);
       fV0PhotonCut.SetRxyRange(4, 24);
     }
-    if (cfg_require_v0_with_tpconly) {
+    if (pcmcuts.cfg_require_v0_with_tpconly) {
       fV0PhotonCut.SetRequireTPConly(true);
       fV0PhotonCut.SetMaxPCA(3.0);
       fV0PhotonCut.SetRxyRange(36, 90);
     }
-    if (cfg_require_v0_on_wwire_ib) {
+    if (pcmcuts.cfg_require_v0_on_wwire_ib) {
       fV0PhotonCut.SetMaxPCA(0.3);
       fV0PhotonCut.SetOnWwireIB(true);
       fV0PhotonCut.SetOnWwireOB(false);
@@ -219,7 +228,7 @@ struct PCMQC {
   }
 
   template <const int ev_id, typename TCollision>
-  void fillEventInfo(TCollision const& collision, const float weight = 1.f)
+  void fillEventInfo(TCollision const& collision, const float /*weight*/ = 1.f)
   {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 1.0);
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
@@ -259,7 +268,7 @@ struct PCMQC {
   }
 
   template <typename TV0>
-  void fillV0Info(TV0 const& v0, const float weight = 1.f)
+  void fillV0Info(TV0 const& v0)
   {
     fRegistry.fill(HIST("V0/hPt"), v0.pt());
     fRegistry.fill(HIST("V0/hEtaPhi"), v0.phi(), v0.eta());
@@ -281,7 +290,7 @@ struct PCMQC {
   }
 
   template <typename TLeg>
-  void fillV0LegInfo(TLeg const& leg, const float weight = 1.f)
+  void fillV0LegInfo(TLeg const& leg)
   {
     fRegistry.fill(HIST("V0Leg/hPt"), leg.pt());
     fRegistry.fill(HIST("V0Leg/hQoverPt"), leg.sign() / leg.pt());

@@ -9,10 +9,15 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(task-lc-centrality
-                    SOURCES taskLcCentrality.cxx
+o2physics_add_dpl_workflow(task-charm-had-impact-par
+                    SOURCES taskCharmHadImpactPar.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+# o2physics_add_dpl_workflow(task-lc-centrality
+#                     SOURCES taskLcCentrality.cxx
+#                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+#                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-mc-efficiency
                     SOURCES taskMcEfficiency.cxx
@@ -24,17 +29,17 @@ o2physics_add_dpl_workflow(task-mc-efficiency-to-xi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-mc-gen-pt-rap-shapes
+                    SOURCES taskMcGenPtRapShapes.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-mc-validation
                     SOURCES taskMcValidation.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-sel-optimisation
-                    SOURCES taskSelOptimisation.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(task-mc-gen-pt-rap-shapes
-                    SOURCES taskMcGenPtRapShapes.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+# o2physics_add_dpl_workflow(task-sel-optimisation
+#                     SOURCES taskSelOptimisation.cxx
+#                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+#                     COMPONENT_NAME Analysis)

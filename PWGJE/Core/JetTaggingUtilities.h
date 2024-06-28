@@ -30,6 +30,7 @@
 #include "TF1.h"
 #include "Framework/Logger.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 
 enum JetTaggingSpecies {
@@ -149,7 +150,7 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
 {
 
   int origin = -1;
-  for (auto& particle : jet.template tracks_as<U>()) {
+  for (const auto& particle : jet.template tracks_as<U>()) {
     origin = RecoDecay::getCharmHadronOrigin(particles, particle, true);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hfparticle = particle;
@@ -213,7 +214,7 @@ int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float 
  * @param dRMax maximum distance in eta-phi of initiating heavy-flavour quark from the jet axis
  */
 
-template <typename T, typename U, typename V>
+template <typename T, typename U>
 int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25)
 {
 
@@ -280,6 +281,46 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
   }
 
   return 0;
+}
+
+/**
+ * return the jet flavor: 0 for lf-jet, 1 for c-jet, 2 for b-jet
+ *
+ * @param AnyJet the jet that we need to study its flavor
+ * @param AllMCParticles a vector of all the mc particles stack
+ */
+template <typename AnyJet, typename AllMCParticles>
+int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
+{
+  const int arraySize = 99;
+
+  std::array<int, arraySize> countpartcode;
+  int count = 0;
+
+  for (auto& mcpart : mcparticles) {
+    int pdgcode = mcpart.pdgCode();
+    if (TMath::Abs(pdgcode) == 21 || (TMath::Abs(pdgcode) >= 1 && TMath::Abs(pdgcode) <= 5)) {
+      double dR = jetutilities::deltaR(jet, mcpart);
+
+      if (dR < jet.r() / 100.f) {
+        if (TMath::Abs(pdgcode) == 5) {
+          return 2; // Beauty jet
+        } else {
+          if (count > arraySize - 1)
+            return 0;
+          countpartcode[count] = pdgcode;
+          count++;
+        }
+      }
+    }
+  }
+
+  for (int ij = 0; ij < count; ij++) {
+    if (TMath::Abs(countpartcode[ij]) == 4)
+      return 1; // Charm jet
+  }
+
+  return 0; // Light flavor jet
 }
 
 /**
@@ -368,20 +409,20 @@ std::unique_ptr<TF1> setResolutionFunction(T const& vecParams)
  *
  * @param fResoFuncjet The resolution function for the jet, used to model the distribution of impact
  *                     parameter significances for tracks associated with the jet.
- * @param collision The collision event data, providing context for calculating geometric signs.
- * @param jet The specific jet being analyzed.
  * @param track The track for which the probability is being calculated.
  * @param minSignImpXYSig The minimum significance of the impact parameter in the XY plane, used as
- *                        the lower limit for integration of the resolution function. Defaults to -10.
+ *                        the lower limit for integration of the resolution function. Defaults to -40.
  * @return The calculated probability of the track being associated with the jet, based on its
  *         impact parameter significance.
  */
-template <typename T, typename U, typename V, typename W>
-float getTrackProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& track, const float& minSignImpXYSig = -10)
+template <typename T, typename U>
+float getTrackProbability(T const& fResoFuncjet, U const& track, const float& minSignImpXYSig = -40)
 {
-  float probTrack = 0.;
-  auto varSignImpXYSig = getGeoSign(collision, jet, track) * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
-  probTrack = fResoFuncjet->Integral(minSignImpXYSig, -1 * TMath::Abs(varSignImpXYSig)) / fResoFuncjet->Integral(minSignImpXYSig, 0);
+  float probTrack = 0;
+  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+  if (-varSignImpXYSig < minSignImpXYSig)
+    varSignImpXYSig = -minSignImpXYSig - 0.01; // To avoid overflow for integral
+  probTrack = fResoFuncjet->Integral(minSignImpXYSig, -varSignImpXYSig) / fResoFuncjet->Integral(minSignImpXYSig, 0);
 
   return probTrack;
 }
@@ -417,7 +458,7 @@ float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet,
   for (auto& jtrack : jet.template tracks_as<W>()) {
     auto track = jtrack.template track_as<X>();
 
-    float probTrack = getTrackProbability(fResoFuncjet, collision, jet, track, minSignImpXYSig);
+    float probTrack = getTrackProbability(fResoFuncjet, track, minSignImpXYSig);
 
     auto geoSign = getGeoSign(collision, jet, track);
     if (geoSign > 0) { // only take positive sign track for JP calculation

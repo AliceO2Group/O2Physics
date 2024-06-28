@@ -418,7 +418,7 @@ struct HfFilter { // Main struct for HF triggers
 
           if (!keepEvent[kBeauty3P] && isBeautyTagged) {
             auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParThird, dcaThird, kBeauty3P);
-            if (isTrackSelected && ((TESTBIT(selD0, 0) && track.sign() < 0) || (TESTBIT(selD0, 1) && track.sign() > 0))) {
+            if (isTrackSelected && ((TESTBIT(selD0, 0) && track.sign() > 0) || (TESTBIT(selD0, 1) && track.sign() < 0))) {
               auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
@@ -588,7 +588,7 @@ struct HfFilter { // Main struct for HF triggers
                 }
 
                 int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackBachelor, trackParBachelor, dcaBachelor, -1);
-                if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() < 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() > 0))) {
+                if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() > 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() < 0))) {
                   std::array<float, 2> massDausD0{massPi, massKa};
                   auto massD0dau = massD0Cand;
                   if (trackBachelor.sign() < 0) {
@@ -1010,9 +1010,9 @@ struct HfFilter { // Main struct for HF triggers
 
             auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecPhoton);
             auto ptCand = RecoDecay::pt(pVecReso3Prong);
-            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 1u)) {
-              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 1u));
-              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 1u));
+            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 2u)) {
+              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 2u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 2u));
+              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 2u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 2u));
               if (isGoodDsStarToKKPi || isGoodDsStarToPiKK) {
                 if (activateQA) {
                   if (isGoodDsStarToKKPi) {
