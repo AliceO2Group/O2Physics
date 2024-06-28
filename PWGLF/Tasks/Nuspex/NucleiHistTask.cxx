@@ -75,6 +75,8 @@ struct NucleiHistTask {
 
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxis_reduced = {ptBinning_short, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec pAxis = {ptBinning, "#it{p} (GeV/#it{c})"};
+    AxisSpec pAxis_reduced = {ptBinning_short, "#it{p} (GeV/#it{c})"};
     AxisSpec centAxis = {centBinning, "V0M (%)"};
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
     AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
@@ -87,11 +89,14 @@ struct NucleiHistTask {
     spectra_reg.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     spectra_reg.add("histTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     spectra_reg.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    spectra_reg.add("histTpcSignalData_pT", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    spectra_reg.add("histTofSignalData_pT", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     spectra_reg.add("histDcaVsPtData_particle", "dcaXY vs Pt (particle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra_reg.add("histDcaZVsPtData_particle", "dcaZ vs Pt (particle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     spectra_reg.add("histDcaVsPtData_antiparticle", "dcaXY vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra_reg.add("histDcaZVsPtData_antiparticle", "dcaZ vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    spectra_reg.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    spectra_reg.add("histTOFm2", "TOF m^2 vs P", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    spectra_reg.add("histTOFm2_pT", "TOF m^2 vs Pt", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
     spectra_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     spectra_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     spectra_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -106,11 +111,16 @@ struct NucleiHistTask {
     pion_reg.add("histKeepEventData", "skimming histogram (#pi^{+})", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     pion_reg.add("histTpcSignalData", "Specific energy loss (#pi^{+})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     pion_reg.add("histTofSignalData", "TOF signal (#pi^{+})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    pion_reg.add("histTpcSignalData_pT", "Specific energy loss (#pi^{+})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    pion_reg.add("histTofSignalData_pT", "TOF signal (#pi^{+})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     pion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     pion_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    pion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    pion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
-    pion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    pion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{+})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    pion_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    pion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    pion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    pion_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    pion_reg.add("histTofNsigmaData_pT", "n-sigma TOF (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     pion_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     pion_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     pion_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -127,11 +137,16 @@ struct NucleiHistTask {
     apion_reg.add("histKeepEventData", "skimming histogram (#pi^{-})", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     apion_reg.add("histTpcSignalData", "Specific energy loss (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     apion_reg.add("histTofSignalData", "TOF signal (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    apion_reg.add("histTpcSignalData_pT", "Specific energy loss (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    apion_reg.add("histTofSignalData_pT", "TOF signal (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     apion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     apion_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    apion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    apion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
-    apion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    apion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{-})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    apion_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    apion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    apion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    apion_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    apion_reg.add("histTofNsigmaData_pT", "n-sigma TOF (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     apion_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     apion_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     apion_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -148,11 +163,16 @@ struct NucleiHistTask {
     proton_reg.add("histKeepEventData", "skimming histogram (p)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     proton_reg.add("histTpcSignalData", "Specific energy loss (p)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     proton_reg.add("histTofSignalData", "TOF signal (p)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    proton_reg.add("histTpcSignalData_pT", "Specific energy loss (p)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    proton_reg.add("histTofSignalData_pT", "TOF signal (p)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     proton_reg.add("histDcaVsPtData", "dcaXY vs Pt (p)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     proton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (p)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    proton_reg.add("histTOFm2", "TOF m^2 vs Pt (p)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    proton_reg.add("histTpcNsigmaData", "n-sigma TPC (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
-    proton_reg.add("histTofNsigmaData", "n-sigma TOF (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
+    proton_reg.add("histTOFm2", "TOF m^2 vs Pt (p)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    proton_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (p)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    proton_reg.add("histTpcNsigmaData", "n-sigma TPC (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
+    proton_reg.add("histTofNsigmaData", "n-sigma TOF (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
+    proton_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
+    proton_reg.add("histTofNsigmaData_pT", "n-sigma TOF (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
     proton_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (p)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     proton_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (p)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     proton_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (p)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -169,11 +189,16 @@ struct NucleiHistTask {
     aproton_reg.add("histKeepEventData", "skimming histogram (#bar{p})", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     aproton_reg.add("histTpcSignalData", "Specific energy loss (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     aproton_reg.add("histTofSignalData", "TOF signal (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    aproton_reg.add("histTpcSignalData_pT", "Specific energy loss (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    aproton_reg.add("histTofSignalData_pT", "TOF signal (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aproton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aproton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    aproton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    aproton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{p})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
-    aproton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{p})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
+    aproton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{p})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    aproton_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    aproton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
+    aproton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
+    aproton_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (#bar{p})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
+    aproton_reg.add("histTofNsigmaData_pT", "n-sigma TOF (#bar{p})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
     aproton_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     aproton_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     aproton_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -190,53 +215,68 @@ struct NucleiHistTask {
     deuteron_reg.add("histKeepEventData", "skimming histogram (d)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     deuteron_reg.add("histTpcSignalData", "Specific energy loss (d)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     deuteron_reg.add("histTofSignalData", "TOF signal (d)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    deuteron_reg.add("histTpcSignalData_pT", "Specific energy loss (d)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    deuteron_reg.add("histTofSignalData_pT", "TOF signal (d)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     deuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (d)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     deuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (d)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    deuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (d)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    deuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
-    deuteron_reg.add("histTofNsigmaData", "n-sigma TOF (d)", HistType::kTH2F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{d}"}});
+    deuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (d)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    deuteron_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (d)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    deuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
+    deuteron_reg.add("histTofNsigmaData", "n-sigma TOF (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
+    deuteron_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
+    deuteron_reg.add("histTofNsigmaData_pT", "n-sigma TOF (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
     deuteron_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (d)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     deuteron_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     deuteron_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     deuteron_reg.add("histChi2TPC", "chi^2 TPC vs Pt (d)", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     deuteron_reg.add("histChi2ITS", "chi^2 ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
     deuteron_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (d) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}, centralityAxis});
-    deuteron_reg.add("histTofNsigmaData_cent", "n-sigma TOF (d) centrality", HistType::kTH3F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{d}"}, centralityAxis});
+    deuteron_reg.add("histTofNsigmaData_cent", "n-sigma TOF (d) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}, centralityAxis});
     deuteron_reg.add("histTofm2_cent", "mass^2 TOF (d) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{d}"}, centralityAxis});
     deuteron_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (d) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}, etaAxis});
-    deuteron_reg.add("histTofNsigmaData_eta", "n-sigma TOF (d) vs eta", HistType::kTH3F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{d}"}, etaAxis});
+    deuteron_reg.add("histTofNsigmaData_eta", "n-sigma TOF (d) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}, etaAxis});
     deuteron_reg.add("histTofm2_eta", "mass^2 TOF (d) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{d}"}, etaAxis});
 
     // histograms for antiDeuterons
     adeuteron_reg.add("histKeepEventData", "skimming histogram (#bar{d})", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     adeuteron_reg.add("histTpcSignalData", "Specific energy loss (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     adeuteron_reg.add("histTofSignalData", "TOF signal (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    adeuteron_reg.add("histTpcSignalData_pT", "Specific energy loss (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    adeuteron_reg.add("histTofSignalData_pT", "TOF signal (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     adeuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     adeuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    adeuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    adeuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{d})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
-    adeuteron_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{d})", HistType::kTH2F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{#bar{d}}"}});
+    adeuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{d})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    adeuteron_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    adeuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
+    adeuteron_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
+    adeuteron_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (#bar{d})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
+    adeuteron_reg.add("histTofNsigmaData_pT", "n-sigma TOF (#bar{d})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
     adeuteron_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     adeuteron_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     adeuteron_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     adeuteron_reg.add("histChi2TPC", "chi^2 TPC vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
     adeuteron_reg.add("histChi2ITS", "chi^2 ITS vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {500, 0.0, 50.0, "chi^2"}});
     adeuteron_reg.add("histTpcNsigmaData_cent", "n-sigma TPC (#bar{d}) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}, centralityAxis});
-    adeuteron_reg.add("histTofNsigmaData_cent", "n-sigma TOF (#bar{d}) centrality", HistType::kTH3F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{#bar{d}}"}, centralityAxis});
+    adeuteron_reg.add("histTofNsigmaData_cent", "n-sigma TOF (#bar{d}) centrality", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}, centralityAxis});
     adeuteron_reg.add("histTofm2_cent", "mass^2 TOF (#bar{d}) centrality", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{#bar{d}}"}, centralityAxis});
     adeuteron_reg.add("histTpcNsigmaData_eta", "n-sigma TPC (#bar{d}) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}, etaAxis});
-    adeuteron_reg.add("histTofNsigmaData_eta", "n-sigma TOF (#bar{d}) vs eta", HistType::kTH3F, {ptAxis_reduced, {160, -20., +20., "n#sigma_{#bar{d}}"}, etaAxis});
+    adeuteron_reg.add("histTofNsigmaData_eta", "n-sigma TOF (#bar{d}) vs eta", HistType::kTH3F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}, etaAxis});
     adeuteron_reg.add("histTofm2_eta", "mass^2 TOF (#bar{d}) vs eta", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2_{#bar{d}}"}, etaAxis});
 
     // histograms for Triton
     triton_reg.add("histKeepEventData", "skimming histogram (t)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     triton_reg.add("histTpcSignalData", "Specific energy loss (t)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     triton_reg.add("histTofSignalData", "TOF signal (t)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    triton_reg.add("histTpcSignalData_pT", "Specific energy loss (t)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    triton_reg.add("histTofSignalData_pT", "TOF signal (t)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     triton_reg.add("histDcaVsPtData", "dcaXY vs Pt (t)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     triton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (t)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    triton_reg.add("histTOFm2", "TOF m^2 vs Pt (t)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    triton_reg.add("histTpcNsigmaData", "n-sigma TPC (t)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
-    triton_reg.add("histTofNsigmaData", "n-sigma TOF (t)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
+    triton_reg.add("histTOFm2", "TOF m^2 vs Pt (t)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    triton_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (t)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    triton_reg.add("histTpcNsigmaData", "n-sigma TPC (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
+    triton_reg.add("histTofNsigmaData", "n-sigma TOF (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
+    triton_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (t)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
+    triton_reg.add("histTofNsigmaData_pT", "n-sigma TOF (t)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
     triton_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (t)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     triton_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (t)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     triton_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (t)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -253,11 +293,16 @@ struct NucleiHistTask {
     atriton_reg.add("histKeepEventData", "skimming histogram (#bar{t})", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     atriton_reg.add("histTpcSignalData", "Specific energy loss (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     atriton_reg.add("histTofSignalData", "TOF signal (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    atriton_reg.add("histTpcSignalData_pT", "Specific energy loss (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    atriton_reg.add("histTofSignalData_pT", "TOF signal (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     atriton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     atriton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    atriton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    atriton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{t})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
-    atriton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{t})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
+    atriton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{t})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    atriton_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    atriton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
+    atriton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
+    atriton_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (#bar{t})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
+    atriton_reg.add("histTofNsigmaData_pT", "n-sigma TOF (#bar{t})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
     atriton_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     atriton_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     atriton_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -274,11 +319,16 @@ struct NucleiHistTask {
     Helium3_reg.add("histKeepEventData", "skimming histogram (^{3}He)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     Helium3_reg.add("histTpcSignalData", "Specific energy loss (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     Helium3_reg.add("histTofSignalData", "TOF signal (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    Helium3_reg.add("histTpcSignalData_pT", "Specific energy loss (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    Helium3_reg.add("histTofSignalData_pT", "TOF signal (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     Helium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     Helium3_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    Helium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    Helium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
-    Helium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    Helium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}He)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    Helium3_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    Helium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    Helium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    Helium3_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (^{3}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    Helium3_reg.add("histTofNsigmaData_pT", "n-sigma TOF (^{3}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     Helium3_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     Helium3_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     Helium3_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -295,11 +345,16 @@ struct NucleiHistTask {
     aHelium3_reg.add("histKeepEventData", "skimming histogram (^{3}#bar{He})", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     aHelium3_reg.add("histTpcSignalData", "Specific energy loss (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     aHelium3_reg.add("histTofSignalData", "TOF signal (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    aHelium3_reg.add("histTpcSignalData_pT", "Specific energy loss (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    aHelium3_reg.add("histTofSignalData_pT", "TOF signal (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aHelium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aHelium3_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    aHelium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    aHelium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
-    aHelium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    aHelium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}#bar{He})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    aHelium3_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    aHelium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    aHelium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    aHelium3_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    aHelium3_reg.add("histTofNsigmaData_pT", "n-sigma TOF (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     aHelium3_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     aHelium3_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     aHelium3_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -316,11 +371,16 @@ struct NucleiHistTask {
     Helium4_reg.add("histKeepEventData", "skimming histogram (^{4}He)", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     Helium4_reg.add("histTpcSignalData", "Specific energy loss (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     Helium4_reg.add("histTofSignalData", "TOF signal (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    Helium4_reg.add("histTpcSignalData_pT", "Specific energy loss (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    Helium4_reg.add("histTofSignalData_pT", "TOF signal (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     Helium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     Helium4_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    Helium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    Helium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
-    Helium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
+    Helium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}He)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    Helium4_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    Helium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
+    Helium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
+    Helium4_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
+    Helium4_reg.add("histTofNsigmaData_pT", "n-sigma TOF (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
     Helium4_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     Helium4_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     Helium4_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -337,11 +397,16 @@ struct NucleiHistTask {
     aHelium4_reg.add("histKeepEventData", "skimming histogram (^{4}#bar{He})", HistType::kTH1F, {{2, -0.5, +1.5, "true: keep event, false: reject event"}});
     aHelium4_reg.add("histTpcSignalData", "Specific energy loss (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     aHelium4_reg.add("histTofSignalData", "TOF signal (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    aHelium4_reg.add("histTpcSignalData_pT", "Specific energy loss (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    aHelium4_reg.add("histTofSignalData_pT", "TOF signal (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aHelium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aHelium4_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    aHelium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    aHelium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
-    aHelium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
+    aHelium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}#bar{He})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
+    aHelium4_reg.add("histTOFm2_pT", "TOF m^2 vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    aHelium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
+    aHelium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
+    aHelium4_reg.add("histTpcNsigmaData_pT", "n-sigma TPC (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
+    aHelium4_reg.add("histTofNsigmaData_pT", "n-sigma TOF (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
     aHelium4_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     aHelium4_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     aHelium4_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -364,40 +429,68 @@ struct NucleiHistTask {
     MC_recon_reg.add("histDCA", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
     MC_recon_reg.add("histDCAz", "DCA z", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_recon_reg.add("histTpcSignalData", "Specific energy loss", HistType::kTH3F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}, PDGBINNING});
-    MC_recon_reg.add("histTpcSignalData_all_species", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     MC_recon_reg.add("histTofSignalData", "TOF signal", HistType::kTH3F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}, PDGBINNING});
+    MC_recon_reg.add("histTpcSignalData_pT", "Specific energy loss", HistType::kTH3F, {{600, -6., 6., "#it{p}_{T} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}, PDGBINNING});
+    MC_recon_reg.add("histTofSignalData_pT", "TOF signal", HistType::kTH3F, {{600, -6., 6., "#it{p}_{T} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}, PDGBINNING});
+    MC_recon_reg.add("histTpcSignalData_all_species", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     MC_recon_reg.add("histTofSignalData_all_species", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    MC_recon_reg.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2"}, PDGBINNING});
+    MC_recon_reg.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH3F, {pAxis, {400, 0.0, 10.0, "m^2"}, PDGBINNING});
+    MC_recon_reg.add("histTOFm2_pT", "TOF m^2 vs Pt", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2"}, PDGBINNING});
     MC_recon_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt", HistType::kTH3F, {ptAxis, {80, 0.0, 160.0, "nCluster"}, PDGBINNING});
     MC_recon_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH3F, {ptAxis, {10, 0.0, 10.0, "ITS nCls"}, PDGBINNING});
     MC_recon_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt", HistType::kTH3F, {ptAxis, {10, 0.0, 10.0, "ITS ib nCls"}, PDGBINNING});
     MC_recon_reg.add("histChi2TPC", "chi^2 TPC vs Pt", HistType::kTH3F, {ptAxis, {100, 0.0, 5.0, "chi^2"}, PDGBINNING});
     MC_recon_reg.add("histChi2ITS", "chi^2 ITS vs Pt", HistType::kTH3F, {ptAxis, {500, 0.0, 50.0, "chi^2"}, PDGBINNING});
     MC_recon_reg.add("histChi2TOF", "chi^2 TOF vs Pt", HistType::kTH3F, {ptAxis, {75, 0.0, 15.0, "chi^2"}, PDGBINNING});
-    MC_recon_reg.add("histTpcNsigmaDataPi", "TPC nSigma (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
-    MC_recon_reg.add("histTpcNsigmaDataaPi", "TPC nSigma (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
-    MC_recon_reg.add("histTpcNsigmaDataPr", "TPC nSigma (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
-    MC_recon_reg.add("histTpcNsigmaDataaPr", "TPC nSigma (#bar{p})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
-    MC_recon_reg.add("histTpcNsigmaDataDe", "TPC nSigma (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
-    MC_recon_reg.add("histTpcNsigmaDataaDe", "TPC nSigma (#bar{d})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
-    MC_recon_reg.add("histTpcNsigmaDataTr", "TPC nSigma (t)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
-    MC_recon_reg.add("histTpcNsigmaDataaTr", "TPC nSigma (#bar{t})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
-    MC_recon_reg.add("histTpcNsigmaDataHe", "TPC nSigma (^{3}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{He-3}"}});
-    MC_recon_reg.add("histTpcNsigmaDataaHe", "TPC nSigma (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{He-3}"}});
-    MC_recon_reg.add("histTpcNsigmaDataAl", "TPC nSigma (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{He-4}"}});
-    MC_recon_reg.add("histTpcNsigmaDataaAl", "TPC nSigma (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{He-4}"}});
-    MC_recon_reg.add("histTofNsigmaDataPi", "TOF nSigma (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
-    MC_recon_reg.add("histTofNsigmaDataaPi", "TOF nSigma (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
-    MC_recon_reg.add("histTofNsigmaDataPr", "TOF nSigma (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
-    MC_recon_reg.add("histTofNsigmaDataaPr", "TOF nSigma (#bar{p})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
-    MC_recon_reg.add("histTofNsigmaDataDe", "TOF nSigma (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
-    MC_recon_reg.add("histTofNsigmaDataaDe", "TOF nSigma (#bar{d})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
-    MC_recon_reg.add("histTofNsigmaDataTr", "TOF nSigma (t)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
-    MC_recon_reg.add("histTofNsigmaDataaTr", "TOF nSigma (#bar{t})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
-    MC_recon_reg.add("histTofNsigmaDataHe", "TOF nSigma (^{3}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
-    MC_recon_reg.add("histTofNsigmaDataaHe", "TOF nSigma (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
-    MC_recon_reg.add("histTofNsigmaDataAl", "TOF nSigma (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
-    MC_recon_reg.add("histTofNsigmaDataaAl", "TOF nSigma (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
+    MC_recon_reg.add("histTpcNsigmaDataPi", "TPC nSigma (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaPi", "TPC nSigma (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    MC_recon_reg.add("histTpcNsigmaDataPr", "TPC nSigma (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaPr", "TPC nSigma (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
+    MC_recon_reg.add("histTpcNsigmaDataDe", "TPC nSigma (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaDe", "TPC nSigma (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
+    MC_recon_reg.add("histTpcNsigmaDataTr", "TPC nSigma (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaTr", "TPC nSigma (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
+    MC_recon_reg.add("histTpcNsigmaDataHe", "TPC nSigma (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{He-3}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaHe", "TPC nSigma (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{He-3}"}});
+    MC_recon_reg.add("histTpcNsigmaDataAl", "TPC nSigma (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{He-4}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaAl", "TPC nSigma (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{He-4}"}});
+    MC_recon_reg.add("histTofNsigmaDataPi", "TOF nSigma (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    MC_recon_reg.add("histTofNsigmaDataaPi", "TOF nSigma (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    MC_recon_reg.add("histTofNsigmaDataPr", "TOF nSigma (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
+    MC_recon_reg.add("histTofNsigmaDataaPr", "TOF nSigma (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
+    MC_recon_reg.add("histTofNsigmaDataDe", "TOF nSigma (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
+    MC_recon_reg.add("histTofNsigmaDataaDe", "TOF nSigma (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
+    MC_recon_reg.add("histTofNsigmaDataTr", "TOF nSigma (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
+    MC_recon_reg.add("histTofNsigmaDataaTr", "TOF nSigma (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
+    MC_recon_reg.add("histTofNsigmaDataHe", "TOF nSigma (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    MC_recon_reg.add("histTofNsigmaDataaHe", "TOF nSigma (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    MC_recon_reg.add("histTofNsigmaDataAl", "TOF nSigma (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
+    MC_recon_reg.add("histTofNsigmaDataaAl", "TOF nSigma (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
+
+    MC_recon_reg.add("histTpcNsigmaDataPi_pT", "TPC nSigma (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaPi_pT", "TPC nSigma (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    MC_recon_reg.add("histTpcNsigmaDataPr_pT", "TPC nSigma (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaPr_pT", "TPC nSigma (#bar{p})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
+    MC_recon_reg.add("histTpcNsigmaDataDe_pT", "TPC nSigma (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaDe_pT", "TPC nSigma (#bar{d})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
+    MC_recon_reg.add("histTpcNsigmaDataTr_pT", "TPC nSigma (t)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaTr_pT", "TPC nSigma (#bar{t})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
+    MC_recon_reg.add("histTpcNsigmaDataHe_pT", "TPC nSigma (^{3}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{He-3}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaHe_pT", "TPC nSigma (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{He-3}"}});
+    MC_recon_reg.add("histTpcNsigmaDataAl_pT", "TPC nSigma (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{He-4}"}});
+    MC_recon_reg.add("histTpcNsigmaDataaAl_pT", "TPC nSigma (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{He-4}"}});
+    MC_recon_reg.add("histTofNsigmaDataPi_pT", "TOF nSigma (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    MC_recon_reg.add("histTofNsigmaDataaPi_pT", "TOF nSigma (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
+    MC_recon_reg.add("histTofNsigmaDataPr_pT", "TOF nSigma (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
+    MC_recon_reg.add("histTofNsigmaDataaPr_pT", "TOF nSigma (#bar{p})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
+    MC_recon_reg.add("histTofNsigmaDataDe_pT", "TOF nSigma (d)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
+    MC_recon_reg.add("histTofNsigmaDataaDe_pT", "TOF nSigma (#bar{d})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{d}"}});
+    MC_recon_reg.add("histTofNsigmaDataTr_pT", "TOF nSigma (t)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
+    MC_recon_reg.add("histTofNsigmaDataaTr_pT", "TOF nSigma (#bar{t})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{t}"}});
+    MC_recon_reg.add("histTofNsigmaDataHe_pT", "TOF nSigma (^{3}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    MC_recon_reg.add("histTofNsigmaDataaHe_pT", "TOF nSigma (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
+    MC_recon_reg.add("histTofNsigmaDataAl_pT", "TOF nSigma (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
+    MC_recon_reg.add("histTofNsigmaDataaAl_pT", "TOF nSigma (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
   }
 
   // Configurables
@@ -511,15 +604,22 @@ struct NucleiHistTask {
       if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || track.pt() < pTmin || track.pt() > pTmax)
         continue;
 
-      spectra_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal());
+      spectra_reg.fill(HIST("histTpcSignalData"), track.p() * track.sign(), track.tpcSignal());
+      spectra_reg.fill(HIST("histTpcSignalData_pT"), track.pt() * track.sign(), track.tpcSignal());
 
       if (track.sign() > 0) {
-        pion_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaPion);
-        proton_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaProton);
-        deuteron_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaDeut);
-        triton_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaTriton);
-        Helium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
-        Helium4_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe4);
+        pion_reg.fill(HIST("histTpcNsigmaData"), track.p(), nSigmaPion);
+        proton_reg.fill(HIST("histTpcNsigmaData"), track.p(), nSigmaProton);
+        deuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(), nSigmaDeut);
+        triton_reg.fill(HIST("histTpcNsigmaData"), track.p(), nSigmaTriton);
+        Helium3_reg.fill(HIST("histTpcNsigmaData"), track.p() * 2.0, nSigmaHe3);
+        Helium4_reg.fill(HIST("histTpcNsigmaData"), track.p() * 2.0, nSigmaHe4);
+        pion_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt(), nSigmaPion);
+        proton_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt(), nSigmaProton);
+        deuteron_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt(), nSigmaDeut);
+        triton_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt(), nSigmaTriton);
+        Helium3_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt() * 2.0, nSigmaHe3);
+        Helium4_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt() * 2.0, nSigmaHe4);
 
         if (track.hasTOF()) {
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
@@ -534,17 +634,24 @@ struct NucleiHistTask {
               continue;
           }
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
-          spectra_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
+          spectra_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+          spectra_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
         }
       }
 
       if (track.sign() < 0) {
-        apion_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaPion);
-        aproton_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaProton);
-        adeuteron_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaDeut);
-        atriton_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaTriton);
-        aHelium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
-        aHelium4_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe4);
+        apion_reg.fill(HIST("histTpcNsigmaData"), track.p(), nSigmaPion);
+        aproton_reg.fill(HIST("histTpcNsigmaData"), track.p(), nSigmaProton);
+        adeuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(), nSigmaDeut);
+        atriton_reg.fill(HIST("histTpcNsigmaData"), track.p(), nSigmaTriton);
+        aHelium3_reg.fill(HIST("histTpcNsigmaData"), track.p() * 2.0, nSigmaHe3);
+        aHelium4_reg.fill(HIST("histTpcNsigmaData"), track.p() * 2.0, nSigmaHe4);
+        apion_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt(), nSigmaPion);
+        aproton_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt(), nSigmaProton);
+        adeuteron_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt(), nSigmaDeut);
+        atriton_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt(), nSigmaTriton);
+        aHelium3_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt() * 2.0, nSigmaHe3);
+        aHelium4_reg.fill(HIST("histTpcNsigmaData_pT"), track.pt() * 2.0, nSigmaHe4);
 
         if (track.hasTOF()) {
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
@@ -559,7 +666,8 @@ struct NucleiHistTask {
               continue;
           }
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
-          spectra_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
+          spectra_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+          spectra_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
         }
       }
 
@@ -571,7 +679,8 @@ struct NucleiHistTask {
           keepEvent_pi = kTRUE;
           pion_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           pion_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          pion_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
+          pion_reg.fill(HIST("histTpcSignalData"), track.p(), track.tpcSignal());
+          pion_reg.fill(HIST("histTpcSignalData_pT"), track.pt(), track.tpcSignal());
           pion_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           pion_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           pion_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
@@ -592,9 +701,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            pion_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            pion_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
-            pion_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPi());
+            pion_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+            pion_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
+            pion_reg.fill(HIST("histTofSignalData"), track.p(), beta);
+            pion_reg.fill(HIST("histTofSignalData_pT"), track.pt(), beta);
+            pion_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPi());
+            pion_reg.fill(HIST("histTofNsigmaData_pT"), track.pt(), track.tofNSigmaPi());
           }
         }
 
@@ -602,7 +714,8 @@ struct NucleiHistTask {
           keepEvent_antipi = kTRUE;
           apion_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           apion_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          apion_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
+          apion_reg.fill(HIST("histTpcSignalData"), track.p(), track.tpcSignal());
+          apion_reg.fill(HIST("histTpcSignalData_pT"), track.pt(), track.tpcSignal());
           apion_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           apion_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           apion_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
@@ -623,9 +736,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            apion_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            apion_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
-            apion_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPi());
+            apion_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+            apion_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
+            apion_reg.fill(HIST("histTofSignalData"), track.p(), beta);
+            apion_reg.fill(HIST("histTofSignalData_pT"), track.pt(), beta);
+            apion_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPi());
+            apion_reg.fill(HIST("histTofNsigmaData_pT"), track.pt(), track.tofNSigmaPi());
           }
         }
 
@@ -641,7 +757,8 @@ struct NucleiHistTask {
             if (lastLayer < lastRequiredTrdCluster)
               continue;
           }
-          spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData"), track.p() * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData_pT"), track.pt() * track.sign(), track.beta());
         }
       }
 
@@ -653,7 +770,8 @@ struct NucleiHistTask {
           keepEvent_p = kTRUE;
           proton_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           proton_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          proton_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
+          proton_reg.fill(HIST("histTpcSignalData"), track.p(), track.tpcSignal());
+          proton_reg.fill(HIST("histTpcSignalData_pT"), track.pt(), track.tpcSignal());
           proton_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           proton_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           proton_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
@@ -674,9 +792,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            proton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            proton_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
-            proton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
+            proton_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+            proton_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
+            proton_reg.fill(HIST("histTofSignalData"), track.p(), beta);
+            proton_reg.fill(HIST("histTofSignalData_pT"), track.pt(), beta);
+            proton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPr());
+            proton_reg.fill(HIST("histTofNsigmaData_pT"), track.pt(), track.tofNSigmaPr());
           }
         }
 
@@ -684,7 +805,8 @@ struct NucleiHistTask {
           keepEvent_antip = kTRUE;
           aproton_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           aproton_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          aproton_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
+          aproton_reg.fill(HIST("histTpcSignalData"), track.p(), track.tpcSignal());
+          aproton_reg.fill(HIST("histTpcSignalData_pT"), track.pt(), track.tpcSignal());
           aproton_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           aproton_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           aproton_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
@@ -705,9 +827,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            aproton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            aproton_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
-            aproton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
+            aproton_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+            aproton_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
+            aproton_reg.fill(HIST("histTofSignalData"), track.p(), beta);
+            aproton_reg.fill(HIST("histTofSignalData_pT"), track.pt(), beta);
+            aproton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPr());
+            aproton_reg.fill(HIST("histTofNsigmaData_pT"), track.pt(), track.tofNSigmaPr());
           }
         }
 
@@ -723,7 +848,8 @@ struct NucleiHistTask {
             if (lastLayer < lastRequiredTrdCluster)
               continue;
           }
-          spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData"), track.p() * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData_pT"), track.pt() * track.sign(), track.beta());
         }
       }
 
@@ -735,7 +861,8 @@ struct NucleiHistTask {
           keepEvent_d = kTRUE;
           deuteron_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           deuteron_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          deuteron_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
+          deuteron_reg.fill(HIST("histTpcSignalData"), track.p(), track.tpcSignal());
+          deuteron_reg.fill(HIST("histTpcSignalData_pT"), track.pt(), track.tpcSignal());
           deuteron_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           deuteron_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           deuteron_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
@@ -756,9 +883,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            deuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            deuteron_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
-            deuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
+            deuteron_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+            deuteron_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
+            deuteron_reg.fill(HIST("histTofSignalData"), track.p(), beta);
+            deuteron_reg.fill(HIST("histTofSignalData_pT"), track.pt(), beta);
+            deuteron_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaDe());
+            deuteron_reg.fill(HIST("histTofNsigmaData_pT"), track.pt(), track.tofNSigmaDe());
           }
         }
 
@@ -766,7 +896,8 @@ struct NucleiHistTask {
           keepEvent_antid = kTRUE;
           adeuteron_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           adeuteron_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          adeuteron_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
+          adeuteron_reg.fill(HIST("histTpcSignalData"), track.p(), track.tpcSignal());
+          adeuteron_reg.fill(HIST("histTpcSignalData_pT"), track.pt(), track.tpcSignal());
           adeuteron_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           adeuteron_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           adeuteron_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
@@ -787,9 +918,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            adeuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            adeuteron_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
-            adeuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
+            adeuteron_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+            adeuteron_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
+            adeuteron_reg.fill(HIST("histTofSignalData"), track.p(), beta);
+            adeuteron_reg.fill(HIST("histTofSignalData_pT"), track.pt(), beta);
+            adeuteron_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaDe());
+            adeuteron_reg.fill(HIST("histTofNsigmaData_pT"), track.pt(), track.tofNSigmaDe());
           }
         }
 
@@ -805,7 +939,8 @@ struct NucleiHistTask {
             if (lastLayer < lastRequiredTrdCluster)
               continue;
           }
-          spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData"), track.p() * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData_pT"), track.pt() * track.sign(), track.beta());
         }
       }
 
@@ -817,7 +952,8 @@ struct NucleiHistTask {
           keepEvent_t = kTRUE;
           triton_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           triton_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          triton_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
+          triton_reg.fill(HIST("histTpcSignalData"), track.p(), track.tpcSignal());
+          triton_reg.fill(HIST("histTpcSignalData_pT"), track.pt(), track.tpcSignal());
           triton_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           triton_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           triton_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
@@ -838,9 +974,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            triton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            triton_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
-            triton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
+            triton_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+            triton_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
+            triton_reg.fill(HIST("histTofSignalData"), track.p(), beta);
+            triton_reg.fill(HIST("histTofSignalData_pT"), track.pt(), beta);
+            triton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaTr());
+            triton_reg.fill(HIST("histTofNsigmaData_pT"), track.pt(), track.tofNSigmaTr());
           }
         }
 
@@ -848,7 +987,8 @@ struct NucleiHistTask {
           keepEvent_antit = kTRUE;
           atriton_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           atriton_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          atriton_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
+          atriton_reg.fill(HIST("histTpcSignalData"), track.p(), track.tpcSignal());
+          atriton_reg.fill(HIST("histTpcSignalData_pT"), track.pt(), track.tpcSignal());
           atriton_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsFound());
           atriton_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
           atriton_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
@@ -869,9 +1009,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            atriton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            atriton_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
-            atriton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
+            atriton_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2);
+            atriton_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2);
+            atriton_reg.fill(HIST("histTofSignalData"), track.p(), beta);
+            atriton_reg.fill(HIST("histTofSignalData_pT"), track.pt(), beta);
+            atriton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaTr());
+            atriton_reg.fill(HIST("histTofNsigmaData_pT"), track.pt(), track.tofNSigmaTr());
           }
         }
 
@@ -887,7 +1030,8 @@ struct NucleiHistTask {
             if (lastLayer < lastRequiredTrdCluster)
               continue;
           }
-          spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData"), track.p() * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData_pT"), track.pt() * track.sign(), track.beta());
         }
       }
 
@@ -899,7 +1043,8 @@ struct NucleiHistTask {
           keepEvent_He3 = kTRUE;
           Helium3_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           Helium3_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
-          Helium3_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0, track.tpcSignal());
+          Helium3_reg.fill(HIST("histTpcSignalData"), track.p() * 2.0, track.tpcSignal());
+          Helium3_reg.fill(HIST("histTpcSignalData_pT"), track.pt() * 2.0, track.tpcSignal());
           Helium3_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsFound());
           Helium3_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls());
           Helium3_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel());
@@ -920,9 +1065,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            Helium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
-            Helium3_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0, beta);
-            Helium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
+            Helium3_reg.fill(HIST("histTOFm2"), track.p() * 2.0, TOFmass2);
+            Helium3_reg.fill(HIST("histTOFm2_pT"), track.pt() * 2.0, TOFmass2);
+            Helium3_reg.fill(HIST("histTofSignalData"), track.p() * 2.0, beta);
+            Helium3_reg.fill(HIST("histTofSignalData_pT"), track.pt() * 2.0, beta);
+            Helium3_reg.fill(HIST("histTofNsigmaData"), track.p() * 2.0, track.tofNSigmaHe());
+            Helium3_reg.fill(HIST("histTofNsigmaData_pT"), track.pt() * 2.0, track.tofNSigmaHe());
           }
         }
 
@@ -930,7 +1078,8 @@ struct NucleiHistTask {
           keepEvent_antiHe3 = kTRUE;
           aHelium3_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           aHelium3_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
-          aHelium3_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0, track.tpcSignal());
+          aHelium3_reg.fill(HIST("histTpcSignalData"), track.p() * 2.0, track.tpcSignal());
+          aHelium3_reg.fill(HIST("histTpcSignalData_pT"), track.pt() * 2.0, track.tpcSignal());
           aHelium3_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsFound());
           aHelium3_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls());
           aHelium3_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel());
@@ -951,9 +1100,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            aHelium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
-            aHelium3_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0, beta);
-            aHelium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
+            aHelium3_reg.fill(HIST("histTOFm2"), track.p() * 2.0, TOFmass2);
+            aHelium3_reg.fill(HIST("histTOFm2_pT"), track.pt() * 2.0, TOFmass2);
+            aHelium3_reg.fill(HIST("histTofSignalData"), track.p() * 2.0, beta);
+            aHelium3_reg.fill(HIST("histTofSignalData_pT"), track.pt() * 2.0, beta);
+            aHelium3_reg.fill(HIST("histTofNsigmaData"), track.p() * 2.0, track.tofNSigmaHe());
+            aHelium3_reg.fill(HIST("histTofNsigmaData_pT"), track.pt() * 2.0, track.tofNSigmaHe());
           }
         }
 
@@ -969,7 +1121,8 @@ struct NucleiHistTask {
             if (lastLayer < lastRequiredTrdCluster)
               continue;
           }
-          spectra_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0 * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData"), track.p() * 2.0 * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData_pT"), track.pt() * 2.0 * track.sign(), track.beta());
         }
       }
 
@@ -981,7 +1134,8 @@ struct NucleiHistTask {
           keepEvent_He4 = kTRUE;
           Helium4_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           Helium4_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
-          Helium4_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0, track.tpcSignal());
+          Helium4_reg.fill(HIST("histTpcSignalData"), track.p() * 2.0, track.tpcSignal());
+          Helium4_reg.fill(HIST("histTpcSignalData_pT"), track.pt() * 2.0, track.tpcSignal());
           Helium4_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsFound());
           Helium4_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls());
           Helium4_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel());
@@ -1002,9 +1156,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            Helium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
-            Helium4_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0, beta);
-            Helium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
+            Helium4_reg.fill(HIST("histTOFm2"), track.p() * 2.0, TOFmass2);
+            Helium4_reg.fill(HIST("histTOFm2_pT"), track.pt() * 2.0, TOFmass2);
+            Helium4_reg.fill(HIST("histTofSignalData"), track.p() * 2.0, beta);
+            Helium4_reg.fill(HIST("histTofSignalData_pT"), track.pt() * 2.0, beta);
+            Helium4_reg.fill(HIST("histTofNsigmaData"), track.p() * 2.0, track.tofNSigmaAl());
+            Helium4_reg.fill(HIST("histTofNsigmaData_pT"), track.pt() * 2.0, track.tofNSigmaAl());
           }
         }
 
@@ -1012,7 +1169,8 @@ struct NucleiHistTask {
           keepEvent_antiHe4 = kTRUE;
           aHelium4_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           aHelium4_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
-          aHelium4_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0, track.tpcSignal());
+          aHelium4_reg.fill(HIST("histTpcSignalData"), track.p() * 2.0, track.tpcSignal());
+          aHelium4_reg.fill(HIST("histTpcSignalData_pT"), track.pt() * 2.0, track.tpcSignal());
           aHelium4_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsFound());
           aHelium4_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls());
           aHelium4_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel());
@@ -1033,9 +1191,12 @@ struct NucleiHistTask {
             }
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            aHelium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
-            aHelium4_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0, beta);
-            aHelium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
+            aHelium4_reg.fill(HIST("histTOFm2"), track.p() * 2.0, TOFmass2);
+            aHelium4_reg.fill(HIST("histTOFm2_pT"), track.pt() * 2.0, TOFmass2);
+            aHelium4_reg.fill(HIST("histTofSignalData"), track.p() * 2.0, beta);
+            aHelium4_reg.fill(HIST("histTofSignalData_pT"), track.pt() * 2.0, beta);
+            aHelium4_reg.fill(HIST("histTofNsigmaData"), track.p() * 2.0, track.tofNSigmaAl());
+            aHelium4_reg.fill(HIST("histTofNsigmaData_pT"), track.pt() * 2.0, track.tofNSigmaAl());
           }
         }
 
@@ -1051,7 +1212,8 @@ struct NucleiHistTask {
             if (lastLayer < lastRequiredTrdCluster)
               continue;
           }
-          spectra_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0 * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData"), track.p() * 2.0 * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData_pT"), track.pt() * 2.0 * track.sign(), track.beta());
         }
       }
     }
@@ -1347,7 +1509,8 @@ struct NucleiHistTask {
           pdgbin = 13;
           break;
         default:
-          continue;
+          pdgbin = -1;
+          break;
       }
 
       TLorentzVector lorentzVector_pion{};
@@ -1381,7 +1544,8 @@ struct NucleiHistTask {
         MC_recon_reg.fill(HIST("histPt"), track.pt() * 2.0, pdgbin);
         MC_recon_reg.fill(HIST("histDCA"), track.pt() * 2.0, track.dcaXY(), pdgbin);
         MC_recon_reg.fill(HIST("histDCAz"), track.pt() * 2.0, track.dcaZ(), pdgbin);
-        MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0 * track.sign(), track.tpcSignal(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData"), track.p() * 2.0 * track.sign(), track.tpcSignal(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData_pT"), track.pt() * 2.0 * track.sign(), track.tpcSignal(), pdgbin);
         MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * 2.0 * track.sign(), track.tpcSignal());
         MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsCrossedRows(), pdgbin);
         MC_recon_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls(), pdgbin);
@@ -1393,7 +1557,8 @@ struct NucleiHistTask {
         MC_recon_reg.fill(HIST("histPt"), track.pt(), pdgbin);
         MC_recon_reg.fill(HIST("histDCA"), track.pt(), track.dcaXY(), pdgbin);
         MC_recon_reg.fill(HIST("histDCAz"), track.pt(), track.dcaZ(), pdgbin);
-        MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData"), track.p() * track.sign(), track.tpcSignal(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData_pT"), track.pt() * track.sign(), track.tpcSignal(), pdgbin);
         MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * track.sign(), track.tpcSignal());
         MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows(), pdgbin);
         MC_recon_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls(), pdgbin);
@@ -1420,56 +1585,82 @@ struct NucleiHistTask {
       float nSigmaHe4 = track.tpcNSigmaAl();
 
       if (track.sign() > 0) {
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataPi"), track.pt(), nSigmaPion);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataPr"), track.pt(), nSigmaProton);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataDe"), track.pt(), nSigmaDeuteron);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataTr"), track.pt(), nSigmaTriton);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataHe"), track.pt() * 2.0, nSigmaHe3);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataAl"), track.pt() * 2.0, nSigmaHe4);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataPi"), track.p(), nSigmaPion);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataPr"), track.p(), nSigmaProton);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataDe"), track.p(), nSigmaDeuteron);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataTr"), track.p(), nSigmaTriton);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataHe"), track.p() * 2.0, nSigmaHe3);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataAl"), track.p() * 2.0, nSigmaHe4);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataPi_pT"), track.pt(), nSigmaPion);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataPr_pT"), track.pt(), nSigmaProton);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataDe_pT"), track.pt(), nSigmaDeuteron);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataTr_pT"), track.pt(), nSigmaTriton);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataHe_pT"), track.pt() * 2.0, nSigmaHe3);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataAl_pT"), track.pt() * 2.0, nSigmaHe4);
       }
       if (track.sign() < 0) {
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataaPi"), track.pt(), nSigmaPion);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataaPr"), track.pt(), nSigmaProton);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataaDe"), track.pt(), nSigmaDeuteron);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataaTr"), track.pt(), nSigmaTriton);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataaHe"), track.pt() * 2.0, nSigmaHe3);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataaAl"), track.pt() * 2.0, nSigmaHe4);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaPi"), track.p(), nSigmaPion);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaPr"), track.p(), nSigmaProton);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaDe"), track.p(), nSigmaDeuteron);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaTr"), track.p(), nSigmaTriton);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaHe"), track.p() * 2.0, nSigmaHe3);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaAl"), track.p() * 2.0, nSigmaHe4);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaPi_pT"), track.pt(), nSigmaPion);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaPr_pT"), track.pt(), nSigmaProton);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaDe_pT"), track.pt(), nSigmaDeuteron);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaTr_pT"), track.pt(), nSigmaTriton);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaHe_pT"), track.pt() * 2.0, nSigmaHe3);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaAl_pT"), track.pt() * 2.0, nSigmaHe4);
       }
 
       if (track.hasTOF()) {
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-        MC_recon_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2, pdgbin);
-        MC_recon_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta(), pdgbin);
+        MC_recon_reg.fill(HIST("histTOFm2"), track.p(), TOFmass2, pdgbin);
+        MC_recon_reg.fill(HIST("histTOFm2_pT"), track.pt(), TOFmass2, pdgbin);
+        MC_recon_reg.fill(HIST("histTofSignalData"), track.p() * track.sign(), track.beta(), pdgbin);
+        MC_recon_reg.fill(HIST("histTofSignalData_pT"), track.pt() * track.sign(), track.beta(), pdgbin);
         MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * track.sign(), track.beta());
 
         if (track.sign() > 0) {
           if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataPi"), track.pt(), track.tofNSigmaPi());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataPi"), track.p(), track.tofNSigmaPi());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataPi_pT"), track.pt(), track.tofNSigmaPi());
           if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataPr"), track.pt(), track.tofNSigmaPr());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataPr"), track.p(), track.tofNSigmaPr());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataPr_pT"), track.pt(), track.tofNSigmaPr());
           if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataDe"), track.pt(), track.tofNSigmaDe());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataDe"), track.p(), track.tofNSigmaDe());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataDe_pT"), track.pt(), track.tofNSigmaDe());
           if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataTr"), track.pt(), track.tofNSigmaTr());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataTr"), track.p(), track.tofNSigmaTr());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataTr_pT"), track.pt(), track.tofNSigmaTr());
           if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataHe"), track.pt() * 2.0, track.tofNSigmaHe());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataHe"), track.p() * 2.0, track.tofNSigmaHe());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataHe_pT"), track.pt() * 2.0, track.tofNSigmaHe());
           if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataAl"), track.pt() * 2.0, track.tofNSigmaAl());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataAl"), track.p() * 2.0, track.tofNSigmaAl());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataAl_pT"), track.pt() * 2.0, track.tofNSigmaAl());
         }
         if (track.sign() < 0) {
           if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataaPi"), track.pt(), track.tofNSigmaPi());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaPi"), track.p(), track.tofNSigmaPi());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataaPi_pT"), track.pt(), track.tofNSigmaPi());
           if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataaPr"), track.pt(), track.tofNSigmaPr());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaPr"), track.p(), track.tofNSigmaPr());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataaPr_pT"), track.pt(), track.tofNSigmaPr());
           if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataaDe"), track.pt(), track.tofNSigmaDe());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaDe"), track.p(), track.tofNSigmaDe());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataaDe_pT"), track.pt(), track.tofNSigmaDe());
           if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataaTr"), track.pt(), track.tofNSigmaTr());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaTr"), track.p(), track.tofNSigmaTr());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataaTr_pT"), track.pt(), track.tofNSigmaTr());
           if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataaHe"), track.pt() * 2.0, track.tofNSigmaHe());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaHe"), track.p() * 2.0, track.tofNSigmaHe());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataaHe_pT"), track.pt() * 2.0, track.tofNSigmaHe());
           if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataaAl"), track.pt() * 2.0, track.tofNSigmaAl());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaAl"), track.p() * 2.0, track.tofNSigmaAl());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataaAl_pT"), track.pt() * 2.0, track.tofNSigmaAl());
         }
       }
     }

@@ -352,6 +352,7 @@ struct centralEventFilterTask {
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents - startCollision);
 
     for (uint64_t iE{0}; iE < outTrigger.size(); ++iE) {
+      bool triggered{false}, selected{false};
       for (uint64_t iD{0}; iD < outTrigger[0].size(); ++iD) {
         for (int iB{0}; iB < 64; ++iB) {
           if (!(outTrigger[iE][iD] & BIT(iB))) {
@@ -365,12 +366,14 @@ struct centralEventFilterTask {
             }
           }
         }
-        if (outTrigger[iE][iD]) {
-          mScalers->Fill(mScalers->GetNbinsX() - 1);
-        }
-        if (outDecision[iE][iD]) {
-          mFiltered->Fill(mFiltered->GetNbinsX() - 1);
-        }
+        triggered = triggered || outTrigger[iE][iD];
+        selected = selected || outDecision[iE][iD];
+      }
+      if (triggered) {
+        mScalers->Fill(mScalers->GetNbinsX() - 1);
+      }
+      if (selected) {
+        mFiltered->Fill(mFiltered->GetNbinsX() - 1);
       }
     }
 

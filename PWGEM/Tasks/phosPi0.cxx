@@ -96,6 +96,7 @@ struct phosPi0 {
 
   int mPrevMCColId = -1; // mark MC collissions already scanned
   // fast access to histos
+  TH1* hColl;
   TH3 *hReMod, *hMiMod;
   TH2 *hReAll, *hReDisp, *hReCPV, *hReBoth, *hSignalAll, *hPi0SignalAll, *hPi0SignalCPV, *hPi0SignalDisp,
     *hPi0SignalBoth, *hMiAll, *hMiDisp, *hMiCPV, *hMiBoth;
@@ -126,16 +127,15 @@ struct phosPi0 {
       centAxis{10, 0., 10.},
       centralityAxis{100, 0., 100., "centrality", "centrality"};
 
-    auto h{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsCol", "Number of events", HistType::kTH1F, {{9, 0., 9.}}))};
-    h->GetXaxis()->SetBinLabel(1, "All");
-    h->GetXaxis()->SetBinLabel(2, "T0a||T0c");
-    h->GetXaxis()->SetBinLabel(3, "T0a&&T0c");
-    h->GetXaxis()->SetBinLabel(4, "alias kTVXinPHOS");
-    h->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
-    h->GetXaxis()->SetBinLabel(6, "kTVXinPHOS");
-    h->GetXaxis()->SetBinLabel(7, "PHOSClu");
-    h->GetXaxis()->SetBinLabel(8, "PHOSClu&&Trig");
-    h->GetXaxis()->SetBinLabel(9, "PHOSClu&&Trig&&BB");
+    hColl = std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsCol", "Number of events", HistType::kTH1F, {{9, 0., 9.}})).get();
+    hColl->GetXaxis()->SetBinLabel(1, "All");
+    hColl->GetXaxis()->SetBinLabel(2, "T0a||T0c");
+    hColl->GetXaxis()->SetBinLabel(3, "T0a&&T0c");
+    hColl->GetXaxis()->SetBinLabel(4, "kTVXinPHOS");
+    hColl->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
+    hColl->GetXaxis()->SetBinLabel(6, "PHOSClu");
+    hColl->GetXaxis()->SetBinLabel(7, "PHOSClu&&kTVXinPHOS");
+    hColl->GetXaxis()->SetBinLabel(8, "Accepted");
 
     auto h2{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsBC", "Number of events per trigger", HistType::kTH1F, {{8, 0., 8.}}))};
     h2->GetXaxis()->SetBinLabel(1, "All");
@@ -148,7 +148,7 @@ struct phosPi0 {
     h2->GetXaxis()->SetBinLabel(8, "PHOSClu&&Trig");
 
     mHistManager.add("contributors", "Contributors per collision", HistType::kTH2F, {{10, 0., 10.}, {10, 0., 100.}});
-    mHistManager.add("vertex", "vertex", HistType::kTH2F, {{10, 0., 10.}, vertexAxis});
+    mHistManager.add("vertex", "vertex", HistType::kTH1F, {vertexAxis});
 
     if (mFillQC) {
       // QC histograms for normal collisions
@@ -230,81 +230,102 @@ struct phosPi0 {
                    aod::CaloClusters const& clusters)
   {
     aod::McParticles const* mcPart = nullptr;
-    processAll<false>(col, clusters, mcPart);
+    scanAll<false>(col, clusters, mcPart);
   }
-  PROCESS_SWITCH(phosPi0, processData, "process data", true);
+  PROCESS_SWITCH(phosPi0, processData, "processData", true);
   void processMC(SelCollisionsMC::iterator const& col,
                  mcClusters const& clusters,
-                 aod::McParticles const& mcPart)
+                 aod::McParticles const& mcPart,
+                 aod::McCollisions const& mcCol)
   {
-    processAll<true>(col, clusters, &mcPart);
+    scanAll<true>(col, clusters, &mcPart);
   }
-  PROCESS_SWITCH(phosPi0, processMC, "process MC", false);
+  PROCESS_SWITCH(phosPi0, processMC, "processMC", false);
 
   template <bool isMC, typename TCollision, typename TClusters>
-  void processAll(TCollision& col,
-                  TClusters& clusters,
-                  aod::McParticles const* mcPart)
+  void scanAll(TCollision& col,
+               TClusters& clusters,
+               aod::McParticles const* mcPart)
   {
     bool isColSelected = false;
     mixedEventBin = 0;
 
-    mHistManager.fill(HIST("eventsCol"), 0.);
+    hColl->Fill(0.5);
     if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
-      mHistManager.fill(HIST("eventsCol"), 1.);
+      hColl->Fill(1.5);
     }
     if (col.selection_bit(kIsBBT0A) && col.selection_bit(kIsBBT0C)) {
-      mHistManager.fill(HIST("eventsCol"), 2.);
+      hColl->Fill(2.5);
     }
     if (col.alias_bit(kTVXinPHOS)) {
-      mHistManager.fill(HIST("eventsCol"), 3.);
+      hColl->Fill(3.5);
     }
     if (col.selection_bit(kIsTriggerTVX)) {
-      mHistManager.fill(HIST("eventsCol"), 4.);
-    }
-    if (col.alias_bit(kTVXinPHOS)) {
-      mHistManager.fill(HIST("eventsCol"), 5.);
+      hColl->Fill(4.5);
     }
     if (clusters.size() > 0) {
-      mHistManager.fill(HIST("eventsCol"), 6);
+      hColl->Fill(5.5);
       if (col.alias_bit(kTVXinPHOS)) {
-        mHistManager.fill(HIST("eventsCol"), 7);
+        hColl->Fill(6.5);
       }
     }
-    isColSelected = col.alias_bit(mEvSelTrig);
+    isColSelected = false;
+    if constexpr (isMC) {
+      isColSelected = (col.selection_bit(kIsTriggerTVX) && (clusters.size() > 0));
+    } else {
+      isColSelected = col.alias_bit(mEvSelTrig);
+    }
     double vtxZ = col.posZ();
+    mHistManager.fill(HIST("vertex"), vtxZ);
     int mult = 1.; // multiplicity TODO!!!
     mixedEventBin = findMixedEventBin(vtxZ, mult);
-
-    if constexpr (isMC) {
-      isColSelected = true; // aliaces do not work in MC???
-    }
 
     if (!isColSelected) {
       return;
     }
+    hColl->Fill(7.5);
 
     // Fill MC distributions
     // pion rapidity, pt, phi
     // secondary pi0s
     if constexpr (isMC) {
+      // check current collision Id for clusters
+      int cluMcBCId = -1;
+      for (auto clu : clusters) {
+        auto mcList = clu.labels(); // const std::vector<int>
+        int nParents = mcList.size();
+        for (int iParent = 0; iParent < nParents; iParent++) { // Not found nbar parent yiet
+          int label = mcList[iParent];
+          if (label > -1) {
+            auto parent = mcPart->iteratorAt(label);
+            cluMcBCId = parent.mcCollision().bcId();
+            break;
+          }
+        }
+        if (cluMcBCId > -1) {
+          break;
+        }
+      }
       if (mcPart->begin() != mcPart->end()) {
         if (mcPart->begin().mcCollisionId() != mPrevMCColId) {
           mPrevMCColId = mcPart->begin().mcCollisionId(); // to avoid scanning full MC table each BC
           for (auto part : *mcPart) {
-            if (col.has_mcCollision() && (part.mcCollisionId() != col.mcCollisionId())) {
+            if (part.mcCollision().bcId() != cluMcBCId) {
               continue;
             }
             if (part.pdgCode() == 111) {
+              double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
+              if (r < 0.5) {
+                mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
+              }
               if (abs(part.y()) < .5) {
                 double pt = part.pt();
                 mHistManager.fill(HIST("hMCPi0SpAll"), pt);
-                double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
                 double phiVtx = atan2(part.vy(), part.vx());
-                mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
-                if (r < 0.5) {
+                if (r > 0.5) {
+                  mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
+                } else {
                   mHistManager.fill(HIST("hMCPi0SpPrim"), pt);
-                  mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
                   mHistManager.fill(HIST("hMCPi0PhiPrim"), part.phi());
                 }
               }
@@ -440,13 +461,13 @@ struct phosPi0 {
       }
     }
   }
-  void processBC(aod::BCs::iterator const& bc,
+  void processBC(aod::BCs::iterator const& /*bc*/,
                  aod::CaloAmbiguousClusters const& clusters)
   {
     bool isSelected = true;
     mixedEventBin = 0;
 
-    mHistManager.fill(HIST("eventsCol"), 0.);
+    mHistManager.fill(HIST("eventsBC"), 0.);
     double vtxZ = 0; // no vtx info
     int mult = 1.;   // multiplicity TODO!!!
     mixedEventBin = findMixedEventBin(vtxZ, mult);
@@ -555,7 +576,7 @@ struct phosPi0 {
       }
     }
   }
-  PROCESS_SWITCH(phosPi0, processBC, "process data BC", false);
+  PROCESS_SWITCH(phosPi0, processBC, "processBC", false);
 
   //_____________________________________________________________________________
   int ModuleCombination(int m1, int m2)

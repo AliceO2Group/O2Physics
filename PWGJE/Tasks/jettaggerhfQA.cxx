@@ -53,13 +53,13 @@ struct JetTaggerHFQA {
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
-  Configurable<float> prong2LxySigmaMax{"prong2LxySigmaMax", 0.03, "maximum sigma of decay length of 2-prong on xy plane"};
+  Configurable<float> prong2sigmaLxyMax{"prong2simgaLxyMax", 0.03, "maximum sigma of decay length of 2-prong on xy plane"};
   Configurable<float> prong2SxyMin{"prong2SxyMin", 7, "minimum decay length significance of 2-prong on xy plane"};
-  Configurable<float> prong2LxyzSigmaMax{"prong2LxyzSigmazMax", 0.03, "maximum sigma of decay length of 2-prong on xyz plane"};
+  Configurable<float> prong2sigmaLxyzMax{"prong2sigmaLxyzMax", 0.03, "maximum sigma of decay length of 2-prong on xyz plane"};
   Configurable<float> prong2SxyzMin{"prong2SxyzMin", 7, "minimum decay length significance of 2-prong on xyz plane"};
-  Configurable<float> prong3LxySigmaMax{"prong3LxySigmaMax", 0.03, "maximum sigma of decay length of 3-prong on xy plane"};
+  Configurable<float> prong3sigmaLxyMax{"prong3sigmaLxyMax", 0.03, "maximum sigma of decay length of 3-prong on xy plane"};
   Configurable<float> prong3SxyMin{"prong3SxyMin", 7, "minimum decay length significance of 3-prong on xy plane"};
-  Configurable<float> prong3LxyzSigmaMax{"prong3LxyzSigmazMax", 0.03, "maximum sigma of decay length of 3-prong on xyz plane"};
+  Configurable<float> prong3sigmaLxyzMax{"prong3sigmaLxyzMax", 0.03, "maximum sigma of decay length of 3-prong on xyz plane"};
   Configurable<float> prong3SxyzMin{"prong3SxyzMin", 7, "minimum decay length significance of 3-prong on xyz plane"};
   Configurable<int> numFlavourSpecies{"numFlavourSpecies", 6, "number of jet flavour species"};
   Configurable<int> numOrder{"numOrder", 6, "number of ordering"};
@@ -91,12 +91,19 @@ struct JetTaggerHFQA {
 
   int numberOfJetFlavourSpecies = 6;
   int trackSelection = -1;
+  float maxSigmaLxy2Prong = 0.;
+  float minSxy2Prong = 0.;
+  float maxSigmaLxyz2Prong = 0.;
+  float minSxyz2Prong = 0.;
+  float maxSigmaLxy3Prong = 0.;
+  float minSxy3Prong = 0.;
+  float maxSigmaLxyz3Prong = 0.;
+  float minSxyz3Prong = 0.;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
-
     // Axis
     AxisSpec jetFlavourAxis = {binJetFlavour, "Jet flavour"};
     AxisSpec jetPtAxis = {binJetPt, "#it{p}_{T, jet}"};
@@ -118,10 +125,18 @@ struct JetTaggerHFQA {
     AxisSpec SxyAxis = {binSxy, "S_{XY}"};
     AxisSpec LxyzAxis = {binLxyz, "L_{XYZ} [cm]"};
     AxisSpec SxyzAxis = {binSxyz, "S_{XYZ}"};
-    AxisSpec sigmaLxyAxis = {binSigmaLxy, "#simga_{L_{XY}} [cm]"};
-    AxisSpec sigmaLxyzAxis = {binSigmaLxyz, "#simga_{L_{XYZ}} [cm]"};
+    AxisSpec sigmaLxyAxis = {binSigmaLxy, "#sigma_{L_{XY}} [cm]"};
+    AxisSpec sigmaLxyzAxis = {binSigmaLxyz, "#sigma_{L_{XYZ}} [cm]"};
 
     numberOfJetFlavourSpecies = static_cast<int>(numFlavourSpecies);
+    maxSigmaLxy2Prong = static_cast<float>(prong2sigmaLxyMax);
+    minSxy2Prong = static_cast<float>(prong2SxyMin);
+    maxSigmaLxyz2Prong = static_cast<float>(prong2sigmaLxyzMax);
+    minSxyz2Prong = static_cast<float>(prong2SxyzMin);
+    maxSigmaLxy3Prong = static_cast<float>(prong3sigmaLxyMax);
+    minSxy3Prong = static_cast<float>(prong3SxyMin);
+    maxSigmaLxyz3Prong = static_cast<float>(prong3sigmaLxyzMax);
+    minSxyz3Prong = static_cast<float>(prong3SxyzMin);
 
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     if (doprocessTracksDca) {
@@ -234,31 +249,65 @@ struct JetTaggerHFQA {
       registry.add("h3_jet_pt_JP_N3_flavour", "jet pt jet probability flavour N3", {HistType::kTH3F, {{jetPtAxis}, {JetProbabilityAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_neg_log_JP_N3_flavour", "jet pt log jet probability flavour N3", {HistType::kTH3F, {{jetPtAxis}, {JetProbabilityLogAxis}, {jetFlavourAxis}}});
     }
-    if (doprocessSV2ProngMCD) {
+    if (doprocessSV2ProngData) {
       registry.add("h_2prong_nprongs", "", {HistType::kTH1F, {{nprongsAxis}}});
+      registry.add("h2_jet_pt_2prong_Lxy", "", {HistType::kTH2F, {{jetPtAxis}, {LxyAxis}}});
+      registry.add("h2_jet_pt_2prong_Sxy", "", {HistType::kTH2F, {{jetPtAxis}, {SxyAxis}}});
+      registry.add("h2_jet_pt_2prong_Lxyz", "", {HistType::kTH2F, {{jetPtAxis}, {LxyzAxis}}});
+      registry.add("h2_jet_pt_2prong_Sxyz", "", {HistType::kTH2F, {{jetPtAxis}, {SxyzAxis}}});
+      registry.add("h2_jet_pt_2prong_Sxy_N1", "", {HistType::kTH2F, {{jetPtAxis}, {SxyAxis}}});
+      registry.add("h2_jet_pt_2prong_Sxyz_N1", "", {HistType::kTH2F, {{jetPtAxis}, {SxyzAxis}}});
+      registry.add("h2_2prong_Sxy_sigmaLxy", "", {HistType::kTH2F, {{SxyAxis}, {sigmaLxyAxis}}});
+      registry.add("h2_2prong_Sxyz_sigmaLxyz", "", {HistType::kTH2F, {{SxyzAxis}, {sigmaLxyzAxis}}});
+      registry.add("h2_jet_pt_2prong_sigmaLxy", "", {HistType::kTH2F, {{jetPtAxis}, {sigmaLxyAxis}}});
+      registry.add("h2_jet_pt_2prong_sigmaLxyz", "", {HistType::kTH2F, {{jetPtAxis}, {sigmaLxyzAxis}}});
+    }
+    if (doprocessSV3ProngData) {
+      registry.add("h_3prong_nprongs", "", {HistType::kTH1F, {{nprongsAxis}}});
+      registry.add("h2_jet_pt_3prong_Lxy", "", {HistType::kTH2F, {{jetPtAxis}, {LxyAxis}}});
+      registry.add("h2_jet_pt_3prong_Sxy", "", {HistType::kTH2F, {{jetPtAxis}, {SxyAxis}}});
+      registry.add("h2_jet_pt_3prong_Lxyz", "", {HistType::kTH2F, {{jetPtAxis}, {LxyzAxis}}});
+      registry.add("h2_jet_pt_3prong_Sxyz", "", {HistType::kTH2F, {{jetPtAxis}, {SxyzAxis}}});
+      registry.add("h2_jet_pt_3prong_Sxy_N1", "", {HistType::kTH2F, {{jetPtAxis}, {SxyAxis}}});
+      registry.add("h2_jet_pt_3prong_Sxyz_N1", "", {HistType::kTH2F, {{jetPtAxis}, {SxyzAxis}}});
+      registry.add("h2_3prong_Sxy_sigmaLxy", "", {HistType::kTH2F, {{SxyAxis}, {sigmaLxyAxis}}});
+      registry.add("h2_3prong_Sxyz_sigmaLxyz", "", {HistType::kTH2F, {{SxyzAxis}, {sigmaLxyzAxis}}});
+      registry.add("h2_jet_pt_3prong_sigmaLxy", "", {HistType::kTH2F, {{jetPtAxis}, {sigmaLxyAxis}}});
+      registry.add("h2_jet_pt_3prong_sigmaLxyz", "", {HistType::kTH2F, {{jetPtAxis}, {sigmaLxyzAxis}}});
+    }
+    if (doprocessSV2ProngMCD) {
+      registry.add("h2_2prong_nprongs_flavour", "", {HistType::kTH2F, {{nprongsAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_2prong_Lxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {LxyAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_2prong_Sxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_2prong_Lxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {LxyzAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_2prong_Sxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
-      registry.add("h3_jet_pt_2prong_Sxy_flavour_N1", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
-      registry.add("h3_jet_pt_2prong_Sxyz_flavour_N1", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Sxy_N1_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Sxyz_N1_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
       registry.add("h3_2prong_Sxy_sigmaLxy_flavour", "", {HistType::kTH3F, {{SxyAxis}, {sigmaLxyAxis}, {jetFlavourAxis}}});
       registry.add("h3_2prong_Sxyz_sigmaLxyz_flavour", "", {HistType::kTH3F, {{SxyzAxis}, {sigmaLxyzAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_2prong_sigmaLxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaLxyAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_2prong_sigmaLxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaLxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Sxy_flavour_cutSxyAndsigmaLxy", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Sxyz_flavour_cutSxyzAndsigmaLxyz", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Sxy_N1_flavour_cutSxyAndsigmaLxy", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Sxyz_N1_flavour_cutSxyzAndsigmaLxyz", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
     }
     if (doprocessSV3ProngMCD) {
-      registry.add("h_3prong_nprongs", "", {HistType::kTH1F, {{nprongsAxis}}});
+      registry.add("h2_3prong_nprongs_flavour", "", {HistType::kTH2F, {{nprongsAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_3prong_Lxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {LxyAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_3prong_Sxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_3prong_Lxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {LxyzAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_3prong_Sxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
-      registry.add("h3_jet_pt_3prong_Sxy_flavour_N1", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
-      registry.add("h3_jet_pt_3prong_Sxyz_flavour_N1", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Sxy_N1_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Sxyz_N1_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
       registry.add("h3_3prong_Sxy_sigmaLxy_flavour", "", {HistType::kTH3F, {{SxyAxis}, {sigmaLxyAxis}, {jetFlavourAxis}}});
       registry.add("h3_3prong_Sxyz_sigmaLxyz_flavour", "", {HistType::kTH3F, {{SxyzAxis}, {sigmaLxyzAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_3prong_sigmaLxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaLxyAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_3prong_sigmaLxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaLxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Sxy_flavour_cutSxyAndsigmaLxy", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Sxyz_flavour_cutSxyzAndsigmaLxyz", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Sxy_N1_flavour_cutSxyAndsigmaLxy", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Sxyz_N1_flavour_cutSxyzAndsigmaLxyz", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
     }
   }
 
@@ -284,14 +333,44 @@ struct JetTaggerHFQA {
     return 1;
   }
 
-  template <typename T, typename U = float, typename V = float>
-  bool prongAcceptance(T const& prong, U const& maxDecayLengthSigma, V const& minDecayLengthSig)
+  bool prongAcceptance(float sigmaDecayLength, float decayLengthSig, float maxSigmaDecayLength, float minDecayLengthSig)
   {
-    auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
-    if (prong.errorDecayLengthXY() < maxDecayLengthSigma || Sxy > minDecayLengthSig)
+    if ((sigmaDecayLength < maxSigmaDecayLength) && (decayLengthSig > minDecayLengthSig))
       return 0;
 
     return 1;
+  }
+
+  template <typename V, typename JetType>
+  std::tuple<float, float> getMaxSxyForJet(const JetType& mcdjet)
+  {
+    float maxSxy = 0;
+    float correspondingErrorDecayLengthXY = 0;
+
+    for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
+      float Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+      if (maxSxy < Sxy) {
+        maxSxy = Sxy;
+        correspondingErrorDecayLengthXY = prong.errorDecayLengthXY();
+      }
+    }
+    return std::make_tuple(maxSxy, correspondingErrorDecayLengthXY);
+  }
+
+  template <typename V, typename JetType>
+  std::tuple<float, float> getMaxSxyzForJet(const JetType& mcdjet)
+  {
+    float maxSxyz = 0;
+    float correspondingErrorDecayLength = 0;
+
+    for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
+      float Sxyz = prong.decayLength() / prong.errorDecayLength();
+      if (maxSxyz < Sxyz) {
+        maxSxyz = Sxyz;
+        correspondingErrorDecayLength = prong.errorDecayLength();
+      }
+    }
+    return std::make_tuple(maxSxyz, correspondingErrorDecayLength);
   }
 
   template <typename T, typename U, typename V, typename W>
@@ -367,16 +446,16 @@ struct JetTaggerHFQA {
         continue;
       for (int order = 1; order <= numOrder; order++) {
         if (fillIPxy && order < vecSignImpXYSig.size()) {
-          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_tc"), jet.pt(), vecSignImpXYSig[order][0], order);
-          registry.fill(HIST("h3_track_pt_sign_impact_parameter_xy_significance_tc"), vecSignImpXYSig[order][1], vecSignImpXYSig[order][0], order);
+          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_tc"), jet.pt(), vecSignImpXYSig[order - 1][0], order);
+          registry.fill(HIST("h3_track_pt_sign_impact_parameter_xy_significance_tc"), vecSignImpXYSig[order - 1][1], vecSignImpXYSig[order - 1][0], order);
         }
         if (fillIPz && order < vecSignImpZSig.size()) {
-          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_tc"), jet.pt(), vecSignImpZSig[order][0], order);
-          registry.fill(HIST("h3_track_pt_sign_impact_parameter_z_significance_tc"), vecSignImpZSig[order][1], vecSignImpZSig[order][0], order);
+          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_tc"), jet.pt(), vecSignImpZSig[order - 1][0], order);
+          registry.fill(HIST("h3_track_pt_sign_impact_parameter_z_significance_tc"), vecSignImpZSig[order - 1][1], vecSignImpZSig[order - 1][0], order);
         }
         if (fillIPxyz && order < vecSignImpXYZSig.size()) {
-          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_tc"), jet.pt(), vecSignImpXYZSig[order][0], order);
-          registry.fill(HIST("h3_track_pt_sign_impact_parameter_xyz_significance_tc"), vecSignImpXYZSig[order][1], vecSignImpXYZSig[order][0], order);
+          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_tc"), jet.pt(), vecSignImpXYZSig[order - 1][0], order);
+          registry.fill(HIST("h3_track_pt_sign_impact_parameter_xyz_significance_tc"), vecSignImpXYZSig[order - 1][1], vecSignImpXYZSig[order - 1][0], order);
         }
       }
     }
@@ -578,35 +657,80 @@ struct JetTaggerHFQA {
     }
   }
 
-  Preslice<aod::HfCand2Prong> perColFor2Prong = aod::hf_cand::collisionId;
-  Preslice<aod::HfCand3Prong> perColFor3Prong = aod::hf_cand::collisionId;
+  template <typename T, typename U, typename V>
+  void fillHistogramSV2ProngData(T const& collision, U const& jets, V const& prongs)
+  {
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      auto [maxSxy, sigmaLxy] = getMaxSxyForJet<V>(jet);
+      auto [maxSxyz, sigmaLxyz] = getMaxSxyzForJet<V>(jet);
+      registry.fill(HIST("h_2prong_nprongs"), jet.template secondaryVertices_as<V>().size());
+      for (const auto& prong : jet.template secondaryVertices_as<V>()) {
+        auto Lxy = prong.decayLengthXY();
+        auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+        auto Lxyz = prong.decayLength();
+        auto Sxyz = prong.decayLength() / prong.errorDecayLength();
+        registry.fill(HIST("h2_jet_pt_2prong_Lxy"), jet.pt(), Lxy);
+        registry.fill(HIST("h2_jet_pt_2prong_Sxy"), jet.pt(), Sxy);
+        registry.fill(HIST("h2_jet_pt_2prong_Lxyz"), jet.pt(), Lxyz);
+        registry.fill(HIST("h2_jet_pt_2prong_Sxyz"), jet.pt(), Sxyz);
+        registry.fill(HIST("h2_2prong_Sxy_sigmaLxy"), Sxy, prong.errorDecayLengthXY());
+        registry.fill(HIST("h2_2prong_Sxyz_sigmaLxyz"), Sxyz, prong.errorDecayLength());
+        registry.fill(HIST("h2_jet_pt_2prong_sigmaLxy"), jet.pt(), prong.errorDecayLengthXY());
+        registry.fill(HIST("h2_jet_pt_2prong_sigmaLxyz"), jet.pt(), prong.errorDecayLength());
+      }
+      registry.fill(HIST("h2_jet_pt_2prong_Sxy_N1"), jet.pt(), maxSxy);
+      registry.fill(HIST("h2_jet_pt_2prong_Sxyz_N1"), jet.pt(), maxSxyz);
+    }
+  }
+
+  template <typename T, typename U, typename V>
+  void fillHistogramSV3ProngData(T const& collision, U const& jets, V const& prongs)
+  {
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      auto [maxSxy, sigmaLxy] = getMaxSxyForJet<V>(jet);
+      auto [maxSxyz, sigmaLxyz] = getMaxSxyzForJet<V>(jet);
+      registry.fill(HIST("h_3prong_nprongs"), jet.template secondaryVertices_as<V>().size());
+      for (const auto& prong : jet.template secondaryVertices_as<V>()) {
+        auto Lxy = prong.decayLengthXY();
+        auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+        auto Lxyz = prong.decayLength();
+        auto Sxyz = prong.decayLength() / prong.errorDecayLength();
+        registry.fill(HIST("h2_jet_pt_3prong_Lxy"), jet.pt(), Lxy);
+        registry.fill(HIST("h2_jet_pt_3prong_Sxy"), jet.pt(), Sxy);
+        registry.fill(HIST("h2_jet_pt_3prong_Lxyz"), jet.pt(), Lxyz);
+        registry.fill(HIST("h2_jet_pt_3prong_Sxyz"), jet.pt(), Sxyz);
+        registry.fill(HIST("h2_3prong_Sxy_sigmaLxy"), Sxy, prong.errorDecayLengthXY());
+        registry.fill(HIST("h2_3prong_Sxyz_sigmaLxyz"), Sxyz, prong.errorDecayLength());
+        registry.fill(HIST("h2_jet_pt_3prong_sigmaLxy"), jet.pt(), prong.errorDecayLengthXY());
+        registry.fill(HIST("h2_jet_pt_3prong_sigmaLxyz"), jet.pt(), prong.errorDecayLength());
+      }
+      registry.fill(HIST("h2_jet_pt_3prong_Sxy_N1"), jet.pt(), maxSxy);
+      registry.fill(HIST("h2_jet_pt_3prong_Sxyz_N1"), jet.pt(), maxSxyz);
+    }
+  }
 
   template <typename T, typename U, typename V>
   void fillHistogramSV2ProngMCD(T const& collision, U const& mcdjets, V const& prongs)
   {
-    int numOfSV = 0;
-    int maxSxy = 0;
-    int maxSxyz = 0;
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       auto origin = mcdjet.origin();
-      auto prongsPerCol = prongs.sliceBy(perColFor2Prong, collision.globalIndex());
-      for (const auto& prong : prongsPerCol) {
-        auto deltaR = jetutilities::deltaR(mcdjet, prong);
-        if (deltaR > mcdjet.r() / 100.0) {
-          continue;
-        }
-        numOfSV++;
+      auto [maxSxy, sigmaLxy] = getMaxSxyForJet<V>(mcdjet);
+      auto [maxSxyz, sigmaLxyz] = getMaxSxyzForJet<V>(mcdjet);
+      registry.fill(HIST("h2_2prong_nprongs_flavour"), mcdjet.template secondaryVertices_as<V>().size(), origin);
+      for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
         auto Lxy = prong.decayLengthXY();
         auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
         auto Lxyz = prong.decayLength();
         auto Sxyz = prong.decayLength() / prong.errorDecayLength();
-        if (maxSxy < Sxy)
-          maxSxy = Sxy;
-        if (maxSxyz < Sxyz)
-          maxSxyz = Sxyz;
         registry.fill(HIST("h3_jet_pt_2prong_Lxy_flavour"), mcdjet.pt(), Lxy, origin);
         registry.fill(HIST("h3_jet_pt_2prong_Sxy_flavour"), mcdjet.pt(), Sxy, origin);
         registry.fill(HIST("h3_jet_pt_2prong_Lxyz_flavour"), mcdjet.pt(), Lxyz, origin);
@@ -615,39 +739,40 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h3_2prong_Sxyz_sigmaLxyz_flavour"), Sxyz, prong.errorDecayLength(), origin);
         registry.fill(HIST("h3_jet_pt_2prong_sigmaLxy_flavour"), mcdjet.pt(), prong.errorDecayLengthXY(), origin);
         registry.fill(HIST("h3_jet_pt_2prong_sigmaLxyz_flavour"), mcdjet.pt(), prong.errorDecayLength(), origin);
+        if (prongAcceptance(prong.errorDecayLengthXY(), Sxy, maxSigmaLxy2Prong, minSxy2Prong)) {
+          registry.fill(HIST("h3_jet_pt_2prong_Sxy_flavour_cutSxyAndsigmaLxy"), mcdjet.pt(), Sxy, origin);
+        }
+        if (prongAcceptance(prong.errorDecayLength(), Sxyz, maxSigmaLxyz2Prong, minSxyz2Prong)) {
+          registry.fill(HIST("h3_jet_pt_2prong_Sxyz_flavour_cutSxyzAndsigmaLxyz"), mcdjet.pt(), Sxyz, origin);
+        }
       }
-      registry.fill(HIST("h3_jet_pt_2prong_Sxy_flavour_N1"), mcdjet.pt(), maxSxy, origin);
-      registry.fill(HIST("h3_jet_pt_2prong_Sxyz_flavour_N1"), mcdjet.pt(), maxSxyz, origin);
+      registry.fill(HIST("h3_jet_pt_2prong_Sxy_N1_flavour"), mcdjet.pt(), maxSxy, origin);
+      registry.fill(HIST("h3_jet_pt_2prong_Sxyz_N1_flavour"), mcdjet.pt(), maxSxyz, origin);
+      if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy2Prong, minSxy2Prong)) {
+        registry.fill(HIST("h3_jet_pt_2prong_Sxy_N1_flavour_cutSxyAndsigmaLxy"), mcdjet.pt(), maxSxy, origin);
+      }
+      if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy2Prong, minSxy2Prong)) {
+        registry.fill(HIST("h3_jet_pt_2prong_Sxyz_N1_flavour_cutSxyzAndsigmaLxyz"), mcdjet.pt(), maxSxyz, origin);
+      }
     }
-    registry.fill(HIST("h_2prong_nprongs"), numOfSV);
   }
 
   template <typename T, typename U, typename V>
   void fillHistogramSV3ProngMCD(T const& collision, U const& mcdjets, V const& prongs)
   {
-    int numOfSV = 0;
-    int maxSxy = 0;
-    int maxSxyz = 0;
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       auto origin = mcdjet.origin();
-      auto prongsPerCol = prongs.sliceBy(perColFor3Prong, collision.globalIndex());
-      for (const auto& prong : prongsPerCol) {
-        auto deltaR = jetutilities::deltaR(mcdjet, prong);
-        if (deltaR > mcdjet.r() / 100.0) {
-          continue;
-        }
-        numOfSV++;
+      auto [maxSxy, sigmaLxy] = getMaxSxyForJet<V>(mcdjet);
+      auto [maxSxyz, sigmaLxyz] = getMaxSxyzForJet<V>(mcdjet);
+      registry.fill(HIST("h2_3prong_nprongs_flavour"), mcdjet.template secondaryVertices_as<V>().size(), origin);
+      for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
         auto Lxy = prong.decayLengthXY();
         auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
         auto Lxyz = prong.decayLength();
         auto Sxyz = prong.decayLength() / prong.errorDecayLength();
-        if (maxSxy < Sxy)
-          maxSxy = Sxy;
-        if (maxSxyz < Sxyz)
-          maxSxyz = Sxyz;
         registry.fill(HIST("h3_jet_pt_3prong_Lxy_flavour"), mcdjet.pt(), Lxy, origin);
         registry.fill(HIST("h3_jet_pt_3prong_Sxy_flavour"), mcdjet.pt(), Sxy, origin);
         registry.fill(HIST("h3_jet_pt_3prong_Lxyz_flavour"), mcdjet.pt(), Lxyz, origin);
@@ -656,11 +781,22 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h3_3prong_Sxyz_sigmaLxyz_flavour"), Sxyz, prong.errorDecayLength(), origin);
         registry.fill(HIST("h3_jet_pt_3prong_sigmaLxy_flavour"), mcdjet.pt(), prong.errorDecayLengthXY(), origin);
         registry.fill(HIST("h3_jet_pt_3prong_sigmaLxyz_flavour"), mcdjet.pt(), prong.errorDecayLength(), origin);
+        if (prongAcceptance(prong.errorDecayLengthXY(), Sxy, maxSigmaLxy3Prong, minSxy3Prong)) {
+          registry.fill(HIST("h3_jet_pt_3prong_Sxy_flavour_cutSxyAndsigmaLxy"), mcdjet.pt(), Sxy, origin);
+        }
+        if (prongAcceptance(prong.errorDecayLength(), Sxyz, maxSigmaLxyz3Prong, minSxyz3Prong)) {
+          registry.fill(HIST("h3_jet_pt_3prong_Sxyz_flavour_cutSxyzAndsigmaLxyz"), mcdjet.pt(), Sxyz, origin);
+        }
       }
-      registry.fill(HIST("h3_jet_pt_2prong_Sxy_flavour_N1"), mcdjet.pt(), maxSxy, origin);
-      registry.fill(HIST("h3_jet_pt_2prong_Sxyz_flavour_N1"), mcdjet.pt(), maxSxyz, origin);
+      registry.fill(HIST("h3_jet_pt_3prong_Sxy_N1_flavour"), mcdjet.pt(), maxSxy, origin);
+      registry.fill(HIST("h3_jet_pt_3prong_Sxyz_N1_flavour"), mcdjet.pt(), maxSxyz, origin);
+      if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy3Prong, minSxy3Prong)) {
+        registry.fill(HIST("h3_jet_pt_3prong_Sxy_N1_flavour_cutSxyAndsigmaLxy"), mcdjet.pt(), maxSxy, origin);
+      }
+      if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy3Prong, minSxy3Prong)) {
+        registry.fill(HIST("h3_jet_pt_3prong_Sxyz_N1_flavour_cutSxyzAndsigmaLxyz"), mcdjet.pt(), maxSxyz, origin);
+      }
     }
-    registry.fill(HIST("h_3prong_nprongs"), numOfSV);
   }
 
   void processDummy(aod::Collision const&, aod::Tracks const&)
@@ -694,19 +830,19 @@ struct JetTaggerHFQA {
       registry.fill(HIST("h_impact_parameter_xyz_significance"), varImpXYZSig);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' impormation for data", false);
+  PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
 
   void processIPsData(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableData const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks)
   {
     fillHistogramIPsData(jcollision, jets, jtracks, tracks);
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsData, "Fill impact parameter impormation for data jets", false);
+  PROCESS_SWITCH(JetTaggerHFQA, processIPsData, "Fill impact parameter imformation for data jets", false);
 
   void processIPsMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles&)
   {
     fillHistogramIPsMCD(jcollision, mcdjets, jtracks, tracks);
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter impormation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter imformation for mcd jets", false);
 
   void processJPData(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableData const& jets, JetTagTracksData const&)
   {
@@ -720,17 +856,29 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processJPMCD, "Fill jet probability imformation for mcd jets", false);
 
-  void processSV2ProngMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, aod::HfCand2Prong const& prongs)
+  void processSV2ProngData(soa::Filtered<JetCollisions>::iterator const& jcollision, soa::Join<JetTagTableData, aod::DataSecondaryVertex2ProngIndices> const& jets, aod::DataSecondaryVertex2Prongs const& prongs)
+  {
+    fillHistogramSV2ProngData(jcollision, jets, prongs);
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngData, "Fill 2prong imformation for data jets", false);
+
+  void processSV3ProngData(soa::Filtered<JetCollisions>::iterator const& jcollision, soa::Join<JetTagTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, aod::DataSecondaryVertex3Prongs const& prongs)
+  {
+    fillHistogramSV3ProngData(jcollision, jets, prongs);
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngData, "Fill 2prong imformation for data jets", false);
+
+  void processSV2ProngMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, soa::Join<JetTagTableMCD, aod::MCDSecondaryVertex2ProngIndices> const& mcdjets, aod::MCDSecondaryVertex2Prongs const& prongs)
   {
     fillHistogramSV2ProngMCD(jcollision, mcdjets, prongs);
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngMCD, "Fill 2prong impormation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngMCD, "Fill 2prong imformation for mcd jets", false);
 
-  void processSV3ProngMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, aod::HfCand3Prong const& prongs)
+  void processSV3ProngMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, soa::Join<JetTagTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
   {
     fillHistogramSV3ProngMCD(jcollision, mcdjets, prongs);
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCD, "Fill 3prong impormation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCD, "Fill 3prong imformation for mcd jets", false);
 };
 
 using JetTaggerQAChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags>;

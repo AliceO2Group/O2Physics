@@ -81,12 +81,15 @@ struct SGCandProducer {
     outputFwdTracks(outputCollisions.lastIndex(),
                     fwdtrack.px(), fwdtrack.py(), fwdtrack.pz(), fwdtrack.sign(),
                     bcnum, fwdtrack.trackTime(), fwdtrack.trackTimeRes());
-    outputFwdTracksExtra(fwdtrack.nClusters(),
+    outputFwdTracksExtra(fwdtrack.trackType(),
+                         fwdtrack.nClusters(),
                          fwdtrack.pDca(),
                          fwdtrack.rAtAbsorberEnd(),
                          fwdtrack.chi2(),
                          fwdtrack.chi2MatchMCHMID(),
                          fwdtrack.chi2MatchMCHMFT(),
+                         fwdtrack.matchMFTTrackId(),
+                         fwdtrack.matchMCHTrackId(),
                          fwdtrack.mchBitMap(),
                          fwdtrack.midBitMap(),
                          fwdtrack.midBoards());
@@ -150,7 +153,7 @@ struct SGCandProducer {
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+               aod::Zdcs& /*zdcs*/, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);

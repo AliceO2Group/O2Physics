@@ -17,7 +17,8 @@
 #include <algorithm>
 #include "JFFlucAnalysis.h"
 
-JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis() : TNamed(),
+                                   fVertex(0),
                                    fCent(0),
                                    fImpactParameter(-1),
                                    subeventMask(kSubEvent_A | kSubEvent_B),
@@ -29,7 +30,8 @@ JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : TNamed(),
+                                                       fVertex(0),
                                                        fCent(0),
                                                        fImpactParameter(-1),
                                                        subeventMask(kSubEvent_A | kSubEvent_B),
@@ -41,7 +43,8 @@ JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : fVertex(a.fVertex),
+JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : TNamed(a),
+                                                          fVertex(a.fVertex),
                                                           fCent(a.fCent),
                                                           fImpactParameter(a.fImpactParameter),
                                                           subeventMask(a.subeventMask),
@@ -124,7 +127,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* popt)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 {
   TComplex corr[kNH][nKL];
   TComplex ncorr[kNH][nKL];
@@ -289,7 +292,7 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
     }
 
     for (UInt_t ih = 2; ih < kNH; ih++) {
-      for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) {
+      for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : static_cast<UInt_t>(kcNH)); ihh < mm; ihh++) {
         TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
 
         pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, ih, ihh, scfour.Re(), event_weight_four);
@@ -305,7 +308,7 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* popt)
+void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
 {
   //
 }

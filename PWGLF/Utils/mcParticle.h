@@ -307,7 +307,7 @@ class PIDExtended
       case o2::constants::physics::Pdg::kXiC0:
         return XiC0;
       default:
-        LOG(info) << "Cannot identify particle with PDG code " << particle.pdgCode();
+        LOG(debug) << "Cannot identify particle with PDG code " << particle.pdgCode();
         break;
     }
     return -1;
