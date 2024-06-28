@@ -932,11 +932,11 @@ struct QaEfficiency {
       if (!mcParticle.isPhysicalPrimary()) {
         // Check if the particle is produced in a secondary decay
         if (mcParticle.getProcess() == 4) {
-          return true;// Consider it as a tertiary particle
+          return true; // Consider it as a tertiary particle
         }
       }
     }
-    return false;// Otherwise, not considered a tertiary particle
+    return false; // Otherwise, not considered a tertiary particle
   }
   template <int pdgSign, o2::track::PID::ID id, typename trackType>
   void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
