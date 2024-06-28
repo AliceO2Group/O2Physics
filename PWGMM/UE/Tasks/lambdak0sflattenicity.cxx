@@ -40,7 +40,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct lambdak0sflattenicity {
+struct lambdak0sflattenicity
+{
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rKzeroShort{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -49,11 +50,11 @@ struct lambdak0sflattenicity {
   HistogramRegistry rFlattenicity{"flattenicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   static constexpr std::string_view nhEst[8] = {
-    "eGlobaltrack", "eFV0", "e1flatencityFV0", "eFT0", "e1flatencityFT0", "eFV0FT0C", "e1flatencityFV0FT0C", "ePtTrig"};
+      "eGlobaltrack", "eFV0", "e1flatencityFV0", "eFT0", "e1flatencityFT0", "eFV0FT0C", "e1flatencityFV0FT0C", "ePtTrig"};
   static constexpr std::string_view tEst[8] = {
-    "GlobalTrk", "FV0", "1-flatencity_FV0", "FT0", "1-flatencityFT0", "FV0_FT0C", "1-flatencity_FV0_FT0C", "PtTrig"};
+      "GlobalTrk", "FV0", "1-flatencity_FV0", "FT0", "1-flatencityFT0", "FV0_FT0C", "1-flatencity_FV0_FT0C", "PtTrig"};
   static constexpr std::string_view nhPtEst[8] = {
-    "ptVsGlobaltrack", "ptVsFV0", "ptVs1flatencityFV0", "ptVsFT0", "ptVs1flatencityFT0", "ptVsFV0FT0C", "ptVs1flatencityFV0FT0C", "pTVsPtTrig"};
+      "ptVsGlobaltrack", "ptVsFV0", "ptVs1flatencityFV0", "ptVsFT0", "ptVs1flatencityFT0", "ptVsFV0FT0C", "ptVs1flatencityFV0FT0C", "pTVsPtTrig"};
 
   // Configurable for histograms
   Configurable<int> nBinsVz{"nBinsVz", 100, "N bins in Vz"};
@@ -95,7 +96,7 @@ struct lambdak0sflattenicity {
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.0f, "Minimum  pT"};
 
-  void init(InitContext const&)
+  void init(InitContext const &)
   {
     // Axes
     AxisSpec K0sMassAxis = {nBinsK0sMass, 0.45f, 0.55f, "#it{M}_{#pi^{+}#pi^{-}} [GeV/#it{c}^{2}]"};
@@ -171,13 +172,15 @@ struct lambdak0sflattenicity {
     rFlattenicity.add("hFT0A", "FT0A", HistType::kTH1F, {{2000, -0.5, 1999.5, "FT0A amplitudes"}});
 
     // estimators
-    for (int i_e = 0; i_e < 8; ++i_e) {
+    for (int i_e = 0; i_e < 8; ++i_e)
+    {
       rFlattenicity.add(
-        nhEst[i_e].data(), "", HistType::kTH2F, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}, {100, -0.5, +99.5, "Global track"}});
+          nhEst[i_e].data(), "", HistType::kTH2F, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}, {100, -0.5, +99.5, "Global track"}});
     }
 
     // vs pT
-    for (int i_e = 0; i_e < 8; ++i_e) {
+    for (int i_e = 0; i_e < 8; ++i_e)
+    {
       rFlattenicity.add(nhPtEst[i_e].data(), "", HistType::kTProfile, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
     }
 
@@ -202,13 +205,16 @@ struct lambdak0sflattenicity {
     rFlattenicity.add("hAmpT0AvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
     rFlattenicity.add("hAmpT0CvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
 
-    if (doprocessDataRun3 && (doprocessRecMC || doprocessGenMC)) {
+    if (doprocessDataRun3 && (doprocessRecMC || doprocessGenMC))
+    {
       LOGF(fatal, "Both Data and MC are both set to true; try again with only one of them set to true");
     }
-    if (!doprocessDataRun3 && !(doprocessRecMC || doprocessGenMC)) {
+    if (!doprocessDataRun3 && !(doprocessRecMC || doprocessGenMC))
+    {
       LOGF(fatal, "Both Data and MC set to false; try again with only one of them set to false");
     }
-    if ((doprocessRecMC && !doprocessGenMC) || (!doprocessRecMC && doprocessGenMC)) {
+    if ((doprocessRecMC && !doprocessGenMC) || (!doprocessRecMC && doprocessGenMC))
+    {
       LOGF(fatal, "MCRec and MCGen are set to opposite switches, try again with both set to either true or false");
     }
   }
@@ -216,8 +222,10 @@ struct lambdak0sflattenicity {
   int getT0ASector(int i_ch)
   {
     int i_sec_t0a = -1;
-    for (int i_sec = 0; i_sec < 24; ++i_sec) {
-      if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec) {
+    for (int i_sec = 0; i_sec < 24; ++i_sec)
+    {
+      if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec)
+      {
         i_sec_t0a = i_sec;
         break;
       }
@@ -228,8 +236,10 @@ struct lambdak0sflattenicity {
   int getT0CSector(int i_ch)
   {
     int i_sec_t0c = -1;
-    for (int i_sec = 0; i_sec < 28; ++i_sec) {
-      if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec) {
+    for (int i_sec = 0; i_sec < 28; ++i_sec)
+    {
+      if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec)
+      {
         i_sec_t0c = i_sec;
         break;
       }
@@ -240,15 +250,24 @@ struct lambdak0sflattenicity {
   int getFV0Ring(int i_ch)
   {
     int i_ring = -1;
-    if (i_ch < 8) {
+    if (i_ch < 8)
+    {
       i_ring = 0;
-    } else if (i_ch >= 8 && i_ch < 16) {
+    }
+    else if (i_ch >= 8 && i_ch < 16)
+    {
       i_ring = 1;
-    } else if (i_ch >= 16 && i_ch < 24) {
+    }
+    else if (i_ch >= 16 && i_ch < 24)
+    {
       i_ring = 2;
-    } else if (i_ch >= 24 && i_ch < 32) {
+    }
+    else if (i_ch >= 24 && i_ch < 32)
+    {
       i_ring = 3;
-    } else {
+    }
+    else
+    {
       i_ring = 4;
     }
     return i_ring;
@@ -258,93 +277,172 @@ struct lambdak0sflattenicity {
   {
     int i_ring = -1;
 
-    if (i_ch >= 0 && i_ch < 8) {
-      if (i_ch < 4) {
+    if (i_ch >= 0 && i_ch < 8)
+    {
+      if (i_ch < 4)
+      {
         i_ring = i_ch;
-      } else {
-        if (i_ch == 7) {
+      }
+      else
+      {
+        if (i_ch == 7)
+        {
           i_ring = 4;
-        } else if (i_ch == 6) {
+        }
+        else if (i_ch == 6)
+        {
           i_ring = 5;
-        } else if (i_ch == 5) {
+        }
+        else if (i_ch == 5)
+        {
           i_ring = 6;
-        } else if (i_ch == 4) {
+        }
+        else if (i_ch == 4)
+        {
           i_ring = 7;
         }
       }
-    } else if (i_ch >= 8 && i_ch < 16) {
-      if (i_ch < 12) {
+    }
+    else if (i_ch >= 8 && i_ch < 16)
+    {
+      if (i_ch < 12)
+      {
         i_ring = i_ch;
-      } else {
-        if (i_ch == 15) {
+      }
+      else
+      {
+        if (i_ch == 15)
+        {
           i_ring = 12;
-        } else if (i_ch == 14) {
+        }
+        else if (i_ch == 14)
+        {
           i_ring = 13;
-        } else if (i_ch == 13) {
+        }
+        else if (i_ch == 13)
+        {
           i_ring = 14;
-        } else if (i_ch == 12) {
+        }
+        else if (i_ch == 12)
+        {
           i_ring = 15;
         }
       }
-    } else if (i_ch >= 16 && i_ch < 24) {
-      if (i_ch < 20) {
+    }
+    else if (i_ch >= 16 && i_ch < 24)
+    {
+      if (i_ch < 20)
+      {
         i_ring = i_ch;
-      } else {
-        if (i_ch == 23) {
+      }
+      else
+      {
+        if (i_ch == 23)
+        {
           i_ring = 20;
-        } else if (i_ch == 22) {
+        }
+        else if (i_ch == 22)
+        {
           i_ring = 21;
-        } else if (i_ch == 21) {
+        }
+        else if (i_ch == 21)
+        {
           i_ring = 22;
-        } else if (i_ch == 20) {
+        }
+        else if (i_ch == 20)
+        {
           i_ring = 23;
         }
       }
-    } else if (i_ch >= 24 && i_ch < 32) {
-      if (i_ch < 28) {
+    }
+    else if (i_ch >= 24 && i_ch < 32)
+    {
+      if (i_ch < 28)
+      {
         i_ring = i_ch;
-      } else {
-        if (i_ch == 31) {
+      }
+      else
+      {
+        if (i_ch == 31)
+        {
           i_ring = 28;
-        } else if (i_ch == 30) {
+        }
+        else if (i_ch == 30)
+        {
           i_ring = 29;
-        } else if (i_ch == 29) {
+        }
+        else if (i_ch == 29)
+        {
           i_ring = 30;
-        } else if (i_ch == 28) {
+        }
+        else if (i_ch == 28)
+        {
           i_ring = 31;
         }
       }
-    } else if (i_ch == 32) {
+    }
+    else if (i_ch == 32)
+    {
       i_ring = 32;
-    } else if (i_ch == 40) {
+    }
+    else if (i_ch == 40)
+    {
       i_ring = 33;
-    } else if (i_ch == 33) {
+    }
+    else if (i_ch == 33)
+    {
       i_ring = 34;
-    } else if (i_ch == 41) {
+    }
+    else if (i_ch == 41)
+    {
       i_ring = 35;
-    } else if (i_ch == 34) {
+    }
+    else if (i_ch == 34)
+    {
       i_ring = 36;
-    } else if (i_ch == 42) {
+    }
+    else if (i_ch == 42)
+    {
       i_ring = 37;
-    } else if (i_ch == 35) {
+    }
+    else if (i_ch == 35)
+    {
       i_ring = 38;
-    } else if (i_ch == 43) {
+    }
+    else if (i_ch == 43)
+    {
       i_ring = 39;
-    } else if (i_ch == 47) {
+    }
+    else if (i_ch == 47)
+    {
       i_ring = 40;
-    } else if (i_ch == 39) {
+    }
+    else if (i_ch == 39)
+    {
       i_ring = 41;
-    } else if (i_ch == 46) {
+    }
+    else if (i_ch == 46)
+    {
       i_ring = 42;
-    } else if (i_ch == 38) {
+    }
+    else if (i_ch == 38)
+    {
       i_ring = 43;
-    } else if (i_ch == 45) {
+    }
+    else if (i_ch == 45)
+    {
       i_ring = 44;
-    } else if (i_ch == 37) {
+    }
+    else if (i_ch == 37)
+    {
       i_ring = 45;
-    } else if (i_ch == 44) {
+    }
+    else if (i_ch == 44)
+    {
       i_ring = 46;
-    } else if (i_ch == 36) {
+    }
+    else if (i_ch == 36)
+    {
       i_ring = 47;
     }
     return i_ring;
@@ -355,19 +453,22 @@ struct lambdak0sflattenicity {
     int entries = signals.size();
     float flat = 9999;
     float mRho = 0;
-    for (int iCell = 0; iCell < entries; ++iCell) {
+    for (int iCell = 0; iCell < entries; ++iCell)
+    {
       mRho += 1.0 * signals[iCell];
     }
     // average activity per cell
     mRho /= (1.0 * entries);
     // get sigma
     float sRho_tmp = 0;
-    for (int iCell = 0; iCell < entries; ++iCell) {
+    for (int iCell = 0; iCell < entries; ++iCell)
+    {
       sRho_tmp += TMath::Power(1.0 * signals[iCell] - mRho, 2);
     }
     sRho_tmp /= (1.0 * entries * entries);
     float sRho = TMath::Sqrt(sRho_tmp);
-    if (mRho > 0) {
+    if (mRho > 0)
+    {
       flat = sRho / mRho;
     }
     return flat;
@@ -415,41 +516,47 @@ struct lambdak0sflattenicity {
   std::array<float, 8> estimator;
 
   template <typename TCollision>
-  bool isEventSelected(TCollision const& collision)
+  bool isEventSelected(TCollision const &collision)
   {
     rEventSelection.fill(HIST("hEventsSelected"), 0);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+    {
       rEventSelection.fill(HIST("hEventsRejected"), 0);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 1);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+    {
       rEventSelection.fill(HIST("hEventsRejected"), 1);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 2);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    {
       rEventSelection.fill(HIST("hEventsRejected"), 2);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 3);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    {
       rEventSelection.fill(HIST("hEventsRejected"), 3);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 4);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+    {
       rEventSelection.fill(HIST("hEventsRejected"), 4);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 5);
 
-    if (collision.isInelGt0() == false) {
+    if (collision.isInelGt0() == false)
+    {
       rEventSelection.fill(HIST("hEventsRejected"), 5);
       return false;
     }
@@ -460,30 +567,35 @@ struct lambdak0sflattenicity {
 
   // ============== Flattenicity estimation begins  ===================== //
   template <typename TCollision, typename Tracks>
-  void EstimateFlattenicity(TCollision const& collision, Tracks const& tracks)
+  void EstimateFlattenicity(TCollision const &collision, Tracks const &tracks)
   {
     const int nDetVtx = 3;
-    TGraph* gVtx[nDetVtx];
-    const char* nameDet[nDetVtx] = {"AmpV0", "AmpT0A", "AmpT0C"};
+    TGraph *gVtx[nDetVtx];
+    const char *nameDet[nDetVtx] = {"AmpV0", "AmpT0A", "AmpT0C"};
 
     float ampl5[nEta5] = {0, 0};
     float ampl6[nEta6] = {0, 0};
 
-    for (int i_d = 0; i_d < nDetVtx; ++i_d) {
+    for (int i_d = 0; i_d < nDetVtx; ++i_d)
+    {
       gVtx[i_d] = 0;
       gVtx[i_d] = new TGraph();
     }
-    for (int i_v = 0; i_v < 30; ++i_v) {
+    for (int i_v = 0; i_v < 30; ++i_v)
+    {
       gVtx[0]->SetPoint(i_v, biningVtxt[i_v], calibFV0vtx[i_v]);
     }
-    for (int i_v = 0; i_v < 30; ++i_v) {
+    for (int i_v = 0; i_v < 30; ++i_v)
+    {
       gVtx[1]->SetPoint(i_v, biningVtxt[i_v], calibFT0Avtx[i_v]);
     }
-    for (int i_v = 0; i_v < 30; ++i_v) {
+    for (int i_v = 0; i_v < 30; ++i_v)
+    {
       gVtx[2]->SetPoint(i_v, biningVtxt[i_v], calibFT0Cvtx[i_v]);
     }
 
-    for (int i_d = 0; i_d < nDetVtx; ++i_d) {
+    for (int i_d = 0; i_d < nDetVtx; ++i_d)
+    {
       gVtx[i_d]->SetName(Form("g%s", nameDet[i_d]));
     }
     auto vtxZ = collision.posZ();
@@ -495,10 +607,12 @@ struct lambdak0sflattenicity {
     ampchannelBefore.fill(0.0);
     RhoLattice.fill(0);
 
-    if (collision.has_foundFV0()) {
+    if (collision.has_foundFV0())
+    {
 
       auto fv0 = collision.foundFV0();
-      for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
+      for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++)
+      {
         float phiv0 = -999.0;
         float etav0 = -999.0;
         int channelv0 = fv0.channel()[ich];
@@ -506,31 +620,40 @@ struct lambdak0sflattenicity {
         int ringindex = getFV0Ring(channelv0);
         int channelv0phi = getFV0IndexPhi(channelv0);
         etav0 = maxEtaFV0 - (detaFV0 / 2.0) * (2.0 * ringindex + 1);
-        if (channelv0 < innerFV0) {
+        if (channelv0 < innerFV0)
+        {
           phiv0 = (2.0 * (channelv0phi - 8 * ringindex) + 1) * M_PI / (8.0);
-        } else {
+        }
+        else
+        {
           phiv0 = ((2.0 * channelv0phi) + 1 - 64.0) * 2.0 * M_PI / (32.0);
         }
         ampchannelBefore[channelv0phi] = ampl_ch;
-        if (applyCalibCh) {
+        if (applyCalibCh)
+        {
           ampl_ch *= calib[channelv0phi];
         }
         sumAmpFV0 += ampl_ch;
 
-        if (channelv0 >= 8) { // exclude the 1st ch, eta 2.2,4.52
+        if (channelv0 >= 8)
+        { // exclude the 1st ch, eta 2.2,4.52
           sumAmpFV01to4Ch += ampl_ch;
         }
         rFlattenicity.fill(HIST("fEtaPhiFv0"), phiv0, etav0, ampl_ch);
         ampchannel[channelv0phi] = ampl_ch;
-        if (channelv0 < innerFV0) {
+        if (channelv0 < innerFV0)
+        {
           RhoLattice[channelv0phi] = ampl_ch;
-        } else {
+        }
+        else
+        {
           RhoLattice[channelv0phi] = ampl_ch / 2.0; // two channels per bin
         }
       }
 
       rFlattenicity.fill(HIST("hAmpV0vsVtxBeforeCalibration"), vtxZ, sumAmpFV0);
-      if (applyCalibVtx) {
+      if (applyCalibVtx)
+      {
         sumAmpFV0 *= gVtx[0]->Eval(vtxZ);
         sumAmpFV01to4Ch *= gVtx[0]->Eval(vtxZ);
       }
@@ -543,11 +666,14 @@ struct lambdak0sflattenicity {
     // global tracks
     float ptT = 0.;
     int multGlob = 0;
-    for (auto& track : tracks) {
-      if (!track.isGlobalTrack()) {
+    for (auto &track : tracks)
+    {
+      if (!track.isGlobalTrack())
+      {
         continue;
       }
-      if (track.pt() > ptT) {
+      if (track.pt() > ptT)
+      {
         ptT = track.pt();
       }
       multGlob++;
@@ -560,16 +686,20 @@ struct lambdak0sflattenicity {
     RhoLatticeT0A.fill(0);
     RhoLatticeT0C.fill(0);
 
-    if (collision.has_foundFT0()) {
+    if (collision.has_foundFT0())
+    {
       auto ft0 = collision.foundFT0();
-      for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
+      for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++)
+      {
         float amplitude = ft0.amplitudeA()[i_a];
         uint8_t channel = ft0.channelA()[i_a];
         int sector = getT0ASector(channel);
-        if (sector >= 0 && sector < 24) {
+        if (sector >= 0 && sector < 24)
+        {
           RhoLatticeT0A[sector] += amplitude;
           rFlattenicity.fill(HIST("hAmpT0AVsChBeforeCalibration"), sector, amplitude);
-          if (applyCalibCh) {
+          if (applyCalibCh)
+          {
             amplitude *= calibT0A[sector];
           }
           rFlattenicity.fill(HIST("hAmpT0AVsCh"), sector, amplitude);
@@ -578,15 +708,18 @@ struct lambdak0sflattenicity {
         rFlattenicity.fill(HIST("hFT0A"), amplitude);
       }
 
-      for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
+      for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++)
+      {
         float amplitude = ft0.amplitudeC()[i_c];
         sumAmpFT0C += amplitude;
         uint8_t channel = ft0.channelC()[i_c];
         int sector = getT0CSector(channel);
-        if (sector >= 0 && sector < 28) {
+        if (sector >= 0 && sector < 28)
+        {
           RhoLatticeT0C[sector] += amplitude;
           rFlattenicity.fill(HIST("hAmpT0CVsChBeforeCalibration"), sector, amplitude);
-          if (applyCalibCh) {
+          if (applyCalibCh)
+          {
             amplitude *= calibT0C[sector];
           }
           rFlattenicity.fill(HIST("hAmpT0CVsCh"), sector, amplitude);
@@ -596,7 +729,8 @@ struct lambdak0sflattenicity {
 
       rFlattenicity.fill(HIST("hAmpT0AvsVtxBeforeCalibration"), vtxZ, sumAmpFT0A);
       rFlattenicity.fill(HIST("hAmpT0CvsVtxBeforeCalibration"), vtxZ, sumAmpFT0C);
-      if (applyCalibVtx) {
+      if (applyCalibVtx)
+      {
         sumAmpFT0A *= gVtx[1]->Eval(vtxZ);
         sumAmpFT0C *= gVtx[2]->Eval(vtxZ);
       }
@@ -613,29 +747,38 @@ struct lambdak0sflattenicity {
     float combined_estimator5 = 0;
     float combined_estimator6 = 0;
 
-    for (int i_e = 0; i_e < 8; ++i_e) {
+    for (int i_e = 0; i_e < 8; ++i_e)
+    {
       estimator[i_e] = 0;
     }
 
-    if (collision.has_foundFV0() && collision.has_foundFT0()) {
+    if (collision.has_foundFV0() && collision.has_foundFT0())
+    {
       float all_weights = 0;
       // option 5
       ampl5[0] = sumAmpFT0C;
       ampl5[1] = sumAmpFT0A;
-      if (sumAmpFT0C > 0 && sumAmpFT0A > 0) {
+      if (sumAmpFT0C > 0 && sumAmpFT0A > 0)
+      {
         isOK_estimator5 = true;
       }
-      if (isOK_estimator5) {
-        if (applyNorm) {
+      if (isOK_estimator5)
+      {
+        if (applyNorm)
+        {
           all_weights = 0;
-          for (int i_5 = 0; i_5 < nEta5; ++i_5) {
+          for (int i_5 = 0; i_5 < nEta5; ++i_5)
+          {
             combined_estimator5 +=
-              ampl5[i_5] * weigthsEta5[i_5] / deltaEeta5[i_5];
+                ampl5[i_5] * weigthsEta5[i_5] / deltaEeta5[i_5];
             all_weights += weigthsEta5[i_5];
           }
           combined_estimator5 /= all_weights;
-        } else {
-          for (int i_5 = 0; i_5 < nEta5; ++i_5) {
+        }
+        else
+        {
+          for (int i_5 = 0; i_5 < nEta5; ++i_5)
+          {
             combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
           }
         }
@@ -643,20 +786,27 @@ struct lambdak0sflattenicity {
       // option 6: FT0C + FV0
       ampl6[0] = sumAmpFT0C;
       ampl6[1] = sumAmpFV0;
-      if (sumAmpFT0C > 0 && sumAmpFV0 > 0) {
+      if (sumAmpFT0C > 0 && sumAmpFV0 > 0)
+      {
         isOK_estimator6 = true;
       }
-      if (isOK_estimator6) {
-        if (applyNorm) {
+      if (isOK_estimator6)
+      {
+        if (applyNorm)
+        {
           all_weights = 0;
-          for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+          for (int i_6 = 0; i_6 < nEta6; ++i_6)
+          {
             combined_estimator6 +=
-              ampl6[i_6] * weigthsEta6[i_6] / deltaEeta6[i_6];
+                ampl6[i_6] * weigthsEta6[i_6] / deltaEeta6[i_6];
             all_weights += weigthsEta6[i_6];
           }
           combined_estimator6 /= all_weights;
-        } else {
-          for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+        }
+        else
+        {
+          for (int i_6 = 0; i_6 < nEta6; ++i_6)
+          {
             combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
           }
         }
@@ -686,22 +836,25 @@ struct lambdak0sflattenicity {
       rFlattenicity.fill(HIST(nhEst[7]), estimator[7], estimator[0]);
 
       // plot pt vs estimators
-      for (auto& track : tracks) {
-        if (!track.isGlobalTrack()) {
+      for (auto &track : tracks)
+      {
+        if (!track.isGlobalTrack())
+        {
           continue;
         }
         float pt = track.pt();
-        rFlattenicity.fill(HIST(nhEst[0]), estimator[0], pt);
-        rFlattenicity.fill(HIST(nhEst[1]), estimator[1], pt);
-        rFlattenicity.fill(HIST(nhEst[2]), estimator[2], pt);
-        rFlattenicity.fill(HIST(nhEst[3]), estimator[3], pt);
-        rFlattenicity.fill(HIST(nhEst[4]), estimator[4], pt);
-        rFlattenicity.fill(HIST(nhEst[5]), estimator[5], pt);
-        rFlattenicity.fill(HIST(nhEst[6]), estimator[6], pt);
-        rFlattenicity.fill(HIST(nhEst[7]), estimator[7], pt);
+        rFlattenicity.fill(HIST(nhPtEst[0]), estimator[0], pt);
+        rFlattenicity.fill(HIST(nhPtEst[1]), estimator[1], pt);
+        rFlattenicity.fill(HIST(nhPtEst[2]), estimator[2], pt);
+        rFlattenicity.fill(HIST(nhPtEst[3]), estimator[3], pt);
+        rFlattenicity.fill(HIST(nhPtEst[4]), estimator[4], pt);
+        rFlattenicity.fill(HIST(nhPtEst[5]), estimator[5], pt);
+        rFlattenicity.fill(HIST(nhPtEst[6]), estimator[6], pt);
+        rFlattenicity.fill(HIST(nhPtEst[7]), estimator[7], pt);
       }
 
-      for (int iCh = 0; iCh < 48; ++iCh) {
+      for (int iCh = 0; iCh < 48; ++iCh)
+      {
         rFlattenicity.fill(HIST("hAmpV0VsCh"), iCh, ampchannel[iCh]);
         rFlattenicity.fill(HIST("hAmpV0VsChBeforeCalibration"), iCh,
                            ampchannelBefore[iCh]);
@@ -726,12 +879,13 @@ struct lambdak0sflattenicity {
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut);
   using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr>>;
 
-  void processDataRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::BarrelMults>>::iterator const& collision,
-                       soa::Filtered<aod::V0Datas> const& V0s, TrackCandidates const& tracks, soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
-                       aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
-                       aod::FV0As const& /*fv0s*/)
+  void processDataRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::BarrelMults>>::iterator const &collision,
+                       soa::Filtered<aod::V0Datas> const &V0s, TrackCandidates const &tracks, soa::Join<aod::BCs, aod::Timestamps> const & /*bcs*/,
+                       aod::MFTTracks const & /*mfttracks*/, aod::FT0s const & /*ft0s*/,
+                       aod::FV0As const & /*fv0s*/)
   {
-    if (!(isEventSelected(collision))) { // Checking if the event passes the selection criteria
+    if (!(isEventSelected(collision)))
+    { // Checking if the event passes the selection criteria
       return;
     }
 
@@ -743,11 +897,13 @@ struct lambdak0sflattenicity {
 
     rEventSelection.fill(HIST("hVertexZ"), vtxZ);
 
-    for (const auto& v0 : V0s) {
-      const auto& posDaughterTrack = v0.posTrack_as<TrackCandidates>();
-      const auto& negDaughterTrack = v0.negTrack_as<TrackCandidates>();
+    for (const auto &v0 : V0s)
+    {
+      const auto &posDaughterTrack = v0.posTrack_as<TrackCandidates>();
+      const auto &negDaughterTrack = v0.negTrack_as<TrackCandidates>();
 
-      if (TMath::Abs(posDaughterTrack.eta()) > 0.8 || TMath::Abs(negDaughterTrack.eta()) > 0.8) {
+      if (TMath::Abs(posDaughterTrack.eta()) > 0.8 || TMath::Abs(negDaughterTrack.eta()) > 0.8)
+      {
         continue;
       }
       float massK0s = v0.mK0Short();
@@ -771,7 +927,8 @@ struct lambdak0sflattenicity {
 
       // Cut on dynamic columns for K0s
 
-      if (v0.v0cosPA() >= v0setting_cospaK0s && v0.v0radius() >= v0setting_radiusK0s && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5 && TMath::Abs(massLambda - pdgmassLambda) > 0.005 && TMath::Abs(massAntiLambda - pdgmassLambda) > 0.005) {
+      if (v0.v0cosPA() >= v0setting_cospaK0s && v0.v0radius() >= v0setting_radiusK0s && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5 && TMath::Abs(massLambda - pdgmassLambda) > 0.005 && TMath::Abs(massAntiLambda - pdgmassLambda) > 0.005)
+      {
 
         rKzeroShort.fill(HIST("hMassK0sSelected"), massK0s);
         rKzeroShort.fill(HIST("hDCAV0DaughtersK0s"), v0.dcaV0daughters());
@@ -782,14 +939,16 @@ struct lambdak0sflattenicity {
         rKzeroShort.fill(HIST("hMassK0spT"), massK0s, v0.pt());
 
         // Filling the PID of the V0 daughters in the region of the K0s peak
-        if (0.45 < massK0s && massK0s < 0.55) {
+        if (0.45 < massK0s && massK0s < 0.55)
+        {
           rKzeroShort.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
           rKzeroShort.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
         }
       }
 
       // Cut on dynamic columns for Lambda
-      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01) {
+      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01)
+      {
 
         rLambda.fill(HIST("hMassLambdaSelected"), massLambda);
         rLambda.fill(HIST("hDCAV0DaughtersLambda"), v0.dcaV0daughters());
@@ -800,14 +959,16 @@ struct lambdak0sflattenicity {
         rLambda.fill(HIST("hMassLambdapT"), massLambda, v0.pt());
 
         // Filling the PID of the V0 daughters in the region of the Lambda peak
-        if (1.015 < massLambda && massLambda < 1.215) {
+        if (1.015 < massLambda && massLambda < 1.215)
+        {
           rLambda.fill(HIST("hNSigmaPosPionFromLambda"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
           rLambda.fill(HIST("hNSigmaNegPionFromLambda"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
         }
       }
 
       // Cut on dynamic columns for AntiLambda
-      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01) {
+      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01)
+      {
 
         rAntiLambda.fill(HIST("hMassAntiLambdaSelected"), massAntiLambda);
         rAntiLambda.fill(HIST("hDCAV0DaughtersAntiLambda"), v0.dcaV0daughters());
@@ -818,7 +979,8 @@ struct lambdak0sflattenicity {
         rAntiLambda.fill(HIST("hMassAntiLambdapT"), massAntiLambda, v0.pt());
 
         // Filling the PID of the V0 daughters in the region of the AntiLambda peak
-        if (1.015 < massAntiLambda && massAntiLambda < 1.215) {
+        if (1.015 < massAntiLambda && massAntiLambda < 1.215)
+        {
           rAntiLambda.fill(HIST("hNSigmaPosPionFromAntiLambda"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
           rAntiLambda.fill(HIST("hNSigmaNegPionFromAntiLambda"), negDaughterTrack.tpcNSigmaPr(), negDaughterTrack.tpcInnerParam());
         }
@@ -827,14 +989,15 @@ struct lambdak0sflattenicity {
   }
 
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>>;
-  void processRecMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::BarrelMults>>::iterator const& collision,
-                    soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& V0s,
-                    TrackCandidatesMC const& tracks,
-                    soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
-                    aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
-                    aod::FV0As const& /*fv0s*/, aod::McParticles const&)
+  void processRecMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::BarrelMults>>::iterator const &collision,
+                    soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const &V0s,
+                    TrackCandidatesMC const &tracks,
+                    soa::Join<aod::BCs, aod::Timestamps> const & /*bcs*/,
+                    aod::MFTTracks const & /*mfttracks*/, aod::FT0s const & /*ft0s*/,
+                    aod::FV0As const & /*fv0s*/, aod::McParticles const &)
   {
-    if (!(isEventSelected(collision))) { // Checking if the event passes the selection criteria
+    if (!(isEventSelected(collision)))
+    { // Checking if the event passes the selection criteria
       return;
     }
 
@@ -846,15 +1009,18 @@ struct lambdak0sflattenicity {
 
     rEventSelection.fill(HIST("hVertexZ"), vtxZ);
 
-    for (const auto& v0 : V0s) {
+    for (const auto &v0 : V0s)
+    {
 
-      const auto& posDaughterTrack = v0.posTrack_as<TrackCandidatesMC>();
-      const auto& negDaughterTrack = v0.negTrack_as<TrackCandidatesMC>();
+      const auto &posDaughterTrack = v0.posTrack_as<TrackCandidatesMC>();
+      const auto &negDaughterTrack = v0.negTrack_as<TrackCandidatesMC>();
 
-      if (!posDaughterTrack.has_mcParticle() || !negDaughterTrack.has_mcParticle()) {
+      if (!posDaughterTrack.has_mcParticle() || !negDaughterTrack.has_mcParticle())
+      {
         continue;
       }
-      if (TMath::Abs(posDaughterTrack.eta()) > 0.8 || TMath::Abs(negDaughterTrack.eta()) > 0.8) {
+      if (TMath::Abs(posDaughterTrack.eta()) > 0.8 || TMath::Abs(negDaughterTrack.eta()) > 0.8)
+      {
         continue;
       }
 
@@ -882,11 +1048,15 @@ struct lambdak0sflattenicity {
 
       // Cut on dynamic columns for K0s
 
-      for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-        for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-          if (particleMotherOfNeg == particleMotherOfPos && (particleMotherOfNeg.pdgCode() == 3122 || particleMotherOfNeg.pdgCode() == -3122 || particleMotherOfNeg.pdgCode() == 310) && particleMotherOfNeg.isPhysicalPrimary()) {
+      for (auto &particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>())
+      {
+        for (auto &particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>())
+        {
+          if (particleMotherOfNeg == particleMotherOfPos && (particleMotherOfNeg.pdgCode() == 3122 || particleMotherOfNeg.pdgCode() == -3122 || particleMotherOfNeg.pdgCode() == 310) && particleMotherOfNeg.isPhysicalPrimary())
+          {
 
-            if (particleMotherOfNeg.pdgCode() == 310 && v0.v0cosPA() >= v0setting_cospaK0s && v0.v0radius() >= v0setting_radiusK0s && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5 && TMath::Abs(massLambda - pdgmassLambda) > 0.005 && TMath::Abs(massAntiLambda - pdgmassLambda) > 0.005) {
+            if (particleMotherOfNeg.pdgCode() == 310 && v0.v0cosPA() >= v0setting_cospaK0s && v0.v0radius() >= v0setting_radiusK0s && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5 && TMath::Abs(massLambda - pdgmassLambda) > 0.005 && TMath::Abs(massAntiLambda - pdgmassLambda) > 0.005)
+            {
 
               rKzeroShort.fill(HIST("hMassK0sSelected"), massK0s);
               rKzeroShort.fill(HIST("hDCAV0DaughtersK0s"), v0.dcaV0daughters());
@@ -897,14 +1067,16 @@ struct lambdak0sflattenicity {
               rKzeroShort.fill(HIST("hMassK0spT"), massK0s, v0.pt());
 
               // Filling the PID of the V0 daughters in the region of the K0s peak
-              if (0.45 < massK0s && massK0s < 0.55) {
+              if (0.45 < massK0s && massK0s < 0.55)
+              {
                 rKzeroShort.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
                 rKzeroShort.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
               }
             }
 
             // Cut on dynamic columns for Lambda
-            if (particleMotherOfNeg.pdgCode() == 3122 && v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01) {
+            if (particleMotherOfNeg.pdgCode() == 3122 && v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01)
+            {
 
               rLambda.fill(HIST("hMassLambdaSelected"), massLambda);
               rLambda.fill(HIST("hDCAV0DaughtersLambda"), v0.dcaV0daughters());
@@ -915,14 +1087,16 @@ struct lambdak0sflattenicity {
               rLambda.fill(HIST("hMassLambdapT"), massLambda, v0.pt());
 
               // Filling the PID of the V0 daughters in the region of the Lambda peak
-              if (1.015 < massLambda && massLambda < 1.215) {
+              if (1.015 < massLambda && massLambda < 1.215)
+              {
                 rLambda.fill(HIST("hNSigmaPosPionFromLambda"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
                 rLambda.fill(HIST("hNSigmaNegPionFromLambda"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
               }
             }
 
             // Cut on dynamic columns for AntiLambda
-            if (particleMotherOfNeg.pdgCode() == -3122 && v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01) {
+            if (particleMotherOfNeg.pdgCode() == -3122 && v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01)
+            {
 
               rAntiLambda.fill(HIST("hMassAntiLambdaSelected"), massAntiLambda);
               rAntiLambda.fill(HIST("hDCAV0DaughtersAntiLambda"), v0.dcaV0daughters());
@@ -933,7 +1107,8 @@ struct lambdak0sflattenicity {
               rAntiLambda.fill(HIST("hMassAntiLambdapT"), massAntiLambda, v0.pt());
 
               // Filling the PID of the V0 daughters in the region of the AntiLambda peak
-              if (1.015 < massAntiLambda && massAntiLambda < 1.215) {
+              if (1.015 < massAntiLambda && massAntiLambda < 1.215)
+              {
                 rAntiLambda.fill(HIST("hNSigmaPosPionFromAntiLambda"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
                 rAntiLambda.fill(HIST("hNSigmaNegPionFromAntiLambda"), negDaughterTrack.tpcNSigmaPr(), negDaughterTrack.tpcInnerParam());
               }
@@ -945,9 +1120,9 @@ struct lambdak0sflattenicity {
   }
 
   Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < cutzvertex);
-  void processGenMC(soa::Filtered<aod::McCollisions>::iterator const& mcCollision,
-                    const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions,
-                    aod::McParticles const& mcParticles)
+  void processGenMC(soa::Filtered<aod::McCollisions>::iterator const &mcCollision,
+                    const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> &collisions,
+                    aod::McParticles const &mcParticles)
   {
     if (collisions.size() < 1) // to process generated collisions that've been reconstructed at least once
     {
@@ -956,19 +1131,24 @@ struct lambdak0sflattenicity {
 
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
 
-    for (const auto& mcParticle : mcParticles) {
+    for (const auto &mcParticle : mcParticles)
+    {
 
-      if (mcParticle.isPhysicalPrimary() && mcParticle.y() < 0.5) {
+      if (mcParticle.isPhysicalPrimary() && mcParticle.y() < 0.5)
+      {
 
-        if (mcParticle.pdgCode() == 310) {
+        if (mcParticle.pdgCode() == 310)
+        {
           rKzeroShort.fill(HIST("hPtK0ShortGen"), mcParticle.pt());
         }
 
-        if (mcParticle.pdgCode() == 3122) {
+        if (mcParticle.pdgCode() == 3122)
+        {
           rLambda.fill(HIST("hPtLambdaGen"), mcParticle.pt());
         }
 
-        if (mcParticle.pdgCode() == -3122) {
+        if (mcParticle.pdgCode() == -3122)
+        {
           rAntiLambda.fill(HIST("hPtAntiLambdaGen"), mcParticle.pt());
         }
       }
@@ -980,8 +1160,8 @@ struct lambdak0sflattenicity {
   PROCESS_SWITCH(lambdak0sflattenicity, processGenMC, "Process Run 3 mc, generated", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdak0sflattenicity>(cfgc)};
+      adaptAnalysisTask<lambdak0sflattenicity>(cfgc)};
 }
