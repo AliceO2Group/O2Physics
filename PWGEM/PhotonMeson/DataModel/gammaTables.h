@@ -605,10 +605,10 @@ using DalitzEEEMEventId = DalitzEEEMEventIds::iterator;
 
 namespace emprimarymuon
 {
-DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                                  //!
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                                           //!
-DECLARE_SOA_COLUMN(FwdTrackId, fwdtrackId, int);                                             //!
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "FwdTracks_MatchMCHTrack"); //! Index of matched MCH track for GlobalMuonTracks and GlobalForwardTracks
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                                     //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                                              //!
+DECLARE_SOA_COLUMN(FwdTrackId, fwdtrackId, int);                                                //!
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "EMPRIMARYMUs_MatchMCHTrack"); //! Index of matched MCH track for GlobalMuonTracks and GlobalForwardTracks
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousMuons, ambiguousMuons);
 DECLARE_SOA_COLUMN(Sign, sign, int8_t); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });

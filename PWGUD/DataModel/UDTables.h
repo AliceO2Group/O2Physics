@@ -357,12 +357,15 @@ DECLARE_SOA_TABLE(UDFwdTracks, "AOD", "UDFWDTRACK",
 
 // Muon track quality details
 DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
+                  fwdtrack::TrackType,
                   fwdtrack::NClusters,
                   fwdtrack::PDca,
                   fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2,
                   fwdtrack::Chi2MatchMCHMID,
                   fwdtrack::Chi2MatchMCHMFT,
+                  fwdtrack::MFTTrackId,
+                  fwdtrack::MCHTrackId,
                   fwdtrack::MCHBitMap,
                   fwdtrack::MIDBitMap,
                   fwdtrack::MIDBoards);

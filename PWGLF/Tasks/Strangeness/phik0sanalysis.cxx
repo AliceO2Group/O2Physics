@@ -53,7 +53,14 @@ namespace
 {
 static constexpr int nMultBin = 10;
 
-constexpr float mPhi[nMultBin] = {};
+constexpr float flowmPhiInc[nMultBin] = {1.01074, 1.01073, 1.01072, 1.01074, 1.01075, 1.01074, 1.01075, 1.01074, 1.01073, 1.01074};
+constexpr float fupmPhiInc[nMultBin] = {1.02778, 1.02777, 1.02776, 1.02778, 1.02779, 1.02778, 1.02779, 1.02778, 1.02777, 1.02778};
+
+constexpr float flowmPhiFCut[nMultBin] = {1.01072, 1.01073, 1.01072, 1.01074, 1.01075, 1.01076, 1.01076, 1.01076, 1.01075, 1.01073};
+constexpr float fupmPhiFCut[nMultBin] = {1.02776, 1.02777, 1.02776, 1.02778, 1.02779, 1.02778, 1.02778, 1.02778, 1.02779, 1.02777};
+
+constexpr float flowmPhiSCut[nMultBin] = {1.01072, 1.01074, 1.01070, 1.01076, 1.01075, 1.01077, 1.01075, 1.01075, 1.01076, 1.01077};
+constexpr float fupmPhiSCut[nMultBin] = {1.02776, 1.02778, 1.02774, 1.02780, 1.02779, 1.02781, 1.02779, 1.02779, 1.02780, 1.02774};
 
 static constexpr float multBin[nMultBin + 1] = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
 
@@ -96,12 +103,12 @@ struct phik0shortanalysis {
 
   // Configurables on Phi mass
   Configurable<int> nBins{"nBins", 50, "N bins in cfgPhimassaxis"};
-  Configurable<std::vector<float>> lowmPhiInc{"lowmPhiInc", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass Inclusive"};
-  Configurable<std::vector<float>> upmPhiInc{"upmPhiInc", std::vector<float>{mPhi, mPhi + nMultBin}, "Upper limits on Phi mass Inclusive"};
-  Configurable<std::vector<float>> lowmPhiFCut{"lowmPhiFCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass First Cut"};
-  Configurable<std::vector<float>> upmPhiFCut{"upmPhiFCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Upper limits on Phi mass First Cut"};
-  Configurable<std::vector<float>> lowmPhiSCut{"lowmPhiSCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Lower limits on Phi mass Second Cut"};
-  Configurable<std::vector<float>> upmPhiSCut{"upmPhiSCut", std::vector<float>{mPhi, mPhi + nMultBin}, "Upper limits on Phi mass Second Cut"};
+  Configurable<std::vector<float>> lowmPhiInc{"lowmPhiInc", std::vector<float>{flowmPhiInc, flowmPhiInc + nMultBin}, "Lower limits on Phi mass Inclusive"};
+  Configurable<std::vector<float>> upmPhiInc{"upmPhiInc", std::vector<float>{fupmPhiInc, fupmPhiInc + nMultBin}, "Upper limits on Phi mass Inclusive"};
+  Configurable<std::vector<float>> lowmPhiFCut{"lowmPhiFCut", std::vector<float>{flowmPhiFCut, flowmPhiFCut + nMultBin}, "Lower limits on Phi mass First Cut"};
+  Configurable<std::vector<float>> upmPhiFCut{"upmPhiFCut", std::vector<float>{fupmPhiFCut, fupmPhiFCut + nMultBin}, "Upper limits on Phi mass First Cut"};
+  Configurable<std::vector<float>> lowmPhiSCut{"lowmPhiSCut", std::vector<float>{flowmPhiSCut, flowmPhiSCut + nMultBin}, "Lower limits on Phi mass Second Cut"};
+  Configurable<std::vector<float>> upmPhiSCut{"upmPhiSCut", std::vector<float>{fupmPhiSCut, fupmPhiSCut + nMultBin}, "Upper limits on Phi mass Second Cut"};
 
   // Configurables for phi selection
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minimum pt cut"};
@@ -149,7 +156,7 @@ struct phik0shortanalysis {
     for (int i = 0; i < nMultBin; i++) {
       cfgPhimassAxisInc.push_back({nBins, lowmPhiInc->at(i), upmPhiInc->at(i), "#it{M}_{inv} [GeV/#it{c}^{2}]"});
       cfgPhimassAxisFCut.push_back({nBins, lowmPhiFCut->at(i), upmPhiFCut->at(i), "#it{M}_{inv} [GeV/#it{c}^{2}]"});
-      cfgPhimassAxisSCut.push_back({nBins, lowmPhiSCut->at(i), upmPhiFCut->at(i), "#it{M}_{inv} [GeV/#it{c}^{2}]"});
+      cfgPhimassAxisSCut.push_back({nBins, lowmPhiSCut->at(i), upmPhiSCut->at(i), "#it{M}_{inv} [GeV/#it{c}^{2}]"});
     }
 
     // Histograms
