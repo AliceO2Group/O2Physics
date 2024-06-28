@@ -872,38 +872,42 @@ struct UpcTauCentralBarrelRL {
   }
 
   template <typename T>
-  int whatPsi2Schannel(T const& trkDaug1, T const& trkDaug2, T const& trkDaug3, T const& trkDaug4, std::vector<int> &vecPIDidx){
+  int whatPsi2Schannel(T const& trkDaug1, T const& trkDaug2, T const& trkDaug3, T const& trkDaug4, std::vector<int>& vecPIDidx)
+  {
     TLorentzVector jpsi, daug[4];
     daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
     daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
     daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
     // Find index of the two largest values
-    std::vector<std::pair<double, double > >vecPts;
-    for(int i=0;i<4;i++){
-      vecPts.push_back(std::make_pair((double)daug[i].Pt(),i));
+    std::vector<std::pair<double, double>> vecPts;
+    for (int i = 0; i < 4; i++) {
+      vecPts.push_back(std::make_pair((double)daug[i].Pt(), i));
     }
     sort(vecPts.begin(), vecPts.end());
-    int idx1L = vecPts[vecPts.size()-1].second;
-    int idx2L = vecPts[vecPts.size()-2].second;
-    int idx3L = vecPts[vecPts.size()-3].second;
-    int idx4L = vecPts[vecPts.size()-4].second;
+    int idx1L = vecPts[vecPts.size() - 1].second;
+    int idx2L = vecPts[vecPts.size() - 2].second;
+    int idx3L = vecPts[vecPts.size() - 3].second;
+    int idx4L = vecPts[vecPts.size() - 4].second;
     // Create the jpsi
     jpsi = daug[idx1L] + daug[idx2L];
     // The two smallest-pT tracks should be pions
-    if ((vecPIDidx[idx3L] == P_MUON || vecPIDidx[idx3L] == P_PION) && (vecPIDidx[idx4L] == P_MUON || vecPIDidx[idx4L] == P_PION)){
+    if ((vecPIDidx[idx3L] == P_MUON || vecPIDidx[idx3L] == P_PION) && (vecPIDidx[idx4L] == P_MUON || vecPIDidx[idx4L] == P_PION)) {
       // Branch into Jpsi to mumu and Jpsi to elel
-      if ((vecPIDidx[idx1L] == P_MUON || vecPIDidx[idx1L] == P_PION) && (vecPIDidx[idx2L] == P_MUON || vecPIDidx[idx2L] == P_PION)){
+      if ((vecPIDidx[idx1L] == P_MUON || vecPIDidx[idx1L] == P_PION) && (vecPIDidx[idx2L] == P_MUON || vecPIDidx[idx2L] == P_PION)) {
         // Is jpsi mass?
-        if (jpsi.M()<2.9 || jpsi.M()>3.3) return 0;// Not Psi2S
+        if (jpsi.M() < 2.9 || jpsi.M() > 3.3)
+          return 0; // Not Psi2S
         return 1;
-      } else if (vecPIDidx[idx1L] == P_ELECTRON && vecPIDidx[idx2L] == P_ELECTRON){
+      } else if (vecPIDidx[idx1L] == P_ELECTRON && vecPIDidx[idx2L] == P_ELECTRON) {
         // Is jpsi mass?
-        if (jpsi.M()<2.75 || jpsi.M()>3.3) return 0;// Not Psi2S
+        if (jpsi.M() < 2.75 || jpsi.M() > 3.3)
+          return 0; // Not Psi2S
         return 2;
-      } else return 0;// Not Psi2S
-    } else return 0;// Not Psi2S
-
+      } else
+        return 0; // Not Psi2S
+    } else
+      return 0; // Not Psi2S
   }
 
   template <typename C, typename Ts>
@@ -1929,7 +1933,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventFourTracks/MuonsPions/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         }
         // Hunting down psi2s: ideal case
-        if (whatPsi2Schannel(trkDaug1,trkDaug2,trkDaug3,trkDaug4,vecPIDidx) == 1) {
+        if (whatPsi2Schannel(trkDaug1, trkDaug2, trkDaug3, trkDaug4, vecPIDidx) == 1) {
           histos.get<TH1>(HIST("EventFourTracks/Psi2StoMuMuPiPi/hInvariantMass"))->Fill(mother.M());
           histos.get<TH1>(HIST("EventFourTracks/Psi2StoMuMuPiPi/hInvariantMassWide"))->Fill(mother.M());
           histos.get<TH1>(HIST("EventFourTracks/Psi2StoMuMuPiPi/hMotherP"))->Fill(mother.P());
@@ -1939,7 +1943,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH1>(HIST("EventFourTracks/Psi2StoMuMuPiPi/hMotherRapidity"))->Fill(mother.Rapidity());
           histos.get<TH2>(HIST("EventFourTracks/Psi2StoMuMuPiPi/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
         }
-        if (whatPsi2Schannel(trkDaug1,trkDaug2,trkDaug3,trkDaug4,vecPIDidx) == 2) {
+        if (whatPsi2Schannel(trkDaug1, trkDaug2, trkDaug3, trkDaug4, vecPIDidx) == 2) {
           histos.get<TH1>(HIST("EventFourTracks/Psi2StoElElPiPi/hInvariantMass"))->Fill(mother.M());
           histos.get<TH1>(HIST("EventFourTracks/Psi2StoElElPiPi/hInvariantMassWide"))->Fill(mother.M());
           histos.get<TH1>(HIST("EventFourTracks/Psi2StoElElPiPi/hMotherP"))->Fill(mother.P());
