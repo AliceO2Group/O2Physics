@@ -880,9 +880,9 @@ struct UpcTauCentralBarrelRL {
     daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
     daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
     // Find index of the two largest values
-    std::vector<std::pair<double, double>> vecPts;
-    for (int i = 0; i < 4; i++) {
-      vecPts.push_back(std::make_pair((double)daug[i].Pt(), i));
+    std::vector<std::pair<double, double > >vecPts;
+    for(int i=0;i<4;i++){
+      vecPts.push_back(std::make_pair(static_cast<double>(daug[i].Pt()),i));
     }
     sort(vecPts.begin(), vecPts.end());
     int idx1L = vecPts[vecPts.size() - 1].second;
@@ -904,10 +904,12 @@ struct UpcTauCentralBarrelRL {
         if (jpsi.M() < 2.75 || jpsi.M() > 3.3)
           return 0; // Not Psi2S
         return 2;
-      } else
-        return 0; // Not Psi2S
-    } else
-      return 0; // Not Psi2S
+      } else {
+        return 0;// Not Psi2S
+      }
+    } else {
+      return 0;// Not Psi2S
+    }
   }
 
   template <typename C, typename Ts>
