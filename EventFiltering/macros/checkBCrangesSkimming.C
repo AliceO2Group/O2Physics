@@ -28,6 +28,7 @@ const ULong64_t trigger0Bit = BIT(54);
 const ULong64_t trigger1Bit = 0;
 const int bcDiffTolerance = 0;
 const char outputFileName[15] = "output.root";
+bool skipNoneDuplicate = false;
 
 struct bcTuple {
   bcTuple(ULong64_t bcAO2D, ULong64_t bcEvSel) : bcAO2D(bcAO2D), bcEvSel(bcEvSel) {}
@@ -100,77 +101,92 @@ void checkDuplicateTrigger(std::string AnaFileName = "AnalysisResults.root", std
 
   // Readin labels
   TFile AnaFile(AnaFileName.c_str(), "READ");
-  if (!AnaFile.IsOpen()) {
-    std::cout << "Failed to open the file" << std::endl;
-  }
   TH1* hist0 = dynamic_cast<TH1*>(AnaFile.Get("central-event-filter-task/scalers/mFiltered;1"));
   std::vector<std::string> labels;
+  std::vector<int> binNum;
   for (int i = 1; i <= hist0->GetNbinsX(); i++) {
     std::string label = hist0->GetXaxis()->GetBinLabel(i);
     if (label != "Total number of events" && label != "Filtered events") {
       labels.push_back(label);
+      binNum.push_back(i);
     }
   }
   AnaFile.Close();
 
-  TH1D hOriginalTotal("hOriginalTotal", "AO2D Original;;Number of events", labels.size(), 0, labels.size());
-  TH1D hOriginalDuplicate("hOriginalDuplicate", "Duplicate Trigger Original;;Number of events", labels.size(), 0, labels.size());
-  TH1D hOriginalRatio("hOriginalRatio", (runNumber + " Original;;Duplicate / Total").data(), labels.size(), 0, labels.size());
-  TH1D hSkimmedTotal("hSkimmedTotal", "AO2D Skimmed;;Number of events", labels.size(), 0, labels.size());
-  TH1D hSkimmedDuplicate("hSkimmedDuplicate", "Duplicate Trigger Skimmed;;Number of events", labels.size(), 0, labels.size());
-  TH1D hSkimmedRatio("hSkimmedRatio", (runNumber + " Skimmed;;Duplicate / Total").data(), labels.size(), 0, labels.size());
-
   TFile originalFile(originalFileName.c_str(), "READ");
   TFile skimmedFile(skimmedFileName.c_str(), "READ");
+  std::vector<std::string> sel_labels;
+  std::vector<double> numOriginal, numSkimmed, numOriginalDuplicate, numSkimmedDuplicate;
   for (int i = 0; i < labels.size(); i++) {
     ULong64_t trigger0Bit = 0, trigger1Bit = 0;
-    if (i < 64) {
-      trigger0Bit = BIT(i);
+    int triggerBit = binNum[i] - 2;
+    if (triggerBit < 64) {
+      trigger0Bit = BIT(triggerBit);
     } else {
-      trigger1Bit = BIT(i - 64);
+      trigger1Bit = BIT(triggerBit - 64);
     }
     // For Original dataset
     std::vector<bcTuple> bcSet;
+    double noriginal{0}, nskimmed{0}, noriginalduplicate{0}, nskimmedduplicate{0};
     auto Frames = getSelectedFrames(originalFile, trigger0Bit, trigger1Bit);
     for (auto frame : Frames) {
-      hOriginalTotal.Fill(i);
+      noriginal++;
       bcTuple currentBC(frame.bcAO2D, frame.bcEvSel);
       auto p = std::find(bcSet.begin(), bcSet.end(), currentBC);
       if (p == bcSet.end()) {
         bcSet.push_back(currentBC);
       } else {
-        hOriginalDuplicate.Fill(i);
+        noriginalduplicate++;
       }
     }
     // For skimmed dataset
     bcSet.clear();
     auto skimmedFrames = getSelectedFrames(skimmedFile, trigger0Bit, trigger1Bit);
     for (auto& skimmedFrame : skimmedFrames) {
-      hSkimmedTotal.Fill(i);
+      nskimmed++;
       bcTuple currentBC(skimmedFrame.bcAO2D, skimmedFrame.bcEvSel);
       auto p = std::find(bcSet.begin(), bcSet.end(), currentBC);
       if (p == bcSet.end()) {
         bcSet.push_back(currentBC);
       } else {
-        hSkimmedDuplicate.Fill(i);
+        nskimmedduplicate++;
       }
+    }
+    if (!skipNoneDuplicate || noriginalduplicate != 0 || nskimmedduplicate != 0) {
+      sel_labels.push_back(labels[i]);
+      numOriginal.push_back(noriginal);
+      numOriginalDuplicate.push_back(noriginalduplicate);
+      numSkimmed.push_back(nskimmed);
+      numSkimmedDuplicate.push_back(nskimmedduplicate);
     }
   }
   originalFile.Close();
   skimmedFile.Close();
 
-  for (int i = 0; i < labels.size(); i++) {
-    hOriginalTotal.GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
-    hOriginalDuplicate.GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
-    hOriginalRatio.GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
+  TH1D hOriginalTotal("hOriginalTotal", "AO2D Original;;Number of events", sel_labels.size(), 0, sel_labels.size());
+  TH1D hOriginalDuplicate("hOriginalDuplicate", "Duplicate Trigger Original;;Number of events", sel_labels.size(), 0, sel_labels.size());
+  TH1D hOriginalRatio("hOriginalRatio", (runNumber + " Original;;Duplicate / Total").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hSkimmedTotal("hSkimmedTotal", "AO2D Skimmed;;Number of events", sel_labels.size(), 0, sel_labels.size());
+  TH1D hSkimmedDuplicate("hSkimmedDuplicate", "Duplicate Trigger Skimmed;;Number of events", sel_labels.size(), 0, sel_labels.size());
+  TH1D hSkimmedRatio("hSkimmedRatio", (runNumber + " Skimmed;;Duplicate / Total").data(), sel_labels.size(), 0, sel_labels.size());
+
+  for (int i = 0; i < sel_labels.size(); i++) {
+    hOriginalTotal.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hOriginalDuplicate.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hOriginalRatio.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hOriginalTotal.SetBinContent(i + 1, numOriginal[i]);
+    hOriginalDuplicate.SetBinContent(i + 1, numOriginalDuplicate[i]);
     if (hOriginalTotal.GetBinContent(i + 1) > 0) {
       hOriginalRatio.SetBinContent(i + 1, hOriginalDuplicate.GetBinContent(i + 1) / hOriginalTotal.GetBinContent(i + 1));
     } else {
       hOriginalRatio.SetBinContent(i + 1, 0);
     }
-    hSkimmedTotal.GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
-    hSkimmedDuplicate.GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
-    hSkimmedRatio.GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
+
+    hSkimmedTotal.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hSkimmedDuplicate.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hSkimmedRatio.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hSkimmedTotal.SetBinContent(i + 1, numSkimmed[i]);
+    hSkimmedDuplicate.SetBinContent(i + 1, numSkimmedDuplicate[i]);
     if (hSkimmedTotal.GetBinContent(i + 1) > 0) {
       hSkimmedRatio.SetBinContent(i + 1, hSkimmedDuplicate.GetBinContent(i + 1) / hSkimmedTotal.GetBinContent(i + 1));
     } else {
