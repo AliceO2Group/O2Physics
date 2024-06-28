@@ -229,12 +229,6 @@ struct PhotonIsolationQA {
       if (distance2 < Perpendicular_Cone_Radius) {
         sum_Pt += track.pt();
       }
-      if (distance1 < Perpendicular_Cone_Radius) {
-        sum_Pt += track.pt();
-      }
-      if (distance2 < Perpendicular_Cone_Radius) {
-        sum_Pt += track.pt();
-      }
     }
     double Rho = sum_Pt / (2. * M_PI * pow(Perpendicular_Cone_Radius, 2));
     return Rho;
