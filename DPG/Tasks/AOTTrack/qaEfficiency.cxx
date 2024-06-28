@@ -447,7 +447,6 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPt_Str", hPtItsTpcStr[histogramIndex]);
     makeEfficiency("ITS-TPC_vsPt_Str_Trk", hPtTrkItsTpcStr[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPt_Str", hPtItsTpcTofStr[histogramIndex]);
-   
     makeEfficiency("ITS-TPC_vsPt_Mat", hPtItsTpcMat[histogramIndex]);
     makeEfficiency("ITS-TPC_vsPt_Mat_Trk", hPtTrkItsTpcMat[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPt_Mat", hPtItsTpcTofMat[histogramIndex]);
@@ -922,24 +921,23 @@ struct QaEfficiency {
     return mcParticle.isPhysicalPrimary();
   }
   bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
-   {
+  {
     // Example conditions to determine if a particle is final (tertiary)
     // Here, we assume that final state particles are those not originating from primary vertex
     // and not further decaying into other particles
     // Check if the particle has no daughters
-   if (!mcParticle.has_daughters()) {
+    if (!mcParticle.has_daughters()) {
 
       // Check if the particle is not a primary particle
       if (!mcParticle.isPhysicalPrimary()) {
-       // Check if the particle is produced in a secondary decay
-       if (mcParticle.getProcess() == 4) {
+        // Check if the particle is produced in a secondary decay
+        if (mcParticle.getProcess() == 4) {
           return true;// Consider it as a tertiary particle
         }
       }
-     }
-     return false;// Otherwise, not considered a tertiary particle
-   }
- 
+    }
+    return false;// Otherwise, not considered a tertiary particle
+  }
   template <int pdgSign, o2::track::PID::ID id, typename trackType>
   void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
   {
@@ -1062,8 +1060,8 @@ struct QaEfficiency {
           hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
           if (passedTOF) {
             hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
-         }
-       }
+          }
+        }
       }
     } else { // Material
       if (passedITS && passedTPC) {
