@@ -130,12 +130,14 @@ struct hyperRecoTask {
   // Selection criteria
   Configurable<double> v0cospacut{"hypcospa", 0.95, "V0 CosPA"};
   Configurable<float> masswidth{"hypmasswidth", 0.06, "Mass width (GeV/c^2)"};
+  Configurable<float> dcaToPvPion{"dcapvPi", 0., "DCA to PV pion"};
   Configurable<float> dcav0dau{"hypdcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the hypercandidate"};
   Configurable<float> TPCRigidityMinHe{"TPCRigidityMinHe", 0.2, "Minimum rigidity of the helium candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> nSigmaMaxHe{"nSigmaMaxHe", 5, "helium dEdx cut (n sigma)"};
-  Configurable<float> nTPCClusMin{"nTPCClusMin", 70, "helium NTPC clusters cut"};
+  Configurable<float> nTPCClusMinHe{"nTPCClusMinHe", 70, "helium NTPC clusters cut"};
+  Configurable<float> nTPCClusMinPi{"nTPCClusMinPi", -1., "pion NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -463,6 +465,10 @@ struct hyperRecoTask {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, piTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
     hypCand.piDCAXY = dcaInfo[0];
 
+    if (abs(hypCand.piDCAXY) < dcaToPvPion) {
+      return;
+    }
+
     // finally, fill collision info and push back the candidate
     hypCand.isReco = true;
     hypCand.heTrackID = heTrack.globalIndex();
@@ -470,7 +476,7 @@ struct hyperRecoTask {
     hypCand.collisionID = collision.globalIndex();
 
     hDeDx3HeSel->Fill(heTrack.sign() * hypCand.momHe3TPC, heTrack.tpcSignal());
-    hNsigma3HeSel->Fill(hypCand.momPiTPC * hypCand.momHe3TPC, hypCand.nSigmaHe3);
+    hNsigma3HeSel->Fill(heTrack.sign() * hypCand.momHe3TPC, hypCand.nSigmaHe3);
     hyperCandidates.push_back(hypCand);
   }
 
@@ -500,7 +506,7 @@ struct hyperRecoTask {
       }
       auto& heTrack = isHe ? posTrack : negTrack;
       auto& piTrack = isHe ? negTrack : posTrack;
-      if (heTrack.tpcNClsFound() < nTPCClusMin || piTrack.tpcNClsFound() < nTPCClusMin) {
+      if (heTrack.tpcNClsFound() < nTPCClusMinHe || piTrack.tpcNClsFound() < nTPCClusMinPi) {
         continue;
       }
 
@@ -519,18 +525,25 @@ struct hyperRecoTask {
   {
 
     svCreator.clearPools();
+    svCreator.fillBC2Coll(collisions, bcs);
 
     for (auto& track : tracks) {
 
       if (std::abs(track.eta()) > etaMax)
         continue;
 
-      if (!track.hasITS() || track.tpcNClsFound() < nTPCClusMin)
+      if (!track.hasITS())
         continue;
 
       auto nSigmaHe = computeNSigmaHe3(track);
       bool isHe = nSigmaHe > -1 * nSigmaMaxHe;
       int pdgHypo = isHe ? heDauPdg : 211;
+      // LOG(info) << "ncls found: " << track.tpcNClsFound();
+      if (isHe && track.tpcNClsFound() < nTPCClusMinHe)
+        continue;
+      if (!isHe && track.tpcNClsFound() < nTPCClusMinPi)
+        continue;
+
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
     auto& svPool = svCreator.getSVCandPool(collisions);

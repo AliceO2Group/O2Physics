@@ -31,6 +31,9 @@
 #include "Framework/DataTypes.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 class DalitzEECut : public TNamed
 {
@@ -108,8 +111,8 @@ class DalitzEECut : public TNamed
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float dca_t1_3d = t1.dca3DinSigma();
-    float dca_t2_3d = t2.dca3DinSigma();
+    float dca_t1_3d = dca3DinSigma(t1);
+    float dca_t2_3d = dca3DinSigma(t2);
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
     float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
 
@@ -334,7 +337,7 @@ class DalitzEECut : public TNamed
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DalitzEECuts::kDCA3Dsigma:
-        return mMinDca3D <= track.dca3DinSigma() && track.dca3DinSigma() <= mMaxDca3D; // in sigma for single leg
+        return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
 
       case DalitzEECuts::kDCAxy:
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);

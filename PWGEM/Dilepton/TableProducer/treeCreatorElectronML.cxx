@@ -14,6 +14,7 @@
 // This code will create data table for inputs to machine learning for electrons.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <random>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -32,8 +33,10 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -87,12 +90,13 @@ DECLARE_SOA_COLUMN(MotherPdgCodes, motherpdgCodes, std::vector<int>); //! eta va
 DECLARE_SOA_TABLE(MyTracks, "AOD", "MYTRACK", //!
                   o2::soa::Index<>, mytrack::MyCollisionId, mytrack::Sign,
                   track::Pt, track::Eta, track::Phi,
-                  track::DcaXY, track::DcaZ, mytrack::DCAresXY, mytrack::DCAresZ,
+                  track::DcaXY, track::DcaZ, mytrack::DCAresXY, mytrack::DCAresZ, track::CZY,
                   track::TPCNClsFindable, mytrack::TPCNClsFound, mytrack::TPCNClsCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::TOFChi2, track::ITSClusterMap, track::ITSChi2NCl, track::ITSClusterSizes,
+                  track::TOFChi2, track::ITSChi2NCl, track::ITSClusterSizes,
+                  track::TRDSignal, track::TRDPattern,
                   mytrack::MCVx, mytrack::MCVy, mytrack::MCVz,
                   mcparticle::PdgCode, mytrack::IsPhysicalPrimary, mytrack::MotherIds, mytrack::MotherPdgCodes);
 
@@ -112,17 +116,21 @@ DECLARE_SOA_COLUMN(Phi, phi, float);             //!
 DECLARE_SOA_COLUMN(PhiV, phiv, float);           //!
 DECLARE_SOA_COLUMN(PairDCAxy, pairDCAxy, float); //!
 DECLARE_SOA_COLUMN(PairDCAz, pairDCAz, float);   //!
-
-DECLARE_SOA_COLUMN(IsSM, isSM, bool);         //!
-DECLARE_SOA_COLUMN(IsHF, isHF, int);          //!
-DECLARE_SOA_COLUMN(PairType, pairtype, int);  //!
-DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool); //!
+DECLARE_SOA_COLUMN(CosOpAng, cosOpAng, float);   //!
+DECLARE_SOA_COLUMN(CosPA, cosPA, float);         //!
+DECLARE_SOA_COLUMN(Lxy, lxy, float);             //!
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);     //!
+DECLARE_SOA_COLUMN(IsSM, isSM, bool);            //!
+DECLARE_SOA_COLUMN(IsHF, isHF, int);             //!
+DECLARE_SOA_COLUMN(PairType, pairtype, int);     //!
+DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);    //!
 } // namespace mypair
 
 // reconstructed track information
 DECLARE_SOA_TABLE(MyPairs, "AOD", "MYPAIR", //!
                   o2::soa::Index<>, mypair::MyCollisionId, mypair::PosTrackId, mypair::NegTrackId,
                   mypair::Mass, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
+                  mypair::CosOpAng, mypair::CosPA, mypair::Lxy, mypair::Chi2PCA,
                   mypair::IsSM, mypair::IsHF, mypair::PairType, mypair::IsPrompt,
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
@@ -160,24 +168,93 @@ struct TreeCreatorElectronML {
   };
 
   // Configurables
+
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+
+  // track
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
+  Configurable<int> mintpcclusters{"mintpcclusters", 90, "min. tpc clusters"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max. chi2/NclsTPC"};
+  Configurable<float> maxchi2its{"maxchi2its", 5.0, "max. chi2/NclsITS"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
+  Configurable<float> minpt{"minpt", 0.2, "min. pT"};
+  Configurable<float> maxDcaZ{"maxDcaZ", 1.0, "max DCA Z"};
+  Configurable<float> maxDcaXY{"maxDcaXY", 1.0, "max DCA XY"};
+  Configurable<uint8_t> minITSClusters{"minITSLayers", 5, "min. of ITS clusters"};
+  Configurable<uint8_t> minITSClustersIB{"minITSClustersIB", 3, "min. number of ITS clusters in inner barrel"};
+  Configurable<float> downSampleEl{"downSampleEl", 1.0, "down scaling factor for electrons"};
+  Configurable<float> downSamplePi{"downSamplePi", 1.0, "down scaling factor for pions"};
+  Configurable<float> downSampleKa{"downSampleKa", 1.0, "down scaling factor for kaons"};
+  Configurable<float> downSamplePr{"downSamplePr", 1.0, "down scaling factor for protons"};
+  Configurable<float> downSampleMu{"downSampleMu", 1.0, "down scaling factor for muons"};
+  Configurable<float> downSampleNucl{"downSampleNucl", 1.0, "down scaling factor for nuclei"};
+
+  // pair
+  Configurable<float> minPairPt{"minPairPt", 0.2, "min. pT,ee"};
+  Configurable<float> minMass{"minMass", 0.0, "min. pair invariant mass"};
+  Configurable<float> maxMass{"maxMass", 9999.0, "max. pair invariant mass"};
   Configurable<bool> doLS{"doLS", true, "process also LS spectra"};
   Configurable<double> combBgReductionFactor{"combBgReductionFactor", 1.0, "reduction factor for combinatorial background"};
-  Configurable<double> singleTrackBgReductionFactor{"singleTrackBgReductionFactor", 1.0, "reduction factor for background"};
 
   int mRunNumber;
   float d_bz;
+  o2::vertexing::DCAFitterN<2> fitter;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::base::MatLayerCylSet* lut = nullptr;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  std::mt19937 engine;
+  std::uniform_real_distribution<float> dist01;
+
   void init(InitContext&)
   {
+
+    std::random_device seed_gen;
+    engine = std::mt19937(seed_gen());
+    dist01 = std::uniform_real_distribution<float>(0.0f, 1.0f);
+
     mRunNumber = 0;
     d_bz = 0;
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    }
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    }
+
+    fitter.setPropagateToPCA(true);
+    fitter.setMaxR(200.);
+    fitter.setMinParamChange(1e-3);
+    fitter.setMinRelChi2Change(0.9);
+    fitter.setMaxDZIni(1e9);
+    fitter.setMaxChi2(1e9);
+    fitter.setUseAbsDCA(d_UseAbsDCA);
+    fitter.setWeightedFinalPCA(d_UseWeightedPCA);
+
+    if (useMatCorrType == 1) {
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+    } else if (useMatCorrType == 2) {
+      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    }
+    fitter.setMatCorrType(matCorr);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -186,22 +263,33 @@ struct TreeCreatorElectronML {
       return;
     }
 
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      fitter.setBz(d_bz);
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
+    o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery)
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", run3grp_timestamp);
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path "
-                   << "GLO/Config/GRPMagField"
-                   << " of object GRPMagField and "
-                   << "GLO/GRP/GRP"
-                   << " of object GRPObject for timestamp " << run3grp_timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
@@ -209,6 +297,13 @@ struct TreeCreatorElectronML {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = bc.runNumber();
+    // Set magnetic field value once known
+    fitter.setBz(d_bz);
+
+    if (useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
   }
 
   template <typename TTrack>
@@ -359,13 +454,68 @@ struct TreeCreatorElectronML {
     if (track.tpcNClsCrossedRows() < mincrossedrows) {
       return false;
     }
+    if (track.tpcNClsFound() < mintpcclusters) {
+      return false;
+    }
     if (track.itsChi2NCl() < -1) { // if tracks are not reconstructed properly, chi2/ITSncls is set to -999;
+      return false;
+    }
+    if (track.itsNCls() < minITSClusters) {
+      return false;
+    }
+    if (track.itsNClsInnerBarrel() < minITSClustersIB) {
       return false;
     }
     return true;
   }
 
-  Filter trackFilter = nabs(o2::aod::track::eta) < maxeta && o2::aod::track::tpcChi2NCl < maxchi2tpc && nabs(o2::aod::track::dcaXY) < 1.f && nabs(o2::aod::track::dcaZ) < 1.f;
+  template <typename TMom>
+  bool IsSelectedPair(TMom const& v12)
+  {
+    if (v12.Pt() < minPairPt) {
+      return false;
+    }
+    if (v12.M() < minMass) {
+      return false;
+    }
+    if (v12.M() > maxMass) {
+      return false;
+    }
+    return true;
+  }
+
+  bool downSample(int pdg)
+  { // pdg=0: combinatorial background for pairs
+    float factor = 1.;
+    switch (pdg) {
+      case 11:
+        factor = downSampleEl;
+        break;
+      case 211:
+        factor = downSamplePi;
+        break;
+      case 321:
+        factor = downSampleKa;
+        break;
+      case 2212:
+        factor = downSamplePr;
+        break;
+      case 13:
+        factor = downSampleMu;
+        break;
+      case 0:
+        factor = combBgReductionFactor;
+        break;
+      default:
+        factor = downSampleNucl;
+    }
+    if (dist01(engine) <= factor) {
+      return true;
+    }
+    return false;
+  }
+
+  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& nabs(o2::aod::track::dcaXY) < maxDcaXY&& nabs(o2::aod::track::dcaZ) < maxDcaZ;
   using MyFilteredTracksMC = soa::Filtered<FullTracksExtMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
 
@@ -420,19 +570,17 @@ struct TreeCreatorElectronML {
           }
         }
 
-        int pdgCode = mctrack.pdgCode();
-        double pt = track.pt();
-        double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
-        if (abs(pdgCode) == 11 || pseudoRndm <= singleTrackBgReductionFactor) {
+        if (downSample(abs(mctrack.pdgCode()))) {
           mytrack(mycollision.lastIndex(),
-                  track.sign(), pt, track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()),
+                  track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
                   track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                   track.tpcChi2NCl(), track.tpcInnerParam(),
                   track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                   track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                  track.tofChi2(), track.itsClusterMap(), track.itsChi2NCl(), track.itsClusterSizes(),
+                  track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
+                  track.trdSignal(), track.trdPattern(),
                   mctrack.vx(), mctrack.vy(), mctrack.vz(),
-                  pdgCode, mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+                  mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
         }
         mothers_id.shrink_to_fit();
         mothers_pdg.shrink_to_fit();
@@ -510,12 +658,13 @@ struct TreeCreatorElectronML {
           }
 
           mytrack(mycollision.lastIndex(),
-                  track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()),
+                  track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
                   track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                   track.tpcChi2NCl(), track.tpcInnerParam(),
                   track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                   track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                  track.tofChi2(), track.itsClusterMap(), track.itsChi2NCl(), track.itsClusterSizes(),
+                  track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
+                  track.trdSignal(), track.trdPattern(),
                   mctrack.vx(), mctrack.vy(), mctrack.vz(),
                   mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
 
@@ -546,9 +695,20 @@ struct TreeCreatorElectronML {
         ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
+        if (!IsSelectedPair(v12)) {
+          continue;
+        }
+
         float phiv = get_phiv(ele, pos);
         float pair_dca_xy = sqrt((pow(pos.dcaXY() / sqrt(pos.cYY()), 2) + pow(ele.dcaXY() / sqrt(ele.cYY()), 2)) / 2.);
         float pair_dca_z = sqrt((pow(pos.dcaZ() / sqrt(pos.cZZ()), 2) + pow(ele.dcaZ() / sqrt(ele.cZZ()), 2)) / 2.);
+
+        float cosOpAng = (v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / sqrt((v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz()) * (v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz()));
+        float pca = 999.f;
+        float lxy = 999.f;
+        float cosPA = 999.f;
+        o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, pos, ele, pca, lxy, cosPA);
+        float lxy_proper = lxy * v12.M() / v12.Pt();
 
         bool isSM = false;
         int common_mother_id = FindCommonMotherFrom2Prongs(mcpos, mcele, mctracks);
@@ -582,22 +742,20 @@ struct TreeCreatorElectronML {
           }
 
           mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
                  isSM, isHF, EM_EEPairType::kULS, is_prompt, mcpair.pdgCode(), mcpair.statusCode(), mcpair.flags(),
                  mcpair.vx(), mcpair.vy(), mcpair.vz());
           // LOGF(info, "mcpair.pdgCode() = %d", mcpair.pdgCode());
         } else if (isHF > -1) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
                  isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
-          double pt = v12.Pt();
-          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
-          if (pseudoRndm <= combBgReductionFactor) {
+          if (downSample(0)) {
             mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
-                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
                    isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
                    0, 0, 0);
           }
@@ -628,16 +786,27 @@ struct TreeCreatorElectronML {
         ROOT::Math::PtEtaPhiMVector v2(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
+        if (!IsSelectedPair(v12)) {
+          continue;
+        }
+
         float phiv = get_phiv(pos1, pos2);
         float pair_dca_xy = sqrt((pow(pos2.dcaXY() / sqrt(pos2.cYY()), 2) + pow(pos1.dcaXY() / sqrt(pos1.cYY()), 2)) / 2.);
         float pair_dca_z = sqrt((pow(pos2.dcaZ() / sqrt(pos2.cZZ()), 2) + pow(pos1.dcaZ() / sqrt(pos1.cZZ()), 2)) / 2.);
+
+        float cosOpAng = (v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / sqrt((v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz()) * (v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz()));
+        float pca = 999.f;
+        float lxy = 999.f;
+        float cosPA = 999.f;
+        o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, pos1, pos2, pca, lxy, cosPA);
+        float lxy_proper = lxy * v12.M() / v12.Pt();
 
         bool isSM = false;
         int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mcpos1, mcpos2, mctracks);
         if (isHF != static_cast<int>(o2::aod::pwgem::dilepton::mcutil::EM_HFeeType::kUndef)) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
                  isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
@@ -645,7 +814,7 @@ struct TreeCreatorElectronML {
           double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
           if (pseudoRndm <= combBgReductionFactor) {
             mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
-                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
                    isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
                    0, 0, 0);
           }
@@ -672,24 +841,33 @@ struct TreeCreatorElectronML {
         ROOT::Math::PtEtaPhiMVector v2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
+        if (!IsSelectedPair(v12)) {
+          continue;
+        }
+
         float phiv = get_phiv(ele1, ele2);
         float pair_dca_xy = sqrt((pow(ele2.dcaXY() / sqrt(ele2.cYY()), 2) + pow(ele1.dcaXY() / sqrt(ele1.cYY()), 2)) / 2.);
         float pair_dca_z = sqrt((pow(ele2.dcaZ() / sqrt(ele2.cZZ()), 2) + pow(ele1.dcaZ() / sqrt(ele1.cZZ()), 2)) / 2.);
+
+        float cosOpAng = (v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / sqrt((v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz()) * (v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz()));
+        float pca = 999.f;
+        float lxy = 999.f;
+        float cosPA = 999.f;
+        o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, ele1, ele2, pca, lxy, cosPA);
+        float lxy_proper = lxy * v12.M() / v12.Pt();
 
         bool isSM = false;
         int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mcele1, mcele2, mctracks);
         if (isHF != static_cast<int>(o2::aod::pwgem::dilepton::mcutil::EM_HFeeType::kUndef)) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
                  isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
-          double pt = v12.Pt();
-          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
-          if (pseudoRndm <= combBgReductionFactor) {
+          if (downSample(0)) {
             mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
-                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
                    isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
                    0, 0, 0);
           }
