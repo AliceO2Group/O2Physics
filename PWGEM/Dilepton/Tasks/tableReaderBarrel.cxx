@@ -96,7 +96,6 @@ using MyBarrelTracksSelectedWithPrefilter = soa::Join<aod::ReducedTracks, aod::R
 using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
 using MyBarrelTracksSelectedWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelInfo>;
 
-
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
@@ -223,11 +222,16 @@ struct AnalysisEventSelection {
   {
     AnalysisCut* cut = new AnalysisCut("eventcut", "eventcut");
     cut->AddCut(VarManager::kVtxZ, -eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);
-    if(eventcuts.cfgRequireSel8) cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
-    if(eventcuts.cfgRequireNoTFB) cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
-    if(eventcuts.cfgRequireNoITSROFB) cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
-    if(eventcuts.cfgRequireNoSameBunchPileup) cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
-    if(eventcuts.cfgRequireGoodZvtxFT0vsPV) cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+    if (eventcuts.cfgRequireSel8)
+      cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    if (eventcuts.cfgRequireNoTFB)
+      cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    if (eventcuts.cfgRequireNoITSROFB)
+      cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+    if (eventcuts.cfgRequireNoSameBunchPileup)
+      cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    if (eventcuts.cfgRequireGoodZvtxFT0vsPV)
+      cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     cut->AddCut(VarManager::kCentFT0C, eventcuts.cfgCentFT0CMin, eventcuts.cfgCentFT0CMax);
     cut->AddCut(VarManager::kTrackOccupancyInTimeRange, eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
     return cut;
@@ -301,7 +305,7 @@ struct AnalysisTrackSelection {
     Configurable<std::vector<float>> cfgITSnclsMin{"cfgITSnclsMin", {4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f}, "Comma separated list of min number of ITS clusters"};
     Configurable<std::vector<float>> cfgITSnclsMax{"cfgITSnclsMax", {7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f}, "Comma separated list of max number of ITS clusters"};
     Configurable<std::vector<float>> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f}, "Comma separated list of tpc chi2 max"};
-     Configurable<std::vector<float>> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f}, "Comma separated list of min number of TPC clusters"};
+    Configurable<std::vector<float>> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f}, "Comma separated list of min number of TPC clusters"};
     Configurable<std::vector<float>> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f}, "Comma separated list of max number of TPC clusters"};
     Configurable<std::vector<float>> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f}, "Comma separated list of min number of TPC crossed rows"};
     Configurable<std::vector<float>> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f}, "Comma separated list of max number of TPC crossed rows"};
@@ -330,7 +334,6 @@ struct AnalysisTrackSelection {
 
   HistogramManager* fHistMan;
 
-
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   void init(o2::framework::InitContext&)
@@ -340,7 +343,7 @@ struct AnalysisTrackSelection {
     int nbofcuts = fConfigNbTrackCut;
     if (nbofcuts > 0 && nbofcuts < 31) {
       for (unsigned int icut = 0; icut < nbofcuts; ++icut) {
-        AnalysisCompositeCut* cut = new AnalysisCompositeCut(Form("trackcut%d", icut),Form("trackcut%d", icut));
+        AnalysisCompositeCut* cut = new AnalysisCompositeCut(Form("trackcut%d", icut), Form("trackcut%d", icut));
         cut->AddCut(GetTrackCut(icut));
         cut->AddCut(GetPIDCut(icut));
         fTrackCuts.push_back(*cut);
@@ -395,7 +398,6 @@ struct AnalysisTrackSelection {
     auto vecTOFnsigmaelmin = (std::vector<float>)pidcuts.cfgTOFNSigmaElMin;
     auto vecTOFnsigmaelmax = (std::vector<float>)pidcuts.cfgTOFNSigmaElMax;
 
-
     AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut(Form("pid_TPCnSigma_%d", i), Form("pid_TPCnSigma_%d", i), kTRUE);
     AnalysisCut* cuttpc = new AnalysisCut(Form("pidcuttpc_%d", i), Form("pidcuttpc_%d", i));
     if (!fConfigComputeTPCpostCalib) {
@@ -412,14 +414,14 @@ struct AnalysisTrackSelection {
       cuttpc->AddCut(VarManager::kTPCnSigmaMu, vecTPCnsigmamumin.at(i), vecTPCnsigmamumax.at(i), true, VarManager::kPin, 0.0, 1e+10, false);
     }
 
-    if (vecrejbadtof.at(i) > 0)
-      {
-        cuttpc->AddCut(VarManager::kTOFbeta, 0., 0.985, true, VarManager::kPin, 0.0, 1e+10, false);
-        cuttpc->AddCut(VarManager::kTOFbeta, 1.015, 999999999., true, VarManager::kPin, 0.0, 1e+10, false);
-      }
+    if (vecrejbadtof.at(i) > 0) {
+      cuttpc->AddCut(VarManager::kTOFbeta, 0., 0.985, true, VarManager::kPin, 0.0, 1e+10, false);
+      cuttpc->AddCut(VarManager::kTOFbeta, 1.015, 999999999., true, VarManager::kPin, 0.0, 1e+10, false);
+    }
     cut_tpc_nSigma->AddCut(cuttpc);
 
-    if (vecPIDmode.at(i) == 1) return cut_tpc_nSigma;
+    if (vecPIDmode.at(i) == 1)
+      return cut_tpc_nSigma;
 
     AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut(Form("pid_TOFnSigma_%d", i), Form("pid_TOFnSigma_%d", i), kTRUE);
     AnalysisCut* cuttof = new AnalysisCut(Form("pidcuttof_%d", i), Form("pidcuttof_%d", i));
@@ -433,7 +435,8 @@ struct AnalysisTrackSelection {
     cuttof->AddCut(VarManager::kTOFnSigmaEl, vecTOFnsigmaelmin.at(i), vecTOFnsigmaelmax.at(i), false, VarManager::kPin, 0.0, 1e+10, false);
     cut_tof_nSigma->AddCut(cuttof);
 
-    if (vecPIDmode.at(i) == 2) return cut_tof_nSigma;
+    if (vecPIDmode.at(i) == 2)
+      return cut_tof_nSigma;
 
     AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut(Form("e_NSigma_%d", i), Form("e_NSigma_%d", i), kFALSE);
     cut_pid_OR->AddCut(cut_tpc_nSigma);
@@ -473,9 +476,12 @@ struct AnalysisTrackSelection {
     cut->AddCut(VarManager::kTrackDCAxy, -vecDCAxymax.at(i), vecDCAxymax.at(i));
     cut->AddCut(VarManager::kTrackDCAz, -vecDCAzmax.at(i), vecDCAzmax.at(i));
 
-    if (vecIsSPDfirst.at(i) > 0) cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
-    if (vecIsSPDany.at(i) > 0) cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
-    if (vecIsITSibAny.at(i) > 0) cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    if (vecIsSPDfirst.at(i) > 0)
+      cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
+    if (vecIsSPDany.at(i) > 0)
+      cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
+    if (vecIsITSibAny.at(i) > 0)
+      cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
 
     cut->AddCut(VarManager::kITSchi2, 0.0, vecITSchi2max.at(i));
     cut->AddCut(VarManager::kITSncls, vecITSnclsmin.at(i), vecITSnclsmax.at(i));
@@ -484,7 +490,8 @@ struct AnalysisTrackSelection {
     cut->AddCut(VarManager::kTPCnclsCR, vecTPCnclsCRmin.at(i), vecTPCnclsCRmax.at(i));
     cut->AddCut(VarManager::kTPCncls, vecTPCnclsmin.at(i), vecTPCnclsmax.at(i));
 
-    if (vecIsDalitzLeg.at(i) > 0 && vecIsDalitzLeg.at(i) <= 8) cut->AddCut(VarManager::kIsDalitzLeg + vecIsDalitzLeg.at(i) - 1, 0.5, 1.5);
+    if (vecIsDalitzLeg.at(i) > 0 && vecIsDalitzLeg.at(i) <= 8)
+      cut->AddCut(VarManager::kIsDalitzLeg + vecIsDalitzLeg.at(i) - 1, 0.5, 1.5);
     return cut;
   }
 
@@ -596,7 +603,6 @@ struct AnalysisPrefilterSelection {
     cut->AddCut(VarManager::kPairPhiv, pairprecuts.cfgPhiVMin, 3.2);
     return cut;
   }
-
 
   void init(o2::framework::InitContext&)
   {
@@ -866,7 +872,7 @@ struct AnalysisSameEventPairing {
 
   } paircuts;
 
- AnalysisCompositeCut* GetPairCut(unsigned int i)
+  AnalysisCompositeCut* GetPairCut(unsigned int i)
   {
     auto vecRej = (std::vector<int>)paircuts.cfgRej;
     auto vecmassmin = (std::vector<float>)paircuts.cfgMassMin;
@@ -936,7 +942,7 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    if (fConfigNbTrackCut > 0 && fConfigNbTrackCut < 31) { // if track cuts
+    if (fConfigNbTrackCut > 0 && fConfigNbTrackCut < 31) {   // if track cuts
       for (int icut = 0; icut < fConfigNbTrackCut; ++icut) { // loop over track cuts
         fTwoTrackFilterMask |= (uint32_t(1) << icut);
         // no pair cuts
@@ -947,7 +953,7 @@ struct AnalysisSameEventPairing {
         histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
         fTrackHistNames.push_back(names);
 
-        if (fConfigNbPairCut > 0 && fConfigNbPairCut < 5) { // if pair cuts
+        if (fConfigNbPairCut > 0 && fConfigNbPairCut < 5) {                 // if pair cuts
           for (int iPairCut = 0; iPairCut < fConfigNbPairCut; ++iPairCut) { // loop over pair cuts
             names = {
               Form("PairsBarrelSEPM_trackcut%d_paircut%d", icut, iPairCut),
