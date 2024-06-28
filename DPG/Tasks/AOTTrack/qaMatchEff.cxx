@@ -1599,6 +1599,8 @@ struct qaMatchEff {
           default:
             specind = 0;
         }
+        if (siPDGCode == 211 || siPDGCode == 321)
+          specind = 10; // pions and kaons together
       } else {
         specind = -9999;
         if (isProton && !(isKaon || isPion))
@@ -1614,9 +1616,9 @@ struct qaMatchEff {
         if (isKaon && isProton && !isPion)
           specind = 7; // maybe proton, maybe kaon
         if (isPion && isKaon && isProton)
-          specind = 9; // maybe pion, maybe kaon, maybe proton
+          specind = 8; // maybe pion, maybe kaon, maybe proton
         if (!isPion && !isKaon && !isProton)
-          specind = 1; // PID is NOT pion or kaon or proton
+          specind = 9; // PID is NOT pion or kaon or proton
         if (specind == 2 || specind == 3 || specind == 5)
           specind = 10; // pions and kaons together
       }
