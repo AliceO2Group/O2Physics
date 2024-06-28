@@ -1137,7 +1137,7 @@ struct QaEfficiency {
           if (isFinal(mcParticle)) {
             hPtGeneratedTer[histogramIndex]->Fill(mcParticle.pt());
           }
-        }   
+        }
       } else { // Material
         hPtGeneratedMat[histogramIndex]->Fill(mcParticle.pt());
       }
