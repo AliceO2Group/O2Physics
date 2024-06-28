@@ -516,7 +516,7 @@ struct TreeCreatorElectronML {
   }
 
   template <typename TTrack, typename TMCParticles, typename TCollision>
-  void doPair(TTrack const& t1, TTrack const& t2, int pairtype, TMCParticles const& mctracks, std::map<uint64_t, int>& fNewLabels, TCollision const& collision)
+  void doPair(TTrack const& t1, TTrack const& t2, int pairtype, TMCParticles const& mctracks, TCollision const& collision, std::map<uint64_t, int>& fNewLabels, std::vector<uint64_t>& fSelected_old_labels, int& fCounter)
   {
     if (!IsSelected(t1) || !IsSelected(t2)) {
       return;
@@ -607,6 +607,16 @@ struct TreeCreatorElectronML {
     }
 
     if (!is_comb_bg || downSample(0)) {
+      if (!(fNewLabels.find(t1.globalIndex()) != fNewLabels.end())) {
+        fNewLabels[t1.globalIndex()] = fCounter;
+        fSelected_old_labels.push_back(t1.globalIndex());
+        fCounter++;
+      }
+      if (!(fNewLabels.find(t2.globalIndex()) != fNewLabels.end())) {
+        fNewLabels[t2.globalIndex()] = fCounter;
+        fSelected_old_labels.push_back(t2.globalIndex());
+        fCounter++;
+      }
       mypair(mycollision.lastIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()],
              v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
              isSM, isHF, pairtype, is_prompt, pdgCode, statusCode, flags,
@@ -698,6 +708,7 @@ struct TreeCreatorElectronML {
     int fCounter = 0;
 
     for (auto& collision : collisions) {
+      std::vector<uint64_t> fSelected_old_labels;
       // TODO: investigate the collisions without corresponding mcCollision
       if (!collision.has_mcCollision()) {
         continue;
@@ -716,78 +727,62 @@ struct TreeCreatorElectronML {
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
-      for (auto& track : tracks) {
-        if (!IsSelected(track)) {
-          continue;
-        }
-
-        if (!track.has_mcParticle()) {
-          continue; // If no MC particle is found, skip the track
-        }
-
-        auto mctrack = track.mcParticle_as<aod::McParticles>();
-
-        if (abs(mctrack.pdgCode()) != 11) {
-          continue;
-        }
-
-        if (!(fNewLabels.find(track.globalIndex()) != fNewLabels.end())) {
-          fNewLabels[track.globalIndex()] = fCounter;
-
-          // store all mother relation
-          std::vector<int> mothers_id;
-          std::vector<int> mothers_pdg;
-          if (mctrack.has_mothers()) {
-            int motherid = mctrack.mothersIds()[0]; // first mother index
-            while (motherid > -1) {
-              if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-                auto mp = mctracks.iteratorAt(motherid);
-                mothers_id.emplace_back(motherid);
-                mothers_pdg.emplace_back(mp.pdgCode());
-
-                if (mp.has_mothers()) {
-                  motherid = mp.mothersIds()[0];
-                } else {
-                  motherid = -999;
-                }
-              } else {
-                LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
-              }
-            }
-          }
-
-          mytrack(mycollision.lastIndex(),
-                  track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
-                  track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
-                  track.tpcChi2NCl(), track.tpcInnerParam(),
-                  track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                  track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                  track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
-                  track.trdSignal(), track.trdPattern(),
-                  mctrack.vx(), mctrack.vy(), mctrack.vz(),
-                  mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
-
-          mothers_id.shrink_to_fit();
-          mothers_pdg.shrink_to_fit();
-          fCounter++;
-        }
-
-      } // end of track loop
-
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
-        doPair(pos, ele, EM_EEPairType::kULS, mctracks, fNewLabels, collision);
+        doPair(pos, ele, EM_EEPairType::kULS, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
       }
 
       if (!doLS) {
         continue;
       }
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_coll, posTracks_coll))) {
-        doPair(pos1, pos2, EM_EEPairType::kLSpp, mctracks, fNewLabels, collision);
+        doPair(pos1, pos2, EM_EEPairType::kLSpp, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
       }
 
       for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_coll, negTracks_coll))) {
-        doPair(ele1, ele2, EM_EEPairType::kLSnn, mctracks, fNewLabels, collision);
+        doPair(ele1, ele2, EM_EEPairType::kLSnn, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
       }
+
+      // single tracks, only if selected in at least one pair
+      for (uint64_t track_label : fSelected_old_labels) {
+        auto track = tracks.rawIteratorAt(track_label);
+        auto mctrack = track.mcParticle_as<aod::McParticles>();
+        // store all mother relation
+        std::vector<int> mothers_id;
+        std::vector<int> mothers_pdg;
+        if (mctrack.has_mothers()) {
+          int motherid = mctrack.mothersIds()[0]; // first mother index
+          while (motherid > -1) {
+            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mctracks.iteratorAt(motherid);
+              mothers_id.emplace_back(motherid);
+              mothers_pdg.emplace_back(mp.pdgCode());
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0];
+              } else {
+                motherid = -999;
+              }
+            } else {
+              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
+            }
+          }
+        }
+
+        mytrack(mycollision.lastIndex(),
+                track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
+                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                track.tpcChi2NCl(), track.tpcInnerParam(),
+                track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
+                track.trdSignal(), track.trdPattern(),
+                mctrack.vx(), mctrack.vy(), mctrack.vz(),
+                mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+
+        mothers_id.shrink_to_fit();
+        mothers_pdg.shrink_to_fit();
+
+      } // end of track loop
 
     } // end of collision loop
     fNewLabels.clear();
