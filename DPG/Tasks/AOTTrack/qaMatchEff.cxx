@@ -1584,23 +1584,21 @@ struct qaMatchEff {
           case 2212:
             specind = 4;
             break;
-          // case -11:
-          //   specind = -1;
-          //   break;
-          // case -211:
-          //   specind = -2;
-          //   break;
-          // case -321:
-          //   specind = -3;
-          //   break;
-          // case -2212:
-          //   specind = -4;
-          //   break;
+            // case -11:
+            //   specind = -1;
+            //   break;
+            // case -211:
+            //   specind = -2;
+            //   break;
+            // case -321:
+            //   specind = -3;
+            //   break;
+            // case -2212:
+            //   specind = -4;
+            //   break;
           default:
             specind = 0;
         }
-        if (siPDGCode == 211 || siPDGCode == 321)
-          specind = 10; // pions and kaons together
       } else {
         specind = -9999;
         if (isProton && !(isKaon || isPion))
@@ -1619,8 +1617,6 @@ struct qaMatchEff {
           specind = 8; // maybe pion, maybe kaon, maybe proton
         if (!isPion && !isKaon && !isProton)
           specind = 9; // PID is NOT pion or kaon or proton
-        if (specind == 2 || specind == 3 || specind == 5)
-          specind = 10; // pions and kaons together
       }
       // PID info for ThNSparse filling
       //
@@ -1637,8 +1633,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1650,8 +1650,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1663,8 +1667,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1676,8 +1684,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1689,8 +1701,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1702,8 +1718,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1715,8 +1735,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1728,8 +1752,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1741,8 +1769,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1754,8 +1786,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
@@ -1767,8 +1803,12 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+              histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
+            if (specind == 2 || specind == 3 || specind == 5) // pions and kaons together
+              histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           }
         }
       }
