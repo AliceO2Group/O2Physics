@@ -202,6 +202,9 @@ struct dimuonQCMC {
     fRegistry.add("Track/lf/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
     fRegistry.add("Track/lf/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
     fRegistry.add("Track/lf/hMFTClusterMap", "MFT cluster map", kTH1F, {{1024, -0.5, 1023.5}}, false);
+    fRegistry.add("Track/lf/hPtGen_DeltaPtOverPtGen", "muon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
+    fRegistry.add("Track/lf/hPtGen_DeltaEta", "muon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
+    fRegistry.add("Track/lf/hPtGen_DeltaPhi", "muon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.addClone("Track/lf/", "Track/PromptJPsi/");
     fRegistry.addClone("Track/lf/", "Track/NonPromptJPsi/");
     fRegistry.addClone("Track/lf/", "Track/PromptPsi2S/");
@@ -324,7 +327,11 @@ struct dimuonQCMC {
       FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 223, mcparticles),
       FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 333, mcparticles),
       FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 443, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 100443, mcparticles)};
+      FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 100443, mcparticles),
+      FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 553, mcparticles),
+      FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 100553, mcparticles),
+      FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 200553, mcparticles),
+      FindCommonMotherFrom2Prongs(posmc, elemc, -13, 13, 300553, mcparticles)};
     int size = sizeof(arr) / sizeof(*arr);
     int max = *std::max_element(arr, arr + size);
     return max;
@@ -340,11 +347,12 @@ struct dimuonQCMC {
     }
   }
 
-  template <int e_source_id, typename TTrack>
+  template <int e_source_id, typename TMCParticles, typename TTrack>
   void fillTrackInfo(TTrack const& track)
   {
     // fill track info that belong to true pairs.
     if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
+      auto mctrack = track.template emmcparticle_as<TMCParticles>();
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPt"), track.pt());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hEtaPhi"), track.phi(), track.eta());
@@ -360,6 +368,9 @@ struct dimuonQCMC {
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hChi2MatchMCHMID"), track.chi2MatchMCHMID());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hMFTClusterMap"), track.mftClusterMap());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
       used_trackIds.emplace_back(track.globalIndex());
     }
   }
@@ -409,50 +420,50 @@ struct dimuonQCMC {
           switch (abs(mcmother.pdgCode())) {
             case 221:
               fRegistry.fill(HIST("Pair/sm/Eta/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 331:
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 113:
               fRegistry.fill(HIST("Pair/sm/Rho/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 223:
               fRegistry.fill(HIST("Pair/sm/Omega/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-              fillTrackInfo<0>(t1);
-              fillTrackInfo<0>(t2);
+              fillTrackInfo<0, TMCParticles>(t1);
+              fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<2>(t1);
-                fillTrackInfo<2>(t2);
+                fillTrackInfo<2, TMCParticles>(t1);
+                fillTrackInfo<2, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/sm/PromptJPsi/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<1>(t1);
-                fillTrackInfo<1>(t2);
+                fillTrackInfo<1, TMCParticles>(t1);
+                fillTrackInfo<1, TMCParticles>(t2);
               }
               break;
             }
             case 100443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fRegistry.fill(HIST("Pair/sm/NonPromptPsi2S/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<4>(t1);
-                fillTrackInfo<4>(t2);
+                fillTrackInfo<4, TMCParticles>(t1);
+                fillTrackInfo<4, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/sm/PromptPsi2S/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<3>(t1);
-                fillTrackInfo<3>(t2);
+                fillTrackInfo<3, TMCParticles>(t1);
+                fillTrackInfo<3, TMCParticles>(t2);
               }
               break;
             }
@@ -471,16 +482,16 @@ struct dimuonQCMC {
               fRegistry.fill(HIST("Pair/ccbar/c2mu_c2mu/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/ccbar/c2mu_c2mu/meson_meson/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<5>(t1);
-                fillTrackInfo<5>(t2);
+                fillTrackInfo<5, TMCParticles>(t1);
+                fillTrackInfo<5, TMCParticles>(t2);
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
                 fRegistry.fill(HIST("Pair/ccbar/c2mu_c2mu/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<5>(t1);
-                fillTrackInfo<5>(t2);
+                fillTrackInfo<5, TMCParticles>(t1);
+                fillTrackInfo<5, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/ccbar/c2mu_c2mu/meson_baryon/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<5>(t1);
-                fillTrackInfo<5>(t2);
+                fillTrackInfo<5, TMCParticles>(t1);
+                fillTrackInfo<5, TMCParticles>(t2);
               }
               break;
             }
@@ -488,16 +499,16 @@ struct dimuonQCMC {
               fRegistry.fill(HIST("Pair/bbbar/b2mu_b2mu/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
               if (isBeautyMeson(mp1) && isBeautyMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2mu_b2mu/meson_meson/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<6>(t1);
-                fillTrackInfo<6>(t2);
+                fillTrackInfo<6, TMCParticles>(t1);
+                fillTrackInfo<6, TMCParticles>(t2);
               } else if (isBeautyBaryon(mp1) && isBeautyBaryon(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2mu_b2mu/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<6>(t1);
-                fillTrackInfo<6>(t2);
+                fillTrackInfo<6, TMCParticles>(t1);
+                fillTrackInfo<6, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/bbbar/b2mu_b2mu/meson_baryon/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<6>(t1);
-                fillTrackInfo<6>(t2);
+                fillTrackInfo<6, TMCParticles>(t1);
+                fillTrackInfo<6, TMCParticles>(t2);
               }
               break;
             }
@@ -505,16 +516,16 @@ struct dimuonQCMC {
               fRegistry.fill(HIST("Pair/bbbar/b2c2mu_b2c2mu/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2mu_b2c2mu/meson_meson/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2mu_b2c2mu/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               } else {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2mu_b2c2mu/meson_baryon/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               }
               break;
             }
@@ -528,11 +539,11 @@ struct dimuonQCMC {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2mu_b2mu_sameb/meson_baryon/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
               }
               if ((isCharmMeson(mp1) || isCharmBaryon(mp1)) && (isBeautyMeson(mp2) || isBeautyBaryon(mp2))) {
-                fillTrackInfo<6>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<6, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               } else {
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<6>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<6, TMCParticles>(t2);
               }
               break;
             }
@@ -566,11 +577,11 @@ struct dimuonQCMC {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2mu_b2mu_diffb/meson_baryon/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca);
               }
               if ((isCharmMeson(mp1) || isCharmBaryon(mp1)) && (isBeautyMeson(mp2) || isBeautyBaryon(mp2))) {
-                fillTrackInfo<6>(t1);
-                fillTrackInfo<7>(t2);
+                fillTrackInfo<6, TMCParticles>(t1);
+                fillTrackInfo<7, TMCParticles>(t2);
               } else {
-                fillTrackInfo<7>(t1);
-                fillTrackInfo<6>(t2);
+                fillTrackInfo<7, TMCParticles>(t1);
+                fillTrackInfo<6, TMCParticles>(t2);
               }
               break;
             }
