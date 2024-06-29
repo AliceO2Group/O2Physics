@@ -417,21 +417,21 @@ struct phik0shortanalysis {
       double deltay = std::abs(rapidityPi - rapidityPhi);
 
       if constexpr (!isMix) { // same event
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxSameEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxSameEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxSameEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxSameEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxsSameEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxsSameEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
       } else { // mixed event
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxMixedEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxMixedEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxMixedEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
       }
     }
   }
