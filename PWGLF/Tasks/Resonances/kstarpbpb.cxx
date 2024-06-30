@@ -122,6 +122,7 @@ struct kstarpbpb {
 
   void init(o2::framework::InitContext&)
   {
+    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisPhiminusPsi{configThnAxisPhiminusPsi, "#phi - #psi"};
@@ -130,6 +131,7 @@ struct kstarpbpb {
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {400, -2, 2, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
+    AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
 
     histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
     histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
@@ -139,9 +141,9 @@ struct kstarpbpb {
     histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
-    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality, occupancyAxis});
+    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality, occupancyAxis});
+    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality, occupancyAxis});
 
     // histogram for resolution
     histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
@@ -329,6 +331,7 @@ struct kstarpbpb {
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
+    int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hFTOCvsTPC"), centrality, multTPC);
     if (additionalEvsel && !eventSelected(collision, tracks.size(), centrality)) {
       return;
@@ -436,7 +439,7 @@ struct kstarpbpb {
         }
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+        histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality, occupancy);
 
         for (int nrotbkg = 1; nrotbkg < nBkgRotations; nrotbkg++) {
           auto anglestep = nrotbkg * (2.0 * TMath::Pi() / nBkgRotations);
@@ -456,7 +459,7 @@ struct kstarpbpb {
           kstarrot = kaonrot + daughter2;
           auto phiminuspsiRot = GetPhiInRange(kstarrot.Phi() - psiFT0C);
           auto v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
-          histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality);
+          histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality, occupancy);
         }
       }
     }
@@ -477,6 +480,7 @@ struct kstarpbpb {
       if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
+      int occupancy = collision1.trackOccupancyInTimeRange();
       auto centrality = collision1.centFT0C();
       auto centrality2 = collision2.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
@@ -547,7 +551,7 @@ struct kstarpbpb {
         }
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality, occupancy);
       }
     }
   }

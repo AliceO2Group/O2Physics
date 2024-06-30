@@ -101,6 +101,8 @@ DECLARE_SOA_COLUMN(Occupancy, occupancy, int);
 DECLARE_SOA_DYNAMIC_COLUMN(dIsNoSameBunchPileup, isNoSameBunchPileup, [](uint64_t selBit) -> bool { return TESTBIT(selBit, evsel::kNoSameBunchPileup); });
 DECLARE_SOA_DYNAMIC_COLUMN(dIsGoodZvtxFT0vsPV, isGoodZvtxFT0vsPV, [](uint64_t selBit) -> bool { return TESTBIT(selBit, evsel::kIsGoodZvtxFT0vsPV); });
 DECLARE_SOA_DYNAMIC_COLUMN(dIsVertexITSTPC, isVertexITSTPC, [](uint64_t selBit) -> bool { return TESTBIT(selBit, evsel::kIsVertexITSTPC); });
+DECLARE_SOA_DYNAMIC_COLUMN(dIsVertexTOForTRDmatched, isVertexTOForTRDmatched, [](uint64_t selBit) -> int { return static_cast<int>(TESTBIT(selBit, evsel::kIsVertexTOFmatched)) + static_cast<int>(TESTBIT(selBit, evsel::kIsVertexTRDmatched)); });
+DECLARE_SOA_DYNAMIC_COLUMN(dNoCollInTimeRangeStandard, noCollInTimeRangeStandard, [](uint64_t selBit) -> bool { return TESTBIT(selBit, evsel::kNoCollInTimeRangeStandard); });
 
 } // namespace singletrackselector
 
@@ -124,7 +126,9 @@ DECLARE_SOA_TABLE(SingleCollExtras_v1, "AOD", "SINGLECOLLEXTR1", // Joinable col
 
                   singletrackselector::dIsNoSameBunchPileup<evsel::Selection>,
                   singletrackselector::dIsGoodZvtxFT0vsPV<evsel::Selection>,
-                  singletrackselector::dIsVertexITSTPC<evsel::Selection>);
+                  singletrackselector::dIsVertexITSTPC<evsel::Selection>,
+                  singletrackselector::dIsVertexTOForTRDmatched<evsel::Selection>,
+                  singletrackselector::dNoCollInTimeRangeStandard<evsel::Selection>);
 
 using SingleCollExtras = SingleCollExtras_v1;
 

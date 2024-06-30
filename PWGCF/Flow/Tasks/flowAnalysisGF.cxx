@@ -69,6 +69,7 @@ std::vector<double> centbinning(90);
 int nBootstrap = 10;
 GFWRegions regions;
 GFWCorrConfigs configs;
+int eventBin = 0;
 } // namespace o2::analysis::flowanalysis
 
 using namespace o2::analysis::flowanalysis;
@@ -93,10 +94,15 @@ struct flowAnalysisGF {
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
   // added
-  O2_DEFINE_CONFIGURABLE(cfgROFCuts, bool, true, "Use addional event selection cuts");
-  O2_DEFINE_CONFIGURABLE(cfgDoExtraQA, bool, true, "Make extra QA plots");
   O2_DEFINE_CONFIGURABLE(cfgDoubleTrackFunction, bool, true, "Include track cut at low pt");
   O2_DEFINE_CONFIGURABLE(cfgTrackCutSize, float, 0.06, "Spread of track cut");
+  O2_DEFINE_CONFIGURABLE(cfgMaxOccupancy, int, 500, "Maximum occupancy of selected events");
+  O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
+  O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
+  O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
+  O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
+  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional evenr cut on mult correlations");
+  O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "Use kTVXinTRD (reject TRD triggered events)");
 
   Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10}, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}}, "Configuration for binning"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull", "poiN", "poiP", "poiFull", "olN", "olP", "olFull"}, {-0.8, 0.5, -0.8, -0.8, -0.8, 0.5, -0.8, -0.8}, {-0.5, 0.8, 0.8, -0.5, 0.8, 0.8, -0.5}, {0, 0, 0, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 2, 2, 2, 4, 4, 4}}, "Configurations for GFW regions"};
@@ -183,13 +189,19 @@ struct flowAnalysisGF {
     for (int i = 0; i <= nchbins; ++i) {
       nchbinning.push_back(nchskip * i + nchlow + 0.5);
     }
+
     AxisSpec nchAxis = {nchbinning, "N_{ch}"};
     AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
     AxisSpec t0aAxis = {200, 0, 200, "N_{ch}"};
     AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
     AxisSpec multAxis = (cfgUseNch) ? nchAxis : centAxis;
-    AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
-    AxisSpec dcaXYAXis = {200, -1, 1, "DCA_{xy} (cm)"};
+    AxisSpec dcaZAxis = {200, -2, 2, "DCA_{z} (cm)"};
+    AxisSpec dcaXYAxis = {200, -1, 1, "DCA_{xy} (cm)"};
+    AxisSpec tpcAxis = {200, 0, 200, "TPC Clusters"};
+    AxisSpec tpcAxisCl = {10, 0, 10, "TPC Crossed rows / findable Clusters"};
+    AxisSpec dEdxAxis = {400, 0, 200, "TPC: dE/dx"};
+    AxisSpec itsClAxis = {10, 0, 10, "Number of ITS clusters"};
+    AxisSpec ptAxisQA = {100, 0.2, 10, "#it{p}_{T} GeV/#it{c}"};
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -206,35 +218,67 @@ struct flowAnalysisGF {
       fWeights->Init(true, false);
     }
 
-    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{10, 0, 10}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "kTVXinTRD");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "kNoITSROFrameBorder");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "kNoSameBunchPileup");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "kIsGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "kIsVertexITSTPC");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "after Mult cuts");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "corr + cent");
-
     if (doprocessMCGen) {
       registry.add("pt_gen", "", {HistType::kTH1D, {ptAxis}});
       registry.add("phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
     }
     if (doprocessMCReco || doprocessData || doprocessRun2) {
       registry.add("phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      registry.add("pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
-      registry.add("pt_phi_bef", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
-      registry.add("pt_phi_aft", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
+      registry.add("pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxisQA, dcaXYAxis, dcaZAxis}});
+      registry.add("pt_phi_bef", "", {HistType::kTH2D, {ptAxisQA, phiModAxis}});
+      registry.add("pt_phi_aft", "", {HistType::kTH2D, {ptAxisQA, phiModAxis}});
       registry.add("phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      registry.add("globalTracks_centT0C", "", {HistType::kTH2D, {centAxis, nchAxis}});
-      registry.add("PVTracks_centT0C", "", {HistType::kTH2D, {centAxis, multpvAxis}});
-      registry.add("globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
-      registry.add("globalTracks_multT0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
-      registry.add("globalTracks_multV0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
-      registry.add("multV0A_multT0A", "", {HistType::kTH2D, {t0aAxis, t0aAxis}});
-      registry.add("multT0C_centT0C", "", {HistType::kTH2D, {centAxis, t0cAxis}});
+
+      registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{11, 0, 11}}});
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "sel8");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "occupancy");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "kTVXinTRD");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "kNoSameBunchPileup");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeStandard");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "after Mult cuts");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "corr + cent");
+
+      registry.add("eventQA/nITS_nTPC_Tracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+
+      // track QA before and after selections
+      registry.add("trackQA/before/CrossedTPCRows_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxis}});
+      registry.add("trackQA/before/NumberSharedClustersTPC_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxis}});
+      registry.add("trackQA/before/ITSClusters_pt", "", {HistType::kTH2D, {ptAxisQA, itsClAxis}});
+      registry.add("trackQA/before/DCAxy_pt", "", {HistType::kTH2D, {ptAxisQA, dcaXYAxis}});
+      registry.add("trackQA/before/DCAz_pt", "", {HistType::kTH2D, {ptAxisQA, dcaZAxis}});
+      registry.add("trackQA/before/tpcSignal_pt", "", {HistType::kTH2D, {ptAxisQA, dEdxAxis}});
+      registry.add("trackQA/before/phi_pt", "", {HistType::kTH2D, {ptAxisQA, phiAxis}});
+      registry.add("trackQA/before/phi_eta", "", {HistType::kTH2D, {etaAxis, phiAxis}});
+      registry.add("trackQA/before/tpcCrossedRowsOverFindableCls_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxisCl}});
+
+      registry.add("trackQA/after/CrossedTPCRows_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxis}});
+      registry.add("trackQA/after/NumberSharedClustersTPC_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxis}});
+      registry.add("trackQA/after/ITSClusters_pt", "", {HistType::kTH2D, {ptAxisQA, itsClAxis}});
+      registry.add("trackQA/after/DCAxy_pt", "", {HistType::kTH2D, {ptAxisQA, dcaXYAxis}});
+      registry.add("trackQA/after/DCAz_pt", "", {HistType::kTH2D, {ptAxisQA, dcaZAxis}});
+      registry.add("trackQA/after/tpcSignal_pt", "", {HistType::kTH2D, {ptAxisQA, dEdxAxis}});
+      registry.add("trackQA/after/phi_pt", "", {HistType::kTH2D, {ptAxisQA, phiAxis}});
+      registry.add("trackQA/after/phi_eta", "", {HistType::kTH2D, {etaAxis, phiAxis}});
+      registry.add("trackQA/after/tpcCrossedRowsOverFindableCls_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxisCl}});
+
+      // track QA after selections
+      registry.add("eventQA/before/globalTracks_centT0C", "", {HistType::kTH2D, {centAxis, nchAxis}});
+      registry.add("eventQA/before/PVTracks_centT0C", "", {HistType::kTH2D, {centAxis, multpvAxis}});
+      registry.add("eventQA/before/globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
+      registry.add("eventQA/before/globalTracks_multT0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
+      registry.add("eventQA/before/globalTracks_multV0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
+      registry.add("eventQA/before/multV0A_multT0A", "", {HistType::kTH2D, {t0aAxis, t0aAxis}});
+      registry.add("eventQA/before/multT0C_centT0C", "", {HistType::kTH2D, {centAxis, t0cAxis}});
+
+      registry.add("eventQA/after/globalTracks_centT0C", "", {HistType::kTH2D, {centAxis, nchAxis}});
+      registry.add("eventQA/after/PVTracks_centT0C", "", {HistType::kTH2D, {centAxis, multpvAxis}});
+      registry.add("eventQA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
+      registry.add("eventQA/after/globalTracks_multT0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
+      registry.add("eventQA/after/globalTracks_multV0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
+      registry.add("eventQA/after/multV0A_multT0A", "", {HistType::kTH2D, {t0aAxis, t0aAxis}});
+      registry.add("eventQA/after/multT0C_centT0C", "", {HistType::kTH2D, {centAxis, t0cAxis}});
     }
 
     if (regions.GetSize() < 0)
@@ -358,47 +402,37 @@ struct flowAnalysisGF {
   template <typename TCollision>
   bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
   {
-    if (collision.alias_bit(kTVXinTRD)) {
-      // TRD triggered
-      // "CMTVX-B-NOPF-TRD,minbias_TVX"
-      return 0;
-    }
-    registry.fill(HIST("hEventCount"), 2.5);
-
-    if (cfgROFCuts) {
-      if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        // reject collisions close to Time Frame borders
-        // https://its.cern.ch/jira/browse/O2-4623
+    if (cfgTVXinTRD) {
+      if (collision.alias_bit(kTVXinTRD)) {
+        // TRD triggered
+        // "CMTVX-B-NOPF-TRD,minbias_TVX"
         return 0;
       }
       registry.fill(HIST("hEventCount"), 3.5);
+    }
 
-      if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-        // reject events affected by the ITS ROF border
-        // https://its.cern.ch/jira/browse/O2-4309
-        return 0;
-      }
-      registry.fill(HIST("hEventCount"), 4.5);
-
+    if (cfgNoSameBunchPileupCut) {
       if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         // rejects collisions which are associated with the same "found-by-T0" bunch crossing
         // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
         return 0;
       }
-      registry.fill(HIST("hEventCount"), 5.5);
-
+      registry.fill(HIST("hEventCount"), 4.5);
+    }
+    if (cfgIsGoodZvtxFT0vsPV) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
         // use this cut at low multiplicities with caution
         return 0;
       }
-      registry.fill(HIST("hEventCount"), 6.5);
-
-      if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-        // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
+      registry.fill(HIST("hEventCount"), 5.5);
+    }
+    if (cfgNoCollInTimeRangeStandard) {
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        //  Rejection of the collisions which have other events nearby
         return 0;
       }
-      registry.fill(HIST("hEventCount"), 7.5);
+      registry.fill(HIST("hEventCount"), 6.5);
     }
 
     float vtxz = -999;
@@ -413,15 +447,18 @@ struct flowAnalysisGF {
 
     if (vtxz > vtxZup || vtxz < vtxZlow)
       return 0;
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk < fMultCutLow->Eval(centrality))
-      return 0;
-    if (multTrk > fMultCutHigh->Eval(centrality))
-      return 0;
-    registry.fill(HIST("hEventCount"), 8.5);
+
+    if (cfgMultCut) {
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+        return 0;
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+        return 0;
+      if (multTrk < fMultCutLow->Eval(centrality))
+        return 0;
+      if (multTrk > fMultCutHigh->Eval(centrality))
+        return 0;
+      registry.fill(HIST("hEventCount"), 7.5);
+    }
 
     return 1;
   }
@@ -485,24 +522,48 @@ struct flowAnalysisGF {
   }
 
   template <typename TCollision, typename TTracks>
-  void processCollision(datatype dt, TCollision collision, TTracks tracks, const float& centrality, const int& field)
+  void processCollision(datatype dt, TCollision const& collision, TTracks tracks, const float& centrality, const int& field)
   {
 
     if (tracks.size() < 1)
       return;
     if (centrality < centbinning.front() || centrality > centbinning.back())
       return;
-    registry.fill(HIST("hEventCount"), 9.5);
+    registry.fill(HIST("hEventCount"), 8.5);
     float vtxz = collision.posZ();
     fGFW->Clear();
     fFCpt->ClearVector();
     float l_Random = fRndm->Rndm();
 
+    std::vector<int> ITS_TPC_tracks(6, 0);
+
     for (auto& track : tracks) {
       ProcessTrack(track, centrality, vtxz, field);
+      FillITSTPCQA(track, ITS_TPC_tracks);
     }
+    registry.fill(HIST("eventQA/nITS_nTPC_Tracks"), ITS_TPC_tracks[1], ITS_TPC_tracks[2]);
 
     FillOutputContainers(dt, (cfgUseNch) ? tracks.size() : centrality, l_Random);
+  }
+
+  template <typename TrackObject>
+  inline void FillITSTPCQA(TrackObject const& track, std::vector<int>& ITS_TPC_tracks)
+  {
+    if constexpr (!framework::has_type_v<aod::mcparticle::Vy, typename TrackObject::all_columns>) {
+      // if track its and tpc required then these three are the same
+      if (track.hasITS() || track.hasTPC())
+        ITS_TPC_tracks[0] += 1;
+      if (track.hasITS())
+        ITS_TPC_tracks[1] += 1;
+      if (track.hasTPC())
+        ITS_TPC_tracks[2] += 1;
+      if (track.hasITS() && track.hasTPC())
+        ITS_TPC_tracks[3] += 1;
+      if (track.hasITS() && !track.hasTPC())
+        ITS_TPC_tracks[4] += 1;
+      if (track.hasTPC() && !track.hasITS())
+        ITS_TPC_tracks[5] += 1;
+    }
   }
 
   template <typename TrackObject>
@@ -511,6 +572,10 @@ struct flowAnalysisGF {
     float weff = 1, wacc = 1;
 
     auto handleReco = [&](auto const& particle) -> bool {
+      if (cfgFillQA) {
+        FillTrackQA(track, vtxz, true);
+      }
+
       if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
         return false;
 
@@ -521,7 +586,7 @@ struct flowAnalysisGF {
         return false;
 
       if (cfgFillQA) {
-        FillTrackQA(track, vtxz);
+        FillTrackQA(track, vtxz, false);
       }
 
       FillGFW(particle, weff, wacc);
@@ -547,7 +612,7 @@ struct flowAnalysisGF {
         return;
 
       if (cfgFillQA)
-        FillTrackQA(track, vtxz);
+        FillTrackQA(track, vtxz, true);
 
       FillGFW(track, 1., 1.);
     } else {
@@ -577,7 +642,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TrackObject>
-  inline void FillTrackQA(TrackObject track, const float vtxz)
+  inline void FillTrackQA(TrackObject track, const float vtxz, bool before)
   {
     if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       registry.fill(HIST("phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
@@ -585,19 +650,54 @@ struct flowAnalysisGF {
     } else {
       registry.fill(HIST("phi_eta_vtxZ"), track.phi(), track.eta(), vtxz);
       registry.fill(HIST("pt_dcaXY_dcaZ"), track.pt(), track.dcaXY(), track.dcaZ());
+      if (before) {
+        registry.fill(HIST("trackQA/before/CrossedTPCRows_pt"), track.pt(), track.tpcNClsCrossedRows());
+        registry.fill(HIST("trackQA/before/NumberSharedClustersTPC_pt"), track.pt(), track.tpcNClsShared());
+        registry.fill(HIST("trackQA/before/ITSClusters_pt"), track.pt(), track.itsNCls());
+        registry.fill(HIST("trackQA/before/DCAxy_pt"), track.pt(), track.dcaXY());
+        registry.fill(HIST("trackQA/before/DCAz_pt"), track.pt(), track.dcaZ());
+        registry.fill(HIST("trackQA/before/tpcSignal_pt"), track.pt(), track.tpcSignal());
+        registry.fill(HIST("trackQA/before/phi_pt"), track.pt(), track.phi());
+        registry.fill(HIST("trackQA/before/phi_eta"), track.eta(), track.phi());
+        registry.fill(HIST("trackQA/before/tpcCrossedRowsOverFindableCls_pt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
+      } else {
+        registry.fill(HIST("trackQA/after/CrossedTPCRows_pt"), track.pt(), track.tpcNClsCrossedRows());
+        registry.fill(HIST("trackQA/after/NumberSharedClustersTPC_pt"), track.pt(), track.tpcNClsShared());
+        registry.fill(HIST("trackQA/after/ITSClusters_pt"), track.pt(), track.itsNCls());
+        registry.fill(HIST("trackQA/after/DCAxy_pt"), track.pt(), track.dcaXY());
+        registry.fill(HIST("trackQA/after/DCAz_pt"), track.pt(), track.dcaZ());
+        registry.fill(HIST("trackQA/after/tpcSignal_pt"), track.pt(), track.tpcSignal());
+        registry.fill(HIST("trackQA/after/phi_pt"), track.pt(), track.phi());
+        registry.fill(HIST("trackQA/after/phi_eta"), track.eta(), track.phi());
+        registry.fill(HIST("trackQA/after/tpcCrossedRowsOverFindableCls_pt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
+      }
     }
   }
 
   template <typename CollisionObject, typename TracksObject>
-  inline void FillEventQA(CollisionObject collision, TracksObject tracks)
+  inline void FillEventQA(CollisionObject collision, TracksObject tracks, bool before)
   {
-    registry.fill(HIST("globalTracks_centT0C"), collision.centFT0C(), tracks.size());
-    registry.fill(HIST("PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
-    registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    registry.fill(HIST("globalTracks_multT0A"), collision.multFT0A(), tracks.size());
-    registry.fill(HIST("globalTracks_multV0A"), collision.multFV0A(), tracks.size());
-    registry.fill(HIST("multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
-    registry.fill(HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
+    if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
+      if (before) {
+        // Dit maar gewoon voor en na event selection en dan verschillende wagons met configuration
+        registry.fill(HIST("eventQA/before/globalTracks_centT0C"), collision.centFT0C(), tracks.size());
+        registry.fill(HIST("eventQA/before/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
+        registry.fill(HIST("eventQA/before/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+        registry.fill(HIST("eventQA/before/globalTracks_multT0A"), collision.multFT0A(), tracks.size());
+        registry.fill(HIST("eventQA/before/globalTracks_multV0A"), collision.multFV0A(), tracks.size());
+        registry.fill(HIST("eventQA/before/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
+        registry.fill(HIST("eventQA/before/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
+      } else {
+        registry.fill(HIST("eventQA/after/globalTracks_centT0C"), collision.centFT0C(), tracks.size());
+        registry.fill(HIST("eventQA/after/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
+        registry.fill(HIST("eventQA/after/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+        registry.fill(HIST("eventQA/after/globalTracks_multT0A"), collision.multFT0A(), tracks.size());
+        registry.fill(HIST("eventQA/after/globalTracks_multV0A"), collision.multFV0A(), tracks.size());
+        registry.fill(HIST("eventQA/after/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
+        registry.fill(HIST("eventQA/after/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
+      }
+    }
+
     return;
   }
 
@@ -617,8 +717,21 @@ struct flowAnalysisGF {
         return;
       registry.fill(HIST("hEventCount"), 1.5);
       centrality = collision.centFT0C();
+
       if (cfgFillQA)
-        FillEventQA(collision, tracks);
+        FillEventQA(collision, tracks, true);
+    }
+
+    if (cfgDoOccupancySel) {
+      // occupancy selections
+      int occupancy = collision.trackOccupancyInTimeRange();
+      if (occupancy >= 0 && occupancy < cfgMaxOccupancy)
+        return;
+      registry.fill(HIST("hEventCount"), 2.5);
+    }
+
+    if (cfgFillQA) {
+      FillEventQA(collision, tracks, false);
     }
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
