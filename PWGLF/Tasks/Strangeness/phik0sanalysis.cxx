@@ -878,7 +878,7 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processMEPhiK0S, "Process Mixed Event for Phi-K0S Analysis", false);
 
-  void processMEPhiPion(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const& fullTracks)
+  void processMEPhiPion(soa::Filtered<SelCollisions> const& collisions, FullTracks const& fullTracks)
   {
     // Mixing the events with similar vertex z and multiplicity
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
