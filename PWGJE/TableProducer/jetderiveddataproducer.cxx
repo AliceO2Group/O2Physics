@@ -115,6 +115,14 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsRun2, "produces derived collision tables for Run 2 data", false);
 
+  void processCollisionsALICE3(aod::Collision const& collision)
+  {
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, 0);
+    jCollisionsParentIndexTable(collision.globalIndex());
+    jCollisionsBunchCrossingIndexTable(-1);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsALICE3, "produces derived collision tables for ALICE 3 simulations", false);
+
   void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision)
   {
 
