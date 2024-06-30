@@ -155,7 +155,7 @@ struct phik0shortanalysis {
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
-  using MCCollisions = soa::Join<EventCandidatess, aod::McCollisionLabels>;
+  using MCCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
 
   // Defining the type of the tracks
   using FullTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
