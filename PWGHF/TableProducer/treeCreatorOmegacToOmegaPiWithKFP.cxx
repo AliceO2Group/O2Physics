@@ -663,7 +663,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   }
 
   void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi,
+                       soa::Join<aod::HfCandOmegac, aod::HfSelToOmegaPi,
                                  aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
@@ -681,7 +681,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processDataFull, "Process KFdata with full information", false);
 
   void processKFDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi, aod::HfOmegacKf> const& candidates)
+                         soa::Join<aod::HfCandOmegac, aod::HfSelToOmegaPi, aod::HfOmegacKf> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -695,10 +695,10 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
       fillKFCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processKFDataFull, "Process KF data with full information", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processKFDataFull, "Process KF data with full information", false);
 
   void processKFDataWithMlFull(MyEventTable const& collisions, MyTrackTable const&,
-                               soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi, aod::HfOmegacKf,
+                               soa::Join<aod::HfCandOmegac, aod::HfSelToOmegaPi, aod::HfOmegacKf,
                                          aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
@@ -713,11 +713,11 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
       fillKFCandidateWithMl(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processKFDataWithMlFull, "Process KFdata with full information and ML infomation", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processKFDataWithMlFull, "Process KFdata with full information and ML infomation", true);
 
   void processMcFull(MyEventTable const& collisions,
                      MyTrackTable const&,
-                     soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi,
+                     soa::Join<aod::HfCandOmegac, aod::HfSelToOmegaPi,
                                aod::HfMlSelOmegacToOmegaPi, aod::HfOmegacMCRec> const& candidates)
   {
     // Filling event properties
@@ -737,7 +737,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processMcFull, "Process MC with full information", false);
 
   void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi,
+                       soa::Join<aod::HfCandOmegac, aod::HfSelToOmegaPi,
                                  aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
@@ -755,7 +755,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processDataLite, "Process data and produce lite table version", false);
 
   void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
-                     soa::Join<aod::HfCandOmegac, aod::HfSelOmegacToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfOmegacMCRec> const& candidates)
+                     soa::Join<aod::HfCandOmegac, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfOmegacMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
