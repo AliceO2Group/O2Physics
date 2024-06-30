@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \author Lars Jörgensen <lars.christian.joergensen@cern.ch>
 
 #include <vector>
 
@@ -30,9 +32,9 @@
 #include "fastjet/Selector.hh"
 #include "fastjet/tools/Subtractor.hh"
 #include "fastjet/tools/JetMedianBackgroundEstimator.hh"
+#include "TVector2.h"
 // #include "PWGJE/Core/JetFinder.h"
 // #include "PWGJE/Core/JetFindingUtilities.h"
-#include "TVector2.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -153,8 +155,8 @@ struct AngularCorrelationsInJets {
     registryData.add("hPtDiff", "pT difference PseudoJet/original track;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1D, {{100, -5, 5}});
 
     // nSigma
-    registryData.add("hTPCsignal", "TPC signal", HistType::kTH2F, {nsigmapTAxis, {1000, -100, 100}});
-    registryData.add("hTOFsignal", "TOF signal", HistType::kTH2F, {nsigmapTAxis, {200, -1, 1}});
+    registryData.add("hTPCsignal", "TPC signal", HistType::kTH2F, {{1000, 0, 100, "#it{p} [GeV/#it{c}]"}, {5000, 0, 5000, "d#it{E}/d#it{X} (a.u.)"}});
+    registryData.add("hTOFsignal", "TOF signal", HistType::kTH2F, {{1000, 0, 100, "#it{p} [GeV/#it{c}]"}, {550, 0, 1.1, "#beta (TOF)"}});
     registryData.add("hTPCnsigmaProton", "TPC n#sigma for (anti)proton", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
     registryData.add("hTOFnsigmaProton", "TOF n#sigma for (anti)proton", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
     registryData.add("hTPCnsigmaDeuteron", "TPC n#sigma for (anti)deuteron", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
@@ -177,6 +179,9 @@ struct AngularCorrelationsInJets {
     registryData.add("hJetConeRadius", "Jet Radius;#it{R}", HistType::kTH1F, {{100, 0, 1}});
 
     //TODO: add QA histograms
+    registryQA.add("hTOFmass", "TOF mass", HistType::kTH2F, {ptAxis, {1000, 0, 5, "#it{m} [GeV/#it{c}^{2}]"}});
+    registryQA.get<TH2>(HIST("hTOFmass"))->Sumw2();
+
   }
 
   std::vector<typename FullTracksRun2::iterator> fTrackBufferProton;
@@ -213,9 +218,12 @@ struct AngularCorrelationsInJets {
     return true;
   }
 
-  void fillConstituents(std::vector<fastjet::PseudoJet> jetInput, std::vector<fastjet::PseudoJet> constituents) {
+  std::vector<fastjet::PseudoJet> findJets(std::vector<fastjet::PseudoJet> jetInput)
+  {
     std::vector<fastjet::PseudoJet> jets;
+    std::vector<fastjet::PseudoJet> constituents;
     jets.clear();
+    constituents.clear();
     fastjet::PseudoJet hardestJet(0., 0., 0., 0.);
     fastjet::PseudoJet subtractedJet(0., 0., 0., 0.);
 
@@ -229,27 +237,26 @@ struct AngularCorrelationsInJets {
     fastjet::ClusterSequenceArea clusterSeq(jetInput, jetDef, areaDef); // or CSActiveArea?
     jets = sorted_by_pt(clusterSeq.inclusive_jets());
     if (jets.size() == 0)
-      return;
+      return constituents;
+
     registryData.fill(HIST("hEventProtocol"), 3);
 
     hardestJet = jets[0];
 
     if (hardestJet.pt() < fMinJetPt)
-      return;
+      return constituents;
     registryData.fill(HIST("hEventProtocol"), 4);
     if (hardestJet.constituents().size() < 2)
-      return;
+      return constituents;
     registryData.fill(HIST("hEventProtocol"), 5);
     registryData.fill(HIST("hNumberOfJets"), 0);
     registryData.fill(HIST("hPtTotalJet"), hardestJet.pt());
     registryData.fill(HIST("hJetRapidity"), hardestJet.rap());
 
-    constituents = hardestJet.constituents();
-
-    for (int i = 0; i < static_cast<int>(constituents.size()); i++) {
-      registryData.fill(HIST("hPtJetParticle"), constituents[i].pt());
-      double DeltaPhi = TVector2::Phi_0_2pi(constituents[i].phi() - hardestJet.phi());
-      double DeltaEta = constituents[i].eta() - hardestJet.eta();
+    for (const auto& constituent : hardestJet.constituents()) {
+      registryData.fill(HIST("hPtJetParticle"), constituent.pt());
+      double DeltaPhi = TVector2::Phi_0_2pi(constituent.phi() - hardestJet.phi());
+      double DeltaEta = constituent.eta() - hardestJet.eta();
       double Delta = TMath::Sqrt(DeltaPhi * DeltaPhi + DeltaEta * DeltaEta); // need 1/pT^2?
       registryData.fill(HIST("hJetConeRadius"), Delta);
     }
@@ -262,10 +269,11 @@ struct AngularCorrelationsInJets {
 
     subtractedJet = subtractor(hardestJet);
     if (subtractedJet.has_constituents()) {
-      for (int i = 0; i < static_cast<int>(subtractedJet.constituents().size()); i++) {
-        registryData.fill(HIST("hPtSubtractedJet"), subtractedJet.constituents()[i].pt());
+      for (const auto& subConstituent : subtractedJet.constituents()) {
+        registryData.fill(HIST("hPtSubtractedJet"), subConstituent.pt());
       }
     }
+    return hardestJet.constituents();
   }
 
   template <typename T>
@@ -275,6 +283,7 @@ struct AngularCorrelationsInJets {
     if (track.sign() < 0)
       return isProton;
 
+    //TPC
     if (track.pt() < fProtonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) < fProtonTPCnsigLow)
       isProton = true;
     if (track.pt() > fProtonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) < fProtonTPCnsigHigh)
@@ -287,6 +296,7 @@ struct AngularCorrelationsInJets {
     if (TMath::Abs(track.dcaZ()) > fProtonDCAz)
       return false;
 
+    //TOF
     if (track.pt() < fProtonTPCTOFpT && TMath::Abs(track.tofNSigmaPr()) < fProtonTOFnsigLow)
       isProton = true;
     if (track.pt() > fProtonTPCTOFpT && TMath::Abs(track.tofNSigmaPr()) < fProtonTOFnsigHigh)
@@ -302,6 +312,7 @@ struct AngularCorrelationsInJets {
     if (track.sign() < 0)
       return isAntiproton;
 
+    //TPC
     if (track.pt() < fAntiprotonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) < fAntiprotonTPCnsigLow)
       isAntiproton = true;
     if (track.pt() > fAntiprotonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) < fAntiprotonTPCnsigHigh)
@@ -314,6 +325,7 @@ struct AngularCorrelationsInJets {
     if (TMath::Abs(track.dcaZ()) > fAntiprotonDCAz)
       return false;
 
+    //TOF
     if (track.pt() < fAntiprotonTPCTOFpT && TMath::Abs(track.tofNSigmaPr()) < fAntiprotonTOFnsigLow)
       isAntiproton = true;
     if (track.pt() > fAntiprotonTPCTOFpT && TMath::Abs(track.tofNSigmaPr()) < fAntiprotonTOFnsigHigh)
@@ -329,6 +341,7 @@ struct AngularCorrelationsInJets {
     if (track.sign() < 0)
       return isDeuteron;
 
+    //TPC
     if (track.pt() < fDeuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fDeuteronTPCnsigLow)
       isDeuteron = true;
     if (track.pt() > fDeuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fDeuteronTPCnsigHigh)
@@ -341,6 +354,7 @@ struct AngularCorrelationsInJets {
     if (TMath::Abs(track.dcaZ()) > fDeuteronDCAz)
       return false;
 
+    //TOF
     if (track.pt() < fDeuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fDeuteronTOFnsigLow)
       isDeuteron = true;
     if (track.pt() > fDeuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fDeuteronTOFnsigHigh)
@@ -356,6 +370,7 @@ struct AngularCorrelationsInJets {
     if (track.sign() < 0)
       return isAntideuteron;
 
+    //TPC
     if (track.pt() < fAntideuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fAntideuteronTPCnsigLow)
       isAntideuteron = true;
     if (track.pt() > fAntideuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fAntideuteronTPCnsigHigh)
@@ -368,6 +383,7 @@ struct AngularCorrelationsInJets {
     if (TMath::Abs(track.dcaZ()) > fAntideuteronDCAz)
       return false;
 
+    //TOF
     if (track.pt() < fAntideuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fAntideuteronTOFnsigLow)
       isAntideuteron = true;
     if (track.pt() > fAntideuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fAntideuteronTOFnsigHigh)
@@ -376,134 +392,117 @@ struct AngularCorrelationsInJets {
     return isAntideuteron;
   }
 
-  template <typename T>
-  void setTrackBuffer(const T& track, int particleType) //TODO: buffer as argument, lose switch statement
+  void setTrackBuffer(const auto& tempBuffer, auto& buffer)
   {
-    switch (particleType) {
-      case 1:
-        if (static_cast<int>(fTrackBufferProton.size()) == fTrackBufferSize) {
-          fTrackBufferProton.insert(fTrackBufferProton.begin(), track);
-          fTrackBufferProton.resize(fTrackBufferSize);
-        } else if (static_cast<int>(fTrackBufferProton.size()) < fTrackBufferSize) {
-          fTrackBufferProton.emplace_back(track);
-        }
-        break;
-      case 2:
-        if (static_cast<int>(fTrackBufferAntiproton.size()) == fTrackBufferSize) {
-          fTrackBufferAntiproton.insert(fTrackBufferAntiproton.begin(), track);
-          fTrackBufferAntiproton.resize(fTrackBufferSize);
-        } else if (static_cast<int>(fTrackBufferAntiproton.size()) < fTrackBufferSize) {
-          fTrackBufferAntiproton.emplace_back(track);
-        }
-        break;
-      case 3:
-        if (static_cast<int>(fTrackBufferDeuteron.size()) == fTrackBufferSize) {
-          fTrackBufferDeuteron.insert(fTrackBufferDeuteron.begin(), track);
-          fTrackBufferDeuteron.resize(fTrackBufferSize);
-        } else if (static_cast<int>(fTrackBufferDeuteron.size()) < fTrackBufferSize) {
-          fTrackBufferDeuteron.emplace_back(track);
-        }
-        break;
-      case 4:
-        if (static_cast<int>(fTrackBufferAntideuteron.size()) == fTrackBufferSize) {
-          fTrackBufferAntideuteron.insert(fTrackBufferAntideuteron.begin(), track);
-          fTrackBufferAntideuteron.resize(fTrackBufferSize);
-        } else if (static_cast<int>(fTrackBufferAntideuteron.size()) < fTrackBufferSize) {
-          fTrackBufferAntideuteron.emplace_back(track);
-        }
-        break;
-      default:
-        LOG(warn) << "SetTrackBuffer: invalid particle ID!";
+    for (const auto& track : tempBuffer) {
+      if (static_cast<int>(buffer.size()) == fTrackBufferSize) {
+        buffer.insert(buffer.begin(), track);
+        buffer.resize(fTrackBufferSize);
+      } else if (static_cast<int>(buffer.size()) < fTrackBufferSize) {
+        buffer.emplace_back(track);
+      }
     }
   }
 
-  template <typename T>
-  void fillMixedEventDeltas(const T& track, int particleType) //TODO: buffer as argument, lose switch statement
+  void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType)
   {
-    switch (particleType) {
-      case 1:
-        if (fTrackBufferProton.size() == 0)
-          return;
-        for (int i = 0; i < static_cast<int>(fTrackBufferProton.size()); i++) { // even if the track buffer isn't even full yet?
-          double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferProton[i].phi());
-          double DeltaEta = TMath::Abs(track.eta() - fTrackBufferProton[i].eta());
-          registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaME"), particleType, DeltaPhi, DeltaEta);
-        }
-        break;
-      case 2:
-        if (fTrackBufferAntiproton.size() == 0)
-          return;
-        for (int i = 0; i < static_cast<int>(fTrackBufferAntiproton.size()); i++) {
-          double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferAntiproton[i].phi());
-          double DeltaEta = TMath::Abs(track.eta() - fTrackBufferAntiproton[i].eta());
-          registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaME"), particleType, DeltaPhi, DeltaEta);
-        }
-        break;
-      case 3:
-        if (fTrackBufferDeuteron.size() == 0)
-          return;
-        for (int i = 0; i < static_cast<int>(fTrackBufferDeuteron.size()); i++) {
-          double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferDeuteron[i].phi());
-          double DeltaEta = TMath::Abs(track.eta() - fTrackBufferDeuteron[i].eta());
-          registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaME"), particleType, DeltaPhi, DeltaEta);
-        }
-        break;
-      case 4:
-        if (fTrackBufferAntideuteron.size() == 0)
-          return;
-        for (int i = 0; i < static_cast<int>(fTrackBufferAntideuteron.size()); i++) {
-          double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferAntideuteron[i].phi());
-          double DeltaEta = TMath::Abs(track.eta() - fTrackBufferAntideuteron[i].eta());
-          registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaME"), particleType, DeltaPhi, DeltaEta);
-        }
-        break;
-      default:
-        LOG(warn) << "FillMixedEventDeltas: invalid particle ID!";
+    if (buffer.size() == 0)
+      return;
+    for (int i = 0; i < static_cast<int>(buffer.size()); i++) { // even if the track buffer isn't even full yet?
+      if (buffer[i].phi() > 2* M_PI || buffer[i].phi() < -2*M_PI) {// problematic?
+        registryData.fill(HIST("hTrackProtocol"), 11);
+        continue;
+      }
+      double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - buffer[i].phi());
+      // LOG(info) << "Lars' Fantastic Debugging Tool | Buffer Track Size/Phi: " << buffer.size() << " | " << i << " | " << buffer[i].phi();
+      double DeltaEta = TMath::Abs(track.eta() - buffer[i].eta());
+      registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
+      registryData.fill(HIST("hDeltaPhiEtaME"), particleType, DeltaPhi, DeltaEta);
     }
+  }
+
+  void doCorrelations(const auto& particleVector, const auto& buffer, auto& tempBuffer, int particleType)
+  {
+    for (int i = 0; i < static_cast<int>(particleVector.size()); i++) {
+        for (int j = i + 1; j < static_cast<int>(particleVector.size()); j++) {
+          double DeltaPhi = TVector2::Phi_0_2pi(particleVector[i].phi() - particleVector[j].phi());
+          double DeltaEta = TMath::Abs(particleVector[i].eta() - particleVector[j].eta());
+          if (DeltaPhi > (1.5 * TMath::Pi())) {
+            DeltaPhi = DeltaPhi - 2 * TMath::Pi();
+          }
+          registryData.fill(HIST("hDeltaPhiSE"), 1, DeltaPhi);
+          registryData.fill(HIST("hDeltaPhiEtaSE"), 1, DeltaPhi, DeltaEta);
+        }
+        fillMixedEventDeltas(particleVector[i], buffer, particleType);
+        tempBuffer.emplace_back(particleVector[i]);
+      }
   }
 
   template <typename T, typename U>
-  void fillHistogramsRun2(T const& collision, U const& allTracks) {
+  void fillHistogramsRun2(T const& collision, U const& allTracks)
+  {
+    std::vector<typename FullTracksRun2::iterator> fTempBufferProton;
+    std::vector<typename FullTracksRun2::iterator> fTempBufferAntiproton;
+    std::vector<typename FullTracksRun2::iterator> fTempBufferDeuteron;
+    std::vector<typename FullTracksRun2::iterator> fTempBufferAntideuteron;
+    fTempBufferProton.clear();
+    fTempBufferAntiproton.clear();
+    fTempBufferDeuteron.clear();
+    fTempBufferAntideuteron.clear();
     std::vector<fastjet::PseudoJet> jetInput;
-    std::vector<fastjet::PseudoJet> constituents;
+    std::map<int, typename U::iterator> particles;
     jetInput.clear();
-    constituents.clear();
+    particles.clear();
+    int index = 0;
 
     auto tracks = allTracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
 
     for (const auto& track : tracks) {
       if (!selectTrack(track))
         continue;
+        
+      double mass;
+      if (track.hasTOF()) {
+        mass = track.mass(); //check reliability, maybe use only pion mass
+        registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
+        registryData.fill(HIST("hTrackProtocol"), 4);
+      } else {
+        mass = 0.139; //pion mass as default, ~80% are pions
+        registryData.fill(HIST("hTrackProtocol"), 5);
+      }
 
       registryData.fill(HIST("hPtFullEvent"), track.pt());
-      fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(track.mass()));
-      inputPseudoJet.set_user_index(track.globalIndex()+1);
+      fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(mass));
+      inputPseudoJet.set_user_index(index);
+      particles[index] = track;
       jetInput.emplace_back(inputPseudoJet);
+
+      index++;
     }
 
     if (jetInput.size() < 2)
       return;
     registryData.fill(HIST("hEventProtocol"), 2);
 
-    fillConstituents(jetInput, constituents);
+    std::vector<fastjet::PseudoJet> constituents = findJets(jetInput);
+    if (constituents.empty())
+      return;
 
-    std::vector<typename U::iterator> jetProtons;
+    std::vector<typename U::iterator> jetProtons; //replace with IDs?
     std::vector<typename U::iterator> jetAntiprotons;
     std::vector<typename U::iterator> jetDeuterons;
     std::vector<typename U::iterator> jetAntideuterons;
 
     for (int i = 0; i < static_cast<int>(constituents.size()); i++) {
+      registryData.fill(HIST("hTrackProtocol"), 10);
       fastjet::PseudoJet pseudoParticle = constituents[i];
-      uint64_t id = pseudoParticle.user_index();
-      auto jetParticle = tracks.iteratorAt(id);
+      int id = pseudoParticle.user_index();
+      const auto& jetParticle = particles[id];
+
       registryData.fill(HIST("hDCAxyFullJet"), jetParticle.pt() * jetParticle.sign(), jetParticle.dcaXY());
       registryData.fill(HIST("hDCAzFullJet"), jetParticle.pt() * jetParticle.sign(), jetParticle.dcaZ());
       registryData.fill(HIST("hTPCsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcSignal());
-      registryData.fill(HIST("hTOFsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofSignal());
+      registryData.fill(HIST("hTOFsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.beta());
 
       double ptDiff = pseudoParticle.pt() - jetParticle.pt();
       registryData.fill(HIST("hPtDiff"), ptDiff);
@@ -541,72 +540,29 @@ struct AngularCorrelationsInJets {
 
     if ((jetProtons.size() < 2) && (jetAntiprotons.size() < 2) && (jetDeuterons.size() < 2) && (jetAntideuterons.size() < 2))
       return;
-    registryData.fill(HIST("hEventProtocol"), 5);
+    registryData.fill(HIST("hEventProtocol"), 6);
 
-    if (jetProtons.size() > 1) { //TODO: write function that takes jetParticle vector, lose 3/4 if statements
-      for (int i = 0; i < static_cast<int>(jetProtons.size()); i++) {
-        for (int j = i + 1; j < static_cast<int>(jetProtons.size()); j++) {
-          double DeltaPhi = TVector2::Phi_0_2pi(jetProtons[i].phi() - jetProtons[j].phi());
-          double DeltaEta = TMath::Abs(jetProtons[i].eta() - jetProtons[j].eta());
-          if (DeltaPhi > (1.5 * TMath::Pi())) {
-            DeltaPhi = DeltaPhi - 2 * TMath::Pi();
-          }
-          registryData.fill(HIST("hDeltaPhiSE"), 1, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaSE"), 1, DeltaPhi, DeltaEta);
-        }
-        fillMixedEventDeltas(jetProtons[i], 1);
-        setTrackBuffer(jetProtons[i], 1);
-      }
+    if (jetProtons.size() > 1) {// unravel functions if code doesn't work?
+      doCorrelations(jetProtons, fTrackBufferProton, fTempBufferProton, 1);
+      setTrackBuffer(fTempBufferProton, fTrackBufferProton);
     }
     if (jetAntiprotons.size() > 1) {
-      for (int i = 0; i < static_cast<int>(jetAntiprotons.size()); i++) {
-        for (int j = i + 1; j < static_cast<int>(jetAntiprotons.size()); j++) {
-          double DeltaPhi = TVector2::Phi_0_2pi(jetAntiprotons[i].phi() - jetAntiprotons[j].phi());
-          double DeltaEta = TMath::Abs(jetAntiprotons[i].eta() - jetAntiprotons[j].eta());
-          if (DeltaPhi > (1.5 * TMath::Pi())) {
-            DeltaPhi = DeltaPhi - 2 * TMath::Pi();
-          }
-          registryData.fill(HIST("hDeltaPhiSE"), 2, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaSE"), 2, DeltaPhi, DeltaEta);
-        }
-        fillMixedEventDeltas(jetAntiprotons[i], 2);
-        setTrackBuffer(jetAntiprotons[i], 2);
-      }
+      doCorrelations(jetAntiprotons, fTrackBufferAntiproton, fTempBufferAntiproton, 2);
+      setTrackBuffer(fTempBufferAntiproton, fTrackBufferAntiproton);
     }
     if (jetDeuterons.size() > 1) {
-      for (int i = 0; i < static_cast<int>(jetDeuterons.size()); i++) {
-        for (int j = i + 1; j < static_cast<int>(jetDeuterons.size()); j++) {
-          double DeltaPhi = TVector2::Phi_0_2pi(jetDeuterons[i].phi() - jetDeuterons[j].phi());
-          double DeltaEta = TMath::Abs(jetDeuterons[i].eta() - jetDeuterons[j].eta());
-          if (DeltaPhi > (1.5 * TMath::Pi())) {
-            DeltaPhi = DeltaPhi - 2 * TMath::Pi();
-          }
-          registryData.fill(HIST("hDeltaPhiSE"), 3, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaSE"), 3, DeltaPhi, DeltaEta);
-        }
-        fillMixedEventDeltas(jetDeuterons[i], 3);
-        setTrackBuffer(jetDeuterons[i], 3);
-      }
+      doCorrelations(jetDeuterons, fTrackBufferDeuteron, fTempBufferDeuteron, 3);
+      setTrackBuffer(fTempBufferDeuteron, fTrackBufferDeuteron);
     }
     if (jetAntideuterons.size() > 1) {
-      for (int i = 0; i < static_cast<int>(jetAntideuterons.size()); i++) {
-        for (int j = i + 1; j < static_cast<int>(jetAntideuterons.size()); j++) {
-          double DeltaPhi = TVector2::Phi_0_2pi(jetAntideuterons[i].phi() - jetAntideuterons[j].phi());
-          double DeltaEta = TMath::Abs(jetAntideuterons[i].eta() - jetAntideuterons[j].eta());
-          if (DeltaPhi > (1.5 * TMath::Pi())) {
-            DeltaPhi = DeltaPhi - 2 * TMath::Pi();
-          }
-          registryData.fill(HIST("hDeltaPhiSE"), 4, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaSE"), 4, DeltaPhi, DeltaEta);
-        }
-        fillMixedEventDeltas(jetAntideuterons[i], 4);
-        setTrackBuffer(jetAntideuterons[i], 4);
-      }
+      doCorrelations(jetAntideuterons, fTrackBufferAntideuteron, fTempBufferAntideuteron, 4);
+      setTrackBuffer(fTempBufferAntideuteron, fTrackBufferAntideuteron);
     }
   }
 
   template <typename T, typename U>
-  void fillHistogramsRun3(T const& collision, U const& tracks) {
+  void fillHistogramsRun3(T const& collision, U const& tracks)
+  {
     std::vector<fastjet::PseudoJet> jetInput;
     std::vector<fastjet::PseudoJet> constituents;
     jetInput.clear();
@@ -622,8 +578,8 @@ struct AngularCorrelationsInJets {
       jetInput.emplace_back(inputPseudoJet);
     }
 
-    fillConstituents(jetInput, constituents);
-    //TODO: add rest of the logic when it is are optimised
+    findJets(jetInput);
+    //TODO: add rest of the logic when it is optimised
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
