@@ -756,7 +756,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfpMc {
       rowMCMatchGen(flag, debugGenCharmBar, debugGenOmega, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
     }
   }                                                                                          // close process
-  PROCESS_SWITCH(HfCandidateCreatorOmegacToOmegaPiWithKfpMc, processMc, "Process MC", true); // false
+  PROCESS_SWITCH(HfCandidateCreatorOmegacToOmegaPiWithKfpMc, processMc, "Process MC", false); // false
 };                                                                                           // close struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
