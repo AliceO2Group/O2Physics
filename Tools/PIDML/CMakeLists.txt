@@ -33,14 +33,14 @@ o2physics_add_dpl_workflow(simple-apply-pid-onnx-interface
                            PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(ml-model-gen-hists
-                           SOURCES mlModelGenHists.cxx
+o2physics_add_dpl_workflow(pid-ml-eff-and-pur-producer
+                           SOURCES pidMLEffAndPurProducer.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-eff-and-pur-producer
-                           SOURCES pidEffAndPurProducer.cxx
+o2physics_add_dpl_workflow(pid-ml-batch-eff-and-pur-producer
+                           SOURCES pidMLBatchEffAndPurProducer.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)

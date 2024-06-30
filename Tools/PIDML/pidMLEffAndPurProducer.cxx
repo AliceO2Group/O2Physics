@@ -12,8 +12,8 @@
 /// \file mlModelGenHists
 /// \brief Generate momentum TH1Fs for mlAccepted mcParticles by ML model and for MC mcParticles.
 ///
-/// \author Michał Olędzki <mioledzk@cern.ch>
-/// \author Marek Mytkowski <mmytkows@cern.ch>
+/// \author Michał Olędzki <michal.oledzki.stud@pw.edu.pl>
+/// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
 #include <Framework/AnalysisDataModel.h>
 #include "Framework/runDataProcessing.h"
@@ -34,7 +34,7 @@ using namespace o2::framework::expressions;
 #define TOF_ACCEPTANCE_THRESHOLD (-999.0f)
 #define TRD_ACCEPTANCE_THRESHOLD (0.0f)
 
-struct MlModelGenHists {
+struct PidMlEffAndPurProducer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
@@ -206,5 +206,5 @@ struct MlModelGenHists {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
   return WorkflowSpec{
-    adaptAnalysisTask<MlModelGenHists>(cfgc)};
+    adaptAnalysisTask<PidMlEffAndPurProducer>(cfgc)};
 }

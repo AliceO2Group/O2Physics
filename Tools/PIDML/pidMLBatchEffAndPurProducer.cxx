@@ -34,11 +34,11 @@ namespace o2::aod
 namespace effandpurpidresult
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track);              //! Track index
-DECLARE_SOA_COLUMN(Pid, pid, int);                   //! Pid to be tested by the model
-DECLARE_SOA_COLUMN(MlCertainty, mlCertainty, float); //! Machine learning model cartainty value for track and pid
+DECLARE_SOA_COLUMN(Pid, pid, int);                   //! PDG particle ID to be tested by the model
+DECLARE_SOA_COLUMN(MlCertainty, mlCertainty, float); //! Machine learning model certainty value for track and pid
 DECLARE_SOA_COLUMN(TpcNSigma, tpcNSigma, float);     //! tpcNSigma value for track and pid
 DECLARE_SOA_COLUMN(TofNSigma, tofNSigma, float);     //! tofNSigma value for track and pid
-DECLARE_SOA_COLUMN(IsPidMC, isPidMc, bool);          //! Is track's mcParticle marked as pid
+DECLARE_SOA_COLUMN(IsPidMC, isPidMc, bool);          //! Is track's mcParticle recognized as "Pid"
 } // namespace effandpurpidresult
 
 DECLARE_SOA_TABLE(EffAndPurPidResult, "AOD", "PIDEFFANDPURRES", o2::soa::Index<>,
@@ -46,7 +46,7 @@ DECLARE_SOA_TABLE(EffAndPurPidResult, "AOD", "PIDEFFANDPURRES", o2::soa::Index<>
                   effandpurpidresult::TpcNSigma, effandpurpidresult::TofNSigma, effandpurpidresult::IsPidMC);
 } // namespace o2::aod
 
-struct PidEffAndPurProducerONNXInterface {
+struct PidMlBatchEffAndPurProducer {
   Produces<o2::aod::EffAndPurPidResult> effAndPurPIDResult;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -225,7 +225,7 @@ struct PidEffAndPurProducerONNXInterface {
     }
 
     for (auto& mcPart : mcParticles) {
-      // eta cut is included in requireGlobalTrackInFilter() so we cut it only here
+      // eta cut is done in requireGlobalTrackInFilter() so we cut it only here
       if (mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < etaCut) {
         fillMcParticlePositiveHist(mcPart);
       }
@@ -237,7 +237,7 @@ struct PidEffAndPurProducerONNXInterface {
         if (mcPart.isPhysicalPrimary()) {
           fillMcParticleTrackedHist(mcPart);
 
-          for(int i = 0; i < cfgPids.value.size(); ++i) {
+          for (int i = 0; i < cfgPids.value.size(); ++i) {
             float mlCertainty = models[i].applyModel(track);
             nSigma_t nSigma = getNSigma(track, cfgPids.value[i]);
             bool isMCPid = mcPart.pdgCode() == cfgPids.value[i];
@@ -253,5 +253,5 @@ struct PidEffAndPurProducerONNXInterface {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PidEffAndPurProducerONNXInterface>(cfgc)};
+    adaptAnalysisTask<PidMlBatchEffAndPurProducer>(cfgc)};
 }

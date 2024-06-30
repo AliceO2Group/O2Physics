@@ -184,17 +184,16 @@ struct PidONNXModel {
   {
     // TODO: Hardcoded for now. Planning to implement RowView extension to get runtime access to selected columns
     // sign is short, trackType and tpcNClsShared uint8_t
-    float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
-    float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
-    float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
-    float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
-    float scaledTPCNClsShared = (static_cast<float>(track.tpcNClsShared()) - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
-    float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
-    float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
 
     float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
 
-    std::vector<float> inputValues{track.px(), track.py(), track.pz(), static_cast<float>(track.sign()), scaledX, scaledY, scaledZ, scaledAlpha, static_cast<float>(track.trackType()), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p(), scaledTPCSignal};
+    std::vector<float> inputValues{scaledTPCSignal};
+
+    if (mDetector >= kTPCTOFTRD) {
+      float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
+      inputValues.push_back(scaledTRDSignal);
+      inputValues.push_back(track.trdPattern());
+    }
 
     if (mDetector >= kTPCTOF) {
       float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
@@ -203,12 +202,15 @@ struct PidONNXModel {
       inputValues.push_back(scaledBeta);
     }
 
-    if (mDetector >= kTPCTOFTRD) {
-      float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
-      float scaledTRDPattern = (track.trdPattern() - mScalingParams.at("fTRDPattern").first) / mScalingParams.at("fTRDPattern").second;
-      inputValues.push_back(scaledTRDSignal);
-      inputValues.push_back(scaledTRDPattern);
-    }
+    float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
+    float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
+    float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
+    float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
+    float scaledTPCNClsShared = (static_cast<float>(track.tpcNClsShared()) - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
+    float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
+    float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
+
+    inputValues.insert(inputValues.end(), {track.p(), track.pt(), track.px(), track.py(), track.pz(), static_cast<float>(track.sign()), scaledX, scaledY, scaledZ, scaledAlpha, static_cast<float>(track.trackType()), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ});
 
     return inputValues;
   }
