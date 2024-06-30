@@ -418,7 +418,7 @@ struct phik0shortanalysis {
         PhiPionHist.fill(HIST("h4PhiInvMassPidEdxSameEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxsSameEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxSameEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
       } else { // mixed event
         PhiPionHist.fill(HIST("h4PhiInvMassPidEdxMixedEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
