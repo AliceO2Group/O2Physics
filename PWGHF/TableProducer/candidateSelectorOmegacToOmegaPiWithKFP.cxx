@@ -39,7 +39,7 @@ enum pidInfoStored {
 
 /// Struct for applying Omegac0 selection cuts
 struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
-  Produces<aod::HfSelOmegacToOmegaPi> HfSelOmegacToOmegaPi;
+  Produces<aod::HfSelToOmegaPi> HfSelToOmegaPi;
   Produces<aod::HfMlSelOmegacToOmegaPi> hfMlToOmegaPiCandidate;
 
   // LF analysis selections
@@ -137,7 +137,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  o2::analysis::HfMlResponseOmegaCToOmegaPi<float> hfMlResponse;
+  o2::analysis::HfMlResponseOmegacToOmegaPi<float> hfMlResponse;
   std::vector<float> outputMlOmegaC = {};
   std::vector<float> outputMlOmegaCbar = {};
   o2::ccdb::CcdbApi ccdbApi;
@@ -233,7 +233,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
     }
   }
 
-  void process(aod::HfCandOmegaC const& candidates,
+  void process(aod::HfCandOmegac const& candidates,
                TracksSel const&)
   {
 
@@ -350,7 +350,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
       }
 
       // dcaXY v0 daughters to PV cut
-      if (candidate.dcaXYToPvV0Dau0() < dcaPosToPvMin || candidate.dcaXYToPvV0Dau1() < dcaNegToPvMin) {
+      if (std::abs(candidate.dcaXYToPvV0Dau0()) < dcaPosToPvMin || std::abs(candidate.dcaXYToPvV0Dau1()) < dcaNegToPvMin) {
         resultSelections = false;
         registry.fill(HIST("hSelDcaXYToPvV0Daughters"), 0);
       } else {
@@ -358,7 +358,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
       }
 
       // dcaXY Kaon <-- cascade to PV cut
-      if (candidate.dcaXYToPvCascDau() < dcaBachToPvMin) {
+      if (std::abs(candidate.dcaXYToPvCascDau()) < dcaBachToPvMin) {
         resultSelections = false;
         registry.fill(HIST("hSelDcaXYToPvKaFromCasc"), 0);
       } else {
@@ -657,7 +657,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
         }
       }
       //#####################End#########################################
-      HfSelOmegacToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda,
+      HfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda,
                            statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                            trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                            trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
