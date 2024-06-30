@@ -786,13 +786,7 @@ struct Pi0EtaToGammaGamma {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              if (cfgDoFlow) {
-                std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-                std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
-              } else {
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
-              }
+              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
             }
           }
         } // end of loop over mixed event pool
@@ -820,13 +814,7 @@ struct Pi0EtaToGammaGamma {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              if (cfgDoFlow) {
-                std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-                std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
-              } else {
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
-              }
+              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
             }
           }
         } // end of loop over mixed event pool
@@ -852,13 +840,7 @@ struct Pi0EtaToGammaGamma {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              if (cfgDoFlow) {
-                std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-                std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]), RecoDecay::dotProd(u3_gg, q3vector[cfgQvecEstimator]));
-              } else {
-                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
-              }
+              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), 0.0, 0.0);
             }
           }
         } // end of loop over mixed event pool

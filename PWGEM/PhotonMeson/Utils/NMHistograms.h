@@ -52,6 +52,7 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const
   }
   const AxisSpec axis_sp2{nbin_sp, -5.f, 5.f, Form("u_{2}^{%s} #upoint Q_{2}^{%s}", pairname, epdetname)};
   const AxisSpec axis_sp3{nbin_sp, -5.f, 5.f, Form("u_{3}^{%s} #upoint Q_{3}^{%s}", pairname, epdetname)};
+  const AxisSpec axis_sp_dummy{1, -5.f, 5.f, Form("u_{3}^{%s} #upoint Q_{3}^{%s}", pairname, epdetname)};
 
   if (isMC) {
     fRegistry->add("Pair/Pi0/hs_Primary", "rec. true pi0", kTHnSparseD, {axis_mass, axis_pt, axis_sp2, axis_sp3}, true);
@@ -71,7 +72,7 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const
     fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetYTitle("rapidity |y|");
   } else {
     fRegistry->add("Pair/same/hs", "diphoton", kTHnSparseD, {axis_mass, axis_pt, axis_sp2, axis_sp3}, true);
-    fRegistry->addClone("Pair/same/", "Pair/mix/");
+    fRegistry->add("Pair/mix/hs", "diphoton", kTHnSparseD, {axis_mass, axis_pt, axis_sp_dummy, axis_sp_dummy}, true);
   }
 }
 
