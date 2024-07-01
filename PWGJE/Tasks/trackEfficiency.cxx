@@ -55,7 +55,7 @@ struct TrackEfficiencyJets {
   Configurable<bool> checkPrimaryPart{"checkPrimaryPart", true, "0: doesn't check mcparticle.isPhysicalPrimary() - 1: checks particle.isPhysicalPrimary()"};
   Configurable<bool> checkCentrality{"checkCentrality", false, ""};
   Configurable<int> acceptSplitCollisions{"acceptSplitCollisions", 0, "0: only look at mcCollisions that are not split; 1: accept split mcCollisions, 2: accept split mcCollisions but only look at the first reco collision associated with it"};
-  Configurable<float> trackEtaAcceptance{"trackEtaAcceptance", 0.9, "eta acceptance"};
+  Configurable<float> trackEtaAcceptanceCountQA{"trackEtaAcceptanceCountQA", 0.9, "eta acceptance"}; // removed from actual cuts for now because all the histograms have an eta axis
   Configurable<float> centralityMin{"centralityMin", -999, ""};
   Configurable<float> centralityMax{"centralityMax", 999, ""};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -114,15 +114,15 @@ struct TrackEfficiencyJets {
       registry.add("hMcPartCutsCounts", "McPart cuts count checks", {HistType::kTH1F, {{10, 0., 10.}}});
       registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(1, "allPartsInSelMcColl");
       registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(2, "isPrimary");
-      registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(3, "etaAccept");
-      registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(4, "isCharged");
+      registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(3, "isCharged");
+      registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(4, "etaAccept"); // not actually applied here but it will give an idea of what will be done in the post processing
 
       registry.add("hTrackCutsCounts", "Track cuts count checks", {HistType::kTH1F, {{10, 0., 10.}}});
       registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(1, "allTracksInSelColl");
       registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(2, "trackSel");
       registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(3, "hasMcParticle");
       registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(4, "mcPartIsPrimary");
-      registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(5, "etaAcc");
+      registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(5, "etaAcc"); // not actually applied here but it will give an idea of what will be done in the post processing
 
       AxisSpec ptAxis = {500, 0., 10., "#it{p}_{T} (GeV/#it{c})"};
       AxisSpec etaAxis = {100, -1.0, 1.0, "#eta"};
@@ -137,9 +137,10 @@ struct TrackEfficiencyJets {
 
       registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_primary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
       registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
-      registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
+      registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_primary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
+      registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
 
-      registry.add("h2_particle_pt_track_pt_diif_associatedtrack_primary", "(#it{p}_{T, mcpart} - #it{p}_{T, track}) / #it{p}_{T, mcpart}; #it{p}_{T, mcpart} (GeV/#it{c})", {HistType::kTH2F, {ptAxis, {200, -1., 1.}}});
+      registry.add("h2_particle_pt_track_pt_residual_associatedtrack_primary", "(#it{p}_{T, mcpart} - #it{p}_{T, track}) / #it{p}_{T, mcpart}; #it{p}_{T, mcpart} (GeV/#it{c})", {HistType::kTH2F, {ptAxis, {200, -1., 1.}}});
     }
 
     if (doprocessTracks || doprocessTracksWeighted) {
@@ -229,17 +230,16 @@ struct TrackEfficiencyJets {
       }
       registry.fill(HIST("hMcPartCutsCounts"), 1.5); // isPrimary
 
-      if (!(abs(jMcParticle.eta()) < trackEtaAcceptance)) {
-        continue;
-      }
-      registry.fill(HIST("hMcPartCutsCounts"), 2.5); // etaAccept
-
       if (!isChargedParticle(jMcParticle.pdgCode())) {
         continue;
       }
-      registry.fill(HIST("hMcPartCutsCounts"), 3.5); // isCharged
+      registry.fill(HIST("hMcPartCutsCounts"), 2.5); // isCharged
 
       registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
+
+      if ((abs(jMcParticle.eta()) < trackEtaAcceptanceCountQA)) { // removed from actual cuts for now because all the histograms have an eta axis
+        registry.fill(HIST("hMcPartCutsCounts"), 3.5);            // etaAccept // not actually applied here but it will give an idea of what will be done in the post processing
+      }
     }
 
     std::vector<int> seenMcParticlesVector; // is reset every mc collision
@@ -274,6 +274,13 @@ struct TrackEfficiencyJets {
         if (!jMcParticleFromTrack.isPhysicalPrimary()) {
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_nonprimary"), track.pt(), track.eta(), track.phi());
           registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+
+          if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
+            registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+          } else {
+            seenMcParticlesVector.push_back(jMcParticleFromTrack.globalIndex());
+          }
+
           continue;
         }
 
@@ -281,16 +288,16 @@ struct TrackEfficiencyJets {
 
         registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_primary"), track.pt(), track.eta(), track.phi());
         registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
-        registry.fill(HIST("h2_particle_pt_track_pt_diif_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
+        registry.fill(HIST("h2_particle_pt_track_pt_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
 
         if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split"), track.pt(), track.eta(), track.phi());
-          registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+          registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
         } else {
           seenMcParticlesVector.push_back(jMcParticleFromTrack.globalIndex());
         }
 
-        if (abs(jMcParticleFromTrack.eta()) < trackEtaAcceptance) { // not actually applied here but it will give an idea of what will be done in the post processing
+        if (abs(jMcParticleFromTrack.eta()) < trackEtaAcceptanceCountQA) { // not actually applied here but it will give an idea of what will be done in the post processing
           registry.fill(HIST("hTrackCutsCounts"), 4.5);
         }
       }
