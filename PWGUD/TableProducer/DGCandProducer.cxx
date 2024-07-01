@@ -71,12 +71,15 @@ struct DGCandProducer {
     outputFwdTracks(outputCollisions.lastIndex(),
                     fwdtrack.px(), fwdtrack.py(), fwdtrack.pz(), fwdtrack.sign(),
                     bcnum, fwdtrack.trackTime(), fwdtrack.trackTimeRes());
-    outputFwdTracksExtra(fwdtrack.nClusters(),
+    outputFwdTracksExtra(fwdtrack.trackType(),
+                         fwdtrack.nClusters(),
                          fwdtrack.pDca(),
                          fwdtrack.rAtAbsorberEnd(),
                          fwdtrack.chi2(),
                          fwdtrack.chi2MatchMCHMID(),
                          fwdtrack.chi2MatchMCHMFT(),
+                         fwdtrack.matchMFTTrackId(),
+                         fwdtrack.matchMCHTrackId(),
                          fwdtrack.mchBitMap(),
                          fwdtrack.midBitMap(),
                          fwdtrack.midBoards());
@@ -217,9 +220,9 @@ struct DGCandProducer {
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
     registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
 
-    std::string labels[nXbinsInStatH] = {"all", "hasBC", "FITveto", "MID trk", "global PV trk", "not global PB trk",
+    std::string labels[nXbinsInStatH] = {"all", "hasBC", "accepted", "FITveto", "MID trk", "global not PV trk", "not global PV trk",
                                          "ITS-only PV trk", "TOF PV trk fraction", "n PV trks", "PID", "pt", "eta", "net charge",
-                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx", "evsel TRD vtx", "evsel TOF vtx", "", ""};
+                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx", "evsel TRD vtx", "evsel TOF vtx", "", "", ""};
 
     registry.get<TH1>(HIST("reco/Stat"))->SetNdivisions(nXbinsInStatH, "X");
     for (int iXbin(1); iXbin < nXbinsInStatH + 1; iXbin++) {

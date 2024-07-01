@@ -94,6 +94,19 @@ struct RofBorderQaTask {
 
     histos.add("hFoundBC_kTVX_counter", "hFoundBC_kTVX_counter", kTH1D, {axisBC});
 
+    // n ITS layers per track in pt bins
+    AxisSpec axisPtBinsForROFstudy{{0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 1.5, 2.0, 3.0, 5.0}, "p_{T}"};
+    histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt", kTH2D, {axisBC, axisPtBinsForROFstudy});
+    histos.add("hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt", "hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt", kTH2D, {axisBC, axisPtBinsForROFstudy});
+
+    histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_pi", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_pi", kTH2D, {axisBC, axisPtBinsForROFstudy});
+    histos.add("hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_pi", "hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_pi", kTH2D, {axisBC, axisPtBinsForROFstudy});
+    histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_ka", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_ka", kTH2D, {axisBC, axisPtBinsForROFstudy});
+    histos.add("hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_ka", "hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_ka", kTH2D, {axisBC, axisPtBinsForROFstudy});
+    histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_pr", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_pr", kTH2D, {axisBC, axisPtBinsForROFstudy});
+    histos.add("hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_pr", "hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_pr", kTH2D, {axisBC, axisPtBinsForROFstudy});
+
+    // n ITS layers per track
     histos.add("hBC_kTVX_nITSlayers_for_ITSTPCtracks", "hBC_kTVX_nITSlayers_for_ITSTPCtracks", kTH1D, {axisBC});
     histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks", kTH1D, {axisBC});
     histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_kTVXinTRD", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_kTVXinTRD", kTH1D, {axisBC});
@@ -102,6 +115,7 @@ struct RofBorderQaTask {
     histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_pr", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_pr", kTH1D, {axisBC});
     histos.add("hFoundBC_kTVX_nITSlayers_for_GlobalTracks", "hFoundBC_kTVX_nITSlayers_for_GlobalTracks", kTH1D, {axisBC});
 
+    // counters
     histos.add("hBC_kTVX_counter_ITSTPCtracks", "hBC_kTVX_counter_ITSTPCtracks", kTH1D, {axisBC});
     histos.add("hFoundBC_kTVX_counter_ITSTPCtracks", "hFoundBC_kTVX_counter_ITSTPCtracks", kTH1D, {axisBC});
     histos.add("hFoundBC_kTVX_counter_ITSTPCtracks_kTVXinTRD", "hFoundBC_kTVX_counter_ITSTPCtracks_kTVXinTRD", kTH1D, {axisBC});
@@ -120,13 +134,13 @@ struct RofBorderQaTask {
                             79.5,
                             199.5,
                           },
-                          "p_{T}"};
+                          "n PV ITSTPC tracks"};
     histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_multBins", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_multBins", kTH2D, {axisBC, axisMultBins});
     histos.add("hFoundBC_kTVX_counter_ITSTPCtracks_multBins", "hFoundBC_kTVX_counter_ITSTPCtracks_multBins", kTH2D, {axisBC, axisMultBins});
 
-    AxisSpec axisPtBinsForROFstudy{{0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 1.5, 2.0, 3.0, 5.0}, "p_{T}"};
-    histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt", kTH2D, {axisBC, axisPtBinsForROFstudy});
-    histos.add("hFoundBC_kTVX_nITSTPCtracks_vs_pt", "hFoundBC_kTVX_nITSTPCtracks_vs_pt", kTH2D, {axisBC, axisPtBinsForROFstudy});
+    AxisSpec axisClusterSizes{15, 0.5, 15.5, "cluster size #times cos(#Lambda)"};
+    histos.add("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_clsSizeBins", "hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_clsSizeBins", kTH2D, {axisBC, axisClusterSizes});
+    histos.add("hFoundBC_kTVX_counter_ITSTPCtracks_clsSizeBins", "hFoundBC_kTVX_counter_ITSTPCtracks_clsSizeBins", kTH2D, {axisBC, axisClusterSizes});
 
     // ##### tracks for TVXinTRD collisions
     histos.add("hFoundBC_kTVXinTRD_nAllTracks", "hFoundBC_kTVXinTRD_nAllTracks", kTH1D, {axisBC});
@@ -150,7 +164,6 @@ struct RofBorderQaTask {
     histos.add("hFoundBC_kTVX_nITSTPCTRDtracks_mult_above_1000", "hFoundBC_kTVX_nITSTPCTRDtracks_mult_above_1000", kTH1D, {axisBC});
 
     // to study ITS ROF dips vs pt
-    // if (flagIncludeQAROFinPtEtaBins) {
     AxisSpec axisITSlayers{7, -0.5, 7 - 0.5, "layer id"};
     histos.add("hFoundBC_kTVX_nITStracks_vs_BC_in_ptBins_eta02", "hFoundBC_kTVX_nITStracks_vs_BC_in_ptBins_eta02", kTH2D, {axisBC, axisPtBinsForROFstudy});
     histos.add("hFoundBC_kTVX_nITStracks_vs_BC_in_ptBins_eta02_04", "hFoundBC_kTVX_nITStracks_vs_BC_in_ptBins_eta02_04", kTH2D, {axisBC, axisPtBinsForROFstudy});
@@ -181,14 +194,11 @@ struct RofBorderQaTask {
     histos.add("hITSlayerCounts_vs_BC_p_pt05_10", "hITSlayerCounts_vs_BC", kTH2D, {axisBC, axisITSlayers});
     histos.add("hITSlayerCounts_vs_BC_p_pt10_50", "hITSlayerCounts_vs_BC", kTH2D, {axisBC, axisITSlayers});
     // histos.add("hITSlayerCounts_vs_BC_p_pt10_50", "hITSlayerCounts_vs_BC", kTH2D, {axisBC, axisITSlayers});
-    // }
 
     // bcInTF
     AxisSpec axisBCinTF32orbits{32 * 3564, -0.5, 32 * 3564, "bcInTF"};
     histos.add("hBCinTF_kTVX_nTracksPV", "hBCinTF_kTVX_nTracksPV;bc in TF; n tracks", kTH1D, {axisBCinTF32orbits});
     histos.add("hBCinTF_kTVX_nITSTPCTRDtracks", "hBCinTF_kTVX_nITSTPCTRDtracks;bc in TF; n tracks", kTH1D, {axisBCinTF32orbits});
-
-    // } // end of if flagIncludeQATracksInFoundBC
   }
 
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi>;
@@ -312,41 +322,66 @@ struct RofBorderQaTask {
       bool isProton = (TMath::Abs(track.tpcNSigmaPr()) < 3 && TMath::Abs(track.tpcNSigmaKa()) > 3 && TMath::Abs(track.tpcNSigmaPi()) > 3 && TMath::Abs(track.tpcNSigmaEl()) > 1) ? true : false;
 
       if (track.hasITS() && track.hasTPC() && fabs(eta) < 0.8) {
+        histos.fill(HIST("hBC_kTVX_nITSlayers_for_ITSTPCtracks"), collBC, track.itsNCls());
+        histos.fill(HIST("hBC_kTVX_counter_ITSTPCtracks"), collBC);
+      }
+
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && track.hasITS() && track.hasTPC() && fabs(eta) < 0.8) {
+
         histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), globalFoundBC, track.itsNCls());
         histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks"), globalFoundBC);
 
-        histos.fill(HIST("hBC_kTVX_nITSlayers_for_ITSTPCtracks"), collBC, track.itsNCls());
-        histos.fill(HIST("hBC_kTVX_counter_ITSTPCtracks"), collBC);
+        // ### vs mult
+        histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_multBins"), globalFoundBC, nTracksPV, track.itsNCls());
+        histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_multBins"), globalFoundBC, nTracksPV);
+
+        // ### vs pt
+        histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt"), globalFoundBC, pt, track.itsNCls());
+        histos.fill(HIST("hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt"), globalFoundBC, pt);
 
         if (collision.alias_bit(kTVXinTRD)) {
           histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_kTVXinTRD"), globalFoundBC, track.itsNCls());
           histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_kTVXinTRD"), globalFoundBC);
         }
 
+        // ### with pid selection
         if (isPion) {
           histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_pi"), globalFoundBC, track.itsNCls());
           histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_pi"), globalFoundBC);
+
+          histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_pi"), globalFoundBC, pt, track.itsNCls());
+          histos.fill(HIST("hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_pi"), globalFoundBC, pt);
         }
         if (isKaon) {
           histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_ka"), globalFoundBC, track.itsNCls());
           histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_ka"), globalFoundBC);
+
+          histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_ka"), globalFoundBC, pt, track.itsNCls());
+          histos.fill(HIST("hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_ka"), globalFoundBC, pt);
         }
         if (isProton) {
           histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_pr"), globalFoundBC, track.itsNCls());
           histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_pr"), globalFoundBC);
+
+          histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt_pr"), globalFoundBC, pt, track.itsNCls());
+          histos.fill(HIST("hFoundBC_kTVX_counter_nITSTPCtracks_vs_pt_pr"), globalFoundBC, pt);
         }
-
-        // #### vs mult
-        histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_multBins"), globalFoundBC, nTracksPV, track.itsNCls());
-
-        // vs pt
-        histos.fill(HIST("hFoundBC_kTVX_nITSTPCtracks_vs_pt"), globalFoundBC, pt);
-        histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_vs_pt"), globalFoundBC, pt, track.itsNCls());
       }
-
+      // ### global tracks
       if (track.isGlobalTrack() && fabs(eta) < 0.8) {
         histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_GlobalTracks"), globalFoundBC, track.itsNCls());
         histos.fill(HIST("hFoundBC_kTVX_counter_GlobalTracks"), globalFoundBC);
+      }
+
+      // ### vs cluster size
+      if (track.itsNCls() >= 5) {
+        float averageClusterSize = 0.;
+        for (int i = 0; i < 7; i++) { // info stored in 4 bits
+          averageClusterSize += (((1 << 4) - 1) & (track.itsClusterSizes() >> 4 * i));
+        }
+        averageClusterSize /= track.itsNCls();
+        histos.fill(HIST("hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks_clsSizeBins"), globalFoundBC, averageClusterSize, track.itsNCls());
+        histos.fill(HIST("hFoundBC_kTVX_counter_ITSTPCtracks_clsSizeBins"), globalFoundBC, averageClusterSize);
       }
     }
 
