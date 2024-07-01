@@ -75,6 +75,7 @@ struct dimuonQC {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
+  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 3, "FT0M:0, FT0A:1, FT0C:2, BTOT:3"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
@@ -91,7 +92,7 @@ struct dimuonQC {
   ConfigurableAxis ConfMmumuBins{"ConfMmumuBins", {VARIABLE_WIDTH, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.10, 5.20, 5.30, 5.40, 5.50, 5.60, 5.70, 5.80, 5.90, 6.00, 6.10, 6.20, 6.30, 6.40, 6.50, 6.60, 6.70, 6.80, 6.90, 7.00, 7.10, 7.20, 7.30, 7.40, 7.50, 7.60, 7.70, 7.80, 7.90, 8.00, 8.10, 8.20, 8.30, 8.40, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.00, 11.10, 11.20, 11.30, 11.40, 11.50, 11.60, 11.70, 11.80, 11.90, 12.00}, "mmumu bins for output histograms"};
   ConfigurableAxis ConfPtmumuBins{"ConfPtmumuBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00}, "pTmumu bins for output histograms"};
   ConfigurableAxis ConfDCAmumuBins{"ConfDCAmumuBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCAmumu bins for output histograms"};
-  ConfigurableAxis ConfPCAmumuBins{"ConfPCAmumuBins", {VARIABLE_WIDTH, 0.0, 0.5, 1, 1.5, 2, 3, 4, 5}, "PCAmumu bins for output histograms in mm"};
+  // ConfigurableAxis ConfPCAmumuBins{"ConfPCAmumuBins", {VARIABLE_WIDTH, 0.0, 0.5, 1, 1.5, 2, 3, 4, 5}, "PCAmumu bins for output histograms in mm"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -254,12 +255,23 @@ struct dimuonQC {
     const AxisSpec axis_mass{ConfMmumuBins, "m_{#mu#mu} (GeV/c^{2})"};
     const AxisSpec axis_pt{ConfPtmumuBins, "p_{T,#mu#mu} (GeV/c)"};
     const AxisSpec axis_dca{ConfDCAmumuBins, "DCA_{#mu#mu}^{xy} (#sigma)"};
-    const AxisSpec axis_pca{ConfPCAmumuBins, "PCA (mm)"}; // particle closest approach
+    // const AxisSpec axis_pca{ConfPCAmumuBins, "PCA (mm)"}; // particle closest approach
 
-    fRegistry.add("Pair/same/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_pca}, true);
+    std::string_view qvec_det_names[4] = {"FT0M", "FT0A", "FT0C", "BTOT"};
+    int nbin_sp = 1;
+    if (cfgDoFlow) {
+      nbin_sp = 100;
+    }
+    const AxisSpec axis_sp2{nbin_sp, -5.f, 5.f, Form("u_{2}^{#mu#mu} #upoint Q_{2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
+    const AxisSpec axis_sp_dummy{1, -5.f, 5.f, Form("u_{3}^{#mu#mu} #upoint Q_{3}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
+
+    fRegistry.add("Pair/same/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp2}, true);
     fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
     fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
-    fRegistry.addClone("Pair/same/", "Pair/mix/");
+
+    fRegistry.add("Pair/mix/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp_dummy}, true);
+    fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
+    fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
 
     // for track info
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -342,8 +354,14 @@ struct dimuonQC {
       return false;
     }
 
-    float pca = 999.f, lxy = 999.f; // in unit of cm
-    o2::aod::pwgem::dilepton::utils::pairutil::isSVFoundFwd(fitter, collision, t1, t2, pca, lxy);
+    // float pca = 999.f, lxy = 999.f; // in unit of cm
+    // o2::aod::pwgem::dilepton::utils::pairutil::isSVFoundFwd(fitter, collision, t1, t2, pca, lxy);
+
+    std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
+    std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
+    std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
+    std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
+    const std::array<float, 2> q2vector[4] = {q2ft0m, q2ft0a, q2ft0c, q2btot};
 
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
@@ -356,12 +374,21 @@ struct dimuonQC {
     float dca_xy_t2 = fwdDcaXYinSigma(t2);
     float dca_mumu_xy = std::sqrt((dca_xy_t1 * dca_xy_t1 + dca_xy_t2 * dca_xy_t2) / 2.);
 
+    float sp2 = 0.f;
+    if constexpr (ev_id == 0) {
+      if (cfgDoFlow) {
+        std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
+        sp2 = RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]);
+      }
+    } else if constexpr (ev_id == 1) {
+      sp2 = 0.f;
+    }
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca * 10);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp2);
     } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca * 10);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp2);
     } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_mumu_xy, pca * 10);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp2);
     }
 
     // store tracks for event mixing without double counting
