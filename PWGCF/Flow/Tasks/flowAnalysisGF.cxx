@@ -313,15 +313,15 @@ struct flowAnalysisGF {
       }
     }
   }
-  
+
   static constexpr std::string_view moment[] = {
     "before/",
     "after/"};
-  
+
   enum QAtime {
-      kBefore,
-      kAfter
-    };
+    kBefore,
+    kAfter
+  };
 
   void AddConfigObjectsToObjArray(TObjArray* oba, const std::vector<GFW::CorrConfig>& configs)
   {
@@ -565,7 +565,8 @@ struct flowAnalysisGF {
     float weff = 1, wacc = 1;
 
     auto handleReco = [&](auto const& particle) -> bool {
-      if (cfgFillQA) FillTrackQA<kBefore>(track, vtxz);
+      if (cfgFillQA)
+        FillTrackQA<kBefore>(track, vtxz);
 
       if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
         return false;
@@ -576,8 +577,8 @@ struct flowAnalysisGF {
       if (!setCurrentParticleWeights(weff, wacc, particle.phi(), particle.eta(), particle.pt(), vtxz))
         return false;
 
-      if (cfgFillQA) FillTrackQA<kAfter>(track, vtxz);
-      
+      if (cfgFillQA)
+        FillTrackQA<kAfter>(track, vtxz);
 
       FillGFW(particle, weff, wacc);
 
@@ -634,7 +635,7 @@ struct flowAnalysisGF {
   template <QAtime qt, typename TrackObject>
   inline void FillTrackQA(TrackObject track, const float vtxz)
   {
-    
+
     if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       registry.fill(HIST("phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
       registry.fill(HIST("pt_gen"), track.pt());
@@ -685,7 +686,8 @@ struct flowAnalysisGF {
       registry.fill(HIST("hEventCount"), 1.5);
       centrality = collision.centFT0C();
 
-      if (cfgFillQA) FillEventQA<kBefore>(collision, tracks);
+      if (cfgFillQA)
+        FillEventQA<kBefore>(collision, tracks);
     }
 
     if (cfgDoOccupancySel) {
@@ -698,8 +700,9 @@ struct flowAnalysisGF {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality))
       return;
-    if (cfgFillQA) FillEventQA<kAfter>(collision, tracks);
-    
+    if (cfgFillQA)
+      FillEventQA<kAfter>(collision, tracks);
+
     loadCorrections(bc.timestamp());
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
     processCollision(kReco, collision, tracks, centrality, field);
