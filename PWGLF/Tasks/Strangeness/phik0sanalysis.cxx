@@ -236,9 +236,9 @@ struct phik0shortanalysis {
     PhiK0SHist.add("h3PhiK0SInvMassMixedEventSecondCut", "2D Invariant mass of Phi and K0Short for Mixed Event Deltay < SecondCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
 
     // Phi mass vs Pion dE/dx
-    PhiPionHist.add("h4PhiInvMassPidEdxSameEventInclusive", "Phi Invariant mass vs Pion dE/dx for Same Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPidEdxSameEventFirstCut", "Phi Invariant mass vs Pion dE/dx for Same Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPidEdxSameEventSecondCut", "Phi Invariant mass vs Pion dE/dx for Same Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxSameEventInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxSameEventFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxSameEventSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
 
     PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
     PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
