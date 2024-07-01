@@ -63,7 +63,6 @@ struct qVectorsCorrection {
   Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number"};
-  
 
   ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {300, -1, 1}, ""};
   ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
