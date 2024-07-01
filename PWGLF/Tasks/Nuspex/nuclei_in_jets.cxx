@@ -1456,12 +1456,12 @@ struct nuclei_in_jets {
         float deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
         float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-        if (deltaR_jet < Rmax_jet_ue)  {
+        if (deltaR_jet < Rmax_jet_ue) {
           registryMC.fill(HIST("antiproton_all_jet"), track.pt());
           if (particle.isPhysicalPrimary())
             registryMC.fill(HIST("antiproton_prim_jet"), track.pt());
         }
-        if (deltaR_ue1 < Rmax_jet_ue || deltaR_ue2 < Rmax_jet_ue)  {
+        if (deltaR_ue1 < Rmax_jet_ue || deltaR_ue2 < Rmax_jet_ue) {
           registryMC.fill(HIST("antiproton_all_ue"), track.pt());
           if (particle.isPhysicalPrimary())
             registryMC.fill(HIST("antiproton_prim_ue"), track.pt());
