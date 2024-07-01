@@ -141,6 +141,36 @@ struct phik0shortanalysis {
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
 
+  // Constants
+  double massKa = o2::constants::physics::MassKPlus;
+  double massPi = o2::constants::physics::MassPiPlus;
+
+  // Defining filters for events (event selection)
+  // Processed events will be already fulfilling the event selection requirements
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
+
+  // Defining filters on V0s (cannot filter on dynamic columns)
+  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv && nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv && aod::v0data::dcaV0daughters < v0setting_dcav0dau);
+
+  // Defining the type of the collisions for data and MC
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
+  using MCCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
+
+  // Defining the type of the V0s
+  using FullV0s = soa::Filtered<aod::V0Datas>;
+
+  // Defining the type of the tracks
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
+
+  // Defining the binning policy for mixed event
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+
+  SliceCache cache;
+  Partition<FullTracks> posTracks = aod::track::signed1Pt > cfgCutCharge;
+  Partition<FullTracks> negTracks = aod::track::signed1Pt < cfgCutCharge;
+
   void init(InitContext const&)
   {
     // Axes
@@ -206,48 +236,14 @@ struct phik0shortanalysis {
     PhiK0SHist.add("h3PhiK0SInvMassMixedEventSecondCut", "2D Invariant mass of Phi and K0Short for Mixed Event Deltay < SecondCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
 
     // Phi mass vs Pion dE/dx
-    PhiPionHist.add("h4PhiInvMassPidEdxSameEventInclusive", "Phi Invariant mass vs Pion dE/dx for Same Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPidEdxSameEventFirstCut", "Phi Invariant mass vs Pion dE/dx for Same Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPidEdxSameEventSecondCut", "Phi Invariant mass vs Pion dE/dx for Same Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxSameEventInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxSameEventFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxSameEventSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
 
-    PhiPionHist.add("h4PhiInvMassPidEdxMixedEventInclusive", "Phi Invariant mass vs Pion dE/dx for Mixed Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPidEdxMixedEventFirstCut", "Phi Invariant mass vs Pion dE/dx for Mixed Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPidEdxMixedEventSecondCut", "Phi Invariant mass vs Pion dE/dx for Mixed Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
   }
-
-  // Constants
-  double massKa = o2::constants::physics::MassKPlus;
-  double massPi = o2::constants::physics::MassPiPlus;
-
-  // Defining filters for events (event selection)
-  // Processed events will be already fulfilling the event selection requirements
-  Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
-
-  // Defining filters on V0s (cannot filter on dynamic columns)
-  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv && nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv && aod::v0data::dcaV0daughters < v0setting_dcav0dau);
-
-  // Defining the type of the event
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
-
-  // Defining the type of the Phi daughter tracks
-  using PhiDaughterCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>;
-
-  // Defining the type of the V0s
-  using V0Candidates = soa::Filtered<aod::V0Datas>;
-
-  // Defining the type of the V0 daughter tracks
-  using V0DaughterCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
-
-  // Defining the type of the Pions
-  using PionCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>;
-
-  // Defining the binning policy for mixed event
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-
-  SliceCache cache;
-  Partition<PhiDaughterCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
-  Partition<PhiDaughterCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
 
   // Event selection and QA filling
   template <typename T>
@@ -404,9 +400,9 @@ struct phik0shortanalysis {
     }
   }
 
-  // Fill Phi invariant mass vs Pion dE/dx histogram
+  // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
   template <bool isMix>
-  void fillInvMassdEdx(TLorentzVector Pi, float dEdx, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
+  void fillInvMassdEdx(TLorentzVector Pi, float nSigmadEdxPi, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
   {
     double rapidityPi = Pi.Rapidity();
     double ptPi = Pi.Pt();
@@ -417,26 +413,26 @@ struct phik0shortanalysis {
       double deltay = std::abs(rapidityPi - rapidityPhi);
 
       if constexpr (!isMix) { // same event
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxSameEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxSameEventInclusive"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxSameEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxSameEventFirstCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxsSameEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxSameEventSecondCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
       } else { // mixed event
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventInclusive"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiInvMassPidEdxMixedEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
       }
     }
   }
 
-  void processQAPurity(EventCandidates::iterator const& collision, PhiDaughterCandidates const&, PionCandidates const& Pis, V0Candidates const& V0s, V0DaughterCandidates const&)
+  void processQAPurity(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
     // Check if the event selection is passed
     if (!acceptEventQA(collision))
@@ -491,8 +487,8 @@ struct phik0shortanalysis {
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
-          const auto& posDaughterTrack = v0.posTrack_as<V0DaughterCandidates>();
-          const auto& negDaughterTrack = v0.negTrack_as<V0DaughterCandidates>();
+          const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+          const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
 
           // Cut on V0 dynamic columns
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
@@ -538,12 +534,12 @@ struct phik0shortanalysis {
         bool isCountedPiSecondCut = false;
 
         // Loop over all primary pion candidates
-        for (const auto& pi : Pis) {
-          if (!selectionPion(pi))
+        for (const auto& track : fullTracks) {
+          if (!selectionPion(track))
             continue;
 
           TLorentzVector recPi;
-          recPi.SetXYZM(pi.px(), pi.py(), pi.pz(), massPi);
+          recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
           if (recPi.Rapidity() > 0.8)
             continue;
@@ -568,9 +564,9 @@ struct phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processQAPurity, "Process Same Event for QA and Phi Purities", true);
+  PROCESS_SWITCH(phik0shortanalysis, processQAPurity, "Process for QA and Phi Purities", true);
 
-  void processSEPhiK0S(soa::Filtered<EventCandidates>::iterator const& collision, PhiDaughterCandidates const&, V0Candidates const& V0s, V0DaughterCandidates const&)
+  void processSEPhiK0S(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const&, FullV0s const& V0s, V0DauTracks const&)
   {
     if (!collision.isInelGt0())
       return;
@@ -592,8 +588,8 @@ struct phik0shortanalysis {
 
     // V0 already reconstructed by the builder
     for (const auto& v0 : V0s) {
-      const auto& posDaughterTrack = v0.posTrack_as<V0DaughterCandidates>();
-      const auto& negDaughterTrack = v0.negTrack_as<V0DaughterCandidates>();
+      const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+      const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
 
       // Cut on V0 dynamic columns
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
@@ -695,9 +691,9 @@ struct phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processSEPhiK0S, "Process Same Event for Analysis Phi-K0S", false);
+  PROCESS_SWITCH(phik0shortanalysis, processSEPhiK0S, "Process Same Event for Phi-K0S Analysis", false);
 
-  void processSEPhiPion(soa::Filtered<EventCandidates>::iterator const& collision, PhiDaughterCandidates const&, PionCandidates const& Pis)
+  void processSEPhiPion(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const& fullTracks)
   {
     if (!collision.isInelGt0())
       return;
@@ -710,14 +706,14 @@ struct phik0shortanalysis {
     auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     // Loop over all primary pion candidates
-    for (const auto& pi : Pis) {
+    for (const auto& track : fullTracks) {
 
       // Pion selection
-      if (!selectionPion(pi))
+      if (!selectionPion(track))
         continue;
 
       TLorentzVector recPi;
-      recPi.SetXYZM(pi.px(), pi.py(), pi.pz(), massPi);
+      recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
       if (recPi.Rapidity() > 0.8)
         continue;
 
@@ -761,13 +757,13 @@ struct phik0shortanalysis {
       float weightInclusive = 1. / static_cast<float>(countInclusive);
       float weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
       float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
-      fillInvMassdEdx<false>(recPi, pi.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+      fillInvMassdEdx<false>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processSEPhiPion, "Process Same Event for Analysis Phi-Pion", false);
+  PROCESS_SWITCH(phik0shortanalysis, processSEPhiPion, "Process Same Event for Phi-Pion Analysis", false);
 
-  void processMEPhiK0S(soa::Filtered<EventCandidates> const& collisions, PhiDaughterCandidates const&, V0Candidates const& V0s, V0DaughterCandidates const&)
+  void processMEPhiK0S(soa::Filtered<SelCollisions> const& collisions, FullTracks const&, FullV0s const& V0s, V0DauTracks const&)
   {
     // Mixing the events with similar vertex z and multiplicity
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
@@ -793,8 +789,8 @@ struct phik0shortanalysis {
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
 
       for (const auto& v0 : V0ThisColl) {
-        const auto& posDaughterTrack = v0.posTrack_as<V0DaughterCandidates>();
-        const auto& negDaughterTrack = v0.negTrack_as<V0DaughterCandidates>();
+        const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+        const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
 
         // Cut on V0 dynamic columns
         if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
@@ -881,9 +877,9 @@ struct phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processMEPhiK0S, "Process Mixed Event for Analysis Phi-K0S", false);
+  PROCESS_SWITCH(phik0shortanalysis, processMEPhiK0S, "Process Mixed Event for Phi-K0S Analysis", false);
 
-  void processMEPhiPion(soa::Filtered<EventCandidates> const& collisions, PhiDaughterCandidates const&, PionCandidates const& Pis)
+  void processMEPhiPion(soa::Filtered<SelCollisions> const& collisions, FullTracks const& fullTracks)
   {
     // Mixing the events with similar vertex z and multiplicity
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
@@ -894,19 +890,19 @@ struct phik0shortanalysis {
       float multiplicity = collision1.centFT0M();
 
       // Defining V0s from collision1
-      auto PiThisColl = Pis.sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+      auto trackThisColl = fullTracks.sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
 
       // Defining positive and negative tracks for phi reconstruction from collision1 and collision2, respectively
       auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
 
-      for (const auto& pi : PiThisColl) {
+      for (const auto& track : trackThisColl) {
 
-        if (!selectionPion(pi))
+        if (!selectionPion(track))
           continue;
 
         TLorentzVector recPi;
-        recPi.SetXYZM(pi.px(), pi.py(), pi.pz(), massPi);
+        recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
         if (recPi.Rapidity() > 0.8)
           continue;
 
@@ -937,12 +933,12 @@ struct phik0shortanalysis {
         float weightInclusive = 1. / static_cast<float>(countInclusive);
         float weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
         float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
-        fillInvMassdEdx<true>(recPi, pi.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+        fillInvMassdEdx<true>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
       }
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processMEPhiPion, "Process Mixed Event for Analysis Phi-Pion", false);
+  PROCESS_SWITCH(phik0shortanalysis, processMEPhiPion, "Process Mixed Event for Phi-Pion Analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
