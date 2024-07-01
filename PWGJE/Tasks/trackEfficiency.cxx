@@ -238,7 +238,7 @@ struct TrackEfficiencyJets {
       registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
 
       if ((abs(jMcParticle.eta()) < trackEtaAcceptanceCountQA)) { // removed from actual cuts for now because all the histograms have an eta axis
-        registry.fill(HIST("hMcPartCutsCounts"), 3.5); // etaAccept // not actually applied here but it will give an idea of what will be done in the post processing
+        registry.fill(HIST("hMcPartCutsCounts"), 3.5);            // etaAccept // not actually applied here but it will give an idea of what will be done in the post processing
       }
     }
 
