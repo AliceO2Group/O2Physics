@@ -240,9 +240,9 @@ struct phik0shortanalysis {
     PhiPionHist.add("h4PhiInvMassPidEdxSameEventFirstCut", "Phi Invariant mass vs Pion dE/dx for Same Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
     PhiPionHist.add("h4PhiInvMassPidEdxSameEventSecondCut", "Phi Invariant mass vs Pion dE/dx for Same Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
 
-    PhiPionHist.add("h4PhiInvMassPidEdxMixedEventInclusive", "Phi Invariant mass vs Pion dE/dx for Mixed Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPidEdxMixedEventFirstCut", "Phi Invariant mass vs Pion dE/dx for Mixed Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPidEdxMixedEventSecondCut", "Phi Invariant mass vs Pion dE/dx for Mixed Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
   }
 
   // Event selection and QA filling
@@ -400,9 +400,9 @@ struct phik0shortanalysis {
     }
   }
 
-  // Fill Phi invariant mass vs Pion dE/dx histogram
+  // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
   template <bool isMix>
-  void fillInvMassdEdx(TLorentzVector Pi, float dEdx, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
+  void fillInvMassdEdx(TLorentzVector Pi, float nSigmadEdxPi, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
   {
     double rapidityPi = Pi.Rapidity();
     double ptPi = Pi.Pt();
@@ -413,21 +413,21 @@ struct phik0shortanalysis {
       double deltay = std::abs(rapidityPi - rapidityPhi);
 
       if constexpr (!isMix) { // same event
-        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxSameEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxSameEventInclusive"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxSameEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxSameEventFirstCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxSameEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxSameEventSecondCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
       } else { // mixed event
-        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxMixedEventInclusive"), multiplicity, ptPi, dEdx, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventInclusive"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxMixedEventFirstCut"), multiplicity, ptPi, dEdx, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h4PhiInvMassPidEdxMixedEventSecondCut"), multiplicity, ptPi, dEdx, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
       }
     }
   }
