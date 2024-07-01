@@ -1395,76 +1395,76 @@ struct nuclei_in_jets {
 
         if (distance_jet_min <= distance_bkg_min) {
 
-        // Update Momentum of Leading Particle
-        auto jet_track = tracks_per_coll.iteratorAt(label_jet_particle);
-        TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
-        p_leading = p_leading + p_i;
+          // Update Momentum of Leading Particle
+          auto jet_track = tracks_per_coll.iteratorAt(label_jet_particle);
+          TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
+          p_leading = p_leading + p_i;
 
-        // Remove Element
-        particle_ID[i_jet_particle] = -1;
-        nPartAssociated++;
-      }
+          // Remove Element
+          particle_ID[i_jet_particle] = -1;
+          nPartAssociated++;
+        }
 
-      if (nPartAssociated >= (nParticles - 1))
-        exit = 1;
-      if (distance_jet_min > distance_bkg_min)
-        exit = 2;
+        if (nPartAssociated >= (nParticles - 1))
+          exit = 1;
+        if (distance_jet_min > distance_bkg_min)
+          exit = 2;
 
-    } while (exit == 0);
+      } while (exit == 0);
 
-    float eta_jet_axis = p_leading.Eta();
-    if ((TMath::Abs(eta_jet_axis) + Rmax_jet_ue) > max_eta)
-      continue;
-    TVector3 jet_axis(p_leading.X(), p_leading.Y(), p_leading.Z());
-
-    // Perpendicular Cones for UE Estimate
-    TVector3 ue_axis1(0.0, 0.0, 0.0);
-    TVector3 ue_axis2(0.0, 0.0, 0.0);
-    get_perpendicular_axis(jet_axis, ue_axis1, +1.0);
-    get_perpendicular_axis(jet_axis, ue_axis2, -1.0);
-
-    // Protection against delta<0
-    if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
-      continue;
-    if (ue_axis2.X() == 0 && ue_axis2.Y() == 0 && ue_axis2.Z() == 0)
-      continue;
-
-    for (auto track : tracks_per_coll) {
-
-      if (!passedTrackSelection(track))
+      float eta_jet_axis = p_leading.Eta();
+      if ((TMath::Abs(eta_jet_axis) + Rmax_jet_ue) > max_eta)
         continue;
-      if (TMath::Abs(track.dcaXY()) > max_dcaxy)
+      TVector3 jet_axis(p_leading.X(), p_leading.Y(), p_leading.Z());
+
+      // Perpendicular Cones for UE Estimate
+      TVector3 ue_axis1(0.0, 0.0, 0.0);
+      TVector3 ue_axis2(0.0, 0.0, 0.0);
+      get_perpendicular_axis(jet_axis, ue_axis1, +1.0);
+      get_perpendicular_axis(jet_axis, ue_axis2, -1.0);
+
+      // Protection against delta<0
+      if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
         continue;
-      if (TMath::Abs(track.dcaZ()) > max_dcaz)
+      if (ue_axis2.X() == 0 && ue_axis2.Y() == 0 && ue_axis2.Z() == 0)
         continue;
 
-      // Get MC Particle
-      if (!track.has_mcParticle())
-        continue;
-      const auto particle = track.mcParticle();
-      if (particle.pdgCode() != -2212)
-        continue;
+      for (auto track : tracks_per_coll) {
 
-      TVector3 particle_dir(track.px(), track.py(), track.pz());
-      float deltaEta_jet = particle_dir.Eta() - jet_axis.Eta();
-      float deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), jet_axis.Phi());
-      float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-      float deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
-      float deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
-      float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-      float deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
-      float deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
-      float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+        if (!passedTrackSelection(track))
+          continue;
+        if (TMath::Abs(track.dcaXY()) > max_dcaxy)
+          continue;
+        if (TMath::Abs(track.dcaZ()) > max_dcaz)
+          continue;
 
-      if (deltaR_jet < Rmax_jet_ue)  {
-        registryMC.fill(HIST("antiproton_all_jet"), track.pt());
-        if (particle.isPhysicalPrimary())
-          registryMC.fill(HIST("antiproton_prim_jet"), track.pt());
-      }
-      if (deltaR_ue1 < Rmax_jet_ue || deltaR_ue2 < Rmax_jet_ue)  {
-        registryMC.fill(HIST("antiproton_all_ue"), track.pt());
-        if (particle.isPhysicalPrimary())
-          registryMC.fill(HIST("antiproton_prim_ue"), track.pt());
+        // Get MC Particle
+        if (!track.has_mcParticle())
+          continue;
+        const auto particle = track.mcParticle();
+        if (particle.pdgCode() != -2212)
+          continue;
+
+        TVector3 particle_dir(track.px(), track.py(), track.pz());
+        float deltaEta_jet = particle_dir.Eta() - jet_axis.Eta();
+        float deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), jet_axis.Phi());
+        float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        float deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
+        float deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
+        float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        float deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
+        float deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
+        float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+        if (deltaR_jet < Rmax_jet_ue)  {
+          registryMC.fill(HIST("antiproton_all_jet"), track.pt());
+          if (particle.isPhysicalPrimary())
+            registryMC.fill(HIST("antiproton_prim_jet"), track.pt());
+        }
+        if (deltaR_ue1 < Rmax_jet_ue || deltaR_ue2 < Rmax_jet_ue)  {
+          registryMC.fill(HIST("antiproton_all_ue"), track.pt());
+          if (particle.isPhysicalPrimary())
+            registryMC.fill(HIST("antiproton_prim_ue"), track.pt());
         }
       }
     }
