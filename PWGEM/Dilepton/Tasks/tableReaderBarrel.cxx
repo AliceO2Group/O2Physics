@@ -416,37 +416,68 @@ struct AnalysisTrackSelection {
     auto vecTOFnsigmaelmin = (std::vector<float>)pidcuts.cfgTOFNSigmaElMin;
     auto vecTOFnsigmaelmax = (std::vector<float>)pidcuts.cfgTOFNSigmaElMax;
 
-    if (veceta.size() != fConfigNbTrackCut) return false;
-    if (vecptmin.size() != fConfigNbTrackCut) return false;
-    if (vecptmax.size() != fConfigNbTrackCut) return false;
-    if (vecDCAxymax.size() != fConfigNbTrackCut) return false;
-    if (vecDCAzmax.size() != fConfigNbTrackCut) return false;
-    if (vecIsSPDfirst.size() != fConfigNbTrackCut) return false;
-    if (vecIsSPDany.size() != fConfigNbTrackCut) return false;
-    if (vecIsITSibAny.size() != fConfigNbTrackCut) return false;
-    if (vecITSchi2max.size() != fConfigNbTrackCut) return false;
-    if (vecITSnclsmin.size() != fConfigNbTrackCut) return false;
-    if (vecITSnclsmax.size() != fConfigNbTrackCut) return false;
-    if (vecTPCchi2max.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnclsmin.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnclsmax.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnclsCRmin.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnclsCRmax.size() != fConfigNbTrackCut) return false;
-    if (vecIsDalitzLeg.size() != fConfigNbTrackCut) return false;
-    if (vecPIDmode.size() != fConfigNbTrackCut) return false;
-    if (vecrejbadtof.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmaelmin.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmaelmax.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmapimin.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmapimax.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmaprmin.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmaprmax.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmakamin.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmakamax.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmamumin.size() != fConfigNbTrackCut) return false;
-    if (vecTPCnsigmamumax.size() != fConfigNbTrackCut) return false;
-    if (vecTOFnsigmaelmin.size() != fConfigNbTrackCut) return false;
-    if (vecTOFnsigmaelmax.size() != fConfigNbTrackCut) return false;
+    if (veceta.size() != fConfigNbTrackCut)
+      return false;
+    if (vecptmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecptmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecDCAxymax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecDCAzmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecIsSPDfirst.size() != fConfigNbTrackCut)
+      return false;
+    if (vecIsSPDany.size() != fConfigNbTrackCut)
+      return false;
+    if (vecIsITSibAny.size() != fConfigNbTrackCut)
+      return false;
+    if (vecITSchi2max.size() != fConfigNbTrackCut)
+      return false;
+    if (vecITSnclsmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecITSnclsmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCchi2max.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnclsmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnclsmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnclsCRmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnclsCRmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecIsDalitzLeg.size() != fConfigNbTrackCut)
+      return false;
+    if (vecPIDmode.size() != fConfigNbTrackCut)
+      return false;
+    if (vecrejbadtof.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmaelmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmaelmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmapimin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmapimax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmaprmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmaprmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmakamin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmakamax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmamumin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmamumax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTOFnsigmaelmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTOFnsigmaelmax.size() != fConfigNbTrackCut)
+      return false;
     return true;
   }
 
@@ -960,11 +991,16 @@ struct AnalysisSameEventPairing {
     auto vecopamax = (std::vector<float>)paircuts.cfgOpAngMax;
     auto vecphivmin = (std::vector<float>)paircuts.cfgPhiVMin;
 
-    if (vecRej.size() != fConfigNbPairCut) return false;
-    if (vecmassmin.size() != fConfigNbPairCut) return false;
-    if (vecmassmax.size() != fConfigNbPairCut) return false;
-    if (vecopamax.size() != fConfigNbPairCut) return false;
-    if (vecphivmin.size() != fConfigNbPairCut) return false;
+    if (vecRej.size() != fConfigNbPairCut)
+      return false;
+    if (vecmassmin.size() != fConfigNbPairCut)
+      return false;
+    if (vecmassmax.size() != fConfigNbPairCut)
+      return false;
+    if (vecopamax.size() != fConfigNbPairCut)
+      return false;
+    if (vecphivmin.size() != fConfigNbPairCut)
+      return false;
     return true;
   }
 
@@ -1059,7 +1095,7 @@ struct AnalysisSameEventPairing {
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
 
           fTrackHistNames.push_back(names);
-        } // end loop (pair cuts)
+        }   // end loop (pair cuts)
       }     // end loop (track cuts)
     }       // end if (track cuts)
 
