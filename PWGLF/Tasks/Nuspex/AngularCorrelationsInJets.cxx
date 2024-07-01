@@ -42,8 +42,6 @@ using namespace o2::framework::expressions;
 
 struct AngularCorrelationsInJets {
   // Preliminary Cuts
-  Configurable<std::string> eventSelections{"eventSelection", "sel8", "choose event selection"};
-  Configurable<std::string> trackSelections{"trackSelection", "globalTracks", "set track selection"};
   Configurable<int> fMinNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "min number of crossed rows TPC"};
   Configurable<int> fMinReqClusterITS{"minReqClusterITS", 2, "min number of clusters required in ITS"};
   Configurable<int> fMinReqClusterTPC{"minReqClusterTPC", 70, "min number of clusters required in TPC"};
@@ -392,7 +390,7 @@ struct AngularCorrelationsInJets {
     return isAntideuteron;
   }
 
-  void setTrackBuffer(const auto& tempBuffer, auto& buffer)
+  void setTrackBuffer(const auto& tempBuffer, auto& buffer)// tempBuffer problematic?
   {
     for (const auto& track : tempBuffer) {
       if (static_cast<int>(buffer.size()) == fTrackBufferSize) {
@@ -409,10 +407,10 @@ struct AngularCorrelationsInJets {
     if (buffer.size() == 0)
       return;
     for (int i = 0; i < static_cast<int>(buffer.size()); i++) { // even if the track buffer isn't even full yet?
-      if (buffer[i].phi() > 2* M_PI || buffer[i].phi() < -2*M_PI) {// problematic?
+      /* if (buffer[i].phi() > 2* M_PI || buffer[i].phi() < -2*M_PI) {// problematic?
         registryData.fill(HIST("hTrackProtocol"), 11);
         continue;
-      }
+      } */
       double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - buffer[i].phi());
       // LOG(info) << "Lars' Fantastic Debugging Tool | Buffer Track Size/Phi: " << buffer.size() << " | " << i << " | " << buffer[i].phi();
       double DeltaEta = TMath::Abs(track.eta() - buffer[i].eta());
@@ -460,7 +458,7 @@ struct AngularCorrelationsInJets {
     for (const auto& track : tracks) {
       if (!selectTrack(track))
         continue;
-        
+
       double mass;
       if (track.hasTOF()) {
         mass = track.mass(); //check reliability, maybe use only pion mass
