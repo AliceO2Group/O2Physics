@@ -72,7 +72,7 @@ struct f0980analysis {
     "PV contributor track selection"}; // PV Contriuibutor
   Configurable<bool> cfgGlobalTrack{
     "cfgGlobalTrack", false,
-    "Global track selection"};  // kGoldenChi2 | kDCAxy | kDCAz
+    "Global track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
   Configurable<float> cfgRatioTPCRowsOverFindableCls{
@@ -86,7 +86,7 @@ struct f0980analysis {
   Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
-  //PID
+  // PID
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};
