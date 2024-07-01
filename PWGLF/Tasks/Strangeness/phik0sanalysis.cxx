@@ -157,11 +157,12 @@ struct phik0shortanalysis {
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
   using MCCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
 
-  // Defining the type of the tracks
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
-
   // Defining the type of the V0s
-  using V0Candidates = soa::Filtered<aod::V0Datas>;
+  using FullV0s = soa::Filtered<aod::V0Datas>;
+
+  // Defining the type of the tracks
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
 
   // Defining the binning policy for mixed event
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
@@ -431,7 +432,7 @@ struct phik0shortanalysis {
     }
   }
 
-  void processQAPurity(SelCollisions::iterator const& collision, FullTracks const& fullTracks, V0Candidates const& V0s)
+  void processQAPurity(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
     // Check if the event selection is passed
     if (!acceptEventQA(collision))
@@ -486,8 +487,8 @@ struct phik0shortanalysis {
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
-          const auto& posDaughterTrack = v0.posTrack_as<FullTracks>();
-          const auto& negDaughterTrack = v0.negTrack_as<FullTracks>();
+          const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+          const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
 
           // Cut on V0 dynamic columns
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
@@ -565,7 +566,7 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processQAPurity, "Process for QA and Phi Purities", true);
 
-  void processSEPhiK0S(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const&, V0Candidates const& V0s)
+  void processSEPhiK0S(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const&, FullV0s const& V0s, V0DauTracks const&)
   {
     if (!collision.isInelGt0())
       return;
@@ -587,8 +588,8 @@ struct phik0shortanalysis {
 
     // V0 already reconstructed by the builder
     for (const auto& v0 : V0s) {
-      const auto& posDaughterTrack = v0.posTrack_as<FullTracks>();
-      const auto& negDaughterTrack = v0.negTrack_as<FullTracks>();
+      const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+      const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
 
       // Cut on V0 dynamic columns
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
@@ -762,7 +763,7 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processSEPhiPion, "Process Same Event for Phi-Pion Analysis", false);
 
-  void processMEPhiK0S(soa::Filtered<SelCollisions> const& collisions, FullTracks const&, V0Candidates const& V0s)
+  void processMEPhiK0S(soa::Filtered<SelCollisions> const& collisions, FullTracks const&, FullV0s const& V0s, V0DauTracks const&)
   {
     // Mixing the events with similar vertex z and multiplicity
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
@@ -788,8 +789,8 @@ struct phik0shortanalysis {
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
 
       for (const auto& v0 : V0ThisColl) {
-        const auto& posDaughterTrack = v0.posTrack_as<FullTracks>();
-        const auto& negDaughterTrack = v0.negTrack_as<FullTracks>();
+        const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+        const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
 
         // Cut on V0 dynamic columns
         if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
