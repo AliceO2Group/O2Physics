@@ -342,8 +342,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
 
-DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);              //! FwdTrack index
-DECLARE_SOA_INDEX_COLUMN(MFTTrack, mfttrack);              //! MFTTrack index
+DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack); //! FwdTrack index
+DECLARE_SOA_INDEX_COLUMN(MFTTrack, mfttrack); //! MFTTrack index
 } // namespace udfwdtrack
 
 // Muon track kinematics
