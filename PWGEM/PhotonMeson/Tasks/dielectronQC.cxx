@@ -73,9 +73,10 @@ struct dielectronQC {
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<bool> cfgDoFlow{"cfgDoFlow", false, "flag to analyze vn"};
+  Configurable<bool> cfgDo_v2{"cfgDo_v2", false, "flag to analyze v2"};
+  Configurable<bool> cfgDo_v3{"cfgDo_v3", false, "flag to analyze v3"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
+  Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
@@ -84,7 +85,6 @@ struct dielectronQC {
   ConfigurableAxis ConfMeeBins{"ConfMeeBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00}, "mee bins for output histograms"};
   ConfigurableAxis ConfPteeBins{"ConfPteeBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00}, "pTee bins for output histograms"};
   ConfigurableAxis ConfDCAeeBins{"ConfDCAeeBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCAee bins for output histograms"};
-  // ConfigurableAxis ConfPCAeeBins{"ConfPCAeeBins", {VARIABLE_WIDTH, 0.0, 0.5, 1, 1.5, 2, 3, 4, 5}, "PCAee bins for output histograms in mm"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -251,6 +251,9 @@ struct dielectronQC {
     delete emh_ele;
     emh_ele = 0x0;
 
+    map_mixed_eventId_to_q2vector.clear();
+    map_mixed_eventId_to_q3vector.clear();
+
     used_trackIds.clear();
     used_trackIds.shrink_to_fit();
   }
@@ -258,7 +261,7 @@ struct dielectronQC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
+    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDo_v2 | cfgDo_v3);
 
     // pair info
     const AxisSpec axis_mass{ConfMeeBins, "m_{ee} (GeV/c^{2})"};
@@ -266,22 +269,22 @@ struct dielectronQC {
     const AxisSpec axis_dca{ConfDCAeeBins, "DCA_{ee}^{3D} (#sigma)"};
 
     std::string_view qvec_det_names[3] = {"FT0M", "FT0A", "FT0C"};
-    int nbin_sp = 1;
-    if (cfgDoFlow) {
-      nbin_sp = 100;
+    int nbin_sp2 = 1;
+    int nbin_sp3 = 1;
+    if (cfgDo_v2) {
+      nbin_sp2 = 100;
     }
-    const AxisSpec axis_sp2{nbin_sp, -5.f, 5.f, Form("u_{2}^{ee} #upoint Q_{2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-    const AxisSpec axis_sp_dummy{1, -5.f, 5.f, Form("u_{3}^{ee} #upoint Q_{3}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
+    if (cfgDo_v3) {
+      nbin_sp3 = 100;
+    }
+    const AxisSpec axis_sp2{nbin_sp2, -5.f, 5.f, Form("u_{2}^{ee} #upoint Q_{2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
+    const AxisSpec axis_sp3{nbin_sp3, -5.f, 5.f, Form("u_{3}^{ee} #upoint Q_{3}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
 
-    fRegistry.add("Pair/same/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp2}, true);
+    fRegistry.add("Pair/same/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp2, axis_sp3}, true);
     fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
     fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
     fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
-
-    fRegistry.add("Pair/mix/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp_dummy}, true);
-    fRegistry.add("Pair/mix/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
-    fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
-    fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
+    fRegistry.addClone("Pair/same/", "Pair/mix/");
 
     // for track info
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -302,7 +305,8 @@ struct dielectronQC {
     fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/hTOFbeta", "TOF beta;p_{in} (GeV/c);TOF #beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
+    fRegistry.add("Track/hTOFbeta", "TOF beta;p_{in} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
+    fRegistry.add("Track/h1overTOFbeta", "TOF beta;p_{in} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {1000, 0.8, 1.8}}, false);
     fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -385,7 +389,7 @@ struct dielectronQC {
   }
 
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2>
-  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2)
+  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, const float q2x_mixed = 0.f, const float q2y_mixed = 0.f, const float q3x_mixed = 0.f, const float q3y_mixed = 0.f)
   {
     if constexpr (ev_id == 1) {
       if (t1.has_ambiguousElectrons() && t2.has_ambiguousElectrons()) {
@@ -423,6 +427,10 @@ struct dielectronQC {
     std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
     std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
     const std::array<float, 2> q2vector[3] = {q2ft0m, q2ft0a, q2ft0c};
+    std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
+    std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
+    std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
+    const std::array<float, 2> q3vector[3] = {q3ft0m, q3ft0a, q3ft0c};
 
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
@@ -436,24 +444,39 @@ struct dielectronQC {
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
     float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
-    float sp2 = 0.f;
+    float sp2 = 0.f, sp3 = 0.f;
     if constexpr (ev_id == 0) {
-      if (cfgDoFlow) {
-        std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-        sp2 = RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]);
+      if (cfgDo_v2) {
+        std::array<float, 2> u2_ll = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
+        sp2 = RecoDecay::dotProd(u2_ll, q2vector[cfgQvecEstimator]);
+      }
+      if (cfgDo_v3) {
+        std::array<float, 2> u3_ll = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
+        sp3 = RecoDecay::dotProd(u3_ll, q3vector[cfgQvecEstimator]);
       }
     } else if constexpr (ev_id == 1) {
-      sp2 = 0.f;
+      if (cfgDo_v2) {
+        // LOGF(info, "q2x_mixed = %f, q2y_mixed = %f", q2x_mixed, q2y_mixed);
+        std::array<float, 2> u2_l1 = {static_cast<float>(std::cos(2 * v1.Phi())), static_cast<float>(std::sin(2 * v1.Phi()))};
+        std::array<float, 2> u2_l2 = {static_cast<float>(std::cos(2 * v2.Phi())), static_cast<float>(std::sin(2 * v2.Phi()))};
+        sp2 = RecoDecay::dotProd(u2_l1, std::array<float, 2>{q2vector[cfgQvecEstimator][0], q2vector[cfgQvecEstimator][1]}) * std::cos(2 * (v1.Phi() - v12.Phi())) + RecoDecay::dotProd(u2_l2, std::array<float, 2>{q2x_mixed, q2y_mixed}) * std::cos(2 * (v2.Phi() - v12.Phi()));
+      }
+      if (cfgDo_v3) {
+        // LOGF(info, "q3x_mixed = %f, q3y_mixed = %f", q3x_mixed, q3y_mixed);
+        std::array<float, 2> u3_l1 = {static_cast<float>(std::cos(3 * v1.Phi())), static_cast<float>(std::sin(3 * v1.Phi()))};
+        std::array<float, 2> u3_l2 = {static_cast<float>(std::cos(3 * v2.Phi())), static_cast<float>(std::sin(3 * v2.Phi()))};
+        sp3 = RecoDecay::dotProd(u3_l1, std::array<float, 2>{q3vector[cfgQvecEstimator][0], q3vector[cfgQvecEstimator][1]}) * std::cos(3 * (v1.Phi() - v12.Phi())) + RecoDecay::dotProd(u3_l2, std::array<float, 2>{q3x_mixed, q3y_mixed}) * std::cos(3 * (v2.Phi() - v12.Phi()));
+      }
     }
 
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp2);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp2, sp3);
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsPhiV"), phiv, v12.M());
     } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp2);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp2, sp3);
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsPhiV"), phiv, v12.M());
     } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp2);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp2, sp3);
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsPhiV"), phiv, v12.M());
     }
 
@@ -530,6 +553,7 @@ struct dielectronQC {
     fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
     fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
     fRegistry.fill(HIST("Track/hTOFbeta"), track.tpcInnerParam(), track.beta());
+    fRegistry.fill(HIST("Track/h1overTOFbeta"), track.tpcInnerParam(), 1. / track.beta());
     fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
     fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
     fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
@@ -553,6 +577,9 @@ struct dielectronQC {
   Partition<FilteredMyTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0);
   Partition<FilteredMyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
 
+  std::map<std::pair<int, int>, std::array<float, 2>> map_mixed_eventId_to_q2vector;
+  std::map<std::pair<int, int>, std::array<float, 2>> map_mixed_eventId_to_q3vector;
+
   std::vector<std::pair<int, int>> used_trackIds;
   int ndf = 0;
   void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& /*tracks*/)
@@ -564,13 +591,22 @@ struct dielectronQC {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDo_v2 | cfgDo_v3);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDo_v2 | cfgDo_v3);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
+      std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
+      std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
+      std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
+      const std::array<float, 2> q2vector[3] = {q2ft0m, q2ft0a, q2ft0c};
+
+      std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
+      std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
+      std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
+      const std::array<float, 2> q3vector[3] = {q3ft0m, q3ft0a, q3ft0c};
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
@@ -651,36 +687,46 @@ struct dielectronQC {
           continue;
         }
 
+        float q2x_mixed = map_mixed_eventId_to_q2vector[mix_dfId_collisionId][0];
+        float q2y_mixed = map_mixed_eventId_to_q2vector[mix_dfId_collisionId][1];
+        float q3x_mixed = map_mixed_eventId_to_q3vector[mix_dfId_collisionId][0];
+        float q3y_mixed = map_mixed_eventId_to_q3vector[mix_dfId_collisionId][1];
+
+        // LOGF(info, "mix_df = %d, mix_collisionId = %d, q2x_mixed = %f, q2y_mixed = %f", mix_dfId, mix_collisionId, q2x_mixed, q2y_mixed);
+
         auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
         auto negTracks_from_event_pool = emh_ele->GetTracksPerCollision(mix_dfId_collisionId);
         // LOGF(info, "Do event mixing: current event (%d, %d) | event pool (%d, %d), npos = %d , nele = %d", ndf, collision.globalIndex(), mix_dfId, mix_collisionId, posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
 
         for (auto& pos : selected_posTracks_in_this_event) { // ULS mix
           for (auto& ele : negTracks_from_event_pool) {
-            fillPairInfo<1>(collision, pos, ele);
+            fillPairInfo<1>(collision, pos, ele, q2x_mixed, q2y_mixed, q3x_mixed, q3y_mixed);
           }
         }
 
         for (auto& ele : selected_negTracks_in_this_event) { // ULS mix
           for (auto& pos : posTracks_from_event_pool) {
-            fillPairInfo<1>(collision, ele, pos);
+            fillPairInfo<1>(collision, ele, pos, q2x_mixed, q2y_mixed, q3x_mixed, q3y_mixed);
           }
         }
 
         for (auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
           for (auto& pos2 : posTracks_from_event_pool) {
-            fillPairInfo<1>(collision, pos1, pos2);
+            fillPairInfo<1>(collision, pos1, pos2, q2x_mixed, q2y_mixed, q3x_mixed, q3y_mixed);
           }
         }
 
         for (auto& ele1 : selected_negTracks_in_this_event) { // LS-- mix
           for (auto& ele2 : negTracks_from_event_pool) {
-            fillPairInfo<1>(collision, ele1, ele2);
+            fillPairInfo<1>(collision, ele1, ele2, q2x_mixed, q2y_mixed, q3x_mixed, q3y_mixed);
           }
         }
       } // end of loop over mixed event pool
 
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) {
+        // LOGF(info, "adding : ndf = %d, collision.globalIndex() = %d, q2x = %f, q2y  = %f", ndf, collision.globalIndex(), q2vector[cfgQvecEstimator][0], q2vector[cfgQvecEstimator][1]);
+        map_mixed_eventId_to_q2vector[key_df_collision] = q2vector[cfgQvecEstimator];
+        map_mixed_eventId_to_q3vector[key_df_collision] = q3vector[cfgQvecEstimator];
         emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh_ele->AddCollisionIdAtLast(key_bin, key_df_collision);
       }
