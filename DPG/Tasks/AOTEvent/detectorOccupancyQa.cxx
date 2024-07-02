@@ -631,7 +631,7 @@ struct DetectorOccupancyQaTask {
           continue;
         nPV++;
 
-        if (track.isGlobalTrack() && track.tpcNClsFound() < confCutMinTPCcls)
+        if (track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls)
           nGlobalTracks++;
       }
 
