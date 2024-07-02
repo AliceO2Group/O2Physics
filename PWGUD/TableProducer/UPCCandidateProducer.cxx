@@ -369,7 +369,7 @@ struct UpcCandProducer {
       double mchmftChi2 = track.chi2MatchMCHMFT();
       udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
       udFwdTracksExtra(track.trackType(), track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2, mchmftChi2,
-                       track.matchMFTTrackId(), track.matchMCHTrackId(), track.mchBitMap(), track.midBitMap(), track.midBoards());
+                       track.mchBitMap(), track.midBitMap(), track.midBoards());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trackID);

@@ -340,10 +340,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh2, midBoardCh2, //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 16) & 0xFF); });
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
-                           [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
-
-DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack); //! FwdTrack index
-DECLARE_SOA_INDEX_COLUMN(MFTTrack, mfttrack); //! MFTTrack index
+                           [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });                    
 } // namespace udfwdtrack
 
 // Muon track kinematics
@@ -367,8 +364,6 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
                   fwdtrack::Chi2,
                   fwdtrack::Chi2MatchMCHMID,
                   fwdtrack::Chi2MatchMCHMFT,
-                  fwdtrack::MFTTrackId,
-                  fwdtrack::MCHTrackId,
                   fwdtrack::MCHBitMap,
                   fwdtrack::MIDBitMap,
                   fwdtrack::MIDBoards);
