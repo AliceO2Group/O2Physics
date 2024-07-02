@@ -690,8 +690,8 @@ struct flowAnalysisGF {
         FillEventQA<kBefore>(collision, tracks);
     }
 
-    int occupancy = collision.trackOccupancyInTimeRange();
     if (cfgDoOccupancySel) {
+      int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < 0 || occupancy > cfgMaxOccupancy)
         return;
       registry.fill(HIST("hEventCount"), 2.5);
