@@ -26,7 +26,7 @@ using namespace o2::aod::pwgem::mcutil;
 
 namespace o2::aod::pwgem::photonmeson::utils::nmhistogram
 {
-void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const char* pairname = "#gamma#gamma", const char* epdetname = "")
+void addNMHistograms(HistogramRegistry* fRegistry, bool do_v2, bool do_v3, bool isMC, const char* pairname = "#gamma#gamma", const char* epdetname = "")
 {
   // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at skimming.!!
   std::vector<double> ptbins;
@@ -46,13 +46,18 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const
 
   const AxisSpec axis_mass{400, 0, 0.8, Form("m_{%s} (GeV/c^{2})", pairname)};
 
-  int nbin_sp = 1;
-  if (doFlow && !isMC) {
-    nbin_sp = 100;
+  int nbin_sp2 = 1;
+  int nbin_sp3 = 1;
+  if (!isMC) {
+    if (do_v2) {
+      nbin_sp2 = 100;
+    }
+    if (do_v3) {
+      nbin_sp3 = 100;
+    }
   }
-  const AxisSpec axis_sp2{nbin_sp, -5.f, 5.f, Form("u_{2}^{%s} #upoint Q_{2}^{%s}", pairname, epdetname)};
-  const AxisSpec axis_sp3{nbin_sp, -5.f, 5.f, Form("u_{3}^{%s} #upoint Q_{3}^{%s}", pairname, epdetname)};
-  const AxisSpec axis_sp_dummy{1, -5.f, 5.f, Form("u_{3}^{%s} #upoint Q_{3}^{%s}", pairname, epdetname)};
+  const AxisSpec axis_sp2{nbin_sp2, -5.f, 5.f, Form("u_{2}^{%s} #upoint Q_{2}^{%s}", pairname, epdetname)};
+  const AxisSpec axis_sp3{nbin_sp3, -5.f, 5.f, Form("u_{3}^{%s} #upoint Q_{3}^{%s}", pairname, epdetname)};
 
   if (isMC) {
     fRegistry->add("Pair/Pi0/hs_Primary", "rec. true pi0", kTHnSparseD, {axis_mass, axis_pt, axis_sp2, axis_sp3}, true);
@@ -72,32 +77,9 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const
     fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetYTitle("rapidity |y|");
   } else {
     fRegistry->add("Pair/same/hs", "diphoton", kTHnSparseD, {axis_mass, axis_pt, axis_sp2, axis_sp3}, true);
-    fRegistry->add("Pair/mix/hs", "diphoton", kTHnSparseD, {axis_mass, axis_pt, axis_sp_dummy, axis_sp_dummy}, true);
+    fRegistry->addClone("Pair/same/", "Pair/mix/");
   }
 }
-
-// template <int ev_id, int ep_det_id, typename TCollision, typename TDiphoton>
-// void fillPairInfo(HistogramRegistry* fRegistry, TCollision const& collision, TDiphoton const& diphoton, const bool doFlow)
-// {
-//   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
-//   if (doFlow) {
-//     std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
-//     std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
-//     std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
-//     std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * diphoton.Phi())), static_cast<float>(std::sin(2 * diphoton.Phi()))};
-//     double sp2[3] = {RecoDecay::dotProd(u2_gg, q2ft0m), RecoDecay::dotProd(u2_gg, q2ft0a), RecoDecay::dotProd(u2_gg, q2ft0c)};
-//
-//     std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
-//     std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
-//     std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
-//     std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * diphoton.Phi())), static_cast<float>(std::sin(3 * diphoton.Phi()))};
-//     double sp3[3] = {RecoDecay::dotProd(u3_gg, q3ft0m), RecoDecay::dotProd(u3_gg, q3ft0a), RecoDecay::dotProd(u3_gg, q3ft0c)};
-//
-//     fRegistry->fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs"), diphoton.M(), diphoton.Pt(), sp2[ep_det_id], sp3[ep_det_id]);
-//   } else {
-//     fRegistry->fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs"), diphoton.M(), diphoton.Pt(), 0.0, 0.0);
-//   }
-// }
 
 template <typename TDiphoton, typename TMCParitlce, typename TMCParticles, typename TMCCollisions>
 void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCParitlce const& mcparticle, TMCParticles const& mcparticles, TMCCollisions const&, const TF1* f1fd_k0s_to_pi0 = nullptr)
