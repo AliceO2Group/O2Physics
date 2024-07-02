@@ -819,8 +819,12 @@ struct EventSelectionTask {
       bool decisions[4];
       for (int iCut = 0; iCut < 4; iCut++) {
         decisions[iCut] = true;
-        for (int iTime = 0; iTime < nTimeIntervals; iTime++)
-          decisions[iCut] *= (nITS567tracksInTimeBins[iTime] < coeffOccupInTimeBins[iCut] * confReferenceOccupanciesInTimeBins->at(iTime));
+        for (int iTime = 0; iTime < nTimeIntervals; iTime++) {
+          if (nITS567tracksInTimeBins[iTime] >= coeffOccupInTimeBins[iCut] * confReferenceOccupanciesInTimeBins->at(iTime)) {
+            decisions[iCut] = false;
+            break;
+          }
+        }
       }
       vNoOccupStrictCuts[colIndex] = decisions[0];
       vNoOccupMediumCuts[colIndex] = decisions[1];
