@@ -54,6 +54,23 @@ using CentFT0A = CentFT0As::iterator;
 using CentFT0C = CentFT0Cs::iterator;
 using CentFDDM = CentFDDMs::iterator;
 using CentNTPV = CentNTPVs::iterator;
+
+template<typename T>
+concept HasRun2Centrality = requires(T &&t) {
+    {t.centRun2V0M() };
+    {t.centRun2CL0() };
+    {t.centRun2CL1() };
+};
+
+template<typename T>
+concept HasCentrality = requires(T &&t) {
+    {t.centFV0A() };
+    {t.centFT0M() };
+    {t.centFT0A() };
+    {t.centFT0C() };
+    {t.centNTPV() };
+};
+
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_CENTRALITY_H_
