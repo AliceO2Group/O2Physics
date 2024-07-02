@@ -347,9 +347,9 @@ struct JetTaggerHFQA {
   bool prongAcceptance(float sigmaDecayLength, float decayLengthSig, float maxSigmaDecayLength, float minDecayLengthSig)
   {
     if ((sigmaDecayLength < maxSigmaDecayLength) && (decayLengthSig > minDecayLengthSig))
-      return 0;
+      return 1;
 
-    return 1;
+    return 0;
   }
 
   template <typename V, typename JetType>
