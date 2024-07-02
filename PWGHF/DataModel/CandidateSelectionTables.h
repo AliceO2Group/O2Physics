@@ -406,6 +406,15 @@ DECLARE_SOA_TABLE(HfSelToOmegaKa, "AOD", "HFSELTOOMEKA",
                   hf_sel_toomegaka::TpcNSigmaKaFromCharmBaryon, hf_sel_toomegaka::TpcNSigmaKaFromCasc, hf_sel_toomegaka::TpcNSigmaPiFromLambda, hf_sel_toomegaka::TpcNSigmaPrFromLambda,
                   hf_sel_toomegaka::TofNSigmaKaFromCharmBaryon, hf_sel_toomegaka::TofNSigmaKaFromCasc, hf_sel_toomegaka::TofNSigmaPiFromLambda, hf_sel_toomegaka::TofNSigmaPrFromLambda)
 
+namespace hf_sel_omegac
+{
+DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, std::vector<float>);
+DECLARE_SOA_COLUMN(MlProbOmegacBar, mlProbOmegacBar, std::vector<float>);
+} // namespace hf_sel_omegac
+
+DECLARE_SOA_TABLE(HfMlSelOmegacToOmegaPi, "AOD", "HFMLOMEGAC", //!
+                  hf_sel_omegac::MlProbOmegac, hf_sel_omegac::MlProbOmegacBar);
+
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
