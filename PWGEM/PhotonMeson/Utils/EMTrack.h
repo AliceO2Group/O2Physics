@@ -34,6 +34,7 @@ class EMTrack
     fCharge = charge;
     fDCAxy = dcaXY;
     fDCAz = dcaZ;
+    fPairDCA3DinSigmaOTF = 0;
 
     fAmbEleSelfIds = amb_ele_self_ids;
     if (fAmbEleSelfIds.size() > 0) {
@@ -62,6 +63,9 @@ class EMTrack
   std::vector<int> ambiguousElectronsIds() const { return fAmbEleSelfIds; }
   float signed1Pt() const { return fCharge * 1.f / fPt; }
 
+  float pairDca3DinSigmaOTF() const { return fPairDCA3DinSigmaOTF; }
+  void setPairDca3DinSigmaOTF(float dca) { fPairDCA3DinSigmaOTF = dca; }
+
  protected:
   int fGlobalId;
   int fCollisionId;
@@ -73,6 +77,7 @@ class EMTrack
   int8_t fCharge;
   float fDCAxy;
   float fDCAz;
+  float fPairDCA3DinSigmaOTF;
   bool fIsAmbiguous;
   std::vector<int> fAmbEleSelfIds;
 };
@@ -132,6 +137,10 @@ class EMTrackWithCov : public EMTrack
   float c1PtSnp() const { return fC1PtSnp; }
   float c1PtTgl() const { return fC1PtTgl; }
   float c1Pt21Pt2() const { return fC1Pt21Pt2; }
+
+  void setCYY(float cYY) { fCYY = cYY; }
+  void setCZY(float cZY) { fCZY = cZY; }
+  void setCZZ(float cZZ) { fCZZ = cZZ; }
 
  protected:
   float fX;

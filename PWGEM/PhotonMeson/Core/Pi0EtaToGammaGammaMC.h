@@ -640,7 +640,13 @@ struct Pi0EtaToGammaGammaMC {
           if (abs(v12.Rapidity()) > maxY_rec) {
             continue;
           }
-          o2::aod::pwgem::photonmeson::utils::nmhistogram::fillPairInfo<0, pairtype>(&fRegistry, collision, v12, cfgDoFlow);
+          // if (pi0id > 0) {
+          //   auto pi0mc = mcparticles.iteratorAt(pi0id);
+          //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
+          // } else if (etaid > 0) {
+          //   auto etamc = mcparticles.iteratorAt(etaid);
+          //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
+          // }
         } // end of pairing loop
       }   // end of pairing in same event
     }     // end of collision loop
@@ -688,7 +694,7 @@ struct Pi0EtaToGammaGammaMC {
       if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue; // I don't know why this is necessary in simulation.
       }
-      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && ((!collision.alias_bit(triggerAliases::kTVXinEMC) && emccuts.requireCaloReadout) || collision.ncollsPerBC() != 1)) {
+      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && (!collision.alias_bit(triggerAliases::kTVXinEMC) && emccuts.requireCaloReadout)) {
         continue; // I don't know why this is necessary in simulation.
       }
 
