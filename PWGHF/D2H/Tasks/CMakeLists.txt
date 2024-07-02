@@ -84,6 +84,11 @@ o2physics_add_dpl_workflow(task-sigmac
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-sigmac-to-cascade
+                    SOURCES taskSigmacToCascade.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-xic
                     SOURCES taskXic.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
