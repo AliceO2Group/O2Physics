@@ -68,9 +68,12 @@ struct DetectorOccupancyQaTask {
   Configurable<bool> confAddTracksVsFwdHistos{"AddTracksVsFwdHistos", true, "0 - add histograms, 1 - skip"};
   Configurable<int> nBinsTracks{"nBinsTracks", 400, "N bins in n tracks histo"};
   Configurable<int> nMaxTracks{"nMaxTracks", 8000, "N max in n tracks histo"};
-  Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 4000, "N max in n tracks histo"};
+  Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 3000, "N max in n tracks histo"};
   Configurable<int> nBinsMultFwd{"nBinsMultFwd", 400, "N bins in mult fwd histo"};
   Configurable<float> nMaxMultFwd{"nMaxMultFwd", 200000, "N max in mult fwd histo"};
+
+  Configurable<int> nBinsOccupancy{"nBinsOccupancy", 150, "N bins for occupancy axis"};
+  Configurable<float> nMaxOccupancy{"nMaxOccupancy", 15000, "N for max of the occupancy axis"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -98,6 +101,17 @@ struct DetectorOccupancyQaTask {
     // histograms for occupancy-in-time-window study
     double kMaxOccup = confOccupancyHistCoeffNtracksForOccupancy;
     double kMaxThisEv = confCoeffMaxNtracksThisEvent;
+
+    AxisSpec axisBC{3601, -0.5, 3600.5, "bc"};
+    histos.add("h2D_diff_FoundBC_vs_BC", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_multAbove10", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_multAbove20", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_multAbove50", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_multAbove100", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_hasTOF", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_hasTRD", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_hasTOF_multAbove10", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_hasTRD_multAbove10", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
 
     if (confAddBasicQAhistos) {
       int nMax1D = kMaxThisEv * 8000;
@@ -160,9 +174,9 @@ struct DetectorOccupancyQaTask {
 
     if (confAddTracksVsFwdHistos) {
       AxisSpec axisNtracks{nBinsTracks, -0.5, nMaxTracks - 0.5, "n tracks"};
-      AxisSpec axisNtracksGlobal{nMaxGlobalTracks, -0.5, nMaxGlobalTracks - 0.5, "n tracks"};
+      AxisSpec axisNtracksGlobal{nBinsTracks, -0.5, nMaxGlobalTracks - 0.5, "n tracks"};
       AxisSpec axisMultFw{nBinsMultFwd, 0., static_cast<float>(nMaxMultFwd), "mult Fwd"};
-      AxisSpec axisOccupancy{60, 0., 15000, "occupancy (n ITS tracks weighted)"};
+      AxisSpec axisOccupancy{nBinsOccupancy, 0., nMaxOccupancy, "occupancy (n ITS tracks weighted)"};
 
       histos.add("nTracksPV_vs_V0A_kNoHighOccupancyAgressive", "nTracksPV_vs_V0A_kNoHighOccupancyAgressive", kTH2F, {axisMultFw, axisNtracks});
       histos.add("nTracksPV_vs_V0A_kNoHighOccupancyStrict", "nTracksPV_vs_V0A_kNoHighOccupancyStrict", kTH2F, {axisMultFw, axisNtracks});
@@ -298,6 +312,7 @@ struct DetectorOccupancyQaTask {
       int nITSTPCtracks = 0;
       int nITSTPCtracksPtEtaCuts = 0;
       int nTOFtracks = 0;
+      int nTRDtracks = 0;
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       for (auto& track : tracksGrouped) {
         if (!track.isPVContributor()) {
@@ -307,6 +322,7 @@ struct DetectorOccupancyQaTask {
           nITS567cls++;
         nITSTPCtracks += track.hasITS() && track.hasTPC();
         nTOFtracks += track.hasTOF();
+        nTRDtracks += track.hasTRD();
 
         if (track.pt() < confCutPtMinThisEvent || track.pt() > confCutPtMaxThisEvent)
           continue;
@@ -348,6 +364,33 @@ struct DetectorOccupancyQaTask {
       vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 300) * bcNS > timeWinOccupancyCalcNS) && ((nBCsPerTF - 4000 - bcInTF) * bcNS > timeWinOccupancyCalcNS) ? true : false;
 
       LOGP(debug, "###  check bcInTF cut: colIndex={} bcInTF={} vIsFullInfoForOccupancy={}", colIndex, bcInTF, static_cast<int>(vIsFullInfoForOccupancy[colIndex]));
+
+      // additional QA:
+      if (col.selection_bit(kNoTimeFrameBorder) && col.selection_bit(kNoITSROFrameBorder)) {
+        auto bcFoundId = bc.globalBC() % 3564;
+        auto bcNonFound = col.bc_as<BCsRun3>();
+        auto bcNonFoundId = bcNonFound.globalBC() % 3564;
+        int64_t diffFoundBC_vs_BC = (int64_t)bcFoundId - (int64_t)bcNonFoundId;
+        histos.fill(HIST("h2D_diff_FoundBC_vs_BC"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 10)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_multAbove10"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 20)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_multAbove20"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 50)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_multAbove50"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 100)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_multAbove100"), bcNonFoundId, diffFoundBC_vs_BC);
+
+        if (nTOFtracks > 0)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_hasTOF"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nTRDtracks > 0)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_hasTRD"), bcNonFoundId, diffFoundBC_vs_BC);
+
+        if (nITS567cls > 10 && nTOFtracks > 0)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_hasTOF_multAbove10"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 10 && nTRDtracks > 0)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_hasTRD_multAbove10"), bcNonFoundId, diffFoundBC_vs_BC);
+      }
     }
 
     // find for each collision all collisions within the defined time window
