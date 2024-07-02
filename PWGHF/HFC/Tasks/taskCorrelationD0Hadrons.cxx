@@ -52,8 +52,8 @@ AxisSpec axisDeltaPhi = {64, -o2::constants::math::PIHalf, 3. * o2::constants::m
 AxisSpec axisPtD = {10, 0., 10., ""};
 AxisSpec axisPtHadron = {11, 0., 11., ""};
 AxisSpec axisPoolBin = {9, 0., 9., ""};
-AxisSpec axisInvmass = {200, 1.3848, 2.3848, ""};
 AxisSpec axisCorrelationState = {2, 0., 1., ""};
+ConfigurableAxis axisMass{"axisMass", {250, 1.65f, 2.15f}, ""};
 
 // definition of vectors for standard ptbin and invariant mass configurables
 const int nPtBinsCorrelations = 12;
@@ -90,7 +90,16 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{vecSidebandRightInner}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{vecSidebandRightOuter}, "Outer values of right sideband vs pT"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D meson specie under study"};
+  Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
+  Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
   Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying efficiency weights"};
+
+  enum Region {
+    Default = 0, // 默认值
+    Toward,
+    Away,
+    Transverse
+  };
 
   HistogramRegistry registry{
     "registry",
@@ -169,7 +178,9 @@ struct HfTaskCorrelationD0Hadrons {
      {"hDeltaEtaPtIntGen", stringMcParticles + stringDeltaEta + "entries", {HistType::kTH1F, {axisDeltaEta}}},
      {"hDeltaPhiPtIntGen", stringMcParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {axisDeltaPhi}}},
      // Toward Transverse Away
-     {"hCorInfoWithCorrelationState", stringDHadron + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}, {axisInvmass}, {axisCorrelationState}}}}}};
+     {"hToward", "Toward invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     {"hTransverse", "Transverse invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     {"hAway", "Away invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}}}};
   void init(InitContext&)
   {
     int nBinsPtAxis = binsCorrelations->size() - 1;
@@ -214,6 +225,16 @@ struct HfTaskCorrelationD0Hadrons {
     registry.get<THnSparse>(HIST("hCorrel2DVsPtGen"))->Sumw2();
   }
 
+  Region getRegion(double deltaPhi)
+  {
+    if (std::abs(deltaPhi) < o2::constants::math::PI / 3.) {
+      return Toward;
+    } else if (deltaPhi > 2. * o2::constants::math::PI / 3. && deltaPhi < 4. * o2::constants::math::PI / 3.) {
+      return Away;
+    } else {
+      return Transverse;
+    }
+  }
   /// D-h correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   /// Works on both USL and LS analyses pair tables
   void processData(aod::DHadronPairFull const& pairEntries)
@@ -231,7 +252,6 @@ struct HfTaskCorrelationD0Hadrons {
       int ptBinD = o2::analysis::findBin(binsCorrelations, ptD);
       int poolBin = pairEntry.poolBin();
       bool isAutoCorrelated = pairEntry.isAutoCorrelated();
-
       // reject entries outside pT ranges of interest
       if (ptBinD < 0 || effBinD < 0) {
         continue;
@@ -249,11 +269,42 @@ struct HfTaskCorrelationD0Hadrons {
         continue;
       }
       //==============================================================================================================
-      if (signalStatus == ParticleTypeData::D0Only || (signalStatus == ParticleTypeData::D0D0barBoth)) {
-        registry.fill(HIST("hCorInfoWithCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massD, isAutoCorrelated, efficiencyWeight);
-      }
-      if (signalStatus == ParticleTypeData::D0barOnly || (signalStatus == ParticleTypeData::D0D0barBoth)) {
-        registry.fill(HIST("hCorInfoWithCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massDbar, isAutoCorrelated, efficiencyWeight);
+      if (isTowardTransverseAway) {
+        // Divide into three regions: toward, transverse, and away
+        if (ptHadron < leadingParticlePtMin) {
+          continue;
+        }
+        Region region = getRegion(deltaPhi);
+        if (signalStatus == ParticleTypeData::D0Only || signalStatus == ParticleTypeData::D0D0barBoth) {
+          switch (region) {
+            case Toward:
+              registry.fill(HIST("hToward"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            case Away:
+              registry.fill(HIST("hAway"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            case Transverse:
+              registry.fill(HIST("hTransverse"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            default:
+              break;
+          }
+        }
+        if (signalStatus == ParticleTypeData::D0barOnly || signalStatus == ParticleTypeData::D0D0barBoth) {
+          switch (region) {
+            case Toward:
+              registry.fill(HIST("hToward"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            case Away:
+              registry.fill(HIST("hAway"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            case Transverse:
+              registry.fill(HIST("hTransverse"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            default:
+              break;
+          }
+        }
       }
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if ((massD > signalRegionLeft->at(ptBinD) && massD < signalRegionRight->at(ptBinD)) && ((signalStatus == ParticleTypeData::D0Only) || (signalStatus == ParticleTypeData::D0D0barBoth))) {

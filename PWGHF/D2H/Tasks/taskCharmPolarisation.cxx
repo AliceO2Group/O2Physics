@@ -680,6 +680,11 @@ struct TaskPolarisationCharmHadrons {
         }
         origin = candidate.originMcRec();
         ptBhadMother = candidate.ptBhadMotherPart();
+        int pdgBhadMother = candidate.pdgBhadMotherPart();
+        // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
+        if (origin == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557)) {
+          return isCandidateInSignalRegion;
+        }
       } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
         if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) { // this candidate is not signal, skip
           return isCandidateInSignalRegion;
@@ -913,6 +918,11 @@ struct TaskPolarisationCharmHadrons {
       origin = mcParticle.originMcGen();
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(mcParticle.idxBhadMotherPart() - mcParticles.offset());
+        int pdgBhadMother = std::abs(bHadMother.pdgCode());
+        // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
+        if (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557) {
+          return;
+        }
         ptBhadMother = bHadMother.pt();
       }
 
