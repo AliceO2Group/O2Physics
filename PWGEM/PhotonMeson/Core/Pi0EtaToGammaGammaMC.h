@@ -624,8 +624,8 @@ struct Pi0EtaToGammaGammaMC {
               auto etamc = mcparticles.iteratorAt(etaid);
               o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
             }
-          }    // end of dielectron loop
-        }      // end of pcm loop
+          } // end of dielectron loop
+        } // end of pcm loop
       } else { // PCM-EMC, PCM-PHOS. Nightmare. don't run these pairs.
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
@@ -648,8 +648,8 @@ struct Pi0EtaToGammaGammaMC {
           //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
           // }
         } // end of pairing loop
-      }   // end of pairing in same event
-    }     // end of collision loop
+      } // end of pairing in same event
+    } // end of collision loop
   }
 
   template <int par_id, typename TBinnedData>
@@ -694,7 +694,7 @@ struct Pi0EtaToGammaGammaMC {
       if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue; // I don't know why this is necessary in simulation.
       }
-      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && ((!collision.alias_bit(triggerAliases::kTVXinEMC) && emccuts.requireCaloReadout) || collision.ncollsPerBC() != 1)) {
+      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && (!collision.alias_bit(triggerAliases::kTVXinEMC) && emccuts.requireCaloReadout)) {
         continue; // I don't know why this is necessary in simulation.
       }
 
