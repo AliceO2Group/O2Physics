@@ -11,25 +11,38 @@
 //
 // ========================
 //
-// This code loops over photons and makes pairs for neutral mesons analyses.
+// This code loops over v0 photons and makes pairs for photon HBT analysis.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <cstring>
+#include <iterator>
+
+#include "TString.h"
+#include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/LorentzRotation.h"
+#include "Math/GenVector/Boost.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
-#include "Common/Core/RecoDecay.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGamma.h"
+#include "PWGEM/PhotonMeson/Core/PhotonHBT.h"
 
 using namespace o2;
 using namespace o2::aod;
 
+// using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
+// using MyPrimaryElectron = MyPrimaryElectrons::iterator;
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMDalitzEE, MyV0Photons, aod::V0Legs, MyPrimaryElectrons>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmdalitzee"}),
-  };
+    adaptAnalysisTask<PhotonHBT<PairType::kEEEE, MyPrimaryElectrons>>(cfgc, TaskName{"photon-hbt-eeee"})};
 }

@@ -38,7 +38,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfFillQAEventHistograms2D{"cfFillQAEventHistograms2D", false, "if false, all QA 2D event histograms are not filled. if true, only the ones for which fBookQAEventHistograms2D[...] is true, are filled"};
   Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"MultTPC_vs_NContributors-1", "Vertex_z_vs_MultTPC-1", "Vertex_z_vs_NContributors-1", "CentFT0M_vs_CentNTPV-1", "CentRun2V0M_vs_CentRun2SPDTracklets-1", "CentRun2V0M_vs_NContributors-1"}, "book (1) or do not book (0) this QA 2D event histogram"};
   Configurable<bool> cfFillQAParticleHistograms2D{"cfFillQAParticleHistograms2D", false, "if false, all QA 2D particle histograms are not filled. if true, only the ones for which fBookQAParticleHistograms2D[...] is true, are filled"};
-  Configurable<vector<string>> cfBookQAParticleHistograms2D{"cfBookQAParticleHistograms2D", {"dcaXY_vs_Pt-1"}, "nook (1) or do not book (0) this QA 2D particle histogram"};
+  Configurable<vector<string>> cfBookQAParticleHistograms2D{"cfBookQAParticleHistograms2D", {"dcaXY_vs_Pt-1"}, "book (1) or do not book (0) this QA 2D particle histogram"};
 } cf_qa;
 
 // *) Event histograms:
@@ -90,7 +90,7 @@ struct : ConfigurableGroup {
 
 // *) Particle cuts:
 struct : ConfigurableGroup {
-  Configurable<vector<string>> cfUseParticleCuts{"cfUseParticleCuts", {"Phi-1", "Pt-1", "Eta-1", "Charge-1", "tpcNClsFindable-1", "tpcNClsShared-1", "tpcNClsFound-1", "tpcNClsCrossedRows-1", "itsNCls-1", "itsNClsInnerBarrel-1", "tpcCrossedRowsOverFindableCls-1", "tpcFoundOverFindableCls-1", "tpcFractionSharedCls-1", "dcaXY-1", "dcaZ-1", "PDG-1", "trackCutFlagFb1-0", "trackCutFlagFb2-0", "isQualityTrack-0", "isPrimaryTrack-0", "isInAcceptanceTrack-0", "isGlobalTrack-0"}, "Use (1) or do not use (0) particle cuts"};
+  Configurable<vector<string>> cfUseParticleCuts{"cfUseParticleCuts", {"Phi-1", "Pt-1", "Eta-1", "Charge-1", "tpcNClsFindable-1", "tpcNClsShared-1", "tpcNClsFound-1", "tpcNClsCrossedRows-1", "itsNCls-1", "itsNClsInnerBarrel-1", "tpcCrossedRowsOverFindableCls-1", "tpcFoundOverFindableCls-1", "tpcFractionSharedCls-1", "dcaXY-1", "dcaZ-1", "PDG-1", "trackCutFlagFb1-0", "trackCutFlagFb2-0", "isQualityTrack-0", "isPrimaryTrack-0", "isInAcceptanceTrack-0", "isGlobalTrack-0", "PtDependentDCAxyParameterization-0"}, "Use (1) or do not use (0) particle cuts"};
   Configurable<bool> cfUseParticleCutCounterAbsolute{"cfUseParticleCutCounterAbsolute", false, "profile and save how many times each particle cut counter triggered (absolute). Use with care, as this is computationally heavy"};
   Configurable<bool> cfUseParticleCutCounterSequential{"cfUseParticleCutCounterSequential", false, "profile and save how many times each particle cut counter triggered (sequential). Use with care, as this is computationally heavy"};
   Configurable<vector<float>> cfPhi{"cfPhi", {0.0, TMath::TwoPi()}, "phi range: {min, max}[rad], with convention: min <= phi < max"};
@@ -115,6 +115,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfisPrimaryTrack{"cfisPrimaryTrack", false, "TBI 20240510 add description"};
   Configurable<bool> cfisInAcceptanceTrack{"cfisInAcceptanceTrack", false, "TBI 20240510 add description"};
   Configurable<bool> cfisGlobalTrack{"cfisGlobalTrack", false, "TBI 20240510 add description"};
+  Configurable<string> cfPtDependentDCAxyParameterization{"cfPtDependentDCAxyParameterization", "some formula TBI add some default formula, e.g. 0.0105+0.0350/x^1.1", "set here formula for pt-dependence DCAxy cut, in the following example format 0.0105+0.0350/x^1.1"};
   // TBI 20240426 do I need to add separate support for booleans to use each specific cut?
 } cf_pc;
 

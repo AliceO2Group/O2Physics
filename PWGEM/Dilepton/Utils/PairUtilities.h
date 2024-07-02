@@ -28,11 +28,11 @@ using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
 template <typename TDCAFitter, typename TCollision, typename TTrack>
-bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1, TTrack const& t2, float& pca, float& lxy)
+bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1, TTrack const& t2, float& pca, float& lxy, float& cosPA)
 {
   std::array<float, 3> svpos = {0.}; // secondary vertex position
-  // std::array<float, 3> pvec0 = {0.};
-  // std::array<float, 3> pvec1 = {0.};
+  std::array<float, 3> pvec0 = {0.};
+  std::array<float, 3> pvec1 = {0.};
   auto pTrack = getTrackParCov(t1);
   auto nTrack = getTrackParCov(t2);
 
@@ -43,20 +43,30 @@ bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1,
     for (int i = 0; i < 3; i++) {
       svpos[i] = vtx[i];
     }
-    // fitter.getTrack(0).getPxPyPzGlo(pvec0); // positive
-    // fitter.getTrack(1).getPxPyPzGlo(pvec1); // negative
-    // std::array<float, 3> pvxyz{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
+    fitter.getTrack(0).getPxPyPzGlo(pvec0); // positive
+    fitter.getTrack(1).getPxPyPzGlo(pvec1); // negative
+    std::array<float, 3> pvxyz{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
     // float pt = RecoDecay::sqrtSumOfSquares(pvxyz[0], pvxyz[1]);
     // LOGF(info, "pair pT = %f GeV/c at sv", pt);
 
     pca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between 2 legs.
     lxy = RecoDecay::sqrtSumOfSquares(svpos[0] - collision.posX(), svpos[1] - collision.posY());
+    cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, svpos, pvxyz);
     return true;
   } else {
     pca = 999.f;
     lxy = 999.f;
+    cosPA = 999.f;
     return false;
   }
+}
+
+// function call without cosPA
+template <typename TDCAFitter, typename TCollision, typename TTrack>
+bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1, TTrack const& t2, float& pca, float& lxy)
+{
+  float cosPA = 999.f;
+  return isSVFound(fitter, collision, t1, t2, pca, lxy, cosPA);
 }
 //_______________________________________________________________________
 template <typename TFwdDCAFitter, typename TCollision, typename TTrack>

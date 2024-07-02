@@ -44,6 +44,7 @@ struct JetFinderTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  Configurable<double> trackingEfficiency{"trackingEfficiency", 1.0, "tracking efficiency applied to jet finding"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
@@ -140,7 +141,7 @@ struct JetFinderTask {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
+    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, registry.get<THn>(HIST("hJet")), fillTHnSparse);
   }
 
@@ -153,7 +154,7 @@ struct JetFinderTask {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracksSub>, soa::Filtered<JetTracksSub>::iterator>(inputParticles, tracks, trackSelection);
+    jetfindingutilities::analyseTracks<soa::Filtered<JetTracksSub>, soa::Filtered<JetTracksSub>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetEWSPtMin, jetEWSPtMax, jetRadius, jetAreaFractionMin, collision, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, registry.get<THn>(HIST("hJetEWS")), fillTHnSparse);
   }
 
@@ -179,7 +180,7 @@ struct JetFinderTask {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
+    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     jetfindingutilities::analyseClusters(inputParticles, &clusters);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, registry.get<THn>(HIST("hJet")), fillTHnSparse);
   }

@@ -233,6 +233,7 @@ struct skimmerPrimaryElectron {
 
     gpu::gpustd::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
+    track_par_cov_recalc.setPID(o2::track::PID::Electron);
     std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
     getPxPyPz(track_par_cov_recalc, pVec_recalc);
@@ -316,6 +317,7 @@ struct skimmerPrimaryElectron {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
       gpu::gpustd::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
+      track_par_cov_recalc.setPID(o2::track::PID::Electron);
       std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
       getPxPyPz(track_par_cov_recalc, pVec_recalc);
@@ -736,19 +738,19 @@ struct prefilterPrimaryElectron {
     }
 
     gpu::gpustd::array<float, 2> dcaInfo;
-    auto track_par_recalc = getTrackPar(track);
+    auto track_par_cov_recalc = getTrackParCov(track);
     std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_recalc, 2.f, matCorr, &dcaInfo);
-    getPxPyPz(track_par_recalc, pVec_recalc);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+    getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
     if (abs(dcaInfo[0]) < min_dcatopv) {
       return false;
     }
 
-    if (isITSonlyTrack(track) && track_par_recalc.getPt() > max_pt_itsonly) {
+    if (isITSonlyTrack(track) && track_par_cov_recalc.getPt() > max_pt_itsonly) {
       return false;
     }
-    if (abs(track_par_recalc.getEta()) > maxeta) {
+    if (abs(track_par_cov_recalc.getEta()) > maxeta) {
       return false;
     }
 
@@ -767,21 +769,21 @@ struct prefilterPrimaryElectron {
     std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
 
     if constexpr (loose_track_sign > 0) { // positive track is loose track
-      auto track_par_recalc = getTrackPar(pos);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_recalc, 2.f, matCorr, &dcaInfo);
-      getPxPyPz(track_par_recalc, pVec_recalc);
+      auto track_par_cov_recalc = getTrackParCov(pos);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+      getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
       ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
-      ROOT::Math::PtEtaPhiMVector v2(track_par_recalc.getPt(), track_par_recalc.getEta(), track_par_recalc.getPhi(), o2::constants::physics::MassElectron);
+      ROOT::Math::PtEtaPhiMVector v2(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron);
       ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
       mee = v12.M();
       phiv = getPhivPair(pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
     } else {
-      auto track_par_recalc = getTrackPar(ele);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_recalc, 2.f, matCorr, &dcaInfo);
-      getPxPyPz(track_par_recalc, pVec_recalc);
+      auto track_par_cov_recalc = getTrackParCov(ele);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+      getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
-      ROOT::Math::PtEtaPhiMVector v1(track_par_recalc.getPt(), track_par_recalc.getEta(), track_par_recalc.getPhi(), o2::constants::physics::MassElectron);
+      ROOT::Math::PtEtaPhiMVector v1(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron);
       ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
       ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
       mee = v12.M();

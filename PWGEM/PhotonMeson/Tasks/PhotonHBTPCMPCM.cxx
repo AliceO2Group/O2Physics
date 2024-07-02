@@ -11,20 +11,38 @@
 //
 // ========================
 //
-// This code loops over photons and makes pairs for neutral mesons analyses.
+// This code loops over v0 photons and makes pairs for photon HBT analysis.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <cstring>
+#include <iterator>
+
+#include "TString.h"
+#include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/LorentzRotation.h"
+#include "Math/GenVector/Boost.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGamma.h"
+#include "PWGEM/PhotonMeson/Core/PhotonHBT.h"
 
 using namespace o2;
 using namespace o2::aod;
+// using namespace o2::framework;
+// using namespace o2::framework::expressions;
+// using namespace o2::soa;
+// using namespace o2::aod::photonpair;
+// using namespace o2::aod::pwgem::photon;
+// using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 // using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 // using MyV0Photon = MyV0Photons::iterator;
@@ -32,6 +50,5 @@ using namespace o2::aod;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmpcm"}),
-  };
+    adaptAnalysisTask<PhotonHBT<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"photon-hbt-pcmpcm"})};
 }

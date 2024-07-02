@@ -175,11 +175,11 @@ struct phipbpb {
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
-    histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiTPCR", "PsiTPCR", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiTPCL", "PsiTPCL", kTH2F, {centAxis, phiAxis});
+    histos.add("hPsiFT0C", "PsiFT0C", kTH3F, {centAxis, occupancyAxis, phiAxis});
+    histos.add("hPsiFT0A", "PsiFT0A", kTH3F, {centAxis, occupancyAxis, phiAxis});
+    histos.add("hPsiTPC", "PsiTPC", kTH3F, {centAxis, occupancyAxis, phiAxis});
+    histos.add("hPsiTPCR", "PsiTPCR", kTH3F, {centAxis, occupancyAxis, phiAxis});
+    histos.add("hPsiTPCL", "PsiTPCL", kTH3F, {centAxis, occupancyAxis, phiAxis});
     if (!fillRapidity) {
       histos.add("hSparseV2SASameEvent_costhetastarOP", "hSparseV2SASameEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_costhetastarIP", "hSparseV2SASameEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -211,19 +211,19 @@ struct phipbpb {
       histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     }
     // histogram for resolution
-    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
-    histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH2F, {centAxis, resAxis});
-    histos.add("ResFT0CTPCL", "ResFT0CTPCL", kTH2F, {centAxis, resAxis});
-    histos.add("ResTPCRTPCL", "ResTPCRTPCL", kTH2F, {centAxis, resAxis});
-    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
-    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
+    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResFT0CTPCL", "ResFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResTPCRTPCL", "ResTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
 
-    histos.add("ResSPFT0CTPC", "ResSPFT0CTPC", kTH2F, {centAxis, resAxis});
-    histos.add("ResSPFT0CTPCR", "ResSPFT0CTPCR", kTH2F, {centAxis, resAxis});
-    histos.add("ResSPFT0CTPCL", "ResSPFT0CTPCL", kTH2F, {centAxis, resAxis});
-    histos.add("ResSPTPCRTPCL", "ResSPTPCRTPCL", kTH2F, {centAxis, resAxis});
-    histos.add("ResSPFT0CFT0A", "ResSPFT0CFT0A", kTH2F, {centAxis, resAxis});
-    histos.add("ResSPFT0ATPC", "ResSPFT0ATPC", kTH2F, {centAxis, resAxis});
+    histos.add("ResSPFT0CTPC", "ResSPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResSPFT0CTPCR", "ResSPFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResSPFT0CTPCL", "ResSPFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResSPTPCRTPCL", "ResSPTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResSPFT0CFT0A", "ResSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResSPFT0ATPC", "ResSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
 
     // MC histogram
     if (isMC) {
@@ -441,25 +441,25 @@ struct phipbpb {
       return;
     }
     histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
-    histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
-    histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
-    histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
-    histos.fill(HIST("hPsiTPCR"), centrality, psiTPCR);
-    histos.fill(HIST("hPsiTPCL"), centrality, psiTPCL);
+    histos.fill(HIST("hPsiFT0C"), centrality, occupancy, psiFT0C);
+    histos.fill(HIST("hPsiFT0A"), centrality, occupancy, psiFT0A);
+    histos.fill(HIST("hPsiTPC"), centrality, occupancy, psiTPC);
+    histos.fill(HIST("hPsiTPCR"), centrality, occupancy, psiTPCR);
+    histos.fill(HIST("hPsiTPCL"), centrality, occupancy, psiTPCL);
 
-    histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
-    histos.fill(HIST("ResFT0CTPCR"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPCR)));
-    histos.fill(HIST("ResFT0CTPCL"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPCL)));
-    histos.fill(HIST("ResTPCRTPCL"), centrality, TMath::Cos(2.0 * (psiTPCR - psiTPCL)));
-    histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
-    histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+    histos.fill(HIST("ResFT0CTPC"), centrality, occupancy, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+    histos.fill(HIST("ResFT0CTPCR"), centrality, occupancy, TMath::Cos(2.0 * (psiFT0C - psiTPCR)));
+    histos.fill(HIST("ResFT0CTPCL"), centrality, occupancy, TMath::Cos(2.0 * (psiFT0C - psiTPCL)));
+    histos.fill(HIST("ResTPCRTPCL"), centrality, occupancy, TMath::Cos(2.0 * (psiTPCR - psiTPCL)));
+    histos.fill(HIST("ResFT0CFT0A"), centrality, occupancy, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+    histos.fill(HIST("ResFT0ATPC"), centrality, occupancy, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
 
-    histos.fill(HIST("ResSPFT0CTPC"), centrality, QFT0C * QTPC * TMath::Cos(2.0 * (psiFT0C - psiTPC)));
-    histos.fill(HIST("ResSPFT0CTPCR"), centrality, QFT0C * QTPCR * TMath::Cos(2.0 * (psiFT0C - psiTPCR)));
-    histos.fill(HIST("ResSPFT0CTPCL"), centrality, QFT0C * QTPCL * TMath::Cos(2.0 * (psiFT0C - psiTPCL)));
-    histos.fill(HIST("ResSPTPCRTPCL"), centrality, QTPCR * QTPCL * TMath::Cos(2.0 * (psiTPCR - psiTPCL)));
-    histos.fill(HIST("ResSPFT0CFT0A"), centrality, QFT0C * QFT0A * TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
-    histos.fill(HIST("ResSPFT0ATPC"), centrality, QTPC * QFT0A * TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+    histos.fill(HIST("ResSPFT0CTPC"), centrality, occupancy, QFT0C * QTPC * TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+    histos.fill(HIST("ResSPFT0CTPCR"), centrality, occupancy, QFT0C * QTPCR * TMath::Cos(2.0 * (psiFT0C - psiTPCR)));
+    histos.fill(HIST("ResSPFT0CTPCL"), centrality, occupancy, QFT0C * QTPCL * TMath::Cos(2.0 * (psiFT0C - psiTPCL)));
+    histos.fill(HIST("ResSPTPCRTPCL"), centrality, occupancy, QTPCR * QTPCL * TMath::Cos(2.0 * (psiTPCR - psiTPCL)));
+    histos.fill(HIST("ResSPFT0CFT0A"), centrality, occupancy, QFT0C * QFT0A * TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+    histos.fill(HIST("ResSPFT0ATPC"), centrality, occupancy, QTPC * QFT0A * TMath::Cos(2.0 * (psiTPC - psiFT0A)));
 
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());

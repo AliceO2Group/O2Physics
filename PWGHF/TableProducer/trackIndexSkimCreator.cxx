@@ -2959,7 +2959,7 @@ struct HfTrackIndexSkimCreator {
 struct HfTrackIndexSkimCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;
 
-  struct ConfigurableGroup {
+  struct : ConfigurableGroup {
     Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
     // event selection

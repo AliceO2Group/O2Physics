@@ -110,7 +110,8 @@ struct lambdak0sflattenicity {
 
     // Histograms
     // Event selection
-    rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
+    rEventSelection.add("hVertexZ", "hVertexZ", {HistType::kTH1F, {vertexZAxis}});
+    rEventSelection.add("hVertexZGen", "hVertexZGen", {HistType::kTH1F, {vertexZAxis}});
     rEventSelection.add("hEventsRejected", "hEventsRejected", {HistType::kTH1F, {{11, -0.5, 10.5}}});
     rEventSelection.add("hEventsSelected", "hEventsSelected", {HistType::kTH1F, {{11, -0.5, 10.5}}});
 
@@ -128,6 +129,7 @@ struct lambdak0sflattenicity {
     rKzeroShort.add("hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hMassK0spT", "hMassK0spT", {HistType::kTH2F, {{K0sMassAxis}, {ptAxis}}});
+    rKzeroShort.add("hPtK0ShortGen", "hPtK0ShortGen", {HistType::kTH1F, {ptAxis}});
 
     // Lambda reconstruction
     // Mass
@@ -143,6 +145,7 @@ struct lambdak0sflattenicity {
     rLambda.add("hctauLambda", "hctauLambda", {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rLambda.add("h2DdecayRadiusLambda", "h2DdecayRadiusLambda", {HistType::kTH1F, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
     rLambda.add("hMassLambdapT", "hMassLambdapT", {HistType::kTH2F, {{LambdaMassAxis}, {ptAxis}}});
+    rLambda.add("hPtLambdaGen", "hPtLambdaGen", {HistType::kTH1F, {ptAxis}});
 
     // AntiLambda reconstruction
     // Mass
@@ -158,6 +161,7 @@ struct lambdak0sflattenicity {
     rAntiLambda.add("hctauAntiLambda", "hctauAntiLambda", {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rAntiLambda.add("h2DdecayRadiusAntiLambda", "h2DdecayRadiusAntiLambda", {HistType::kTH1F, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
     rAntiLambda.add("hMassAntiLambdapT", "hMassAntiLambdapT", {HistType::kTH2F, {{AntiLambdaMassAxis}, {ptAxis}}});
+    rAntiLambda.add("hPtAntiLambdaGen", "hPtAntiLambdaGen", {HistType::kTH1F, {ptAxis}});
 
     rFlattenicity.add("hEv", "Ev", HistType::kTH1F, {{6, -0.5, 5.5, "index activated detector"}});
     rFlattenicity.add("hFV0amplRing1to4", "FV01to4", HistType::kTH1F, {{4000, -0.5, +49999.5, "FV0 amplitude"}});
@@ -197,6 +201,16 @@ struct lambdak0sflattenicity {
     rFlattenicity.add("hAmpV0vsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Trk mult"}, {1000, -0.5, +39999.5, "FV0 amplitude"}});
     rFlattenicity.add("hAmpT0AvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
     rFlattenicity.add("hAmpT0CvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
+
+    if (doprocessDataRun3 && (doprocessRecMC || doprocessGenMC)) {
+      LOGF(fatal, "Both Data and MC are both set to true; try again with only one of them set to true");
+    }
+    if (!doprocessDataRun3 && !(doprocessRecMC || doprocessGenMC)) {
+      LOGF(fatal, "Both Data and MC set to false; try again with only one of them set to false");
+    }
+    if ((doprocessRecMC && !doprocessGenMC) || (!doprocessRecMC && doprocessGenMC)) {
+      LOGF(fatal, "MCRec and MCGen are set to opposite switches, try again with both set to either true or false");
+    }
   }
 
   int getT0ASector(int i_ch)
@@ -400,72 +414,54 @@ struct lambdak0sflattenicity {
 
   std::array<float, 8> estimator;
 
-  // Defining filters for events (event selection)
-  // Processed events will be already fulfilling the event selection requirements
-  Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
-
-  // Filters on V0s
-  // Cannot filter on dynamic columns, so we cut on DCA to PV and DCA between daughters only
-  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
-                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
-                        aod::v0data::dcaV0daughters < v0setting_dcav0dau);
-
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut);
-  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr>>;
-
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::BarrelMults>>::iterator const& collision,
-               soa::Filtered<aod::V0Datas> const& V0s, TrackCandidates const& tracks, soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
-               aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
-               aod::FV0As const& /*fv0s*/)
+  template <typename TCollision>
+  bool isEventSelected(TCollision const& collision)
   {
-    // Fill the event counter
-    auto vtxZ = collision.posZ();
-    auto vtxY = collision.posY();
-    auto vtxX = collision.posX();
-
     rEventSelection.fill(HIST("hEventsSelected"), 0);
 
     if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       rEventSelection.fill(HIST("hEventsRejected"), 0);
-      return;
+      return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 1);
 
     if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       rEventSelection.fill(HIST("hEventsRejected"), 1);
-      return;
+      return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 2);
 
     if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       rEventSelection.fill(HIST("hEventsRejected"), 2);
-      return;
+      return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 3);
 
     if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       rEventSelection.fill(HIST("hEventsRejected"), 3);
-      return;
+      return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 4);
 
     if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       rEventSelection.fill(HIST("hEventsRejected"), 4);
-      return;
+      return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 5);
 
     if (collision.isInelGt0() == false) {
       rEventSelection.fill(HIST("hEventsRejected"), 5);
-      return;
+      return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 6);
 
-    rEventSelection.fill(HIST("hVertexZRec"), vtxZ);
+    return true;
+  }
 
-    // ============== Flattenicity estimation begins  =====================
-
+  // ============== Flattenicity estimation begins  ===================== //
+  template <typename TCollision, typename Tracks>
+  void EstimateFlattenicity(TCollision const& collision, Tracks const& tracks)
+  {
     const int nDetVtx = 3;
     TGraph* gVtx[nDetVtx];
     const char* nameDet[nDetVtx] = {"AmpV0", "AmpT0A", "AmpT0C"};
@@ -490,6 +486,7 @@ struct lambdak0sflattenicity {
     for (int i_d = 0; i_d < nDetVtx; ++i_d) {
       gVtx[i_d]->SetName(Form("g%s", nameDet[i_d]));
     }
+    auto vtxZ = collision.posZ();
 
     float sumAmpFV0 = 0;
     float sumAmpFV01to4Ch = 0;
@@ -531,6 +528,7 @@ struct lambdak0sflattenicity {
           RhoLattice[channelv0phi] = ampl_ch / 2.0; // two channels per bin
         }
       }
+
       rFlattenicity.fill(HIST("hAmpV0vsVtxBeforeCalibration"), vtxZ, sumAmpFV0);
       if (applyCalibVtx) {
         sumAmpFV0 *= gVtx[0]->Eval(vtxZ);
@@ -595,6 +593,7 @@ struct lambdak0sflattenicity {
         }
         rFlattenicity.fill(HIST("hFT0C"), amplitude);
       }
+
       rFlattenicity.fill(HIST("hAmpT0AvsVtxBeforeCalibration"), vtxZ, sumAmpFT0A);
       rFlattenicity.fill(HIST("hAmpT0CvsVtxBeforeCalibration"), vtxZ, sumAmpFT0C);
       if (applyCalibVtx) {
@@ -676,18 +675,30 @@ struct lambdak0sflattenicity {
       float flatenicity_ft0v0 = 0.5 * flattenicityfv0 + 0.5 * flatenicity_t0c;
       estimator[6] = 1.0 - flatenicity_ft0v0;
       estimator[7] = ptT;
-      static_for<0, 7>([&](auto i) {
-        constexpr int index = i.value;
-        rFlattenicity.fill(HIST(nhEst[index]), estimator[index], estimator[0]); });
+
+      rFlattenicity.fill(HIST(nhEst[0]), estimator[0], estimator[0]);
+      rFlattenicity.fill(HIST(nhEst[1]), estimator[1], estimator[0]);
+      rFlattenicity.fill(HIST(nhEst[2]), estimator[2], estimator[0]);
+      rFlattenicity.fill(HIST(nhEst[3]), estimator[3], estimator[0]);
+      rFlattenicity.fill(HIST(nhEst[4]), estimator[4], estimator[0]);
+      rFlattenicity.fill(HIST(nhEst[5]), estimator[5], estimator[0]);
+      rFlattenicity.fill(HIST(nhEst[6]), estimator[6], estimator[0]);
+      rFlattenicity.fill(HIST(nhEst[7]), estimator[7], estimator[0]);
+
       // plot pt vs estimators
       for (auto& track : tracks) {
         if (!track.isGlobalTrack()) {
           continue;
         }
         float pt = track.pt();
-        static_for<0, 7>([&](auto i) {
-          constexpr int index = i.value;
-          rFlattenicity.fill(HIST(nhPtEst[index]), estimator[index], pt); });
+        rFlattenicity.fill(HIST(nhPtEst[0]), estimator[0], pt);
+        rFlattenicity.fill(HIST(nhPtEst[1]), estimator[1], pt);
+        rFlattenicity.fill(HIST(nhPtEst[2]), estimator[2], pt);
+        rFlattenicity.fill(HIST(nhPtEst[3]), estimator[3], pt);
+        rFlattenicity.fill(HIST(nhPtEst[4]), estimator[4], pt);
+        rFlattenicity.fill(HIST(nhPtEst[5]), estimator[5], pt);
+        rFlattenicity.fill(HIST(nhPtEst[6]), estimator[6], pt);
+        rFlattenicity.fill(HIST(nhPtEst[7]), estimator[7], pt);
       }
 
       for (int iCh = 0; iCh < 48; ++iCh) {
@@ -698,8 +709,39 @@ struct lambdak0sflattenicity {
       rFlattenicity.fill(HIST("fMultFv0"), sumAmpFV0);
       rFlattenicity.fill(HIST("hFlatFT0CvsFlatFT0A"), flatenicity_t0c, flatenicity_t0a);
     }
+  }
+  // ====================== Flattenicity estimation ends =====================
 
-    // ====================== Flattenicity estimation ends =====================
+  // Defining filters for events (event selection)
+  // Processed events will be already fulfilling the event selection requirements
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
+
+  // Filters on V0s
+  // Cannot filter on dynamic columns, so we cut on DCA to PV and DCA between daughters only
+  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
+                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
+                        aod::v0data::dcaV0daughters < v0setting_dcav0dau);
+
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut);
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr>>;
+
+  void processDataRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::BarrelMults>>::iterator const& collision,
+                       soa::Filtered<aod::V0Datas> const& V0s, TrackCandidates const& tracks, soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
+                       aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
+                       aod::FV0As const& /*fv0s*/)
+  {
+    if (!(isEventSelected(collision))) { // Checking if the event passes the selection criteria
+      return;
+    }
+
+    auto vtxZ = collision.posZ();
+    auto vtxY = collision.posY();
+    auto vtxX = collision.posX();
+
+    EstimateFlattenicity(collision, tracks);
+
+    rEventSelection.fill(HIST("hVertexZ"), vtxZ);
 
     for (const auto& v0 : V0s) {
       const auto& posDaughterTrack = v0.posTrack_as<TrackCandidates>();
@@ -783,6 +825,159 @@ struct lambdak0sflattenicity {
       }
     }
   }
+
+  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>>;
+  void processRecMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::BarrelMults>>::iterator const& collision,
+                    soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& V0s,
+                    TrackCandidatesMC const& tracks,
+                    soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
+                    aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
+                    aod::FV0As const& /*fv0s*/, aod::McParticles const&)
+  {
+    if (!(isEventSelected(collision))) { // Checking if the event passes the selection criteria
+      return;
+    }
+
+    auto vtxZ = collision.posZ();
+    auto vtxY = collision.posY();
+    auto vtxX = collision.posX();
+
+    EstimateFlattenicity(collision, tracks);
+
+    rEventSelection.fill(HIST("hVertexZ"), vtxZ);
+
+    for (const auto& v0 : V0s) {
+
+      const auto& posDaughterTrack = v0.posTrack_as<TrackCandidatesMC>();
+      const auto& negDaughterTrack = v0.negTrack_as<TrackCandidatesMC>();
+
+      if (!posDaughterTrack.has_mcParticle() || !negDaughterTrack.has_mcParticle()) {
+        continue;
+      }
+      if (TMath::Abs(posDaughterTrack.eta()) > 0.8 || TMath::Abs(negDaughterTrack.eta()) > 0.8) {
+        continue;
+      }
+
+      auto mcnegtrack = negDaughterTrack.mcParticle_as<aod::McParticles>();
+      auto mcpostrack = posDaughterTrack.mcParticle_as<aod::McParticles>();
+
+      float massK0s = v0.mK0Short();
+      float massLambda = v0.mLambda();
+      float massAntiLambda = v0.mAntiLambda();
+
+      rKzeroShort.fill(HIST("hMassK0s"), massK0s);
+      rLambda.fill(HIST("hMassLambda"), massLambda);
+      rAntiLambda.fill(HIST("hMassAntiLambda"), massAntiLambda);
+
+      float decayvtxX = v0.x();
+      float decayvtxY = v0.y();
+      float decayvtxZ = v0.z();
+
+      float decaylength = TMath::Sqrt(TMath::Power(decayvtxX - vtxX, 2) + TMath::Power(decayvtxY - vtxY, 2) + TMath::Power(decayvtxZ - vtxZ, 2));
+      float v0p = TMath::Sqrt(v0.pt() * v0.pt() + v0.pz() * v0.pz());
+
+      float ctauK0s = decaylength * massK0s / v0p;
+      float ctauLambda = decaylength * massLambda / v0p;
+      float ctauAntiLambda = decaylength * massAntiLambda / v0p;
+
+      // Cut on dynamic columns for K0s
+
+      for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+          if (particleMotherOfNeg == particleMotherOfPos && (particleMotherOfNeg.pdgCode() == 3122 || particleMotherOfNeg.pdgCode() == -3122 || particleMotherOfNeg.pdgCode() == 310) && particleMotherOfNeg.isPhysicalPrimary()) {
+
+            if (particleMotherOfNeg.pdgCode() == 310 && v0.v0cosPA() >= v0setting_cospaK0s && v0.v0radius() >= v0setting_radiusK0s && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5 && TMath::Abs(massLambda - pdgmassLambda) > 0.005 && TMath::Abs(massAntiLambda - pdgmassLambda) > 0.005) {
+
+              rKzeroShort.fill(HIST("hMassK0sSelected"), massK0s);
+              rKzeroShort.fill(HIST("hDCAV0DaughtersK0s"), v0.dcaV0daughters());
+              rKzeroShort.fill(HIST("hV0CosPAK0s"), v0.v0cosPA());
+              rKzeroShort.fill(HIST("hrapidityK0s"), v0.rapidity(0));
+              rKzeroShort.fill(HIST("hctauK0s"), ctauK0s);
+              rKzeroShort.fill(HIST("h2DdecayRadiusK0s"), v0.v0radius());
+              rKzeroShort.fill(HIST("hMassK0spT"), massK0s, v0.pt());
+
+              // Filling the PID of the V0 daughters in the region of the K0s peak
+              if (0.45 < massK0s && massK0s < 0.55) {
+                rKzeroShort.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
+                rKzeroShort.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
+              }
+            }
+
+            // Cut on dynamic columns for Lambda
+            if (particleMotherOfNeg.pdgCode() == 3122 && v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01) {
+
+              rLambda.fill(HIST("hMassLambdaSelected"), massLambda);
+              rLambda.fill(HIST("hDCAV0DaughtersLambda"), v0.dcaV0daughters());
+              rLambda.fill(HIST("hV0CosPALambda"), v0.v0cosPA());
+              rLambda.fill(HIST("hrapidityLambda"), v0.rapidity(1));
+              rLambda.fill(HIST("hctauLambda"), ctauLambda);
+              rLambda.fill(HIST("h2DdecayRadiusLambda"), v0.v0radius());
+              rLambda.fill(HIST("hMassLambdapT"), massLambda, v0.pt());
+
+              // Filling the PID of the V0 daughters in the region of the Lambda peak
+              if (1.015 < massLambda && massLambda < 1.215) {
+                rLambda.fill(HIST("hNSigmaPosPionFromLambda"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
+                rLambda.fill(HIST("hNSigmaNegPionFromLambda"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
+              }
+            }
+
+            // Cut on dynamic columns for AntiLambda
+            if (particleMotherOfNeg.pdgCode() == -3122 && v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5 && TMath::Abs(massK0s - pdgmassK0s) > 0.01) {
+
+              rAntiLambda.fill(HIST("hMassAntiLambdaSelected"), massAntiLambda);
+              rAntiLambda.fill(HIST("hDCAV0DaughtersAntiLambda"), v0.dcaV0daughters());
+              rAntiLambda.fill(HIST("hV0CosPAAntiLambda"), v0.v0cosPA());
+              rAntiLambda.fill(HIST("hrapidityAntiLambda"), v0.rapidity(2));
+              rAntiLambda.fill(HIST("hctauAntiLambda"), ctauAntiLambda);
+              rAntiLambda.fill(HIST("h2DdecayRadiusAntiLambda"), v0.v0radius());
+              rAntiLambda.fill(HIST("hMassAntiLambdapT"), massAntiLambda, v0.pt());
+
+              // Filling the PID of the V0 daughters in the region of the AntiLambda peak
+              if (1.015 < massAntiLambda && massAntiLambda < 1.215) {
+                rAntiLambda.fill(HIST("hNSigmaPosPionFromAntiLambda"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
+                rAntiLambda.fill(HIST("hNSigmaNegPionFromAntiLambda"), negDaughterTrack.tpcNSigmaPr(), negDaughterTrack.tpcInnerParam());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < cutzvertex);
+  void processGenMC(soa::Filtered<aod::McCollisions>::iterator const& mcCollision,
+                    const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions,
+                    aod::McParticles const& mcParticles)
+  {
+    if (collisions.size() < 1) // to process generated collisions that've been reconstructed at least once
+    {
+      return;
+    }
+
+    rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
+
+    for (const auto& mcParticle : mcParticles) {
+
+      if (mcParticle.isPhysicalPrimary() && mcParticle.y() < 0.5) {
+
+        if (mcParticle.pdgCode() == 310) {
+          rKzeroShort.fill(HIST("hPtK0ShortGen"), mcParticle.pt());
+        }
+
+        if (mcParticle.pdgCode() == 3122) {
+          rLambda.fill(HIST("hPtLambdaGen"), mcParticle.pt());
+        }
+
+        if (mcParticle.pdgCode() == -3122) {
+          rAntiLambda.fill(HIST("hPtAntiLambdaGen"), mcParticle.pt());
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(lambdak0sflattenicity, processDataRun3, "Process Run 3 Data", false);
+  PROCESS_SWITCH(lambdak0sflattenicity, processRecMC, "Process Run 3 mc, reconstructed", true);
+  PROCESS_SWITCH(lambdak0sflattenicity, processGenMC, "Process Run 3 mc, generated", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

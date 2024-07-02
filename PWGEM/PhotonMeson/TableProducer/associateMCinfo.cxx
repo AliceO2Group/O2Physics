@@ -30,6 +30,7 @@ using namespace o2::aod::pwgem::mcutil;
 
 using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels>;
 using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
+using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMCClusterMCLabels>;
 
 struct AssociateMCInfo {
@@ -37,8 +38,8 @@ struct AssociateMCInfo {
     kPCM = 0x1,
     kPHOS = 0x2,
     kEMC = 0x4,
-    kDalitzEE = 0x8,
-    kDalitzMuMu = 0x10,
+    kElectron = 0x8,
+    kFwdMuon = 0x10,
   };
 
   Produces<o2::aod::EMMCEvents> mcevents;
@@ -46,15 +47,17 @@ struct AssociateMCInfo {
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::V0LegMCLabels> v0legmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
-  // Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
+  Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
   Produces<o2::aod::EMEMCClusterMCLabels> ememcclustermclabels;
 
   Produces<o2::aod::BinnedGenPts> binned_gen_pt;
   // Produces<o2::aod::BinnedGenPtAccs> binned_gen_pt_acc;
 
   Configurable<float> max_rxy_gen{"max_rxy_gen", 100, "max rxy to store generated information"};
-  Configurable<float> max_Y_gen_primary{"max_Y_gen_primary", 1.2, "max rapidity Y to store generated information"}; // smearing might be applied at analysis stage. set wider value.
-  Configurable<float> max_Y_gen_secondary{"max_Y_gen_secondary", 0.9, "max rapidity Y to store generated information"};
+  Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", 1.2, "max rapidity Y to store generated information"};   // smearing might be applied at analysis stage. set wider value.
+  Configurable<float> min_eta_gen_primary_fwd{"min_eta_gen_primary_fwd", -4.5, "min eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
+  Configurable<float> max_eta_gen_primary_fwd{"max_eta_gen_primary_fwd", -2.0, "max eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
+  Configurable<float> max_eta_gen_secondary{"max_eta_gen_secondary", 0.9, "max eta to store generated information"};
   Configurable<float> margin_z_gen{"margin_z_gen", 15.f, "margin for Z of true photon conversion point to store generated information"};
 
   HistogramRegistry registry{"EMMCEvent"};
@@ -132,30 +135,30 @@ struct AssociateMCInfo {
     genPhi_acc_ee.resize(nbins_acc, 0);
   }
 
-  template <typename TMCParticle>
-  bool isBeam(TMCParticle const& p)
-  {
-    if ((abs(p.pdgCode()) == 2212 || abs(p.pdgCode()) > 1e+9) && p.pt() < 1e-4 && p.pz() > 440.f && p.globalIndex() < 2 && !p.has_mothers()) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+  // template <typename TMCParticle>
+  // bool isBeam(TMCParticle const& p)
+  // {
+  //   if ((abs(p.pdgCode()) == 2212 || abs(p.pdgCode()) > 1e+9) && p.pt() < 1e-4 && p.pz() > 440.f && p.globalIndex() < 2 && !p.has_mothers()) {
+  //     return true;
+  //   } else {
+  //     return false;
+  //   }
+  // }
 
-  template <typename TMCParticle>
-  bool isQuarkOrGluon(TMCParticle const& p)
-  {
-    if ((1 <= abs(p.pdgCode()) && abs(p.pdgCode()) <= 6) || p.pdgCode() == 21) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+  // template <typename TMCParticle>
+  // bool isQuarkOrGluon(TMCParticle const& p)
+  // {
+  //   if ((1 <= abs(p.pdgCode()) && abs(p.pdgCode()) <= 6) || p.pdgCode() == 21) {
+  //     return true;
+  //   } else {
+  //     return false;
+  //   }
+  // }
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   Preslice<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
-  // Preslice<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  Preslice<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<MyEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -177,8 +180,8 @@ struct AssociateMCInfo {
   std::vector<uint16_t> genK0S;           // primary, pt, y
   std::vector<uint16_t> genLambda;        // primary, pt, y
 
-  template <uint8_t system, typename TTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TPCMs const& v0photons, TPCMLegs const& /*v0legs*/, TPHOSs const& /*phosclusters*/, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
+  template <uint8_t system, typename TTracks, typename TFwdTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons>
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TFwdTracks const& o2fwdtracks, TPCMs const& v0photons, TPCMLegs const& /*v0legs*/, TPHOSs const& /*phosclusters*/, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::map<uint64_t, int> fNewLabels;
@@ -353,8 +356,8 @@ struct AssociateMCInfo {
           registry.fill(HIST("PCM/hRZ"), mctrack.vz(), sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)));
         }
 
-        if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) { // primary leptons
-          if (abs(mctrack.y()) < max_Y_gen_primary) {                       // primary leptons
+        if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {                                                                         // primary leptons
+          if ((abs(mctrack.eta()) < max_eta_gen_primary) || (min_eta_gen_primary_fwd < mctrack.eta() && mctrack.eta() < max_eta_gen_primary_fwd)) { // primary leptons
             if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
               fNewLabels[mctrack.globalIndex()] = fCounters[0];
               fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
@@ -394,11 +397,11 @@ struct AssociateMCInfo {
           int motherid = mctrack.mothersIds()[0];             // first mother index
           auto mp = mcTracks.iteratorAt(motherid);
 
-          if (sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_Y_gen_secondary))) - margin_z_gen) {
+          if (sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen_secondary))) - margin_z_gen) {
             continue;
           }
 
-          if (mp.pdgCode() == 22 && (mp.isPhysicalPrimary() || mp.producedByGenerator()) && abs(mp.y()) < max_Y_gen_secondary) {
+          if (mp.pdgCode() == 22 && (mp.isPhysicalPrimary() || mp.producedByGenerator()) && abs(mp.eta()) < max_eta_gen_secondary) {
             // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
             if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) { // store electron information. !!Not photon!!
               fNewLabels[mctrack.globalIndex()] = fCounters[0];
@@ -434,7 +437,6 @@ struct AssociateMCInfo {
           }
 
           for (auto& leg : {pos, ele}) { // be carefull of order {pos, ele}!
-            // auto o2track = leg.template track_as<TracksMC>();
             auto o2track = o2tracks.iteratorAt(leg.trackId());
             auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
             // LOGF(info, "mctrack.globalIndex() = %d, mctrack.index() = %d", mctrack.globalIndex(), mctrack.index()); // these are exactly the same.
@@ -479,7 +481,7 @@ struct AssociateMCInfo {
           }   // end of leg loop
         }     // end of v0 loop
       }
-      if constexpr (static_cast<bool>(system & kDalitzEE)) {
+      if constexpr (static_cast<bool>(system & kElectron)) {
         // for dalitz ee
         auto emprimaryelectrons_coll = emprimaryelectrons.sliceBy(perCollision_el, collision.globalIndex());
         for (auto& emprimaryelectron : emprimaryelectrons_coll) {
@@ -527,58 +529,58 @@ struct AssociateMCInfo {
             }
           } // end of mother chain loop
 
-        } // end of em primary track loop
+        } // end of em primary electron loop
       }
-      // if constexpr (static_cast<bool>(system & kDalitzMuMu)) {
-      //   // for dalitz mumu
-      //   auto emprimarymuons_coll = emprimarymuons.sliceBy(perCollision_mu, collision.globalIndex());
-      //   for (auto& emprimarymuon : emprimarymuons_coll) {
-      //     auto o2track = o2tracks.iteratorAt(emprimarymuon.trackId());
-      //     if (!o2track.has_mcParticle()) {
-      //       continue; // If no MC particle is found, skip the dilepton
-      //     }
-      //     auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
+      if constexpr (static_cast<bool>(system & kFwdMuon)) {
+        // for dalitz mumu
+        auto emprimarymuons_coll = emprimarymuons.sliceBy(perCollision_mu, collision.globalIndex());
+        for (auto& emprimarymuon : emprimarymuons_coll) {
+          auto o2track = o2fwdtracks.iteratorAt(emprimarymuon.fwdtrackId());
+          if (!o2track.has_mcParticle()) {
+            continue; // If no MC particle is found, skip the dilepton
+          }
+          auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
 
-      //     // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-      //     if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
-      //       fNewLabels[mctrack.globalIndex()] = fCounters[0];
-      //       fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
-      //       // fMCFlags[mctrack.globalIndex()] = mcflags;
-      //       fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-      //       fCounters[0]++;
-      //     }
-      //     emprimarymuonmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
+          // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
+          }
+          emprimarymuonmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
 
-      //     // Next, store mother-chain of this reconstructed track.
-      //     int motherid = -999; // first mother index
-      //     if (mctrack.has_mothers()) {
-      //       motherid = mctrack.mothersIds()[0]; // first mother index
-      //     }
-      //     while (motherid > -1) {
-      //       if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
-      //         auto mp = mcTracks.iteratorAt(motherid);
+          // Next, store mother-chain of this reconstructed track.
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
 
-      //         // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-      //         if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
-      //           fNewLabels[mp.globalIndex()] = fCounters[0];
-      //           fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
-      //           // fMCFlags[mp.globalIndex()] = mcflags;
-      //           fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-      //           fCounters[0]++;
-      //         }
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
 
-      //         if (mp.has_mothers()) {
-      //           motherid = mp.mothersIds()[0]; // first mother index
-      //         } else {
-      //           motherid = -999;
-      //         }
-      //       } else {
-      //         motherid = -999;
-      //       }
-      //     } // end of mother chain loop
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
+              }
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
 
-      //   } // end of em primary track loop
-      // }
+        } // end of em primary muon loop
+      }
       if constexpr (static_cast<bool>(system & kEMC)) {
         // for emc photons
         auto ememcclusters_coll = emcclusters.sliceBy(perCollision_emc, collision.globalIndex());
@@ -680,84 +682,88 @@ struct AssociateMCInfo {
 
   void processMC_PCM(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs)
   {
-    skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, nullptr, nullptr, nullptr);
+    skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr, nullptr, nullptr);
   }
-  void processMC_PCM_DalitzEE(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons)
+  void processMC_PCM_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons)
   {
-    const uint8_t sysflag = kPCM | kDalitzEE;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons, nullptr);
+    const uint8_t sysflag = kPCM | kElectron;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons, nullptr);
   }
-  void processMC_DalitzEE(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::EMPrimaryElectrons const& emprimaryelectrons)
+  void processMC_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::EMPrimaryElectrons const& emprimaryelectrons)
   {
-    const uint8_t sysflag = kDalitzEE;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, nullptr, nullptr, nullptr, emprimaryelectrons, nullptr);
+    const uint8_t sysflag = kElectron;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, nullptr, nullptr, nullptr, nullptr, emprimaryelectrons, nullptr);
   }
-
-  // void processMC_PCM_DalitzEE_DalitzMuMu(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons, aod::EMPrimaryMuons const& emprimarymuons)
-  // {
-  //   const uint8_t sysflag = kPCM | kDalitzEE | kDalitzMuMu;
-  //   skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons, emprimarymuons);
-  // }
-
+  void processMC_FwdMuon(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, FwdTracksMC const& o2fwdtracks, aod::EMPrimaryMuons const& emprimarymuons)
+  {
+    const uint8_t sysflag = kFwdMuon;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, nullptr, o2fwdtracks, nullptr, nullptr, nullptr, nullptr, nullptr, emprimarymuons);
+  }
+  void processMC_PCM_Electron_FwdMuon(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, FwdTracksMC const& o2fwdtracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons, aod::EMPrimaryMuons const& emprimarymuons)
+  {
+    const uint8_t sysflag = kPCM | kElectron | kFwdMuon;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, o2fwdtracks, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons, emprimarymuons);
+  }
   void processMC_PHOS(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, aod::PHOSClusters const& phosclusters)
   {
-    skimmingMC<kPHOS>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, phosclusters, nullptr, nullptr, nullptr);
+    skimmingMC<kPHOS>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, nullptr, phosclusters, nullptr, nullptr, nullptr);
   }
   void processMC_EMC(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, MyEMCClusters const& emcclusters)
   {
-    skimmingMC<kEMC>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, nullptr, emcclusters, nullptr, nullptr);
+    skimmingMC<kEMC>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, nullptr, nullptr, emcclusters, nullptr, nullptr);
   }
   void processMC_PCM_PHOS(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, nullptr, nullptr, nullptr);
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, phosclusters, nullptr, nullptr, nullptr);
   }
-  void processMC_PCM_PHOS_DalitzEE(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, aod::EMPrimaryElectrons const& emprimaryelectrons)
+  void processMC_PCM_PHOS_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, aod::EMPrimaryElectrons const& emprimaryelectrons)
   {
-    const uint8_t sysflag = kPCM | kPHOS | kDalitzEE;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, nullptr, emprimaryelectrons, nullptr);
+    const uint8_t sysflag = kPCM | kPHOS | kElectron;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, phosclusters, nullptr, emprimaryelectrons, nullptr);
   }
   void processMC_PCM_EMC(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, MyEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kEMC;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, emcclusters, nullptr, nullptr);
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, nullptr, emcclusters, nullptr, nullptr);
   }
-  void processMC_PCM_EMC_DalitzEE(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, MyEMCClusters const& emcclusters, aod::EMPrimaryElectrons const& emprimaryelectrons)
+  void processMC_PCM_EMC_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, MyEMCClusters const& emcclusters, aod::EMPrimaryElectrons const& emprimaryelectrons)
   {
-    const uint8_t sysflag = kPCM | kEMC | kDalitzEE;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, emcclusters, emprimaryelectrons, nullptr);
+    const uint8_t sysflag = kPCM | kEMC | kElectron;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, nullptr, emcclusters, emprimaryelectrons, nullptr);
   }
   void processMC_PHOS_EMC(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, aod::PHOSClusters const& phosclusters, MyEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPHOS | kEMC;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, phosclusters, emcclusters, nullptr, nullptr);
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, nullptr, nullptr, nullptr, nullptr, phosclusters, emcclusters, nullptr, nullptr);
   }
   void processMC_PCM_PHOS_EMC(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, MyEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS | kEMC;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, emcclusters, nullptr, nullptr);
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, phosclusters, emcclusters, nullptr, nullptr);
   }
-  void processMC_PCM_PHOS_EMC_DalitzEE(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, MyEMCClusters const& emcclusters, aod::EMPrimaryElectrons const& emprimaryelectrons)
+  void processMC_PCM_PHOS_EMC_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, MyEMCClusters const& emcclusters, aod::EMPrimaryElectrons const& emprimaryelectrons)
   {
-    const uint8_t sysflag = kPCM | kPHOS | kEMC | kDalitzEE;
-    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, emcclusters, emprimaryelectrons, nullptr);
+    const uint8_t sysflag = kPCM | kPHOS | kEMC | kElectron;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, phosclusters, emcclusters, emprimaryelectrons, nullptr);
   }
 
   void processDummy(MyCollisionsMC const&) {}
 
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM, "create em mc event table for PCM", false);
-  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE, "create em mc event table for PCM, DalitzEE", false);
-  PROCESS_SWITCH(AssociateMCInfo, processMC_DalitzEE, "create em mc event table for DalitzEE", false);
-  // PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE_DalitzMuMu, "create em mc event table for PCM, DalitzEE, DalitzMuMu", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_Electron, "create em mc event table for PCM, Electron", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_Electron, "create em mc event table for Electron", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_FwdMuon, "create em mc event table for Forward Muon", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_Electron_FwdMuon, "create em mc event table for PCM, Electron, FwdMuon", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PHOS, "create em mc event table for PHOS", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_EMC, "create em mc event table for EMCal", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_PHOS, "create em mc event table for PCM, PHOS", false);
-  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_PHOS_DalitzEE, "create em mc event table for PCM, PHOS, DalitzEE", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_PHOS_Electron, "create em mc event table for PCM, PHOS, Electron", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_EMC, "create em mc event table for PCM, EMCal", false);
-  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_EMC_DalitzEE, "create em mc event table for PCM, EMCal, DalitzEE", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_EMC_Electron, "create em mc event table for PCM, EMCal, Electron", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PHOS_EMC, "create em mc event table for PHOS, EMCal", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_PHOS_EMC, "create em mc event table for PCM, PHOS, EMCal", false);
-  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_PHOS_EMC_DalitzEE, "create em mc event table for PCM, PHOS, EMCal, DalitzEE", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_PHOS_EMC_Electron, "create em mc event table for PCM, PHOS, EMCal, Electron", false);
   PROCESS_SWITCH(AssociateMCInfo, processDummy, "processDummy", true);
 };
 
