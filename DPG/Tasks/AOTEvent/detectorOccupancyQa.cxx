@@ -621,11 +621,17 @@ struct DetectorOccupancyQaTask {
 
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       for (auto& track : tracksGrouped) {
-        if (!track.isPVContributor()) {
+        if (!track.isPVContributor())
           continue;
-        }
+        if (track.pt() < confCutPtMinThisEvent || track.pt() > confCutPtMaxThisEvent)
+          continue;
+        if (track.eta() < confCutEtaMinTracksThisEvent || track.eta() > confCutEtaMaxTracksThisEvent)
+          continue;
+        if (track.itsNCls() < 5)
+          continue;
         nPV++;
-        if (track.isGlobalTrack())
+
+        if (track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls)
           nGlobalTracks++;
       }
 
