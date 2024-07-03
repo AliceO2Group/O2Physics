@@ -421,7 +421,7 @@ struct flowAnalysisGF {
       registry.fill(HIST("hEventCount"), 5.5);
     }
     if (cfgNoCollInTimeRangeStandard) {
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         //  Rejection of the collisions which have other events nearby
         return 0;
       }
