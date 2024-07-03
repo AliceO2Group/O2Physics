@@ -103,6 +103,7 @@ struct flowAnalysisGF {
   O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional evenr cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "Use kTVXinTRD (reject TRD triggered events)");
+  O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks");
 
   Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10}, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}}, "Configuration for binning"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull", "poiN", "poiP", "poiFull", "olN", "olP", "olFull"}, {-0.8, 0.5, -0.8, -0.8, -0.8, 0.5, -0.8, -0.8}, {-0.5, 0.8, 0.8, -0.5, 0.8, 0.8, -0.5}, {0, 0, 0, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 2, 2, 2, 4, 4, 4}}, "Configurations for GFW regions"};
@@ -230,7 +231,7 @@ struct flowAnalysisGF {
       registry.add("trackQA/phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       registry.add("trackQA/pt_reco", "", {HistType::kTH1D, {ptAxis}});
 
-      registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{9, 0, 9}}});
+      registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{10, 0, 10}}});
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "sel8");
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "occupancy");
@@ -238,8 +239,9 @@ struct flowAnalysisGF {
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "kNoSameBunchPileup");
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeStandard");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "after Mult cuts");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "corr + cent");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "kIsVertexITSTPC");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "after Mult cuts");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "corr + cent");
 
       registry.add("eventQA/nITS_nTPC_Tracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
 
@@ -428,6 +430,14 @@ struct flowAnalysisGF {
       }
       registry.fill(HIST("hEventCount"), 6.5);
     }
+    
+    if(cfgIsVertexITSTPC) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)){
+        // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
+        return 0;
+      }
+      registry.fill(HIST("hEventCount"), 7.5);
+    }
 
     float vtxz = -999;
     if (collision.numContrib() > 1) {
@@ -451,7 +461,7 @@ struct flowAnalysisGF {
         return 0;
       if (multTrk > fMultCutHigh->Eval(centrality))
         return 0;
-      registry.fill(HIST("hEventCount"), 7.5);
+      registry.fill(HIST("hEventCount"), 8.5);
     }
 
     return 1;
@@ -523,7 +533,7 @@ struct flowAnalysisGF {
       return;
     if (centrality < centbinning.front() || centrality > centbinning.back())
       return;
-    registry.fill(HIST("hEventCount"), 8.5);
+    registry.fill(HIST("hEventCount"), 9.5);
     float vtxz = collision.posZ();
     fGFW->Clear();
     fFCpt->ClearVector();
