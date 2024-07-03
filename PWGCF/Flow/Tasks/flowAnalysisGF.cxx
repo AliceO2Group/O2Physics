@@ -202,7 +202,6 @@ struct flowAnalysisGF {
     AxisSpec tpcAxisCl = {10, 0, 10, "TPC Crossed rows / findable Clusters"};
     AxisSpec dEdxAxis = {400, 0, 200, "TPC: dE/dx"};
     AxisSpec itsClAxis = {10, 0, 10, "Number of ITS clusters"};
-    AxisSpec ptAxisQA = {100, 0.2, 10, "#it{p}_{T} GeV/#it{c}"};
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -225,9 +224,9 @@ struct flowAnalysisGF {
     }
     if (doprocessMCReco || doprocessData || doprocessRun2) {
       registry.add("trackQA/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      registry.add("trackQA/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxisQA, dcaXYAxis, dcaZAxis}});
-      registry.add("trackQA/pt_phi_bef", "", {HistType::kTH2D, {ptAxisQA, phiModAxis}});
-      registry.add("trackQA/pt_phi_aft", "", {HistType::kTH2D, {ptAxisQA, phiModAxis}});
+      registry.add("trackQA/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAxis, dcaZAxis}});
+      registry.add("trackQA/pt_phi_bef", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
+      registry.add("trackQA/pt_phi_aft", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
       registry.add("trackQA/phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       registry.add("trackQA/pt_reco", "", {HistType::kTH1D, {ptAxis}});
 
@@ -246,15 +245,15 @@ struct flowAnalysisGF {
       registry.add("eventQA/nITS_nTPC_Tracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
 
       // track QA before and after selections
-      registry.add("trackQA/before/CrossedTPCRows_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxis}});
-      registry.add("trackQA/before/NumberSharedClustersTPC_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxis}});
-      registry.add("trackQA/before/ITSClusters_pt", "", {HistType::kTH2D, {ptAxisQA, itsClAxis}});
-      registry.add("trackQA/before/DCAxy_pt", "", {HistType::kTH2D, {ptAxisQA, dcaXYAxis}});
-      registry.add("trackQA/before/DCAz_pt", "", {HistType::kTH2D, {ptAxisQA, dcaZAxis}});
-      registry.add("trackQA/before/tpcSignal_pt", "", {HistType::kTH2D, {ptAxisQA, dEdxAxis}});
-      registry.add("trackQA/before/phi_pt", "", {HistType::kTH2D, {ptAxisQA, phiAxis}});
+      registry.add("trackQA/before/CrossedTPCRows_pt", "", {HistType::kTH2D, {ptAxis, tpcAxis}});
+      registry.add("trackQA/before/NumberSharedClustersTPC_pt", "", {HistType::kTH2D, {ptAxis, tpcAxis}});
+      registry.add("trackQA/before/ITSClusters_pt", "", {HistType::kTH2D, {ptAxis, itsClAxis}});
+      registry.add("trackQA/before/DCAxy_pt", "", {HistType::kTH2D, {ptAxis, dcaXYAxis}});
+      registry.add("trackQA/before/DCAz_pt", "", {HistType::kTH2D, {ptAxis, dcaZAxis}});
+      registry.add("trackQA/before/tpcSignal_pt", "", {HistType::kTH2D, {ptAxis, dEdxAxis}});
+      registry.add("trackQA/before/phi_pt", "", {HistType::kTH2D, {ptAxis, phiAxis}});
       registry.add("trackQA/before/phi_eta", "", {HistType::kTH2D, {etaAxis, phiAxis}});
-      registry.add("trackQA/before/tpcCrossedRowsOverFindableCls_pt", "", {HistType::kTH2D, {ptAxisQA, tpcAxisCl}});
+      registry.add("trackQA/before/tpcCrossedRowsOverFindableCls_pt", "", {HistType::kTH2D, {ptAxis, tpcAxisCl}});
       registry.addClone("trackQA/before/", "trackQA/after/");
 
       // track QA after selections
