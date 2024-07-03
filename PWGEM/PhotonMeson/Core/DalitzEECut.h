@@ -82,8 +82,8 @@ class DalitzEECut : public TNamed
     kTPChadrej = 1,
     kTPChadrejORTOFreq = 2,
     kTPConly = 3,
-    kMuon_lowB = 4,
-    kPIDML = 5,
+    kTOFif = 4,
+    kPIDML = 5
   };
 
   template <typename T = int, typename TPair>
@@ -251,8 +251,8 @@ class DalitzEECut : public TNamed
       case static_cast<int>(PIDSchemes::kTPConly):
         return PassTPConly(track);
 
-      case static_cast<int>(PIDSchemes::kMuon_lowB):
-        return PassMuon_lowB(track);
+      case static_cast<int>(PIDSchemes::kTOFif):
+        return PassTOFif(track);
 
       case static_cast<int>(PIDSchemes::kPIDML):
         return true; // don't use kPIDML here.
@@ -294,24 +294,12 @@ class DalitzEECut : public TNamed
   }
 
   template <typename T>
-  bool PassMuon_lowB(T const& track) const
+  bool PassTOFif(T const& track) const
   {
-    bool is_el_excluded_TPC = track.tpcNSigmaEl() < mMinTPCNsigmaEl || mMaxTPCNsigmaEl < track.tpcNSigmaEl();
-    if (!is_el_excluded_TPC) {
-      return false;
-    }
-    if (track.hasTOF()) {
-      bool is_mu_included_TPC = mMinTPCNsigmaMu < track.tpcNSigmaMu() && track.tpcNSigmaMu() < mMaxTPCNsigmaMu;
-      bool is_mu_included_TOF = mMinTOFNsigmaMu < track.tofNSigmaMu() && track.tofNSigmaMu() < mMaxTOFNsigmaMu;
-      bool is_pi_excluded_TOF = track.tofNSigmaPi() < mMinTOFNsigmaPi;
-      return is_mu_included_TPC && is_mu_included_TOF && is_pi_excluded_TOF;
-    } else if (track.tpcInnerParam() < mMaxPinMuonTPConly) {
-      bool is_mu_included_TPC = mMinTPCNsigmaMu < track.tpcNSigmaMu() && track.tpcNSigmaMu() < mMaxTPCNsigmaMu;
-      bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi;
-      return is_mu_included_TPC && is_pi_excluded_TPC;
-    } else {
-      return false;
-    }
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
+    bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) : true;
+    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
   template <typename T>
