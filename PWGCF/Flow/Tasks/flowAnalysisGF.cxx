@@ -430,9 +430,9 @@ struct flowAnalysisGF {
       }
       registry.fill(HIST("hEventCount"), 6.5);
     }
-    
-    if(cfgIsVertexITSTPC) {
-      if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)){
+
+    if (cfgIsVertexITSTPC) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
         // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
         return 0;
       }
