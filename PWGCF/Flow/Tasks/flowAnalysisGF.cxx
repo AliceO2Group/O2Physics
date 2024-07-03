@@ -219,15 +219,16 @@ struct flowAnalysisGF {
     }
 
     if (doprocessMCGen) {
-      registry.add("pt_gen", "", {HistType::kTH1D, {ptAxis}});
-      registry.add("phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+      registry.add("trackMCGen/pt_gen", "", {HistType::kTH1D, {ptAxis}});
+      registry.add("trackMCGen/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
     }
     if (doprocessMCReco || doprocessData || doprocessRun2) {
-      registry.add("phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      registry.add("pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxisQA, dcaXYAxis, dcaZAxis}});
-      registry.add("pt_phi_bef", "", {HistType::kTH2D, {ptAxisQA, phiModAxis}});
-      registry.add("pt_phi_aft", "", {HistType::kTH2D, {ptAxisQA, phiModAxis}});
-      registry.add("phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+      registry.add("trackQA/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+      registry.add("trackQA/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxisQA, dcaXYAxis, dcaZAxis}});
+      registry.add("trackQA/pt_phi_bef", "", {HistType::kTH2D, {ptAxisQA, phiModAxis}});
+      registry.add("trackQA/pt_phi_aft", "", {HistType::kTH2D, {ptAxisQA, phiModAxis}});
+      registry.add("trackQA/phi_eta_vtxZ_corrected", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+      registry.add("trackQA/pt_reco", "", {HistType::kTH1D, {ptAxis}});
 
       registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{9, 0, 9}}});
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
@@ -469,14 +470,14 @@ struct flowAnalysisGF {
 
     phimodn += TMath::Pi() / 18.0; // to center gap in the middle
     phimodn = fmod(phimodn, TMath::Pi() / 9.0);
-    registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
+    registry.fill(HIST("trackQA/pt_phi_bef"), track.pt(), phimodn);
     if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
       return false; // reject track
     if (cfgDoubleTrackFunction) {
       if (phimodn < fPhiCutHigh2->Eval(track.pt()) && phimodn > fPhiCutLow2->Eval(track.pt()))
         return false; // reject track
     }
-    registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
+    registry.fill(HIST("trackQA/pt_phi_aft"), track.pt(), phimodn);
     return true;
   }
 
@@ -596,7 +597,7 @@ struct flowAnalysisGF {
       if (!handleReco(mcParticle))
         return;
 
-      registry.fill(HIST("phi_eta_vtxZ_corrected"), mcParticle.phi(), mcParticle.eta(), vtxz, wacc);
+      registry.fill(HIST("trackQA/phi_eta_vtxZ_corrected"), mcParticle.phi(), mcParticle.eta(), vtxz, wacc);
 
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       if (!track.isPhysicalPrimary() || track.eta() < etalow || track.eta() > etaup || track.pt() < ptlow || track.pt() > ptup)
@@ -613,7 +614,7 @@ struct flowAnalysisGF {
       if (!handleReco(track))
         return;
 
-      registry.fill(HIST("phi_eta_vtxZ_corrected"), track.phi(), track.eta(), vtxz, wacc);
+      registry.fill(HIST("trackQA/phi_eta_vtxZ_corrected"), track.phi(), track.eta(), vtxz, wacc);
     }
   }
 
@@ -635,13 +636,13 @@ struct flowAnalysisGF {
   template <QAtime qt, typename TrackObject>
   inline void FillTrackQA(TrackObject track, const float vtxz)
   {
-
     if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
-      registry.fill(HIST("phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
-      registry.fill(HIST("pt_gen"), track.pt());
+      registry.fill(HIST("trackMCGen/phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
+      registry.fill(HIST("trackMCGen/pt_gen"), track.pt());
     } else {
-      registry.fill(HIST("phi_eta_vtxZ"), track.phi(), track.eta(), vtxz);
-      registry.fill(HIST("pt_dcaXY_dcaZ"), track.pt(), track.dcaXY(), track.dcaZ());
+      registry.fill(HIST("trackQA/phi_eta_vtxZ"), track.phi(), track.eta(), vtxz);
+      registry.fill(HIST("trackQA/pt_dcaXY_dcaZ"), track.pt(), track.dcaXY(), track.dcaZ());
+      registry.fill(HIST("trackQA/pt_reco"), track.pt());
       registry.fill(HIST("trackQA/") + HIST(moment[qt]) + HIST("CrossedTPCRows_pt"), track.pt(), track.tpcNClsCrossedRows());
       registry.fill(HIST("trackQA/") + HIST(moment[qt]) + HIST("NumberSharedClustersTPC_pt"), track.pt(), track.tpcNClsShared());
       registry.fill(HIST("trackQA/") + HIST(moment[qt]) + HIST("ITSClusters_pt"), track.pt(), track.itsNCls());
