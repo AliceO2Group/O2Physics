@@ -290,8 +290,10 @@ struct FactorialMoments {
       checkpT(track);
     }
     for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-      if (countTracks[iPt] > 0) {
+      if (countTracks[iPt] > 500) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
+      } else {
+        return;
       }
     }
     // Calculate the normalized factorial moments
