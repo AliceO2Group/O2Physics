@@ -32,7 +32,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct SigmacInCascade {
+struct HfTaskSigmacInCascade {
 
   Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Σc0, Σc++  and Σc0,++"};
   Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
@@ -47,6 +47,7 @@ struct SigmacInCascade {
   ConfigurableAxis configAxisMassLambdaC{"configAxisMassLambdaC", {600, 1.98, 2.58}, ""};
   ConfigurableAxis configAxisDeltaMassSigmaC{"configAxisDeltaMassSigmaC", {200, 0.13, 0.23}, ""};
   Configurable<double> nSigmaSoftPi{"pionNSigma", 3., "NSigma TPC selection"};
+  ConfigurableAxis configAxisChargeSigmaC{"configAxisChargeSigmaC", {3, 0, 3}, "charge of SigmaC"};
   HfHelper hfHelper;
   using RecoLc = soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>;
 
@@ -80,34 +81,35 @@ struct SigmacInCascade {
     /// Declare histograms related to Sigma_C analysis from LcToK0sP channel///
     ///////////////////////////////////////////////////////////////////////////
 
-    registry.add("Data/hDeltaMassSc0", "#Sigma_{c}^{0} candidates; #it{M}(K0sP #pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); counts;", {HistType::kTH1F, {{200, 0.13, 0.23}}});                                                                  /// Σc0
-    registry.add("Data/hDeltaMassScPlusPlus", "#Sigma_{c}^{++} candidates; #it{M}(K0sP#pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); counts;", {HistType::kTH1F, {{200, 0.13, 0.23}}});                                                           /// Σc++
-    registry.add("Data/hDeltaMassSc0PlusPlus", "#Sigma_{c}^{0, ++} candidates; #it{M}(K0sP#pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); counts;", {HistType::kTH1F, {{200, 0.13, 0.23}}});                                                       /// Σc0,++
-    registry.add("Data/hDeltaMassSc0VsPt", "#Sigma_{c}^{0} candidates; #it{M}(K0sP #pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}});              /// Σc0
-    registry.add("Data/hDeltaMassScPlusPlusVsPt", "#Sigma_{c}^{++} candidates; #it{M}(K0sP #pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}});     /// Σc++
-    registry.add("Data/hDeltaMassSc0PlusPlusVsPt", "#Sigma_{c}^{0, ++} candidates; #it{M}(K0sP #pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2F, {{200, 0.13, 0.23}, {36, 0., 36.}}}); /// Σc0, ++
-    registry.add("Data/hEtaSc0", "#Sigma_{c}^{0} candidates; #eta ; counts;", {HistType::kTH1F, {axisEta}});                                                                                                                             /// Σc0
-    registry.add("Data/hEtaScPlusPlus", "#Sigma_{c}^{++} candidates; #eta ; counts;", {HistType::kTH1F, {axisEta}});                                                                                                                     /// Σc++
-    registry.add("Data/hEtaSc0PlusPlus", "#Sigma_{c}^{0, ++} candidates; #eta ; counts;", {HistType::kTH1F, {axisEta}});                                                                                                                 /// Σc0,++
-    registry.add("Data/hEtaSc0PlusPlusVsPt", "#Sigma_{c}^{0, ++} candidates; #eta; #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2F, {axisEta, axisPt}});                                                                     /// Σc0,++
-    registry.add("Data/hYSc0PlusPlusVsPt", "#Sigma_{c}^{0, ++} candidates; y (rapidity); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2F, {axisY, axisPt}});                                                                 /// Σc0,++
-    registry.add("Data/hPhiSc0", "#Sigma_{c}^{0} candidates; #Phi ; counts;", {HistType::kTH1F, {axisPhi}});                                                                                                                             /// Σc0
-    registry.add("Data/hPhiScPlusPlus", "#Sigma_{c}^{++} candidates; #Phi ; counts;", {HistType::kTH1F, {axisPhi}});                                                                                                                     /// Σc++
-    registry.add("Data/hPhiSc0PlusPlus", "#Sigma_{c}^{0, ++} candidates; #Phi ; counts;", {HistType::kTH1F, {axisPhi}});                                                                                                                 /// Σc0,++
+    registry.add("Data/hDeltaMassSc0", "#Sigma_{c}^{0} candidates; #it{M}(K0sP #pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); counts;", {HistType::kTH1D, {{200, 0.13, 0.23}}});                                                                  /// Σc0
+    registry.add("Data/hDeltaMassScPlusPlus", "#Sigma_{c}^{++} candidates; #it{M}(K0sP#pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); counts;", {HistType::kTH1D, {{200, 0.13, 0.23}}});                                                           /// Σc++
+    registry.add("Data/hDeltaMassSc0PlusPlus", "#Sigma_{c}^{0, ++} candidates; #it{M}(K0sP#pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); counts;", {HistType::kTH1D, {{200, 0.13, 0.23}}});                                                       /// Σc0,++
+    registry.add("Data/hDeltaMassSc0VsPt", "#Sigma_{c}^{0} candidates; #it{M}(K0sP #pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}});              /// Σc0
+    registry.add("Data/hDeltaMassScPlusPlusVsPt", "#Sigma_{c}^{++} candidates; #it{M}(K0sP #pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}});     /// Σc++
+    registry.add("Data/hDeltaMassSc0PlusPlusVsPt", "#Sigma_{c}^{0, ++} candidates; #it{M}(K0sP #pi) - #it{M}(K0sP) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2D, {{200, 0.13, 0.23}, {36, 0., 36.}}}); /// Σc0, ++
+    registry.add("Data/hEtaSc0", "#Sigma_{c}^{0} candidates; #eta ; counts;", {HistType::kTH1D, {axisEta}});                                                                                                                             /// Σc0
+    registry.add("Data/hEtaScPlusPlus", "#Sigma_{c}^{++} candidates; #eta ; counts;", {HistType::kTH1D, {axisEta}});                                                                                                                     /// Σc++
+    registry.add("Data/hEtaSc0PlusPlus", "#Sigma_{c}^{0, ++} candidates; #eta ; counts;", {HistType::kTH1D, {axisEta}});                                                                                                                 /// Σc0,++
+    registry.add("Data/hEtaSc0PlusPlusVsPt", "#Sigma_{c}^{0, ++} candidates; #eta; #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {axisEta, axisPt}});                                                                     /// Σc0,++
+    registry.add("Data/hYSc0PlusPlusVsPt", "#Sigma_{c}^{0, ++} candidates; y (rapidity); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {axisY, axisPt}});                                                                 /// Σc0,++
+    registry.add("Data/hPhiSc0", "#Sigma_{c}^{0} candidates; #Phi ; counts;", {HistType::kTH1D, {axisPhi}});                                                                                                                             /// Σc0
+    registry.add("Data/hPhiScPlusPlus", "#Sigma_{c}^{++} candidates; #Phi ; counts;", {HistType::kTH1D, {axisPhi}});                                                                                                                     /// Σc++
+    registry.add("Data/hPhiSc0PlusPlus", "#Sigma_{c}^{0, ++} candidates; #Phi ; counts;", {HistType::kTH1D, {axisPhi}});                                                                                                                 /// Σc0,++
 
     /// softPions
-    registry.add("Data/hPtSoftPiSc0", "#pi^{-} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#pi^{-} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); counts;", {HistType::kTH1F, {axisPt}});                 /// Σc0
-    registry.add("Data/hPtSoftPiScPlusPlus", "#pi^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#pi^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); counts;", {HistType::kTH1F, {axisPt}});         /// Σc++
-    registry.add("Data/hPtSoftPiSc0PlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0, ++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); counts;", {HistType::kTH1F, {axisPt}}); /// Σc0,++
-    registry.add("Data/hEtaSoftPiSc0", "#pi^{-} #leftarrow #Sigma_{c}^{0} candidates; #eta ; counts;", {HistType::kTH1F, {axisEta}});                                                                    /// Σc0
-    registry.add("Data/hEtaSoftPiScPlusPlus", "#pi^{+} #leftarrow #Sigma_{c}^{++} candidates; #eta ; counts;", {HistType::kTH1F, {axisEta}});                                                            /// Σc++
-    registry.add("Data/hEtaSoftPiSc0PlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0, ++} candidates; #eta ; counts;", {HistType::kTH1F, {axisEta}});                                                      /// Σc0,++
-    registry.add("Data/hPhiSoftPiSc0", "#pi^{-} #leftarrow #Sigma_{c}^{0} candidates; #Phi ; counts;", {HistType::kTH1F, {axisPhi}});                                                                    /// Σc0
-    registry.add("Data/hPhiSoftPiScPlusPlus", "#pi^{+} #leftarrow #Sigma_{c}^{++} candidates; #Phi ; counts;", {HistType::kTH1F, {axisPhi}});                                                            /// Σc++
-    registry.add("Data/hPhiSoftPiSc0PlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0, ++} candidates; #Phi ; counts;", {HistType::kTH1F, {axisPhi}});                                                      /// Σc0,++
+    registry.add("Data/hPtSoftPiSc0", "#pi^{-} #leftarrow #Sigma_{c}^{0} candidates; #it{p}_{T}(#pi^{-} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); counts;", {HistType::kTH1D, {axisPt}});                 /// Σc0
+    registry.add("Data/hPtSoftPiScPlusPlus", "#pi^{+} #leftarrow #Sigma_{c}^{++} candidates; #it{p}_{T}(#pi^{+} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); counts;", {HistType::kTH1D, {axisPt}});         /// Σc++
+    registry.add("Data/hPtSoftPiSc0PlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0, ++} candidates; #it{p}_{T}(#pi^{#pm} #leftarrow #Sigma_{c}^{0}) (GeV/#it{c}); counts;", {HistType::kTH1D, {axisPt}}); /// Σc0,++
+    registry.add("Data/hEtaSoftPiSc0", "#pi^{-} #leftarrow #Sigma_{c}^{0} candidates; #eta ; counts;", {HistType::kTH1D, {axisEta}});                                                                    /// Σc0
+    registry.add("Data/hEtaSoftPiScPlusPlus", "#pi^{+} #leftarrow #Sigma_{c}^{++} candidates; #eta ; counts;", {HistType::kTH1D, {axisEta}});                                                            /// Σc++
+    registry.add("Data/hEtaSoftPiSc0PlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0, ++} candidates; #eta ; counts;", {HistType::kTH1D, {axisEta}});                                                      /// Σc0,++
+    registry.add("Data/hPhiSoftPiSc0", "#pi^{-} #leftarrow #Sigma_{c}^{0} candidates; #Phi ; counts;", {HistType::kTH1D, {axisPhi}});                                                                    /// Σc0
+    registry.add("Data/hPhiSoftPiScPlusPlus", "#pi^{+} #leftarrow #Sigma_{c}^{++} candidates; #Phi ; counts;", {HistType::kTH1D, {axisPhi}});                                                            /// Σc++
+    registry.add("Data/hPhiSoftPiSc0PlusPlus", "#pi^{#pm} #leftarrow #Sigma_{c}^{0, ++} candidates; #Phi ; counts;", {HistType::kTH1D, {axisPhi}});                                                      /// Σc0,++
 
     /// THn for candidate Λc+ and Σc0,++ cut variation
     if (enableTHn) {
+      const AxisSpec thnAxisChargeSigmaC{configAxisChargeSigmaC, "charge of SigmaC"};
       const AxisSpec thnAxisMassLambdaC{configAxisMassLambdaC, "inv. mass (K0s p) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
       const AxisSpec thnAxisPtSigmaC{thnConfigAxisPt, "#it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
@@ -115,9 +117,7 @@ struct SigmacInCascade {
       const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length XY #Lambda_{c}^{+} (cm)"};
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle #Lambda_{c}^{+}"};
       const AxisSpec thnAxisCPAXY{thnConfigAxisCPAXY, "cosine of pointing angle XY #Lambda_{c}^{+}"};
-      registry.add("hnSigmaC0", "THn for Sigmac from Cascade channel", HistType::kTHnSparseF, {thnAxisMassLambdaC, thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisPtSigmaC});
-      registry.add("hnSigmaCPlusPlus", "THn for Sigmac from Cascade channel", HistType::kTHnSparseF, {thnAxisMassLambdaC, thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisPtSigmaC});
-      registry.add("hnSigmaC0PlusPlus", "THn for Sigmac from Cascade channel", HistType::kTHnSparseF, {thnAxisMassLambdaC, thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisPtSigmaC});
+      registry.add("hnSigmaC0PlusPlus", "THn for Sigmac from Cascade channel", HistType::kTHnSparseF, {thnAxisChargeSigmaC, thnAxisMassLambdaC, thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisPtSigmaC});
     }
   }
 
@@ -129,8 +129,8 @@ struct SigmacInCascade {
       const auto& candidateLc = candSc.prongLc_as<RecoLc>();
       double massSc(-1.), massLc(-1.), deltaMass(-1.);
       double ptSc(candSc.pt()), ptLc(candidateLc.pt());
-      [[maybe_unused]] double etaSc(candSc.eta()), etaLc(candidateLc.eta());
-      [[maybe_unused]] double phiSc(candSc.phi()), phiLc(candidateLc.phi());
+      double etaSc(candSc.eta()) /*, etaLc(candidateLc.eta())*/;
+      double phiSc(candSc.phi()) /*, phiLc(candidateLc.phi())*/;
       double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
       double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
       double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
@@ -138,7 +138,7 @@ struct SigmacInCascade {
 
       massLc = hfHelper.invMassLcToK0sP(candidateLc);
       if (candSc.charge() == 0) {
-        massSc = hfHelper.invMassSc0RecoLcToK0sP(candSc, candidateLc);
+        massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
         deltaMass = massSc - massLc;
         y = hfHelper.ySc0(candSc);
         registry.fill(HIST("Data/hDeltaMassSc0"), deltaMass);                   /// Σc0
@@ -161,13 +161,12 @@ struct SigmacInCascade {
         registry.fill(HIST("Data/hPhiSoftPiSc0PlusPlus"), phiSoftPi); // π ← Σc0,++
 
         if (enableTHn) {
-          registry.get<THnSparse>(HIST("hnSigmaC0"))->Fill(massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
-          registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
+          registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
         }
       } /// Σc0
 
       if (candSc.charge() == 2) {
-        massSc = hfHelper.invMassScPlusPlusRecoLcToK0sP(candSc, candidateLc);
+        massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
         deltaMass = massSc - massLc;
         y = hfHelper.yScPlusPlus(candSc);
         registry.fill(HIST("Data/hDeltaMassScPlusPlus"), deltaMass);            /// Σc++
@@ -190,16 +189,15 @@ struct SigmacInCascade {
         registry.fill(HIST("Data/hPhiSoftPiSc0PlusPlus"), phiSoftPi); // π ← Σc0,++
 
         if (enableTHn) {
-          registry.get<THnSparse>(HIST("hnSigmaCPlusPlus"))->Fill(massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
-          registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
+          registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
         }
       }
     }
   }
-  PROCESS_SWITCH(SigmacInCascade, processSigmaCToLcPi, "Process Data", true);
+  PROCESS_SWITCH(HfTaskSigmacInCascade, processSigmaCToLcPi, "Process Data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<SigmacInCascade>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskSigmacInCascade>(cfgc)};
 }

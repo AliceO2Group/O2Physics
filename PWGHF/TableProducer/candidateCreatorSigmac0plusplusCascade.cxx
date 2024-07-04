@@ -33,15 +33,15 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfCandidateCreatorSigmac0plusplusCascade {
-  Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.15, "track min pT"};
-  Configurable<double> cfgtrkMaxEta{"cfgtrkMaxEta", 0.8, "track max Eta"};
-  Configurable<double> cfgMaxDCAxyToPVcut{"cfgMaxDCAxyToPVcut", 2.0, "Track DCAxy cut to PV Maximum"};
-  Configurable<double> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
-  Configurable<double> cfgnFindableTPCClusters{"cfgnFindableTPCClusters", 120, "nFindable TPC Clusters"};
-  Configurable<double> cfgnTPCCrossedRows{"cfgnTPCCrossedRows", 70, "nCrossed TPC Rows"};
-  Configurable<double> cfgnTPCChi2{"cfgnTPChi2", 4.0, "nTPC Chi2 per Cluster"};
-  Configurable<double> cfgnITSChi2{"cfgnITShi2", 36.0, "nITS Chi2 per Cluster"};
-  Configurable<double> cfgTPCnSigmaPi{"cfgTPCnSigmaPi", 3.0, "TPC nSigma selection"};
+  Configurable<double> trkMinPt{"trkMinPt", 0.15, "track min pT"};
+  Configurable<double> trkMaxEta{"trkMaxEta", 0.8, "track max Eta"};
+  Configurable<double> maxDCAxyToPVcut{"maxDCAxyToPVcut", 2.0, "Track DCAxy cut to PV Maximum"};
+  Configurable<double> maxDCAzToPVcut{"maxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
+  Configurable<double> nTpcNClsFound{"nTpcNClsFound", 120, "nFindable TPC Clusters"};
+  Configurable<double> nTPCCrossedRows{"nTPCCrossedRows", 70, "nCrossed TPC Rows"};
+  Configurable<double> nTPCChi2{"nTPCChi2", 4.0, "nTPC Chi2 per Cluster"};
+  Configurable<double> nITSChi2{"nITSChi2", 36.0, "nITS Chi2 per Cluster"};
+  Configurable<double> tpcnSigmaPi{"tpcnSigmaPi", 3.0, "TPC nSigma selection"};
 
   /// Table with Σc0,++ info
   Produces<aod::HfCandScCasBase> rowScCandidates;
@@ -49,7 +49,6 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandLcMax{"yCandLcMax", -1., "max. candLc. Lc rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_sigmac_to_p_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cutsMassLcMax{"cutsMassLcMax", {hf_cuts_sigmac_to_p_k_pi::cuts[0], hf_cuts_sigmac_to_p_k_pi::nBinsPt, hf_cuts_sigmac_to_p_k_pi::nCutVars, hf_cuts_sigmac_to_p_k_pi::labelsPt, hf_cuts_sigmac_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
   Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
   Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
   /// Selections on candidate soft π-,+
@@ -65,23 +64,23 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   template <typename TrackType>
   bool isTrackSelected(const TrackType& track)
   {
-    if (track.pt() < cfgtrkMinPt)
+    if (track.pt() < trkMinPt)
       return false;
-    if (std::abs(track.eta()) > cfgtrkMaxEta)
+    if (std::abs(track.eta()) > trkMaxEta)
       return false;
-    if (std::abs(track.dcaXY()) > cfgMaxDCAxyToPVcut)
+    if (std::abs(track.dcaXY()) > maxDCAxyToPVcut)
       return false;
-    if (std::abs(track.dcaZ()) > cfgMaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > maxDCAzToPVcut)
       return false;
-    if (track.tpcNClsFindable() < cfgnFindableTPCClusters)
+    if (track.tpcNClsFound() < nTpcNClsFound)
       return false;
-    if (track.tpcNClsCrossedRows() < cfgnTPCCrossedRows)
+    if (track.tpcNClsCrossedRows() < nTPCCrossedRows)
       return false;
-    if (track.tpcChi2NCl() > cfgnTPCChi2)
+    if (track.tpcChi2NCl() > nTPCChi2)
       return false;
-    if (track.itsChi2NCl() > cfgnITSChi2)
+    if (track.itsChi2NCl() > nITSChi2)
       return false;
-    if (track.tpcNSigmaPi() > cfgTPCnSigmaPi)
+    if (track.tpcNSigmaPi() > tpcnSigmaPi)
       return false;
 
     return true;
@@ -187,7 +186,6 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
 
   /// @param tracks are the tracks (with dcaXY, dcaZ information) → soft-pion candidate tracks
   /// @param candidatesLc are 2-prong candidates satisfying the analysis selections for Λc+ → Ks0P (and charge conj.)
-
   void processData(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates,
                    aod::Collisions const&, TracksWithPID const& tracks)
   {

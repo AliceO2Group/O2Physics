@@ -1686,9 +1686,6 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction l
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
-
-// mapping of decay types
-enum DecayType { Sc0ToKs0P = 0 };
 } // namespace hf_cand_sigmac_cascade
 
 // declare dedicated Σc0,++ decay candidate table
