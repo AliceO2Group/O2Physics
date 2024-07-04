@@ -3747,7 +3747,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCncls, 70, 161.);
     return cut;
   }
-  
+
   if (!nameStr.compare("electronStandardQualityTPCOnly2")) {
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kTPCncls, 100, 161.);
