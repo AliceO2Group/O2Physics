@@ -29,16 +29,11 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#define EPS 0.00001f
-#define ETA_CUT 0.8f
-#define TOF_ACCEPTANCE_THRESHOLD (-999.0f)
-#define TRD_ACCEPTANCE_THRESHOLD (0.0f)
-
 struct PidMlEffAndPurProducer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
-  Configurable<uint32_t> cfgDetector{"detector", kTPCTOFTRD, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
+  Configurable<uint32_t> cfgDetector{"detector", kTPCOnly, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
   Configurable<double> cfgNSigmaCut{"n-sigma-cut", 3.0f, "TPC and TOF PID nSigma cut"};
   Configurable<double> cfgTofPtCut{"tof-pt-cut", 0.5f, "From what pT TOF is used"};
@@ -52,13 +47,17 @@ struct PidMlEffAndPurProducer {
   Configurable<bool> cfgUseFixedTimestamp{"use-fixed-timestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
   Configurable<uint64_t> cfgTimestamp{"timestamp", 1524176895000, "Hardcoded timestamp for tests"};
 
+  static constexpr float kTOFMissingSignal = -999.0f;
+  static constexpr float kTRDMissingSignal = 0.0f;
+  static constexpr float kEtaCut = 0.8f;
+  static constexpr float kEpsilon = 1e-10f;
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
 
-  Filter trackFilter = requireGlobalTrackInFilter() &&
-    (nabs(aod::pidtofsignal::tofSignal - TOF_ACCEPTANCE_THRESHOLD) > EPS) &&
-    (nabs(aod::track::trdSignal - TRD_ACCEPTANCE_THRESHOLD) > EPS);
+  Filter trackFilter = requireGlobalTrackInFilter();
+    // && (nabs(aod::pidtofsignal::tofSignal - kTOFMissingSignal) > kEpsilon)
+    // && (nabs(aod::track::trdSignal - kTRDMissingSignal) > kEpsilon);
 
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels,
     aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu, 
@@ -101,7 +100,7 @@ struct PidMlEffAndPurProducer {
     int sign = cfgPid > 0 ? 1 : -1;
     if(track.sign() != sign) return false;
 
-    if (cfgDetector == 0 || track.pt() <= cfgTofPtCut) {
+    if (cfgDetector == 0 || track.pt() <= cfgTofPtCut || (track.tofSignal() - kTOFMissingSignal) < kEpsilon) {
       if (TMath::Abs(nSigma.tpc) >= cfgNSigmaCut)
         return false;
     } else {
@@ -120,7 +119,7 @@ struct PidMlEffAndPurProducer {
           ccdbApi, -1, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
     }
 
-    const AxisSpec axisPt{100, 0, 3.1, "pt"};
+    const AxisSpec axisPt{100, 0, 5.0, "pt"};
     const AxisSpec axisBeta{100, 0, 1.0, "beta"};
     const AxisSpec axisTPCSignal{100, 0, 120.0, "dEdx"};
     const AxisSpec axisNSigma{100, -5.0, 5.0, "n-sigma"};
@@ -157,7 +156,7 @@ struct PidMlEffAndPurProducer {
 
     for (auto& mcPart : mcParticles) {
       // eta cut is included in requireGlobalTrackInFilter() so we cut it only here
-      if(mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < ETA_CUT && mcPart.pdgCode() == pidModel.mPid) {
+      if(mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < kEtaCut && mcPart.pdgCode() == pidModel.mPid) {
         histos.fill(HIST("hPtMCPositive"), mcPart.pt());
       }
     }
@@ -176,7 +175,7 @@ struct PidMlEffAndPurProducer {
           if(mcPart.pdgCode() == pidModel.mPid) {
             histos.fill(HIST("full/hPtTOFNSigma"), track.pt(), nSigma.tof);
             histos.fill(HIST("full/hPtTPCNSigma"), track.pt(), nSigma.tpc);
-            histos.fill(HIST("hPtMCTracked"), mcPart.pt());
+            histos.fill(HIST("hPtMCTracked"), track.pt());
           }
           
           histos.fill(HIST("full/hPtTOFBeta"), track.pt(), track.beta());
@@ -184,9 +183,9 @@ struct PidMlEffAndPurProducer {
 
           if(mlAccepted) {
             if(mcPart.pdgCode() == pidModel.mPid) {
-              histos.fill(HIST("hPtMLTruePositive"), mcPart.pt());
+              histos.fill(HIST("hPtMLTruePositive"), track.pt());
             }
-            histos.fill(HIST("hPtMLPositive"), mcPart.pt());
+            histos.fill(HIST("hPtMLPositive"), track.pt());
           }
 
           if(nSigmaAccepted) {
@@ -194,9 +193,9 @@ struct PidMlEffAndPurProducer {
             histos.fill(HIST("hPtTPCNSigma"), track.pt(), nSigma.tpc);
 
             if(mcPart.pdgCode() == pidModel.mPid) {
-              histos.fill(HIST("hPtNSigmaTruePositive"), mcPart.pt());
+              histos.fill(HIST("hPtNSigmaTruePositive"), track.pt());
             }
-            histos.fill(HIST("hPtNSigmaPositive"), mcPart.pt());
+            histos.fill(HIST("hPtNSigmaPositive"), track.pt());
           }
         }
       }

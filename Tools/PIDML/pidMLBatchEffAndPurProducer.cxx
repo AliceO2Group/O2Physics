@@ -35,15 +35,15 @@ namespace effandpurpidresult
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track);              //! Track index
 DECLARE_SOA_COLUMN(Pid, pid, int);                   //! PDG particle ID to be tested by the model
+DECLARE_SOA_COLUMN(Pt, pt, float);                   //! particle's pt
 DECLARE_SOA_COLUMN(MlCertainty, mlCertainty, float); //! Machine learning model certainty value for track and pid
-DECLARE_SOA_COLUMN(TpcNSigma, tpcNSigma, float);     //! tpcNSigma value for track and pid
-DECLARE_SOA_COLUMN(TofNSigma, tofNSigma, float);     //! tofNSigma value for track and pid
+DECLARE_SOA_COLUMN(NSigma, nSigma, float);     //! nSigma value for track and pid
 DECLARE_SOA_COLUMN(IsPidMC, isPidMc, bool);          //! Is track's mcParticle recognized as "Pid"
 } // namespace effandpurpidresult
 
 DECLARE_SOA_TABLE(EffAndPurPidResult, "AOD", "PIDEFFANDPURRES", o2::soa::Index<>,
-                  effandpurpidresult::TrackId, effandpurpidresult::Pid, effandpurpidresult::MlCertainty,
-                  effandpurpidresult::TpcNSigma, effandpurpidresult::TofNSigma, effandpurpidresult::IsPidMC);
+                  effandpurpidresult::TrackId, effandpurpidresult::Pid, effandpurpidresult::Pt, effandpurpidresult::MlCertainty,
+                  effandpurpidresult::NSigma, effandpurpidresult::IsPidMC);
 } // namespace o2::aod
 
 struct PidMlBatchEffAndPurProducer {
@@ -53,8 +53,9 @@ struct PidMlBatchEffAndPurProducer {
   int currentRunNumber = -1;
   static constexpr float eps = 1e-10;
   static constexpr float etaCut = 0.8f;
-  static constexpr float tofAcceptThreshold = -999.0f;
-  static constexpr float trdAcceptThreshold = 0.0f;
+  static constexpr float nSigmaTofPtCut = 0.5f;
+  static constexpr float tofMissing = -999.0f;
+  static constexpr float trdMissing = 0.0f;
   static constexpr int nPids = 6;
   static constexpr int pids[nPids] = {211, 321, 2212, -211, -321, -2212};
 
@@ -168,16 +169,16 @@ struct PidMlBatchEffAndPurProducer {
     }
   }
 
-  Filter trackFilter = requireGlobalTrackInFilter() &&
-                       (nabs(aod::pidtofsignal::tofSignal - tofAcceptThreshold) > eps) &&
-                       (nabs(aod::track::trdSignal - trdAcceptThreshold) > eps);
+  Filter trackFilter = requireGlobalTrackInFilter(); // &&
+                       // (nabs(aod::pidtofsignal::tofSignal - tofMissing) > eps) &&
+                       // (nabs(aod::track::trdSignal - trdMissing) > eps);
 
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels,
                                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu,
                                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu>>;
 
   typedef struct nSigma_t {
-    double tpc, tof;
+    double tpc, tof, composed;
   } nSigma_t;
 
   const nSigma_t getNSigma(const BigTracks::iterator& track, const int& cfgPid)
@@ -205,6 +206,17 @@ struct PidMlBatchEffAndPurProducer {
         nSigma.tof = track.tofNSigmaPr();
         nSigma.tpc = track.tpcNSigmaPr();
         break;
+    }
+
+    if(track.pt() < nSigmaTofPtCut || (track.tofSignal() - tofMissing) < eps) {
+      nSigma.composed = TMath::Abs(nSigma.tpc);
+    } else {
+      nSigma.composed = TMath::Hypot(nSigma.tof, nSigma.tpc);
+    }
+
+    int sign = cfgPid > 0 ? 1 : -1;
+    if(sign != track.sign()) {
+      nSigma.composed = std::numeric_limits<float>::max();
     }
 
     return nSigma;
@@ -242,7 +254,7 @@ struct PidMlBatchEffAndPurProducer {
             nSigma_t nSigma = getNSigma(track, cfgPids.value[i]);
             bool isMCPid = mcPart.pdgCode() == cfgPids.value[i];
 
-            effAndPurPIDResult(track.index(), cfgPids.value[i], mlCertainty, nSigma.tpc, nSigma.tof, isMCPid);
+            effAndPurPIDResult(track.index(), cfgPids.value[i], track.pt(), mlCertainty, nSigma.composed, isMCPid);
           }
         }
       }

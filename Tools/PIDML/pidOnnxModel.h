@@ -17,6 +17,8 @@
 #ifndef TOOLS_PIDML_PIDONNXMODEL_H_
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <algorithm>
 #include <map>
@@ -180,6 +182,10 @@ struct PidONNXModel {
     }
   }
 
+  static constexpr float kTOFMissingSignal = -999.0f;
+  static constexpr float kTRDMissingSignal = 0.0f;
+  static constexpr float kEpsilon = 1e-10f;
+
   template <typename T>
   std::vector<float> createInputsSingle(const T& track)
   {
@@ -192,17 +198,23 @@ struct PidONNXModel {
 
       std::vector<float> inputValues{scaledTPCSignal};
 
-      if (mDetector >= kTPCTOFTRD) {
+      if ((track.trdSignal() - kTRDMissingSignal) > kEpsilon) {
         float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
         inputValues.push_back(scaledTRDSignal);
         inputValues.push_back(track.trdPattern());
+      } else {
+        inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+        inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
       }
 
-      if (mDetector >= kTPCTOF) {
+      if ((track.tofSignal() - kTOFMissingSignal) > kEpsilon) {
         float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
         float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
         inputValues.push_back(scaledTOFSignal);
         inputValues.push_back(scaledBeta);
+      } else {
+        inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+        inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
       }
 
       float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
