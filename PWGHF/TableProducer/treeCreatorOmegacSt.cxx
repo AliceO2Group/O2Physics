@@ -240,8 +240,7 @@ struct HfTreeCreatorOmegacSt {
     "registry",
     {
       {"hDca", "DCA;DCA (cm)", {HistType::kTH1D, {{200, 0., .5}}}},
-      {"hDcaXY", "DCA;DCA_{xy} (cm)", {HistType::kTH1D, {
-        {200, -.5, .5}}}},
+      {"hDcaXY", "DCA;DCA_{xy} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
       {"hDcaXYVsPt", "DCA;p_{T} (GeV/#it{c};DCA_{xy} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
       {"hDcaZ", "DCA;DCA_{z} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
       {"hDcaZVsPt", "DCA;p_{T} (GeV/#it{c});DCA_{z} (cm)", {HistType::kTH2D, {{200, 0., 10.}, {200, -.5, .5}}}},
@@ -308,7 +307,7 @@ struct HfTreeCreatorOmegacSt {
           int idxPionDaughter = -1;
           int idxCascDaughter = -1;
           const auto daughters = mcParticle.daughters_as<aod::McParticles>();
-          for (const auto& daughter: daughters) {
+          for (const auto& daughter : daughters) {
             if (idxCascDaughter < 0 && (std::abs(daughter.pdgCode()) == (isOmegaC ? kOmegaMinus : kXiMinus))) {
               idxCascDaughter = daughter.globalIndex();
             }
@@ -317,14 +316,14 @@ struct HfTreeCreatorOmegacSt {
             }
           }
           if ((idxPionDaughter >= 0) && (idxCascDaughter >= 0)) {
-            const auto &cascDaughter = mcParticles.iteratorAt(idxCascDaughter);
+            const auto& cascDaughter = mcParticles.iteratorAt(idxCascDaughter);
             const auto& mcColl = mcParticle.mcCollision();
             std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
             std::array<double, 3> secondaryVertexGen = {cascDaughter.vx(), cascDaughter.vy(), cascDaughter.vz()};
             float decayLengthCascGen = -1.;
             float decayLengthXYCascGen = -1.;
             if (cascDaughter.has_daughters()) {
-              const auto &cascDecayDaughter = cascDaughter.daughters_as<aod::McParticles>().iteratorAt(0);
+              const auto& cascDecayDaughter = cascDaughter.daughters_as<aod::McParticles>().iteratorAt(0);
               std::array<double, 3> tertiaryVertexGen = {cascDecayDaughter.vx(), cascDecayDaughter.vy(), cascDecayDaughter.vz()};
               decayLengthCascGen = RecoDecay::distance(tertiaryVertexGen, primaryVertexPosGen);
               decayLengthXYCascGen = RecoDecay::distanceXY(tertiaryVertexGen, primaryVertexPosGen);
@@ -333,18 +332,18 @@ struct HfTreeCreatorOmegacSt {
             const auto decayLengthXYGen = RecoDecay::distanceXY(secondaryVertexGen, primaryVertexPosGen);
             registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::constants::physics::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
             outputTableGen(
-                           mcParticle.px(),
-                           mcParticle.py(),
-                           mcParticle.pz(),
-                           mcParticle.pdgCode(),
-                           cascDaughter.px(),
-                           cascDaughter.py(),
-                           cascDaughter.pz(),
-                           cascDaughter.pdgCode(),
-                           decayLengthGen,
-                           decayLengthXYGen,
-                           decayLengthCascGen,
-                           decayLengthXYCascGen);
+              mcParticle.px(),
+              mcParticle.py(),
+              mcParticle.pz(),
+              mcParticle.pdgCode(),
+              cascDaughter.px(),
+              cascDaughter.py(),
+              cascDaughter.pz(),
+              cascDaughter.pdgCode(),
+              decayLengthGen,
+              decayLengthXYGen,
+              decayLengthCascGen,
+              decayLengthXYCascGen);
             mapMcPartToGenTable[mcParticle.globalIndex()] = outputTableGen.lastIndex();
           }
         }
@@ -353,7 +352,7 @@ struct HfTreeCreatorOmegacSt {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
 
-  template<typename TracksType>
+  template <typename TracksType>
   void fillTable(Collisions const& collisions,
                  aod::AssignedTrackedCascades const& trackedCascades,
                  aod::TrackAssoc const& trackIndices)
