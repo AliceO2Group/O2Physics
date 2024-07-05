@@ -80,6 +80,7 @@ struct HfCorrelatorDMesonPairs {
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{100, -5., 5.}}};
   HistogramConfigSpec hTH1Phi{HistType::kTH1F, {{32, 0., o2::constants::math::TwoPI}}};
   HistogramConfigSpec hTH2Pid{HistType::kTH2F, {{500, 0., 10.}, {400, -20., 20.}}};
+  HistogramConfigSpec hTH2PtVsY{HistType::kTH2F, {{180, 0., 36.}, {100, -5., 5.}}};
 
   HistogramRegistry registry{
     "registry",
@@ -90,11 +91,13 @@ struct HfCorrelatorDMesonPairs {
      {"hEta", "D meson candidates;candidate #it{#eta};entries", hTH1Y},
      {"hPhi", "D meson candidates;candidate #it{#varphi};entries", hTH1Phi},
      {"hY", "D meson candidates;candidate #it{y};entries", hTH1Y},
+     {"hPtVsY", "D meson candidates;candidate #it{p}_{T} (GeV/#it{c});#it{y}", hTH2PtVsY},
      // MC Gen plots
      {"hPtCandMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hPtCandAfterCutMcGen", "D meson candidates after pT cut;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hEtaMcGen", "D meson candidates MC Gen;candidate #it{#eta};entries", hTH1Y},
      {"hPhiMcGen", "D meson candidates MC Gen;candidate #it{#varphi};entries", hTH1Phi},
+     {"hPtVsYMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});#it{y}", hTH2PtVsY},
      // PID plots ----- Not definitively here
      {"PID/hTofNSigmaPi", "(TOFsignal-time#pi)/tofSigPid;p[GeV/c];(TOFsignal-time#pi)/tofSigPid", hTH2Pid},
      {"PID/hTofNSigmaKa", "(TOFsignal-timeK)/tofSigPid;p[GeV/c];(TOFsignal-timeK)/tofSigPid", hTH2Pid},
@@ -328,7 +331,6 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hPhi"), candidate.phi());
       registry.fill(HIST("hY"), candidate.y(MassD0));
       registry.fill(HIST("hPtCandAfterCut"), candidate.pt());
-      registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
 
       bool isDCand1 = isD(candidateType1);
       bool isDbarCand1 = isDbar(candidateType1);
@@ -432,6 +434,16 @@ struct HfCorrelatorDMesonPairs {
       if ((!isDCand1) && (!isDbarCand2)) {
         registry.fill(HIST("hSelectionStatus"), 21);
       }
+    }
+
+    // Fill inv. mass and pt vs. y of single candidate within the pair
+    if (isDCand1) {
+      registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+      registry.fill(HIST("hPtVsY"), candidate1.pt(), candidate1.y(MassD0));
+    }
+    if (isDbarCand1) {
+      registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+      registry.fill(HIST("hPtVsY"), candidate1.pt(), candidate1.y(MassD0Bar));
     }
 
     entryD0Pair(candidate1.pt(), candidate2.pt(), yCand1, yCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
@@ -777,6 +789,14 @@ struct HfCorrelatorDMesonPairs {
         if (isDbarParticle1 && isDParticle2) {
           SETBIT(pairType, DbarD);
           registry.fill(HIST("hSelectionStatusMcGen"), 25);
+        }
+
+        // Fill Inv.mass and ptVsY of single particle from the pair
+        if (isDParticle1) {
+          registry.fill(HIST("hPtVsYMcGen"), particle1.pt(), particle1.y());
+        }
+        if (isDbarParticle1) {
+          registry.fill(HIST("hPtVsYMcGen"), particle1.pt(), particle1.y());
         }
 
         // Fill pair Selection Status
