@@ -1131,11 +1131,11 @@ struct correlateStrangeness {
         constexpr int index = i.value;
         for (Int_t iassoc = 0; iassoc < associatedIndices[index].size(); iassoc++){
           auto assocParticle = mcParticles.iteratorAt(associatedIndices[index][iassoc]);
-          if( triggerIndices[iTrigger] != associatedIndices[index][iassoc] && globalIndex != assocParticle.globalIndex()) { // avoid self
+          if (triggerIndices[iTrigger] != associatedIndices[index][iassoc] && globalIndex != assocParticle.globalIndex()) { // avoid self
             Double_t getaassoc = assocParticle.eta();
             Double_t gphiassoc = assocParticle.phi();
             Double_t ptassoc = assocParticle.pt();
-            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger,gphiassoc), getatrigger - getaassoc, ptassoc, pttrigger, collision.posZ(), iteratorNum);
+            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger, gphiassoc), getatrigger - getaassoc, ptassoc, pttrigger, collision.posZ(), iteratorNum);
           }
         }
       });
