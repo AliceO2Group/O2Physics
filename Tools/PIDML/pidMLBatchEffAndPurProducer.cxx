@@ -81,9 +81,9 @@ struct PidMlBatchEffAndPurProducer {
     "0321/hPtMCTracked",
     "02212/hPtMCTracked"};
   template <std::size_t i, typename T>
-  void fillMcParticleTrackedHistos(const T& mcPart)
+  void fillMcParticleTrackedHistos(const T& track)
   {
-    histos.fill(HIST(mcTrackedHistLabels[i]), mcPart.pt());
+    histos.fill(HIST(mcTrackedHistLabels[i]), track.pt());
   }
 
   static constexpr std::string_view mcPositiveHistLabels[nPids] = {
@@ -127,26 +127,26 @@ struct PidMlBatchEffAndPurProducer {
   }
 
   template <typename T>
-  void fillMcParticleTrackedHist(const T& mcPart)
+  void fillMcParticleTrackedHist(const T& track, int pdgCode)
   {
-    switch (mcPart.pdgCode()) {
+    switch (pdgCode) {
       case pids[0]:
-        fillMcParticleTrackedHistos<0>(mcPart);
+        fillMcParticleTrackedHistos<0>(track);
         break;
       case pids[1]:
-        fillMcParticleTrackedHistos<1>(mcPart);
+        fillMcParticleTrackedHistos<1>(track);
         break;
       case pids[2]:
-        fillMcParticleTrackedHistos<2>(mcPart);
+        fillMcParticleTrackedHistos<2>(track);
         break;
       case pids[3]:
-        fillMcParticleTrackedHistos<3>(mcPart);
+        fillMcParticleTrackedHistos<3>(track);
         break;
       case pids[4]:
-        fillMcParticleTrackedHistos<4>(mcPart);
+        fillMcParticleTrackedHistos<4>(track);
         break;
       case pids[5]:
-        fillMcParticleTrackedHistos<5>(mcPart);
+        fillMcParticleTrackedHistos<5>(track);
         break;
       default:
         return;
@@ -160,7 +160,7 @@ struct PidMlBatchEffAndPurProducer {
     } else {
     }
 
-    const AxisSpec axisPt{100, 0, 3.1, "pt"};
+    const AxisSpec axisPt{50, 0, 3.1, "pt"};
 
     // Monte Carlo Model Simulation Tracking and PID truth info
     for (int i = 0; i < nPids; ++i) {
@@ -247,7 +247,7 @@ struct PidMlBatchEffAndPurProducer {
       if (track.has_mcParticle()) {
         auto mcPart = track.mcParticle();
         if (mcPart.isPhysicalPrimary()) {
-          fillMcParticleTrackedHist(mcPart);
+          fillMcParticleTrackedHist(track, mcPart.pdgCode());
 
           for (int i = 0; i < cfgPids.value.size(); ++i) {
             float mlCertainty = models[i].applyModel(track);
