@@ -801,10 +801,10 @@ struct UPCPionAnalysis {
           }
         }
       }
-    } // double gap
-  }   // end of process
+    }
+  }
 
-};    // end of struct
+};  
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
