@@ -1405,7 +1405,7 @@ struct strangeness_in_jets {
       // Momentum of the Leading Particle
       auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
       TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
-      registryQC.fill(HIST("deltaPt_leading"), pt_max-leading_track.pt());
+      registryQC.fill(HIST("deltaPt_leading"), pt_max - leading_track.pt());
 
       // Labels
       int exit(0);
