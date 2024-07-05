@@ -54,12 +54,10 @@ inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrac
 
   //*******************************************************
 
-  // o2::track::TrackParametrizationWithError<TrackPrecision> = TrackParCov, I use the full version to have control over the data type
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); // first get an object that stores Track information (positive)
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); // first get an object that stores Track information (negative)
-
-  // trackPosInformation.setPID(o2::track::PID::Electron);
-  // trackNegInformation.setPID(o2::track::PID::Electron);
+  trackPosInformation.setPID(o2::track::PID::Electron);
+  trackNegInformation.setPID(o2::track::PID::Electron);
 
   o2::track::TrackAuxPar helixPos(trackPosInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
   o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
@@ -70,8 +68,8 @@ inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrac
   // I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackPosInformation);
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackNegInformation);
-  // trackPosInformationCopy.setPID(o2::track::PID::Electron);
-  // trackNegInformationCopy.setPID(o2::track::PID::Electron);
+  trackPosInformationCopy.setPID(o2::track::PID::Electron);
+  trackNegInformationCopy.setPID(o2::track::PID::Electron);
 
   // I think this calculation gets the closest point on the track to the conversion point
   // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point

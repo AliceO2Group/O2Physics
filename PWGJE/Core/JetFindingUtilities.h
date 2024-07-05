@@ -23,6 +23,7 @@
 #include <optional>
 #include <cmath>
 #include <memory>
+#include <TRandom3.h>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -51,6 +52,24 @@ namespace jetfindingutilities
 {
 
 /**
+ * returns true if the cluster is from an EMCAL table
+ */
+template <typename T>
+constexpr bool isEMCALCluster()
+{
+  return std::is_same_v<std::decay_t<T>, JetClusters::iterator> || std::is_same_v<std::decay_t<T>, JetClusters::filtered_iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::filtered_iterator>;
+}
+
+/**
+ * returns true if the table is an EMCAL table
+ */
+template <typename T>
+constexpr bool isEMCALTable()
+{
+  return isEMCALCluster<typename T::iterator>() || isEMCALCluster<typename T::filtered_iterator>();
+}
+
+/**
  * Adds tracks to a fastjet inputParticles list
  *
  * @param inputParticles fastjet container
@@ -60,7 +79,7 @@ namespace jetfindingutilities
  */
 
 template <typename T, typename U>
-void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, std::optional<U> const& candidate = std::nullopt)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, double trackingEfficinecy, std::optional<U> const& candidate = std::nullopt)
 {
   for (auto& track : tracks) {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -69,6 +88,12 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
     if (candidate != std::nullopt) {
       auto cand = candidate.value();
       if (jethfutilities::isDaughterTrack(track, cand, tracks)) {
+        continue;
+      }
+    }
+    if (trackingEfficinecy < 0.999) { // this code is a bit ugly but it stops us needing to do the random generation unless asked for
+      TRandom3 randomNumber(0);
+      if (randomNumber.Rndm() > trackingEfficinecy) { // Is Rndm ok to use?
         continue;
       }
     }
@@ -86,7 +111,7 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
  */
 
 template <typename T, typename U>
-void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, U const& candidates)
+void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, double trackingEfficinecy, U const& candidates)
 {
   for (auto& track : tracks) {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -94,6 +119,12 @@ void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParti
     }
     for (auto& candidate : candidates) {
       if (jethfutilities::isDaughterTrack(track, candidate, tracks)) {
+        continue;
+      }
+    }
+    if (trackingEfficinecy < 0.999) { // this code is a bit ugly but it stops us needing to do the random generation unless asked for
+      TRandom3 randomNumber(0);
+      if (randomNumber.Rndm() > trackingEfficinecy) { // Is Rndm ok to use?
         continue;
       }
     }

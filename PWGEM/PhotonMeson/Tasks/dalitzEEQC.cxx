@@ -21,6 +21,9 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/Core/RecoDecay.h"
 
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
@@ -30,6 +33,7 @@
 #include "PWGEM/PhotonMeson/Core/EMEventCut.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -37,24 +41,26 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct DalitzEEQC {
+  // Configurables
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<bool> cfgDoFlow{"cfgDoFlow", false, "flag to analyze vn"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
-  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
-  ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -119,16 +125,65 @@ struct DalitzEEQC {
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  int mRunNumber;
+  float d_bz;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
+  bool cfgDoFlow = false;
 
-  void init(InitContext& context)
+  void init(InitContext& /*context*/)
   {
     DefineEMEventCut();
     DefineDileptonCut();
     addhistograms();
+
+    mRunNumber = 0;
+    d_bz = 0;
+
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+  }
+
+  template <typename TCollision>
+  void initCCDB(TCollision const& collision)
+  {
+    if (mRunNumber == collision.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      mRunNumber = collision.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = collision.timestamp();
+    o2::parameters::GRPObject* grpo = 0x0;
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery)
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    if (grpo) {
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = collision.runNumber();
   }
 
   ~DalitzEEQC() {}
@@ -142,29 +197,23 @@ struct DalitzEEQC {
     std::vector<double> ptbins;
     std::vector<double> massbins;
 
-    for (int i = 0; i < 110; i++) {
-      massbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c2 from 0.0 to 1.1 GeV/c2
+    for (int i = 0; i < 51; i++) {
+      massbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c2 from 0.0 to 0.5 GeV/c2
     }
     const AxisSpec axis_mass{massbins, "m_{ee} (GeV/c^{2})"};
 
-    for (int i = 0; i < 10; i++) {
-      ptbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c from 0.0 to 0.1 GeV/c
+    for (int i = 0; i < 50; i++) {
+      ptbins.emplace_back(0.1 * (i - 0) + 0.0); // every 0.1 GeV/c from 0.0 to 5.0 GeV/c
     }
-    for (int i = 10; i < 59; i++) {
-      ptbins.emplace_back(0.1 * (i - 10) + 0.1); // every 0.1 GeV/c from 0.0 to 5.0 GeV/c
-    }
-    for (int i = 59; i < 70; i++) {
-      ptbins.emplace_back(0.5 * (i - 59) + 5.0); // every 0.5 GeV/c from 5.0 to 10 GeV/c
+    for (int i = 50; i < 61; i++) {
+      ptbins.emplace_back(0.5 * (i - 50) + 5.0); // every 0.5 GeV/c from 5.0 to 10 GeV/c
     }
     const AxisSpec axis_pt{ptbins, "p_{T,ee} (GeV/c)"};
 
-    fRegistry.add("Pair/hMvsPt_uls", "hs pair", kTH2F, {axis_mass, axis_pt}, true);
-    fRegistry.addClone("Pair/hMvsPt_uls", "Pair/hMvsPt_lspp");
-    fRegistry.addClone("Pair/hMvsPt_uls", "Pair/hMvsPt_lsmm");
-
-    fRegistry.add("Pair/hMvsPhiV_uls", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, false);
-    fRegistry.addClone("Pair/hMvsPhiV_uls", "Pair/hMvsPhiV_lspp");
-    fRegistry.addClone("Pair/hMvsPhiV_uls", "Pair/hMvsPhiV_lsmm");
+    fRegistry.add("Pair/same/uls/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {axis_mass, axis_pt}, true);
+    fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
+    fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
+    fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
@@ -248,7 +297,7 @@ struct DalitzEEQC {
     if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
       if (dileptoncuts.loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
+        ccdbApi.init(ccdburl);
         std::map<std::string, std::string> metadata;
         bool retrieveSuccessGamma = ccdbApi.retrieveBlob(dileptoncuts.BDTPathCCDB.value, ".", metadata, dileptoncuts.timestampCCDB.value, false, dileptoncuts.BDTLocalPathGamma.value);
         if (retrieveSuccessGamma) {
@@ -281,24 +330,27 @@ struct DalitzEEQC {
       }
     }
 
-    if (!fDileptonCut.IsSelectedPair(t1, t2, collision.bz())) {
+    if (!fDileptonCut.IsSelectedPair(t1, t2, d_bz)) {
       return false;
     }
 
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
+    if (abs(v12.Rapidity()) > maxY) {
+      return false;
+    }
+    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/hMvsPt_uls"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/hMvsPhiV_uls"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/same/uls/hMvsPt"), v12.M(), v12.Pt());
+      fRegistry.fill(HIST("Pair/same/uls/hMvsPhiV"), phiv, v12.M());
     } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/hMvsPt_lspp"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/hMvsPhiV_lspp"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/same/lspp/hMvsPt"), v12.M(), v12.Pt());
+      fRegistry.fill(HIST("Pair/same/lspp/hMvsPhiV"), phiv, v12.M());
     } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/hMvsPt_lsmm"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/hMvsPhiV_lsmm"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/same/lsmm/hMvsPt"), v12.M(), v12.Pt());
+      fRegistry.fill(HIST("Pair/same/lsmm/hMvsPhiV"), phiv, v12.M());
     }
 
     if (t1.sign() > 0) {
@@ -371,9 +423,10 @@ struct DalitzEEQC {
   Partition<FilteredMyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
 
   std::vector<int> used_trackIds;
-  void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks)
+  void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& /*tracks*/)
   {
     for (auto& collision : collisions) {
+      initCCDB(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;

@@ -22,8 +22,10 @@
 #include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
 #include "TableHelper.h"
-#include "THashList.h"
+#include "TList.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -81,6 +83,7 @@ struct CentralityTable {
   Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
   Configurable<bool> fatalizeMultCalibSanity{"fatalizeMultCalibSanity", false, {"Option to do fatalize the sanity check on the multiplicity calibration"}};
   Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
+  ConfigurableAxis binsPercentile{"binsPercentile", {VARIABLE_WIDTH, 0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028, 0.029, 0.03, 0.031, 0.032, 0.033, 0.034, 0.035, 0.036, 0.037, 0.038, 0.039, 0.04, 0.041, 0.042, 0.043, 0.044, 0.045, 0.046, 0.047, 0.048, 0.049, 0.05, 0.051, 0.052, 0.053, 0.054, 0.055, 0.056, 0.057, 0.058, 0.059, 0.06, 0.061, 0.062, 0.063, 0.064, 0.065, 0.066, 0.067, 0.068, 0.069, 0.07, 0.071, 0.072, 0.073, 0.074, 0.075, 0.076, 0.077, 0.078, 0.079, 0.08, 0.081, 0.082, 0.083, 0.084, 0.085, 0.086, 0.087, 0.088, 0.089, 0.09, 0.091, 0.092, 0.093, 0.094, 0.095, 0.096, 0.097, 0.098, 0.099, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0}, "Binning of the percentile axis"};
 
   int mRunNumber;
   struct tagRun2V0MCalibration {
@@ -158,8 +161,8 @@ struct CentralityTable {
   std::array<bool, nTables> isTableEnabled;
 
   // Debug output
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
-  OutputObj<THashList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
 
   void init(InitContext& context)
   {
@@ -214,19 +217,23 @@ struct CentralityTable {
       return;
     }
 
-    histos.add("FT0M", "FT0M vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0M percentile"}, {1000, 0, 1000, "FT0M mult."}});
-    histos.add("FT0MvsPV", "FT0M vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0M percentile"}, {100, 0, 100, "PV mult."}});
-    histos.add("FT0MMultvsPV", "FT0M vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0M mult."}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0M/percentile", "FT0M percentile.", HistType::kTH1D, {{binsPercentile, "FT0M percentile"}});
+    histos.add("FT0M/percentilevsPV", "percentile vs PV mult.", HistType::kTH2D, {{binsPercentile, "FT0M percentile"}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0M/MultvsPV", "FT0M mult. vs PV mult.", HistType::kTH2D, {{1000, 0, 5000, "FT0M mult."}, {100, 0, 100, "PV mult."}});
 
-    histos.add("FT0C", "FT0C vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0C percentile"}, {1000, 0, 1000, "FT0C mult."}});
-    histos.add("FT0CvsPV", "FT0C vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0C percentile"}, {100, 0, 100, "PV mult."}});
-    histos.add("FT0CMultvsPV", "FT0C vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0A/percentile", "FT0A percentile.", HistType::kTH1D, {{binsPercentile, "FT0A percentile"}});
+    histos.add("FT0A/percentilevsPV", "percentile vs PV mult.", HistType::kTH2D, {{binsPercentile, "FT0A percentile"}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0A/MultvsPV", "FT0A mult. vs PV mult.", HistType::kTH2D, {{1000, 0, 5000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
 
-    histos.add("FT0A", "FT0A vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0A percentile"}, {1000, 0, 1000, "FT0A mult."}});
-    histos.add("FT0AvsPV", "FT0A vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0A percentile"}, {100, 0, 100, "PV mult."}});
-    histos.add("FT0AMultvsPV", "FT0A vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0C/percentile", "FT0C percentile.", HistType::kTH1D, {{binsPercentile, "FT0C percentile"}});
+    histos.add("FT0C/percentilevsPV", "percentile vs PV mult.", HistType::kTH2D, {{binsPercentile, "FT0C percentile"}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0C/MultvsPV", "FT0C mult. vs PV mult.", HistType::kTH2D, {{1000, 0, 5000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
 
-    listCalib.setObject(new THashList);
+    histos.addClone("FT0M/", "sel8FT0M/");
+    histos.addClone("FT0C/", "sel8FT0C/");
+    histos.addClone("FT0A/", "sel8FT0A/");
+
+    listCalib.setObject(new TList);
   }
 
   using BCsWithTimestampsAndRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
@@ -527,6 +534,7 @@ struct CentralityTable {
        * @param estimator The calibration information.
        * @param multiplicity The multiplicity value.
        */
+
       auto populateTable = [&](auto& table, struct calibrationInfo& estimator, float multiplicity) {
         const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
         auto scaleMC = [](float x, float pars[6]) {
@@ -560,9 +568,14 @@ struct CentralityTable {
             if constexpr (enableCentFT0) {
               const float perC = populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
               if (produceHistograms.value) {
-                histos.fill(HIST("FT0M"), perC, collision.multZeqFT0A() + collision.multZeqFT0C());
-                histos.fill(HIST("FT0MvsPV"), perC, collision.multNTracksPV());
-                histos.fill(HIST("FT0MMultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
+                histos.fill(HIST("FT0M/percentile"), perC);
+                histos.fill(HIST("FT0M/percentilevsPV"), perC, collision.multNTracksPV());
+                histos.fill(HIST("FT0M/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
+                if (collision.sel8()) {
+                  histos.fill(HIST("sel8FT0M/percentile"), perC);
+                  histos.fill(HIST("sel8FT0M/percentilevsPV"), perC, collision.multNTracksPV());
+                  histos.fill(HIST("sel8FT0M/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
+                }
               }
             }
             break;
@@ -570,9 +583,14 @@ struct CentralityTable {
             if constexpr (enableCentFT0) {
               const float perC = populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A());
               if (produceHistograms.value) {
-                histos.fill(HIST("FT0A"), perC, collision.multZeqFT0A());
-                histos.fill(HIST("FT0AvsPV"), perC, collision.multNTracksPV());
-                histos.fill(HIST("FT0AMultvsPV"), collision.multZeqFT0A(), collision.multNTracksPV());
+                histos.fill(HIST("FT0A/percentile"), perC);
+                histos.fill(HIST("FT0A/percentilevsPV"), perC, collision.multNTracksPV());
+                histos.fill(HIST("FT0A/MultvsPV"), collision.multZeqFT0A(), collision.multNTracksPV());
+                if (collision.sel8()) {
+                  histos.fill(HIST("sel8FT0A/percentile"), perC);
+                  histos.fill(HIST("sel8FT0A/percentilevsPV"), perC, collision.multNTracksPV());
+                  histos.fill(HIST("sel8FT0A/MultvsPV"), collision.multZeqFT0A(), collision.multNTracksPV());
+                }
               }
             }
             break;
@@ -580,9 +598,14 @@ struct CentralityTable {
             if constexpr (enableCentFT0) {
               const float perC = populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C());
               if (produceHistograms.value) {
-                histos.fill(HIST("FT0C"), perC, collision.multZeqFT0C());
-                histos.fill(HIST("FT0CvsPV"), perC, collision.multNTracksPV());
-                histos.fill(HIST("FT0CMultvsPV"), collision.multZeqFT0C(), collision.multNTracksPV());
+                histos.fill(HIST("FT0C/percentile"), perC);
+                histos.fill(HIST("FT0C/percentilevsPV"), perC, collision.multNTracksPV());
+                histos.fill(HIST("FT0C/MultvsPV"), collision.multZeqFT0C(), collision.multNTracksPV());
+                if (collision.sel8()) {
+                  histos.fill(HIST("sel8FT0C/percentile"), perC);
+                  histos.fill(HIST("sel8FT0C/percentilevsPV"), perC, collision.multNTracksPV());
+                  histos.fill(HIST("sel8FT0C/MultvsPV"), collision.multZeqFT0C(), collision.multNTracksPV());
+                }
               }
             }
             break;
@@ -604,12 +627,12 @@ struct CentralityTable {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::PVMults, aod::MultZeqs> const& collisions, BCsWithTimestamps const&)
+  void processRun3(soa::Join<aod::Collisions, aod::PVMults, aod::MultZeqs, aod::EvSels> const& collisions, BCsWithTimestamps const&)
   {
     produceRun3Tables(collisions);
   }
 
-  void processRun3FT0(soa::Join<aod::Collisions, aod::PVMults, aod::FT0MultZeqs, aod::PVMultZeqs> const& collisions, BCsWithTimestamps const&)
+  void processRun3FT0(soa::Join<aod::Collisions, aod::PVMults, aod::FT0MultZeqs, aod::PVMultZeqs, aod::EvSels> const& collisions, BCsWithTimestamps const&)
   {
     produceRun3Tables<false, // FV0
                       true,  // FT0

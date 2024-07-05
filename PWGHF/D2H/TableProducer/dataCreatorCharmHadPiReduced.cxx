@@ -32,8 +32,10 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -111,6 +113,7 @@ struct HfDataCreatorCharmHadPiReduced {
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "flag to enable MC checks on decay type"};
 
   HfHelper hfHelper;
+  o2::hf_evsel::HfEventSelection hfEvSel;
 
   // CCDB service
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -462,8 +465,8 @@ struct HfDataCreatorCharmHadPiReduced {
     }
   }
 
-  template <bool doMc, bool withMl, uint8_t decChannel, typename PParticles, typename TTracks, typename CCharmCands>
-  void runDataCreation(aod::Collision const& collision,
+  template <bool doMc, bool withMl, uint8_t decChannel, typename PParticles, typename TTracks, typename CCharmCands, typename Coll>
+  void runDataCreation(Coll const& collision,
                        CCharmCands const& candsC,
                        aod::TrackAssoc const& trackIndices,
                        TTracks const&,
@@ -482,7 +485,7 @@ struct HfDataCreatorCharmHadPiReduced {
     // Set the magnetic field from ccdb.
     // The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
     // but this is not true when running on Run2 data/MC already converted into AO2Ds.
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
       o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
@@ -812,7 +815,7 @@ struct HfDataCreatorCharmHadPiReduced {
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   // PROCESS FUNCTIONS FOR DATA
 
-  void processDplusPiData(aod::Collisions const& collisions,
+  void processDplusPiData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                           CandsDplusFiltered const& candsC,
                           aod::TrackAssoc const& trackIndices,
                           TracksPidWithSel const& tracks,
@@ -824,19 +827,25 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<false, false, DecayChannel::B0ToDminusPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processDplusPiData, "Process DplusPi without MC info and without ML info", true);
 
-  void processDplusPiDataWithMl(aod::Collisions const& collisions,
+  void processDplusPiDataWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                 CandsDplusFilteredWithMl const& candsC,
                                 aod::TrackAssoc const& trackIndices,
                                 TracksPidWithSel const& tracks,
@@ -848,19 +857,25 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<false, true, DecayChannel::B0ToDminusPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processDplusPiDataWithMl, "Process DplusPi without MC info and with ML info", false);
 
-  void processD0PiData(aod::Collisions const& collisions,
+  void processD0PiData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                        CandsD0Filtered const& candsC,
                        aod::TrackAssoc const& trackIndices,
                        TracksPidWithSel const& tracks,
@@ -872,19 +887,25 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<false, false, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiData, "Process D0Pi without MC info and without ML info", false);
 
-  void processD0PiDataWithMl(aod::Collisions const& collisions,
+  void processD0PiDataWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                              CandsD0FilteredWithMl const& candsC,
                              aod::TrackAssoc const& trackIndices,
                              TracksPidWithSel const& tracks,
@@ -896,22 +917,28 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<false, true, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiDataWithMl, "Process D0Pi without MC info and with ML info", false);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   // PROCESS FUNCTIONS FOR MC
 
-  void processDplusPiMc(aod::Collisions const& collisions,
+  void processDplusPiMc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         CandsDplusFiltered const& candsC,
                         aod::TrackAssoc const& trackIndices,
                         TracksPidWithSelAndMc const& tracks,
@@ -924,20 +951,26 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<true, false, DecayChannel::B0ToDminusPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     runMcGen<DecayChannel::B0ToDminusPi>(particlesMc);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processDplusPiMc, "Process DplusPi with MC info and without ML info", false);
 
-  void processDplusPiMcWithMl(aod::Collisions const& collisions,
+  void processDplusPiMcWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                               CandsDplusFilteredWithMl const& candsC,
                               aod::TrackAssoc const& trackIndices,
                               TracksPidWithSelAndMc const& tracks,
@@ -950,20 +983,26 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<true, true, DecayChannel::B0ToDminusPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     runMcGen<DecayChannel::B0ToDminusPi>(particlesMc);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processDplusPiMcWithMl, "Process DplusPi with MC info and with ML info", false);
 
-  void processD0PiMc(aod::Collisions const& collisions,
+  void processD0PiMc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                      CandsD0Filtered const& candsC,
                      aod::TrackAssoc const& trackIndices,
                      TracksPidWithSelAndMc const& tracks,
@@ -976,20 +1015,26 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<true, false, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     runMcGen<DecayChannel::BplusToD0barPi>(particlesMc);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiMc, "Process D0Pi with MC info and without ML info", false);
 
-  void processD0PiMcWithMl(aod::Collisions const& collisions,
+  void processD0PiMcWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                            CandsD0FilteredWithMl const& candsC,
                            aod::TrackAssoc const& trackIndices,
                            TracksPidWithSelAndMc const& tracks,
@@ -1002,15 +1047,21 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<true, true, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     runMcGen<DecayChannel::BplusToD0barPi>(particlesMc);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiMcWithMl, "Process D0Pi with MC info and with ML info", false);

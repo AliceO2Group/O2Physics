@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 ///
 /// \author Veronika Barbasova (veronika.barbasova@cern.ch)
+/// \since April 3, 2024
 
 #include <TLorentzVector.h>
 
@@ -186,6 +187,8 @@ struct phianalysisTHnSparse {
       registry.add("QATrack/unlikepm/afterSelection/hTrack1tpcNClsFound", "", kTH1F, {{110, 50., 160.}});
 
       registry.add("QATrack/unlikepm/TPCPID/h2TracknSigma", "", kTH2F, {{120, -6, 6}, {120, -6, 6}});
+
+      registry.add("QAMC/hInvMassTrueFalse", "", kTH1F, {invAxis});
 
       // Mixing QA
       registry.add("QAMixing/s4Mult_Vz", "", kTHnSparseF, {axisMultiplicityMixing, axisMultiplicityMixing, axisVertexMixing, axisVertexMixing});
@@ -419,8 +422,10 @@ struct phianalysisTHnSparse {
       if (!(track1PDG == dautherPosPDG && track2PDG == dautherNegPDG)) {
         continue;
       }
+      n = 0;
       for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
         for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
+
           if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
             continue;
 
@@ -436,12 +441,19 @@ struct phianalysisTHnSparse {
           if (std::abs(mothertrack1.pdgCode()) != motherPDG)
             continue;
 
-          n++;
-          if (static_cast<int>(verbose.verboselevel) > 1)
+          if (static_cast<int>(verbose.verboselevel) > 1) {
             LOGF(info, "True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
+            LOGF(info, "%d px: %f, py=%f, pz=%f, px: %f, py=%f, pz=%f", n, mctrack1.px(), mctrack1.py(), mctrack1.pz(), mctrack2.px(), mctrack2.py(), mctrack2.pz());
+          }
 
           if (!selectedPair(mother, mctrack1, mctrack2))
             continue;
+
+          if (n > 0) {
+            if (QA)
+              registry.fill(HIST("QAMC/hInvMassTrueFalse"), mother.Mag());
+            continue;
+          }
 
           pointPair = FillPointPair(mother.Mag(),
                                     mother.Pt(),
@@ -457,6 +469,7 @@ struct phianalysisTHnSparse {
                                     0);
 
           rsnOutput->fillUnliketrue(pointPair);
+          n++;
         }
       }
     }
