@@ -51,6 +51,8 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_sigmac_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
   Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
+  Configurable<double> cutsMassLcMax{"cutsMassLcMax", 0.08, "Lc candidate mass selection"};
+
   /// Selections on candidate soft π-,+
   Configurable<bool> applyGlobalTrkWoDcaCutsSoftPi{"applyGlobalTrkWoDcaCutsSoftPi", false, "Switch on the application of the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS"};
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
@@ -187,13 +189,12 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   /// @param tracks are the tracks (with dcaXY, dcaZ information) → soft-pion candidate tracks
   /// @param candidatesLc are 2-prong candidates satisfying the analysis selections for Λc+ → Ks0P (and charge conj.)
   void processData(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates,
-                   aod::Collisions const&, TracksWithPID const& tracks)
+                   aod::Collisions const&, TracksWithPID const& tracks, aod::V0s const&)
   {
     for (const auto& candidateLc : candidates) {
       /// slice the tracks based on the collisionId
       const auto& tracksInThisCollision = tracks.sliceBy(trackIndicesPerCollision, candidateLc.collision().globalIndex());
-      int chargeLc = candidateLc.prong0_as<TracksWithPID>().sign(); // get the soft pions for the given collId
-      registry.fill(HIST("candidateStat"), 1);
+      int chargeLc = candidateLc.prong0_as<TracksWithPID>().sign(); // Lc charge depends on its bach charge (here it is proton)
 
       auto ptCand = candidateLc.pt();
       auto eta = candidateLc.eta();
@@ -274,9 +275,18 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
         registry.fill(HIST("lc/hCtCand"), ctLc);
         registry.fill(HIST("lc/hCtCandVsPtCand"), ctLc, ptCand);
       }
+      if (std::abs(invMassLcToK0sP - MassLambdaCPlus) > cutsMassLcMax)
+        continue;
+      registry.fill(HIST("candidateStat"), 1);
+      auto K0short = candidateLc.v0_as<o2::aod::V0s>(); // get the soft pions for the given collId
+      auto pos = K0short.template posTrack_as<TracksWithPID>();
+      auto neg = K0short.template negTrack_as<TracksWithPID>();
       for (const auto& trackSoftPi : tracksInThisCollision) {
-
         int chargeSoftPi = trackSoftPi.sign();
+        if (chargeSoftPi == pos.sign() && trackSoftPi.globalIndex() == pos.globalIndex())
+          continue;
+        if (chargeSoftPi == neg.sign() && trackSoftPi.globalIndex() == neg.globalIndex())
+          continue;
         registry.fill(HIST("candidateStat"), 2);
         if (!isTrackSelected(trackSoftPi))
           return;

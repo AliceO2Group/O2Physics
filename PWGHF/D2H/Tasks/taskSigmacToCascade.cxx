@@ -49,7 +49,10 @@ struct HfTaskSigmacInCascade {
   Configurable<double> nSigmaSoftPi{"pionNSigma", 3., "NSigma TPC selection"};
   ConfigurableAxis configAxisChargeSigmaC{"configAxisChargeSigmaC", {3, 0, 3}, "charge of SigmaC"};
   HfHelper hfHelper;
-  using RecoLc = soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>;
+  /// Filter the candidate Λc+ used for the Σc0,++ creation
+  Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP ||
+                                    aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
+  using RecoLc = soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>>;
 
   HistogramRegistry registry{"registry"};
   void init(InitContext& context)
