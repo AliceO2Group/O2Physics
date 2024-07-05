@@ -172,7 +172,7 @@ struct HfCandidateCreatorDstar {
                        CandsDstar const& rowsTrackIndexDstar,
                        aod::Hf2Prongs const&,
                        aod::TracksWCov const&,
-                       aod::BCsWithTimestamps const&)
+                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // LOG(info) << "runCreatorDstar function called";
     // LOG(info) << "candidate loop starts";
@@ -182,7 +182,7 @@ struct HfCandidateCreatorDstar {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexDstar.template collision_as<Coll>();
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -444,14 +444,14 @@ struct HfCandidateCreatorDstar {
   ///////////////////////////////////////////////////////////
 
   /// @brief process function to monitor collisions - no centrality
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -461,14 +461,14 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -478,14 +478,14 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -504,7 +504,9 @@ struct HfCandidateCreatorDstarExpressions {
   Produces<aod::HfCandDstarMcRec> rowsMcMatchRecDstar;
   Produces<aod::HfCandDstarMcGen> rowsMcMatchGenDstar;
 
-  float zPvPosMax{1000.f};
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
@@ -512,21 +514,18 @@ struct HfCandidateCreatorDstarExpressions {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-dstar") == 0) {
-        for (const auto& option : device.options) {
-          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
-            break;
-          }
-        }
+        hfEvSelMc.configureFromDevice(device);
         break;
       }
     }
+    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   /// Perform MC Matching.
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
     rowsCandidateD0->bindExternalIndices(&tracks);
     rowsCandidateDstar->bindExternalIndices(&tracks);
@@ -578,7 +577,7 @@ struct HfCandidateCreatorDstarExpressions {
       } else {
         rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
       }
-      rowsMcMatchRecD0(flagD0, originD0);
+      rowsMcMatchRecD0(flagD0, originD0, -1.f, 0);
     }
 
     // Match generated particles.
@@ -590,10 +589,13 @@ struct HfCandidateCreatorDstarExpressions {
       std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      hfEvSelMc.fillHistograms(rejectionMask);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
         rowsMcMatchGenDstar(flagDstar, originDstar, -1);
-        rowsMcMatchGenD0(flagD0, originD0);
+        rowsMcMatchGenD0(flagD0, originD0, -1);
         continue;
       }
 
@@ -619,7 +621,7 @@ struct HfCandidateCreatorDstarExpressions {
       } else {
         rowsMcMatchGenDstar(flagDstar, originDstar, -1);
       }
-      rowsMcMatchGenD0(flagD0, originD0);
+      rowsMcMatchGenD0(flagD0, originD0, -1.);
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMc, "Process MC", false);

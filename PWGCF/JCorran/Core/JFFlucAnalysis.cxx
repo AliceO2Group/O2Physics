@@ -17,7 +17,8 @@
 #include <algorithm>
 #include "JFFlucAnalysis.h"
 
-JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis() : TNamed(),
+                                   fVertex(0),
                                    fCent(0),
                                    fImpactParameter(-1),
                                    subeventMask(kSubEvent_A | kSubEvent_B),
@@ -29,7 +30,8 @@ JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : TNamed(),
+                                                       fVertex(0),
                                                        fCent(0),
                                                        fImpactParameter(-1),
                                                        subeventMask(kSubEvent_A | kSubEvent_B),
@@ -41,7 +43,8 @@ JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : fVertex(a.fVertex),
+JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : TNamed(a),
+                                                          fVertex(a.fVertex),
                                                           fCent(a.fCent),
                                                           fImpactParameter(a.fImpactParameter),
                                                           subeventMask(a.subeventMask),
@@ -124,7 +127,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* popt)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 {
   (void)popt; // unused var error
   TComplex corr[kNH][nKL];
@@ -309,7 +312,7 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* popt)
+void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
 {
   (void)popt; // unused var error
 }

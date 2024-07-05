@@ -143,7 +143,7 @@ struct HfCandidateCreatorCascade {
                          aod::V0Datas const&,
                          aod::V0fCDatas const&,
                          aod::TracksWCov const&,
-                         aod::BCsWithTimestamps const&)
+                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // loop over pairs of track indices
     for (const auto& casc : rowsTrackIndexCasc) {
@@ -151,7 +151,7 @@ struct HfCandidateCreatorCascade {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = casc.template collision_as<Coll>();
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -374,14 +374,14 @@ struct HfCandidateCreatorCascade {
   ///////////////////////////////////////////////////////////
 
   /// @brief process function to monitor collisions - no centrality
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -391,14 +391,14 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -408,14 +408,14 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -431,9 +431,10 @@ struct HfCandidateCreatorCascadeMc {
   Produces<aod::HfCandCascadeMcRec> rowMcMatchRec;
   Produces<aod::HfCandCascadeMcGen> rowMcMatchGen;
 
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
   using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
-
-  float zPvPosMax{1000.f};
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
@@ -441,20 +442,17 @@ struct HfCandidateCreatorCascadeMc {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-cascade") == 0) {
-        for (const auto& option : device.options) {
-          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
-            break;
-          }
-        }
+        hfEvSelMc.configureFromDevice(device);
         break;
       }
     }
+    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   void processMc(MyTracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
     int8_t sign = 0;
     int8_t origin = 0;
@@ -466,8 +464,8 @@ struct HfCandidateCreatorCascadeMc {
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
     for (const auto& candidate : *rowCandidateCasc) {
-
       origin = 0;
+      std::vector<int> idxBhadMothers{};
 
       const auto& bach = candidate.prong0_as<MyTracksWMc>();
       const auto& trackV0DaughPos = candidate.posTrack_as<MyTracksWMc>();
@@ -476,12 +474,6 @@ struct HfCandidateCreatorCascadeMc {
       auto arrayDaughtersV0 = std::array{trackV0DaughPos, trackV0DaughNeg};
       auto arrayDaughtersLc = std::array{bach, trackV0DaughPos, trackV0DaughNeg};
 
-      // First we check the K0s
-      LOG(debug) << "\n";
-      LOG(debug) << "Checking MC for candidate!";
-      LOG(debug) << "Looking for K0s";
-
-      // if (isLc) {
       RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
       if (sign != 0) { // we have already positively checked the K0s
         // then we check the Lc
@@ -491,21 +483,29 @@ struct HfCandidateCreatorCascadeMc {
       // Check whether the particle is non-prompt (from a b quark).
       if (sign != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
-      rowMcMatchRec(sign, origin);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowMcMatchRec(sign, origin, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowMcMatchRec(sign, origin, -1.f, 0);
+      }
     }
     //}
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       origin = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        rowMcMatchGen(sign, origin);
+
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      hfEvSelMc.fillHistograms(rejectionMask);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
+        rowMcMatchGen(sign, origin, -1);
         continue;
       }
 
@@ -533,9 +533,13 @@ struct HfCandidateCreatorCascadeMc {
       }
       // Check whether the particle is non-prompt (from a b quark).
       if (sign != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-      rowMcMatchGen(sign, origin);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        rowMcMatchGen(sign, origin, idxBhadMothers[0]);
+      } else {
+        rowMcMatchGen(sign, origin, -1);
+      }
     }
   }
 

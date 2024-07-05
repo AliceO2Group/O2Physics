@@ -62,6 +62,18 @@ struct reso2dfmerged {
   //  SliceCache cache;
 
   Configurable<int> nDF{"nDF", 1, "no of combination of collision"};
+  Configurable<bool> cpidCut{"cpidCut", 0, "pid cut"};
+  Configurable<bool> crejtpc{"crejtpc", 0, "reject electron pion"};
+  Configurable<bool> crejtof{"crejtof", 0, "reject electron pion tof"};
+  Configurable<bool> isPrimary{"isPrimary", 0, "is Primary only"};
+  Configurable<bool> isGlobal{"isGlobal", 0, "Global tracks only"};
+  Configurable<float> cDCAXY{"cDCAXY", 1., "value of dcaxy"};
+  Configurable<float> cDCAZ{"cDCAZ", 1., "value of dcaz"};
+  Configurable<float> nsigmaPr{"nsigmaPr", 6., "nsigma value for proton"};
+  Configurable<float> nsigmaKa{"nsigmaKa", 6., "nsigma value for kaon"};
+  Configurable<float> nsigmatofPr{"nsigmatofPr", 6., "nsigma value for tof prot"};
+  Configurable<float> nsigmatofKa{"nsigmatofKa", 6., "nsigma value for tof kaon"};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   using resoCols = aod::ResoCollisions;
@@ -81,7 +93,7 @@ struct reso2dfmerged {
   std::vector<std::vector<std::tuple<float, float, float, float,
                                      float, float, signed char, unsigned char, unsigned char, unsigned char,
                                      float, float, float, float,
-                                     bool, float, float, float,
+                                     bool, bool, bool, float, float, float,
                                      float, float, float, float,
                                      float, float, bool, bool,
                                      bool, bool, bool, bool, float, float, float>>>
@@ -94,12 +106,34 @@ struct reso2dfmerged {
     std::vector<std::tuple<float, float, float, float,
                            float, float, signed char, unsigned char, unsigned char, unsigned char,
                            float, float, float, float,
-                           bool, float, float, float,
+                           bool, bool, bool, float, float, float,
                            float, float, float, float,
                            float, float, bool, bool,
                            bool, bool, bool, bool, float, float, float>>
       innerVector;
     for (auto& track : tracks) {
+      if (cpidCut) {
+        if (!track.hasTOF()) {
+          if (std::abs(track.tpcNSigmaPr()) > nsigmaPr && std::abs(track.tpcNSigmaKa()) > nsigmaKa)
+            continue;
+
+          if (crejtpc && ((std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaEl()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaEl())) || (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi()))))
+            continue;
+
+        } else {
+          if (std::abs(track.tofNSigmaPr()) > nsigmatofPr && std::abs(track.tofNSigmaKa()) > nsigmatofKa)
+            continue;
+
+          if (crejtof && ((std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaEl()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaEl())) || (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi()))))
+            continue;
+        }
+
+        if (std::abs(track.dcaXY()) > cDCAXY)
+          continue;
+        if (std::abs(track.dcaZ()) > cDCAZ)
+          continue;
+      }
+
       innerVector.push_back(std::make_tuple(
         track.pt(),
         track.px(),
@@ -115,6 +149,8 @@ struct reso2dfmerged {
         track.dcaZ(),
         track.x(),
         track.alpha(),
+        track.hasITS(),
+        track.hasTPC(),
         track.hasTOF(),
         track.tpcNSigmaPi(),
         track.tpcNSigmaKa(),
@@ -185,7 +221,9 @@ struct reso2dfmerged {
                     std::get<29>(tuple),
                     std::get<30>(tuple),
                     std::get<31>(tuple),
-                    std::get<32>(tuple));
+                    std::get<32>(tuple),
+                    std::get<33>(tuple),
+                    std::get<34>(tuple));
       }
     }
 
@@ -194,6 +232,81 @@ struct reso2dfmerged {
   }
 
   PROCESS_SWITCH(reso2dfmerged, processTrackDataDF, "Process for data merged DF", true);
+
+  void processLambdaStarCandidate(resoCols::iterator const& collision, resoTracks const&
+                                                                         tracks)
+  {
+
+    if (doprocessTrackDataDF)
+      LOG(fatal) << "Disable processTrackDataDF first!";
+    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
+
+    resoCollisionsdf(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0);
+
+    for (auto& track : tracks) {
+      if (isPrimary && !track.isPrimaryTrack())
+        continue;
+      if (isGlobal && !track.isGlobalTrack())
+        continue;
+      if (!track.hasTOF()) {
+        if (std::abs(track.tpcNSigmaPr()) > nsigmaPr && std::abs(track.tpcNSigmaKa()) > nsigmaKa)
+          continue;
+
+        if (crejtpc && ((std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaEl()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaEl())) || (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi()))))
+          continue;
+
+      } else {
+        if (std::abs(track.tofNSigmaPr()) > nsigmatofPr && std::abs(track.tofNSigmaKa()) > nsigmatofKa)
+          continue;
+
+        if (crejtof && ((std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaEl()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaEl())) || (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi()))))
+          continue;
+      }
+
+      if (std::abs(track.dcaXY()) > cDCAXY)
+        continue;
+      if (std::abs(track.dcaZ()) > cDCAZ)
+        continue;
+
+      reso2trksdf(resoCollisionsdf.lastIndex(),
+                  track.pt(),
+                  track.px(),
+                  track.py(),
+                  track.pz(),
+                  track.eta(),
+                  track.phi(),
+                  track.sign(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  (uint8_t)track.tpcNClsFound(),
+                  (uint8_t)track.itsNCls(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.x(),
+                  track.alpha(),
+                  track.hasITS(),
+                  track.hasTPC(),
+                  track.hasTOF(),
+                  track.tpcNSigmaPi(),
+                  track.tpcNSigmaKa(),
+                  track.tpcNSigmaPr(),
+                  track.tpcNSigmaEl(),
+                  track.tofNSigmaPi(),
+                  track.tofNSigmaKa(),
+                  track.tofNSigmaPr(),
+                  track.tofNSigmaEl(),
+                  track.tpcSignal(),
+                  track.passedITSRefit(),
+                  track.passedTPCRefit(),
+                  track.isGlobalTrackWoDCA(),
+                  track.isGlobalTrack(),
+                  track.isPrimaryTrack(),
+                  track.isPVContributor(),
+                  track.tpcCrossedRowsOverFindableCls(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl());
+    }
+  }
+  PROCESS_SWITCH(reso2dfmerged, processLambdaStarCandidate, "Process for lambda star candidate", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

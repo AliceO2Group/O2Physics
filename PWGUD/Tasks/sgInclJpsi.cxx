@@ -214,7 +214,7 @@ struct SGInclJpsi {
       // PID cut - t0=K, t1=pi
       if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
         continue;
-      if (selectionPIDMuon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDMuon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+      if (selectionPIDMuon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDMuon(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
         // Apply pion hypothesis and create pairs
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassMuon);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassMuon);
@@ -297,9 +297,9 @@ struct SGInclJpsi {
             registry.fill(HIST("sss_Ntr_mm_invm_3"), tracks.size(), v01.M(), -1);
             registry.fill(HIST("sss_mm_pt_invm_3"), v01.Pt(), v01.M(), -1);
           }
-        }
       }
-      if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+      }
+      if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDElec(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
         // Apply pion hypothesis and create pairs
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassElectron);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassElectron);

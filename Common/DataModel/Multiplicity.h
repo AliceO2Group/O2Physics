@@ -53,12 +53,12 @@ DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
 
 // complementary / MultsExtra table
-DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int);   //!
-DECLARE_SOA_COLUMN(MultPVChi2, multPVChi2, float);                           //!
-DECLARE_SOA_COLUMN(MultCollisionTimeRes, multCollisionTimeRes, float);       //!
-DECLARE_SOA_COLUMN(MultRunNumber, multRunNumber, int);                       //!
-DECLARE_SOA_COLUMN(MultPVz, multPVz, float);                                 //!
-DECLARE_SOA_COLUMN(MultSel8, multSel8, bool);                                //!
+DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int); //!
+DECLARE_SOA_COLUMN(MultPVChi2, multPVChi2, float);                         //!
+DECLARE_SOA_COLUMN(MultCollisionTimeRes, multCollisionTimeRes, float);     //!
+DECLARE_SOA_COLUMN(MultRunNumber, multRunNumber, int);                     //!
+DECLARE_SOA_COLUMN(MultPVz, multPVz, float);                               //!
+DECLARE_SOA_COLUMN(MultSel8, multSel8, bool);                              //!
 
 DECLARE_SOA_COLUMN(MultNTracksHasITS, multNTracksHasITS, int); //!
 DECLARE_SOA_COLUMN(MultNTracksHasTPC, multNTracksHasTPC, int); //!
@@ -66,9 +66,9 @@ DECLARE_SOA_COLUMN(MultNTracksHasTOF, multNTracksHasTOF, int); //!
 DECLARE_SOA_COLUMN(MultNTracksHasTRD, multNTracksHasTRD, int); //!
 
 // further QA
-DECLARE_SOA_COLUMN(MultNTracksITSOnly, multNTracksITSOnly, int); //!
-DECLARE_SOA_COLUMN(MultNTracksTPCOnly, multNTracksTPCOnly, int); //!
-DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);   //!
+DECLARE_SOA_COLUMN(MultNTracksITSOnly, multNTracksITSOnly, int);     //!
+DECLARE_SOA_COLUMN(MultNTracksTPCOnly, multNTracksTPCOnly, int);     //!
+DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);       //!
 DECLARE_SOA_COLUMN(MultAllTracksTPCOnly, multAllTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultAllTracksITSTPC, multAllTracksITSTPC, int);   //!
 DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);       //!
@@ -126,7 +126,14 @@ DECLARE_SOA_TABLE(MultSelections, "AOD", "MULTSELECTIONS", //!
                   evsel::Selection);                       // for derived data / QA studies
 using MultExtra = MultsExtra::iterator;
 DECLARE_SOA_TABLE(MultsExtraMC, "AOD", "MULTEXTRAMC", //! Table for the MC information
-                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<1>);
+                  mult::MultMCFT0A,
+                  mult::MultMCFT0C,
+                  mult::MultMCNParticlesEta05,
+                  mult::MultMCNParticlesEta08,
+                  mult::MultMCNParticlesEta10,
+                  mult::IsInelGt0<mult::MultMCNParticlesEta10>,
+                  mult::IsInelGt1<mult::MultMCNParticlesEta10>,
+                  o2::soa::Marker<1>);
 using MultExtraMC = MultsExtraMC::iterator;
 
 namespace multZeq

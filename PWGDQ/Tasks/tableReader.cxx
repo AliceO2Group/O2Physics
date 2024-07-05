@@ -97,6 +97,9 @@ using MyEventsVtxCovSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::Re
 using MyEventsVtxCovSelectedQvectorExtraWithRefFlow = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsVtxCovSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
+using MyEventsQvectorMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr>;
+using MyEventsQvectorCentrMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
@@ -120,7 +123,9 @@ using MyMftTracks = soa::Join<aod::ReducedMFTs, aod::ReducedMFTsExtra>;
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
 constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector;
+constexpr static uint32_t gkEventFillMapWithQvectorMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect;
+constexpr static uint32_t gkEventFillMapWithQvectorCentrMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkEventFillMapWithCovQvectorExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventQvectorExtra;
 constexpr static uint32_t gkEventFillMapWithCovQvectorExtraWithRefFlow = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventQvectorExtra | VarManager::ObjTypes::ReducedEventRefFlow;
@@ -240,13 +245,28 @@ struct AnalysisEventSelection {
   {
     runEventSelection<gkEventFillMapWithQvector>(event);
   }
+  void processSkimmedQVectorCentr(MyEventsQvectorCentr::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithQvectorCentr>(event);
+  }
+  void processSkimmedQVectorMultExtra(MyEventsQvectorMultExtra::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithQvectorMultExtra>(event);
+  }
+  void processSkimmedQVectorCentrMultExtra(MyEventsQvectorCentrMultExtra::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithQvectorCentrMultExtra>(event);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
-  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVector, "Run event selection on DQ skimmed events with Q vector", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVector, "Run event selection on DQ skimmed events with Q vector from GFW", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentr, "Run event selection on DQ skimmed events with Q vector from CFW", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtra, "Run event selection on DQ skimmed events with Q vector from GFW and MultPV", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentrMultExtra, "Run event selection on DQ skimmed events with Q vector from CFW and MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
   // TODO: Add process functions subscribing to Framework Collision
 };
@@ -584,6 +604,7 @@ struct AnalysisEventMixing {
   Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -643,7 +664,11 @@ struct AnalysisEventMixing {
             Form("PairsMuonMEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonMEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonMEMM_%s", objArray->At(icut)->GetName())};
-          histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          if (fConfigAmbiguousHist) {
+            histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+          } else {
+            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          }
           fMuonHistNames.push_back(names);
           fTwoMuonFilterMask |= (uint32_t(1) << icut);
         }
@@ -721,11 +746,20 @@ struct AnalysisEventMixing {
           if (twoTrackFilter & (uint32_t(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+              if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
+              }
             } else {
               if (track1.sign() > 0) {
                 fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][1].Data()), VarManager::fgValues);
+                }
               } else {
                 fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][2].Data()), VarManager::fgValues);
+                }
               }
             }
           } // end if (filter bits)
@@ -1612,13 +1646,13 @@ struct AnalysisDileptonHadron {
         if (fConfigUseKFVertexing) {
           VarManager::SetupThreeProngKFParticle(mMagField);
         } else {
-          VarManager::SetupThreeProngDCAFitter(); // TODO: get these parameters from Configurables
+          VarManager::SetupThreeProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
         }
       } else {
         if (fConfigUseKFVertexing) {
           VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
         } else {
-          VarManager::SetupThreeProngDCAFitter(); // TODO: get these parameters from Configurables
+          VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
         }
       }
       fCurrentRun = event.runNumber();

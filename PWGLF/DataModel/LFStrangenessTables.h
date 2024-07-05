@@ -79,6 +79,9 @@ DECLARE_SOA_TABLE(StraFT0MQVs, "AOD", "STRAFT0MQVS", //! t0m Qvec
                   qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M);
 DECLARE_SOA_TABLE(StraFV0AQVs, "AOD", "STRAFV0AQVS", //! v0a Qvec
                   qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(StraTPCQVs, "AOD", "STRATPCQVS", //! tpc Qvec
+                  qvec::QvecBNegRe, qvec::QvecBNegIm, epcalibrationtable::QTPCL,
+                  qvec::QvecBPosRe, qvec::QvecBPosIm, epcalibrationtable::QTPCR);
 DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to compute t0c Qvec
                   epcalibrationtable::TriggerEventEP);
 DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
@@ -1187,6 +1190,13 @@ DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlat
                   cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
                   cascdata::PxMC, cascdata::PyMC, cascdata::PzMC);
 
+namespace cascdata
+{
+DECLARE_SOA_INDEX_COLUMN(CascMCCore, cascMCCore); //! Index to CascMCCore entry
+}
+
+DECLARE_SOA_TABLE(CascCoreMCLabels, "AOD", "CASCCOREMCLABEL", //! optional table to refer to CascMCCores if not joinable
+                  o2::soa::Index<>, cascdata::CascMCCoreId);
 DECLARE_SOA_TABLE(CascMCCollRefs, "AOD", "CASCMCCOLLREF", //! refers MC candidate back to proper MC Collision
                   o2::soa::Index<>, cascdata::StraMCCollisionId, o2::soa::Marker<3>);
 

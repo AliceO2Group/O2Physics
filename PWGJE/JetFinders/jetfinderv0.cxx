@@ -46,6 +46,7 @@ struct JetFinderV0Task {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  Configurable<double> trackingEfficiency{"trackingEfficiency", 1.0, "tracking efficiency applied to jet finding"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
@@ -152,7 +153,7 @@ struct JetFinderV0Task {
           }
         }
         */
-    jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, candidates);
+    jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, trackingEfficiency, candidates);
 
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, true);
   }

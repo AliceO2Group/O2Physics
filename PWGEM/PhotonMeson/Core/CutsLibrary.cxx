@@ -458,21 +458,7 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
       LOGF(info, Form("Did not find electron ID cut %s", cutName));
       return cut;
     }
-  } else if (nameStr.find("mmumu") != std::string::npos) { // for muon
-    if (nameStr.find("tpctof") != std::string::npos) {
-      // for PID
-      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kMuon_lowB));
-      cut->SetTPCNsigmaElRange(-2, +2); // exclusion
-      cut->SetTPCNsigmaMuRange(-3, +3);
-      cut->SetTPCNsigmaPiRange(-3, +1e+10);
-      cut->SetTOFNsigmaMuRange(-3, +3);
-      cut->SetTOFNsigmaPiRange(-3, +1e+10);
-      return cut;
-    } else { // not match muon cut
-      LOGF(info, Form("Did not find muon ID cut %s", cutName));
-      return cut;
-    }
-  } else { // match neither electron nor electron
+  } else { // do not match mee
     LOGF(info, Form("Did not find any pid cut %s", cutName));
     return cut;
   }
