@@ -75,14 +75,14 @@ int testPIDhypothesis(T trackPIDinfo, float maxNsigma = 5.0, bool useTOF = true,
       if (nSigmaTOF[enumChoiceTOF] < maxNsigma) {
         return enumChoiceTOF;
       } else {
-        LOGF(debug, "testPIDhypothesis cut - the lowest nSigmaTOF is higher than %f",maxNsigma);
+        LOGF(debug, "testPIDhypothesis cut - the lowest nSigmaTOF is higher than %f", maxNsigma);
         return -1;
       }
     } else {
       if (nSigmaTPC[enumChoiceTPC] < maxNsigma) {
         return enumChoiceTPC;
       } else {
-        LOGF(debug, "testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f",maxNsigma);
+        LOGF(debug, "testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f", maxNsigma);
         return -1;
       }
     }
