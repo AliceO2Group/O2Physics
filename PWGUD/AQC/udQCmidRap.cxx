@@ -90,17 +90,19 @@ struct UDQCmid {
       registry.add("DG/dEdxTPC", "DG: TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{120, -6., 6.}, {1000, 0., 1000.}}});
       registry.add("DG/dEdxTOF", "DG: TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{1000, 0., 10.}, {1000, 0., 10.}}});
 
-      registry.add("DG/hMassAll", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
-      registry.add("DG/hMassFIT", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
+      registry.add("DG/hMassAll", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("DG/hMassFIT", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
 
-      registry.add("DG/hMassZDC", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
-      registry.add("DG/hMassTOF", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
-      registry.add("DG/hMassFWD", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
-      registry.add("DG/hMassGlobalTrk", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
-      registry.add("DG/hMassITSTrk", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
 
-      registry.add("DG/hMassAmbigous", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
-      registry.add("DG/hMassAmbigousFWD", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
+      registry.add("DG/hMassZDC", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("DG/hMassTOF", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("DG/hMassFWD", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("DG/hMassGlobalTrk", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("DG/hMassITSTrk", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
+
+      registry.add("DG/hMassAmbigous", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("DG/hMassAmbigousFWD", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
+
 
       registry.add("DG/etaphi", "DG: Eta versus Phi; eta ; #phi ", {HistType::kTH2F, {{80, -2., 2.}, {120, 0., 6.28}}});
       registry.add("DG/etaphi1", "DG: Eta versus Phi; eta ; #phi ", {HistType::kTH2F, {{80, -2., 2.}, {120, 0., 6.28}}});
@@ -155,10 +157,10 @@ struct UDQCmid {
     registry.get<TH1>(HIST("collisions/globalTracks"))->Fill(goodTracks.size());
 
     // 12. net charge and invariant mass
-    // bool goodetas = true;
-    // bool goodpts = true;
+    // bool goodetas = false;
+    // bool goodpts = false;
     bool ispipiCand = false;
-    // auto netCharge = 0;
+    auto netCharge = 0;
     auto lvtmp = TLorentzVector();
     auto ivm = TLorentzVector();
     if (isDGcandidate) {
@@ -183,13 +185,13 @@ struct UDQCmid {
         // define Lorentz vector to create invariant mass
         lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), mass2Use);
         LOGF(debug, "mass %f track pt %f/%f eta %f/%f", mass2Use, track.pt(), lvtmp.Perp(), track.eta(), lvtmp.Eta());
-        /* if (track.pt() <= diffCuts.minPt() || track.pt() >= diffCuts.maxPt()) {
-           goodpts = false;
-         }
-         if (track.eta() <= diffCuts.minEta() || track.eta() >= diffCuts.maxEta()) {
-           goodetas = false;
-         }*/
-        // netCharge += track.sign();
+        if (track.pt() <= diffCuts.minPt() || track.pt() >= diffCuts.maxPt()) {
+          continue;
+        }
+        if (track.eta() <= diffCuts.minEta() || track.eta() >= diffCuts.maxEta()) {
+          continue;
+        }
+        netCharge += track.sign();
         ivm += lvtmp;
       }
 
@@ -219,7 +221,8 @@ struct UDQCmid {
         if (ispipiCand) {
           registry.get<TH2>(HIST("DG/IVMptSys2PVtrk"))->Fill(ivm.M(), ivm.Pt());
           registry.get<TH2>(HIST("DG/etaphi"))->Fill(ivm.Eta(), ivm.Phi());
-          registry.get<TH1>(HIST("DG/hMassAll"))->Fill(ivm.M());
+          if (netCharge == 0)
+            registry.get<TH1>(HIST("DG/hMassAll"))->Fill(ivm.M());
         }
       } // coll
     }   // dgcand
@@ -304,26 +307,24 @@ struct UDQCmid {
 
     // Invariant mass with 2 PV contributors and all contributors
     if (isDGcandidate) {
-      if (collision.numContrib() == 2) {
-        if (ispipiCand) {
-          registry.get<TH2>(HIST("DG/IVMptSys2PVtrk1"))->Fill(ivm.M(), ivm.Pt());
-          registry.get<TH2>(HIST("DG/etaphi1"))->Fill(ivm.Eta(), ivm.Phi());
-          if (ivm.Pt() < 0.2) {
-            registry.get<TH1>(HIST("DG/hMassFIT"))->Fill(ivm.M());
-          }
+      if (ispipiCand) {
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk1"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi1"))->Fill(ivm.Eta(), ivm.Phi());
+        if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
+          registry.get<TH1>(HIST("DG/hMassFIT"))->Fill(ivm.M());
         }
+      }
 
-        for (auto const& track : tracks) {
-          if (track.isPVContributor()) {
-            registry.get<TH2>(HIST("DG/etapt"))->Fill(track.eta(), track.pt(), 1.);
-            LOGF(debug, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
-            registry.get<TH2>(HIST("DG/dEdxTPC"))->Fill(track.tpcInnerParam() / track.sign(), track.tpcSignal());
+      for (auto const& track : tracks) {
+        if (track.isPVContributor()) {
+          registry.get<TH2>(HIST("DG/etapt"))->Fill(track.eta(), track.pt(), 1.);
+          LOGF(debug, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
+          registry.get<TH2>(HIST("DG/dEdxTPC"))->Fill(track.tpcInnerParam() / track.sign(), track.tpcSignal());
 
-            if (track.hasTOF()) {
-              registry.get<TH2>(HIST("DG/dEdxTOF"))->Fill(track.p() / track.sign(), track.beta());
-            } // fill TOF
-          }   // pv contributor
-        }
+          if (track.hasTOF()) {
+            registry.get<TH2>(HIST("DG/dEdxTOF"))->Fill(track.p() / track.sign(), track.beta());
+          } // fill TOF
+        }   // pv contributor
       }
     } // Inavariant mass after FIT
 
@@ -342,7 +343,7 @@ struct UDQCmid {
       if (ispipiCand) {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk2"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi2"))->Fill(ivm.Eta(), ivm.Phi());
-        if (ivm.Pt() < 0.2) {
+        if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
           registry.get<TH1>(HIST("DG/hMassZDC"))->Fill(ivm.M());
         }
       }
@@ -356,7 +357,7 @@ struct UDQCmid {
       if (ispipiCand) {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk3"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi3"))->Fill(ivm.Eta(), ivm.Phi());
-        if (ivm.Pt() < 0.2) {
+        if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
           registry.get<TH1>(HIST("DG/hMassFWD"))->Fill(ivm.M());
         }
       }
@@ -375,7 +376,7 @@ struct UDQCmid {
       if (ispipiCand) {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk4"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi4"))->Fill(ivm.Eta(), ivm.Phi());
-        if (ivm.Pt() < 0.2) {
+        if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
           registry.get<TH1>(HIST("DG/hMassGlobalTrk"))->Fill(ivm.M());
         }
       }
@@ -394,7 +395,10 @@ struct UDQCmid {
       if (ispipiCand) {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk5"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi5"))->Fill(ivm.Eta(), ivm.Phi());
-        if (ivm.Pt() < 0.2) {
+
+
+        if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
+
           registry.get<TH1>(HIST("DG/hMassITSTrk"))->Fill(ivm.M());
         }
       }
@@ -415,7 +419,10 @@ struct UDQCmid {
       if (ispipiCand) {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk6"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi6"))->Fill(ivm.Eta(), ivm.Phi());
-        if (ivm.Pt() < 0.2) {
+
+
+        if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
+
           registry.get<TH1>(HIST("DG/hMassAmbigous"))->Fill(ivm.M());
         }
       }
@@ -436,7 +443,9 @@ struct UDQCmid {
       if (ispipiCand) {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk7"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi7"))->Fill(ivm.Eta(), ivm.Phi());
-        if (ivm.Pt() < 0.2) {
+
+
+        if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
           registry.get<TH1>(HIST("DG/hMassAmbigousFWD"))->Fill(ivm.M());
         }
       }
@@ -450,7 +459,10 @@ struct UDQCmid {
       if (ispipiCand) {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk8"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi8"))->Fill(ivm.Eta(), ivm.Phi());
-        if (ivm.Pt() < 0.2) {
+
+       
+        if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
+
           registry.get<TH1>(HIST("DG/hMassTOF"))->Fill(ivm.M());
         }
       }

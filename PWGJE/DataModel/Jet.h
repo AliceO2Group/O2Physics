@@ -197,6 +197,7 @@ using JetTracks = o2::aod::JTracks;
 using JetTracksMCD = o2::soa::Join<JetTracks, o2::aod::JMcTrackLbs>;
 using JetTracksSub = o2::aod::JTrackSubs;
 using JetClusters = o2::aod::JClusters;
+using JetClustersMCD = o2::soa::Join<o2::aod::JClusters, o2::aod::JMcClusterLbs>;
 
 using JetMcCollisions = o2::aod::JMcCollisions;
 using JetMcCollision = JetMcCollisions::iterator;

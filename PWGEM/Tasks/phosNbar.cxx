@@ -44,6 +44,7 @@
 /// - Count rate in 2D representation
 
 using namespace o2;
+using namespace o2::aod::evsel;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -56,6 +57,7 @@ struct phosNbar {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using SelCollision = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  using SelCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi>;
   using mcClusters = soa::Join<aod::CaloClusters, aod::PHOSCluLabels>;
   using mcTracks = soa::Join<TrackCandidates, aod::McTrackLabels>;
@@ -63,6 +65,7 @@ struct phosNbar {
   // using MatchedClusters = soa::Join<aod::CaloClusters, aod::PHOSMatchedTrack>;
 
   Configurable<int> mPairingMethod{"mPairingMethod", 0, "0:max CPA, 1: min DCA"};
+  Configurable<bool> mIsMC{"isMC", false, "to fill MC histograms"};
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
   // nbar selection
   Configurable<double> mMinCluE{"minCluE", 0.3, "Minimum cluster energy"};
@@ -81,6 +84,7 @@ struct phosNbar {
   Configurable<uint> mNmix{"nMix", 5, "depth of mixing buffer"};
   Configurable<bool> mStrictParentCut{"StrictParent", true, "parent with largest Edep or any parent"};
 
+  int mPrevMCColId = -1;                    // mark MC collissions already scanned
   static constexpr double c = 29979245800.; // speed of light in cm/sec
   static constexpr double mNbar = 0.939485; // neutron mass
   static constexpr double mpi = 0.13957039; // pion mass
@@ -137,7 +141,7 @@ struct phosNbar {
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
   {
-    mHistManager.add("evsel", "event selection", HistType::kTH1F, {{13, 0., 13.}});
+    mHistManager.add("evsel", "event selection", HistType::kTH1F, {{14, 0., 14.}});
     mHistManager.add("vtxZ", "Vertex z distribution", HistType::kTH1F, {{100, -20., 20., "z_{vtx} (cm)", "z_{vtx} (cm)"}});
     mHistManager.add("cluCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "E (GeV)", "E (GeV)"}, {10, 0., 10., "cut"}});
     mHistManager.add("nbarCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "E (GeV)", "E (GeV)"}, {10, 0., 10., "cut"}});
@@ -162,9 +166,11 @@ struct phosNbar {
     hRePM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("RePiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hMiPP = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiP", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hMiPM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
-    hSignalSP = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSP", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
-    hSignalSM = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSM", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
-    hSignalOther = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalOther", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+    if (mIsMC) {
+      hSignalSP = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSP", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+      hSignalSM = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSM", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+      hSignalOther = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalOther", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+    }
 
     hRePPDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiPDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
     hRePMDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiMDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
@@ -175,6 +181,26 @@ struct phosNbar {
     hRePMCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiMCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
     hMiPPCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiPCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
     hMiPMCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiMCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
+
+    if (mIsMC) {
+      mHistManager.add("hMCSigPSp", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigPSpAll", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigPSpPrim", "Sigma spectrum Primary", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigPRap", "Sigma rapidity", HistType::kTH1F, {{100, -3., 3., "Rapidity"}});
+      mHistManager.add("hMCSigPPhi", "Sigma phi", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
+      mHistManager.add("hMCSigPRapPrim", "Sigma rapidity primary", HistType::kTH1F, {{100, -1., 1., "Rapidity"}});
+      mHistManager.add("hMCSigPPhiPrim", "Sigma phi primary", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
+      mHistManager.add("hMCSigPSecVtx", "Sigma secondary", HistType::kTH2F, {{100, 0., 500., "R (cm)"}, {100, -TMath::Pi(), TMath::Pi(), "#phi (rad)"}});
+
+      mHistManager.add("hMCSigMSp", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigMSpAll", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigMSpPrim", "Sigma spectrum Primary", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigMRap", "Sigma rapidity", HistType::kTH1F, {{100, -3., 3., "Rapidity"}});
+      mHistManager.add("hMCSigMPhi", "Sigma phi", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
+      mHistManager.add("hMCSigMRapPrim", "Sigma rapidity primary", HistType::kTH1F, {{100, -1., 1., "Rapidity"}});
+      mHistManager.add("hMCSigMPhiPrim", "Sigma phi primary", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
+      mHistManager.add("hMCSigMSecVtx", "Sigma secondary", HistType::kTH2F, {{100, 0., 500., "R (cm)"}, {100, -TMath::Pi(), TMath::Pi(), "#phi (rad)"}});
+    }
 
     ccdb->setURL(o2::base::NameConf::getCCDBServer());
     ccdb->setCaching(true);
@@ -189,10 +215,81 @@ struct phosNbar {
     if (!selectEvent<isMC>(collision, mixIndex)) {
       return;
     }
+    if constexpr (isMC) {
+      if (clusters.size() == 0) {
+        return;
+      }
+    }
     // count events
     int ntr = tracks.size();
     int nclu = clusters.size();
     mHistManager.fill(HIST("evsel"), 10. + 2 * (ntr > 0) + (nclu > 0));
+    mHistManager.fill(HIST("evsel"), 8.);
+
+    // Fill MC distributions
+    // Sigma rapidity, pt, phi
+    // secondary Sigmas
+    if constexpr (isMC) {
+      // check current collision Id for clusters
+      int cluMcBCId = -1;
+      for (auto clu : clusters) {
+        auto mcList = clu.labels(); // const std::vector<int>
+        int nParents = mcList.size();
+        for (int iParent = 0; iParent < nParents; iParent++) { // Not found nbar parent yiet
+          int label = mcList[iParent];
+          if (label > -1) {
+            auto parent = mcParticles->iteratorAt(label);
+            cluMcBCId = parent.mcCollision().bcId();
+            break;
+          }
+        }
+        if (cluMcBCId > -1) {
+          break;
+        }
+      }
+      // Scan MC particles in current MC event
+      if (mcParticles->begin() != mcParticles->end()) {
+        for (auto part : *mcParticles) {
+          if (part.mcCollision().bcId() != cluMcBCId) {
+            continue;
+            if (part.pdgCode() == -3112) { // Sigma+
+              double pt = part.pt();
+              mHistManager.fill(HIST("hMCSigPSp"), pt);
+              mHistManager.fill(HIST("hMCSigPRap"), part.y());
+              mHistManager.fill(HIST("hMCSigPPhi"), part.phi());
+              if (abs(part.y()) < .5) {
+                mHistManager.fill(HIST("hMCSigPSpAll"), pt);
+                double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
+                double phiVtx = atan2(part.vy(), part.vx());
+                mHistManager.fill(HIST("hMCSigPSecVtx"), r, phiVtx);
+                if (r < 0.5) {
+                  mHistManager.fill(HIST("hMCSigPSpPrim"), pt);
+                  mHistManager.fill(HIST("hMCSigPRapPrim"), part.y());
+                  mHistManager.fill(HIST("hMCSigPPhiPrim"), part.phi());
+                }
+              }
+            }
+            if (part.pdgCode() == -3222) { // Sigma-
+              double pt = part.pt();
+              mHistManager.fill(HIST("hMCSigMSp"), pt);
+              mHistManager.fill(HIST("hMCSigMRap"), part.y());
+              mHistManager.fill(HIST("hMCSigMPhi"), part.phi());
+              if (abs(part.y()) < .5) {
+                mHistManager.fill(HIST("hMCSigMSpAll"), pt);
+                double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
+                double phiVtx = atan2(part.vy(), part.vx());
+                mHistManager.fill(HIST("hMCSigMSecVtx"), r, phiVtx);
+                if (r < 0.5) {
+                  mHistManager.fill(HIST("hMCSigMSpPrim"), pt);
+                  mHistManager.fill(HIST("hMCSigMRapPrim"), part.y());
+                  mHistManager.fill(HIST("hMCSigMPhiPrim"), part.phi());
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     selectNbars<isMC>(clusters, mcParticles);
     selectTracks<isMC>(tracks, mcParticles);
@@ -252,7 +349,6 @@ struct phosNbar {
             }
           } else {
             if (cp != 0) {
-              LOG(info) << "Common parent PDG=" << cp;
               if (cp == -1114 || cp == -2114 || cp == -2214) // Delta
                 hSignalOther->Fill(m, pt, 0.);
               if (cp == -3114 || cp == -3214 || cp == -3312) // Sigma*, Xi
@@ -357,21 +453,48 @@ struct phosNbar {
   template <bool isMC, typename TCollision>
   bool selectEvent(TCollision const& col, int& indx)
   {
+    bool isColSelected = false;
+
     mHistManager.fill(HIST("evsel"), 0.);
+    if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
+      mHistManager.fill(HIST("evsel"), 1.);
+    }
+    if (col.selection_bit(kIsBBT0A) && col.selection_bit(kIsBBT0C)) {
+      mHistManager.fill(HIST("evsel"), 2.);
+    }
+    if (col.alias_bit(kTVXinPHOS)) {
+      mHistManager.fill(HIST("evsel"), 3.);
+    }
+    if (col.selection_bit(kIsTriggerTVX)) {
+      mHistManager.fill(HIST("evsel"), 4.);
+    }
+    if (col.alias_bit(kTVXinPHOS)) {
+      mHistManager.fill(HIST("evsel"), 5.);
+    }
+    if (col.alias_bit(kTVXinPHOS)) {
+      mHistManager.fill(HIST("evsel"), 6);
+    }
+    isColSelected = false;
+    if constexpr (isMC) {
+      isColSelected = col.selection_bit(kIsTriggerTVX);
+    } else {
+      isColSelected = col.alias_bit(mEvSelTrig);
+    }
+    if (!isColSelected) {
+      return false;
+    }
+
     mVtxZ = col.posZ();
     mHistManager.fill(HIST("vtxZ"), mVtxZ);
     if (std::abs(mVtxZ) > 10.f) {
       return false;
     }
-    mHistManager.fill(HIST("evsel"), 1.);
+    mHistManager.fill(HIST("evsel"), 7.);
     if constexpr (!isMC) {
       if (!col.alias_bit(mEvSelTrig)) {
         return false;
       }
     }
-    // Remove pileup???
-    mHistManager.fill(HIST("evsel"), 2.);
-
     // so far only binning according to zvtx is implemented
     indx = (mVtxZ + 10.) / 20. * mNZbins;
     if (indx >= mNZbins) {
@@ -860,8 +983,8 @@ struct phosNbar {
   }
   PROCESS_SWITCH(phosNbar, processData, "process data", false);
 
-  void processMc(SelCollision const& coll,
-                 aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart)
+  void processMC(SelCollisionMC const& coll,
+                 aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart, aod::McCollisions const& mcCol)
   {
     // Initialize B-field
     if (mBz == 123456.) {
@@ -871,7 +994,7 @@ struct phosNbar {
     }
     processAll<true>(coll, tracks, clusters, &mcPart);
   }
-  PROCESS_SWITCH(phosNbar, processMc, "process MC", true);
+  PROCESS_SWITCH(phosNbar, processMC, "process MC", true);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)

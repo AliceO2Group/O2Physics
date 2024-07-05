@@ -36,12 +36,22 @@ o2physics_add_dpl_workflow(pcm-qc-mc
 
 o2physics_add_dpl_workflow(dielectron-qc
                     SOURCES dielectronQC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dielectron-qc-mc
                     SOURCES dielectronQCMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dimuon-qc
+                    SOURCES dimuonQC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore O2::DCAFitter O2::GlobalTracking
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dimuon-qc-mc
+                    SOURCES dimuonQCMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore O2::DCAFitter O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dalitz-ee-qc
@@ -52,16 +62,6 @@ o2physics_add_dpl_workflow(dalitz-ee-qc
 o2physics_add_dpl_workflow(dalitz-ee-qc-mc
                     SOURCES dalitzEEQCMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dalitz-mumu-qc
-                    SOURCES dalitzMuMuQC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dalitz-mumu-qc-mc
-                    SOURCES dalitzMuMuQCMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(emcal-qc
@@ -124,9 +124,19 @@ o2physics_add_dpl_workflow(tagging-pi0-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(photon-hbt
-                    SOURCES PhotonHBT.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
+o2physics_add_dpl_workflow(photon-hbt-pcmpcm
+                    SOURCES PhotonHBTPCMPCM.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(photon-hbt-eeee
+                    SOURCES PhotonHBTEEEE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(photon-hbt-pcmee
+                    SOURCES PhotonHBTPCMEE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tag-and-probe

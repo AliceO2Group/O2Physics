@@ -41,6 +41,8 @@ struct lambda1520analysis {
   Configurable<bool> isFilladditionalQA{"isFilladditionalQA", false, "Turn on/off additional QA plots"};
   Configurable<bool> cAddlTrackcut{"cAddlTrackcut", false, "Switch to turn on/off Additional track cut"};
   Configurable<bool> cOldPIDcut{"cOldPIDcut", false, "Switch to turn on/off old PID cut to apply pt dependent cut"};
+  Configurable<bool> FixedPIDcut{"FixedPIDcut", false, "Switch to turn on/off FIXED PID cut to apply pt dependent cut"};
+  Configurable<bool> cRejectPion{"cRejectPion", false, "Switch to turn on/off pion contamination"};
   Configurable<bool> cDCAr7SigCut{"cDCAr7SigCut", false, "Track DCAr 7 Sigma cut to PV Maximum"};
   Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
   Configurable<bool> cTPCNClsFound{"cTPCNClsFound", false, "Switch to turn on/off TPCNClsFound cut"};
@@ -588,6 +590,90 @@ struct lambda1520analysis {
     return isTrk2Selected;
   }
 
+  // newly added to test
+  template <typename T>
+  bool selectionPIDProtonFixed(const T& candidate)
+  {
+    if (candidate.hasTOF()) {
+      if (candidate.pt() < 1.5 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 4.0) {
+        return true;
+      }
+      if (candidate.pt() >= 1.5 && candidate.pt() < 2.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -3.0 && candidate.tofNSigmaPr() < 4.0) {
+        return true;
+      }
+      if (candidate.pt() >= 2.0 && candidate.pt() < 2.5 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 4.0) {
+        return true;
+      }
+      if (candidate.pt() >= 2.5 && candidate.pt() < 3.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.0 && candidate.tofNSigmaPr() < 2.0) {
+        return true;
+      }
+    }
+    if (!candidate.hasTOF()) {
+      if (candidate.pt() < 0.4 && TMath::Abs(candidate.tpcNSigmaPr()) < 4.0) {
+        return true;
+      }
+      if (candidate.pt() >= 0.4 && candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 0.5 && candidate.pt() < 0.7 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 2.5) {
+        return true;
+      }
+      if (candidate.pt() >= 0.7 && candidate.pt() < 0.8 && candidate.tpcNSigmaPr() > -1.5 && candidate.tpcNSigmaPr() < 2.5) {
+        return true;
+      }
+      if (candidate.pt() >= 0.8 && candidate.pt() < 0.9 && candidate.tpcNSigmaPr() > -1.0 && candidate.tpcNSigmaPr() < 2.5) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool selectionPIDKaonFixed(const T& candidate)
+  {
+    if (candidate.hasTOF()) {
+      if (candidate.pt() < 0.8 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < 3.0 && TMath::Abs(candidate.tofNSigmaKa()) < 4.0) {
+        return true;
+      }
+      if (candidate.pt() >= 0.8 && candidate.pt() < 1.3 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -3.0 && candidate.tofNSigmaKa() < 4.0) {
+        return true;
+      }
+      if (candidate.pt() >= 1.3 && candidate.pt() < 1.6 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -2.0 && candidate.tofNSigmaKa() < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 1.6 && candidate.pt() < 1.8 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -1.5 && candidate.tofNSigmaKa() < 2.5) {
+        return true;
+      }
+      if (candidate.pt() >= 1.8 && candidate.pt() < 2.5 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -1.0 && candidate.tofNSigmaKa() < 2.0) {
+        return true;
+      }
+    }
+    if (!candidate.hasTOF()) {
+      if (candidate.pt() < 0.3 && TMath::Abs(candidate.tpcNSigmaKa()) < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 0.3 && candidate.pt() < 0.4 && candidate.tpcNSigmaKa() > -2.0 && candidate.tpcNSigmaKa() < 2.5) {
+        return true;
+      }
+      if (candidate.pt() >= 0.4 && candidate.pt() < 0.5 && candidate.tpcNSigmaKa() > -1.0 && candidate.tpcNSigmaKa() < 2.5) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool RejectPion(const T& candidate)
+  {
+    if (candidate.pt() > 1.0 && candidate.pt() < 2.0 && !candidate.hasTOF() && candidate.tpcNSigmaPi() < 2) {
+      return false;
+    }
+    return true;
+  }
+
   template <bool IsData, bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
@@ -692,11 +778,16 @@ struct lambda1520analysis {
         continue;
       if (cUseOnlyTOFTrackKa && !isTrk2hasTOF)
         continue;
+      if (cRejectPion && RejectPion(trk2))
+        continue;
       if (cOldPIDcut) {
         if (!selectionoldPIDProton(trk1) || !selectionoldPIDKaon(trk2))
           continue;
-      } else {
+      } else if (!cOldPIDcut && !FixedPIDcut) {
         if (!selectionnewPIDProton(trk1) || !selectionnewPIDKaon(trk2))
+          continue;
+      } else if (FixedPIDcut) {
+        if (!selectionPIDProtonFixed(trk1) || !selectionPIDKaonFixed(trk2))
           continue;
       }
 

@@ -20,7 +20,12 @@
 #include <TGrid.h>
 #include <TObjArray.h>
 #include <TFile.h>
+#include <TKey.h>
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/Logger.h"
+
+using namespace o2::framework;
+using namespace o2;
 
 class MomentumSmearer
 {
@@ -57,95 +62,164 @@ class MomentumSmearer
   /// Default destructor
   ~MomentumSmearer() = default;
 
+  // template <typename T>
+  void getResolutionHistos(TList* list)
+  {
+
+    fArrResoPt = reinterpret_cast<TObjArray*>(list->FindObject(fResPtHistName));
+    if (!fArrResoPt) {
+      LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
+    }
+
+    fArrResoEta = reinterpret_cast<TObjArray*>(list->FindObject(fResEtaHistName));
+    if (!fArrResoEta) {
+      LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
+    }
+
+    fArrResoPhi_Pos = reinterpret_cast<TObjArray*>(list->FindObject(fResPhiPosHistName));
+    if (!fArrResoPhi_Pos) {
+      LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
+    }
+
+    fArrResoPhi_Neg = reinterpret_cast<TObjArray*>(list->FindObject(fResPhiNegHistName));
+    if (!fArrResoPhi_Neg) {
+      LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
+    }
+  }
+
+  /*template <typename T>
+  void getEfficiencyHistos(T dir){
+
+  }*/
+
   void init()
   {
     if (fInitialized)
       return;
 
-    // ToDo: make it possible to access .root files from CCDB
-
-    if (fResFileName.BeginsWith("alien://") || fEffFileName.BeginsWith("alien://")) {
+    if ((fResFileName.BeginsWith("alien://") || fEffFileName.BeginsWith("alien://")) && (!fFromCcdb)) {
       TGrid::Connect("alien://");
     }
 
-    // get resolution histo
-    if (fResFileName.CompareTo("") != 0) {
-      LOGP(info, "Set Resolution histo");
-      // Get Resolution map
-      TFile* fFile = TFile::Open(fResFileName);
-      if (!fFile) {
-        LOGP(fatal, "Could not open Resolution file {}", fResFileName.Data());
-        return;
+    LOGP(info, "Set resolution histos");
+    TList* listRes = new TList();
+    if (fFromCcdb) {
+      if (fCcdbPathRes.CompareTo("") != 0) {
+        fResType = 1;
+        listRes = fCcdb->getForTimeStamp<TList>(fCcdbPathRes.Data(), fTimestamp);
+        if (!listRes) {
+          LOGP(fatal, "Could not get resolution file from CCDB");
+          return;
+        }
       }
-      TObjArray* ArrResoPt = nullptr;
-      if (fFile->GetListOfKeys()->Contains(fResPtHistName)) {
-        ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(fResPtHistName));
-      } else {
+    } else {
+      if (fResFileName.CompareTo("") != 0) {
+        fResType = 1;
+        TFile* fFile = TFile::Open(fResFileName);
+        if (!fFile) {
+          LOGP(fatal, "Could not open resolution file {}", fResFileName.Data());
+          return;
+        }
+        if (fFile->GetListOfKeys()->Contains("ccdb_object")) {
+          listRes = reinterpret_cast<TList*>(fFile->Get("ccdb_object"));
+        } else {
+          for (TObject* keyAsObj : *(fFile->GetListOfKeys())) {
+            auto key = dynamic_cast<TKey*>(keyAsObj);
+            TObject* arr = nullptr;
+            fFile->GetObject(key->GetName(), arr);
+            listRes->Add(arr);
+          }
+        }
+        fFile->Close();
+      }
+    }
+    if (fResType != 0) {
+      fArrResoPt = reinterpret_cast<TObjArray*>(listRes->FindObject(fResPtHistName));
+      if (!fArrResoPt) {
         LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
       }
 
-      TObjArray* ArrResoEta = nullptr;
-      if (fFile->GetListOfKeys()->Contains(fResEtaHistName)) {
-        ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(fResEtaHistName));
-      } else {
+      fArrResoEta = reinterpret_cast<TObjArray*>(listRes->FindObject(fResEtaHistName));
+      if (!fArrResoEta) {
         LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
       }
 
-      TObjArray* ArrResoPhi_Pos = nullptr;
-      if (fFile->GetListOfKeys()->Contains(TString(fResPhiPosHistName))) {
-        ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(fResPhiPosHistName));
-      } else {
+      fArrResoPhi_Pos = reinterpret_cast<TObjArray*>(listRes->FindObject(fResPhiPosHistName));
+      if (!fArrResoPhi_Pos) {
         LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
       }
 
-      TObjArray* ArrResoPhi_Neg = nullptr;
-      if (fFile->GetListOfKeys()->Contains(TString(fResPhiNegHistName))) {
-        ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(fResPhiNegHistName));
-      } else {
+      fArrResoPhi_Neg = reinterpret_cast<TObjArray*>(listRes->FindObject(fResPhiNegHistName));
+      if (!fArrResoPhi_Neg) {
         LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
       }
-
-      fArrResoPt = ArrResoPt;
-      fArrResoEta = ArrResoEta;
-      fArrResoPhi_Pos = ArrResoPhi_Pos;
-      fArrResoPhi_Neg = ArrResoPhi_Neg;
-      fFile->Close();
     }
+    delete listRes;
 
-    // get efficiency histo
-    fEffType = 0;
-    if (fEffFileName.CompareTo("") != 0) {
-      LOGP(info, "Set Efficiency histo");
-      TFile* fEffFile = TFile::Open(fEffFileName);
-      if (!fEffFile) {
-        LOGP(fatal, "Could not open efficiency file {}", fEffFileName.Data());
-        return;
-      }
-      if (fEffFile->GetListOfKeys()->Contains(fEffHistName.Data())) {
-        fArrEff = reinterpret_cast<TObject*>(fEffFile->Get(fEffHistName.Data()));
-        // check which type is used
-        if (dynamic_cast<TH3*>(fArrEff)) {
-          fEffType = 3;
-          LOGP(info, "Use 3d efficiency histo (pt, eta, phi)");
-        } else if (dynamic_cast<TH2*>(fArrEff)) {
-          fEffType = 2;
-          LOGP(info, "Use 2d efficiency histo (pt, eta)");
-        } else if (dynamic_cast<TH1*>(fArrEff)) {
-          fEffType = 1;
-          LOGP(info, "Use 1d efficiency histo (pt)");
-        } else {
-          LOGP(fatal, "Could not identify type of histogram {}", fEffHistName.Data());
+    LOGP(info, "Set efficiency histos");
+    TList* listEff = new TList();
+    if (fFromCcdb) {
+      if (fCcdbPathEff.CompareTo("") != 0) {
+        fEffType = 1;
+        listEff = fCcdb->getForTimeStamp<TList>(fCcdbPathEff.Data(), fTimestamp);
+        if (!listEff) {
+          LOGP(fatal, "Could not get efficiency file from CCDB");
+          return;
         }
-      } else {
-        LOGP(fatal, "Could not find histogram {} in file {}", fEffHistName.Data(), fEffFileName.Data());
+      }
+    } else {
+      if (fEffFileName.CompareTo("") != 0) {
+        fEffType = 1;
+        TFile* fFile = TFile::Open(fEffFileName);
+        if (!fFile) {
+          LOGP(fatal, "Could not open efficiency file {}", fEffFileName.Data());
+          return;
+        }
+        if (fFile->GetListOfKeys()->Contains("ccdb_object")) {
+          listEff = reinterpret_cast<TList*>(fFile->Get("ccdb_object"));
+        } else {
+          for (TObject* keyAsObj : *(fFile->GetListOfKeys())) {
+            auto key = dynamic_cast<TKey*>(keyAsObj);
+            TObject* hist = nullptr;
+            fFile->GetObject(key->GetName(), hist);
+            listEff->Add(hist);
+          }
+        }
+        fFile->Close();
       }
     }
+    if (fEffType != 0) {
+      fArrEff = reinterpret_cast<TObject*>(listEff->FindObject(fEffHistName));
+      if (!fArrEff) {
+        LOGP(fatal, "Could not open {} from file {}", fEffHistName.Data(), fEffFileName.Data());
+      }
+      // check which type is used
+      if (dynamic_cast<TH3*>(fArrEff)) {
+        fEffType = 3;
+        LOGP(info, "Use 3d efficiency histo (pt, eta, phi)");
+      } else if (dynamic_cast<TH2*>(fArrEff)) {
+        fEffType = 2;
+        LOGP(info, "Use 2d efficiency histo (pt, eta)");
+      } else if (dynamic_cast<TH1*>(fArrEff)) {
+        fEffType = 1;
+        LOGP(info, "Use 1d efficiency histo (pt)");
+      } else {
+        LOGP(fatal, "Could not identify type of histogram {}", fEffHistName.Data());
+      }
+    }
+    delete listEff;
 
     fInitialized = true;
   }
 
   void applySmearing(const int ch, const float ptgen, const float etagen, const float phigen, float& ptsmeared, float& etasmeared, float& phismeared)
   {
+    if (fResType == 0) {
+      ptsmeared = ptgen;
+      etasmeared = etagen;
+      phismeared = phigen;
+      return;
+    }
     // smear pt
     int ptbin = reinterpret_cast<TH2D*>(fArrResoPt->At(0))->GetXaxis()->FindBin(ptgen);
     if (ptbin < 1) {
@@ -268,6 +342,14 @@ class MomentumSmearer
   void setResPhiNegHistName(TString resPhiNegHistName) { fResPhiNegHistName = resPhiNegHistName; }
   void setEffFileName(TString effFileName) { fEffFileName = effFileName; }
   void setEffHistName(TString effHistName) { fEffHistName = effHistName; }
+  void setCcdbPathRes(TString ccdbPathRes) { fCcdbPathRes = ccdbPathRes; }
+  void setCcdbPathEff(TString ccdbPathEff) { fCcdbPathEff = ccdbPathEff; }
+  void setCcdb(Service<ccdb::BasicCCDBManager> ccdb)
+  {
+    fCcdb = ccdb;
+    fFromCcdb = true;
+  }
+  void setTimestamp(int64_t timestamp) { fTimestamp = timestamp; }
 
   // getters
   TString getResFileName() { return fResFileName; }
@@ -282,6 +364,8 @@ class MomentumSmearer
   TObjArray* getArrResoPhiPos() { return fArrResoPhi_Pos; }
   TObjArray* getArrResoPhiNeg() { return fArrResoPhi_Neg; }
   TObject* getArrEff() { return fArrEff; }
+  TString getCcdbPathRes() { return fCcdbPathRes; }
+  TString getCcdbPathEff() { return fCcdbPathEff; }
 
  private:
   bool fInitialized = false;
@@ -292,12 +376,18 @@ class MomentumSmearer
   TString fResPhiNegHistName;
   TString fEffFileName;
   TString fEffHistName;
+  TString fCcdbPathRes;
+  TString fCcdbPathEff;
   int fEffType = 0;
+  int fResType = 0;
   TObjArray* fArrResoPt;
   TObjArray* fArrResoEta;
   TObjArray* fArrResoPhi_Pos;
   TObjArray* fArrResoPhi_Neg;
   TObject* fArrEff;
+  int64_t fTimestamp;
+  bool fFromCcdb = false;
+  Service<ccdb::BasicCCDBManager> fCcdb;
 };
 
 #endif // PWGEM_DILEPTON_UTILS_MOMENTUMSMEARER_H_

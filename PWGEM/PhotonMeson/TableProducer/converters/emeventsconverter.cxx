@@ -26,19 +26,17 @@ struct emeventsconverter {
     for (auto& event : events) {
       events_001(
         event.collisionId(),
-        event.globalBC(),
         event.runNumber(),
+        0,
         event.sel8(),
         event.alias_raw(),
         event.selection_raw(),
+        0,
         event.ncollsPerBC(),
         event.posX(),
         event.posY(),
         event.posZ(),
         event.numContrib(),
-        event.collisionTime(),
-        event.collisionTimeRes(),
-        event.bz(),
         0 /*dummy occupancy value*/);
     }
   }

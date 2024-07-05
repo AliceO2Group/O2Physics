@@ -46,6 +46,10 @@ struct FemtoCorrelationsMC {
   Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
   Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+  Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
+  Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
+  Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
+  Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
 
   Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.0, "upper mometum limit"};
@@ -84,6 +88,8 @@ struct FemtoCorrelationsMC {
   Configurable<int> _multNsubBins{"multSubBins", 1, "number of sub-bins to perform the mixing within"};
   Configurable<std::vector<float>> _kTbins{"kTbins", std::vector<float>{0.0f, 100.0f}, "pair transverse momentum kT binning"};
   ConfigurableAxis CFkStarBinning{"CFkStarBinning", {500, 0.005, 5.005}, "k* binning of the res. matrix (Nbins, lowlimit, uplimit)"};
+
+  Configurable<std::vector<float>> _dcaBinning{"dcaBinning", std::vector<float>{151, 0.5f, 8}, "setup for variable binning (geometric progression is used): 1st (int) -- N_bins (must be odd, otherwise will be increased by 1); 2nd (float) -- abs value of the edge of axises in histos (-2nd, +2nd); 3d (int) -- desired ratio between w_bin at the edges and at 0;"};
 
   bool IsIdentical;
 
@@ -126,6 +132,8 @@ struct FemtoCorrelationsMC {
   std::vector<std::vector<std::shared_ptr<TH2>>> Resolution_histos;
   std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos;
   std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos;
+  std::vector<std::vector<std::shared_ptr<TH1>>> AvgSep_SE_histos;
+  std::vector<std::vector<std::shared_ptr<TH1>>> AvgSep_ME_histos;
 
   void init(o2::framework::InitContext&)
   {
@@ -141,12 +149,22 @@ struct FemtoCorrelationsMC {
     TPCcuts_2 = std::make_pair(_particlePDG_2, _tpcNSigma_2);
     TOFcuts_2 = std::make_pair(_particlePDG_2, _tofNSigma_2);
 
+    int N = _dcaBinning.value[0]; // number of bins -- must be odd otherwise will be increased by 1
+    if (N % 2 != 1)
+      N += 1;
+    auto var_bins = calc_var_bins(N + 1, _dcaBinning.value[1], static_cast<int>(_dcaBinning.value[2]));
+    auto const_bins = calc_const_bins(100, 0., 5.0);
+
     for (unsigned int i = 0; i < _centBins.value.size() - 1; i++) {
 
       std::map<int, std::shared_ptr<TH3>> DCA_histos_1_perMult;
-      DCA_histos_1_perMult[0] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) primary"}, {500, -0.5, 0.5, "DCA_Z(pt) primary"}});
-      DCA_histos_1_perMult[1] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_weakdecay", i), "dcaxyz_vs_pt_weakdecay", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) weakdecay"}, {500, -0.5, 0.5, "DCA_Z(pt) weakdecay"}});
-      DCA_histos_1_perMult[2] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_material", i), "dcaxyz_vs_pt_material", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) material"}, {500, -0.5, 0.5, "DCA_Z(pt) material"}});
+      DCA_histos_1_perMult[0] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{1, 0, 1, "pt"}, {1, 0, 1, "DCA_XY(pt) primary"}, {1, 0, 1, "DCA_Z(pt) primary"}});
+      DCA_histos_1_perMult[1] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_weakdecay", i), "dcaxyz_vs_pt_weakdecay", kTH3F, {{1, 0, 1, "pt"}, {1, 0, 1, "DCA_XY(pt) weakdecay"}, {1, 0, 1, "DCA_Z(pt) weakdecay"}});
+      DCA_histos_1_perMult[2] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_material", i), "dcaxyz_vs_pt_material", kTH3F, {{1, 0, 1, "pt"}, {1, 0, 1, "DCA_XY(pt) material"}, {1, 0, 1, "DCA_Z(pt) material"}});
+
+      DCA_histos_1_perMult[0]->SetBins(100, &const_bins[0], N, &var_bins[0], N, &var_bins[0]); // set variable bins in Y and Z axis; constant on X
+      DCA_histos_1_perMult[1]->SetBins(100, &const_bins[0], N, &var_bins[0], N, &var_bins[0]);
+      DCA_histos_1_perMult[2]->SetBins(100, &const_bins[0], N, &var_bins[0], N, &var_bins[0]);
 
       std::map<int, std::shared_ptr<TH1>> Purity_histos_1_perMult;
       Purity_histos_1_perMult[11] = registry.add<TH1>(Form("Cent%i/FirstParticle/pSpectraEl", i), "pSpectraEl", kTH1F, {{100, 0., 5., "p"}});
@@ -162,9 +180,13 @@ struct FemtoCorrelationsMC {
 
       if (!IsIdentical) {
         std::map<int, std::shared_ptr<TH3>> DCA_histos_2_perMult;
-        DCA_histos_2_perMult[0] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) primary"}, {500, -0.5, -0.5, "DCA_Z(pt) primary"}});
-        DCA_histos_2_perMult[1] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_weakdecay", i), "dcaxyz_vs_pt_weakdecay", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) weakdecay"}, {500, -0.5, 0.5, "DCA_Z(pt) weakdecay"}});
-        DCA_histos_2_perMult[2] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_material", i), "dcaxyz_vs_pt_material", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) material"}, {500, -0.5, 0.5, "DCA_Z(pt) material"}});
+        DCA_histos_2_perMult[0] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{1, 0, 1, "pt"}, {1, 0, 1, "DCA_XY(pt) primary"}, {1, 0, 1, "DCA_Z(pt) primary"}});
+        DCA_histos_2_perMult[1] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_weakdecay", i), "dcaxyz_vs_pt_weakdecay", kTH3F, {{1, 0, 1, "pt"}, {1, 0, 1, "DCA_XY(pt) weakdecay"}, {1, 0, 1, "DCA_Z(pt) weakdecay"}});
+        DCA_histos_2_perMult[2] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_material", i), "dcaxyz_vs_pt_material", kTH3F, {{1, 0, 1, "pt"}, {1, 0, 1, "DCA_XY(pt) material"}, {1, 0, 1, "DCA_Z(pt) material"}});
+
+        DCA_histos_2_perMult[0]->SetBins(100, &const_bins[0], N, &var_bins[0], N, &var_bins[0]); // set variable bins in Y and Z axis; constant on X
+        DCA_histos_2_perMult[1]->SetBins(100, &const_bins[0], N, &var_bins[0], N, &var_bins[0]);
+        DCA_histos_2_perMult[2]->SetBins(100, &const_bins[0], N, &var_bins[0], N, &var_bins[0]);
 
         std::map<int, std::shared_ptr<TH1>> Purity_histos_2_perMult;
         Purity_histos_2_perMult[11] = registry.add<TH1>(Form("Cent%i/SecondParticle/pSpectraEl", i), "pSpectraEl", kTH1F, {{100, 0., 5., "p"}});
@@ -183,22 +205,30 @@ struct FemtoCorrelationsMC {
       std::vector<std::shared_ptr<TH2>> Resolution_histos_perMult;
       std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
       std::vector<std::shared_ptr<TH2>> DoubleTrack_ME_histos_perMult;
+      std::vector<std::shared_ptr<TH1>> AvgSep_SE_histos_perMult;
+      std::vector<std::shared_ptr<TH1>> AvgSep_ME_histos_perMult;
 
       for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
         auto kT_tmp = registry.add<TH1>(Form("Cent%i/kT_cent%i_kT%i", i, i, j), Form("kT_cent%i_kT%i", i, j), kTH1F, {{500, 0., 5., "kT"}});
         auto Res_tmp = registry.add<TH2>(Form("Cent%i/ResolutionMatrix_cent%i_kT%i", i, i, j), Form("ResolutionMatrix_rec(gen)_cent%i_kT%i", i, j), kTH2F, {{CFkStarBinning, "k*_gen (GeV/c)"}, {CFkStarBinning, "k*_rec (GeV/c)"}});
-        auto DblTrk_SE_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{628, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
-        auto DblTrk_ME_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{628, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+        auto DblTrk_SE_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}});
+        auto DblTrk_ME_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}});
+        auto AvgSep_SE_tmp = registry.add<TH1>(Form("Cent%i/AvgSep_SE_cent%i_kT%i", i, i, j), Form("AvgSep_SE_cent%i_kT%i", i, j), kTH1F, {{100, 0.0, 100.0, "avg. sep. (cm)"}});
+        auto AvgSep_ME_tmp = registry.add<TH1>(Form("Cent%i/AvgSep_ME_cent%i_kT%i", i, i, j), Form("AvgSep_ME_cent%i_kT%i", i, j), kTH1F, {{100, 0.0, 100.0, "avg. sep. (cm)"}});
         kThistos_perMult.push_back(std::move(kT_tmp));
         Resolution_histos_perMult.push_back(std::move(Res_tmp));
         DoubleTrack_SE_histos_perMult.push_back(std::move(DblTrk_SE_tmp));
         DoubleTrack_ME_histos_perMult.push_back(std::move(DblTrk_ME_tmp));
+        AvgSep_SE_histos_perMult.push_back(std::move(AvgSep_SE_tmp));
+        AvgSep_ME_histos_perMult.push_back(std::move(AvgSep_ME_tmp));
       }
 
       kThistos.push_back(std::move(kThistos_perMult));
       Resolution_histos.push_back(std::move(Resolution_histos_perMult));
       DoubleTrack_SE_histos.push_back(std::move(DoubleTrack_SE_histos_perMult));
       DoubleTrack_ME_histos.push_back(std::move(DoubleTrack_ME_histos_perMult));
+      AvgSep_SE_histos.push_back(std::move(AvgSep_SE_histos_perMult));
+      AvgSep_ME_histos.push_back(std::move(AvgSep_ME_histos_perMult));
     }
   }
 
@@ -220,6 +250,7 @@ struct FemtoCorrelationsMC {
 
         kThistos[centBin][kTbin]->Fill(pair_kT);
         DoubleTrack_SE_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        AvgSep_SE_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
         Pair->ResetPair();
       }
     }
@@ -243,6 +274,7 @@ struct FemtoCorrelationsMC {
 
         kThistos[centBin][kTbin]->Fill(pair_kT);
         DoubleTrack_SE_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        AvgSep_SE_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
         Pair->ResetPair();
       }
     }
@@ -253,6 +285,7 @@ struct FemtoCorrelationsMC {
   { // template for ME
     for (auto ii : tracks1) {
       for (auto iii : tracks2) {
+
         Pair->SetPair(ii, iii);
         float pair_kT = Pair->GetKt();
 
@@ -263,13 +296,18 @@ struct FemtoCorrelationsMC {
         if (kTbin > Resolution_histos[centBin].size() || kTbin > DoubleTrack_ME_histos[centBin].size())
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
 
+        DoubleTrack_ME_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        AvgSep_ME_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
+
+        if (abs(ii->pdgCode()) != _particlePDG_1.value || abs(iii->pdgCode()) != _particlePDG_2.value)
+          continue;
+
         TLorentzVector first4momentumGen;
         first4momentumGen.SetPtEtaPhiM(ii->pt_MC(), ii->eta_MC(), ii->phi_MC(), particle_mass(_particlePDG_1));
         TLorentzVector second4momentumGen;
         second4momentumGen.SetPtEtaPhiM(iii->pt_MC(), iii->eta_MC(), iii->phi_MC(), particle_mass(_particlePDG_2));
 
         Resolution_histos[centBin][kTbin]->Fill(o2::aod::singletrackselector::GetKstarFrom4vectors(first4momentumGen, second4momentumGen, IsIdentical), Pair->GetKstar());
-        DoubleTrack_ME_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         Pair->ResetPair();
       }
     }
@@ -289,11 +327,19 @@ struct FemtoCorrelationsMC {
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() < *_centBins.value.begin() || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() >= *(_centBins.value.end() - 1))
         continue;
+      if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() < _IRcut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() >= _IRcut.value.second)
+        continue;
+      if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() < _OccupancyCut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() >= _OccupancyCut.value.second)
+        continue;
       if (_removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
         continue;
       if (_requestGoodZvtxFT0vsPV && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isGoodZvtxFT0vsPV())
         continue;
       if (_requestVertexITSTPC && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexITSTPC())
+        continue;
+      if (_requestVertexTOForTRDmatched > track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexTOForTRDmatched())
+        continue;
+      if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().noCollInTimeRangeStandard())
         continue;
 
       unsigned int centBin = o2::aod::singletrackselector::getBinIndex<unsigned int>(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc(), _centBins);
@@ -341,6 +387,21 @@ struct FemtoCorrelationsMC {
 
     for (auto collision : collisions) {
       if (collision.multPerc() < *_centBins.value.begin() || collision.multPerc() >= *(_centBins.value.end() - 1))
+        continue;
+      if (collision.hadronicRate() < _IRcut.value.first || collision.hadronicRate() >= _IRcut.value.second)
+        continue;
+      if (collision.occupancy() < _OccupancyCut.value.first || collision.occupancy() >= _OccupancyCut.value.second)
+        continue;
+
+      if (_removeSameBunchPileup && !collision.isNoSameBunchPileup())
+        continue;
+      if (_requestGoodZvtxFT0vsPV && !collision.isGoodZvtxFT0vsPV())
+        continue;
+      if (_requestVertexITSTPC && !collision.isVertexITSTPC())
+        continue;
+      if (_requestVertexTOForTRDmatched > collision.isVertexTOForTRDmatched())
+        continue;
+      if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
         continue;
 
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {

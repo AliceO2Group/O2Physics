@@ -35,6 +35,8 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -105,6 +107,7 @@ struct HfDataCreatorCharmResoReduced {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   HfHelper hfHelper;
+  o2::hf_evsel::HfEventSelection hfEvSel;
 
   bool isHfCandResoConfigFilled = false;
 
@@ -212,8 +215,8 @@ struct HfDataCreatorCharmResoReduced {
     return selMap;
   }
 
-  template <bool withMl, uint8_t DecayChannel, typename CCands>
-  void runDataCreation(aod::Collision const& collision,
+  template <bool withMl, uint8_t DecayChannel, typename Coll, typename CCands>
+  void runDataCreation(Coll const& collision,
                        CCands const& candsD,
                        aod::V0Datas const& V0s,
                        TracksWithPID const&,
@@ -225,7 +228,7 @@ struct HfDataCreatorCharmResoReduced {
     // the value is the V0 index in the table of the selected v0s
     std::map<int64_t, int64_t> selectedV0s;
     bool fillHfReducedCollision = false;
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
     // loop on D candidates
     for (const auto& candD : candsD) {
@@ -235,6 +238,7 @@ struct HfDataCreatorCharmResoReduced {
       float massD;
       float massV0{0.};
       std::array<float, 3> pVecD;
+      std::array<float, 3> pVecProng2;
       std::array<float, 3> secondaryVertexD;
       std::array<int, 3> prongIdsD;
       uint8_t v0type;
@@ -253,6 +257,10 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
+        pVecProng2[0] = candD.pxSoftPi();
+        pVecProng2[1] = candD.pySoftPi();
+        pVecProng2[2] = candD.pzSoftPi();
+
         dtype = candD.signSoftPi() * DType::Dstar;
         if constexpr (withMl) {
           std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
@@ -268,6 +276,9 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
+        pVecProng2[0] = candD.pxProng2();
+        pVecProng2[1] = candD.pyProng2();
+        pVecProng2[2] = candD.pzProng2();
         dtype = static_cast<int8_t>(prong0.sign() * DType::Dplus);
         if constexpr (withMl) {
           std::copy(candD.mlProbDplusToPiKPi().begin(), candD.mlProbDplusToPiKPi().end(), bdtScores.begin());
@@ -335,11 +346,10 @@ struct HfDataCreatorCharmResoReduced {
           hfCandV0(v0.posTrackId(), v0.negTrackId(),
                    indexHfReducedCollision,
                    v0.x(), v0.y(), v0.z(),
-                   v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(),
-                   pVecV0[0], pVecV0[1], pVecV0[2],
+                   v0.pxpos(), v0.pypos(), v0.pzpos(),
+                   v0.pxneg(), v0.pyneg(), v0.pzneg(),
                    v0.v0cosPA(),
                    v0.dcav0topv(),
-                   v0.v0radius(),
                    v0type);
           selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
         }
@@ -350,8 +360,9 @@ struct HfDataCreatorCharmResoReduced {
         hfCandD(prongIdsD[0], prongIdsD[1], prongIdsD[2],
                 indexHfReducedCollision,
                 secondaryVertexD[0], secondaryVertexD[1], secondaryVertexD[2],
-                invMassD,
-                pVecD[0], pVecD[1], pVecD[2],
+                candD.pxProng0(), candD.pyProng0(), candD.pzProng0(),
+                candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
+                pVecProng2[0], pVecProng2[1], pVecProng2[2],
                 dtype);
         if constexpr (withMl) {
           hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2]);
@@ -382,77 +393,102 @@ struct HfDataCreatorCharmResoReduced {
     hfReducedCollision(collision.posX(), collision.posY(), collision.posZ());
   } // run data creation
 
-  void processDplusV0(aod::Collisions const& collisions,
+  void processDplusV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       CandsDplusFiltered const& candsDplus,
                       aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
                       TracksWithPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
       runDataCreation<false, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
 
-  void processDplusV0WithMl(aod::Collisions const& collisions,
+  void processDplusV0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                             CandsDplusFilteredWithMl const& candsDplus,
                             aod::V0Datas const& V0s,
                             TracksWithPID const& tracks,
                             aod::BCsWithTimestamps const& bcs)
   {
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
       runDataCreation<true, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0WithMl, "Process Dplus candidates with ML info", false);
 
-  void processDstarV0(aod::Collisions const& collisions,
+  void processDstarV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       CandDstarFiltered const& candsDstar,
                       aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
                       TracksWithPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
       runDataCreation<false, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
 
-  void processDstarV0WithMl(aod::Collisions const& collisions,
+  void processDstarV0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                             CandDstarFilteredWithMl const& candsDstar,
                             aod::V0Datas const& V0s,
                             TracksWithPID const& tracks,
                             aod::BCsWithTimestamps const& bcs)
   {
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
       runDataCreation<true, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0WithMl, "Process DStar candidates with ML info", false);
 }; // struct

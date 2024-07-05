@@ -31,6 +31,9 @@
 #include "Framework/DataTypes.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 class DalitzEECut : public TNamed
 {
@@ -79,8 +82,8 @@ class DalitzEECut : public TNamed
     kTPChadrej = 1,
     kTPChadrejORTOFreq = 2,
     kTPConly = 3,
-    kMuon_lowB = 4,
-    kPIDML = 5,
+    kTOFif = 4,
+    kPIDML = 5
   };
 
   template <typename T = int, typename TPair>
@@ -108,8 +111,8 @@ class DalitzEECut : public TNamed
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float dca_t1_3d = t1.dca3DinSigma();
-    float dca_t2_3d = t2.dca3DinSigma();
+    float dca_t1_3d = dca3DinSigma(t1);
+    float dca_t2_3d = dca3DinSigma(t2);
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
     float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
 
@@ -248,8 +251,8 @@ class DalitzEECut : public TNamed
       case static_cast<int>(PIDSchemes::kTPConly):
         return PassTPConly(track);
 
-      case static_cast<int>(PIDSchemes::kMuon_lowB):
-        return PassMuon_lowB(track);
+      case static_cast<int>(PIDSchemes::kTOFif):
+        return PassTOFif(track);
 
       case static_cast<int>(PIDSchemes::kPIDML):
         return true; // don't use kPIDML here.
@@ -291,24 +294,12 @@ class DalitzEECut : public TNamed
   }
 
   template <typename T>
-  bool PassMuon_lowB(T const& track) const
+  bool PassTOFif(T const& track) const
   {
-    bool is_el_excluded_TPC = track.tpcNSigmaEl() < mMinTPCNsigmaEl || mMaxTPCNsigmaEl < track.tpcNSigmaEl();
-    if (!is_el_excluded_TPC) {
-      return false;
-    }
-    if (track.hasTOF()) {
-      bool is_mu_included_TPC = mMinTPCNsigmaMu < track.tpcNSigmaMu() && track.tpcNSigmaMu() < mMaxTPCNsigmaMu;
-      bool is_mu_included_TOF = mMinTOFNsigmaMu < track.tofNSigmaMu() && track.tofNSigmaMu() < mMaxTOFNsigmaMu;
-      bool is_pi_excluded_TOF = track.tofNSigmaPi() < mMinTOFNsigmaPi;
-      return is_mu_included_TPC && is_mu_included_TOF && is_pi_excluded_TOF;
-    } else if (track.tpcInnerParam() < mMaxPinMuonTPConly) {
-      bool is_mu_included_TPC = mMinTPCNsigmaMu < track.tpcNSigmaMu() && track.tpcNSigmaMu() < mMaxTPCNsigmaMu;
-      bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi;
-      return is_mu_included_TPC && is_pi_excluded_TPC;
-    } else {
-      return false;
-    }
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
+    bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) : true;
+    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
   template <typename T>
@@ -334,7 +325,7 @@ class DalitzEECut : public TNamed
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DalitzEECuts::kDCA3Dsigma:
-        return mMinDca3D <= track.dca3DinSigma() && track.dca3DinSigma() <= mMaxDca3D; // in sigma for single leg
+        return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
 
       case DalitzEECuts::kDCAxy:
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
@@ -454,7 +445,7 @@ class DalitzEECut : public TNamed
   float mMinPinTOF{0.0f};        // min pin cut for TOF.
   bool mMuonExclusionTPC{false}; // flag to reject muon in TPC for low B
   bool mApplyTOFbeta{false};     // flag to reject hadron contamination with TOF
-  float mMinTOFbeta{0.0}, mMaxTOFbeta{0.95};
+  float mMinTOFbeta{0.0}, mMaxTOFbeta{0.96};
   float mMinTPCNsigmaEl{-1e+10}, mMaxTPCNsigmaEl{+1e+10};
   float mMinTPCNsigmaMu{-1e+10}, mMaxTPCNsigmaMu{+1e+10};
   float mMinTPCNsigmaPi{-1e+10}, mMaxTPCNsigmaPi{+1e+10};

@@ -63,6 +63,7 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JClusters> jClustersTable;
   Produces<aod::JClusterPIs> jClustersParentIndexTable;
   Produces<aod::JClusterTracks> jClustersMatchedTracksTable;
+  Produces<aod::JMcClusterLbs> jMcClustersLabelTable;
   Produces<aod::JD0CollisionIds> jD0CollisionIdsTable;
   Produces<aod::JD0McCollisionIds> jD0McCollisionIdsTable;
   Produces<aod::JD0Ids> jD0IdsTable;
@@ -113,6 +114,14 @@ struct JetDerivedDataProducerTask {
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsRun2, "produces derived collision tables for Run 2 data", false);
+
+  void processCollisionsALICE3(aod::Collision const& collision)
+  {
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, 0);
+    jCollisionsParentIndexTable(collision.globalIndex());
+    jCollisionsBunchCrossingIndexTable(-1);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsALICE3, "produces derived collision tables for ALICE 3 simulations", false);
 
   void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision)
   {
@@ -213,6 +222,19 @@ struct JetDerivedDataProducerTask {
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClusters, "produces derived cluster tables", false);
+
+  void processMcClusterLabels(aod::EMCALMCCluster const& cluster)
+  {
+    std::vector<int> particleIds;
+    for (auto particleId : cluster.mcParticleIds()) {
+      particleIds.push_back(particleId);
+    }
+    std::vector<float> amplitudeA;
+    auto amplitudeASpan = cluster.amplitudeA();
+    std::copy(amplitudeASpan.begin(), amplitudeASpan.end(), std::back_inserter(amplitudeA));
+    jMcClustersLabelTable(particleIds, amplitudeA);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processMcClusterLabels, "produces derived cluster particle label table", false);
 
   void processD0Collisions(aod::HfD0CollIds::iterator const& D0Collision)
   {
