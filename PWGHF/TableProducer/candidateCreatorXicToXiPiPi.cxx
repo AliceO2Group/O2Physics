@@ -120,10 +120,10 @@ struct HfCandidateCreatorXicToXiPiPi {
     }
 
     // fill hVertexerType histogram
-    if ((doprocessXicplusWithDcaFitter == 1) && fillHistograms) {
+    if (doprocessXicplusWithDcaFitter && fillHistograms) {
       registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
     }
-    if ((doprocessXicplusWithKFParticle == 1) && fillHistograms) {
+    if (doprocessXicplusWithKFParticle && fillHistograms) {
       registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::KfParticle);
     }
 
