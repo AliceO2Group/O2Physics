@@ -44,7 +44,7 @@ void printMediumMessage(std::string info)
 }
 
 template <typename T>
-int testPIDhypothesis(T trackPIDinfo, float nSigmaShift = 0., bool isMC = false)
+int testPIDhypothesis(T trackPIDinfo, float maxNsigma = 5.0, bool useTOF = true, float nSigmaShift = 0., bool isMC = false)
 // Choose, which particle it is according to PID
 {
   float nSigmaTPC[5];
@@ -71,10 +71,20 @@ int testPIDhypothesis(T trackPIDinfo, float nSigmaShift = 0., bool isMC = false)
                                     std::min_element(std::begin(nSigmaTOF), std::end(nSigmaTOF)));
 
   if (trackPIDinfo.hasTPC() || trackPIDinfo.hasTOF()) {
-    if (trackPIDinfo.hasTOF()) {
-      return enumChoiceTOF;
+    if (trackPIDinfo.hasTOF() && useTOF) {
+      if (nSigmaTOF[enumChoiceTOF] < maxNsigma) {
+        return enumChoiceTOF;
+      } else {
+        LOGF(debug, "testPIDhypothesis cut - the lowest nSigmaTOF is higher than %f", maxNsigma);
+        return -1;
+      }
     } else {
-      return enumChoiceTPC;
+      if (nSigmaTPC[enumChoiceTPC] < maxNsigma) {
+        return enumChoiceTPC;
+      } else {
+        LOGF(debug, "testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f", maxNsigma);
+        return -1;
+      }
     }
   } else {
     LOGF(debug, "testPIDhypothesis failed - track did not leave information in TPC or TOF");
