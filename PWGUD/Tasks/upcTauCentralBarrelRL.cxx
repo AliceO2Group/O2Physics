@@ -1073,7 +1073,7 @@ struct UpcTauCentralBarrelRL {
         countTPCxRws70++;
       if (track.tpcNClsCrossedRows() > 100)
         countTPCxRws100++;
-      int hypothesisID = testPIDhypothesis(track,cutMyNsigmaPIDselector,usePIDwithTOF);
+      int hypothesisID = testPIDhypothesis(track, cutMyNsigmaPIDselector, usePIDwithTOF);
       vecPIDidx.push_back(hypothesisID);
       if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
         countPVGTselected++;
