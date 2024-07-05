@@ -652,7 +652,6 @@ struct correlateStrangeness {
       histos.add("ClosureTest/hXiPlus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("ClosureTest/hOmegaMinus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("ClosureTest/hOmegaPlus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-
     }
     // initialize CCDB *only* if efficiency correction requested
     // skip if not requested, saves a bit of time
@@ -699,8 +698,8 @@ struct correlateStrangeness {
       auto v0Data = v0.v0Core_as<V0DatasWithoutTrackX>();
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
-          float efficiency = 1.0f;
-        if(applyEfficiencyCorrection){
+        float efficiency = 1.0f;
+        if (applyEfficiencyCorrection) {
           efficiency = hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(v0Data.pt()), hEfficiencyV0[index]->GetYaxis()->FindBin(v0Data.eta()));
         }
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
@@ -763,7 +762,7 @@ struct correlateStrangeness {
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
         float efficiency = 1.0f;
-        if(applyEfficiencyCorrection){
+        if (applyEfficiencyCorrection) {
           efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(cascData.pt()), hEfficiencyCascade[index]->GetYaxis()->FindBin(cascData.eta()));
         }
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
@@ -1004,7 +1003,7 @@ struct correlateStrangeness {
       return;
 
     for (auto const& mcParticle : mcParticles) {
-      if (!mcParticle.isPhysicalPrimary()){
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
       Double_t geta = mcParticle.eta();
@@ -1046,7 +1045,6 @@ struct correlateStrangeness {
       }
     }
   }
-  
   void processClosureTest(aod::McCollision const& collision, aod::McParticles const& mcParticles)
   {
 
@@ -1119,7 +1117,7 @@ struct correlateStrangeness {
     associatedIndices.emplace_back(omegaMinusIndices);
     associatedIndices.emplace_back(omegaPlusIndices);
 
-    for (Int_t iTrigger = 0;  iTrigger < triggerIndices.size(); iTrigger++) {
+    for (Int_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
       auto triggerParticle = mcParticles.iteratorAt(triggerIndices[iTrigger]);
       // if (!mcParticle) {
       //   continue;
@@ -1129,15 +1127,15 @@ struct correlateStrangeness {
       Double_t pttrigger = triggerParticle.pt();
       auto const& mother = triggerParticle.mothers_first_as<aod::McParticles>();
       Int_t globalIndex = mother.globalIndex();
-      static_for<0, 7>([&](auto i) {   // associated loop
+      static_for<0, 7>([&](auto i) { // associated loop
         constexpr int index = i.value;
-        for (Int_t iassoc = 0;  iassoc < associatedIndices[index].size(); iassoc++){
+        for (Int_t iassoc = 0; iassoc < associatedIndices[index].size(); iassoc++){
           auto assocParticle = mcParticles.iteratorAt(associatedIndices[index][iassoc]);
-          if( triggerIndices[iTrigger] != associatedIndices[index][iassoc] && globalIndex != assocParticle.globalIndex()){ // avoid self
+          if( triggerIndices[iTrigger] != associatedIndices[index][iassoc] && globalIndex != assocParticle.globalIndex()) { // avoid self
             Double_t getaassoc = assocParticle.eta();
             Double_t gphiassoc = assocParticle.phi();
-            Double_t ptassoc    = assocParticle.pt();
-            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger,gphiassoc), getatrigger-getaassoc, ptassoc, pttrigger, collision.posZ(), iteratorNum);
+            Double_t ptassoc = assocParticle.pt();
+            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger,gphiassoc), getatrigger - getaassoc, ptassoc, pttrigger, collision.posZ(), iteratorNum);
           }
         }
       });
