@@ -90,6 +90,7 @@ struct tpcPid {
   OnnxModel network;
   o2::ccdb::CcdbApi ccdbApi;
   std::map<std::string, std::string> metadata;
+  std::map<std::string, std::string> nullmetadata;
   std::map<std::string, std::string> headers;
   std::vector<int> speciesNetworkFlags = std::vector<int>(9);
 
@@ -215,17 +216,21 @@ struct tpcPid {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      ccdbApi.init(url);
       if (time != 0) {
         LOGP(info, "Initialising TPC PID response for fixed timestamp {} and reco pass {}:", time, recoPass.value);
         ccdb->setTimestamp(time);
         response = ccdb->getSpecific<o2::pid::tpc::Response>(path, time, metadata);
+        headers = ccdbApi.retrieveHeaders(path, metadata, time);
         if (!response) {
           LOGF(warning, "Unable to find TPC parametrisation for specified pass name - falling back to latest object");
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time);
+          headers = ccdbApi.retrieveHeaders(path, nullmetadata, time);
           if (!response) {
             LOGF(fatal, "Unable to find any TPC object corresponding to timestamp {}!", time);
           }
         }
+        LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << time << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         response->PrintAll();
       }
     }
@@ -236,7 +241,6 @@ struct tpcPid {
       return;
     } else {
       /// CCDB and auto-fetching
-      ccdbApi.init(url);
       if (!autofetchNetworks) {
         if (ccdbTimestamp > 0) {
           /// Fetching network for specific timestamp
@@ -286,13 +290,16 @@ struct tpcPid {
           LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
         }
         response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
+        headers = ccdbApi.retrieveHeaders(ccdbPath.value, metadata, bc.timestamp());
         if (!response) {
           LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+          headers = ccdbApi.retrieveHeaders(ccdbPath.value, nullmetadata, bc.timestamp());
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
           if (!response) {
             LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
           }
         }
+        LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         response->PrintAll();
       }
 
@@ -483,13 +490,16 @@ struct tpcPid {
           LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
         }
         response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
+        headers = ccdbApi.retrieveHeaders(ccdbPath.value, metadata, bc.timestamp());
         if (!response) {
           LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
+          headers = ccdbApi.retrieveHeaders(ccdbPath.value, nullmetadata, bc.timestamp());
           if (!response) {
             LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
           }
         }
+        LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         response->PrintAll();
       }
 
