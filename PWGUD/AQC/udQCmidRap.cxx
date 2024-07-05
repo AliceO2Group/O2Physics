@@ -93,7 +93,6 @@ struct UDQCmid {
       registry.add("DG/hMassAll", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
       registry.add("DG/hMassFIT", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
 
-
       registry.add("DG/hMassZDC", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
       registry.add("DG/hMassTOF", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
       registry.add("DG/hMassFWD", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
@@ -102,7 +101,6 @@ struct UDQCmid {
 
       registry.add("DG/hMassAmbigous", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
       registry.add("DG/hMassAmbigousFWD", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{1000, 0., 10.}}});
-
 
       registry.add("DG/etaphi", "DG: Eta versus Phi; eta ; #phi ", {HistType::kTH2F, {{80, -2., 2.}, {120, 0., 6.28}}});
       registry.add("DG/etaphi1", "DG: Eta versus Phi; eta ; #phi ", {HistType::kTH2F, {{80, -2., 2.}, {120, 0., 6.28}}});
@@ -396,7 +394,6 @@ struct UDQCmid {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk5"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi5"))->Fill(ivm.Eta(), ivm.Phi());
 
-
         if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
 
           registry.get<TH1>(HIST("DG/hMassITSTrk"))->Fill(ivm.M());
@@ -419,7 +416,6 @@ struct UDQCmid {
       if (ispipiCand) {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk6"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi6"))->Fill(ivm.Eta(), ivm.Phi());
-
 
         if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
 
@@ -444,7 +440,6 @@ struct UDQCmid {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk7"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi7"))->Fill(ivm.Eta(), ivm.Phi());
 
-
         if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
           registry.get<TH1>(HIST("DG/hMassAmbigousFWD"))->Fill(ivm.M());
         }
@@ -460,7 +455,6 @@ struct UDQCmid {
         registry.get<TH2>(HIST("DG/IVMptSys2PVtrk8"))->Fill(ivm.M(), ivm.Pt());
         registry.get<TH2>(HIST("DG/etaphi8"))->Fill(ivm.Eta(), ivm.Phi());
 
-       
         if ((ivm.Pt() < 0.2) && (netCharge == 0)) {
 
           registry.get<TH1>(HIST("DG/hMassTOF"))->Fill(ivm.M());
