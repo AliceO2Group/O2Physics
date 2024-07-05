@@ -1129,7 +1129,7 @@ struct correlateStrangeness {
       Int_t globalIndex = mother.globalIndex();
       static_for<0, 7>([&](auto i) { // associated loop
         constexpr int index = i.value;
-        for (Int_t iassoc = 0; iassoc < associatedIndices[index].size(); iassoc++){
+        for (Int_t iassoc = 0; iassoc < associatedIndices[index].size(); iassoc++) {
           auto assocParticle = mcParticles.iteratorAt(associatedIndices[index][iassoc]);
           if (triggerIndices[iTrigger] != associatedIndices[index][iassoc] && globalIndex != assocParticle.globalIndex()) { // avoid self
             Double_t getaassoc = assocParticle.eta();
