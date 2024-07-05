@@ -9,17 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGEM_PHOTONMESON_CORE_PWGEMPHOTONMESONCORELINKDEF_H_
-#define PWGEM_PHOTONMESON_CORE_PWGEMPHOTONMESONCORELINKDEF_H_
+#ifndef PWGEM_DILEPTON_CORE_PWGEMDILEPTONCORELINKDEF_H_
+#define PWGEM_DILEPTON_CORE_PWGEMDILEPTONCORELINKDEF_H_
 
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class V0PhotonCut + ;
-#pragma link C++ class DalitzEECut + ;
-#pragma link C++ class PHOSPhotonCut + ;
-#pragma link C++ class EMCPhotonCut + ;
-#pragma link C++ class PairCut + ;
+#pragma link C++ class EMEventCut + ;
+#pragma link C++ class DielectronCut + ;
+#pragma link C++ class DimuonCut + ;
 
-#endif // PWGEM_PHOTONMESON_CORE_PWGEMPHOTONMESONCORELINKDEF_H_
+#endif // PWGEM_DILEPTON_CORE_PWGEMDILEPTONCORELINKDEF_H_
