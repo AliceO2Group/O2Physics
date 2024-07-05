@@ -36,6 +36,7 @@
 #include "TableHelper.h"
 #include "Tools/ML/model.h"
 #include "pidTPCBase.h"
+#include "MetadataHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -44,6 +45,8 @@ using namespace o2::pid::tpc;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::ml;
+
+MetadataHelper metadataInfo; // Metadata helper
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -149,6 +152,9 @@ struct tpcPid {
     if ((doprocessStandard && doprocessMcTuneOnData) || (!doprocessStandard && !doprocessMcTuneOnData)) {
       LOG(fatal) << "pid-tpc must have only one of the options 'processStandard' OR 'processMcTuneOnData' enabled. Please check your configuration.";
     }
+
+
+
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
@@ -188,11 +194,15 @@ struct tpcPid {
     speciesNetworkFlags[7] = useNetworkHe;
     speciesNetworkFlags[8] = useNetworkAl;
 
-    // Initialise metadata object for CCDB calls
+    
+    // Initialise metadata object for CCDB calls from AO2D metadata
     if (recoPass.value == "") {
-      LOGP(info, "Reco pass not specified; CCDB will take latest available object");
+      if(metadataInfo.isFullyDefined()) {
+      metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+      LOGP(info, "Automatically setting reco pass for TPC Response to {} from AO2D",metadata["RecoPassName"]);
+      }
     } else {
-      LOGP(info, "CCDB object will be requested for reconstruction pass {}", recoPass.value);
+      LOGP(info, "Setting reco pass for TPC response to user-defined name {}", recoPass.value);
       metadata["RecoPassName"] = recoPass.value;
     }
 
@@ -231,6 +241,7 @@ struct tpcPid {
           }
         }
         LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << time << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
+        metadata["RecoPassName"] = headers["RecoPassName"]; // Force pass number for NN request to match retrieved BB
         response->PrintAll();
       }
     }
@@ -251,6 +262,7 @@ struct tpcPid {
             network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
             std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
             network.evalModel(dummyInput); /// Init the model evaluations
+            LOGP(info, "Retrieved NN corrections for production tag {}, pass number {}", headers["LPMProductionTag"], headers["RecoPassName"]);
           } else {
             LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
           }
@@ -300,6 +312,7 @@ struct tpcPid {
           }
         }
         LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
+        metadata["RecoPassName"] = headers["RecoPassName"]; // Force pass number for NN request to match retrieved BB
         response->PrintAll();
       }
 
@@ -311,6 +324,7 @@ struct tpcPid {
           network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
           std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
           network.evalModel(dummyInput);
+          LOGP(info, "Retrieved NN corrections for production tag {}, pass number {}", headers["LPMProductionTag"], headers["RecoPassName"]);
         } else {
           LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
         }
@@ -651,4 +665,7 @@ struct tpcPid {
   PROCESS_SWITCH(tpcPid, processMcTuneOnData, "Creating PID tables with MC TuneOnData", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+   metadataInfo.initMetadata(cfgc); // Parse AO2D metadata
+   return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)};
+}
