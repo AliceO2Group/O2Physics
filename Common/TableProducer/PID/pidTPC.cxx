@@ -153,8 +153,6 @@ struct tpcPid {
       LOG(fatal) << "pid-tpc must have only one of the options 'processStandard' OR 'processMcTuneOnData' enabled. Please check your configuration.";
     }
 
-
-
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
@@ -194,12 +192,11 @@ struct tpcPid {
     speciesNetworkFlags[7] = useNetworkHe;
     speciesNetworkFlags[8] = useNetworkAl;
 
-    
     // Initialise metadata object for CCDB calls from AO2D metadata
     if (recoPass.value == "") {
-      if(metadataInfo.isFullyDefined()) {
-      metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
-      LOGP(info, "Automatically setting reco pass for TPC Response to {} from AO2D",metadata["RecoPassName"]);
+      if (metadataInfo.isFullyDefined()) {
+        metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+        LOGP(info, "Automatically setting reco pass for TPC Response to {} from AO2D", metadata["RecoPassName"]);
       }
     } else {
       LOGP(info, "Setting reco pass for TPC response to user-defined name {}", recoPass.value);
@@ -665,7 +662,8 @@ struct tpcPid {
   PROCESS_SWITCH(tpcPid, processMcTuneOnData, "Creating PID tables with MC TuneOnData", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
-   metadataInfo.initMetadata(cfgc); // Parse AO2D metadata
-   return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)};
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  metadataInfo.initMetadata(cfgc); // Parse AO2D metadata
+  return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)};
 }
