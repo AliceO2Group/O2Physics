@@ -718,21 +718,21 @@ struct derivedlambdakzeroanalysis {
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :          x  x  x  x
       bitMap = 9;
-      if ( fromAfterburner )
+      if (fromAfterburner)
         bitMap = -3;
     } else if (verifyMask(itsClusMap, ((uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :             x  x  x
       bitMap = 8;
-      if ( fromAfterburner )
+      if (fromAfterburner)
         bitMap = -2;
     } else if (verifyMask(itsClusMap, ((uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :                x  x
       bitMap = 7;
-      if ( fromAfterburner )
+      if (fromAfterburner)
         bitMap = -1;
     } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
       // ITS :    IB         OB
