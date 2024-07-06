@@ -693,7 +693,7 @@ struct derivedlambdakzeroanalysis {
     return (bitmap & mask) == mask;
   }
 
-  uint computeITSclusBitmap(uint8_t itsClusMap, bool fromAfterburner)
+  int computeITSclusBitmap(uint8_t itsClusMap, bool fromAfterburner)
   // Focus on the 12 dominant ITS cluster configurations
   {
     int bitMap = 0;
@@ -810,9 +810,9 @@ struct derivedlambdakzeroanalysis {
     bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
 
     uint posDetMap = computeDetBitmap(posTrackExtra.detectorMap());
-    uint posITSclusMap = computeITSclusBitmap(posTrackExtra.itsClusterMap(), posIsFromAfterburner);
+    int posITSclusMap = computeITSclusBitmap(posTrackExtra.itsClusterMap(), posIsFromAfterburner);
     uint negDetMap = computeDetBitmap(negTrackExtra.detectorMap());
-    uint negITSclusMap = computeITSclusBitmap(negTrackExtra.itsClusterMap(), negIsFromAfterburner);
+    int negITSclusMap = computeITSclusBitmap(negTrackExtra.itsClusterMap(), negIsFromAfterburner);
 
     // __________________________________________
     // fill with no selection if plain QA requested
