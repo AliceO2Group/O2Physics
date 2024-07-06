@@ -70,6 +70,29 @@ DECLARE_SOA_TABLE(LambdaTracks, "AOD", "LAMBDATRACKS", o2::soa::Index<>,
 using LambdaTrack = LambdaTracks::iterator;
 } // namespace o2::aod
 
+enum MinMax {
+  kMin = 0,
+  kMax
+};
+
+enum ParticleType {
+  kLambda = 0,
+  kAntiLambda
+};
+
+enum ParticlePair {
+  kLambdaAntiLambda = 0,
+  kLambdaLambda,
+  kAntiLambdaAntiLambda
+};
+
+enum MassWindowType {
+  kCentralWindow = 0,
+  kLeftWindow,
+  kRightWindow,
+  kNoOfMassWindows
+};
+
 struct lambdaCorrTableProducer {
 
   Produces<aod::LambdaCollisions> lambdaCollisionTable;
@@ -239,21 +262,21 @@ struct lambdaCorrTableProducer {
   }
 
   template <typename T>
-  bool selProton(T const& track)
+  bool selPIDTrack(T const& track, float tpcNsigma, float tofNsigma)
   {
 
     bool selTPCFlag = false, selTOFFlag = false;
 
     if (track.hasTOF()) {
-      if (fabs(track.tofNSigmaPr()) < cfg_tof_nsigma) {
+      if (fabs(tofNsigma) < cfg_tof_nsigma) {
         selTOFFlag = true;
       }
-      if (fabs(track.tpcNSigmaPr()) < cfg_tpc_nsigma) {
+      if (fabs(tpcNsigma) < cfg_tpc_nsigma) {
         selTPCFlag = true;
       }
     } else {
       selTOFFlag = true;
-      if (fabs(track.tpcNSigmaPr()) < cfg_tpc_nsigma) {
+      if (fabs(tpcNsigma) < cfg_tpc_nsigma) {
         selTPCFlag = true;
       }
     }
@@ -265,34 +288,7 @@ struct lambdaCorrTableProducer {
     return false;
   }
 
-  template <typename T>
-  bool selPion(T const& track)
-  {
-
-    bool selTPCFlag = false, selTOFFlag = false;
-
-    if (track.hasTOF()) {
-      if (fabs(track.tofNSigmaPi()) < cfg_tof_nsigma) {
-        selTOFFlag = true;
-      }
-      if (fabs(track.tpcNSigmaPi()) < cfg_tpc_nsigma) {
-        selTPCFlag = true;
-      }
-    } else {
-      selTOFFlag = true;
-      if (fabs(track.tpcNSigmaPi()) < cfg_tpc_nsigma) {
-        selTPCFlag = true;
-      }
-    }
-
-    if (selTPCFlag && selTOFFlag) {
-      return true;
-    }
-
-    return false;
-  }
-
-  template <int mode, typename C, typename V, typename T>
+  template <ParticleType part, typename C, typename V, typename T>
   void fillQALambda(C const& col, V const& v0, T const&)
   {
 
@@ -305,37 +301,37 @@ struct lambdaCorrTableProducer {
     auto postrack = v0.template posTrack_as<T>();
     auto negtrack = v0.template negTrack_as<T>();
 
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_dca_V0_daughters"), v0.dcaV0daughters());
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_dca_pos_to_PV"), fabs(v0.dcapostopv()));
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_dca_neg_to_PV"), fabs(v0.dcanegtopv()));
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_dca_V0_to_PV"), fabs(v0.dcav0topv()));
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_v0_cospa"), v0.v0cosPA());
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_v0_radius"), v0.v0radius());
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_v0_ctau"), ctau);
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_pt"), v0.pt());
-    if constexpr (mode == 0) {
-      histos.fill(HIST(sub_dir[mode]) + HIST("h1d_inv_mass"), v0.mLambda());
-      histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pr_dEdx_vs_p"), postrack.tpcInnerParam(), postrack.tpcSignal());
-      histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pi_dEdx_vs_p"), negtrack.tpcInnerParam(), negtrack.tpcSignal());
-      histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pr_nsigma_tpc"), postrack.tpcInnerParam(), postrack.tpcNSigmaPr());
-      histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pi_nsigma_tpc"), negtrack.tpcInnerParam(), negtrack.tpcNSigmaPi());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_dca_V0_daughters"), v0.dcaV0daughters());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_dca_pos_to_PV"), fabs(v0.dcapostopv()));
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_dca_neg_to_PV"), fabs(v0.dcanegtopv()));
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_dca_V0_to_PV"), fabs(v0.dcav0topv()));
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_v0_cospa"), v0.v0cosPA());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_v0_radius"), v0.v0radius());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_v0_ctau"), ctau);
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_pt"), v0.pt());
+    if constexpr (part == kLambda) {
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_inv_mass"), v0.mLambda());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_pr_dEdx_vs_p"), postrack.tpcInnerParam(), postrack.tpcSignal());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_pi_dEdx_vs_p"), negtrack.tpcInnerParam(), negtrack.tpcSignal());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_pr_nsigma_tpc"), postrack.tpcInnerParam(), postrack.tpcNSigmaPr());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_pi_nsigma_tpc"), negtrack.tpcInnerParam(), negtrack.tpcNSigmaPi());
       if (postrack.hasTOF()) {
-        histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pr_nsigma_tof"), postrack.tofExpMom(), postrack.tofNSigmaPr());
+        histos.fill(HIST(sub_dir[part]) + HIST("h2d_pr_nsigma_tof"), postrack.tofExpMom(), postrack.tofNSigmaPr());
       }
       if (negtrack.hasTOF()) {
-        histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pi_nsigma_tof"), negtrack.tofExpMom(), negtrack.tofNSigmaPi());
+        histos.fill(HIST(sub_dir[part]) + HIST("h2d_pi_nsigma_tof"), negtrack.tofExpMom(), negtrack.tofNSigmaPi());
       }
     } else {
-      histos.fill(HIST(sub_dir[mode]) + HIST("h1d_inv_mass"), v0.mAntiLambda());
-      histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pi_dEdx_vs_p"), postrack.tpcInnerParam(), postrack.tpcSignal());
-      histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pr_dEdx_vs_p"), negtrack.tpcInnerParam(), negtrack.tpcSignal());
-      histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pi_nsigma_tpc"), postrack.tpcInnerParam(), postrack.tpcNSigmaPi());
-      histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pr_nsigma_tpc"), negtrack.tpcInnerParam(), negtrack.tpcNSigmaPr());
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_inv_mass"), v0.mAntiLambda());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_pi_dEdx_vs_p"), postrack.tpcInnerParam(), postrack.tpcSignal());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_pr_dEdx_vs_p"), negtrack.tpcInnerParam(), negtrack.tpcSignal());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_pi_nsigma_tpc"), postrack.tpcInnerParam(), postrack.tpcNSigmaPi());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_pr_nsigma_tpc"), negtrack.tpcInnerParam(), negtrack.tpcNSigmaPr());
       if (postrack.hasTOF()) {
-        histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pi_nsigma_tof"), postrack.tofExpMom(), postrack.tofNSigmaPi());
+        histos.fill(HIST(sub_dir[part]) + HIST("h2d_pi_nsigma_tof"), postrack.tofExpMom(), postrack.tofNSigmaPi());
       }
       if (negtrack.hasTOF()) {
-        histos.fill(HIST(sub_dir[mode]) + HIST("h2d_pr_nsigma_tof"), negtrack.tofExpMom(), negtrack.tofNSigmaPr());
+        histos.fill(HIST(sub_dir[part]) + HIST("h2d_pr_nsigma_tof"), negtrack.tofExpMom(), negtrack.tofNSigmaPr());
       }
     }
   }
@@ -353,9 +349,6 @@ struct lambdaCorrTableProducer {
 
     lambdaCollisionTable(collision.centFT0M(), collision.posX(), collision.posY(), collision.posZ());
 
-    float pt = 0., y = 0., eta = 0., phi = 0.;
-    int64_t pos_track_id = 0, neg_track_id = 0;
-
     for (auto const& v0 : V0s) {
 
       // apply topological cuts on v0 candidates
@@ -366,23 +359,16 @@ struct lambdaCorrTableProducer {
       auto postrack = v0.template posTrack_as<Tracks>();
       auto negtrack = v0.template negTrack_as<Tracks>();
 
-      pt = v0.pt();
-      y = v0.yLambda();
-      eta = v0.eta();
-      phi = v0.phi();
-      pos_track_id = postrack.index();
-      neg_track_id = negtrack.index();
-
       // get lambda
-      if ((fabs(v0.mLambda() - MassLambda0) < cfg_lambda_mass_window) && (fabs(v0.mK0Short() - MassK0Short) > cfg_kshort_rej) && (selProton(postrack)) && (selPion(negtrack))) {
-        fillQALambda<0>(collision, v0, tracks);
-        lambdaTrackTable(lambdaCollisionTable.lastIndex(), pt, y, eta, phi, v0.mLambda(), pos_track_id, neg_track_id, true);
+      if ((fabs(v0.mLambda() - MassLambda0) < cfg_lambda_mass_window) && (fabs(v0.mK0Short() - MassK0Short) > cfg_kshort_rej) && (selPIDTrack(postrack, postrack.tpcNSigmaPr(), postrack.tofNSigmaPr())) && (selPIDTrack(negtrack, negtrack.tpcNSigmaPi(), negtrack.tofNSigmaPi()))) {
+        fillQALambda<kLambda>(collision, v0, tracks);
+        lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0.pt(), v0.yLambda(), v0.eta(), v0.phi(), v0.mLambda(), postrack.index(), negtrack.index(), true);
       }
 
       // get anti-lambda
-      if ((fabs(v0.mAntiLambda() - MassLambda0) < cfg_lambda_mass_window) && (fabs(v0.mK0Short() - MassK0Short) > cfg_kshort_rej) && (selProton(negtrack)) && (selPion(postrack))) {
-        fillQALambda<1>(collision, v0, tracks);
-        lambdaTrackTable(lambdaCollisionTable.lastIndex(), pt, y, eta, phi, v0.mAntiLambda(), pos_track_id, neg_track_id, false);
+      if ((fabs(v0.mAntiLambda() - MassLambda0) < cfg_lambda_mass_window) && (fabs(v0.mK0Short() - MassK0Short) > cfg_kshort_rej) && (selPIDTrack(negtrack, negtrack.tpcNSigmaPr(), negtrack.tofNSigmaPr())) && (selPIDTrack(postrack, postrack.tpcNSigmaPi(), postrack.tofNSigmaPi()))) {
+        fillQALambda<kAntiLambda>(collision, v0, tracks);
+        lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0.pt(), v0.yLambda(), v0.eta(), v0.phi(), v0.mAntiLambda(), postrack.index(), negtrack.index(), false);
       }
     }
   }
@@ -395,26 +381,50 @@ struct lambdaCorrelationAnalysis {
   Configurable<float> cfg_Lambda_Pt_Max{"cfg_Lambda_Pt_Max", 2.5, "Maximum Track pT"};
 
   // global variables
-  Configurable<int> cfg_nRapBins{"cfg_nRapBins", 24, "N Rapidity Bins"};
-  Configurable<float> cfg_Rap_Min{"cfg_Rap_Min", -0.6, "Minimum Rapidity"};
-  Configurable<float> cfg_Rap_Max{"cfg_Rap_Max", 0.6, "Maximum Rapidity"};
+  Configurable<int> cfg_nRapBins{"cfg_nRapBins", 16, "N Rapidity Bins"};
+  Configurable<float> cfg_Rap_Min{"cfg_Rap_Min", -0.8, "Minimum Rapidity"};
+  Configurable<float> cfg_Rap_Max{"cfg_Rap_Max", 0.8, "Maximum Rapidity"};
   Configurable<int> cfg_nPhiBins{"cfg_nPhiBins", 64, "N Phi Bins"};
   Configurable<float> cfg_Phi_Min{"cfg_Phi_Min", 0, "Minimum Phi"};
   Configurable<float> cfg_Phi_Max{"cfg_Phi_Max", 2 * TMath::Pi(), "Maximum Phi"};
 
   // lambda mass windows
-  Configurable<std::array<float, 2>> cfg_lambda_mass{"cfg_lambda_mass", {1.105, 1.125}, "Lambda Mass Window"};
-  Configurable<std::array<float, 2>> cfg_lambda_left{"cfg_lambda_left", {1.09, 1.1}, "Lambda Mass Left Sideband"};
-  Configurable<std::array<float, 2>> cfg_lambda_right{"cfg_lambda_right", {1.13, 1.14}, "Lambda Mass Right Sideband"};
+  Configurable<float> cfg_lambda_mass_min{"cfg_lambda_mass_min", 1.11, "Minimum Central Window"};
+  Configurable<float> cfg_lambda_mass_max{"cfg_lambda_mass_max", 1.12, "Maximum Central Window"};
+  Configurable<float> cfg_lambda_left_min{"cfg_lambda_left_min", 1.08, "Minimum Left Window"};
+  Configurable<float> cfg_lambda_left_max{"cfg_lambda_left_max", 1.10, "Maximum Left Window"};
+  Configurable<float> cfg_lambda_right_min{"cfg_lambda_right_min", 1.13, "Minimum Right Window"};
+  Configurable<float> cfg_lambda_right_max{"cfg_lambda_right_max", 1.15, "Maximum Right Window"};
+
+  // bool eta/rapidity
+  Configurable<bool> cfg_do_eta_analysis{"cfg_do_eta_analysis", false, "Eta Analysis"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // Initialize global variables
+  float nrapbins = 0.;
+  float kminrap = 0.;
+  float kmaxrap = 0.;
+  float nphibins = 0.;
+  float kminphi = 0.;
+  float kmaxphi = 0.;
+  float rapbinwidth = 0.;
+  float phibinwidth = 0.;
+
   void init(InitContext const&)
   {
+    nrapbins = static_cast<float>(cfg_nRapBins);
+    kminrap = static_cast<float>(cfg_Rap_Min);
+    kmaxrap = static_cast<float>(cfg_Rap_Max);
+    nphibins = static_cast<float>(cfg_nPhiBins);
+    kminphi = static_cast<float>(cfg_Phi_Min);
+    kmaxphi = static_cast<float>(cfg_Phi_Max);
+
+    rapbinwidth = (kmaxrap - kminrap) / nrapbins;
+    phibinwidth = (kmaxphi - kminphi) / nphibins;
 
     int knrapphibins = static_cast<int>(cfg_nRapBins) * static_cast<int>(cfg_nPhiBins);
-
     float kminrapphi = 0.;
     float kmaxrapphi = knrapphibins;
 
@@ -426,9 +436,9 @@ struct lambdaCorrelationAnalysis {
     const AxisSpec axisEta(40, -1., 1., "#eta");
     const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
 
-    const AxisSpec axisRap(cfg_nRapBins, cfg_Rap_Min, cfg_Rap_Max, "y");
+    const AxisSpec axisRap(cfg_nRapBins, cfg_Rap_Min, cfg_Rap_Max, "rap");
     const AxisSpec axisPhi(cfg_nPhiBins, cfg_Phi_Min, cfg_Phi_Max, "#phi (rad)");
-    const AxisSpec axisRapPhi(knrapphibins, kminrapphi, kmaxrapphi, "y #phi");
+    const AxisSpec axisRapPhi(knrapphibins, kminrapphi, kmaxrapphi, "rap #phi");
 
     // Create Histograms.
     // Event
@@ -459,69 +469,123 @@ struct lambdaCorrelationAnalysis {
     histos.addClone("Lambda_Mass/", "Lambda_Left/");
   }
 
-  template <int mode, typename V>
+  template <ParticleType part, typename V>
   void fillHistos(V const& v)
   {
 
     static constexpr std::string_view sub_dir[] = {"Lambda/", "AntiLambda/"};
 
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_pt"), v.pt());
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_eta"), v.eta());
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_y"), v.y());
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_phi"), v.phi());
-    histos.fill(HIST(sub_dir[mode]) + HIST("h1d_inv_mass"), v.mass());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_pt"), v.pt());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta"), v.eta());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_y"), v.y());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_phi"), v.phi());
+    histos.fill(HIST(sub_dir[part]) + HIST("h1d_inv_mass"), v.mass());
   }
 
-  template <int mode, int hist, typename V>
+  template <ParticleType part, MassWindowType mass_win, typename V>
   void partSingle(V& p)
   {
-    static constexpr std::string_view sub_dir_type[] = {"Lambda_Mass/", "Lambda_Right/", "Lambda_Left/"};
-    static constexpr std::string_view sub_dir_hist[] = {"h2d_n1_LaP", "h2d_n1_LaM"};
 
-    histos.fill(HIST(sub_dir_type[mode]) + HIST(sub_dir_hist[hist]), p.y(), p.phi());
+    static constexpr std::string_view sub_dir_hist[] = {"h2d_n1_LaP", "h2d_n1_LaM"};
+    static constexpr std::string_view sub_dir_type[] = {"Lambda_Mass/", "Lambda_Left/", "Lambda_Right/"};
+
+    if (cfg_do_eta_analysis) {
+      histos.fill(HIST(sub_dir_type[mass_win]) + HIST(sub_dir_hist[part]), p.eta(), p.phi());
+    } else {
+      histos.fill(HIST(sub_dir_type[mass_win]) + HIST(sub_dir_hist[part]), p.y(), p.phi());
+    }
   }
 
-  template <int mode, int hist, typename U, typename V>
-  void partPair(U& p1, V& p2)
+  template <ParticlePair part_pair, MassWindowType mass_win, typename U>
+  void partPair(U& p1, U& p2)
   {
 
-    static constexpr std::string_view sub_dir_type[] = {"Lambda_Mass/", "Lambda_Right/", "Lambda_Left/"};
+    static constexpr std::string_view sub_dir_type[] = {"Lambda_Mass/", "Lambda_Left/", "Lambda_Right/"};
     static constexpr std::string_view sub_dir_hist[] = {"h2d_n2_LaP_LaM", "h2d_n2_LaP_LaP", "h2d_n2_LaM_LaM"};
 
-    float nrapbins = static_cast<float>(cfg_nRapBins);
-    float kminrap = static_cast<float>(cfg_Rap_Min);
-    float kmaxrap = static_cast<float>(cfg_Rap_Max);
-    float nphibins = static_cast<float>(cfg_nPhiBins);
-    float kminphi = static_cast<float>(cfg_Phi_Min);
-    float kmaxphi = static_cast<float>(cfg_Phi_Max);
+    int rapbin1 = 0, rapbin2 = 0;
 
-    float rapbinwidth = (kmaxrap - kminrap) / nrapbins;
-    float phibinwidth = (kmaxphi - kminphi) / nphibins;
+    if (cfg_do_eta_analysis) {
+      rapbin1 = static_cast<int>((p1.eta() - kminrap) / rapbinwidth);
+      rapbin2 = static_cast<int>((p2.eta() - kminrap) / rapbinwidth);
+    } else {
+      rapbin1 = static_cast<int>((p1.y() - kminrap) / rapbinwidth);
+      rapbin2 = static_cast<int>((p2.y() - kminrap) / rapbinwidth);
+    }
 
-    float rap1 = p1.y();
-    float phi1 = p1.phi();
-
-    float rap2 = p2.y();
-    float phi2 = p2.phi();
-
-    int rapbin1 = static_cast<int>((rap1 - kminrap) / rapbinwidth);
-    int phibin1 = static_cast<int>(phi1 / phibinwidth);
-    int rapbin2 = static_cast<int>((rap2 - kminrap) / rapbinwidth);
-    int phibin2 = static_cast<int>(phi2 / phibinwidth);
+    int phibin1 = static_cast<int>(p1.phi() / phibinwidth);
+    int phibin2 = static_cast<int>(p2.phi() / phibinwidth);
 
     if (rapbin1 >= 0 && rapbin2 >= 0 && phibin1 >= 0 && phibin2 >= 0 && rapbin1 < nrapbins && rapbin2 < nrapbins && phibin1 < nphibins && phibin2 < nphibins) {
 
       int rapphix = rapbin1 * nphibins + phibin1;
       int rapphiy = rapbin2 * nphibins + phibin2;
 
-      histos.fill(HIST(sub_dir_type[mode]) + HIST(sub_dir_hist[hist]), rapphix + 0.5, rapphiy + 0.5);
+      histos.fill(HIST(sub_dir_type[mass_win]) + HIST(sub_dir_hist[part_pair]), rapphix + 0.5, rapphiy + 0.5);
+    }
+  }
+
+  template <ParticleType part, MassWindowType mass_window, typename T>
+  void analyseSingles(T const& track, std::vector<std::vector<float>> v_mass_win)
+  {
+
+    // apply rapidity cut
+    if (cfg_do_eta_analysis) {
+      if (std::abs(track.eta()) > cfg_Rap_Max) {
+        return;
+      }
+    } else {
+      if (std::abs(track.y()) > cfg_Rap_Max) {
+        return;
+      }
+    }
+
+    // apply mass window acceptance
+    if (track.mass() <= v_mass_win[mass_window][kMin] || track.mass() >= v_mass_win[mass_window][kMax]) {
+      return;
+    }
+
+    fillHistos<part>(track);
+    partSingle<part, mass_window>(track);
+  }
+
+  template <ParticlePair part_pair, MassWindowType mass_window, bool same, typename T>
+  void analysePairs(T const& trk_1, T const& trk_2, std::vector<std::vector<float>> v_mass_win)
+  {
+
+    // apply rapidity cut
+    if (cfg_do_eta_analysis) {
+      if (std::abs(trk_1.eta()) > cfg_Rap_Max || std::abs(trk_2.eta()) > cfg_Rap_Max) {
+        return;
+      }
+    } else {
+      if (std::abs(trk_1.y()) > cfg_Rap_Max || std::abs(trk_2.y()) > cfg_Rap_Max) {
+        return;
+      }
+    }
+
+    // apply mass window acceptance
+    if (trk_1.mass() <= v_mass_win[mass_window][kMin] || trk_1.mass() >= v_mass_win[mass_window][kMax]) {
+      return;
+    }
+
+    if (trk_2.mass() <= v_mass_win[mass_window][kMin] || trk_2.mass() >= v_mass_win[mass_window][kMax]) {
+      return;
+    }
+
+    if constexpr (!same) {
+      partPair<part_pair, mass_window>(trk_1, trk_2);
+    } else {
+      if (trk_1.index() != trk_2.index() && trk_1.postrackid() != trk_2.postrackid() && trk_1.negtrackid() != trk_2.negtrackid()) {
+        partPair<part_pair, mass_window>(trk_1, trk_2);
+      }
     }
   }
 
   using Lambda_Collisions = aod::LambdaCollisions;
   using Lambda_Tracks = soa::Filtered<aod::LambdaTracks>;
 
-  Filter trk = (aod::lambdatrack::pt > cfg_Lambda_Pt_Min) && (aod::lambdatrack::pt < cfg_Lambda_Pt_Max) && (nabs(aod::lambdatrack::y) < cfg_Rap_Max);
+  Filter trkPt = (aod::lambdatrack::pt > cfg_Lambda_Pt_Min) && (aod::lambdatrack::pt < cfg_Lambda_Pt_Max);
 
   SliceCache cache;
 
@@ -534,147 +598,38 @@ struct lambdaCorrelationAnalysis {
     histos.fill(HIST("Event/h1d_posz"), collision.posZ());
     histos.fill(HIST("Event/h1d_ft0m_mult_percentile"), collision.cent());
 
-    int nLaP = 0, nLaM = 0, nLa = 0;
-    std::array<float, 2> lambda_mass = static_cast<std::array<float, 2>>(cfg_lambda_mass);
-    std::array<float, 2> lambda_left = static_cast<std::array<float, 2>>(cfg_lambda_left);
-    std::array<float, 2> lambda_right = static_cast<std::array<float, 2>>(cfg_lambda_right);
+    std::vector<std::vector<float>> v_mass_win = {{cfg_lambda_mass_min, cfg_lambda_mass_max}, {cfg_lambda_left_min, cfg_lambda_left_max}, {cfg_lambda_right_min, cfg_lambda_right_max}};
 
     auto lambda_tracks = part_lambda_tracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
     auto anti_lambda_tracks = part_anti_lambda_tracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
 
-    // Lambda
     for (auto const& lambda_1 : lambda_tracks) {
-
-      // Lambda Mass Window
-      if (lambda_1.mass() > lambda_mass[0] && lambda_1.mass() < lambda_mass[1]) {
-        fillHistos<0>(lambda_1);
-        partSingle<0, 0>(lambda_1);
-        ++nLaP;
-        ++nLa;
-
-        // lambda-antilambda
-        for (auto const& antilambda_1 : anti_lambda_tracks) {
-          if (antilambda_1.mass() > lambda_mass[0] && antilambda_1.mass() < lambda_mass[1]) {
-            partPair<0, 0>(lambda_1, antilambda_1);
-          }
-        }
-
-        // lambda-lambda
-        for (auto const& lambda_2 : lambda_tracks) {
-          if ((lambda_2.index() != lambda_1.index()) && (lambda_1.postrackid() != lambda_2.postrackid()) && (lambda_1.negtrackid() != lambda_2.negtrackid())) {
-            if (lambda_2.mass() > lambda_mass[0] && lambda_2.mass() < lambda_mass[1]) {
-              partPair<0, 1>(lambda_1, lambda_2);
-            }
-          }
-        }
+      analyseSingles<kLambda, kCentralWindow>(lambda_1, v_mass_win);
+      analyseSingles<kLambda, kLeftWindow>(lambda_1, v_mass_win);
+      analyseSingles<kLambda, kRightWindow>(lambda_1, v_mass_win);
+      for (auto const& antilambda_2 : anti_lambda_tracks) {
+        analysePairs<kLambdaAntiLambda, kCentralWindow, false>(lambda_1, antilambda_2, v_mass_win);
+        analysePairs<kLambdaAntiLambda, kLeftWindow, false>(lambda_1, antilambda_2, v_mass_win);
+        analysePairs<kLambdaAntiLambda, kRightWindow, false>(lambda_1, antilambda_2, v_mass_win);
       }
 
-      // Lambda Right Sideband
-      if (lambda_1.mass() > lambda_right[0] && lambda_1.mass() < lambda_right[1]) {
-        fillHistos<0>(lambda_1);
-        partSingle<1, 0>(lambda_1);
-
-        // lambda-antilambda
-        for (auto const& antilambda_1 : anti_lambda_tracks) {
-          if (antilambda_1.mass() > lambda_right[0] && antilambda_1.mass() < lambda_right[1]) {
-            partPair<1, 0>(lambda_1, antilambda_1);
-          }
-        }
-
-        // lambda-lambda
-        for (auto const& lambda_2 : lambda_tracks) {
-          if ((lambda_2.index() != lambda_1.index()) && (lambda_1.postrackid() != lambda_2.postrackid()) && (lambda_1.negtrackid() != lambda_2.negtrackid())) {
-            if (lambda_2.mass() > lambda_right[0] && lambda_2.mass() < lambda_right[1]) {
-              partPair<1, 1>(lambda_1, lambda_2);
-            }
-          }
-        }
-      }
-
-      // Lambda Left Sideband
-      if (lambda_1.mass() > lambda_left[0] && lambda_1.mass() < lambda_left[1]) {
-        fillHistos<0>(lambda_1);
-        partSingle<2, 0>(lambda_1);
-
-        // lambda-antilambda
-        for (auto const& antilambda_1 : anti_lambda_tracks) {
-          if (antilambda_1.mass() > lambda_left[0] && antilambda_1.mass() < lambda_left[1]) {
-            partPair<2, 0>(lambda_1, antilambda_1);
-          }
-        }
-
-        // lambda-lambda
-        for (auto const& lambda_2 : lambda_tracks) {
-          if ((lambda_2.index() != lambda_1.index()) && (lambda_1.postrackid() != lambda_2.postrackid()) && (lambda_1.negtrackid() != lambda_2.negtrackid())) {
-            if (lambda_2.mass() > lambda_left[0] && lambda_2.mass() < lambda_left[1]) {
-              partPair<2, 1>(lambda_1, lambda_2);
-            }
-          }
-        }
+      for (auto const& lambda_2 : lambda_tracks) {
+        analysePairs<kLambdaLambda, kCentralWindow, true>(lambda_1, lambda_2, v_mass_win);
+        analysePairs<kLambdaLambda, kLeftWindow, true>(lambda_1, lambda_2, v_mass_win);
+        analysePairs<kLambdaLambda, kRightWindow, true>(lambda_1, lambda_2, v_mass_win);
       }
     }
 
-    // Anti-Lambda
     for (auto const& antilambda_1 : anti_lambda_tracks) {
+      analyseSingles<kAntiLambda, kCentralWindow>(antilambda_1, v_mass_win);
+      analyseSingles<kAntiLambda, kLeftWindow>(antilambda_1, v_mass_win);
+      analyseSingles<kAntiLambda, kRightWindow>(antilambda_1, v_mass_win);
 
-      // Anti-Lambda Mass Window
-      if (antilambda_1.mass() > lambda_mass[0] && antilambda_1.mass() < lambda_mass[1]) {
-        fillHistos<1>(antilambda_1);
-        partSingle<0, 1>(antilambda_1);
-        ++nLaM;
-        ++nLa;
-
-        // antilambda - antilambda
-        for (auto const& antilambda_2 : anti_lambda_tracks) {
-          if ((antilambda_2.index() != antilambda_1.index()) && (antilambda_1.postrackid() != antilambda_2.postrackid()) && (antilambda_1.negtrackid() != antilambda_2.negtrackid())) {
-            if (antilambda_2.mass() > lambda_mass[0] && antilambda_2.mass() < lambda_mass[1]) {
-              partPair<0, 2>(antilambda_1, antilambda_2);
-            }
-          }
-        }
+      for (auto const& antilambda_2 : anti_lambda_tracks) {
+        analysePairs<kAntiLambdaAntiLambda, kCentralWindow, true>(antilambda_1, antilambda_2, v_mass_win);
+        analysePairs<kAntiLambdaAntiLambda, kLeftWindow, true>(antilambda_1, antilambda_2, v_mass_win);
+        analysePairs<kAntiLambdaAntiLambda, kRightWindow, true>(antilambda_1, antilambda_2, v_mass_win);
       }
-
-      // Anti-Lambda Right Sideband
-      if (antilambda_1.mass() > lambda_right[0] && antilambda_1.mass() < lambda_right[1]) {
-        fillHistos<1>(antilambda_1);
-        partSingle<1, 1>(antilambda_1);
-
-        // antilambda - antilambda
-        for (auto const& antilambda_2 : anti_lambda_tracks) {
-          if ((antilambda_2.index() != antilambda_1.index()) && (antilambda_1.postrackid() != antilambda_2.postrackid()) && (antilambda_1.negtrackid() != antilambda_2.negtrackid())) {
-            if (antilambda_2.mass() > lambda_right[0] && antilambda_2.mass() < lambda_right[1]) {
-              partPair<1, 2>(antilambda_1, antilambda_2);
-            }
-          }
-        }
-      }
-
-      // Anti-Lambda Left Sideband
-      if (antilambda_1.mass() > lambda_left[0] && antilambda_1.mass() < lambda_left[1]) {
-        fillHistos<1>(antilambda_1);
-        partSingle<2, 1>(antilambda_1);
-
-        // antilambda - antilambda
-        for (auto const& antilambda_2 : anti_lambda_tracks) {
-          if ((antilambda_2.index() != antilambda_1.index()) && (antilambda_1.postrackid() != antilambda_2.postrackid()) && (antilambda_1.negtrackid() != antilambda_2.negtrackid())) {
-            if (antilambda_2.mass() > lambda_left[0] && antilambda_2.mass() < lambda_left[1]) {
-              partPair<2, 2>(antilambda_1, antilambda_2);
-            }
-          }
-        }
-      }
-    }
-
-    if (nLaP != 0) {
-      histos.fill(HIST("Event/h1d_lambda_multiplicity"), nLaP);
-    }
-
-    if (nLaM != 0) {
-      histos.fill(HIST("Event/h1d_antilambda_multiplicity"), nLaM);
-    }
-
-    if (nLa != 0) {
-      histos.fill(HIST("Event/h1d_lambda_tot_mult"), nLa);
     }
   }
 };
