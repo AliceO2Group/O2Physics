@@ -156,7 +156,8 @@ struct qVectorsTable {
           goto allDetectorsInUse; // Added to break from nested loop if all detectors are in use.
         }
         for (auto det : useDetector) {
-          if (input.matcher.binding == det.first) {
+          std::string table_name_with_vector = det.first; // for replacing s with Vecs at the end.
+          if (input.matcher.binding == det.first || input.matcher.binding == table_name_with_vector.replace(table_name_with_vector.size() - 1, 1, "Vecs")) {
             useDetector[det.first.data()] = true;
             LOGF(info, Form("Using detector: %s.", det.first.data()));
           }
@@ -219,7 +220,7 @@ struct qVectorsTable {
     }
 
     objQvec.clear();
-    for (auto i = 0; i < cfgnMods->size(); i++) {
+    for (std::size_t i = 0; i < cfgnMods->size(); i++) {
       int ind = cfgnMods->at(i);
       fullPath = cfgQvecCalibPath;
       fullPath += "/v";
@@ -522,11 +523,11 @@ struct qVectorsTable {
       cent = 110.;
       IsCalibrated = false;
     }
-    for (auto id = 0; id < cfgnMods->size(); id++) {
+    for (std::size_t id = 0; id < cfgnMods->size(); id++) {
       int ind = cfgnMods->at(id);
       CalQvec(ind, coll, tracks, qvecRe, qvecIm, qvecAmp, TrkBPosLabel, TrkBNegLabel, TrkBTotLabel);
       if (cent < 80) {
-        for (auto i{0u}; i < 6; i++) {
+        for (auto i{0u}; i < kBTot + 1; i++) {
           helperEP.DoRecenter(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 1], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 1],
                               objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
 

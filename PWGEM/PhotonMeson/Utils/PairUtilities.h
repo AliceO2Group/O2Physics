@@ -29,7 +29,7 @@ enum PairType {
   kPCMDalitzEE = 5,
   kPCMDalitzMuMu = 6,
   kPHOSEMC = 7,
-  kDalitzEEDalitzEE = 8,
+  kEEEE = 8, // dielectron-dielectron
   kNpair,
 };
 

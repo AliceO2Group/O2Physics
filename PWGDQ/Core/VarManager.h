@@ -2328,7 +2328,8 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kMass] = v12.M();
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
-  values[kPhi] = v12.Phi();
+  // values[kPhi] = v12.Phi();
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
@@ -2543,7 +2544,8 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kMass] = v12.M();
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
-  values[kPhi] = v12.Phi();
+  // values[kPhi] = v12.Phi();
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
 
   // TODO: provide different computations for vn
@@ -3030,7 +3032,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     values[kMass] = v12.M();
     values[kPt] = v12.Pt();
     values[kEta] = v12.Eta();
-    values[kPhi] = v12.Phi();
+    // values[kPhi] = v12.Phi();
+    values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   } else {
     values[kPt1] = t1.pt();
     values[kEta1] = t1.eta();
