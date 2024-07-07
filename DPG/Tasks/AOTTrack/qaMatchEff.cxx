@@ -3375,7 +3375,6 @@ struct qaMatchEff {
   }
   PROCESS_SWITCH(qaMatchEff, processDataPbPbCent, "process data with centrality info", false);
 
-
   /////////////////////////////////////////////////////////////
   ///   Process data with collision grouping and IU tracks  ///
   /////////////////////////////////////////////////////////////
