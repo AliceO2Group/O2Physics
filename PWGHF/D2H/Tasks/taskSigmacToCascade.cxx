@@ -169,9 +169,8 @@ struct HfTaskSigmacToCascade {
         if (enableTHn) {
           registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
         }
-      } /// Σc0
-
-      else if (candSc.charge() == 2) {
+        /// Σc0
+      } else if (candSc.charge() == 2) {
         massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
         deltaMass = massSc - massLc;
         y = hfHelper.yScPlusPlus(candSc);
