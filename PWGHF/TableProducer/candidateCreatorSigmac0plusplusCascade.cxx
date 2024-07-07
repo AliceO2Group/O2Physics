@@ -10,18 +10,18 @@
 // or submit itself to any jurisdiction.
 
 /// \file candidateCreatorSigmac0plusplusCascade.cxx
-///
-/// \note Task for Σc0,++ → Λc(→ K0sP) + π-,+ analysis
+/// \brief Σc0,++ → Λc(→ K0sP) + π-,+ candidate builder
 /// \note Here the Lc from the cascade channel is obtained using the task taskLcToK0sP.cxx
 /// \author Rutuparna Rath <rrath@cern.ch>, INFN BOLOGNA and GSI Darmstadt
 /// In collaboration with Andrea Alici <aalici@cern.ch>, INFN BOLOGNA
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -33,18 +33,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfCandidateCreatorSigmac0plusplusCascade {
-  Configurable<double> trkMinPt{"trkMinPt", 0.15, "track min pT"};
-  Configurable<double> trkMaxEta{"trkMaxEta", 0.8, "track max Eta"};
-  Configurable<double> maxDCAxyToPVcut{"maxDCAxyToPVcut", 2.0, "Track DCAxy cut to PV Maximum"};
-  Configurable<double> maxDCAzToPVcut{"maxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
-  Configurable<double> nTpcNClsFound{"nTpcNClsFound", 120, "nFindable TPC Clusters"};
-  Configurable<double> nTPCCrossedRows{"nTPCCrossedRows", 70, "nCrossed TPC Rows"};
-  Configurable<double> nTPCChi2{"nTPCChi2", 4.0, "nTPC Chi2 per Cluster"};
-  Configurable<double> nITSChi2{"nITSChi2", 36.0, "nITS Chi2 per Cluster"};
-  Configurable<double> tpcnSigmaPi{"tpcnSigmaPi", 3.0, "TPC nSigma selection"};
+  Configurable<float> trkMinPt{"trkMinPt", 0.15, "track min pT"};
+  Configurable<float> trkMaxEta{"trkMaxEta", 0.8, "track max Eta"};
+  Configurable<float> maxDCAxyToPVcut{"maxDCAxyToPVcut", 2.0, "Track DCAxy cut to PV Maximum"};
+  Configurable<float> maxDCAzToPVcut{"maxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
+  Configurable<float> nTpcNClsFound{"nTpcNClsFound", 120, "nFindable TPC Clusters"};
+  Configurable<float> nTPCCrossedRows{"nTPCCrossedRows", 70, "nCrossed TPC Rows"};
+  Configurable<float> nTPCChi2{"nTPCChi2", 4.0, "nTPC Chi2 per Cluster"};
+  Configurable<float> nITSChi2{"nITSChi2", 36.0, "nITS Chi2 per Cluster"};
+  Configurable<float> tpcnSigmaPi{"tpcnSigmaPi", 3.0, "TPC nSigma selection"};
 
-  /// Table with Σc0,++ info
-  Produces<aod::HfCandScCasBase> rowScCandidates;
   /// Selection of candidates Λc+
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandLcMax{"yCandLcMax", -1., "max. candLc. Lc rapidity"};
@@ -62,6 +60,9 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<bool> addQA{"addQA", true, "Switch for the qa PLOTS"};
+
+  /// Table with Σc0,++ info
+  Produces<aod::HfCandScCasBase> rowScCandidates;
 
   template <typename TrackType>
   bool isTrackSelected(const TrackType& track)
@@ -87,16 +88,17 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
 
     return true;
   }
-
+  HistogramRegistry registry;
   HfHelper hfHelper;
+
   /// Filter the candidate Λc+ used for the Σc0,++ creation
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP ||
                                     aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
 
   using TracksWithPID = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
+
   // slice by hand the assoc. track with the  Λc+ collisionId
   Preslice<TracksWithPID> trackIndicesPerCollision = aod::track::collisionId;
-  HistogramRegistry registry;
 
   void init(InitContext&)
   {
@@ -188,13 +190,17 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
 
   /// @param tracks are the tracks (with dcaXY, dcaZ information) → soft-pion candidate tracks
   /// @param candidatesLc are 2-prong candidates satisfying the analysis selections for Λc+ → Ks0P (and charge conj.)
-  void processData(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>> const& candidates,
-                   aod::Collisions const&, TracksWithPID const& tracks, aod::V0s const&)
+  void processData(soa::Filtered<soa::Join<aod::HfCandCascExt,
+                                           aod::HfSelLcToK0sP>> const& candidates,
+                   aod::Collisions const&,
+                   TracksWithPID const& tracks,
+                   aod::V0s const&)
   {
     for (const auto& candidateLc : candidates) {
       /// slice the tracks based on the collisionId
       const auto& tracksInThisCollision = tracks.sliceBy(trackIndicesPerCollision, candidateLc.collision().globalIndex());
-      int chargeLc = candidateLc.prong0_as<TracksWithPID>().sign(); // Lc charge depends on its bach charge (here it is proton)
+      const auto& bachProton = candidateLc.prong0_as<TracksWithPID>();
+      int chargeLc = bachProton.sign(); // Lc charge depends on its bach charge (here it is proton)
 
       auto ptCand = candidateLc.pt();
       auto eta = candidateLc.eta();
@@ -275,21 +281,28 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
         registry.fill(HIST("lc/hCtCand"), ctLc);
         registry.fill(HIST("lc/hCtCandVsPtCand"), ctLc, ptCand);
       }
-      if (std::abs(invMassLcToK0sP - MassLambdaCPlus) > cutsMassLcMax)
+      if (std::abs(invMassLcToK0sP - MassLambdaCPlus) > cutsMassLcMax) {
         continue;
+      }
       registry.fill(HIST("candidateStat"), 1);
       auto K0short = candidateLc.v0_as<o2::aod::V0s>(); // get the soft pions for the given collId
       auto pos = K0short.template posTrack_as<TracksWithPID>();
       auto neg = K0short.template negTrack_as<TracksWithPID>();
       for (const auto& trackSoftPi : tracksInThisCollision) {
         int chargeSoftPi = trackSoftPi.sign();
-        if (chargeSoftPi == pos.sign() && trackSoftPi.globalIndex() == pos.globalIndex())
+        if (chargeSoftPi == pos.sign() && trackSoftPi.globalIndex() == pos.globalIndex()) {
           continue;
-        if (chargeSoftPi == neg.sign() && trackSoftPi.globalIndex() == neg.globalIndex())
+        }
+        if (chargeSoftPi == neg.sign() && trackSoftPi.globalIndex() == neg.globalIndex()) {
           continue;
+        }
+        if (chargeSoftPi == bachProton.sign() && trackSoftPi.globalIndex() == bachProton.globalIndex()) {
+          continue;
+        }
         registry.fill(HIST("candidateStat"), 2);
-        if (!isTrackSelected(trackSoftPi))
-          return;
+        if (!isTrackSelected(trackSoftPi)) {
+          continue;
+        }
         registry.fill(HIST("candidateStat"), 3);
 
         /// fill histograms for softpion
@@ -318,15 +331,15 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   }
   PROCESS_SWITCH(HfCandidateCreatorSigmac0plusplusCascade, processData, "Process Data", true);
 };
-struct HfCandidateCreatorSigmac0plusplusCascadeMC {
+struct HfCandidateCreatorSigmac0plusplusCascadeExpressions {
   Spawns<aod::HfCandScCasExt> candidatesSigmac;
-  void processData(aod::Tracks const&) {}
-  PROCESS_SWITCH(HfCandidateCreatorSigmac0plusplusCascadeMC, processData, "Process MC tracks", true);
+  void processMc(aod::Tracks const&) {}
+  PROCESS_SWITCH(HfCandidateCreatorSigmac0plusplusCascadeExpressions, processMc, "Process MC tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HfCandidateCreatorSigmac0plusplusCascade>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorSigmac0plusplusCascadeMC>(cfgc)};
+    adaptAnalysisTask<HfCandidateCreatorSigmac0plusplusCascadeExpressions>(cfgc)};
 }

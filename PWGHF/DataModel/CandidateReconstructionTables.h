@@ -1673,7 +1673,7 @@ DECLARE_SOA_TABLE(HfCandScMcGen, "AOD", "HFCANDSCMCGEN", //!
                   hf_cand::IdxBhadMotherPart);
 
 // specific Σc0,++ candidate properties in cascade channel
-namespace hf_cand_sigmac_cascade
+namespace hf_cand_sigmac_to_cascade
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngLc, prongLc, int, HfCandCascade, "");               //! Index to a Lc prong
 DECLARE_SOA_COLUMN(Charge, charge, int8_t);                                            //! // Σc charge(either 0 or ++)
@@ -1686,7 +1686,7 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction l
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
-} // namespace hf_cand_sigmac_cascade
+} // namespace hf_cand_sigmac_to_cascade
 
 // declare dedicated Σc0,++ decay candidate table
 // NB: no topology for Σc0,++ (strong decay)
@@ -1697,13 +1697,13 @@ DECLARE_SOA_TABLE(HfCandScCasBase, "AOD", "HFCANDSCCASBASE",
                   // 2-prong specific columns
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
-                  hf_cand_sigmac_cascade::ProngLcId, hf_track_index::Prong1Id,
-                  hf_cand_sigmac_cascade::ChargeLc,
-                  hf_cand_sigmac_cascade::ChargeSoftPi,
+                  hf_cand_sigmac_to_cascade::ProngLcId, hf_track_index::Prong1Id,
+                  hf_cand_sigmac_to_cascade::ChargeLc,
+                  hf_cand_sigmac_to_cascade::ChargeSoftPi,
                   // hf_track_index::HFflag,
                   /* Σc0,++ specific columns */
-                  hf_cand_sigmac_cascade::Charge,
-                  // hf_cand_sigmac_cascade::StatusSpreadLcMinvKs0PFromPDG,
+                  hf_cand_sigmac_to_cascade::Charge,
+                  // hf_cand_sigmac_to_cascade::StatusSpreadLcMinvKs0PFromPDG,
                   /* prong 0 */
                   hf_cand::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
                   hf_cand::Pt2Prong0<hf_cand::PxProng0, hf_cand::PyProng0>,

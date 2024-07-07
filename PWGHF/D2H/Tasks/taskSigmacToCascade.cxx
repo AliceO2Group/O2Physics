@@ -10,19 +10,18 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskSigmacToCascade.cxx
-///
-/// \note Task for Σc0,++ → Λc(→ K0sP) + π-,+ analysis
+/// \brieff Task for Σc0,++ → Λc(→ K0sP) + π-,+ analysis
 /// \note Here the Lc from the cascade channel is obtained using the task taskLcToK0sP.cxx
 /// \author Rutuparna Rath <rrath@cern.ch>, INFN BOLOGNA and GSI Darmstadt
 /// In collaboration with Andrea Alici <aalici@cern.ch>, INFN BOLOGNA
 
-#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -32,12 +31,12 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct HfTaskSigmacInCascade {
+struct HfTaskSigmacToCascade {
 
   Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Σc0, Σc++  and Σc0,++"};
   Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
   Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
-  Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
+  Configurable<float> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {16, 0, 16}, ""};
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
@@ -46,15 +45,19 @@ struct HfTaskSigmacInCascade {
   ConfigurableAxis thnConfigAxisCPAXY{"thnConfigAxisCPAXY", {20, 0.8, 1}, ""};
   ConfigurableAxis configAxisMassLambdaC{"configAxisMassLambdaC", {600, 1.98, 2.58}, ""};
   ConfigurableAxis configAxisDeltaMassSigmaC{"configAxisDeltaMassSigmaC", {200, 0.13, 0.23}, ""};
-  Configurable<double> nSigmaSoftPi{"pionNSigma", 3., "NSigma TPC selection"};
+  Configurable<float> nSigmaSoftPi{"pionNSigma", 3., "NSigma TPC selection"};
   ConfigurableAxis configAxisChargeSigmaC{"configAxisChargeSigmaC", {3, 0, 3}, "charge of SigmaC"};
+
   HfHelper hfHelper;
+
   /// Filter the candidate Λc+ used for the Σc0,++ creation
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP ||
                                     aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
+
   using RecoLc = soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>>;
 
   HistogramRegistry registry{"registry"};
+
   void init(InitContext& context)
   {
     // axes
@@ -124,20 +127,20 @@ struct HfTaskSigmacInCascade {
     }
   }
 
-  void processSigmaCToLcPi(aod::HfCandScCascades const& candScs,
+  void processSigmacToLcPi(aod::HfCandScCascades const& candScs,
                            RecoLc const& candidatesLc,
                            aod::Tracks const&)
   {
-    for (auto& candSc : candScs) {
+    for (const auto& candSc : candScs) {
       const auto& candidateLc = candSc.prongLc_as<RecoLc>();
-      double massSc(-1.), massLc(-1.), deltaMass(-1.);
-      double ptSc(candSc.pt()), ptLc(candidateLc.pt());
-      double etaSc(candSc.eta()) /*, etaLc(candidateLc.eta())*/;
-      double phiSc(candSc.phi()) /*, phiLc(candidateLc.phi())*/;
-      double ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
+      float massSc(-1.), massLc(-1.), deltaMass(-1.);
+      float ptSc(candSc.pt()), ptLc(candidateLc.pt());
+      float etaSc(candSc.eta()) /*, etaLc(candidateLc.eta())*/;
+      float phiSc(candSc.phi()) /*, phiLc(candidateLc.phi())*/;
+      float ptSoftPi(candSc.prong1().pt()), etaSoftPi(candSc.prong1().eta()), phiSoftPi(candSc.prong1().phi());
       double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
-      double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
-      double y(-1.);
+      float cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
+      float y(-1.);
 
       massLc = hfHelper.invMassLcToK0sP(candidateLc);
       if (candSc.charge() == 0) {
@@ -148,12 +151,12 @@ struct HfTaskSigmacInCascade {
         registry.fill(HIST("Data/hDeltaMassSc0VsPt"), deltaMass, ptSc);         /// Σc0
         registry.fill(HIST("Data/hEtaSc0"), etaSc);                             /// Σc0
         registry.fill(HIST("Data/hPhiSc0"), phiSc);                             /// Σc0
-        registry.fill(HIST("Data/hDeltaMassSc0PlusPlus"), deltaMass);           /// Σc0,++
-        registry.fill(HIST("Data/hDeltaMassSc0PlusPlusVsPt"), deltaMass, ptSc); /// Σc0, ++
-        registry.fill(HIST("Data/hEtaSc0PlusPlus"), etaSc);                     /// Σc0,++
-        registry.fill(HIST("Data/hEtaSc0PlusPlusVsPt"), etaSc, ptSc);           /// Σc0, ++
-        registry.fill(HIST("Data/hYSc0PlusPlusVsPt"), y, ptSc);                 /// Σc0, ++
-        registry.fill(HIST("Data/hPhiSc0PlusPlus"), phiSc);                     /// Σc0,++
+        registry.fill(HIST("Data/hDeltaMassSc0PlusPlus"), deltaMass);           /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hDeltaMassSc0PlusPlusVsPt"), deltaMass, ptSc); /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hEtaSc0PlusPlus"), etaSc);                     /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hEtaSc0PlusPlusVsPt"), etaSc, ptSc);           /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hYSc0PlusPlusVsPt"), y, ptSc);                 /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hPhiSc0PlusPlus"), phiSc);                     /// Σc(0,++) for both charges
 
         /// fill histograms for softpion
         registry.fill(HIST("Data/hPtSoftPiSc0"), ptSoftPi);
@@ -168,7 +171,7 @@ struct HfTaskSigmacInCascade {
         }
       } /// Σc0
 
-      if (candSc.charge() == 2) {
+      else if (candSc.charge() == 2) {
         massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
         deltaMass = massSc - massLc;
         y = hfHelper.yScPlusPlus(candSc);
@@ -176,12 +179,12 @@ struct HfTaskSigmacInCascade {
         registry.fill(HIST("Data/hDeltaMassScPlusPlusVsPt"), deltaMass, ptSc);  /// Σc++
         registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);                      /// Σc++
         registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);                      /// Σc++
-        registry.fill(HIST("Data/hDeltaMassSc0PlusPlus"), deltaMass);           /// Σc0,++
-        registry.fill(HIST("Data/hDeltaMassSc0PlusPlusVsPt"), deltaMass, ptSc); /// Σc0,++
-        registry.fill(HIST("Data/hEtaSc0PlusPlus"), etaSc);                     /// Σc0,++
-        registry.fill(HIST("Data/hEtaSc0PlusPlusVsPt"), etaSc, ptSc);           /// Σc0, ++
-        registry.fill(HIST("Data/hYSc0PlusPlusVsPt"), y, ptSc);                 /// Σc0, ++
-        registry.fill(HIST("Data/hPhiSc0PlusPlus"), phiSc);                     /// Σc0,++
+        registry.fill(HIST("Data/hDeltaMassSc0PlusPlus"), deltaMass);           /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hDeltaMassSc0PlusPlusVsPt"), deltaMass, ptSc); /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hEtaSc0PlusPlus"), etaSc);                     /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hEtaSc0PlusPlusVsPt"), etaSc, ptSc);           /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hYSc0PlusPlusVsPt"), y, ptSc);                 /// Σc(0,++) for both charges
+        registry.fill(HIST("Data/hPhiSc0PlusPlus"), phiSc);                     /// Σc(0,++) for both charges
 
         /// fill histograms for softpion
         registry.fill(HIST("Data/hPtSoftPiScPlusPlus"), ptSoftPi);
@@ -197,10 +200,10 @@ struct HfTaskSigmacInCascade {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskSigmacInCascade, processSigmaCToLcPi, "Process Data", true);
+  PROCESS_SWITCH(HfTaskSigmacToCascade, processSigmacToLcPi, "Process Data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskSigmacInCascade>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskSigmacToCascade>(cfgc)};
 }
