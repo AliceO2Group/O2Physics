@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskSigmacToCascade.cxx
-/// \brieff Task for Σc0,++ → Λc(→ K0sP) + π-,+ analysis
+/// \brief Task for Σc0,++ → Λc(→ K0sP) + π-,+ analysis
 /// \note Here the Lc from the cascade channel is obtained using the task taskLcToK0sP.cxx
 /// \author Rutuparna Rath <rrath@cern.ch>, INFN BOLOGNA and GSI Darmstadt
 /// In collaboration with Andrea Alici <aalici@cern.ch>, INFN BOLOGNA
