@@ -51,12 +51,9 @@ struct AssociateMCInfoPhoton {
   Produces<o2::aod::BinnedGenPts> binned_gen_pt;
 
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
-  Configurable<float> max_rxy_gen{"max_rxy_gen", 100, "max rxy to store generated information"};
-  Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", 1.2, "max rapidity Y to store generated information"};   // smearing might be applied at analysis stage. set wider value.
-  Configurable<float> min_eta_gen_primary_fwd{"min_eta_gen_primary_fwd", -4.5, "min eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
-  Configurable<float> max_eta_gen_primary_fwd{"max_eta_gen_primary_fwd", -2.0, "max eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
   Configurable<float> max_eta_gen_secondary{"max_eta_gen_secondary", 0.9, "max eta to store generated information"};
   Configurable<float> margin_z_gen{"margin_z_gen", 15.f, "margin for Z of true photon conversion point to store generated information"};
+  Configurable<float> max_rxy_gen{"max_rxy_gen", 100, "max rxy to store generated information"};
 
   HistogramRegistry registry{"EMMCEvent"};
 
@@ -174,6 +171,48 @@ struct AssociateMCInfoPhoton {
       }
 
       mceventlabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
+
+      for (auto& mctrack : groupedMcTracks) { // store necessary information for denominator of efficiency
+        if (mctrack.pt() < 1e-3 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
+          continue;
+        }
+        int pdg = mctrack.pdgCode();
+        if (abs(pdg) > 1e+9) {
+          continue;
+        }
+
+        // Note that pi0 from weak decay gives producedByGenerator() = false
+        // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
+
+        if (abs(pdg) == 11 && mctrack.has_mothers() && !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) { // secondary electrons. i.e. ele/pos from photon conversions.
+          int motherid = mctrack.mothersIds()[0];                                                                         // first mother index
+          auto mp = mcTracks.iteratorAt(motherid);
+
+          if (sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen_secondary))) - margin_z_gen) {
+            continue;
+          }
+
+          if (mp.pdgCode() == 22 && (mp.isPhysicalPrimary() || mp.producedByGenerator()) && abs(mp.eta()) < max_eta_gen_secondary) {
+            // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+            if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) { // store electron information. !!Not photon!!
+              fNewLabels[mctrack.globalIndex()] = fCounters[0];
+              fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+              // fMCFlags[mctrack.globalIndex()] = mcflags;
+              fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+              fCounters[0]++;
+            }
+
+            // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+            if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) { // store conversion photon
+              fNewLabels[mp.globalIndex()] = fCounters[0];
+              fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+              // fMCFlags[mp.globalIndex()] = mcflags;
+              fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+              fCounters[0]++;
+            }
+          }
+        }
+      } // end of mc track loop
 
     } // end of rec. collision loop
 
