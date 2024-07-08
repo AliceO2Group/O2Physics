@@ -87,10 +87,15 @@ struct qaMatchEff {
   Configurable<bool> isPbPb{"isPbPb", false, "Boolean to tag if the data is PbPb collisions. If false, it is pp"};
   Configurable<bool> isEnableEventSelection{"isEnableEventSelection", true, "Boolean to switch the event selection on/off."};
   Configurable<bool> isCentralityRequired{"isCentralityRequired", false, "Boolean to switch the centrality selection on/off."};
+  Configurable<bool> isEnableOccupancyCut{"isEnableOccupancyCut", false, "Boolean to switch the occupancy cut on/off."};
   struct : ConfigurableGroup {
     Configurable<float> centralityMinCut{"centralityMinCut", 0.0f, "Minimum centrality"};
     Configurable<float> centralityMaxCut{"centralityMaxCut", 100.0f, "Maximum centrality"};
   } centralityCuts;
+  struct : ConfigurableGroup {
+    Configurable<int> minTracksInTimeRange{"minTracksInTimeRange", 0, "Minimum number of tracks in the time range"};
+    Configurable<int> maxTracksInTimeRange{"maxTracksInTimeRange", 1000, "Maximum number of tracks in the time range"};
+  } occupancyCuts;
   //
   // Track selections
   Configurable<bool> isUseTPCinnerWallPt{"isUseTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
@@ -335,6 +340,7 @@ struct qaMatchEff {
     // histos.add("data/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     // histos.add("data/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("data/control/centrality", "Centrality distribution;centrality [%]", kTH1D, {{100, 0.0, 100.0}}, true);
+    histos.add("data/control/occupancy", "Number of tracks in time range;N_{tracks}", kTH1D, {{5000, 0.0, 50000.0}}, true);
     //
     //
     if (!makehistos)
@@ -1420,6 +1426,9 @@ struct qaMatchEff {
       histos.fill(HIST("data/control/chi2Prim"), coll.chi2());
       if constexpr (requires { coll.centFT0C(); }) {
         histos.fill(HIST("data/control/centrality"), coll.centFT0C());
+      }
+      if constexpr (requires { coll.trackOccupancyInTimeRange(); }) {
+        histos.fill(HIST("data/control/occupancy"), coll.trackOccupancyInTimeRange());
       }
     }
     return;
@@ -3345,11 +3354,19 @@ struct qaMatchEff {
         LOGF(info, "Event selection not passed, skipping...");
       return;
     }
-    float centrality = collision.centFT0C();
+    const float centrality = collision.centFT0C();
+    const int occupancy = collision.trackOccupancyInTimeRange();
     if (isCentralityRequired) {
       if (centrality < centralityCuts.centralityMinCut || centrality > centralityCuts.centralityMaxCut) {
         if (doDebug)
           LOGF(info, "Centrality not in the range, skipping...");
+        return;
+      }
+    }
+    if (isEnableOccupancyCut) {
+      if (occupancy < occupancyCuts.minTracksInTimeRange || occupancy > occupancyCuts.maxTracksInTimeRange) {
+        if (doDebug)
+          LOGF(info, "Occupancy not in the range, skipping...");
         return;
       }
     }
