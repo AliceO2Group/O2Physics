@@ -127,7 +127,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting) false positive: https://github.com/cpplint/cpplint/issues/131
 {
   TComplex corr[kNH][nKL];
   TComplex ncorr[kNH][nKL];
@@ -311,7 +311,7 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
+void JFFlucAnalysis::Terminate(Option_t* /*popt*/) // NOLINT(readability/casting) false positive: https://github.com/cpplint/cpplint/issues/131
 {
   //
 }
