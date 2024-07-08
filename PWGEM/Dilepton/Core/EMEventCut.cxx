@@ -14,7 +14,7 @@
 //
 
 #include "Framework/Logger.h"
-#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/Core/EMEventCut.h"
 
 ClassImp(EMEventCut);
 

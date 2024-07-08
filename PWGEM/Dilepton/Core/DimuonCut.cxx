@@ -14,7 +14,7 @@
 //
 
 #include "Framework/Logger.h"
-#include "PWGEM/PhotonMeson/Core/DimuonCut.h"
+#include "PWGEM/Dilepton/Core/DimuonCut.h"
 
 ClassImp(DimuonCut);
 

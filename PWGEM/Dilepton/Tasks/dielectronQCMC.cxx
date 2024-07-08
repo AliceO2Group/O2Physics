@@ -31,12 +31,11 @@
 #include "Common/Core/trackUtilities.h"
 #include "DCAFitter/DCAFitterN.h"
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
-#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
-#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Core/DielectronCut.h"
+#include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+#include "PWGEM/Dilepton/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
@@ -45,9 +44,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::pwgem::mcutil;
-using namespace o2::aod::pwgem::photon;
-using namespace o2::aod::pwgem::dilepton::mcutil;
+using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels>;
@@ -90,7 +87,7 @@ struct dielectronQCMC {
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
   } eventcuts;
 
-  DalitzEECut fDileptonCut;
+  DielectronCut fDileptonCut;
   struct : ConfigurableGroup {
     std::string prefix = "dileptoncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
@@ -114,7 +111,7 @@ struct dielectronQCMC {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
 
-    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
+    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
@@ -159,7 +156,7 @@ struct dielectronQCMC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
+    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
 
     const AxisSpec axis_mass{ConfMeeBins, "m_{ee} (GeV/c^{2})"};
     const AxisSpec axis_pt{ConfPteeBins, "p_{T,ee} (GeV/c)"};
@@ -338,7 +335,7 @@ struct dielectronQCMC {
 
   void DefineDileptonCut()
   {
-    fDileptonCut = DalitzEECut("fDileptonCut", "fDileptonCut");
+    fDileptonCut = DielectronCut("fDileptonCut", "fDileptonCut");
 
     // for pair
     fDileptonCut.SetMeeRange(dileptoncuts.cfg_min_mass, dileptoncuts.cfg_max_mass);
@@ -371,7 +368,7 @@ struct dielectronQCMC {
     fDileptonCut.SetTPCNsigmaPrRange(dileptoncuts.cfg_min_TPCNsigmaPr, dileptoncuts.cfg_max_TPCNsigmaPr);
     fDileptonCut.SetTOFNsigmaElRange(dileptoncuts.cfg_min_TOFNsigmaEl, dileptoncuts.cfg_max_TOFNsigmaEl);
 
-    if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
+    if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
       if (dileptoncuts.loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
@@ -469,7 +466,7 @@ struct dielectronQCMC {
   template <typename TCollision, typename TTrack1, typename TTrack2, typename TMCParticles>
   bool fillTruePairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TMCParticles const& mcparticles)
   {
-    if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) {
+    if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
       if (!fDileptonCut.IsSelectedTrack<true>(t1, collision) || !fDileptonCut.IsSelectedTrack<true>(t2, collision)) {
         return false;
       }
@@ -508,7 +505,7 @@ struct dielectronQCMC {
     float dca_t1_3d = dca3DinSigma(t1);
     float dca_t2_3d = dca3DinSigma(t2);
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
-    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
     if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);
@@ -741,11 +738,16 @@ struct dielectronQCMC {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
+      bool is_sel8_by_hand = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+      if (is_sel8_by_hand != collision.sel8()) {
+        LOGF(info, "collision.sel8() = %d, is_sel8_by_hand = %d", collision.sel8(), is_sel8_by_hand);
+      }
+
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
