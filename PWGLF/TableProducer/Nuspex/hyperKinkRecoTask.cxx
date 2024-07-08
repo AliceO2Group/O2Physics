@@ -369,11 +369,11 @@ struct hyperKinkRecoTask {
         continue;
 
       int pdgHypo = isHyp ? hyperPdg : tritDauPdg;
-
+      // LOG(info) << "Appending track cand with pdg hypo: " << pdgHypo;
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
     auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
-    LOG(debug) << "SV pool size: " << kinkPool.size();
+    LOG(info) << "SV pool size: " << kinkPool.size();
 
     for (auto& svCand : kinkPool) {
 
@@ -382,7 +382,7 @@ struct hyperKinkRecoTask {
       auto trackHyper = tracks.rawIteratorAt(svCand.tr0Idx);
       auto trackTrit = tracks.rawIteratorAt(svCand.tr1Idx);
 
-      auto const& collision = trackHyper.template collision_as<CollisionsFull>();
+      auto const& collision = trackHyper.template collision_as<Tcolls>();
       o2::dataformats::VertexBase primaryVertex;
       primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
       primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
@@ -492,6 +492,7 @@ struct hyperKinkRecoTask {
       if (mcLabHyper.has_mcParticle() && mcLabTrit.has_mcParticle()) {
         auto mcTrackHyper = mcLabHyper.mcParticle_as<aod::McParticles>();
         auto mcTrackTrit = mcLabTrit.mcParticle_as<aod::McParticles>();
+        // LOG(info) << "Hyper PDG: " << mcTrackHyper.pdgCode() << " Triton PDG: " << mcTrackTrit.pdgCode();
 
         if (abs(mcTrackHyper.pdgCode()) != hyperPdg || abs(mcTrackTrit.pdgCode()) != tritDauPdg) {
           continue;
@@ -600,7 +601,20 @@ struct hyperKinkRecoTask {
 
     selectGoodCollisionsMC(collisions);
     fillCandidateData(collisions, tracks, ambiTracks, bcs);
+
+    // crosscheck: loop over svcandpool and look for the corresponding MC particles
+    auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
+    for (auto& svCand : kinkPool) {
+      auto trackHyper = tracks.rawIteratorAt(svCand.tr0Idx);
+      auto trackTrit = tracks.rawIteratorAt(svCand.tr1Idx);
+      auto mcLabelHyper = trackLabelsMC.rawIteratorAt(trackHyper.globalIndex());
+      auto mcLabelTrit = trackLabelsMC.rawIteratorAt(trackTrit.globalIndex());
+      auto mcPart = mcLabelHyper.mcParticle_as<aod::McParticles>();
+      auto mcPartTrit = mcLabelTrit.mcParticle_as<aod::McParticles>();
+      LOG(info) << "Hyper PDG: " << mcPart.pdgCode() << " Triton PDG: " << mcPartTrit.pdgCode();
+    }
     fillMCinfo(trackLabelsMC, particlesMC);
+    LOG(info) << "Kink cand size: " << kinkCandidates.size();
 
     std::vector<int> mcToKinkCandidates;
     mcToKinkCandidates.resize(particlesMC.size(), -1);
@@ -644,6 +658,7 @@ struct hyperKinkRecoTask {
       kinkCand.isSignal = true;
       kinkCandidates.push_back(kinkCand);
       mcToKinkCandidates[hyperMCIndex] = kinkCandidates.size() - 1;
+      LOG(info) << "Gen Pt: " << std::sqrt(momMother[0] * momMother[0] + momMother[1] * momMother[1]) << ", gen Radius: " << std::sqrt(secVtx[0] * secVtx[0] + secVtx[1] * secVtx[1]);
     }
 
     // look for hypertriton or triton tracks, findable part!
@@ -651,9 +666,11 @@ struct hyperKinkRecoTask {
       auto mcLabel = trackLabelsMC.rawIteratorAt(track.globalIndex());
       if (mcLabel.has_mcParticle()) {
         auto mcTrack = mcLabel.mcParticle_as<aod::McParticles>();
-        if (mcToKinkCandidates[mcTrack.globalIndex()] < 0 || !track.hasITS()) {
+        if (mcToKinkCandidates[mcTrack.globalIndex()] < 0) {
           continue;
         }
+        LOG(info) << "MC track found, trackId: " << track.globalIndex() << " MC trackId: " << mcTrack.globalIndex() << " pt: " << track.pt() << " mcMask: " << mcLabel.mcMask() << "PDG: " << mcTrack.pdgCode();
+        LOG(info) << "track has ITS: " << track.hasITS() << " has TPC: " << track.hasTPC() << " has TOF: " << track.hasTOF();
         auto& kinkCand = kinkCandidates[mcToKinkCandidates[mcTrack.globalIndex()]];
         kinkCand.mcMask = mcLabel.mcMask();
         kinkCand.itsPt = track.pt();
