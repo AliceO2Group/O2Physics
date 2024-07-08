@@ -59,7 +59,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-  Configurable<float> max_mean_itsob_cluster_size{"max_mean_itsob_cluster_size", 16.f, "max. <ITSob cluster size> x cos(lambda)"}; // this is to suppress random combination. default 4 + 1 for skimming.
   Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
@@ -67,11 +66,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<float> maxeta{"maxeta", 0.8, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 0.1, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 0.1, "max DCAz in cm"};
-  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1e+10, "max DCA 3D in sigma"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.5, "max. TPC n sigma for pion exclusion"};
-  Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -1e+10 for nominalB
+  Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"};
   Configurable<float> maxMee_lowPtee{"maxMee_lowPtee", 0.02, "max. mee to store dalitz ee pairs for recovery"};
   Configurable<float> maxMee_highPtee{"maxMee_highPtee", 0.04, "max. mee to store dalitz ee pairs for recovery"};
 
@@ -98,11 +96,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
     fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {20, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
-    fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
     fRegistry.add("Track/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
     fRegistry.add("Track/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
-    fRegistry.add("Track/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
-    fRegistry.add("Track/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
     fRegistry.add("Track/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
     fRegistry.add("Track/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
     fRegistry.add("Track/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
@@ -114,7 +109,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
     fRegistry.add("Pair/hMeePtee_ULS", "mee vs. pTee for dalitz ee ULS;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {100, 0, 10}}, false);
   }
 
@@ -188,19 +182,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
-    uint32_t itsClusterSizes = track.itsClusterSizes();
-    int total_cluster_size = 0, nl = 0;
-    for (unsigned int layer = 3; layer < 7; layer++) {
-      int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
-      if (cluster_size_per_layer > 0) {
-        nl++;
-      }
-      total_cluster_size += cluster_size_per_layer;
-    }
-    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_itsob_cluster_size) {
-      return false;
-    }
-
     if (track.tpcNClsFound() < min_ncluster_tpc) {
       return false;
     }
@@ -213,32 +194,11 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
-    gpu::gpustd::array<float, 2> dcaInfo;
-    auto track_par_cov_recalc = getTrackParCov(track);
-    track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    getPxPyPz(track_par_cov_recalc, pVec_recalc);
-    float dcaXY = dcaInfo[0];
-    float dcaZ = dcaInfo[1];
-
-    if (abs(dcaXY) > dca_xy_max || abs(dcaZ) > dca_z_max) {
+    if (abs(track.dcaXY()) > dca_xy_max || abs(track.dcaZ()) > dca_z_max) {
       return false;
     }
 
-    if (track_par_cov_recalc.getPt() < minpt || abs(track_par_cov_recalc.getEta()) > maxeta) {
-      return false;
-    }
-
-    float dca_3d = 999.f;
-    float det = track_par_cov_recalc.getSigmaY2() * track_par_cov_recalc.getSigmaZ2() - track_par_cov_recalc.getSigmaZY() * track_par_cov_recalc.getSigmaZY();
-    if (det < 0) {
-      dca_3d = 999.f;
-    } else {
-      float chi2 = (dcaXY * dcaXY * track_par_cov_recalc.getSigmaZ2() + dcaZ * dcaZ * track_par_cov_recalc.getSigmaY2() - 2. * dcaXY * dcaZ * track_par_cov_recalc.getSigmaZY()) / det;
-      dca_3d = std::sqrt(std::abs(chi2) / 2.);
-    }
-    if (dca_3d > dca_3d_sigma_max) {
+    if (track.pt() < minpt || abs(track.eta()) > maxeta) {
       return false;
     }
 
@@ -261,47 +221,19 @@ struct skimmerPrimaryElectronFromDalitzEE {
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
-      gpu::gpustd::array<float, 2> dcaInfo;
-      auto track_par_cov_recalc = getTrackParCov(track);
-      track_par_cov_recalc.setPID(o2::track::PID::Electron);
-      std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-      getPxPyPz(track_par_cov_recalc, pVec_recalc);
-      float dcaXY = dcaInfo[0];
-      float dcaZ = dcaInfo[1];
-
-      float pt_recalc = track_par_cov_recalc.getPt();
-      float eta_recalc = track_par_cov_recalc.getEta();
-      float phi_recalc = track_par_cov_recalc.getPhi();
-
-      // bool isAssociatedToMPC = collision.globalIndex() == track.collisionId();
-
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
-                         pt_recalc, eta_recalc, phi_recalc, dcaXY, dcaZ,
+                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(),
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
                          track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), track.tgl());
 
-      uint32_t itsClusterSizes = track.itsClusterSizes();
-      int total_cluster_size = 0, nl = 0;
-      for (unsigned int layer = 3; layer < 7; layer++) {
-        int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
-        if (cluster_size_per_layer > 0) {
-          nl++;
-        }
-        total_cluster_size += cluster_size_per_layer;
-      }
-
-      fRegistry.fill(HIST("Track/hPt"), pt_recalc);
-      fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / pt_recalc);
-      fRegistry.fill(HIST("Track/hEtaPhi"), phi_recalc, eta_recalc);
-      fRegistry.fill(HIST("Track/hDCAxyz"), dcaXY, dcaZ);
-      fRegistry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / sqrt(track_par_cov_recalc.getSigmaY2()), dcaZ / sqrt(track_par_cov_recalc.getSigmaZ2()));
-      fRegistry.fill(HIST("Track/hDCAxy_Pt"), pt_recalc, dcaXY);
-      fRegistry.fill(HIST("Track/hDCAz_Pt"), pt_recalc, dcaZ);
-      fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt_recalc, sqrt(track_par_cov_recalc.getSigmaY2()) * 1e+4); // convert cm to um
-      fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt_recalc, sqrt(track_par_cov_recalc.getSigmaZ2()) * 1e+4);  // convert cm to um
+      fRegistry.fill(HIST("Track/hPt"), track.pt());
+      fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
+      fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
+      fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
+      fRegistry.fill(HIST("Track/hDCAxy_Pt"), track.pt(), track.dcaXY());
+      fRegistry.fill(HIST("Track/hDCAz_Pt"), track.pt(), track.dcaZ());
       fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
       fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
       fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
@@ -310,7 +242,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
       fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
       fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
       fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-      fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
       fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
