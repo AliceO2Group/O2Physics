@@ -106,9 +106,9 @@ struct FilterCF {
       return collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
     } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of the collisions which have other events nearby
       int occupancy = collision.trackOccupancyInTimeRange();
-      if (occupancy >= 0 && occupancy < 500) {
+      if (occupancy >= 0 && occupancy < 500)
         return collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard);
-      } else
+      else
         return false;
     }
     return false;
