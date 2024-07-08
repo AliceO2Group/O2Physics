@@ -59,6 +59,7 @@ struct correlateStrangeness {
   Configurable<bool> doCorrelationOmegaMinus{"doCorrelationOmegaMinus", false, "do OmegaMinus correlation"};
   Configurable<bool> doCorrelationOmegaPlus{"doCorrelationOmegaPlus", false, "do OmegaPlus correlation"};
   Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
+  Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
   Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
   Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
   Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
@@ -650,6 +651,9 @@ struct correlateStrangeness {
     if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
       return;
     }
+    if (!collision.isInelGt0()&&selectINELgtZERO){
+      return;
+    }
     // ________________________________________________
     if (!doprocessSameEventHCascades) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
@@ -709,6 +713,9 @@ struct correlateStrangeness {
     if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
       return;
     }
+    if (!collision.isInelGt0()&&selectINELgtZERO){
+      return;
+    }
     // ________________________________________________
     histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
     histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
@@ -749,7 +756,7 @@ struct correlateStrangeness {
     // Do hadron - cascade correlations
     fillCorrelationsCascade(triggerTracks, associatedCascades, false, collision.posZ(), collision.centFT0M());
   }
-  void processSameEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+  void processSameEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision,
                               aod::AssocPions const& associatedPions, aod::TriggerTracks const& triggerTracks,
                               TracksComplete const&, aod::BCsWithTimestamps const&)
   {
@@ -762,6 +769,9 @@ struct correlateStrangeness {
       return;
     }
     if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
+      return;
+    }
+    if (!collision.isInelGt0()&&selectINELgtZERO){
       return;
     }
     // ________________________________________________
@@ -803,6 +813,8 @@ struct correlateStrangeness {
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
+      if ((!collision1.isInelGt0()||!collision2.isInelGt0())&&selectINELgtZERO){
+        continue;
 
       if (!doprocessMixedEventHCascades) {
         if (collision1.globalIndex() == collision2.globalIndex()) {
@@ -838,6 +850,8 @@ struct correlateStrangeness {
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
+      if ((!collision1.isInelGt0()||!collision2.isInelGt0())&&selectINELgtZERO){
+        continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
         histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
@@ -869,6 +883,8 @@ struct correlateStrangeness {
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
+        continue;
+      if ((!collision1.isInelGt0()||!collision2.isInelGt0())&&selectINELgtZERO){
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
