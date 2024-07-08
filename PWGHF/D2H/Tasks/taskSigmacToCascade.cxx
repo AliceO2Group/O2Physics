@@ -15,13 +15,14 @@
 /// \author Rutuparna Rath <rrath@cern.ch>, INFN BOLOGNA and GSI Darmstadt
 /// In collaboration with Andrea Alici <aalici@cern.ch>, INFN BOLOGNA
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -48,8 +49,6 @@ struct HfTaskSigmacToCascade {
   Configurable<float> nSigmaSoftPi{"pionNSigma", 3., "NSigma TPC selection"};
   ConfigurableAxis configAxisChargeSigmaC{"configAxisChargeSigmaC", {3, 0, 3}, "charge of SigmaC"};
 
-  HfHelper hfHelper;
-
   /// Filter the candidate Λc+ used for the Σc0,++ creation
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP ||
                                     aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
@@ -57,6 +56,7 @@ struct HfTaskSigmacToCascade {
   using RecoLc = soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>>;
 
   HistogramRegistry registry{"registry"};
+  HfHelper hfHelper;
 
   void init(InitContext& context)
   {
@@ -82,6 +82,7 @@ struct HfTaskSigmacToCascade {
     AxisSpec axisNSigma = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};
     AxisSpec axisPidP = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
     const AxisSpec axisDeltaMassSigmaC{configAxisDeltaMassSigmaC, "#it{M}(pK_{S}^{0}#pi) - #it{M}(pK_{S}^{0}) (GeV/#it{c}^{2})"};
+
     // data
     ////////////////////////////////////////////////////////////////////////////
     /// Declare histograms related to Sigma_C analysis from LcToK0sP channel///
@@ -143,14 +144,14 @@ struct HfTaskSigmacToCascade {
       float y(-1.);
 
       massLc = hfHelper.invMassLcToK0sP(candidateLc);
-      if (candSc.charge() == 0) {
+      if (candSc.charge() == 0 || candSc.charge() == 2) {
         massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
         deltaMass = massSc - massLc;
-        y = hfHelper.ySc0(candSc);
-        registry.fill(HIST("Data/hDeltaMassSc0"), deltaMass);                   /// Σc0
-        registry.fill(HIST("Data/hDeltaMassSc0VsPt"), deltaMass, ptSc);         /// Σc0
-        registry.fill(HIST("Data/hEtaSc0"), etaSc);                             /// Σc0
-        registry.fill(HIST("Data/hPhiSc0"), phiSc);                             /// Σc0
+        if (candSc.charge() == 0) {
+          y = hfHelper.ySc0(candSc);
+        } else if (candSc.charge() == 2) {
+          y = hfHelper.yScPlusPlus(candSc);
+        }
         registry.fill(HIST("Data/hDeltaMassSc0PlusPlus"), deltaMass);           /// Σc(0,++) for both charges
         registry.fill(HIST("Data/hDeltaMassSc0PlusPlusVsPt"), deltaMass, ptSc); /// Σc(0,++) for both charges
         registry.fill(HIST("Data/hEtaSc0PlusPlus"), etaSc);                     /// Σc(0,++) for both charges
@@ -158,45 +159,42 @@ struct HfTaskSigmacToCascade {
         registry.fill(HIST("Data/hYSc0PlusPlusVsPt"), y, ptSc);                 /// Σc(0,++) for both charges
         registry.fill(HIST("Data/hPhiSc0PlusPlus"), phiSc);                     /// Σc(0,++) for both charges
 
-        /// fill histograms for softpion
-        registry.fill(HIST("Data/hPtSoftPiSc0"), ptSoftPi);
-        registry.fill(HIST("Data/hEtaSoftPiSc0"), etaSoftPi);
-        registry.fill(HIST("Data/hPhiSoftPiSc0"), phiSoftPi); // π ← Σc0
+        /// fill histograms for softpion from Σc(0,++)
         registry.fill(HIST("Data/hPtSoftPiSc0PlusPlus"), ptSoftPi);
         registry.fill(HIST("Data/hEtaSoftPiSc0PlusPlus"), etaSoftPi);
         registry.fill(HIST("Data/hPhiSoftPiSc0PlusPlus"), phiSoftPi); // π ← Σc0,++
 
-        if (enableTHn) {
-          registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
-        }
-        /// Σc0
-      } else if (candSc.charge() == 2) {
-        massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
-        deltaMass = massSc - massLc;
-        y = hfHelper.yScPlusPlus(candSc);
-        registry.fill(HIST("Data/hDeltaMassScPlusPlus"), deltaMass);            /// Σc++
-        registry.fill(HIST("Data/hDeltaMassScPlusPlusVsPt"), deltaMass, ptSc);  /// Σc++
-        registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);                      /// Σc++
-        registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);                      /// Σc++
-        registry.fill(HIST("Data/hDeltaMassSc0PlusPlus"), deltaMass);           /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hDeltaMassSc0PlusPlusVsPt"), deltaMass, ptSc); /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hEtaSc0PlusPlus"), etaSc);                     /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hEtaSc0PlusPlusVsPt"), etaSc, ptSc);           /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hYSc0PlusPlusVsPt"), y, ptSc);                 /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hPhiSc0PlusPlus"), phiSc);                     /// Σc(0,++) for both charges
+        if (candSc.charge() == 0) {
+          registry.fill(HIST("Data/hDeltaMassSc0"), deltaMass);           /// Σc0
+          registry.fill(HIST("Data/hDeltaMassSc0VsPt"), deltaMass, ptSc); /// Σc0
+          registry.fill(HIST("Data/hEtaSc0"), etaSc);                     /// Σc0
+          registry.fill(HIST("Data/hPhiSc0"), phiSc);                     /// Σc0
 
-        /// fill histograms for softpion
-        registry.fill(HIST("Data/hPtSoftPiScPlusPlus"), ptSoftPi);
-        registry.fill(HIST("Data/hEtaSoftPiScPlusPlus"), etaSoftPi);
-        registry.fill(HIST("Data/hPhiSoftPiScPlusPlus"), phiSoftPi); // π ← Σc++
-        registry.fill(HIST("Data/hPtSoftPiSc0PlusPlus"), ptSoftPi);
-        registry.fill(HIST("Data/hEtaSoftPiSc0PlusPlus"), etaSoftPi);
-        registry.fill(HIST("Data/hPhiSoftPiSc0PlusPlus"), phiSoftPi); // π ← Σc0,++
+          /// fill histograms for softpion
+          registry.fill(HIST("Data/hPtSoftPiSc0"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiSc0"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiSc0"), phiSoftPi); // π ← Σc0
 
-        if (enableTHn) {
-          registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
+          if (enableTHn) {
+            registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
+          }
+          /// Σc0
+        } else if (candSc.charge() == 2) {
+          registry.fill(HIST("Data/hDeltaMassScPlusPlus"), deltaMass);           /// Σc++
+          registry.fill(HIST("Data/hDeltaMassScPlusPlusVsPt"), deltaMass, ptSc); /// Σc++
+          registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);                     /// Σc++
+          registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);                     /// Σc++
+
+          /// fill histograms for softpion
+          registry.fill(HIST("Data/hPtSoftPiScPlusPlus"), ptSoftPi);
+          registry.fill(HIST("Data/hEtaSoftPiScPlusPlus"), etaSoftPi);
+          registry.fill(HIST("Data/hPhiSoftPiScPlusPlus"), phiSoftPi); // π ← Σc++
+
+          if (enableTHn) {
+            registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
+          }
         }
-      }
+      } /// for both charges
     }
   }
   PROCESS_SWITCH(HfTaskSigmacToCascade, processSigmacToLcPi, "Process Data", true);

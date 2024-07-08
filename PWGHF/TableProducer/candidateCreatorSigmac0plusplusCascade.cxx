@@ -15,13 +15,14 @@
 /// \author Rutuparna Rath <rrath@cern.ch>, INFN BOLOGNA and GSI Darmstadt
 /// In collaboration with Andrea Alici <aalici@cern.ch>, INFN BOLOGNA
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -33,6 +34,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfCandidateCreatorSigmac0plusplusCascade {
+
+  /// Table with Σc0,++ info
+  Produces<aod::HfCandScCasBase> rowScCandidates;
+
   Configurable<float> trkMinPt{"trkMinPt", 0.15, "track min pT"};
   Configurable<float> trkMaxEta{"trkMaxEta", 0.8, "track max Eta"};
   Configurable<float> maxDCAxyToPVcut{"maxDCAxyToPVcut", 2.0, "Track DCAxy cut to PV Maximum"};
@@ -46,10 +51,10 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   /// Selection of candidates Λc+
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandLcMax{"yCandLcMax", -1., "max. candLc. Lc rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_sigmac_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
   Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
   Configurable<double> cutsMassLcMax{"cutsMassLcMax", 0.08, "Lc candidate mass selection"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_sigmac_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
   /// Selections on candidate soft π-,+
   Configurable<bool> applyGlobalTrkWoDcaCutsSoftPi{"applyGlobalTrkWoDcaCutsSoftPi", false, "Switch on the application of the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS"};
@@ -61,44 +66,17 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<bool> addQA{"addQA", true, "Switch for the qa PLOTS"};
 
-  /// Table with Σc0,++ info
-  Produces<aod::HfCandScCasBase> rowScCandidates;
-
-  template <typename TrackType>
-  bool isTrackSelected(const TrackType& track)
-  {
-    if (track.pt() < trkMinPt)
-      return false;
-    if (std::abs(track.eta()) > trkMaxEta)
-      return false;
-    if (std::abs(track.dcaXY()) > maxDCAxyToPVcut)
-      return false;
-    if (std::abs(track.dcaZ()) > maxDCAzToPVcut)
-      return false;
-    if (track.tpcNClsFound() < nTpcNClsFound)
-      return false;
-    if (track.tpcNClsCrossedRows() < nTPCCrossedRows)
-      return false;
-    if (track.tpcChi2NCl() > nTPCChi2)
-      return false;
-    if (track.itsChi2NCl() > nITSChi2)
-      return false;
-    if (track.tpcNSigmaPi() > tpcnSigmaPi)
-      return false;
-
-    return true;
-  }
-  HistogramRegistry registry;
-  HfHelper hfHelper;
+  using TracksWithPID = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   /// Filter the candidate Λc+ used for the Σc0,++ creation
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP ||
                                     aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
 
-  using TracksWithPID = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
-
   // slice by hand the assoc. track with the  Λc+ collisionId
   Preslice<TracksWithPID> trackIndicesPerCollision = aod::track::collisionId;
+
+  HistogramRegistry registry;
+  HfHelper hfHelper;
 
   void init(InitContext&)
   {
@@ -186,6 +164,31 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
       registry.add("pion/data/hEtaSoftPi", "#pi candidates; #eta ; counts;", {HistType::kTH1F, {axisEta}});
       registry.add("pion/data/hPhiSoftPi", "#pi candidates; #Phi ; counts;", {HistType::kTH1F, {axisPhi}});
     }
+  }
+
+  template <typename TrackType>
+  bool isTrackSelected(const TrackType& track)
+  {
+    if (track.pt() < trkMinPt)
+      return false;
+    if (std::abs(track.eta()) > trkMaxEta)
+      return false;
+    if (std::abs(track.dcaXY()) > maxDCAxyToPVcut)
+      return false;
+    if (std::abs(track.dcaZ()) > maxDCAzToPVcut)
+      return false;
+    if (track.tpcNClsFound() < nTpcNClsFound)
+      return false;
+    if (track.tpcNClsCrossedRows() < nTPCCrossedRows)
+      return false;
+    if (track.tpcChi2NCl() > nTPCChi2)
+      return false;
+    if (track.itsChi2NCl() > nITSChi2)
+      return false;
+    if (track.tpcNSigmaPi() > tpcnSigmaPi)
+      return false;
+
+    return true;
   }
 
   /// @param tracks are the tracks (with dcaXY, dcaZ information) → soft-pion candidate tracks
