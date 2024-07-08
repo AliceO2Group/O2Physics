@@ -1294,13 +1294,13 @@ DECLARE_SOA_TABLE(HfCandToOmegaPi, "AOD", "HFCANDTOOMEGAPI",
                   hf_cand_xic0_omegac0::PxBachFromCasc, hf_cand_xic0_omegac0::PyBachFromCasc, hf_cand_xic0_omegac0::PzBachFromCasc,
                   hf_cand_xic0_omegac0::PxPosV0Dau, hf_cand_xic0_omegac0::PyPosV0Dau, hf_cand_xic0_omegac0::PzPosV0Dau,
                   hf_cand_xic0_omegac0::PxNegV0Dau, hf_cand_xic0_omegac0::PyNegV0Dau, hf_cand_xic0_omegac0::PzNegV0Dau,
-				  // dynamic
+                  // dynamic
                   hf_cand_xic0_omegac0::PtCharmBaryon<hf_cand_xic0_omegac0::PxCharmBaryon, hf_cand_xic0_omegac0::PyCharmBaryon>,
                   hf_cand_xic0_omegac0::PtCasc<hf_cand_xic0_omegac0::PxCasc, hf_cand_xic0_omegac0::PyCasc>,
                   hf_cand_xic0_omegac0::PtPiFromCharmBaryon<hf_cand_xic0_omegac0::PxBachFromCharmBaryon, hf_cand_xic0_omegac0::PyBachFromCharmBaryon>,
                   hf_cand_xic0_omegac0::PtLambda<hf_cand_xic0_omegac0::PxLambda, hf_cand_xic0_omegac0::PyLambda>,
                   hf_cand_xic0_omegac0::PtKaFromCasc<hf_cand_xic0_omegac0::PxBachFromCasc, hf_cand_xic0_omegac0::PyBachFromCasc>,
-				  
+
                   hf_cand_xic0_omegac0::ImpactParCascXY, hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonXY, hf_cand_xic0_omegac0::ImpactParCascZ, hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonZ,
                   hf_cand_xic0_omegac0::ErrImpactParCascXY, hf_cand_xic0_omegac0::ErrImpactParBachFromCharmBaryonXY,
                   hf_cand_xic0_omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0_omegac0::CascadeId, hf_cand_xic0_omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
