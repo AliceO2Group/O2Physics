@@ -58,7 +58,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   Configurable<float> ConfNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < Confmom"};
   Configurable<float> ConfNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};
 
-  Filter collisionFilter = (nabs(aod::collision::posZ) < ConfZVertexCut);
+  Filter collisionFilter = (nabs(aod::FDcollisions::posZ) < ConfZVertexCut);
   using FilteredFDCollisions = soa::Filtered<o2::aod::FDCollisions>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
