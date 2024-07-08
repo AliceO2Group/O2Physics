@@ -34,7 +34,7 @@ namespace pwglf
 class PIDExtended
 {
  public:
-  typedef o2::track::PID::ID ID;
+  typedef int16_t ID;
 
   static constexpr ID Electron = 0;
   static constexpr ID Muon = 1;
@@ -191,7 +191,7 @@ class PIDExtended
 
   /// \brief Convert PDG code to PID index
   template <typename TrackType>
-  static o2::track::pid_constants::ID pdgToId(const TrackType& particle)
+  static ID pdgToId(const TrackType& particle)
   {
     switch (particle.pdgCode()) {
       case 11:

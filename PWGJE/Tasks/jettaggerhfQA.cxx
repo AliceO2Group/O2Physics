@@ -73,6 +73,7 @@ struct JetTaggerHFQA {
   ConfigurableAxis binNtracks{"binNtracks", {100, 0., 100.}, ""};
   ConfigurableAxis binTrackPt{"binTrackPt", {200, 0.f, 100.f}, ""};
   ConfigurableAxis binImpactParameterXY{"binImpactParameterXY", {800, -400.5f, 400.5f}, ""};
+  ConfigurableAxis binSigmaImpactParameterXY{"binImpactSigmaParameterXY", {800, 0.f, 100.f}, ""};
   ConfigurableAxis binImpactParameterXYSignificance{"binImpactParameterXYSignificance", {800, -40.5f, 40.5f}, ""};
   ConfigurableAxis binImpactParameterZ{"binImpactParameterZ", {800, -400.5f, 400.5f}, ""};
   ConfigurableAxis binImpactParameterZSignificance{"binImpactParameterZSignificance", {800, -40.5f, 40.5f}, ""};
@@ -112,6 +113,7 @@ struct JetTaggerHFQA {
     AxisSpec ntracksAxis = {binNtracks, "#it{N}_{tracks}"};
     AxisSpec trackPtAxis = {binTrackPt, "#it{p}_{T}^{track}"};
     AxisSpec impactParameterXYAxis = {binImpactParameterXY, "IP_{XY} [#mum]"};
+    AxisSpec sigmaImpactParameterXYAxis = {binSigmaImpactParameterXY, "#sigma_{XY} [#mum]"};
     AxisSpec impactParameterXYSignificanceAxis = {binImpactParameterXYSignificance, "IPs_{XY}"};
     AxisSpec impactParameterZAxis = {binImpactParameterZ, "IP_{Z} [#mum]"};
     AxisSpec impactParameterZSignificanceAxis = {binImpactParameterZSignificance, "IPs_{Z}"};
@@ -186,6 +188,7 @@ struct JetTaggerHFQA {
       registry.add("h3_jet_pt_track_phi_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {phiAxis}, {jetFlavourAxis}}});
       if (fillIPxy) {
         registry.add("h3_jet_pt_impact_parameter_xy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYAxis}, {jetFlavourAxis}}});
+        registry.add("h3_jet_pt_sigma_impact_parameter_xy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaImpactParameterXYAxis}, {jetFlavourAxis}}});
         registry.add("h3_jet_pt_sign_impact_parameter_xy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYAxis}, {jetFlavourAxis}}});
         registry.add("h3_jet_pt_impact_parameter_xy_significance_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYSignificanceAxis}, {jetFlavourAxis}}});
         registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYSignificanceAxis}, {jetFlavourAxis}}});
@@ -261,6 +264,10 @@ struct JetTaggerHFQA {
       registry.add("h2_2prong_Sxyz_sigmaLxyz", "", {HistType::kTH2F, {{SxyzAxis}, {sigmaLxyzAxis}}});
       registry.add("h2_jet_pt_2prong_sigmaLxy", "", {HistType::kTH2F, {{jetPtAxis}, {sigmaLxyAxis}}});
       registry.add("h2_jet_pt_2prong_sigmaLxyz", "", {HistType::kTH2F, {{jetPtAxis}, {sigmaLxyzAxis}}});
+      registry.add("h2_jet_pt_2prong_Sxy_cutSxyAndsigmaLxy", "", {HistType::kTH2F, {{jetPtAxis}, {SxyAxis}}});
+      registry.add("h2_jet_pt_2prong_Sxyz_cutSxyzAndsigmaLxyz", "", {HistType::kTH2F, {{jetPtAxis}, {SxyzAxis}}});
+      registry.add("h2_jet_pt_2prong_Sxy_N1_cutSxyAndsigmaLxy", "", {HistType::kTH2F, {{jetPtAxis}, {SxyAxis}}});
+      registry.add("h2_jet_pt_2prong_Sxyz_N1_cutSxyzAndsigmaLxyz", "", {HistType::kTH2F, {{jetPtAxis}, {SxyzAxis}}});
     }
     if (doprocessSV3ProngData) {
       registry.add("h_3prong_nprongs", "", {HistType::kTH1F, {{nprongsAxis}}});
@@ -274,6 +281,10 @@ struct JetTaggerHFQA {
       registry.add("h2_3prong_Sxyz_sigmaLxyz", "", {HistType::kTH2F, {{SxyzAxis}, {sigmaLxyzAxis}}});
       registry.add("h2_jet_pt_3prong_sigmaLxy", "", {HistType::kTH2F, {{jetPtAxis}, {sigmaLxyAxis}}});
       registry.add("h2_jet_pt_3prong_sigmaLxyz", "", {HistType::kTH2F, {{jetPtAxis}, {sigmaLxyzAxis}}});
+      registry.add("h2_jet_pt_3prong_Sxy_cutSxyAndsigmaLxy", "", {HistType::kTH2F, {{jetPtAxis}, {SxyAxis}}});
+      registry.add("h2_jet_pt_3prong_Sxyz_cutSxyzAndsigmaLxyz", "", {HistType::kTH2F, {{jetPtAxis}, {SxyzAxis}}});
+      registry.add("h2_jet_pt_3prong_Sxy_N1_cutSxyAndsigmaLxy", "", {HistType::kTH2F, {{jetPtAxis}, {SxyAxis}}});
+      registry.add("h2_jet_pt_3prong_Sxyz_N1_cutSxyzAndsigmaLxyz", "", {HistType::kTH2F, {{jetPtAxis}, {SxyzAxis}}});
     }
     if (doprocessSV2ProngMCD) {
       registry.add("h2_2prong_nprongs_flavour", "", {HistType::kTH2F, {{nprongsAxis}, {jetFlavourAxis}}});
@@ -336,9 +347,9 @@ struct JetTaggerHFQA {
   bool prongAcceptance(float sigmaDecayLength, float decayLengthSig, float maxSigmaDecayLength, float minDecayLengthSig)
   {
     if ((sigmaDecayLength < maxSigmaDecayLength) && (decayLengthSig > minDecayLengthSig))
-      return 0;
+      return 1;
 
-    return 1;
+    return 0;
   }
 
   template <typename V, typename JetType>
@@ -491,10 +502,12 @@ struct JetTaggerHFQA {
         if (fillIPxy) {
           float varImpXY, varSignImpXY, varImpXYSig, varSignImpXYSig;
           varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
+          float varSigmaImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
           varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * jettaggingutilities::cmTomum;
-          varImpXYSig = track.dcaXY() / TMath::Sqrt(track.sigmaDcaXY2());
+          varImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
           varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
           registry.fill(HIST("h3_jet_pt_impact_parameter_xy_flavour"), mcdjet.pt(), varImpXY, jetflavour);
+          registry.fill(HIST("h3_jet_pt_sigma_impact_parameter_xy_flavour"), mcdjet.pt(), varSigmaImpXY, jetflavour);
           registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_flavour"), mcdjet.pt(), varSignImpXY, jetflavour);
           registry.fill(HIST("h3_jet_pt_impact_parameter_xy_significance_flavour"), mcdjet.pt(), varImpXYSig, jetflavour);
           registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour"), mcdjet.pt(), varSignImpXYSig, jetflavour);
@@ -680,9 +693,21 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h2_2prong_Sxyz_sigmaLxyz"), Sxyz, prong.errorDecayLength());
         registry.fill(HIST("h2_jet_pt_2prong_sigmaLxy"), jet.pt(), prong.errorDecayLengthXY());
         registry.fill(HIST("h2_jet_pt_2prong_sigmaLxyz"), jet.pt(), prong.errorDecayLength());
+        if (prongAcceptance(prong.errorDecayLengthXY(), Sxy, maxSigmaLxy2Prong, minSxy2Prong)) {
+          registry.fill(HIST("h2_jet_pt_2prong_Sxy_cutSxyAndsigmaLxy"), jet.pt(), Sxy);
+        }
+        if (prongAcceptance(prong.errorDecayLength(), Sxyz, maxSigmaLxyz2Prong, minSxyz2Prong)) {
+          registry.fill(HIST("h2_jet_pt_2prong_Sxyz_cutSxyzAndsigmaLxyz"), jet.pt(), Sxyz);
+        }
       }
       registry.fill(HIST("h2_jet_pt_2prong_Sxy_N1"), jet.pt(), maxSxy);
       registry.fill(HIST("h2_jet_pt_2prong_Sxyz_N1"), jet.pt(), maxSxyz);
+      if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy2Prong, minSxy2Prong)) {
+        registry.fill(HIST("h2_jet_pt_2prong_Sxy_N1_cutSxyAndsigmaLxy"), jet.pt(), maxSxy);
+      }
+      if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy2Prong, minSxy2Prong)) {
+        registry.fill(HIST("h2_jet_pt_2prong_Sxyz_N1_cutSxyzAndsigmaLxyz"), jet.pt(), maxSxyz);
+      }
     }
   }
 
@@ -709,9 +734,21 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h2_3prong_Sxyz_sigmaLxyz"), Sxyz, prong.errorDecayLength());
         registry.fill(HIST("h2_jet_pt_3prong_sigmaLxy"), jet.pt(), prong.errorDecayLengthXY());
         registry.fill(HIST("h2_jet_pt_3prong_sigmaLxyz"), jet.pt(), prong.errorDecayLength());
+        if (prongAcceptance(prong.errorDecayLengthXY(), Sxy, maxSigmaLxy3Prong, minSxy3Prong)) {
+          registry.fill(HIST("h2_jet_pt_3prong_Sxy_cutSxyAndsigmaLxy"), jet.pt(), Sxy);
+        }
+        if (prongAcceptance(prong.errorDecayLength(), Sxyz, maxSigmaLxyz3Prong, minSxyz3Prong)) {
+          registry.fill(HIST("h2_jet_pt_3prong_Sxyz_cutSxyzAndsigmaLxyz"), jet.pt(), Sxyz);
+        }
       }
       registry.fill(HIST("h2_jet_pt_3prong_Sxy_N1"), jet.pt(), maxSxy);
       registry.fill(HIST("h2_jet_pt_3prong_Sxyz_N1"), jet.pt(), maxSxyz);
+      if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy3Prong, minSxy3Prong)) {
+        registry.fill(HIST("h2_jet_pt_3prong_Sxy_N1_cutSxyAndsigmaLxy"), jet.pt(), maxSxy);
+      }
+      if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy3Prong, minSxy3Prong)) {
+        registry.fill(HIST("h2_jet_pt_3prong_Sxyz_N1_cutSxyzAndsigmaLxyz"), jet.pt(), maxSxyz);
+      }
     }
   }
 

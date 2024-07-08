@@ -461,14 +461,6 @@ struct TableMaker {
     int multTracklets = -1.0;
     int multTracksPV = -1.0;
     float centFT0C = -1.0;
-    /*float energyCommonZNA = -1.0;
-    float energyCommonZNC = -1.0;
-    float energyCommonZPA = -1.0;
-    float energyCommonZPC = -1.0;
-    float timeZNA = -1.0;
-    float timeZNC = -1.0;
-    float timeZPA = -1.0;
-    float timeZPC = -1.0;*/
 
     for (const auto& collision : collisions) {
 
@@ -507,24 +499,7 @@ struct TableMaker {
         if (bcEvSel.has_zdc()) {
           auto bc_zdc = bcEvSel.zdc();
           VarManager::FillZDC(bc_zdc);
-          /*energyCommonZNA = bc_zdc.energyCommonZNA();
-          energyCommonZNC = bc_zdc.energyCommonZNC();
-          energyCommonZPA = bc_zdc.energyCommonZPA();
-          energyCommonZPC = bc_zdc.energyCommonZPC();
-          timeZNA = bc_zdc.timeZNA();
-          timeZNC = bc_zdc.timeZNC();
-          timeZPA = bc_zdc.timeZPA();
-          timeZPC = bc_zdc.timeZPC();*/
-        } /*else {
-          energyCommonZNA = -1.0;
-          energyCommonZNC = -1.0;
-          energyCommonZPA = -1.0;
-          energyCommonZPC = -1.0;
-          timeZNA = -1.0;
-          timeZNC = -1.0;
-          timeZPA = -1.0;
-          timeZPC = -1.0;
-        }*/
+        }
       }
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -547,7 +522,7 @@ struct TableMaker {
         }
       } else {
         if (!fEventCut->IsSelected(VarManager::fgValues)) {
-          return;
+          continue;
         }
       }
 
@@ -587,6 +562,8 @@ struct TableMaker {
           auto bc_zdc = bcEvSel.zdc();
           zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(),
               bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
+        } else {
+          zdc(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0);
         }
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
