@@ -503,9 +503,11 @@ struct AnalysisTrackSelection {
       int isig = 0;
       if (filterMap > 0) {
         for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
+	if (track.has_reducedMCTrack()){
           if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
+	}
         }
 
         // fill histograms
@@ -769,9 +771,11 @@ struct AnalysisMuonSelection {
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
+	  if (track.has_reducedMCTrack()){
           if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
+	  }
         }
       }
 
@@ -1421,12 +1425,16 @@ struct AnalysisSameEventPairing {
           int isig = 0;
           mcDecision = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
+	    if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()){
             if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
               mcDecision |= (uint32_t(1) << isig);
             }
+	    }
           } // end loop over MC signals
+	  if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()){
           isCorrectAssoc_leg1 = (t1.reducedMCTrack().reducedMCevent() == event.reducedMCevent());
           isCorrectAssoc_leg2 = (t2.reducedMCTrack().reducedMCevent() == event.reducedMCevent());
+	  }
 
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           if constexpr (TTwoProngFitter) {
@@ -1462,12 +1470,17 @@ struct AnalysisSameEventPairing {
           int isig = 0;
           mcDecision = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
+	    if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()){
             if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
               mcDecision |= (uint32_t(1) << isig);
             }
+	    }
           } // end loop over MC signals
+
+	  if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()){
           isCorrectAssoc_leg1 = (t1.reducedMCTrack().reducedMCevent() == event.reducedMCevent());
           isCorrectAssoc_leg2 = (t2.reducedMCTrack().reducedMCevent() == event.reducedMCevent());
+	  }
 
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           if constexpr (TTwoProngFitter) {
