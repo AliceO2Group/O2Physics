@@ -219,7 +219,7 @@ struct PhotonHBT {
   std::vector<float> ep_bin_edges;
   std::vector<float> occ_bin_edges;
 
-  void init(InitContext&  /*context*/)
+  void init(InitContext& /*context*/)
   {
     zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
     zvtx_bin_edges.erase(zvtx_bin_edges.begin());
@@ -432,7 +432,7 @@ struct PhotonHBT {
   }
 
   template <int ev_id, typename TCollision>
-  void fillPairHistogram(TCollision const&  /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float dca1, const float dca2)
+  void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float dca1, const float dca2)
   {
 
     //    if constexpr (ev_id == 1 && pairtype == PairType::kEEEE) {
