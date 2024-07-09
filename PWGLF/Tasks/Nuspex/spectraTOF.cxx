@@ -1883,7 +1883,6 @@ struct tofSpectra {
       }
       const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-   // const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
     histos.fill(HIST("Vertex/RecoEvs/histGenVtxMC"), mcCollision.posZ());
     histos.fill(HIST("Centrality/RecoEvs/ImpParm"), mcCollision.impactParameter());
     const float multiplicity = mcCollision.impactParameter();
@@ -1923,7 +1922,7 @@ struct tofSpectra {
       }
     }
   }
- }
+}
   PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", true);
 
 }; // end of spectra task
