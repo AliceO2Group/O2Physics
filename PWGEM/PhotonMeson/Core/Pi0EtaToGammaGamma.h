@@ -460,10 +460,10 @@ struct Pi0EtaToGammaGamma {
       float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
 
       if (openingAngle1 > emccuts.minOpenAngle && abs(mother1.Rapidity()) < maxY) {
-        fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt(), 0.0, 0.0);
+        fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt());
       }
       if (openingAngle2 > emccuts.minOpenAngle && abs(mother2.Rapidity()) < maxY) {
-        fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt(), 0.0, 0.0);
+        fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt());
       }
     }
   }
