@@ -1172,8 +1172,6 @@ DECLARE_SOA_COLUMN(NSigmaTOFKaFromCasc, nSigmaTOFKaFromCasc, float);
 DECLARE_SOA_COLUMN(NSigmaTPCPiFromV0, nSigmaTPCPiFromV0, float);
 DECLARE_SOA_COLUMN(NSigmaTPCPrFromV0, nSigmaTPCPrFromV0, float);
 DECLARE_SOA_COLUMN(KfDcaXYPiFromOmegac, kfDcaXYPiFromOmegac, float);
-DECLARE_SOA_COLUMN(KfDcaCascDau, kfDcaCascDau, float);
-DECLARE_SOA_COLUMN(KfDcaOmegacDau, kfDcaOmegacDau, float);
 DECLARE_SOA_COLUMN(KfDcaXYCascToPv, kfDcaXYCascToPv, float);
 DECLARE_SOA_COLUMN(Chi2GeoV0, chi2GeoV0, float);
 DECLARE_SOA_COLUMN(Chi2GeoCasc, chi2GeoCasc, float);
@@ -1192,11 +1190,8 @@ DECLARE_SOA_COLUMN(Chi2TopoCascToOmegac, chi2TopoCascToOmegac, float);
 DECLARE_SOA_COLUMN(DecayLenXYLambda, decayLenXYLambda, float);
 DECLARE_SOA_COLUMN(DecayLenXYCasc, decayLenXYCasc, float);
 DECLARE_SOA_COLUMN(DecayLenXYOmegac, decayLenXYOmegac, float);
-DECLARE_SOA_COLUMN(CosPaV0ToCasc, cosPaV0ToCasc, float);
 DECLARE_SOA_COLUMN(CosPaV0ToPv, cosPaV0ToPv, float);
-DECLARE_SOA_COLUMN(CosPaCascToOmegac, cosPaCascToOmegac, float);
 DECLARE_SOA_COLUMN(CosPaCascToPv, cosPaCascToPv, float);
-DECLARE_SOA_COLUMN(CosPaOmegacToPv, cosPaOmegacToPv, float);
 DECLARE_SOA_COLUMN(KfMassV0, kfMassV0, float);
 DECLARE_SOA_COLUMN(KfMassCasc, kfMassCasc, float);
 DECLARE_SOA_COLUMN(KfMassOmegac, kfMassOmegac, float);
@@ -1204,8 +1199,6 @@ DECLARE_SOA_COLUMN(KfRapOmegac, kfRapOmegac, float);
 DECLARE_SOA_COLUMN(KfptPiFromOmegac, kfptPiFromOmegac, float);
 DECLARE_SOA_COLUMN(KfptOmegac, kfptOmegac, float);
 DECLARE_SOA_COLUMN(CosThetaStarPiFromOmegac, cosThetaStarPiFromOmegac, float);
-DECLARE_SOA_COLUMN(CtOmegac, ctOmegac, float);
-DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, float);
 DECLARE_SOA_COLUMN(V0Ndf, v0Ndf, float);
 DECLARE_SOA_COLUMN(CascNdf, cascNdf, float);
 DECLARE_SOA_COLUMN(OmegacNdf, omegacNdf, float);
@@ -1349,20 +1342,17 @@ DECLARE_SOA_TABLE(HfOmegacKf, "AOD", "HFOMEGACKF", //!
                   hf_cand_xic0_omegac0::NSigmaTPCPiFromOmegac, hf_cand_xic0_omegac0::NSigmaTOFPiFromOmegac,
                   hf_cand_xic0_omegac0::NSigmaTPCKaFromCasc, hf_cand_xic0_omegac0::NSigmaTOFKaFromCasc,
                   hf_cand_xic0_omegac0::NSigmaTPCPiFromV0, hf_cand_xic0_omegac0::NSigmaTPCPrFromV0,
-                  hf_cand_xic0_omegac0::KfDcaXYPiFromOmegac, hf_cand_xic0_omegac0::KfDcaCascDau, hf_cand_xic0_omegac0::KfDcaOmegacDau, hf_cand_xic0_omegac0::KfDcaXYCascToPv,
+                  hf_cand_xic0_omegac0::KfDcaXYPiFromOmegac, hf_cand_xic0_omegac0::KfDcaXYCascToPv,
                   hf_cand_xic0_omegac0::Chi2GeoV0, hf_cand_xic0_omegac0::Chi2GeoCasc, hf_cand_xic0_omegac0::Chi2GeoOmegac,
                   hf_cand_xic0_omegac0::Chi2MassV0, hf_cand_xic0_omegac0::Chi2MassCasc,
                   hf_cand_xic0_omegac0::V0ldl, hf_cand_xic0_omegac0::Cascldl, hf_cand_xic0_omegac0::Omegacldl,
                   hf_cand_xic0_omegac0::Chi2TopoV0ToPv, hf_cand_xic0_omegac0::Chi2TopoCascToPv, hf_cand_xic0_omegac0::Chi2TopoPiFromOmegacToPv, hf_cand_xic0_omegac0::Chi2TopoOmegacToPv,
                   hf_cand_xic0_omegac0::Chi2TopoV0ToCasc, hf_cand_xic0_omegac0::Chi2TopoCascToOmegac,
                   hf_cand_xic0_omegac0::DecayLenXYLambda, hf_cand_xic0_omegac0::DecayLenXYCasc, hf_cand_xic0_omegac0::DecayLenXYOmegac,
-                  hf_cand_xic0_omegac0::CosPaV0ToCasc, hf_cand_xic0_omegac0::CosPaV0ToPv, hf_cand_xic0_omegac0::CosPaCascToOmegac, hf_cand_xic0_omegac0::CosPaCascToPv,
-                  hf_cand_xic0_omegac0::CosPaOmegacToPv,
-                  hf_cand_xic0_omegac0::KfMassV0, hf_cand_xic0_omegac0::KfMassCasc, hf_cand_xic0_omegac0::KfMassOmegac,
+                  hf_cand_xic0_omegac0::CosPaV0ToPv, hf_cand_xic0_omegac0::CosPaCascToPv,
                   hf_cand_xic0_omegac0::KfRapOmegac,
                   hf_cand_xic0_omegac0::KfptPiFromOmegac, hf_cand_xic0_omegac0::KfptOmegac,
                   hf_cand_xic0_omegac0::CosThetaStarPiFromOmegac,
-                  hf_cand_xic0_omegac0::CtOmegac, hf_cand_xic0_omegac0::EtaOmegac,
                   hf_cand_xic0_omegac0::V0Ndf, hf_cand_xic0_omegac0::CascNdf, hf_cand_xic0_omegac0::OmegacNdf,
                   hf_cand_xic0_omegac0::MassV0Ndf, hf_cand_xic0_omegac0::MassCascNdf,
                   hf_cand_xic0_omegac0::V0Chi2OverNdf, hf_cand_xic0_omegac0::CascChi2OverNdf, hf_cand_xic0_omegac0::OmegacChi2OverNdf,

@@ -107,8 +107,6 @@ DECLARE_SOA_COLUMN(NSigmaTOFKaFromCasc, nSigmaTOFKaFromCasc, float);
 DECLARE_SOA_COLUMN(NSigmaTPCPiFromV0, nSigmaTPCPiFromV0, float);
 DECLARE_SOA_COLUMN(NSigmaTPCPrFromV0, nSigmaTPCPrFromV0, float);
 DECLARE_SOA_COLUMN(KfDcaXYPiFromOmegac, kfDcaXYPiFromOmegac, float);
-DECLARE_SOA_COLUMN(KfDcaCascDau, kfDcaCascDau, float);
-DECLARE_SOA_COLUMN(KfDcaOmegacDau, kfDcaOmegacDau, float);
 DECLARE_SOA_COLUMN(KfDcaXYCascToPv, kfDcaXYCascToPv, float);
 DECLARE_SOA_COLUMN(Chi2GeoV0, chi2GeoV0, float);
 DECLARE_SOA_COLUMN(Chi2GeoCasc, chi2GeoCasc, float);
@@ -132,9 +130,6 @@ DECLARE_SOA_COLUMN(CosPaV0ToPv, cosPaV0ToPv, float);
 DECLARE_SOA_COLUMN(CosPaCascToOmegac, cosPaCascToOmegac, float);
 DECLARE_SOA_COLUMN(CosPaCascToPv, cosPaCascToPv, float);
 DECLARE_SOA_COLUMN(CosPaOmegacToPv, cosPaOmegacToPv, float);
-DECLARE_SOA_COLUMN(KfMassV0, kfMassV0, float);
-DECLARE_SOA_COLUMN(KfMassCasc, kfMassCasc, float);
-DECLARE_SOA_COLUMN(KfMassOmegac, kfMassOmegac, float);
 DECLARE_SOA_COLUMN(KfRapOmegac, kfRapOmegac, float);
 DECLARE_SOA_COLUMN(KfptPiFromOmegac, kfptPiFromOmegac, float);
 DECLARE_SOA_COLUMN(KfptOmegac, kfptOmegac, float);
@@ -184,7 +179,7 @@ DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiLites, "AOD", "HFTOOMEPILITE",
 DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
                   full::NSigmaTPCPiFromV0, full::NSigmaTPCPrFromV0,
-                  full::KfDcaXYPiFromOmegac, full::KfDcaCascDau, full::KfDcaOmegacDau, full::KfDcaXYCascToPv,
+                  full::KfDcaXYPiFromOmegac, full::DcaCascDau, full::DcaCharmBaryonDau, full::KfDcaXYCascToPv,
                   full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoOmegac,
                   full::Chi2MassV0, full::Chi2MassCasc,
                   full::V0ldl, full::Cascldl, full::Omegacldl,
@@ -192,7 +187,7 @@ DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::Chi2TopoV0ToCasc, full::Chi2TopoCascToOmegac,
                   full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYOmegac,
                   full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToOmegac, full::CosPaCascToPv, full::CosPaOmegacToPv,
-                  full::KfMassV0, full::KfMassCasc, full::KfMassOmegac,
+                  full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
                   full::KfRapOmegac, full::KfptPiFromOmegac, full::KfptOmegac,
                   full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac,
                   full::V0Ndf, full::CascNdf, full::OmegacNdf,
@@ -309,8 +304,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       candidate.nSigmaTPCPiFromV0(),
       candidate.nSigmaTPCPrFromV0(),
       candidate.kfDcaXYPiFromOmegac(),
-      candidate.kfDcaCascDau(),
-      candidate.kfDcaOmegacDau(),
+      candidate.dcaCascDau(),
+      candidate.dcaCharmBaryonDau(),
       candidate.kfDcaXYCascToPv(),
       candidate.chi2GeoV0(),
       candidate.chi2GeoCasc(),
@@ -329,20 +324,20 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       candidate.decayLenXYLambda(),
       candidate.decayLenXYCasc(),
       candidate.decayLenXYOmegac(),
-      candidate.cosPaV0ToCasc(),
+      candidate.cosPAV0(),
       candidate.cosPaV0ToPv(),
-      candidate.cosPaCascToOmegac(),
+      candidate.cosPACasc(),
       candidate.cosPaCascToPv(),
-      candidate.cosPaOmegacToPv(),
-      candidate.kfMassV0(),
-      candidate.kfMassCasc(),
-      candidate.kfMassOmegac(),
+      candidate.cosPACharmBaryon(),
+      candidate.invMassLambda(),
+      candidate.invMassCascade(),
+      candidate.invMassCharmBaryon(),
       candidate.kfRapOmegac(),
       candidate.kfptPiFromOmegac(),
       candidate.kfptOmegac(),
       candidate.cosThetaStarPiFromOmegac(),
-      candidate.ctOmegac(),
-      candidate.etaOmegac(),
+      candidate.ctauOmegac(),
+      candidate.etaCharmBaryon(),
       candidate.v0Ndf(),
       candidate.cascNdf(),
       candidate.omegacNdf(),

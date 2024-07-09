@@ -253,7 +253,7 @@ struct HfCandidateCreatorXic0Omegac0 {
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runXic0Omegac0Creator(Coll const&,
-                             aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
+                             aod::BCsWithTimestamps const& bcWithTimeStamps,
                              TracksWCovDca const&,
                              MyCascTable const&, CascadesLinked const&,
                              aod::HfCascLf2Prongs const& candidates,
@@ -981,7 +981,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                        kfOmegac0Candidate.cosPaV0ToCasc, kfOmegac0Candidate.cosPaOmegacToPv, kfOmegac0Candidate.cosPaCascToOmegac, kfOmegac0Candidate.cosPaXYV0ToCasc, kfOmegac0Candidate.cosPaXYOmegacToPv, kfOmegac0Candidate.cosPaXYCascToOmegac,
                        kfOmegac0Candidate.ctOmegac, kfOmegac0Candidate.ctCasc, kfOmegac0Candidate.ctV0,
                        pseudorapV0Dau0, pseudorapV0Dau1, pseudorapCascBachelor, pseudorapCharmBachelor,
-                       KFOmegaC0.GetEta(), KFOmega.GetEta(), KFV0.GetEta(),
+                       kfOmegac0Candidate.etaOmegac, KFOmega.GetEta(), KFV0.GetEta(),
                        dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
                        dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
                        kfOmegac0Candidate.kfDcaCascDau, kfOmegac0Candidate.kfDcaV0Dau, kfOmegac0Candidate.kfDcaOmegacDau,
@@ -990,18 +990,15 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfCandidateData(kfOmegac0Candidate.nSigmaTPCPiFromOmegac, kfOmegac0Candidate.nSigmaTOFPiFromOmegac,
                       kfOmegac0Candidate.nSigmaTOFKaFromCasc, kfOmegac0Candidate.nSigmaTOFKaFromCasc,
                       kfOmegac0Candidate.nSigmaTPCPiFromV0, kfOmegac0Candidate.nSigmaTPCPrFromV0,
-                      kfOmegac0Candidate.kfDcaXYPiFromOmegac, kfOmegac0Candidate.kfDcaCascDau, kfOmegac0Candidate.kfDcaOmegacDau, kfOmegac0Candidate.kfDcaXYCascToPv,
+                      kfOmegac0Candidate.kfDcaXYPiFromOmegac, kfOmegac0Candidate.kfDcaXYCascToPv,
                       kfOmegac0Candidate.chi2GeoV0, kfOmegac0Candidate.chi2GeoCasc, kfOmegac0Candidate.chi2GeoOmegac, kfOmegac0Candidate.chi2MassV0, kfOmegac0Candidate.chi2MassCasc,
                       kfOmegac0Candidate.ldlV0, kfOmegac0Candidate.ldlCasc, kfOmegac0Candidate.ldlOmegac,
                       kfOmegac0Candidate.chi2TopoV0ToPv, kfOmegac0Candidate.chi2TopoCascToPv, kfOmegac0Candidate.chi2TopoPiFromOmegacToPv, kfOmegac0Candidate.chi2TopoOmegacToPv,
                       kfOmegac0Candidate.chi2TopoV0ToCasc, kfOmegac0Candidate.chi2TopoCascToOmegac,
                       kfOmegac0Candidate.decayLenXYLambda, kfOmegac0Candidate.decayLenXYCasc, kfOmegac0Candidate.decayLenXYOmegac,
-                      kfOmegac0Candidate.cosPaV0ToCasc, kfOmegac0Candidate.cosPaV0ToPv, kfOmegac0Candidate.cosPaCascToOmegac, kfOmegac0Candidate.cosPaCascToPv, kfOmegac0Candidate.cosPaOmegacToPv,
-                      kfOmegac0Candidate.massV0, kfOmegac0Candidate.massCasc, kfOmegac0Candidate.massOmegac,
+                      kfOmegac0Candidate.cosPaV0ToPv, kfOmegac0Candidate.cosPaCascToPv,
                       kfOmegac0Candidate.rapOmegac, kfOmegac0Candidate.ptPiFromOmegac, kfOmegac0Candidate.ptOmegac,
                       kfOmegac0Candidate.cosThetaStarPiFromOmegac,
-                      kfOmegac0Candidate.ctOmegac,
-                      kfOmegac0Candidate.etaOmegac,
                       v0NDF, cascNDF, charmbaryonNDF, v0NDF_m, cascNDF_m,
                       v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdf_m, cascChi2OverNdf_m);
 
@@ -1128,7 +1125,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   ///////////////////////////////////////////////////////////
 
   /// @brief process function to monitor collisions - no centrality
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -1145,7 +1142,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -1162,7 +1159,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
