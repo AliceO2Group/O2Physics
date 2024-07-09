@@ -301,7 +301,7 @@ struct tpcPid {
         response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
         headers = ccdbApi.retrieveHeaders(ccdbPath.value, metadata, bc.timestamp());
         if (!response) {
-          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", metadata["RecoPassName"]);
           headers = ccdbApi.retrieveHeaders(ccdbPath.value, nullmetadata, bc.timestamp());
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
           if (!response) {
@@ -503,7 +503,7 @@ struct tpcPid {
         response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
         headers = ccdbApi.retrieveHeaders(ccdbPath.value, metadata, bc.timestamp());
         if (!response) {
-          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", metadata["RecoPassName"]);
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
           headers = ccdbApi.retrieveHeaders(ccdbPath.value, nullmetadata, bc.timestamp());
           if (!response) {
@@ -594,7 +594,7 @@ struct tpcPid {
         }
         response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
         if (!response) {
-          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", metadata["RecoPassName"]);
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
           if (!response) {
             LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
