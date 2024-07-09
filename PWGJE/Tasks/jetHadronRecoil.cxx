@@ -382,7 +382,7 @@ struct hJetAnalysis {
   }
   PROCESS_SWITCH(hJetAnalysis, processMCD, "process MC detector level", false);
 
-  void processMCP(JetMcCollision const&  /*collision*/,
+  void processMCP(JetMcCollision const& /*collision*/,
                   soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
                   JetParticles const& particles)
   {

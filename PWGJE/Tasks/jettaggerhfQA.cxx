@@ -671,7 +671,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV2ProngData(T const&  /*collision*/, U const& jets, V const&  /*prongs*/)
+  void fillHistogramSV2ProngData(T const& /*collision*/, U const& jets, V const& /*prongs*/)
   {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -712,7 +712,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV3ProngData(T const&  /*collision*/, U const& jets, V const&  /*prongs*/)
+  void fillHistogramSV3ProngData(T const& /*collision*/, U const& jets, V const& /*prongs*/)
   {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -753,7 +753,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV2ProngMCD(T const&  /*collision*/, U const& mcdjets, V const&  /*prongs*/)
+  void fillHistogramSV2ProngMCD(T const& /*collision*/, U const& mcdjets, V const& /*prongs*/)
   {
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -795,7 +795,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV3ProngMCD(T const&  /*collision*/, U const& mcdjets, V const&  /*prongs*/)
+  void fillHistogramSV3ProngMCD(T const& /*collision*/, U const& mcdjets, V const& /*prongs*/)
   {
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
