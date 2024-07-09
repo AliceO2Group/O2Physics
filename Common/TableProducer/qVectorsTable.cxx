@@ -402,11 +402,14 @@ struct qVectorsTable {
         continue;
       }
       histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
+      if (std::abs(trk.eta()) > 0.8) {
+        continue;
+      }
       qVectBTot[0] += trk.pt() * std::cos(trk.phi() * nmode);
       qVectBTot[1] += trk.pt() * std::sin(trk.phi() * nmode);
       TrkBTotLabel.push_back(trk.globalIndex());
       nTrkBTot++;
-      if (std::abs(trk.eta()) < 0.1 || std::abs(trk.eta()) > 0.8) {
+      if (std::abs(trk.eta()) < 0.1) {
         continue;
       }
       if (trk.eta() > 0 && useDetector["QvectorBPoss"]) {
