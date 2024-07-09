@@ -565,7 +565,7 @@ struct HfCorrelatorDMesonPairs {
           continue;
         }
         if (!(candidate2.isSelD0() >= selectionFlagD0 || candidate2.isSelD0bar() >= selectionFlagD0bar)) {
-        continue;
+          continue;
         }
         if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
           continue;
