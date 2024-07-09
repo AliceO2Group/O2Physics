@@ -988,7 +988,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                        decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon);
       // fill kf table
       kfCandidateData(kfOmegac0Candidate.nSigmaTPCPiFromOmegac, kfOmegac0Candidate.nSigmaTOFPiFromOmegac,
-                      kfOmegac0Candidate.nSigmaTOFKaFromCasc, kfOmegac0Candidate.nSigmaTOFKaFromCasc,
+                      kfOmegac0Candidate.nSigmaTPCKaFromCasc, kfOmegac0Candidate.nSigmaTOFKaFromCasc,
                       kfOmegac0Candidate.nSigmaTPCPiFromV0, kfOmegac0Candidate.nSigmaTPCPrFromV0,
                       kfOmegac0Candidate.kfDcaXYPiFromOmegac, kfOmegac0Candidate.kfDcaXYCascToPv,
                       kfOmegac0Candidate.chi2GeoV0, kfOmegac0Candidate.chi2GeoCasc, kfOmegac0Candidate.chi2GeoOmegac, kfOmegac0Candidate.chi2MassV0, kfOmegac0Candidate.chi2MassCasc,
