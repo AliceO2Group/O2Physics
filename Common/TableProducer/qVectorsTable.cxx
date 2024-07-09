@@ -402,6 +402,10 @@ struct qVectorsTable {
         continue;
       }
       histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
+      qVectBTot[0] += trk.pt() * std::cos(trk.phi() * nmode);
+      qVectBTot[1] += trk.pt() * std::sin(trk.phi() * nmode);
+      TrkBTotLabel.push_back(trk.globalIndex());
+      nTrkBTot++;
       if (std::abs(trk.eta()) < 0.1 || std::abs(trk.eta()) > 0.8) {
         continue;
       }
@@ -416,10 +420,6 @@ struct qVectorsTable {
         TrkBNegLabel.push_back(trk.globalIndex());
         nTrkBNeg++;
       }
-      qVectBTot[0] += trk.pt() * std::cos(trk.phi() * nmode);
-      qVectBTot[1] += trk.pt() * std::sin(trk.phi() * nmode);
-      TrkBTotLabel.push_back(trk.globalIndex());
-      nTrkBTot++;
     }
     if (nTrkBPos > 0) {
       qVectBPos[0] /= nTrkBPos;
