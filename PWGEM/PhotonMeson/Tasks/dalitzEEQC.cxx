@@ -29,7 +29,6 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
-// #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
@@ -190,10 +189,8 @@ struct DalitzEEQC {
     }
     const AxisSpec axis_pt{ptbins, "p_{T,ee} (GeV/c)"};
 
-    fRegistry.add("Pair/same/uls/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {axis_mass, axis_pt}, true);
-    fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
-    fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
-    fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
+    fRegistry.add("Pair/same/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {axis_mass, axis_pt}, true);
+    fRegistry.add("Pair/same/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
 
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
@@ -210,7 +207,6 @@ struct DalitzEEQC {
     fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
   }
 
   void DefineEMEventCut()
@@ -280,14 +276,8 @@ struct DalitzEEQC {
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/same/uls/hMvsPt"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/same/uls/hMvsPhiV"), phiv, v12.M());
-    } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/same/lspp/hMvsPt"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/same/lspp/hMvsPhiV"), phiv, v12.M());
-    } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/same/lsmm/hMvsPt"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/same/lsmm/hMvsPhiV"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/same/hMvsPt"), v12.M(), v12.Pt());
+      fRegistry.fill(HIST("Pair/same/hMvsPhiV"), phiv, v12.M());
     }
 
     if (t1.sign() > 0) {
@@ -330,7 +320,6 @@ struct DalitzEEQC {
     fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
     fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
     fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-    fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
     fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
     fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
     fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
@@ -371,12 +360,6 @@ struct DalitzEEQC {
 
       for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         fillPairInfo(collision, pos, ele);
-      }
-      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-        fillPairInfo(collision, pos1, pos2);
-      }
-      for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-        fillPairInfo(collision, ele1, ele2);
       }
     } // end of collision loop
 

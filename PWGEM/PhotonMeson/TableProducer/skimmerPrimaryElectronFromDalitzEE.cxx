@@ -26,7 +26,6 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-// #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
 using namespace o2;
