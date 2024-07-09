@@ -460,10 +460,10 @@ struct Pi0EtaToGammaGamma {
       float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
 
       if (openingAngle1 > emccuts.minOpenAngle && abs(mother1.Rapidity()) < maxY) {
-        fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt(), 0.0, 0.0);
+        fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt());
       }
       if (openingAngle2 > emccuts.minOpenAngle && abs(mother2.Rapidity()) < maxY) {
-        fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt(), 0.0, 0.0);
+        fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt());
       }
     }
   }
@@ -635,8 +635,8 @@ struct Pi0EtaToGammaGamma {
               used_dileptonIds.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
-          }    // end of dielectron loop
-        }      // end of g1 loop
+          } // end of dielectron loop
+        } // end of g1 loop
       } else { // PCM-EMC, PCM-PHOS. Nightmare. don't run these pairs.
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
@@ -667,7 +667,7 @@ struct Pi0EtaToGammaGamma {
           }
           ndiphoton++;
         } // end of pairing loop
-      }   // end of pairing in same event
+      } // end of pairing in same event
 
       // event mixing
       if (!cfgDoMix || !(ndiphoton > 0)) {
