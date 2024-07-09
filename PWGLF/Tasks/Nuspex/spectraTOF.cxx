@@ -409,14 +409,14 @@ struct tofSpectra {
         histos.add("MC/test/ka/neg/prm/pt/den", "generated MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/test/pr/pos/prm/pt/den", "generated MC p", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/test/pr/neg/prm/pt/den", "generated MC #bar{p}", kTHnSparseD, {ptAxis, impParamAxis});
-      if (doprocessMCgen_RecoEvs) {
-      histos.add("MC/test/RecoEvs/pi/pos/prm/pt/den", "generated MC #pi^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/RecoEvs/pi/neg/prm/pt/den", "generated MC #pi^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/RecoEvs/ka/pos/prm/pt/den", "generated MC K^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/RecoEvs/ka/neg/prm/pt/den", "generated MC K^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/RecoEvs/pr/pos/prm/pt/den", "generated MC p from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/RecoEvs/pr/neg/prm/pt/den", "generated MC #bar{p} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-       }
+        if (doprocessMCgen_RecoEvs) {
+          histos.add("MC/test/RecoEvs/pi/pos/prm/pt/den", "generated MC #pi^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+          histos.add("MC/test/RecoEvs/pi/neg/prm/pt/den", "generated MC #pi^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+          histos.add("MC/test/RecoEvs/ka/pos/prm/pt/den", "generated MC K^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+          histos.add("MC/test/RecoEvs/ka/neg/prm/pt/den", "generated MC K^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+          histos.add("MC/test/RecoEvs/pr/pos/prm/pt/den", "generated MC p from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+          histos.add("MC/test/RecoEvs/pr/neg/prm/pt/den", "generated MC #bar{p} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+        }
       }
       auto hh = histos.add<TH1>("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{10, 0.5, 10.5}});
       hh->GetXaxis()->SetBinLabel(1, "Collisions generated");
@@ -1877,52 +1877,52 @@ struct tofSpectra {
   PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", true);
   void processMCgen_RecoEvs(GenMCCollisions const& mcCollisions, RecoMCCollisions const& collisions, aod::McParticles const& mcParticles)
   {
-  for (const auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
         continue;
       }
       const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-    histos.fill(HIST("Vertex/RecoEvs/histGenVtxMC"), mcCollision.posZ());
-    histos.fill(HIST("Centrality/RecoEvs/ImpParm"), mcCollision.impactParameter());
-    const float multiplicity = mcCollision.impactParameter();
-    for (const auto& mcParticleGen : particlesInCollision) {
-      if (!mcParticleGen.isPhysicalPrimary())
-        continue;
-      int pdgCode = mcParticleGen.pdgCode();
-      float pt = mcParticleGen.pt();
-      float absY = std::abs(mcParticleGen.y());
-      // Apply rapidity cut
-      if (absY > trkselOptions.cfgCutY) {
-        continue;
-      }
+      histos.fill(HIST("Vertex/RecoEvs/histGenVtxMC"), mcCollision.posZ());
+      histos.fill(HIST("Centrality/RecoEvs/ImpParm"), mcCollision.impactParameter());
+      const float multiplicity = mcCollision.impactParameter();
+      for (const auto& mcParticleGen : particlesInCollision) {
+        if (!mcParticleGen.isPhysicalPrimary())
+          continue;
+        int pdgCode = mcParticleGen.pdgCode();
+        float pt = mcParticleGen.pt();
+        float absY = std::abs(mcParticleGen.y());
+        // Apply rapidity cut
+        if (absY > trkselOptions.cfgCutY) {
+          continue;
+        }
 
-      // Fill histograms based on particle type
-      switch (pdgCode) {
-        case 2212:
-          histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case -2212:
-          histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        case 211:
-          histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case -211:
-          histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        case 321:
-          histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case -321:
-          histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        default:
-          break;
+        // Fill histograms based on particle type
+        switch (pdgCode) {
+          case 2212:
+            histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/den"), pt, multiplicity);
+            break;
+          case -2212:
+            histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/den"), pt, multiplicity);
+            break;
+          case 211:
+            histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/den"), pt, multiplicity);
+            break;
+          case -211:
+            histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/den"), pt, multiplicity);
+            break;
+          case 321:
+            histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/den"), pt, multiplicity);
+            break;
+          case -321:
+            histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/den"), pt, multiplicity);
+            break;
+          default:
+            break;
+        }
       }
     }
   }
-}
   PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", true);
 
 }; // end of spectra task
