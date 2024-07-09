@@ -812,6 +812,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::Dielectrons> dielectronList;
   Produces<aod::Dimuons> dimuonList;
   Produces<aod::DielectronsExtra> dielectronsExtraList;
+  Produces<aod::DielectronsInfo> dielectronInfoList;
   Produces<aod::DimuonsExtra> dimuonsExtraList;
   Produces<aod::DielectronsAll> dielectronAllList;
   Produces<aod::DimuonsAll> dimuonAllList;
@@ -1147,6 +1148,7 @@ struct AnalysisSameEventPairing {
     dielectronList.reserve(1);
     dimuonList.reserve(1);
     dielectronsExtraList.reserve(1);
+    dielectronInfoList.reserve(1);
     dimuonsExtraList.reserve(1);
     dileptonInfoList.reserve(1);
     dileptonFlowList.reserve(1);
@@ -1212,6 +1214,7 @@ struct AnalysisSameEventPairing {
                          t1.sign() + t2.sign(), twoTrackFilter, 0);
 
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
+            dielectronInfoList(t1.collisionId(), t1.trackId(), t2.trackId());
             dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
           }
           if constexpr (trackHasCov && TTwoProngFitter) {

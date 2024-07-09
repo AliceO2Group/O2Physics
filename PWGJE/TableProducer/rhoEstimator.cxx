@@ -41,6 +41,7 @@ struct RhoEstimatorTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  Configurable<double> trackingEfficiency{"trackingEfficiency", 1.0, "tracking efficiency applied to jet finding"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   Configurable<float> bkgjetR{"bkgjetR", 0.2, "jet resolution parameter for determining background density"};
@@ -72,7 +73,7 @@ struct RhoEstimatorTask {
   void processChargedCollisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks)
   {
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
+    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
     rhoChargedTable(collision.globalIndex(), rho, rhoM);
   }
@@ -83,7 +84,7 @@ struct RhoEstimatorTask {
     inputParticles.clear();
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
       rhoD0Table(candidate.globalIndex(), rho, rhoM);
@@ -96,7 +97,7 @@ struct RhoEstimatorTask {
     inputParticles.clear();
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
       rhoLcTable(candidate.globalIndex(), rho, rhoM);
@@ -109,7 +110,7 @@ struct RhoEstimatorTask {
     inputParticles.clear();
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
       rhoBplusTable(candidate.globalIndex(), rho, rhoM);

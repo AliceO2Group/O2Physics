@@ -527,7 +527,7 @@ struct qVectorsTable {
       int ind = cfgnMods->at(id);
       CalQvec(ind, coll, tracks, qvecRe, qvecIm, qvecAmp, TrkBPosLabel, TrkBNegLabel, TrkBTotLabel);
       if (cent < 80) {
-        for (auto i{0u}; i < 6; i++) {
+        for (auto i{0u}; i < kBTot + 1; i++) {
           helperEP.DoRecenter(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 1], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 1],
                               objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
 

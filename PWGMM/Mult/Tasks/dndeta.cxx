@@ -346,28 +346,30 @@ struct MultiplicityCounter {
   template <typename C>
   void processEventStatGeneral(FullBCs const& bcs, C const& collisions)
   {
-    std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
+    std::vector<int64_t> colids;
     for (auto& bc : bcs) {
       if (!useEvSel || isBCSelected(bc)) {
         commonRegistry.fill(HIST(BCSelection), 1.);
-        cols.clear();
+        colids.clear();
         for (auto& collision : collisions) {
           if (collision.has_foundBC()) {
             if (collision.foundBCId() == bc.globalIndex()) {
-              cols.emplace_back(collision);
+              colids.push_back(collision.globalIndex());
             }
           } else if (collision.bcId() == bc.globalIndex()) {
-            cols.emplace_back(collision);
+            colids.push_back(collision.globalIndex());
           }
         }
-        LOGP(debug, "BC {} has {} collisions", bc.globalBC(), cols.size());
-        if (!cols.empty()) {
+        LOGP(debug, "BC {} has {} collisions", bc.globalBC(), colids.size());
+        if (!colids.empty()) {
           commonRegistry.fill(HIST(BCSelection), 2.);
-          if (cols.size() > 1) {
+          if (colids.size() > 1) {
             commonRegistry.fill(HIST(BCSelection), 3.);
           }
         }
-        for (auto& col : cols) {
+        auto col = collisions.begin();
+        for (auto& colid : colids) {
+          col.moveByIndex(colid - col.globalIndex());
           if constexpr (hasRecoCent<C>()) {
             float c = -1;
             if constexpr (C::template contains<aod::CentFT0Cs>()) {

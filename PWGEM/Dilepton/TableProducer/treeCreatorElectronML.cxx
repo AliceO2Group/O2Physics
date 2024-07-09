@@ -515,6 +515,115 @@ struct TreeCreatorElectronML {
     return false;
   }
 
+  template <typename TTrack, typename TMCParticles, typename TCollision>
+  void doPair(TTrack const& t1, TTrack const& t2, int pairtype, TMCParticles const& mctracks, TCollision const& collision, std::map<uint64_t, int>& fNewLabels, std::vector<uint64_t>& fSelected_old_labels, int& fCounter)
+  {
+    if (!IsSelected(t1) || !IsSelected(t2)) {
+      return;
+    }
+
+    if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
+      return;
+    }
+
+    auto mc1 = mctracks.iteratorAt(t1.mcParticleId());
+    auto mc2 = mctracks.iteratorAt(t2.mcParticleId());
+
+    if (abs(mc1.pdgCode()) != 11 || abs(mc2.pdgCode()) != 11) {
+      return;
+    } // charge swap is accepted.
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+    if (!IsSelectedPair(v12)) {
+      return;
+    }
+
+    float phiv = get_phiv(t1, t2);
+    float pair_dca_xy = sqrt((pow(t1.dcaXY() / sqrt(t1.cYY()), 2) + pow(t2.dcaXY() / sqrt(t2.cYY()), 2)) / 2.);
+    float pair_dca_z = sqrt((pow(t1.dcaZ() / sqrt(t1.cZZ()), 2) + pow(t2.dcaZ() / sqrt(t2.cZZ()), 2)) / 2.);
+
+    float cosOpAng = (v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / sqrt((v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz()) * (v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz()));
+    float pca = 999.f;
+    float lxy = 999.f;
+    float cosPA = 999.f;
+    o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, t1, t1, pca, lxy, cosPA);
+    float lxy_proper = lxy * v12.M() / v12.Pt();
+
+    bool isSM = false;
+    int isHF = o2::aod::pwgem::dilepton::utils::mcutil::IsHF(mc1, mc2, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
+
+    bool is_prompt = false;
+    int pdgCode = 0;
+    int statusCode = 0;
+    uint8_t flags = 0;
+    float vx = 0.f;
+    float vy = 0.f;
+    float vz = 0.f;
+    bool is_comb_bg = false;
+    if (pairtype == EM_EEPairType::kULS) {
+      int common_mother_id = FindCommonMotherFrom2Prongs(mc1, mc2, mctracks);
+      if (common_mother_id > 0) {
+        isSM = true;
+      }
+      if (isSM) {
+        auto mcpair = mctracks.iteratorAt(common_mother_id);
+        is_prompt = true; // only relevant for prompt jpsi
+        pdgCode = mcpair.pdgCode();
+        statusCode = mcpair.statusCode();
+        flags = mcpair.flags();
+        vx = mcpair.vx();
+        vy = mcpair.vy();
+        vz = mcpair.vz();
+
+        int motherid_pair = mcpair.mothersIds()[0]; // first mother index
+        while (motherid_pair > -1) {
+          if (motherid_pair < mctracks.size()) { // protect against bad mother indices. why is this needed?
+            auto mp = mctracks.iteratorAt(motherid_pair);
+
+            if (std::to_string(mp.pdgCode()).find("5") != std::string::npos) {
+              is_prompt = false;
+              break;
+            }
+
+            if (mp.has_mothers()) {
+              motherid_pair = mp.mothersIds()[0];
+            } else {
+              motherid_pair = -999;
+            }
+          } else {
+            LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid_pair, mctracks.size());
+          }
+        }
+      } else if (isHF == static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kUndef)) {
+        is_comb_bg = true;
+      }
+    } else { // LS
+      if (isHF == static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kUndef)) {
+        is_comb_bg = true;
+      }
+    }
+
+    if (!is_comb_bg || downSample(0)) {
+      if (!(fNewLabels.find(t1.globalIndex()) != fNewLabels.end())) {
+        fNewLabels[t1.globalIndex()] = fCounter;
+        fSelected_old_labels.push_back(t1.globalIndex());
+        fCounter++;
+      }
+      if (!(fNewLabels.find(t2.globalIndex()) != fNewLabels.end())) {
+        fNewLabels[t2.globalIndex()] = fCounter;
+        fSelected_old_labels.push_back(t2.globalIndex());
+        fCounter++;
+      }
+      mypair(mycollision.lastIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()],
+             v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
+             isSM, isHF, pairtype, is_prompt, pdgCode, statusCode, flags,
+             vx, vy, vz);
+    }
+  }
+
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& nabs(o2::aod::track::dcaXY) < maxDcaXY&& nabs(o2::aod::track::dcaZ) < maxDcaZ;
   using MyFilteredTracksMC = soa::Filtered<FullTracksExtMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
@@ -599,6 +708,7 @@ struct TreeCreatorElectronML {
     int fCounter = 0;
 
     for (auto& collision : collisions) {
+      std::vector<uint64_t> fSelected_old_labels;
       // TODO: investigate the collisions without corresponding mcCollision
       if (!collision.has_mcCollision()) {
         continue;
@@ -617,263 +727,62 @@ struct TreeCreatorElectronML {
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
-      for (auto& track : tracks) {
-        if (!IsSelected(track)) {
-          continue;
-        }
-
-        if (!track.has_mcParticle()) {
-          continue; // If no MC particle is found, skip the track
-        }
-
-        auto mctrack = track.mcParticle_as<aod::McParticles>();
-
-        if (abs(mctrack.pdgCode()) != 11) {
-          continue;
-        }
-
-        if (!(fNewLabels.find(track.globalIndex()) != fNewLabels.end())) {
-          fNewLabels[track.globalIndex()] = fCounter;
-
-          // store all mother relation
-          std::vector<int> mothers_id;
-          std::vector<int> mothers_pdg;
-          if (mctrack.has_mothers()) {
-            int motherid = mctrack.mothersIds()[0]; // first mother index
-            while (motherid > -1) {
-              if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-                auto mp = mctracks.iteratorAt(motherid);
-                mothers_id.emplace_back(motherid);
-                mothers_pdg.emplace_back(mp.pdgCode());
-
-                if (mp.has_mothers()) {
-                  motherid = mp.mothersIds()[0];
-                } else {
-                  motherid = -999;
-                }
-              } else {
-                LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
-              }
-            }
-          }
-
-          mytrack(mycollision.lastIndex(),
-                  track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
-                  track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
-                  track.tpcChi2NCl(), track.tpcInnerParam(),
-                  track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                  track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                  track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
-                  track.trdSignal(), track.trdPattern(),
-                  mctrack.vx(), mctrack.vy(), mctrack.vz(),
-                  mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
-
-          mothers_id.shrink_to_fit();
-          mothers_pdg.shrink_to_fit();
-          fCounter++;
-        }
-
-      } // end of track loop
-
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
-        if (!IsSelected(ele) || !IsSelected(pos)) {
-          continue;
-        }
-
-        if (!ele.has_mcParticle() || !pos.has_mcParticle()) {
-          continue;
-        }
-
-        auto mcpos = pos.mcParticle_as<aod::McParticles>();
-        auto mcele = ele.mcParticle_as<aod::McParticles>();
-
-        if (abs(mcele.pdgCode()) != 11 || abs(mcpos.pdgCode()) != 11) {
-          continue;
-        } // charge swap is accepted.
-
-        ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-
-        if (!IsSelectedPair(v12)) {
-          continue;
-        }
-
-        float phiv = get_phiv(ele, pos);
-        float pair_dca_xy = sqrt((pow(pos.dcaXY() / sqrt(pos.cYY()), 2) + pow(ele.dcaXY() / sqrt(ele.cYY()), 2)) / 2.);
-        float pair_dca_z = sqrt((pow(pos.dcaZ() / sqrt(pos.cZZ()), 2) + pow(ele.dcaZ() / sqrt(ele.cZZ()), 2)) / 2.);
-
-        float cosOpAng = (v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / sqrt((v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz()) * (v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz()));
-        float pca = 999.f;
-        float lxy = 999.f;
-        float cosPA = 999.f;
-        o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, pos, ele, pca, lxy, cosPA);
-        float lxy_proper = lxy * v12.M() / v12.Pt();
-
-        bool isSM = false;
-        int common_mother_id = FindCommonMotherFrom2Prongs(mcpos, mcele, mctracks);
-        if (common_mother_id > 0) {
-          isSM = true;
-        }
-        int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mcpos, mcele, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
-
-        if (isSM) {
-          auto mcpair = mctracks.iteratorAt(common_mother_id);
-          bool is_prompt = true; // only relevant for prompt jpsi
-
-          int motherid_pair = mcpair.mothersIds()[0]; // first mother index
-          while (motherid_pair > -1) {
-            if (motherid_pair < mctracks.size()) { // protect against bad mother indices. why is this needed?
-              auto mp = mctracks.iteratorAt(motherid_pair);
-
-              if (std::to_string(mp.pdgCode()).find("5") != std::string::npos) {
-                is_prompt = false;
-                break;
-              }
-
-              if (mp.has_mothers()) {
-                motherid_pair = mp.mothersIds()[0];
-              } else {
-                motherid_pair = -999;
-              }
-            } else {
-              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid_pair, mctracks.size());
-            }
-          }
-
-          mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
-                 isSM, isHF, EM_EEPairType::kULS, is_prompt, mcpair.pdgCode(), mcpair.statusCode(), mcpair.flags(),
-                 mcpair.vx(), mcpair.vy(), mcpair.vz());
-          // LOGF(info, "mcpair.pdgCode() = %d", mcpair.pdgCode());
-        } else if (isHF > -1) {
-          // isSM and isHF are not satisfied at the same time.
-          mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
-                 isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
-                 0, 0, 0);
-        } else { // this is combinatorial bkg
-          if (downSample(0)) {
-            mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
-                   v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
-                   isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
-                   0, 0, 0);
-          }
-        }
-
-      } // end of uls pair loop
+        doPair(pos, ele, EM_EEPairType::kULS, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
+      }
 
       if (!doLS) {
         continue;
       }
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_coll, posTracks_coll))) {
-        if (!IsSelected(pos1) || !IsSelected(pos2)) {
-          continue;
-        }
-
-        if (!pos1.has_mcParticle() || !pos2.has_mcParticle()) {
-          continue;
-        }
-
-        auto mcpos1 = pos1.mcParticle_as<aod::McParticles>();
-        auto mcpos2 = pos2.mcParticle_as<aod::McParticles>();
-
-        if (abs(mcpos1.pdgCode()) != 11 || abs(mcpos2.pdgCode()) != 11) {
-          continue;
-        } // charge swap is accepted.
-
-        ROOT::Math::PtEtaPhiMVector v1(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-
-        if (!IsSelectedPair(v12)) {
-          continue;
-        }
-
-        float phiv = get_phiv(pos1, pos2);
-        float pair_dca_xy = sqrt((pow(pos2.dcaXY() / sqrt(pos2.cYY()), 2) + pow(pos1.dcaXY() / sqrt(pos1.cYY()), 2)) / 2.);
-        float pair_dca_z = sqrt((pow(pos2.dcaZ() / sqrt(pos2.cZZ()), 2) + pow(pos1.dcaZ() / sqrt(pos1.cZZ()), 2)) / 2.);
-
-        float cosOpAng = (v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / sqrt((v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz()) * (v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz()));
-        float pca = 999.f;
-        float lxy = 999.f;
-        float cosPA = 999.f;
-        o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, pos1, pos2, pca, lxy, cosPA);
-        float lxy_proper = lxy * v12.M() / v12.Pt();
-
-        bool isSM = false;
-        int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mcpos1, mcpos2, mctracks);
-        if (isHF != static_cast<int>(o2::aod::pwgem::dilepton::mcutil::EM_HFeeType::kUndef)) {
-          // isSM and isHF are not satisfied at the same time.
-          mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
-                 isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
-                 0, 0, 0);
-        } else { // this is combinatorial bkg
-          double pt = v12.Pt();
-          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
-          if (pseudoRndm <= combBgReductionFactor) {
-            mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
-                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
-                   isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
-                   0, 0, 0);
-          }
-        }
-
-      } // end of lspp pair loop
+        doPair(pos1, pos2, EM_EEPairType::kLSpp, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
+      }
 
       for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_coll, negTracks_coll))) {
-        if (!IsSelected(ele1) || !IsSelected(ele2)) {
-          continue;
-        }
-        if (!ele1.has_mcParticle() || !ele2.has_mcParticle()) {
-          continue;
-        }
+        doPair(ele1, ele2, EM_EEPairType::kLSnn, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
+      }
 
-        auto mcele1 = ele1.mcParticle_as<aod::McParticles>();
-        auto mcele2 = ele2.mcParticle_as<aod::McParticles>();
+      // single tracks, only if selected in at least one pair
+      for (uint64_t track_label : fSelected_old_labels) {
+        auto track = tracks.rawIteratorAt(track_label);
+        auto mctrack = track.mcParticle_as<aod::McParticles>();
+        // store all mother relation
+        std::vector<int> mothers_id;
+        std::vector<int> mothers_pdg;
+        if (mctrack.has_mothers()) {
+          int motherid = mctrack.mothersIds()[0]; // first mother index
+          while (motherid > -1) {
+            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mctracks.iteratorAt(motherid);
+              mothers_id.emplace_back(motherid);
+              mothers_pdg.emplace_back(mp.pdgCode());
 
-        if (abs(mcele1.pdgCode()) != 11 || abs(mcele2.pdgCode()) != 11) {
-          continue;
-        } // charge swap is accepted.
-
-        ROOT::Math::PtEtaPhiMVector v1(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-
-        if (!IsSelectedPair(v12)) {
-          continue;
-        }
-
-        float phiv = get_phiv(ele1, ele2);
-        float pair_dca_xy = sqrt((pow(ele2.dcaXY() / sqrt(ele2.cYY()), 2) + pow(ele1.dcaXY() / sqrt(ele1.cYY()), 2)) / 2.);
-        float pair_dca_z = sqrt((pow(ele2.dcaZ() / sqrt(ele2.cZZ()), 2) + pow(ele1.dcaZ() / sqrt(ele1.cZZ()), 2)) / 2.);
-
-        float cosOpAng = (v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / sqrt((v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz()) * (v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz()));
-        float pca = 999.f;
-        float lxy = 999.f;
-        float cosPA = 999.f;
-        o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, ele1, ele2, pca, lxy, cosPA);
-        float lxy_proper = lxy * v12.M() / v12.Pt();
-
-        bool isSM = false;
-        int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mcele1, mcele2, mctracks);
-        if (isHF != static_cast<int>(o2::aod::pwgem::dilepton::mcutil::EM_HFeeType::kUndef)) {
-          // isSM and isHF are not satisfied at the same time.
-          mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
-                 isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
-                 0, 0, 0);
-        } else { // this is combinatorial bkg
-          if (downSample(0)) {
-            mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
-                   v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
-                   isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
-                   0, 0, 0);
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0];
+              } else {
+                motherid = -999;
+              }
+            } else {
+              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
+            }
           }
         }
 
-      } // end of lsnn pair loop
+        mytrack(mycollision.lastIndex(),
+                track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
+                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                track.tpcChi2NCl(), track.tpcInnerParam(),
+                track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
+                track.trdSignal(), track.trdPattern(),
+                mctrack.vx(), mctrack.vy(), mctrack.vz(),
+                mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+
+        mothers_id.shrink_to_fit();
+        mothers_pdg.shrink_to_fit();
+
+      } // end of track loop
 
     } // end of collision loop
     fNewLabels.clear();

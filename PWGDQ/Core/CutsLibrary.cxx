@@ -507,6 +507,23 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("singleGapTrackCuts3")) {
+    cut->AddCut(GetAnalysisCut("PIDStandardKine2"));
+    cut->AddCut(GetAnalysisCut("SPDany"));
+
+    AnalysisCompositeCut* cut_notpc = new AnalysisCompositeCut("NoTPC", "NoTPC", kTRUE);
+    cut_notpc->AddCut(GetAnalysisCut("noTPC"));
+
+    AnalysisCompositeCut* cut_tpcpid = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+    cut_tpcpid->AddCut(GetAnalysisCut("pionQuality"));
+
+    AnalysisCompositeCut* cut_OR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+    cut_OR->AddCut(cut_notpc);
+    cut_OR->AddCut(cut_tpcpid);
+    cut->AddCut(cut_OR);
+    return cut;
+  }
+
   if (!nameStr.compare("PIDCalib")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -516,9 +533,9 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("NoPID")) {
-    cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
-    cut->AddCut(GetAnalysisCut("electronStandardQuality"));
-    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("PIDStandardKine2")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly2"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
     return cut;
   }
 
@@ -3172,7 +3189,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
                                         50000.};
 
   for (size_t icase = 0; icase < vecOccupancies.size() - 1; icase++) {
-    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice%i", icase))) {
+    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice%lu", icase))) {
       cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
       cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
       cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
@@ -3728,6 +3745,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("electronStandardQualityTPCOnly")) {
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kTPCncls, 70, 161.);
+    return cut;
+  }
+
+  if (!nameStr.compare("electronStandardQualityTPCOnly2")) {
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 100, 161.);
     return cut;
   }
 

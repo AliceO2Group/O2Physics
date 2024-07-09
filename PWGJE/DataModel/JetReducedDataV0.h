@@ -18,6 +18,7 @@
 #define PWGJE_DATAMODEL_JETREDUCEDDATAV0_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/JetReducedData.h"
@@ -25,14 +26,52 @@
 namespace o2::aod
 {
 
+DECLARE_SOA_TABLE(JV0McCollisions, "AOD", "JV0MCCOLL",
+                  o2::soa::Index<>,
+                  jmccollision::PosX,
+                  jmccollision::PosY,
+                  jmccollision::PosZ,
+                  o2::soa::Marker<1>);
+
+using JMcCollision = JMcCollisions::iterator;
+
+DECLARE_SOA_TABLE(StoredJV0McCollisions, "AOD1", "JV0MCCOLL",
+                  o2::soa::Index<>,
+                  jmccollision::PosX,
+                  jmccollision::PosY,
+                  jmccollision::PosZ,
+                  o2::soa::Marker<2>);
+
 namespace jv0indices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
+DECLARE_SOA_INDEX_COLUMN(JV0McCollision, v0mccollision);
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, JTracks, "_0");
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, JTracks, "_1");
 DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jv0indices
+
+namespace v0collisioncounter
+{
+DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
+} // namespace v0collisioncounter
+
+DECLARE_SOA_TABLE(JV0CollisionIds, "AOD", "JV0COLLID",
+                  jv0indices::JCollisionId);
+
+DECLARE_SOA_TABLE(StoredJV0CollisionIds, "AOD1", "JV0COLLID",
+                  jv0indices::JCollisionId,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JV0McCollisionIds, "AOD", "JV0MCCOLLID",
+                  jv0indices::JMcCollisionId);
+
+DECLARE_SOA_TABLE(StoredJV0McCollisionIds, "AOD1", "JV0MCCOLLID",
+                  jv0indices::JMcCollisionId,
+                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JV0Ids, "AOD", "JV0ID",
                   jv0indices::JCollisionId,
@@ -45,7 +84,12 @@ DECLARE_SOA_TABLE(StoredJV0Ids, "AOD1", "JV0ID",
                   jv0indices::NegTrackId,
                   o2::soa::Marker<1>);
 
-namespace jv0mcparticle
+DECLARE_SOA_TABLE(V0CollisionCounts, "AOD", "V0COLLCOUNT",
+                  v0collisioncounter::ReadCounts,
+                  v0collisioncounter::ReadSelectedCounts,
+                  v0collisioncounter::WrittenCounts);
+
+namespace jv0mc
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -68,56 +112,63 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
-} // namespace jv0mcparticle
+} // namespace jv0mc
 
-DECLARE_SOA_TABLE(JV0McParticles, "AOD", "JV0MCPARTICLE",
+DECLARE_SOA_TABLE(JV0Mcs, "AOD", "JV0MC",
                   o2::soa::Index<>,
-                  jv0indices::JMcCollisionId,
-                  jv0indices::JMcParticleId,
-                  jv0mcparticle::Pt,
-                  jv0mcparticle::Eta,
-                  jv0mcparticle::Phi,
-                  jv0mcparticle::Y,
-                  jv0mcparticle::E,
-                  jv0mcparticle::M,
-                  jv0mcparticle::PdgCode,
-                  jv0mcparticle::GenStatusCode,
-                  jv0mcparticle::HepMCStatusCode,
-                  jv0mcparticle::IsPhysicalPrimary,
-                  jv0mcparticle::MothersIds,
-                  jv0mcparticle::DaughtersIdSlice,
-                  jv0mcparticle::DecayFlag,
-                  jv0mcparticle::Px<jv0mcparticle::Pt, jv0mcparticle::Phi>,
-                  jv0mcparticle::Py<jv0mcparticle::Pt, jv0mcparticle::Phi>,
-                  jv0mcparticle::Pz<jv0mcparticle::Pt, jv0mcparticle::Eta>,
-                  jv0mcparticle::P<jv0mcparticle::Pt, jv0mcparticle::Eta>);
+                  jv0indices::JV0McCollisionId,
+                  jv0mc::Pt,
+                  jv0mc::Eta,
+                  jv0mc::Phi,
+                  jv0mc::Y,
+                  jv0mc::E,
+                  jv0mc::M,
+                  jv0mc::PdgCode,
+                  jv0mc::GenStatusCode,
+                  jv0mc::HepMCStatusCode,
+                  jv0mc::IsPhysicalPrimary,
+                  jv0mc::DecayFlag,
+                  jv0mc::Px<jv0mc::Pt, jv0mc::Phi>,
+                  jv0mc::Py<jv0mc::Pt, jv0mc::Phi>,
+                  jv0mc::Pz<jv0mc::Pt, jv0mc::Eta>,
+                  jv0mc::P<jv0mc::Pt, jv0mc::Eta>);
 
-using JV0McParticle = JV0McParticles::iterator;
+using JV0Mc = JV0Mcs::iterator;
 
-DECLARE_SOA_TABLE(StoredJV0McParticles, "AOD1", "JV0MCPARTICLE",
+DECLARE_SOA_TABLE(StoredJV0Mcs, "AOD1", "JV0MC",
                   o2::soa::Index<>,
-                  jv0indices::JMcCollisionId,
-                  jv0indices::JMcParticleId,
-                  jv0mcparticle::Pt,
-                  jv0mcparticle::Eta,
-                  jv0mcparticle::Phi,
-                  jv0mcparticle::Y,
-                  jv0mcparticle::E,
-                  jv0mcparticle::M,
-                  jv0mcparticle::PdgCode,
-                  jv0mcparticle::GenStatusCode,
-                  jv0mcparticle::HepMCStatusCode,
-                  jv0mcparticle::IsPhysicalPrimary,
-                  jv0mcparticle::MothersIds,
-                  jv0mcparticle::DaughtersIdSlice,
-                  jv0mcparticle::DecayFlag,
-                  jv0mcparticle::Px<jv0mcparticle::Pt, jv0mcparticle::Phi>,
-                  jv0mcparticle::Py<jv0mcparticle::Pt, jv0mcparticle::Phi>,
-                  jv0mcparticle::Pz<jv0mcparticle::Pt, jv0mcparticle::Eta>,
-                  jv0mcparticle::P<jv0mcparticle::Pt, jv0mcparticle::Eta>,
+                  jv0indices::JV0McCollisionId,
+                  jv0mc::Pt,
+                  jv0mc::Eta,
+                  jv0mc::Phi,
+                  jv0mc::Y,
+                  jv0mc::E,
+                  jv0mc::M,
+                  jv0mc::PdgCode,
+                  jv0mc::GenStatusCode,
+                  jv0mc::HepMCStatusCode,
+                  jv0mc::IsPhysicalPrimary,
+                  jv0mc::DecayFlag,
+                  jv0mc::Px<jv0mc::Pt, jv0mc::Phi>,
+                  jv0mc::Py<jv0mc::Pt, jv0mc::Phi>,
+                  jv0mc::Pz<jv0mc::Pt, jv0mc::Eta>,
+                  jv0mc::P<jv0mc::Pt, jv0mc::Eta>,
                   o2::soa::Marker<1>);
 
-using StoredJV0McParticle = StoredJV0McParticles::iterator;
+using StoredJV0Mc = StoredJV0Mcs::iterator;
+
+DECLARE_SOA_TABLE(JV0McIds, "AOD", "JV0MCID",
+                  jv0indices::JMcCollisionId,
+                  jv0indices::JMcParticleId,
+                  jv0mc::MothersIds,
+                  jv0mc::DaughtersIdSlice);
+
+DECLARE_SOA_TABLE(StoredJV0McIds, "AOD1", "JV0MCID",
+                  jv0indices::JMcCollisionId,
+                  jv0indices::JMcParticleId,
+                  jv0mc::MothersIds,
+                  jv0mc::DaughtersIdSlice,
+                  o2::soa::Marker<1>);
 
 } // namespace o2::aod
 
