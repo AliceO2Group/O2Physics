@@ -169,7 +169,7 @@ struct femtoDreamPairTaskCharmHadrons {
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
   Produces<o2::aod::FDResultsHF> fillFemtoResult;
 
-  void init(InitContext&  /*context*/)
+  void init(InitContext& /*context*/)
   {
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTTrack, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarTrack, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptisMc, ConfTrk1_PDGCode);
@@ -198,7 +198,7 @@ struct femtoDreamPairTaskCharmHadrons {
 
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename TableCandidates, typename Collision>
-  void doSameEvent(PartitionType& SliceTrk1, CandType& SliceCharmHad, TableTracks const& parts, TableCandidates const&  /*candidates*/, Collision const& col)
+  void doSameEvent(PartitionType& SliceTrk1, CandType& SliceCharmHad, TableTracks const& parts, TableCandidates const& /*candidates*/, Collision const& col)
   {
     processType = 1; // for same event
     /// Histogramming same event
@@ -277,7 +277,7 @@ struct femtoDreamPairTaskCharmHadrons {
   PROCESS_SWITCH(femtoDreamPairTaskCharmHadrons, processSameEvent, "Enable processing same event", true);
 
   template <bool isMc, typename CollisionType, typename PartType, typename PartitionType1, typename PartitionType2, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2&  /*part2*/, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& /*part2*/, BinningType policy)
   {
     processType = 1 << 1; // for mixed event
 
@@ -340,7 +340,7 @@ struct femtoDreamPairTaskCharmHadrons {
     }
   }
 
-  void processMixedEvent(FilteredColisions const& cols, FilteredFDParticles const& parts, FilteredCharmCands const&  /*candidates*/)
+  void processMixedEvent(FilteredColisions const& cols, FilteredFDParticles const& parts, FilteredCharmCands const& /*candidates*/)
   {
     switch (ConfMixingPolicy.value) {
       case femtodreamcollision::kMult:

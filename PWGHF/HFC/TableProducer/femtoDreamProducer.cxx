@@ -499,7 +499,7 @@ struct femtoDreamProducer {
                          soa::Join<FemtoHFTracks,
                                    aod::McTrackLabels> const& tracks,
                          soa::Filtered<CandidateLcMC> const& candidates,
-                         GeneratedMC const&  /*particles*/)
+                         GeneratedMC const& /*particles*/)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -514,7 +514,7 @@ struct femtoDreamProducer {
                                          aod::McTrackLabels> const& tracks,
                                soa::Filtered<soa::Join<CandidateLcMC,
                                                        aod::HfMlLcToPKPi>> const& candidates,
-                               GeneratedMC const&  /*particles*/)
+                               GeneratedMC const& /*particles*/)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
