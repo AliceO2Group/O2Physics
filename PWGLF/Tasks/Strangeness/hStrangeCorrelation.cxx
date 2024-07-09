@@ -856,22 +856,22 @@ struct correlateStrangeness {
       if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
-        if (!doprocessMixedEventHCascades) {
-          if (collision1.globalIndex() == collision2.globalIndex()) {
-            histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
-          }
-          histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
-          histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
-          histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
+      if (!doprocessMixedEventHCascades) {
+        if (collision1.globalIndex() == collision2.globalIndex()) {
+          histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
         }
-        // ________________________________________________
-        // Do slicing
-        auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
-        auto slicedAssocV0s = associatedV0s.sliceBy(collisionSliceV0s, collision2.globalIndex());
-        // ________________________________________________
-        // Do hadron - V0 correlations
-        fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true, collision1.posZ(), collision1.centFT0M());
+        histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
+        histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
+        histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
       }
+      // ________________________________________________
+      // Do slicing
+      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
+      auto slicedAssocV0s = associatedV0s.sliceBy(collisionSliceV0s, collision2.globalIndex());
+      // ________________________________________________
+      // Do hadron - V0 correlations
+      fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true, collision1.posZ(), collision1.centFT0M());
+    }
   }
   void processMixedEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
                                   aod::AssocV0s const&, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
@@ -895,21 +895,21 @@ struct correlateStrangeness {
       if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
-        if (collision1.globalIndex() == collision2.globalIndex()) {
-          histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
-        }
-
-        histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
-        histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
-        histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
-        // ________________________________________________
-        // Do slicing
-        auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
-        auto slicedAssocCascades = associatedCascades.sliceBy(collisionSliceCascades, collision2.globalIndex());
-        // ________________________________________________
-        // Do hadron - cascade correlations
-        fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true, collision1.posZ(), collision1.centFT0M());
+      if (collision1.globalIndex() == collision2.globalIndex()) {
+        histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
       }
+
+      histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
+      histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
+      histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
+      // ________________________________________________
+      // Do slicing
+      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
+      auto slicedAssocCascades = associatedCascades.sliceBy(collisionSliceCascades, collision2.globalIndex());
+      // ________________________________________________
+      // Do hadron - cascade correlations
+      fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true, collision1.posZ(), collision1.centFT0M());
+    }
   }
   void processMixedEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
                                aod::AssocPions const& assocPions, aod::TriggerTracks const& triggerTracks,
@@ -929,21 +929,21 @@ struct correlateStrangeness {
       if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
-        if (collision1.globalIndex() == collision2.globalIndex()) {
-          histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
-        }
-
-        histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
-        histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
-        histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
-        // ________________________________________________
-        // Do slicing
-        auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
-        auto slicedAssocPions = assocPions.sliceBy(collisionSlicePions, collision2.globalIndex());
-        // ________________________________________________
-        // Do hadron - cascade correlations
-        fillCorrelationsPion(slicedTriggerTracks, slicedAssocPions, true, collision1.posZ(), collision1.centFT0M());
+      if (collision1.globalIndex() == collision2.globalIndex()) {
+        histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
       }
+
+      histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
+      histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
+      histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
+      // ________________________________________________
+      // Do slicing
+      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
+      auto slicedAssocPions = assocPions.sliceBy(collisionSlicePions, collision2.globalIndex());
+      // ________________________________________________
+      // Do hadron - cascade correlations
+      fillCorrelationsPion(slicedTriggerTracks, slicedAssocPions, true, collision1.posZ(), collision1.centFT0M());
+    }
   }
 
   void processMCGenerated(aod::McCollision const& mccollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& collisions, aod::McParticles const& mcParticles)
