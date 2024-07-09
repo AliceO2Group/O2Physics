@@ -227,7 +227,7 @@ struct QaFakeHits {
   using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
 
   // MC process
-  void process(o2::aod::Collision const&  /*collision*/,
+  void process(o2::aod::Collision const& /*collision*/,
                o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                o2::aod::McCollisions const&,
                o2::aod::McParticles const&)

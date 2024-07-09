@@ -211,7 +211,7 @@ struct RofBorderQaTask {
     Colls::iterator const& collision,
     aod::FT0s const&,
     BCsRun3 const& bcs,
-    aod::Origins const&  /*origins*/,
+    aod::Origins const& /*origins*/,
     soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
               aod::TrackSelectionExtension,
               aod::TracksDCA, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
