@@ -375,7 +375,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
 DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
-//Machine learning column for omegac0 to omega pi
+// Machine learning column for omegac0 to omega pi
 DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, std::vector<float>);
 DECLARE_SOA_COLUMN(MlProbOmegacBar, mlProbOmegacBar, std::vector<float>);
 } // namespace hf_sel_toomegapi
@@ -416,7 +416,7 @@ DECLARE_SOA_TABLE(HfSelToOmegaKa, "AOD", "HFSELTOOMEKA",
                   hf_sel_toomegaka::ResultSelections, hf_sel_toomegaka::PidTpcInfoStored, hf_sel_toomegaka::PidTofInfoStored,
                   hf_sel_toomegaka::TpcNSigmaKaFromCharmBaryon, hf_sel_toomegaka::TpcNSigmaKaFromCasc, hf_sel_toomegaka::TpcNSigmaPiFromLambda, hf_sel_toomegaka::TpcNSigmaPrFromLambda,
                   hf_sel_toomegaka::TofNSigmaKaFromCharmBaryon, hf_sel_toomegaka::TofNSigmaKaFromCasc, hf_sel_toomegaka::TofNSigmaPiFromLambda, hf_sel_toomegaka::TofNSigmaPrFromLambda)
-  
+
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
