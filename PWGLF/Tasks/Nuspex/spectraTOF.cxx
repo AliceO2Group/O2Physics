@@ -410,12 +410,12 @@ struct tofSpectra {
         histos.add("MC/test/pr/pos/prm/pt/den", "generated MC p", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/test/pr/neg/prm/pt/den", "generated MC #bar{p}", kTHnSparseD, {ptAxis, impParamAxis});
       if (doprocessMCgen_RecoEvs) {
-       	histos.add("MC/test/RecoEvs/pi/pos/prm/pt/den", "generated MC #pi^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-       	histos.add("MC/test/RecoEvs/pi/neg/prm/pt/den", "generated MC #pi^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-       	histos.add("MC/test/RecoEvs/ka/pos/prm/pt/den", "generated MC K^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-       	histos.add("MC/test/RecoEvs/ka/neg/prm/pt/den", "generated MC K^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-       	histos.add("MC/test/RecoEvs/pr/pos/prm/pt/den", "generated MC p from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-       	histos.add("MC/test/RecoEvs/pr/neg/prm/pt/den", "generated MC #bar{p} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/RecoEvs/pi/pos/prm/pt/den", "generated MC #pi^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/RecoEvs/pi/neg/prm/pt/den", "generated MC #pi^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/RecoEvs/ka/pos/prm/pt/den", "generated MC K^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/RecoEvs/ka/neg/prm/pt/den", "generated MC K^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/RecoEvs/pr/pos/prm/pt/den", "generated MC p from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/RecoEvs/pr/neg/prm/pt/den", "generated MC #bar{p} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
        }
       }
       auto hh = histos.add<TH1>("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{10, 0.5, 10.5}});
@@ -1831,7 +1831,7 @@ struct tofSpectra {
       }
     }
   }
-  PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
+  PROCESS_SWITCH(tofSpectra, processMC, "Process MC", true);
 
   void processMCgen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -1874,7 +1874,7 @@ struct tofSpectra {
       }
     }
   }
-  PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
+  PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", true);
   void processMCgen_RecoEvs(GenMCCollisions const& mcCollisions, RecoMCCollisions const& collisions, aod::McParticles const& mcParticles)
   {
   for (const auto& collision : collisions) {
@@ -1924,7 +1924,7 @@ struct tofSpectra {
     }
   }
  }
-  PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", false);
+  PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", true);
 
 }; // end of spectra task
 
