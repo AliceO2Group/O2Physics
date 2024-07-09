@@ -936,10 +936,12 @@ struct QaEfficiency {
         // Check if the particle is produced in a secondary decay
         if (mcParticle.getProcess() == 4) {
           // Get the mother particle's index and the mother particle itself
-          auto motherParticle = mcParticle.mother0_as<o2::aod::McParticles>();
+          auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+           for (const auto& mother : mothers) {
           // Check if the mother particle is not primary and produced in a weak decay
-          if (!motherParticle.isPhysicalPrimary() && motherParticle.getProcess() == 4) {
+          if (!mother.isPhysicalPrimary() && mother.getProcess() == 4) {
             return true; // Consider it as a tertiary particle
+            }
           }
         }
       }
