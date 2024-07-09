@@ -96,7 +96,7 @@ using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
 // PID index as template argument
 #define perSpeciesWrapper(functionName)                       \
   template <o2::track::PID::ID index, typename TrackType>     \
-  auto functionName(const TrackType& track)             \
+  auto functionName(const TrackType& track)                   \
   {                                                           \
     if constexpr (index == o2::track::PID::Electron) {        \
       return track.functionName##El();                        \
@@ -178,7 +178,7 @@ perSpeciesWrapper(tpcExpSignalDiff);
 // PID index as function argument for TOF
 #define perSpeciesWrapper(functionName)                                                                             \
   template <typename TrackType>                                                                                     \
-  auto functionName(const o2::track::PID::ID index, const TrackType& track)                                   \
+  auto functionName(const o2::track::PID::ID index, const TrackType& track)                                         \
   {                                                                                                                 \
     switch (index) {                                                                                                \
       case o2::track::PID::Electron:                                                                                \
@@ -277,7 +277,7 @@ perSpeciesWrapper(tofExpSignalDiff);
 // PID index as function argument for TPC
 #define perSpeciesWrapper(functionName)                                                                             \
   template <typename TrackType>                                                                                     \
-  auto functionName(const o2::track::PID::ID index, const TrackType& track)                                   \
+  auto functionName(const o2::track::PID::ID index, const TrackType& track)                                         \
   {                                                                                                                 \
     switch (index) {                                                                                                \
       case o2::track::PID::Electron:                                                                                \
