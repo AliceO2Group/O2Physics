@@ -35,18 +35,18 @@ o2physics_add_dpl_workflow(candidate-selector-b0-to-d-pi-reduced
 
 o2physics_add_dpl_workflow(candidate-selector-bplus-to-d0-pi-reduced
                     SOURCES candidateSelectorBplusToD0PiReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 # Data creators
 
 o2physics_add_dpl_workflow(data-creator-charm-had-pi-reduced
                     SOURCES dataCreatorCharmHadPiReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-charm-reso-reduced
                     SOURCES dataCreatorCharmResoReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 

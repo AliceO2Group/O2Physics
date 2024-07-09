@@ -18,7 +18,10 @@
 
 ClassImp(DalitzEECut);
 
-const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairEtaRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF"};
+// const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairRapidityRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
+
+const std::pair<int8_t, std::set<uint8_t>> DalitzEECut::its_ib_any_Requirement = {1, {0, 1, 2}}; // hits on any ITS ib layers.
+const std::pair<int8_t, std::set<uint8_t>> DalitzEECut::its_ib_1st_Requirement = {1, {0}};       // hit on 1st ITS ib layers.
 
 void DalitzEECut::SetPairPtRange(float minPt, float maxPt)
 {
@@ -26,17 +29,11 @@ void DalitzEECut::SetPairPtRange(float minPt, float maxPt)
   mMaxPairPt = maxPt;
   LOG(info) << "DalitzEE Cut, set pair pt range: " << mMinPairPt << " - " << mMaxPairPt;
 }
-void DalitzEECut::SetPairEtaRange(float minEta, float maxEta)
+void DalitzEECut::SetPairYRange(float minY, float maxY)
 {
-  mMinPairEta = minEta;
-  mMaxPairEta = maxEta;
-  LOG(info) << "DalitzEE Cut, set pair eta range: " << mMinPairEta << " - " << mMaxPairEta;
-}
-void DalitzEECut::SetPairDCARange(float min, float max)
-{
-  mMinPairDCA3D = min;
-  mMaxPairDCA3D = max;
-  LOG(info) << "DalitzEE Cut, set pair 3d dca range: " << mMinPairDCA3D << " - " << mMaxPairDCA3D;
+  mMinPairY = minY;
+  mMaxPairY = maxY;
+  LOG(info) << "DalitzEE Cut, set pair eta range: " << mMinPairY << " - " << mMaxPairY;
 }
 void DalitzEECut::SetMeeRange(float min, float max)
 {
@@ -100,11 +97,11 @@ void DalitzEECut::SetChi2PerClusterITS(float min, float max)
   mMaxChi2PerClusterITS = max;
   LOG(info) << "DalitzEE Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
 }
-void DalitzEECut::SetDca3DRange(float min, float max)
+void DalitzEECut::SetMeanClusterSizeITS(float min, float max)
 {
-  mMinDca3D = min;
-  mMaxDca3D = max;
-  LOG(info) << "DalitzEE Cut, set DCA 3D range in sigma: " << mMinDca3D << " - " << mMaxDca3D;
+  mMinMeanClusterSizeITS = min;
+  mMaxMeanClusterSizeITS = max;
+  LOG(info) << "DalitzEE Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
 void DalitzEECut::SetMaxDcaXY(float maxDcaXY)
 {
@@ -127,36 +124,6 @@ void DalitzEECut::ApplyPhiV(bool flag)
   mApplyPhiV = flag;
   LOG(info) << "DalitzEE Cut, apply phiv cut: " << mApplyPhiV;
 }
-void DalitzEECut::ApplyPrefilter(bool flag)
-{
-  mApplyPF = flag;
-  LOG(info) << "DalitzEE Cut, apply prefilter: " << mApplyPF;
-}
-
-void DalitzEECut::SetPIDScheme(PIDSchemes scheme)
-{
-  mPIDScheme = scheme;
-  LOG(info) << "DalitzEE Cut, PID scheme: " << static_cast<int>(mPIDScheme);
-}
-void DalitzEECut::SetMinPinTOF(float min)
-{
-  mMinPinTOF = min;
-  LOG(info) << "DalitzEE Cut, set min pin for TOF: " << mMinPinTOF;
-}
-
-void DalitzEECut::SetMuonExclusionTPC(bool flag)
-{
-  mMuonExclusionTPC = flag;
-  LOG(info) << "DalitzEE Cut, set flag for muon exclusion in TPC: " << mMuonExclusionTPC;
-}
-
-void DalitzEECut::SetTOFbetaRange(bool flag, float min, float max)
-{
-  mApplyTOFbeta = flag;
-  mMinTOFbeta = min;
-  mMaxTOFbeta = max;
-  LOG(info) << "DalitzEE Cut, set TOF beta rejection range: " << mMinTOFbeta << " - " << mMaxTOFbeta;
-}
 
 void DalitzEECut::SetTPCNsigmaElRange(float min, float max)
 {
@@ -164,98 +131,60 @@ void DalitzEECut::SetTPCNsigmaElRange(float min, float max)
   mMaxTPCNsigmaEl = max;
   LOG(info) << "DalitzEE Cut, set TPC n sigma El range: " << mMinTPCNsigmaEl << " - " << mMaxTPCNsigmaEl;
 }
-void DalitzEECut::SetTPCNsigmaMuRange(float min, float max)
-{
-  mMinTPCNsigmaMu = min;
-  mMaxTPCNsigmaMu = max;
-  LOG(info) << "DalitzEE Cut, set TPC n sigma Mu range: " << mMinTPCNsigmaMu << " - " << mMaxTPCNsigmaMu;
-}
 void DalitzEECut::SetTPCNsigmaPiRange(float min, float max)
 {
   mMinTPCNsigmaPi = min;
   mMaxTPCNsigmaPi = max;
   LOG(info) << "DalitzEE Cut, set TPC n sigma Pi range: " << mMinTPCNsigmaPi << " - " << mMaxTPCNsigmaPi;
 }
-void DalitzEECut::SetTPCNsigmaKaRange(float min, float max)
+
+void DalitzEECut::RequireITSibAny(bool flag)
 {
-  mMinTPCNsigmaKa = min;
-  mMaxTPCNsigmaKa = max;
-  LOG(info) << "DalitzEE Cut, set TPC n sigma Ka range: " << mMinTPCNsigmaKa << " - " << mMaxTPCNsigmaKa;
+  mRequireITSibAny = flag;
+  LOG(info) << "DalitzEE Cut, require ITS ib any: " << mRequireITSibAny;
 }
-void DalitzEECut::SetTPCNsigmaPrRange(float min, float max)
+void DalitzEECut::RequireITSib1st(bool flag)
 {
-  mMinTPCNsigmaPr = min;
-  mMaxTPCNsigmaPr = max;
-  LOG(info) << "DalitzEE Cut, set TPC n sigma Pr range: " << mMinTPCNsigmaPr << " - " << mMaxTPCNsigmaPr;
+  mRequireITSib1st = flag;
+  LOG(info) << "DalitzEE Cut, require ITS ib 1st: " << mRequireITSib1st;
+}
+void DalitzEECut::SetPIDScheme(int scheme)
+{
+  mPIDScheme = scheme;
+  LOG(info) << "DalitzEE Cut, PID scheme: " << static_cast<int>(mPIDScheme);
 }
 
-void DalitzEECut::SetTOFNsigmaElRange(float min, float max)
-{
-  mMinTOFNsigmaEl = min;
-  mMaxTOFNsigmaEl = max;
-  LOG(info) << "DalitzEE Cut, set TOF n sigma El range: " << mMinTOFNsigmaEl << " - " << mMaxTOFNsigmaEl;
-}
-void DalitzEECut::SetTOFNsigmaMuRange(float min, float max)
-{
-  mMinTOFNsigmaMu = min;
-  mMaxTOFNsigmaMu = max;
-  LOG(info) << "DalitzEE Cut, set TOF n sigma Mu range: " << mMinTOFNsigmaMu << " - " << mMaxTOFNsigmaMu;
-}
-void DalitzEECut::SetTOFNsigmaPiRange(float min, float max)
-{
-  mMinTOFNsigmaPi = min;
-  mMaxTOFNsigmaPi = max;
-  LOG(info) << "DalitzEE Cut, set TOF n sigma Pi range: " << mMinTOFNsigmaPi << " - " << mMaxTOFNsigmaPi;
-}
-void DalitzEECut::SetTOFNsigmaKaRange(float min, float max)
-{
-  mMinTOFNsigmaKa = min;
-  mMaxTOFNsigmaKa = max;
-  LOG(info) << "DalitzEE Cut, set TOF n sigma Ka range: " << mMinTOFNsigmaKa << " - " << mMaxTOFNsigmaKa;
-}
-void DalitzEECut::SetTOFNsigmaPrRange(float min, float max)
-{
-  mMinTOFNsigmaPr = min;
-  mMaxTOFNsigmaPr = max;
-  LOG(info) << "DalitzEE Cut, set TOF n sigma Pr range: " << mMinTOFNsigmaPr << " - " << mMaxTOFNsigmaPr;
-}
-void DalitzEECut::SetMaxPinMuonTPConly(float max)
-{
-  mMaxPinMuonTPConly = max;
-  LOG(info) << "DalitzEE Cut, set max pin for Muon ID with TPC only: " << mMaxPinMuonTPConly;
-}
-
-void DalitzEECut::print() const
-{
-  LOG(info) << "Dalitz EE Cut:";
-  for (int i = 0; i < static_cast<int>(DalitzEECuts::kNCuts); i++) {
-    switch (static_cast<DalitzEECuts>(i)) {
-      case DalitzEECuts::kTrackPtRange:
-        LOG(info) << mCutNames[i] << " in [" << mMinTrackPt << ", " << mMaxTrackPt << "]";
-        break;
-      case DalitzEECuts::kTrackEtaRange:
-        LOG(info) << mCutNames[i] << " in [" << mMinTrackEta << ", " << mMaxTrackEta << "]";
-        break;
-      case DalitzEECuts::kTPCNCls:
-        LOG(info) << mCutNames[i] << " > " << mMinNClustersTPC;
-        break;
-      case DalitzEECuts::kTPCCrossedRows:
-        LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsTPC;
-        break;
-      case DalitzEECuts::kTPCCrossedRowsOverNCls:
-        LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsOverFindableClustersTPC;
-        break;
-      case DalitzEECuts::kTPCChi2NDF:
-        LOG(info) << mCutNames[i] << " < " << mMaxChi2PerClusterTPC;
-        break;
-      case DalitzEECuts::kDCAxy:
-        LOG(info) << mCutNames[i] << " < " << mMaxDcaXY;
-        break;
-      case DalitzEECuts::kDCAz:
-        LOG(info) << mCutNames[i] << " < " << mMaxDcaZ;
-        break;
-      default:
-        LOG(fatal) << "Cut unknown!";
-    }
-  }
-}
+// void DalitzEECut::print() const
+//{
+//   LOG(info) << "Dalitz EE Cut:";
+//   for (int i = 0; i < static_cast<int>(DalitzEECuts::kNCuts); i++) {
+//     switch (static_cast<DalitzEECuts>(i)) {
+//       case DalitzEECuts::kTrackPtRange:
+//         LOG(info) << mCutNames[i] << " in [" << mMinTrackPt << ", " << mMaxTrackPt << "]";
+//         break;
+//       case DalitzEECuts::kTrackEtaRange:
+//         LOG(info) << mCutNames[i] << " in [" << mMinTrackEta << ", " << mMaxTrackEta << "]";
+//         break;
+//       case DalitzEECuts::kTPCNCls:
+//         LOG(info) << mCutNames[i] << " > " << mMinNClustersTPC;
+//         break;
+//       case DalitzEECuts::kTPCCrossedRows:
+//         LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsTPC;
+//         break;
+//       case DalitzEECuts::kTPCCrossedRowsOverNCls:
+//         LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsOverFindableClustersTPC;
+//         break;
+//       case DalitzEECuts::kTPCChi2NDF:
+//         LOG(info) << mCutNames[i] << " < " << mMaxChi2PerClusterTPC;
+//         break;
+//       case DalitzEECuts::kDCAxy:
+//         LOG(info) << mCutNames[i] << " < " << mMaxDcaXY;
+//         break;
+//       case DalitzEECuts::kDCAz:
+//         LOG(info) << mCutNames[i] << " < " << mMaxDcaZ;
+//         break;
+//       default:
+//         LOG(fatal) << "Cut unknown!";
+//     }
+//   }
+// }

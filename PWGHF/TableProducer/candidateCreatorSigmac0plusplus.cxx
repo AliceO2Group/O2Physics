@@ -24,6 +24,7 @@
 #include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -259,7 +260,7 @@ struct HfCandidateCreatorSigmac0plusplus {
                     TRK const& trackSoftPi,
                     aod::TracksWDcaExtra const& tracks,
                     CandidatesLc const& candidates,
-                    aod::BCsWithTimestamps const& bcWithTimeStamps)
+                    aod::BCsWithTimestamps const&)
   {
 
     auto thisCollId = collision.globalIndex();
@@ -385,8 +386,24 @@ struct HfCandidateSigmac0plusplusMc {
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   // using LambdacMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
+  float zPvPosMax{1000.f};
+
   /// @brief init function
-  void init(InitContext const&) {}
+  void init(InitContext& initContext)
+  {
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-candidate-creator-3prong") == 0) { // here we assume that the hf-candidate-creator-3prong is in the workflow
+        for (const auto& option : device.options) {
+          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
+            zPvPosMax = option.defaultValue.get<float>();
+            break;
+          }
+        }
+        break;
+      }
+    }
+  }
 
   /// @brief dummy process function, to be run on data
   /// @param
@@ -397,7 +414,8 @@ struct HfCandidateSigmac0plusplusMc {
   /// @param mcParticles table of generated particles
   void processMc(aod::McParticles const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& candsLc /*, const LambdacMcGen&*/)
+                 LambdacMc const& candsLc /*, const LambdacMcGen&*/,
+                 aod::McCollisions const&)
   {
 
     // Match reconstructed candidates.
@@ -409,7 +427,6 @@ struct HfCandidateSigmac0plusplusMc {
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t chargeSigmac = 10;
-    // std::vector<int> arrDaughIndex; /// index of daughters of MC particle
 
     /// Match reconstructed Σc0,++ candidates
     for (const auto& candSigmac : *candidatesSigmac) {
@@ -417,12 +434,12 @@ struct HfCandidateSigmac0plusplusMc {
       sign = 0;
       flag = 0;
       origin = 0;
-      // arrDaughIndex.clear();
+      std::vector<int> idxBhadMothers{};
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
       auto candLc = candSigmac.prongLc_as<LambdacMc>();
       if (!(std::abs(candLc.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) { /// (*)
-        rowMCMatchScRec(flag, origin);
+        rowMCMatchScRec(flag, origin, -1.f, 0);
         continue;
       }
 
@@ -457,17 +474,29 @@ struct HfCandidateSigmac0plusplusMc {
       /// check the origin (prompt vs. non-prompt)
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
       /// fill the table with results of reconstruction level MC matching
-      rowMCMatchScRec(flag, origin);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowMCMatchScRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowMCMatchScRec(flag, origin, -1.f, 0);
+      }
     } /// end loop over reconstructed Σc0,++ candidates
 
     /// Match generated Σc0,++ candidates
     for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
+      std::vector<int> idxBhadMothers{};
+
+      auto mcCollision = particle.mcCollision();
+      float zPv = mcCollision.posZ();
+      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+        rowMCMatchScGen(flag, origin, -1);
+        continue;
+      }
 
       /// 3 levels:
       ///   1. Σc0 → Λc+ π-,+
@@ -507,12 +536,14 @@ struct HfCandidateSigmac0plusplusMc {
       /// check the origin (prompt vs. non-prompt)
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
       /// fill the table with results of generation level MC matching
-      rowMCMatchScGen(flag, origin);
-
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        rowMCMatchScGen(flag, origin, idxBhadMothers[0]);
+      } else {
+        rowMCMatchScGen(flag, origin, -1);
+      }
     } /// end loop over mcParticles
   }   /// end processMc
   PROCESS_SWITCH(HfCandidateSigmac0plusplusMc, processMc, "Process MC", false);

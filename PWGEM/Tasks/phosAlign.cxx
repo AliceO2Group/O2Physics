@@ -60,6 +60,8 @@ struct phosAlign {
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl>;
+  using mcClusters = soa::Join<aod::CaloClusters, aod::PHOSCluLabels>;
+  using mcTracks = soa::Join<tracks, aod::McTrackLabels>;
 
   Configurable<float> mMinE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"};
   Configurable<float> mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"};
@@ -76,13 +78,14 @@ struct phosAlign {
   {
    public:
     trackMatch() = default;
-    trackMatch(double x, double z, double p, bool el, bool charge) : pX(x), pZ(z), mom(p), isEl(el), isPos(charge) {}
+    trackMatch(double x, double z, double p, int32_t l, bool el, bool charge) : pX(x), pZ(z), mom(p), label(l), isEl(el), isPos(charge) {}
     ~trackMatch() = default;
 
    public:
-    double pX = 9999.;  // X (phi) track coordinate in PHOS plane
-    double pZ = 9999.;  // Z (theta) track coordinate in PHOS plane
-    double mom = 0.;    // track momentum
+    double pX = 9999.; // X (phi) track coordinate in PHOS plane
+    double pZ = 9999.; // Z (theta) track coordinate in PHOS plane
+    double mom = 0.;   // track momentum
+    int32_t label = 0;
     bool isEl = false;  // is electron from TPC dEdx
     bool isPos = false; // is positive charge
   };
@@ -147,9 +150,9 @@ struct phosAlign {
 
   /// \brief match tracks and clusters in different PHOS modules
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-               aod::CaloClusters& clusters,
-               tracks& tracks,
-               aod::BCsWithTimestamps const& bcs)
+               mcClusters& clusters,
+               mcTracks& tracks,
+               aod::BCsWithTimestamps const&)
   {
 
     // Set the magnetic field from ccdb.
@@ -238,7 +241,7 @@ struct phosAlign {
           electron = false;
         }
       }
-      trackMatchPoints[regionIndex].emplace_back(trackX, trackZ, track.p(), electron, static_cast<bool>(track.sign() > 0));
+      trackMatchPoints[regionIndex].emplace_back(trackX, trackZ, track.p(), track.mcParticleId(), electron, static_cast<bool>(track.sign() > 0));
     }
 
     for (const auto& clu : clusters) {
@@ -248,6 +251,12 @@ struct phosAlign {
       if (clu.time() < mMinCluTime || clu.time() > mMaxCluTime) {
         continue;
       }
+
+      // int label = -1;             // if no MC
+      // auto mcList = clu.labels(); // const std::vector<int>
+      // if (mcList.size() > 0) {
+      //   label = mcList[0];
+      // }
 
       // CPV and track match
       const float cellSizeX = 2 * cpvMaxX / kCpvX;
@@ -347,7 +356,7 @@ struct phosAlign {
     return (module - 1) * kCpvX * kCpvZ + ix * kCpvZ + iz; // modules: 1,2,3,4
   }
 
-  bool impactOnPHOS(o2::track::TrackParametrization<float>& trackPar, float trackEta, float trackPhi, float zvtx, int16_t& module, float& trackX, float& trackZ)
+  bool impactOnPHOS(o2::track::TrackParametrization<float>& trackPar, float trackEta, float trackPhi, float /*zvtx*/, int16_t& module, float& trackX, float& trackZ)
   {
     // eta,phi was calculated at EMCAL radius.
     // Extrapolate to PHOS assuming zeroB and current vertex

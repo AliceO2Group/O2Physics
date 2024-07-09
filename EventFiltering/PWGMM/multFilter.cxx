@@ -246,7 +246,7 @@ struct multFilter {
     }
     return flat;
   }
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::BCsWithTimestamps const&, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::BCsWithTimestamps const&, TrackCandidates const& tracks, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 

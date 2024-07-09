@@ -35,7 +35,8 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs>::iterator;
+using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents, aod::StraFT0CQVsEv, aod::StraTPCQVs>::iterator;
+using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents, aod::StraTPCQVs>::iterator;
 
 namespace cascadev2
 {
@@ -117,6 +118,21 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 
 struct cascadeFlow {
 
+  // axes
+  ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
+  ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
+
+  // Event selection criteria
+  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
+  Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
+  Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
+  Configurable<bool> isGoodEventEP{"isGoodEventEP", 1, "Event is used to calibrate event plane"};
+  Configurable<int> MinOccupancy{"MinOccupancy", 0, "MinOccupancy"};
+  Configurable<int> MaxOccupancy{"MaxOccupancy", 500, "MaxOccupancy"};
+  Configurable<bool> isCollInStandardTimeRange{"isCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
+  Configurable<bool> isCollInNarrowTimeRange{"isCollInNarrowTimeRange", 0, "To remove collisions in +-4 micros time range"};
+
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
@@ -147,6 +163,61 @@ struct cascadeFlow {
   // Add objects needed for ML inference
   o2::analysis::MlResponse<float> mlResponseXi;
   o2::analysis::MlResponse<float> mlResponseOmega;
+
+  template <typename TCollision>
+  bool AcceptEvent(TCollision const& collision)
+  {
+    histos.fill(HIST("hNEvents"), 0.5);
+    histos.fill(HIST("hEventNchCorrelationBefCuts"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+    histos.fill(HIST("hEventPVcontributorsVsCentralityBefCuts"), collision.centFT0C(), collision.multNTracksPVeta1());
+    histos.fill(HIST("hEventGlobalTracksVsCentralityBefCuts"), collision.centFT0C(), collision.multNTracksGlobal());
+
+    // Event selection if required
+    if (sel8 && !collision.sel8()) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 1.5);
+
+    // Z vertex selection
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 2.5);
+
+    // kNoSameBunchPileup selection
+    if (isNoSameBunchPileupCut && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 3.5);
+
+    // kIsGoodZvtxFT0vsPV selection
+    if (isGoodZvtxFT0vsPVCut && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 4.5);
+
+    // occupancy cut
+    int occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy < MinOccupancy || occupancy > MaxOccupancy) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 5.5);
+
+    if (isCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+
+    if (isCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 6.5);
+
+    histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+    histos.fill(HIST("hEventPVcontributorsVsCentrality"), collision.centFT0C(), collision.multNTracksPVeta1());
+    histos.fill(HIST("hEventGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
+
+    return true;
+  }
 
   template <typename TCascade, typename TDaughter>
   bool IsCascAccepted(TCascade casc, TDaughter negExtra, TDaughter posExtra, TDaughter bachExtra, int& counter) // loose cuts on topological selections of cascades
@@ -182,6 +253,7 @@ struct cascadeFlow {
   }
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Tables to produce
   Produces<aod::CascTraining> trainingSample;
@@ -224,16 +296,18 @@ struct cascadeFlow {
   }
 
   template <class collision_t, class cascade_t>
-  //  void fillAnalisedTable(collision_t coll, cascade_t casc, float BDTresponse)
-  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2C, float BDTresponseXi, float BDTresponseOmega)
+  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2CSP, float v2CEP, float PsiT0C, float BDTresponseXi, float BDTresponseOmega)
   {
     analysisSample(coll.centFT0C(),
                    casc.sign(),
                    casc.pt(),
                    casc.eta(),
+                   casc.phi(),
                    casc.mXi(),
                    casc.mOmega(),
-                   v2C,
+                   v2CSP,
+                   v2CEP,
+                   PsiT0C,
                    BDTresponseXi,
                    BDTresponseOmega);
   }
@@ -248,15 +322,40 @@ struct cascadeFlow {
     const AxisSpec ptAxis{static_cast<int>((MaxPt - MinPt) / 0.2), MinPt, MaxPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
+    TString hNEventsLabels[8] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kIsGoodEventEP"};
+
+    resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxis});
+    resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxis});
+    resolution.add("QVectorsTPCAC", "QVectorsTPCAC", HistType::kTH2F, {axisQVs, CentAxis});
+    resolution.add("QVectorsNormT0CTPCA", "QVectorsNormT0CTPCA", HistType::kTH2F, {axisQVsNorm, CentAxis});
+    resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxis});
+    resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxis});
+
+    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{8, 0.f, 8.f}}});
+    for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
+      histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
+    }
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {{120, -12., 12.}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
-    histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
+    histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, -TMath::Pi(), TMath::Pi()}});
+    histos.add("hPsiT0CvsCentFT0C", "hPsiT0CvsCentFT0C", HistType::kTH2D, {CentAxis, {100, -TMath::Pi(), TMath::Pi()}});
+    histos.add("hEventNchCorrelation", "hEventNchCorrelation", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
+    histos.add("hEventPVcontributorsVsCentrality", "hEventPVcontributorsVsCentrality", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
+    histos.add("hEventGlobalTracksVsCentrality", "hEventGlobalTracksVsCentrality", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
+    histos.add("hEventNchCorrelationBefCuts", "hEventNchCorrelationBefCuts", kTH2F, {{5000, 0, 5000}, {2500, 0, 2500}});
+    histos.add("hEventPVcontributorsVsCentralityBefCuts", "hEventPVcontributorsVsCentralityBefCuts", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
+    histos.add("hEventGlobalTracksVsCentralityBefCuts", "hEventGlobalTracksVsCentralityBefCuts", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
+    histos.add("hEventNchCorrelationAfterEP", "hEventNchCorrelationAfterEP", kTH2F, {{5000, 0, 5000}, {2500, 0, 2500}});
+    histos.add("hEventPVcontributorsVsCentralityAfterEP", "hEventPVcontributorsVsCentralityAfterEP", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
+    histos.add("hEventGlobalTracksVsCentralityAfterEP", "hEventGlobalTracksVsCentralityAfterEP", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
 
     histos.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascade", "hCascade", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascadePhi", "hCascadePhi", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
-    histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
+    histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, TMath::Pi()}});
+    histos.add("hv2CEPvsFT0C", "hv2CEPvsFT0C", HistType::kTH2F, {CentAxis, {100, -1, 1}});
+    histos.add("hv2CEPvsv2CSP", "hv2CEPvsV2CSP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     for (int iS{0}; iS < 2; ++iS) {
       cascadev2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
       cascadev2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
@@ -284,14 +383,15 @@ struct cascadeFlow {
     }
   }
 
-  void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraRawCents>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
     int counter = 0;
 
-    if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
+    if (!AcceptEvent(coll)) {
       return;
     }
+
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
@@ -336,10 +436,10 @@ struct cascadeFlow {
     }
   }
 
-  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraRawCents>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
-    if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
+    if (!AcceptEvent(coll)) {
       return;
     }
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
@@ -367,17 +467,36 @@ struct cascadeFlow {
   void processAnalyseData(CollEventPlane const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
-    if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
+    if (!AcceptEvent(coll)) {
       return;
     }
+
+    // select only events used for the calibration of the event plane
+    if (isGoodEventEP && !coll.triggereventep()) {
+      return;
+    }
+    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
+    histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
+    histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
 
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
 
     const float PsiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     histos.fill(HIST("hPsiT0C"), PsiT0C);
+    histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), PsiT0C);
+
+    resolution.fill(HIST("QVectorsT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA), coll.centFT0C());
+    resolution.fill(HIST("QVectorsT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC), coll.centFT0C());
+    resolution.fill(HIST("QVectorsTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0C()), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0C()), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), coll.centFT0C());
 
     std::vector<float> bdtScore[2];
     for (auto& casc : Cascades) {
@@ -440,12 +559,15 @@ struct cascadeFlow {
       }
 
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
-      auto v2C = cascQvec.Dot(eventplaneVecT0C) / std::sqrt(eventplaneVecT0C.mag2());
+      auto v2CSP = cascQvec.Dot(eventplaneVecT0C); // not normalised by amplitude
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
+      auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
 
+      histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
+      histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
       histos.fill(HIST("hCascadePhi"), casc.phi());
       histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
-      double values[4]{casc.mXi(), casc.pt(), v2C, coll.centFT0C()};
+      double values[4]{casc.mXi(), casc.pt(), v2CSP, coll.centFT0C()};
       if (isSelectedCasc[0]) {
         cascadev2::hSparseV2C[0]->Fill(values);
       }
@@ -460,13 +582,142 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, casc, v2C, BDTresponse[0], BDTresponse[1]);
+        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1]);
+    }
+  }
+
+  void processAnalyseDataEPCentralFW(CollEventPlaneCentralFW const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  {
+
+    if (!AcceptEvent(coll)) {
+      return;
+    }
+
+    // select only events used for the calibration of the event plane
+    if (isGoodEventEP) {
+      if (abs(coll.qvecFT0CRe()) > 990 || abs(coll.qvecFT0CIm()) > 990 || abs(coll.qvecBNegRe()) > 990 || abs(coll.qvecBNegIm()) > 990 || abs(coll.qvecBPosRe()) > 990 || abs(coll.qvecBPosIm()) > 990) {
+        return;
+      }
+    }
+
+    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
+    histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
+    histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
+
+    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+    histos.fill(HIST("hEventVertexZ"), coll.posZ());
+
+    ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
+    float NormQvT0C = sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
+    float NormQvTPCA = sqrt(eventplaneVecTPCA.Dot(eventplaneVecTPCA));
+    float NormQvTPCC = sqrt(eventplaneVecTPCC.Dot(eventplaneVecTPCC));
+
+    const float PsiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
+    histos.fill(HIST("hPsiT0C"), PsiT0C);
+    histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), PsiT0C);
+
+    resolution.fill(HIST("QVectorsT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA), coll.centFT0C());
+    resolution.fill(HIST("QVectorsT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC), coll.centFT0C());
+    resolution.fill(HIST("QVectorsTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA) / (NormQvT0C * NormQvTPCA), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (NormQvT0C * NormQvTPCC), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (NormQvTPCA * NormQvTPCC), coll.centFT0C());
+
+    std::vector<float> bdtScore[2];
+    for (auto& casc : Cascades) {
+
+      /// Add some minimal cuts for single track variables (min number of TPC clusters)
+      auto negExtra = casc.negTrackExtra_as<DauTracks>();
+      auto posExtra = casc.posTrackExtra_as<DauTracks>();
+      auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
+
+      int counter = 0;
+      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      histos.fill(HIST("hCascade"), counter);
+
+      // ML selections
+      bool isSelectedCasc[2]{false, false};
+
+      std::vector<float> inputFeaturesCasc{casc.cascradius(),
+                                           casc.v0radius(),
+                                           casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()),
+                                           casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
+                                           casc.dcapostopv(),
+                                           casc.dcanegtopv(),
+                                           casc.dcabachtopv(),
+                                           casc.dcacascdaughters(),
+                                           casc.dcaV0daughters(),
+                                           casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()),
+                                           casc.bachBaryonCosPA(),
+                                           casc.bachBaryonDCAxyToPV()};
+
+      float massCasc[2]{casc.mXi(), casc.mOmega()};
+
+      // inv mass loose cut
+      if (casc.pt() < MinPt || casc.pt() > MaxPt) {
+        continue;
+      }
+
+      cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
+      cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
+
+      if (isApplyML) {
+        // Retrieve model output and selection outcome
+        isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
+        isSelectedCasc[1] = mlResponseOmega.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[1]);
+
+        for (int iS{0}; iS < 2; ++iS) {
+          // Fill BDT score histograms before selection
+          cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
+          cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
+
+          // Fill histograms for selected candidates
+          if (isSelectedCasc[iS]) {
+            cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
+            cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
+            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+          }
+        }
+      } else {
+        isSelectedCasc[0] = true;
+        isSelectedCasc[1] = true;
+      }
+
+      ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
+      auto v2CSP = cascQvec.Dot(eventplaneVecT0C);
+      auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
+      auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
+
+      histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
+      histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
+      histos.fill(HIST("hCascadePhi"), casc.phi());
+      histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
+      double values[4]{casc.mXi(), casc.pt(), v2CSP, coll.centFT0C()};
+      if (isSelectedCasc[0]) {
+        cascadev2::hSparseV2C[0]->Fill(values);
+      }
+      if (isSelectedCasc[1]) {
+        values[0] = casc.mOmega();
+        cascadev2::hSparseV2C[0]->Fill(values);
+      }
+
+      float BDTresponse[2]{0.f, 0.f};
+      if (isApplyML) {
+        BDTresponse[0] = bdtScore[0][1];
+        BDTresponse[1] = bdtScore[1][1];
+      }
+      if (isSelectedCasc[0] || isSelectedCasc[1])
+        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1]);
     }
   }
 
   PROCESS_SWITCH(cascadeFlow, processTrainingBackground, "Process to create the training dataset for the background", true);
   PROCESS_SWITCH(cascadeFlow, processTrainingSignal, "Process to create the training dataset for the signal", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseData, "Process to apply ML model to the data", false);
+  PROCESS_SWITCH(cascadeFlow, processAnalyseDataEPCentralFW, "Process to apply ML model to the data - event plane calibration from central framework", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

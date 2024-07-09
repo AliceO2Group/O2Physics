@@ -81,6 +81,13 @@ def load_workflows_from_json():
     return db_wf
 
 
+def format_table_name(description: str, subspec: int):
+    """Format table description name, including potential versions."""
+    if not subspec:
+        return description
+    return f"{description}_{subspec:03d}"
+
+
 def get_devices(specs_wf: dict):
     """Get the list of devices of a given workflow loaded from a JSON file."""
     return [d["name"] for d in specs_wf]
@@ -93,7 +100,9 @@ def get_inputs(specs_wf: dict, device=""):
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        list_inputs += [i["description"] for i in dev["inputs"] if i["origin"] == "AOD"]
+        list_inputs += [
+            format_table_name(i["description"], i["subspec"]) for i in dev["inputs"] if i["origin"] == "AOD"
+        ]
     return list(dict.fromkeys(list_inputs))  # Remove duplicities
 
 
@@ -105,7 +114,9 @@ def get_outputs(specs_wf: dict, device=""):
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        list_outputs += [i["description"] for i in dev["outputs"] if i["origin"] == "AOD"]
+        list_outputs += [
+            format_table_name(i["description"], i["subspec"]) for i in dev["outputs"] if i["origin"] == "AOD"
+        ]
     return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
 

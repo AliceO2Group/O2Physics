@@ -25,13 +25,10 @@
 #include <vector>
 #include <memory>
 
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-
 #include "TMath.h"
 #include "TVector3.h"
 
-double EventPlaneHelper::GetPhiFV0(int chno)
+double EventPlaneHelper::GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom)
 {
   /* Calculate the azimuthal angle in FV0 for the channel number 'chno'. The offset
   on the A-side is taken into account here. */
@@ -52,13 +49,12 @@ double EventPlaneHelper::GetPhiFV0(int chno)
     offsetY = mOffsetFV0rightY;
   }
 
-  auto fv0geom = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
   auto chPos = fv0geom->getReadoutCenter(chno);
 
   return TMath::ATan2(chPos.y + offsetY, chPos.x + offsetX);
 }
 
-double EventPlaneHelper::GetPhiFT0(int chno)
+double EventPlaneHelper::GetPhiFT0(int chno, o2::ft0::Geometry ft0geom)
 {
   /* Calculate the azimuthal angle in FT0 for the channel number 'chno'. The offset
     of FT0-A is taken into account if chno is between 0 and 95. */
@@ -71,26 +67,25 @@ double EventPlaneHelper::GetPhiFT0(int chno)
     offsetY = mOffsetFT0AY;
   }
 
-  o2::ft0::Geometry ft0Det;
-  ft0Det.calculateChannelCenter();
-  auto chPos = ft0Det.getChannelCenter(chno);
+  ft0geom.calculateChannelCenter();
+  auto chPos = ft0geom.getChannelCenter(chno);
   /// printf("Channel id: %d X: %.3f Y: %.3f\n", chno, chPos.X(), chPos.Y());
 
   return TMath::ATan2(chPos.Y() + offsetY, chPos.X() + offsetX);
 }
 
-void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum)
+void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum, o2::ft0::Geometry ft0geom, o2::fv0::Geometry* fv0geom)
 {
   /* Calculate the complex Q-vector for the provided detector and channel number,
     before adding it to the total Q-vector given as argument. */
   double phi = -999.;
 
   switch (det) {
-    case 0:                  // FT0. Note: the channel number for FT0-C should
-      phi = GetPhiFT0(chno); // already be given in the right range.
+    case 0:                           // FT0. Note: the channel number for FT0-C should
+      phi = GetPhiFT0(chno, ft0geom); // already be given in the right range.
       break;
     case 1: // FV0.
-      phi = GetPhiFV0(chno);
+      phi = GetPhiFV0(chno, fv0geom);
       break;
     default:
       printf("'int det' value does not correspond to any accepted case.\n");

@@ -28,6 +28,19 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
+#include <TFile.h>
+#include <TLorentzVector.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TPDGCode.h>
+#include <TDatabasePDG.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -44,21 +57,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-
-#include <TFile.h>
-#include <TLorentzVector.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -79,7 +79,7 @@ struct lambdakzeroprefilter {
 
   Produces<aod::VFinderTracks> VFinderTracks;
 
-  void processAll(aod::Collision const& collision,
+  void processAll(aod::Collision const& /*collision*/,
                   soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA> const& tracks)
   {
     for (auto& t0 : tracks) {
@@ -95,7 +95,7 @@ struct lambdakzeroprefilter {
   }
   PROCESS_SWITCH(lambdakzeroprefilter, processAll, "Take all tracks, select only on crossed rows + TPC refit", false);
 
-  void processWithdEdx(aod::Collision const& collision,
+  void processWithdEdx(aod::Collision const& /*collision*/,
                        TracksExtraWithDCAnPID const& tracks)
   {
     for (auto& t0 : tracks) {
@@ -123,7 +123,7 @@ struct lambdakzeroprefilter {
 
 struct lambdakzerofinder {
   Produces<aod::V0Indices> v0indices;
-  Produces<aod::StoredV0Cores> v0cores;
+  Produces<aod::V0CoresBase> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
   Produces<aod::V0s_001> v0;
   Produces<aod::V0DataLink> v0datalink;
@@ -166,7 +166,7 @@ struct lambdakzerofinder {
   int mRunNumber;
   float d_bz;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -294,8 +294,8 @@ struct lambdakzerofinder {
     return 1;
   }
 
-  void process(aod::Collisions const& collisions, FullTracksExtIU const& tracks,
-               aod::VFinderTracks const& v0findertracks, aod::BCsWithTimestamps const&)
+  void process(aod::Collisions const& collisions, FullTracksExtIU const& /*tracks*/,
+               aod::VFinderTracks const& /*v0findertracks*/, aod::BCsWithTimestamps const&)
   {
     auto firstcollision = collisions.begin();
     auto bc = firstcollision.bc_as<aod::BCsWithTimestamps>();

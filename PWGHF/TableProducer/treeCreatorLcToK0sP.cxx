@@ -348,10 +348,10 @@ struct HfTreeCreatorLcToK0sP {
   }
 
   void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const& mcCollisions,
+                 aod::McCollisions const&,
                  soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particles,
-                 TracksWPid const& tracks)
+                 TracksWPid const&)
   {
 
     // Filling event properties
@@ -388,7 +388,7 @@ struct HfTreeCreatorLcToK0sP {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()},
+          RecoDecay::y(particle.pVector(),
                        o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen());
@@ -399,7 +399,7 @@ struct HfTreeCreatorLcToK0sP {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCandCascade, aod::HfSelLcToK0sP> const& candidates,
-                   TracksWPid const& tracks)
+                   TracksWPid const&)
   {
 
     // Filling event properties

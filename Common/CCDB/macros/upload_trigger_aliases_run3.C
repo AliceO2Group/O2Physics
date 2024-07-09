@@ -11,6 +11,7 @@
 
 #include "DataFormatsCTP/Configuration.h"
 #include "CCDB/CcdbApi.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "TObjArray.h"
 #include "TriggerAliases.h"
 #include "TTree.h"
@@ -45,8 +46,8 @@ void createPbPbAliases(map<int, TString>& mAliases)
 void upload_trigger_aliases_run3()
 {
   map<int, TString> mAliases;
-  // createDefaultAliases(mAliases);
-  createPbPbAliases(mAliases);
+  createDefaultAliases(mAliases);
+  // createPbPbAliases(mAliases);
 
   TObjArray* classNames[kNaliases];
   for (auto& al : mAliases) {
@@ -58,10 +59,10 @@ void upload_trigger_aliases_run3()
   // ccdb.init("http://ccdb-test.cern.ch:8080");
   // ccdb.truncate("EventSelection/TriggerAliases");
 
-  map<string, string> metadata, metadataRCT, header;
+  map<string, string> metadata;
 
   // read list of runs from text file
-  std::ifstream f("run3_pbpb2023.txt");
+  std::ifstream f("runs.txt");
   std::vector<int> runs;
   int r = 0;
   while (f >> r) {
@@ -93,11 +94,13 @@ void upload_trigger_aliases_run3()
       continue; // no CTP info
     if (run == 528543)
       continue; // no CTP info
-    // read SOR and EOR timestamps from RCT CCDB
-    header = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", run), metadataRCT, -1);
-    ULong64_t sor = atol(header["SOR"].c_str());
-    ULong64_t eor = atol(header["EOR"].c_str());
-    ULong64_t ts = sor;
+
+    // read SOR and EOR timestamps from RCT CCDB via utility function
+    auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, run);
+    auto eor = soreor.second;
+    auto sor = soreor.first;
+    auto ts = sor;
+
     // read CTP config
     metadata["runNumber"] = Form("%d", run);
     auto ctpcfg = ccdb.retrieveFromTFileAny<o2::ctp::CTPConfiguration>("CTP/Config/Config", metadata, ts);
@@ -114,7 +117,7 @@ void upload_trigger_aliases_run3()
     TriggerAliases* aliases = new TriggerAliases();
     for (auto& al : mAliases) {
       int aliasId = al.first;
-      LOGP(debug, "alias = {}", al.second);
+      LOGP(debug, "alias = {}", al.second.Data());
       for (const auto& className : *(classNames[aliasId])) {
         TString sname = className->GetName();
         LOGP(debug, " className = {}", sname.Data());
@@ -147,6 +150,6 @@ void upload_trigger_aliases_run3()
       }
     }
     aliases->Print();
-    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor + 10000); // adding tolerance of 10s to eor
+    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor - 1000, eor + 10000); // adding tolerance of 10s to eor
   }
 }

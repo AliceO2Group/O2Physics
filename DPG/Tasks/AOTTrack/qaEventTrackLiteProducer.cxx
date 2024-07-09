@@ -183,7 +183,7 @@ struct qaEventTrackLiteProducer {
   void processTableMC(CollisionTableMC::iterator const& collision,
                       soa::Filtered<soa::Join<TrackTableMC, aod::TOFSignal, aod::TOFEvTime>> const& tracks,
                       aod::McParticles const& mcParticles,
-                      aod::McCollisions const& mcCollisions,
+                      aod::McCollisions const&,
                       aod::BCs const& bcs)
   {
     fillDerivedTable<true>(collision, tracks, mcParticles, bcs);
@@ -305,7 +305,7 @@ struct qaEventTrackLiteProducer {
   using McCollsWithExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
 
   template <bool IS_MC, typename COLLS, typename MCCOLLS, typename TFILT, typename TALL>
-  void fillCollsBigTable(COLLS& collisions, MCCOLLS& mcCollisions, TFILT& tracksFiltered, TALL& tracksAll, soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const& ft0s)
+  void fillCollsBigTable(COLLS& collisions, MCCOLLS&, TFILT& tracksFiltered, TALL& tracksAll, soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const&, aod::FT0s const&)
   {
     if (nTableEventCounter > targetNumberOfEvents) { // Skip events if target is reached
       return;

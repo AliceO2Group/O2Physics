@@ -55,8 +55,8 @@ struct StrangenessTrackingQATask {
   }
 
   void processTrackedCascades(aod::Collision const& collision,
-                              aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-                              aod::V0s const& v0s, TracksExt const& tracks, aod::McParticles const& mcParticles)
+                              aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const&,
+                              aod::V0s const&, TracksExt const&, aod::McParticles const&)
   {
     for (const auto& trackedCascade : trackedCascades) {
       const auto track = trackedCascade.track_as<TracksExt>();
@@ -98,8 +98,8 @@ struct StrangenessTrackingQATask {
   }
   PROCESS_SWITCH(StrangenessTrackingQATask, processTrackedCascades, "process cascades from strangeness tracking", true);
 
-  void processCascades(aod::Collision const& collision, aod::TrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::V0s const& v0s,
-                       soa::Join<aod::TraCascDatas, aod::McTraCascLabels> const& trackedcascdata, TracksExt const& tracks, aod::McParticles const& mcParticles)
+  void processCascades(aod::Collision const&, aod::TrackedCascades const& trackedCascades, aod::Cascades const&, aod::V0s const&,
+                       soa::Join<aod::TraCascDatas, aod::McTraCascLabels> const& trackedcascdata, TracksExt const&, aod::McParticles const&)
   {
     for (const auto& trackedCascadeData : trackedcascdata) {
       hBuilderMassVsPt->Fill(trackedCascadeData.mOmega(), trackedCascadeData.pt());
@@ -129,9 +129,9 @@ struct StrangenessTrackingQATask {
   }
   PROCESS_SWITCH(StrangenessTrackingQATask, processCascades, "process cascades from builder", true);
 
-  void processTrackedV0s(aod::Collision const& collision,
-                         aod::AssignedTrackedV0s const& trackedV0s, aod::V0s const& v0s,
-                         TracksExt const& tracks, aod::McParticles const& mcParticles)
+  void processTrackedV0s(aod::Collision const&,
+                         aod::AssignedTrackedV0s const& trackedV0s, aod::V0s const&,
+                         TracksExt const&, aod::McParticles const&)
   {
     for (const auto& trackedV0 : trackedV0s) {
       const auto& v0 = trackedV0.v0();
@@ -141,9 +141,9 @@ struct StrangenessTrackingQATask {
   }
   PROCESS_SWITCH(StrangenessTrackingQATask, processTrackedV0s, "process tracked V0s", true);
 
-  void processTracked3Bodys(aod::Collision const& collision,
-                            aod::AssignedTracked3Bodys const& tracked3Bodys, aod::Decay3Bodys const& decay3Bodys,
-                            TracksExt const& tracks, aod::McParticles const& mcParticles)
+  void processTracked3Bodys(aod::Collision const&,
+                            aod::AssignedTracked3Bodys const& tracked3Bodys, aod::Decay3Bodys const&,
+                            TracksExt const&, aod::McParticles const&)
   {
     for (const auto& tracked3Body : tracked3Bodys) {
       tracked3Body.itsTrack();

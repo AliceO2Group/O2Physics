@@ -139,7 +139,8 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
 
   ~TOFResoParamsV2() = default;
 
-  void setShiftParameters(std::unordered_map<std::string, float> const& pars)
+  // Momentum shift for charge calibration
+  void setMomentumChargeShiftParameters(std::unordered_map<std::string, float> const& pars)
   {
     if (pars.count("Shift.etaN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
       mEtaN = 0;
@@ -161,7 +162,13 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
       mContent[i] = pars.at(Form("Shift.etaC%i", i));
     }
   }
-  float getShift(float eta) const
+  // To remove
+  void setShiftParameters(std::unordered_map<std::string, float> const& pars)
+  {
+    setMomentumChargeShiftParameters(pars);
+  }
+
+  float getMomentumChargeShift(float eta) const
   {
     if (mEtaN == 0) { // No correction
       // LOG(info) << "TOFResoParamsV2 shift: no correction mEtaN is " << mEtaN;
@@ -171,7 +178,13 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
     // LOG(info) << "TOFResoParamsV2 shift: correction for eta " << eta << " is for index " << etaIndex << " = " << shift;
     return mContent.at(etaIndex);
   }
-  void printShiftParameters() const
+  // To remove
+  float getShift(float eta) const
+  {
+    return getMomentumChargeShift(eta);
+  }
+
+  void printMomentumChargeShiftParameters() const
   {
     LOG(info) << "TOF momentum shift parameters";
     LOG(info) << "etaN: " << mEtaN;
@@ -182,29 +195,35 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
       LOG(info) << "etaC" << i << ": " << mContent[i];
     }
   }
-  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool pos)
+  // To remove
+  void printShiftParameters() const
+  {
+    printMomentumChargeShiftParameters();
+  }
+
+  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
   {
     TFile f(filename.c_str(), "READ");
     if (f.IsOpen()) {
-      if (pos) {
+      if (positive) {
         f.GetObject(objname.c_str(), gPosEtaTimeCorr);
       } else {
         f.GetObject(objname.c_str(), gNegEtaTimeCorr);
       }
       f.Close();
     }
-    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (pos ? "positive" : "negative");
+    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative");
   }
-  void setTimeShiftParameters(TGraph* g, bool pos)
+  void setTimeShiftParameters(TGraph* g, bool positive)
   {
-    if (pos) {
+    if (positive) {
       gPosEtaTimeCorr = g;
     } else {
       gNegEtaTimeCorr = g;
     }
-    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (pos ? "positive" : "negative");
+    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
   }
-  float getTimeShift(float eta, short sign) const
+  float getTimeShift(float eta, int16_t sign) const
   {
     if (sign > 0) {
       if (!gPosEtaTimeCorr) {
@@ -219,13 +238,146 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
   }
 
  private:
+  // Charge calibration
   int mEtaN = 0; // Number of eta bins, 0 means no correction
   float mEtaStart = 0.f;
   float mEtaStop = 0.f;
   float mInvEtaWidth = 9999.f;
   std::vector<float> mContent;
-  TGraph* gPosEtaTimeCorr = nullptr;
-  TGraph* gNegEtaTimeCorr = nullptr;
+
+  // Time shift for post calibration
+  TGraph* gPosEtaTimeCorr = nullptr; /// Time shift correction for positive tracks
+  TGraph* gNegEtaTimeCorr = nullptr; /// Time shift correction for negative tracks
+};
+
+/// \brief Next implementation class to store TOF response parameters for exp. times
+class TOFResoParamsV3 : public o2::tof::Parameters<13>
+{
+ public:
+  TOFResoParamsV3() : Parameters(std::array<std::string, 13>{"TrkRes.Pi.P0", "TrkRes.Pi.P1", "TrkRes.Pi.P2", "TrkRes.Pi.P3", "time_resolution",
+                                                             "TrkRes.Ka.P0", "TrkRes.Ka.P1", "TrkRes.Ka.P2", "TrkRes.Ka.P3",
+                                                             "TrkRes.Pr.P0", "TrkRes.Pr.P1", "TrkRes.Pr.P2", "TrkRes.Pr.P3"},
+                                 "TOFResoParamsV3")
+  {
+    setParameters(std::array<float, 13>{0.008, 0.008, 0.002, 40.0, 60.0,
+                                        0.008, 0.008, 0.002, 40.0,
+                                        0.008, 0.008, 0.002, 40.0});
+  } // Default constructor with default parameters
+
+  ~TOFResoParamsV3() = default;
+
+  // Momentum shift for charge calibration
+  void setMomentumChargeShiftParameters(std::unordered_map<std::string, float> const& pars)
+  {
+    if (pars.count("Shift.etaN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
+      mEtaN = 0;
+      return;
+    }
+    mEtaN = static_cast<int>(pars.at("Shift.etaN"));
+    if (mEtaN <= 0) {
+      LOG(fatal) << "TOFResoParamsV3 shift: etaN must be positive";
+    }
+    mEtaStart = pars.at("Shift.etaStart");
+    mEtaStop = pars.at("Shift.etaStop");
+    if (mEtaStart >= mEtaStop) {
+      LOG(fatal) << "TOFResoParamsV3 shift: etaStart must be smaller than etaStop";
+    }
+    mInvEtaWidth = 1.f / ((mEtaStop - mEtaStart) / mEtaN);
+    mContent.clear();
+    mContent.resize(mEtaN);
+    for (int i = 0; i < mEtaN; ++i) {
+      mContent[i] = pars.at(Form("Shift.etaC%i", i));
+    }
+  }
+
+  float getMomentumChargeShift(float eta) const
+  {
+    if (mEtaN == 0) { // No correction
+      // LOG(info) << "TOFResoParamsV3 shift: no correction mEtaN is " << mEtaN;
+      return 0.f;
+    }
+    const int& etaIndex = (eta <= mEtaStart) ? 0 : (eta >= mEtaStop ? (mEtaN - 1) : (eta - mEtaStart) * mInvEtaWidth);
+    // LOG(info) << "TOFResoParamsV3 shift: correction for eta " << eta << " is for index " << etaIndex << " = " << shift;
+    return mContent.at(etaIndex);
+  }
+
+  void printMomentumChargeShiftParameters() const
+  {
+    LOG(info) << "TOF momentum shift parameters";
+    LOG(info) << "etaN: " << mEtaN;
+    LOG(info) << "etaStart: " << mEtaStart;
+    LOG(info) << "etaStop: " << mEtaStop;
+    LOG(info) << "content size " << mContent.size();
+    for (int i = 0; i < mEtaN; ++i) {
+      LOG(info) << "etaC" << i << ": " << mContent[i];
+    }
+  }
+
+  // Time shift for post calibration
+  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, bool positive)
+  {
+    std::string baseOpt = positive ? "TimeShift.Pos." : "TimeShift.Neg.";
+
+    if (pars.count(baseOpt + "GetN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
+      return;
+    }
+    const int nPoints = static_cast<int>(pars.at(baseOpt + "GetN"));
+    if (nPoints <= 0) {
+      LOG(fatal) << "TOFResoParamsV3 shift: time must be positive";
+    }
+    TGraph graph;
+    for (int i = 0; i < nPoints; ++i) {
+      graph.AddPoint(pars.at(Form("TimeShift.eta%i", i)), pars.at(Form("TimeShift.cor%i", i)));
+    }
+    setTimeShiftParameters(&graph, positive);
+  }
+  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
+  {
+    TFile f(filename.c_str(), "READ");
+    if (f.IsOpen()) {
+      if (positive) {
+        f.GetObject(objname.c_str(), gPosEtaTimeCorr);
+      } else {
+        f.GetObject(objname.c_str(), gNegEtaTimeCorr);
+      }
+      f.Close();
+    }
+    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative");
+  }
+  void setTimeShiftParameters(TGraph* g, bool positive)
+  {
+    if (positive) {
+      gPosEtaTimeCorr = g;
+    } else {
+      gNegEtaTimeCorr = g;
+    }
+    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
+  }
+  float getTimeShift(float eta, int16_t sign) const
+  {
+    if (sign > 0) {
+      if (!gPosEtaTimeCorr) {
+        return 0.f;
+      }
+      return gPosEtaTimeCorr->Eval(eta);
+    }
+    if (!gNegEtaTimeCorr) {
+      return 0.f;
+    }
+    return gNegEtaTimeCorr->Eval(eta);
+  }
+
+ private:
+  // Charge calibration
+  int mEtaN = 0; // Number of eta bins, 0 means no correction
+  float mEtaStart = 0.f;
+  float mEtaStop = 0.f;
+  float mInvEtaWidth = 9999.f;
+  std::vector<float> mContent;
+
+  // Time shift for post calibration
+  TGraph* gPosEtaTimeCorr = nullptr; /// Time shift correction for positive tracks
+  TGraph* gNegEtaTimeCorr = nullptr; /// Time shift correction for negative tracks
 };
 
 /// \brief Class to handle the the TOF detector response for the expected time
@@ -257,16 +409,17 @@ class ExpTimes
   /// Gets the expected signal of the track of interest under the PID assumption corrected for shifts in expected momentum
   /// \param parameters Parameters to correct for the momentum shift
   /// \param track Track of interest
-  static float GetCorrectedExpectedSignal(const TOFResoParamsV2& parameters, const TrackType& track)
+  template <typename ParamType>
+  static float GetCorrectedExpectedSignal(const ParamType& parameters, const TrackType& track)
   {
     if (!track.hasTOF()) {
       return defaultReturnValue;
     }
     if (track.trackType() == o2::aod::track::Run2Track) {
-      return ComputeExpectedTime(track.tofExpMom() * kCSPEDDInv / (1.f + track.sign() * parameters.getShift(track.eta())), track.length());
+      return ComputeExpectedTime(track.tofExpMom() * kCSPEDDInv / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta())), track.length());
     }
-    LOG(debug) << "TOF exp. mom. " << track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta()));
-    return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta())), track.length()) + parameters.getTimeShift(track.eta(), track.sign());
+    LOG(debug) << "TOF exp. mom. " << track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta()));
+    return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta())), track.length()) + parameters.getTimeShift(track.eta(), track.sign());
   }
 
   /// Gets the expected resolution of the t-texp-t0
@@ -275,7 +428,8 @@ class ExpTimes
   /// \param track Track of interest
   /// \param tofSignal TOF signal of the track of interest
   /// \param collisionTimeRes Collision time resolution of the track of interest
-  static float GetExpectedSigma(const TOFResoParamsV2& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes)
+  template <typename ParamType>
+  static float GetExpectedSigma(const ParamType& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes)
   {
     const float& mom = track.p();
     if (mom <= 0) {
@@ -301,29 +455,49 @@ class ExpTimes
   /// Gets the expected resolution of the t-texp-t0
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetExpectedSigma(const TOFResoParamsV2& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTimeErr()); }
+  template <typename ParamType>
+  static float GetExpectedSigma(const ParamType& parameters, const TrackType& track)
+  {
+    return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTimeErr());
+  }
 
   /// Gets the expected resolution of the time measurement, uses the expected time and no event time resolution
   /// \param parameters Parameters to use to compute the expected resolution
   /// \param track Track of interest
-  static float GetExpectedSigmaTracking(const TOFResoParamsV2& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, GetCorrectedExpectedSignal(parameters, track), 0.f); }
+  template <typename ParamType>
+  static float GetExpectedSigmaTracking(const ParamType& parameters, const TrackType& track)
+  {
+    return GetExpectedSigma(parameters, track, GetCorrectedExpectedSignal(parameters, track), 0.f);
+  }
 
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters
   /// \param track Track of interest
   /// \param collisionTime Collision time
   /// \param collisionTimeRes Collision time resolution of the track of interest
-  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track, const float collisionTime, const float resolution) { return track.hasTOF() ? (track.tofSignal() - collisionTime - GetCorrectedExpectedSignal(parameters, track)) / resolution : defaultReturnValue; }
+  template <typename ParamType>
+  static float GetSeparation(const ParamType& parameters, const TrackType& track, const float collisionTime, const float resolution)
+  {
+    return track.hasTOF() ? (track.tofSignal() - collisionTime - GetCorrectedExpectedSignal(parameters, track)) / resolution : defaultReturnValue;
+  }
 
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track, const float resolution) { return GetSeparation(parameters, track, track.tofEvTime(), resolution); }
+  template <typename ParamType>
+  static float GetSeparation(const ParamType& parameters, const TrackType& track, const float resolution)
+  {
+    return GetSeparation(parameters, track, track.tofEvTime(), resolution);
+  }
 
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track) { return GetSeparation(parameters, track, track.tofEvTime(), GetExpectedSigma(parameters, track)); }
+  template <typename ParamType>
+  static float GetSeparation(const ParamType& parameters, const TrackType& track)
+  {
+    return GetSeparation(parameters, track, track.tofEvTime(), GetExpectedSigma(parameters, track));
+  }
 };
 
 /// \brief Class to convert the trackTime to the tofSignal used for PID

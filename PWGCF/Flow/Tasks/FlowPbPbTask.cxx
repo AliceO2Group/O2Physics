@@ -27,6 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 
 #include "GFWPowerArray.h"
 #include "GFW.h"
@@ -56,12 +57,16 @@ struct FlowPbPbTask {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
+  O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
+  O2_DEFINE_CONFIGURABLE(cfgCutIR, float, 50.0, "maximum interaction rate (kHz)")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
 
   ConfigurableAxis axisVertex{"axisVertex", {40, -20, 20}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -112,6 +117,12 @@ struct FlowPbPbTask {
     // Count the total number of enum
     kCount_ExtraProfile
   };
+  int mRunNumber{-1};
+  uint64_t mSOR{0};
+  double mMinSeconds{-1.};
+  std::unordered_map<int, TH2*> gHadronicRate;
+  ctpRateFetcher mRateFetcher;
+  TH2* gCurrentHadronicRate;
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
@@ -456,6 +467,10 @@ struct FlowPbPbTask {
       // use this cut at low multiplicities with caution
       return 0;
     }
+    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      // no collisions in specified time range
+      return 0;
+    }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
@@ -464,6 +479,7 @@ struct FlowPbPbTask {
         vtxz = -999;
     }
     auto multNTracksPV = collision.multNTracksPV();
+    auto occupancy = collision.trackOccupancyInTimeRange();
 
     if (abs(vtxz) > cfgCutVertex)
       return 0;
@@ -474,6 +490,8 @@ struct FlowPbPbTask {
     if (multTrk < fMultCutLow->Eval(centrality))
       return 0;
     if (multTrk > fMultCutHigh->Eval(centrality))
+      return 0;
+    if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)
       return 0;
 
     // V0A T0A 5 sigma cut
@@ -517,6 +535,23 @@ struct FlowPbPbTask {
     return true;
   }
 
+  void initHadronicRate(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    mRunNumber = bc.runNumber();
+    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()) {
+      auto runDuration = ccdb->getRunDuration(mRunNumber);
+      mSOR = runDuration.first;
+      mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
+      double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"};
+      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {510, 0., 51.}}).get();
+    }
+    gCurrentHadronicRate = gHadronicRate[mRunNumber];
+  }
+
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
@@ -545,6 +580,12 @@ struct FlowPbPbTask {
     registry.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initHadronicRate(bc);
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
+    double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+    if (cfgUseInteractionRateCut && hadronicRate > cfgCutIR) // cut on hadronic rate
+      return;
+    gCurrentHadronicRate->Fill(seconds, hadronicRate);
     loadCorrections(bc.timestamp());
     registry.fill(HIST("hEventCount"), 4.5);
 

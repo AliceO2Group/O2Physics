@@ -122,6 +122,9 @@ struct ZDCAnalysis {
       registry.add("ZPAvstdccoll", "ZPAvstdccoll", {HistType::kTH2F, {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZP}}}});
       registry.add("ZEM1vstdccoll", "ZEM1vstdccoll", {HistType::kTH2F, {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZEM}}}});
       registry.add("ZEM2vstdccoll", "ZEM2vstdccoll", {HistType::kTH2F, {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZEM}}}});
+      registry.add("debunch", "ZN sum vs. ZN diff.", {HistType::kTH2F, {{{240, -12., 12.}, {240, -12., 12.}}}});
+      registry.add("centroidZNA", "ZNA centroid", {HistType::kTH2F, {{{350, -1.75, 1.75}, {350, -1.75, 1.75}}}});
+      registry.add("centroidZNC", "ZNC centroid", {HistType::kTH2F, {{{350, -1.75, 1.75}, {350, -1.75, 1.75}}}});
     }
     if (doprocessZdcCorrela) { // Check if the process function for ZDCCollCorrela is enabled
       registry.add("ZNvsFV0Acorrel", "ZNvsFV0Acorrel", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFV0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
@@ -132,17 +135,24 @@ struct ZDCAnalysis {
 
   void processZdcAuto(aod::Zdc const& zdc)
   {
-    registry.get<TH1>(HIST("ZNApmc"))->Fill(zdc.amplitudeZNA());
-    registry.get<TH1>(HIST("ZNCpmc"))->Fill(zdc.amplitudeZNC());
-    registry.get<TH1>(HIST("ZPApmc"))->Fill(zdc.amplitudeZPA());
-    registry.get<TH1>(HIST("ZPCpmc"))->Fill(zdc.amplitudeZPC());
-    registry.get<TH1>(HIST("ZEM1"))->Fill(zdc.amplitudeZEM1());
-    registry.get<TH1>(HIST("ZEM2"))->Fill(zdc.amplitudeZEM2());
-    registry.get<TH2>(HIST("ZNvsZEM"))->Fill(zdc.amplitudeZEM1() + zdc.amplitudeZEM2(), zdc.amplitudeZNA() + zdc.amplitudeZNC());
-    registry.get<TH2>(HIST("ZNAvsZNC"))->Fill(zdc.amplitudeZNC(), zdc.amplitudeZNA());
-    registry.get<TH2>(HIST("ZPAvsZPC"))->Fill(zdc.amplitudeZPC(), zdc.amplitudeZPA());
-    registry.get<TH2>(HIST("ZNAvsZPA"))->Fill(zdc.amplitudeZPA(), zdc.amplitudeZNA());
-    registry.get<TH2>(HIST("ZNCvsZPC"))->Fill(zdc.amplitudeZPC(), zdc.amplitudeZNC());
+    auto aZNA = zdc.amplitudeZNA();
+    auto aZNC = zdc.amplitudeZNC();
+    auto aZPA = zdc.amplitudeZPA();
+    auto aZPC = zdc.amplitudeZPC();
+    auto aZEM1 = zdc.amplitudeZEM1();
+    auto aZEM2 = zdc.amplitudeZEM2();
+    //
+    registry.get<TH1>(HIST("ZNApmc"))->Fill(aZNA);
+    registry.get<TH1>(HIST("ZNCpmc"))->Fill(aZNC);
+    registry.get<TH1>(HIST("ZPApmc"))->Fill(aZPA);
+    registry.get<TH1>(HIST("ZPCpmc"))->Fill(aZPC);
+    registry.get<TH1>(HIST("ZEM1"))->Fill(aZEM1);
+    registry.get<TH1>(HIST("ZEM2"))->Fill(aZEM2);
+    registry.get<TH2>(HIST("ZNvsZEM"))->Fill(aZEM1 + aZEM2, aZNA + aZNC);
+    registry.get<TH2>(HIST("ZNAvsZNC"))->Fill(aZNC, aZNA);
+    registry.get<TH2>(HIST("ZPAvsZPC"))->Fill(aZPC, aZPA);
+    registry.get<TH2>(HIST("ZNAvsZPA"))->Fill(aZPA, aZNA);
+    registry.get<TH2>(HIST("ZNCvsZPC"))->Fill(aZPC, aZNC);
     //
     float sumZNC = (zdc.energySectorZNC())[0] + (zdc.energySectorZNC())[1] + (zdc.energySectorZNC())[2] + (zdc.energySectorZNC())[3];
     float sumZNA = (zdc.energySectorZNA())[0] + (zdc.energySectorZNA())[1] + (zdc.energySectorZNA())[2] + (zdc.energySectorZNA())[3];
@@ -153,12 +163,12 @@ struct ZDCAnalysis {
     registry.get<TH2>(HIST("ZPCcvsZPCsum"))->Fill(sumZPC, zdc.energyCommonZPC());
     registry.get<TH2>(HIST("ZPAcvsZPAsum"))->Fill(sumZPA, zdc.energyCommonZPA());
     //
-    registry.get<TH2>(HIST("ZNCvstdc"))->Fill(zdc.timeZNC(), zdc.amplitudeZNC());
-    registry.get<TH2>(HIST("ZNAvstdc"))->Fill(zdc.timeZNA(), zdc.amplitudeZNA());
-    registry.get<TH2>(HIST("ZPCvstdc"))->Fill(zdc.timeZPC(), zdc.amplitudeZPC());
-    registry.get<TH2>(HIST("ZPAvstdc"))->Fill(zdc.timeZPA(), zdc.amplitudeZPA());
-    registry.get<TH2>(HIST("ZEM1vstdc"))->Fill(zdc.timeZEM1(), zdc.amplitudeZEM1());
-    registry.get<TH2>(HIST("ZEM2vstdc"))->Fill(zdc.timeZEM2(), zdc.amplitudeZEM2());
+    registry.get<TH2>(HIST("ZNCvstdc"))->Fill(zdc.timeZNC(), aZNC);
+    registry.get<TH2>(HIST("ZNAvstdc"))->Fill(zdc.timeZNA(), aZNA);
+    registry.get<TH2>(HIST("ZPCvstdc"))->Fill(zdc.timeZPC(), aZPC);
+    registry.get<TH2>(HIST("ZPAvstdc"))->Fill(zdc.timeZPA(), aZPA);
+    registry.get<TH2>(HIST("ZEM1vstdc"))->Fill(zdc.timeZEM1(), aZEM1);
+    registry.get<TH2>(HIST("ZEM2vstdc"))->Fill(zdc.timeZEM2(), aZEM2);
   }
   /// name, description, function pointer, default value
   /// note that it has to be declared after the function, so that the pointer is known
@@ -166,22 +176,29 @@ struct ZDCAnalysis {
 
   void processZdcBcAss(
     BCsRun3 const& bcs,
-    aod::Zdcs const& zdcs)
+    aod::Zdcs const& /*zdcs*/)
   {
     for (const auto& bc : bcs) {
       if (bc.has_zdc()) {
 
-        registry.get<TH1>(HIST("ZNAbc"))->Fill(bc.zdc().amplitudeZNA());
-        registry.get<TH1>(HIST("ZNCbc"))->Fill(bc.zdc().amplitudeZNC());
-        registry.get<TH1>(HIST("ZPAbc"))->Fill(bc.zdc().amplitudeZPA());
-        registry.get<TH1>(HIST("ZPCbc"))->Fill(bc.zdc().amplitudeZPC());
-        registry.get<TH1>(HIST("ZEM1bc"))->Fill(bc.zdc().amplitudeZEM1());
-        registry.get<TH1>(HIST("ZEM2bc"))->Fill(bc.zdc().amplitudeZEM2());
-        registry.get<TH2>(HIST("ZNvsZEMbc"))->Fill(bc.zdc().amplitudeZEM1() + bc.zdc().amplitudeZEM2(), bc.zdc().amplitudeZNA() + bc.zdc().amplitudeZNC());
-        registry.get<TH2>(HIST("ZNAvsZNCbc"))->Fill(bc.zdc().amplitudeZNC(), bc.zdc().amplitudeZNA());
-        registry.get<TH2>(HIST("ZPAvsZPCbc"))->Fill(bc.zdc().amplitudeZPC(), bc.zdc().amplitudeZPA());
-        registry.get<TH2>(HIST("ZNAvsZPAbc"))->Fill(bc.zdc().amplitudeZPA(), bc.zdc().amplitudeZNA());
-        registry.get<TH2>(HIST("ZNCvsZPCbc"))->Fill(bc.zdc().amplitudeZPC(), bc.zdc().amplitudeZNC());
+        auto aZNA = bc.zdc().amplitudeZNA();
+        auto aZNC = bc.zdc().amplitudeZNC();
+        auto aZPA = bc.zdc().amplitudeZPA();
+        auto aZPC = bc.zdc().amplitudeZPC();
+        auto aZEM1 = bc.zdc().amplitudeZEM1();
+        auto aZEM2 = bc.zdc().amplitudeZEM2();
+
+        registry.get<TH1>(HIST("ZNAbc"))->Fill(aZNA);
+        registry.get<TH1>(HIST("ZNCbc"))->Fill(aZNC);
+        registry.get<TH1>(HIST("ZPAbc"))->Fill(aZPA);
+        registry.get<TH1>(HIST("ZPCbc"))->Fill(aZPC);
+        registry.get<TH1>(HIST("ZEM1bc"))->Fill(aZEM1);
+        registry.get<TH1>(HIST("ZEM2bc"))->Fill(aZEM2);
+        registry.get<TH2>(HIST("ZNvsZEMbc"))->Fill(aZEM1 + aZEM2, aZNA + aZNC);
+        registry.get<TH2>(HIST("ZNAvsZNCbc"))->Fill(aZNC, aZNA);
+        registry.get<TH2>(HIST("ZPAvsZPCbc"))->Fill(aZPC, aZPA);
+        registry.get<TH2>(HIST("ZNAvsZPAbc"))->Fill(aZPA, aZNA);
+        registry.get<TH2>(HIST("ZNCvsZPCbc"))->Fill(aZPC, aZNC);
       }
     }
   }
@@ -189,54 +206,114 @@ struct ZDCAnalysis {
 
   void processZdcCollAss(
     ColEvSels const& cols,
-    BCsRun3 const& bcs,
-    aod::Zdcs const& zdcs)
+    BCsRun3 const& /*bcs*/,
+    aod::Zdcs const& /*zdcs*/)
   {
     // collision-based event selection
     for (auto& collision : cols) {
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
       if (foundBC.has_zdc()) {
         const auto& zdcread = foundBC.zdc();
+        //
+        auto aZNA = zdcread.amplitudeZNA();
+        auto aZNC = zdcread.amplitudeZNC();
+        auto aZPA = zdcread.amplitudeZPA();
+        auto aZPC = zdcread.amplitudeZPC();
+        auto aZEM1 = zdcread.amplitudeZEM1();
+        auto aZEM2 = zdcread.amplitudeZEM2();
+        auto tZNA = zdcread.timeZNA();
+        auto tZNC = zdcread.timeZNC();
+        auto tZPA = zdcread.timeZPA();
+        auto tZPC = zdcread.timeZPC();
+        //
         if (TDCcut) {
-          if ((zdcread.timeZNA() >= tdcZNmincut) && (zdcread.timeZNA() <= tdcZNmaxcut))
-            registry.get<TH1>(HIST("ZNAcoll"))->Fill(zdcread.amplitudeZNA());
-          if ((zdcread.timeZNC() >= tdcZNmincut) && (zdcread.timeZNC() <= tdcZNmaxcut))
-            registry.get<TH1>(HIST("ZNCcoll"))->Fill(zdcread.amplitudeZNC());
-          if ((zdcread.timeZPA() >= tdcZPmincut) && (zdcread.timeZPA() <= tdcZPmaxcut))
-            registry.get<TH1>(HIST("ZPAcoll"))->Fill(zdcread.amplitudeZPA());
-          if ((zdcread.timeZPC() >= tdcZPmincut) && (zdcread.timeZPC() <= tdcZPmaxcut))
-            registry.get<TH1>(HIST("ZPCcoll"))->Fill(zdcread.amplitudeZPC());
-          if (((zdcread.timeZNC() >= tdcZNmincut) && (zdcread.timeZNC() <= tdcZNmaxcut)) && ((zdcread.timeZNA() >= tdcZNmincut) && (zdcread.timeZNA() <= tdcZNmaxcut)))
-            registry.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2(), zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
-          if (((zdcread.timeZNC() >= tdcZNmincut) && (zdcread.timeZNC() <= tdcZNmaxcut)) && ((zdcread.timeZNA() >= tdcZNmincut) && (zdcread.timeZNA() <= tdcZNmaxcut)))
-            registry.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(zdcread.amplitudeZNC(), zdcread.amplitudeZNA());
-          if (((zdcread.timeZPC() >= tdcZPmincut) && (zdcread.timeZPC() <= tdcZPmaxcut)) && ((zdcread.timeZPA() >= tdcZPmincut) && (zdcread.timeZPA() <= tdcZPmaxcut)))
-            registry.get<TH2>(HIST("ZPAvsZPCcoll"))->Fill(zdcread.amplitudeZPC(), zdcread.amplitudeZPA());
-          if ((zdcread.timeZNA() >= tdcZNmincut) && (zdcread.timeZNA() <= tdcZNmaxcut))
-            registry.get<TH2>(HIST("ZNAvsZPAcoll"))->Fill(zdcread.amplitudeZPA(), zdcread.amplitudeZNA());
-          if ((zdcread.timeZNC() >= tdcZNmincut) && (zdcread.timeZNC() <= tdcZNmaxcut))
-            registry.get<TH2>(HIST("ZNCvsZPCcoll"))->Fill(zdcread.amplitudeZPC(), zdcread.amplitudeZNC());
+          if ((tZNA >= tdcZNmincut) && (tZNA <= tdcZNmaxcut))
+            registry.get<TH1>(HIST("ZNAcoll"))->Fill(aZNA);
+          if ((tZNC >= tdcZNmincut) && (tZNC <= tdcZNmaxcut))
+            registry.get<TH1>(HIST("ZNCcoll"))->Fill(aZNC);
+          if ((tZPA >= tdcZPmincut) && (tZPA <= tdcZPmaxcut))
+            registry.get<TH1>(HIST("ZPAcoll"))->Fill(aZPA);
+          if ((tZPC >= tdcZPmincut) && (tZPC <= tdcZPmaxcut))
+            registry.get<TH1>(HIST("ZPCcoll"))->Fill(aZPC);
+          if (((tZNC >= tdcZNmincut) && (tZNC <= tdcZNmaxcut)) && ((tZNA >= tdcZNmincut) && (tZNA <= tdcZNmaxcut)))
+            registry.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(aZEM1 + aZEM2, aZNA + aZNC);
+          if (((tZNC >= tdcZNmincut) && (tZNC <= tdcZNmaxcut)) && ((tZNA >= tdcZNmincut) && (tZNA <= tdcZNmaxcut)))
+            registry.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(aZNC, aZNA);
+          if (((tZPC >= tdcZPmincut) && (tZPC <= tdcZPmaxcut)) && ((tZPA >= tdcZPmincut) && (tZPA <= tdcZPmaxcut)))
+            registry.get<TH2>(HIST("ZPAvsZPCcoll"))->Fill(aZPC, aZPA);
+          if ((tZNA >= tdcZNmincut) && (tZNA <= tdcZNmaxcut))
+            registry.get<TH2>(HIST("ZNAvsZPAcoll"))->Fill(aZPA, aZNA);
+          if ((tZNC >= tdcZNmincut) && (tZNC <= tdcZNmaxcut))
+            registry.get<TH2>(HIST("ZNCvsZPCcoll"))->Fill(aZPC, aZNC);
           //
         } else {
-          registry.get<TH1>(HIST("ZNAcoll"))->Fill(zdcread.amplitudeZNA());
-          registry.get<TH1>(HIST("ZNCcoll"))->Fill(zdcread.amplitudeZNC());
-          registry.get<TH1>(HIST("ZPAcoll"))->Fill(zdcread.amplitudeZPA());
-          registry.get<TH1>(HIST("ZPCcoll"))->Fill(zdcread.amplitudeZPC());
-          registry.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2(), zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
-          registry.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(zdcread.amplitudeZNC(), zdcread.amplitudeZNA());
-          registry.get<TH2>(HIST("ZPAvsZPCcoll"))->Fill(zdcread.amplitudeZPC(), zdcread.amplitudeZPA());
-          registry.get<TH2>(HIST("ZNAvsZPAcoll"))->Fill(zdcread.amplitudeZPA(), zdcread.amplitudeZNA());
-          registry.get<TH2>(HIST("ZNCvsZPCcoll"))->Fill(zdcread.amplitudeZPC(), zdcread.amplitudeZNC());
+          registry.get<TH1>(HIST("ZNAcoll"))->Fill(aZNA);
+          registry.get<TH1>(HIST("ZNCcoll"))->Fill(aZNC);
+          registry.get<TH1>(HIST("ZPAcoll"))->Fill(aZPA);
+          registry.get<TH1>(HIST("ZPCcoll"))->Fill(aZPC);
+          registry.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(aZEM1 + aZEM2, aZNA + aZNC);
+          registry.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(aZNC, aZNA);
+          registry.get<TH2>(HIST("ZPAvsZPCcoll"))->Fill(aZPC, aZPA);
+          registry.get<TH2>(HIST("ZNAvsZPAcoll"))->Fill(aZPA, aZNA);
+          registry.get<TH2>(HIST("ZNCvsZPCcoll"))->Fill(aZPC, aZNC);
         }
-        registry.get<TH1>(HIST("ZEM1coll"))->Fill(zdcread.amplitudeZEM1());
-        registry.get<TH1>(HIST("ZEM2coll"))->Fill(zdcread.amplitudeZEM2());
+        registry.get<TH1>(HIST("ZEM1coll"))->Fill(aZEM1);
+        registry.get<TH1>(HIST("ZEM2coll"))->Fill(aZEM2);
         //
-        registry.get<TH2>(HIST("ZNCvstdccoll"))->Fill(zdcread.timeZNC(), zdcread.amplitudeZNC());
-        registry.get<TH2>(HIST("ZNAvstdccoll"))->Fill(zdcread.timeZNA(), zdcread.amplitudeZNA());
-        registry.get<TH2>(HIST("ZPCvstdccoll"))->Fill(zdcread.timeZPC(), zdcread.amplitudeZPC());
-        registry.get<TH2>(HIST("ZPAvstdccoll"))->Fill(zdcread.timeZPA(), zdcread.amplitudeZPA());
-        registry.get<TH2>(HIST("ZEM1vstdccoll"))->Fill(zdcread.timeZEM1(), zdcread.amplitudeZEM1());
-        registry.get<TH2>(HIST("ZEM2vstdccoll"))->Fill(zdcread.timeZEM2(), zdcread.amplitudeZEM2());
+        registry.get<TH2>(HIST("ZNCvstdccoll"))->Fill(tZNC, aZNC);
+        registry.get<TH2>(HIST("ZNAvstdccoll"))->Fill(tZNA, aZNA);
+        registry.get<TH2>(HIST("ZPCvstdccoll"))->Fill(tZPC, aZPC);
+        registry.get<TH2>(HIST("ZPAvstdccoll"))->Fill(tZPA, aZPA);
+        registry.get<TH2>(HIST("ZEM1vstdccoll"))->Fill(zdcread.timeZEM1(), aZEM1);
+        registry.get<TH2>(HIST("ZEM2vstdccoll"))->Fill(zdcread.timeZEM2(), aZEM2);
+        //
+        registry.get<TH2>(HIST("debunch"))->Fill(tZNA - tZNC, tZNA + tZNC);
+        //
+        // Calculating centroid over ZNA and ZNC
+        // const float beamEne = 5.36/2.;
+        const float x[4] = {-1.75, 1.75, -1.75, 1.75};
+        const float y[4] = {-1.75, -1.75, 1.75, 1.75};
+        const float alpha = 0.395;
+        double numXZNC = 0., numYZNC = 0., denZNC = 0.;
+        double numXZNA = 0., numYZNA = 0., denZNA = 0.;
+        double centrZNC[2] = {0., 0}, centrZNA[2] = {0., 0.};
+        //
+        auto zncTower = zdcread.energySectorZNC();
+        auto znaTower = zdcread.energySectorZNA();
+        auto zncC = zdcread.energyCommonZNC();
+        auto znaC = zdcread.energyCommonZNA();
+        //
+        for (int i = 0; i < 4; i++) {
+          if (zncTower[i] > 0.) {
+            float wZNC = std::pow(zncTower[i], alpha);
+            numXZNC += x[i] * wZNC;
+            numYZNC += y[i] * wZNC;
+            denZNC += wZNC;
+          }
+          if (znaTower[i] > 0.) {
+            float wZNA = std::pow(znaTower[i], alpha);
+            numXZNA += x[i] * wZNA;
+            numYZNA += y[i] * wZNA;
+            denZNA += wZNA;
+          }
+        }
+        //
+        if (denZNC != 0) {
+          centrZNC[0] = numXZNC / denZNC;
+          centrZNC[1] = numYZNC / denZNC;
+        } else {
+          centrZNC[0] = centrZNC[1] = 999.;
+        }
+        //
+        if (denZNA != 0) {
+          centrZNA[0] = -numXZNA / denZNA;
+          centrZNA[1] = numYZNA / denZNA;
+        } else {
+          centrZNA[0] = centrZNA[1] = 999.;
+        }
+        //
+        registry.get<TH2>(HIST("centroidZNA"))->Fill(centrZNA[0], centrZNA[1], znaC);
+        registry.get<TH2>(HIST("centroidZNC"))->Fill(centrZNC[0], centrZNC[1], zncC);
       }
     }
   }
@@ -244,17 +321,17 @@ struct ZDCAnalysis {
 
   void processZdcCorrela(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& coll,
-    BCsRun3 const& bcs,
-    aod::Zdcs const& zdcs,
-    aod::FV0As const& fv0as,
-    aod::FT0s const& ft0s,
-    aod::FDDs const& fdds)
+    BCsRun3 const& /*bcs*/,
+    aod::Zdcs const& /*zdcs*/,
+    aod::FV0As const& /*fv0as*/,
+    aod::FT0s const& /*ft0s*/,
+    aod::FDDs const& /*fdds*/)
   {
     const auto& foundBC = coll.foundBC_as<BCsRun3>();
 
     // FT0
-    float multT0A = 0;
-    float multT0C = 0;
+    float multT0A = 0.;
+    float multT0C = 0.;
     if (foundBC.has_ft0()) {
       for (auto amplitude : foundBC.ft0().amplitudeA()) {
         multT0A += amplitude;
@@ -290,9 +367,11 @@ struct ZDCAnalysis {
 
     if (foundBC.has_zdc()) {
       const auto& zdcread = foundBC.zdc();
-      registry.get<TH2>(HIST("ZNvsFV0Acorrel"))->Fill(multV0A / 100., zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
-      registry.get<TH2>(HIST("ZNvsFT0correl"))->Fill((multT0A + multT0C) / 100., zdcread.amplitudeZNC() + zdcread.amplitudeZNA());
-      registry.get<TH2>(HIST("ZNvsFDDcorrel"))->Fill(multFDC + multFDA, zdcread.amplitudeZNC() + zdcread.amplitudeZNA());
+      auto aZNA = zdcread.amplitudeZNA();
+      auto aZNC = zdcread.amplitudeZNC();
+      registry.get<TH2>(HIST("ZNvsFV0Acorrel"))->Fill(multV0A / 100., aZNA + aZNC);
+      registry.get<TH2>(HIST("ZNvsFT0correl"))->Fill((multT0A + multT0C) / 100., aZNC + aZNA);
+      registry.get<TH2>(HIST("ZNvsFDDcorrel"))->Fill(multFDC + multFDA, aZNC + aZNA);
     }
   }
   PROCESS_SWITCH(ZDCAnalysis, processZdcCorrela, "Processing ZDC vs. mult. w. collision association", true);
