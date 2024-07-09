@@ -236,7 +236,7 @@ struct phosPi0 {
   void processMC(SelCollisionsMC::iterator const& col,
                  mcClusters const& clusters,
                  aod::McParticles const& mcPart,
-                 aod::McCollisions const& mcCol)
+                 aod::McCollisions const& /*mcCol*/)
   {
     scanAll<true>(col, clusters, &mcPart);
   }
