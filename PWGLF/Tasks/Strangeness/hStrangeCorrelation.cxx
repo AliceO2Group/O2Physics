@@ -929,7 +929,7 @@ struct correlateStrangeness {
       fillCorrelationsPion(slicedTriggerTracks, slicedAssocPions, true, collision1.posZ(), collision1.centFT0M());
     }
   }
-  void processMCGenerated(aod::McCollision const& mccollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms>> const& collisions, aod::McParticles const& mcParticles)
+  void processMCGenerated(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms>> const& collisions, aod::McParticles const& mcParticles)
   {
 
     for (auto const& mcParticle : mcParticles) {
