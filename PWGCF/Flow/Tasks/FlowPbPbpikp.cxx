@@ -303,7 +303,7 @@ struct v2ellip {
 
   array<float, 15> ptbins = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0, 3.5, 4.0, 4.5, 5.0};
 
-  void processSE(EventCandidates::iterator const& collision, TrackCandidates const&  /*tracks*/, aod::BCs const&)
+  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::BCs const&)
 
   {
     float sum_sinA = 0.0, sum_cosA = 0.0, sum_sinB = 0.0, sum_cosB = 0.0;
