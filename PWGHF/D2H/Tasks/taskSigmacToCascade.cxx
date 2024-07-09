@@ -144,57 +144,55 @@ struct HfTaskSigmacToCascade {
       float y(-1.);
 
       massLc = hfHelper.invMassLcToK0sP(candidateLc);
-      if (candSc.charge() == 0 || candSc.charge() == 2) {
-        massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
-        deltaMass = massSc - massLc;
-        if (candSc.charge() == 0) {
-          y = hfHelper.ySc0(candSc);
-        } else if (candSc.charge() == 2) {
-          y = hfHelper.yScPlusPlus(candSc);
+      massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
+      deltaMass = massSc - massLc;
+      if (candSc.charge() == 0) {
+        y = hfHelper.ySc0(candSc);
+      } else if (candSc.charge() == 2) {
+        y = hfHelper.yScPlusPlus(candSc);
+      }
+      registry.fill(HIST("Data/hDeltaMassSc0PlusPlus"), deltaMass);           /// Σc(0,++) for both charges
+      registry.fill(HIST("Data/hDeltaMassSc0PlusPlusVsPt"), deltaMass, ptSc); /// Σc(0,++) for both charges
+      registry.fill(HIST("Data/hEtaSc0PlusPlus"), etaSc);                     /// Σc(0,++) for both charges
+      registry.fill(HIST("Data/hEtaSc0PlusPlusVsPt"), etaSc, ptSc);           /// Σc(0,++) for both charges
+      registry.fill(HIST("Data/hYSc0PlusPlusVsPt"), y, ptSc);                 /// Σc(0,++) for both charges
+      registry.fill(HIST("Data/hPhiSc0PlusPlus"), phiSc);                     /// Σc(0,++) for both charges
+
+      /// fill histograms for softpion from Σc(0,++)
+      registry.fill(HIST("Data/hPtSoftPiSc0PlusPlus"), ptSoftPi);
+      registry.fill(HIST("Data/hEtaSoftPiSc0PlusPlus"), etaSoftPi);
+      registry.fill(HIST("Data/hPhiSoftPiSc0PlusPlus"), phiSoftPi); // π ← Σc0,++
+
+      if (candSc.charge() == 0) {
+        registry.fill(HIST("Data/hDeltaMassSc0"), deltaMass);           /// Σc0
+        registry.fill(HIST("Data/hDeltaMassSc0VsPt"), deltaMass, ptSc); /// Σc0
+        registry.fill(HIST("Data/hEtaSc0"), etaSc);                     /// Σc0
+        registry.fill(HIST("Data/hPhiSc0"), phiSc);                     /// Σc0
+
+        /// fill histograms for softpion
+        registry.fill(HIST("Data/hPtSoftPiSc0"), ptSoftPi);
+        registry.fill(HIST("Data/hEtaSoftPiSc0"), etaSoftPi);
+        registry.fill(HIST("Data/hPhiSoftPiSc0"), phiSoftPi); // π ← Σc0
+
+        if (enableTHn) {
+          registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
         }
-        registry.fill(HIST("Data/hDeltaMassSc0PlusPlus"), deltaMass);           /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hDeltaMassSc0PlusPlusVsPt"), deltaMass, ptSc); /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hEtaSc0PlusPlus"), etaSc);                     /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hEtaSc0PlusPlusVsPt"), etaSc, ptSc);           /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hYSc0PlusPlusVsPt"), y, ptSc);                 /// Σc(0,++) for both charges
-        registry.fill(HIST("Data/hPhiSc0PlusPlus"), phiSc);                     /// Σc(0,++) for both charges
+        /// Σc0
+      } else if (candSc.charge() == 2) {
+        registry.fill(HIST("Data/hDeltaMassScPlusPlus"), deltaMass);           /// Σc++
+        registry.fill(HIST("Data/hDeltaMassScPlusPlusVsPt"), deltaMass, ptSc); /// Σc++
+        registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);                     /// Σc++
+        registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);                     /// Σc++
 
-        /// fill histograms for softpion from Σc(0,++)
-        registry.fill(HIST("Data/hPtSoftPiSc0PlusPlus"), ptSoftPi);
-        registry.fill(HIST("Data/hEtaSoftPiSc0PlusPlus"), etaSoftPi);
-        registry.fill(HIST("Data/hPhiSoftPiSc0PlusPlus"), phiSoftPi); // π ← Σc0,++
+        /// fill histograms for softpion
+        registry.fill(HIST("Data/hPtSoftPiScPlusPlus"), ptSoftPi);
+        registry.fill(HIST("Data/hEtaSoftPiScPlusPlus"), etaSoftPi);
+        registry.fill(HIST("Data/hPhiSoftPiScPlusPlus"), phiSoftPi); // π ← Σc++
 
-        if (candSc.charge() == 0) {
-          registry.fill(HIST("Data/hDeltaMassSc0"), deltaMass);           /// Σc0
-          registry.fill(HIST("Data/hDeltaMassSc0VsPt"), deltaMass, ptSc); /// Σc0
-          registry.fill(HIST("Data/hEtaSc0"), etaSc);                     /// Σc0
-          registry.fill(HIST("Data/hPhiSc0"), phiSc);                     /// Σc0
-
-          /// fill histograms for softpion
-          registry.fill(HIST("Data/hPtSoftPiSc0"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiSc0"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiSc0"), phiSoftPi); // π ← Σc0
-
-          if (enableTHn) {
-            registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
-          }
-          /// Σc0
-        } else if (candSc.charge() == 2) {
-          registry.fill(HIST("Data/hDeltaMassScPlusPlus"), deltaMass);           /// Σc++
-          registry.fill(HIST("Data/hDeltaMassScPlusPlusVsPt"), deltaMass, ptSc); /// Σc++
-          registry.fill(HIST("Data/hEtaScPlusPlus"), etaSc);                     /// Σc++
-          registry.fill(HIST("Data/hPhiScPlusPlus"), phiSc);                     /// Σc++
-
-          /// fill histograms for softpion
-          registry.fill(HIST("Data/hPtSoftPiScPlusPlus"), ptSoftPi);
-          registry.fill(HIST("Data/hEtaSoftPiScPlusPlus"), etaSoftPi);
-          registry.fill(HIST("Data/hPhiSoftPiScPlusPlus"), phiSoftPi); // π ← Σc++
-
-          if (enableTHn) {
-            registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
-          }
+        if (enableTHn) {
+          registry.get<THnSparse>(HIST("hnSigmaC0PlusPlus"))->Fill(candSc.charge(), massLc, ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, ptSc);
         }
-      } /// for both charges
+      }
     }
   }
   PROCESS_SWITCH(HfTaskSigmacToCascade, processSigmacToLcPi, "Process Data", true);
