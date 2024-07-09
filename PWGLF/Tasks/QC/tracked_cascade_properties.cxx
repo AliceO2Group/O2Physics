@@ -121,7 +121,7 @@ struct tracked_cascade_properties {
   }
 
   void processData(SelectedCollisions::iterator const& collision, aod::AssignedTrackedCascades const& trackedCascades,
-                   aod::Cascades const&, FullTracks const&  /*tracks*/)
+                   aod::Cascades const&, FullTracks const& /*tracks*/)
   {
     registryData.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
