@@ -1012,6 +1012,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::Dielectrons> dielectronList;
   Produces<aod::Dimuons> dimuonList;
   Produces<aod::DielectronsExtra> dielectronsExtraList;
+  Produces<aod::DielectronsInfo> dielectronInfoList;
   Produces<aod::DimuonsExtra> dimuonsExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
@@ -1047,6 +1048,7 @@ struct AnalysisSameEventPairing {
 
   Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
   Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
+  Configurable<bool> fConfigSkimSignalOnly{"fConfigSkimSignalOnly", false, "Configurable to select only matched candidates"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -1369,6 +1371,7 @@ struct AnalysisSameEventPairing {
     dimuonList.reserve(1);
     dielectronsExtraList.reserve(1);
     dimuonsExtraList.reserve(1);
+    dielectronInfoList.reserve(1);
     dileptonInfoList.reserve(1);
     if (fConfigFlatTables.value) {
       dimuonAllList.reserve(1);
@@ -1435,16 +1438,18 @@ struct AnalysisSameEventPairing {
           if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);
           }
+          if (!fConfigSkimSignalOnly || (fConfigSkimSignalOnly && mcDecision > 0)) {
+            dielectronList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
+                           VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
+                           t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
 
-          dielectronList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
-                         VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
-                         t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
-
-          if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
-            dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
-          }
-          if constexpr (trackHasCov && TTwoProngFitter) {
-            dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
+            if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
+              dielectronInfoList(t1.collisionId(), t1.trackId(), t2.trackId());
+              dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+            }
+            if constexpr (trackHasCov && TTwoProngFitter) {
+              dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
+            }
           }
         }
 

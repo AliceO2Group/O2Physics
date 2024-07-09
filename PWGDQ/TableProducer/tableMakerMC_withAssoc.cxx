@@ -105,10 +105,12 @@ struct TableMakerMC {
   Produces<ReducedEvents> event;
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
+  Produces<ReducedEventsInfo> eventInfo;
   Produces<ReducedEventsMultPV> multPV;
   Produces<ReducedEventsMultAll> multAll;
   Produces<ReducedMCEventLabels> eventMClabels;
 
+  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedTracks> trackBasic;
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
@@ -470,6 +472,7 @@ struct TableMakerMC {
                     multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C);
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       eventMClabels(collision.mcCollisionId(), collision.mcMask());
+      eventInfo(collision.globalIndex());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
                collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
@@ -552,6 +555,7 @@ struct TableMakerMC {
           fCollIndexMap.find(track.collisionId()) != fCollIndexMap.end()) { // if the original track collisionId is from a not skimmed collision, keep -1 as coll index
         reducedEventIdx = fCollIndexMap[track.collisionId()];
       }
+      trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
       trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
       trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                   track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
@@ -823,6 +827,7 @@ struct TableMakerMC {
     eventExtended.reserve(collisions.size());
     eventVtxCov.reserve(collisions.size());
     eventMClabels.reserve(collisions.size());
+    eventInfo.reserve(collisions.size());
     skimCollisions<TEventFillMap>(collisions, bcs);
     if (fCollIndexMap.size() == 0) {
       return;
@@ -830,6 +835,7 @@ struct TableMakerMC {
 
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       fTrackIndexMap.clear();
+      trackBarrelInfo.reserve(tracksBarrel.size());
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
       trackBarrelCov.reserve(tracksBarrel.size());

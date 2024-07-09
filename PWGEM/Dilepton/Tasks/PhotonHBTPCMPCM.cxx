@@ -33,16 +33,13 @@
 #include "CCDB/BasicCCDBManager.h"
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/PhotonHBT.h"
+#include "PWGEM/Dilepton/Core/PhotonHBT.h"
 
 using namespace o2;
 using namespace o2::aod;
 
-// using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
-// using MyPrimaryElectron = MyPrimaryElectrons::iterator;
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PhotonHBT<PairType::kEEEE, MyPrimaryElectrons>>(cfgc, TaskName{"photon-hbt-eeee"})};
+    adaptAnalysisTask<PhotonHBT<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"photon-hbt-pcmpcm"})};
 }

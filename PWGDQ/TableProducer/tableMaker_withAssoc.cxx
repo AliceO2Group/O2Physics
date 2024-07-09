@@ -147,14 +147,15 @@ struct TableMaker {
   Produces<ReducedEvents> event;
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
+  Produces<ReducedEventsInfo> eventInfo;
   Produces<ReducedZdcs> zdc;
   Produces<ReducedEventsMultPV> multPV;
   Produces<ReducedEventsMultAll> multAll;
+  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedTracks> trackBasic;
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
-  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedTracksAssoc> trackBarrelAssoc;
   Produces<ReducedMuons> muonBasic;
   Produces<ReducedMuonsExtra> muonExtra;
@@ -461,14 +462,6 @@ struct TableMaker {
     int multTracklets = -1.0;
     int multTracksPV = -1.0;
     float centFT0C = -1.0;
-    /*float energyCommonZNA = -1.0;
-    float energyCommonZNC = -1.0;
-    float energyCommonZPA = -1.0;
-    float energyCommonZPC = -1.0;
-    float timeZNA = -1.0;
-    float timeZNC = -1.0;
-    float timeZPA = -1.0;
-    float timeZPC = -1.0;*/
 
     for (const auto& collision : collisions) {
 
@@ -507,24 +500,7 @@ struct TableMaker {
         if (bcEvSel.has_zdc()) {
           auto bc_zdc = bcEvSel.zdc();
           VarManager::FillZDC(bc_zdc);
-          /*energyCommonZNA = bc_zdc.energyCommonZNA();
-          energyCommonZNC = bc_zdc.energyCommonZNC();
-          energyCommonZPA = bc_zdc.energyCommonZPA();
-          energyCommonZPC = bc_zdc.energyCommonZPC();
-          timeZNA = bc_zdc.timeZNA();
-          timeZNC = bc_zdc.timeZNC();
-          timeZPA = bc_zdc.timeZPA();
-          timeZPC = bc_zdc.timeZPC();*/
-        } /*else {
-          energyCommonZNA = -1.0;
-          energyCommonZNC = -1.0;
-          energyCommonZPA = -1.0;
-          energyCommonZPC = -1.0;
-          timeZNA = -1.0;
-          timeZNC = -1.0;
-          timeZPA = -1.0;
-          timeZPC = -1.0;
-        }*/
+        }
       }
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -547,7 +523,7 @@ struct TableMaker {
         }
       } else {
         if (!fEventCut->IsSelected(VarManager::fgValues)) {
-          return;
+          continue;
         }
       }
 
@@ -582,11 +558,14 @@ struct TableMaker {
       eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                     multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C);
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+      eventInfo(collision.globalIndex());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {
         if (bcEvSel.has_zdc()) {
           auto bc_zdc = bcEvSel.zdc();
           zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(),
               bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
+        } else {
+          zdc(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0);
         }
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
@@ -685,7 +664,7 @@ struct TableMaker {
         uint32_t reducedEventIdx = fCollIndexMap[collision.globalIndex()];
         // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
         //   in workflows where the original AO2Ds are also present)
-        trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ());
+        trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
         trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
         trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                     track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
@@ -901,9 +880,9 @@ struct TableMaker {
 
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       fTrackIndexMap.clear();
+      trackBarrelInfo.reserve(tracksBarrel.size());
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
-      trackBarrelInfo.reserve(tracksBarrel.size());
       trackBarrelCov.reserve(tracksBarrel.size());
       trackBarrelPID.reserve(tracksBarrel.size());
       trackBarrelAssoc.reserve(tracksBarrel.size());
