@@ -75,9 +75,6 @@
 namespace o2::analysis
 {
 enum class InputFeaturesOmegacToOmegaPi : uint8_t {
-  xPv = 0,
-  yPv,
-  zPv,
   xDecayVtxCascade,
   yDecayVtxCascade,
   zDecayVtxCascade,
