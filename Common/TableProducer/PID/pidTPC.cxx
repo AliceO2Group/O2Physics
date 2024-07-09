@@ -261,7 +261,7 @@ struct tpcPid {
             network.evalModel(dummyInput); /// Init the model evaluations
             LOGP(info, "Retrieved NN corrections for production tag {}, pass number {}", headers["LPMProductionTag"], headers["RecoPassName"]);
           } else {
-            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+            LOG(fatal) << "No valid NN object found matching retrieved Bethe-Bloch parametrisation for pass " << metadata["RecoPassName"] << ". Please ensure that the requested pass has dedicated NN corrections available";
           }
         } else {
           /// Taking the network from local file
@@ -323,7 +323,7 @@ struct tpcPid {
           network.evalModel(dummyInput);
           LOGP(info, "Retrieved NN corrections for production tag {}, pass number {}", headers["LPMProductionTag"], headers["RecoPassName"]);
         } else {
-          LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+          LOG(fatal) << "No valid NN object found matching retrieved Bethe-Bloch parametrisation for pass " << metadata["RecoPassName"] << ". Please ensure that the requested pass has dedicated NN corrections available";
         }
       }
     }
