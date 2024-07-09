@@ -384,7 +384,7 @@ struct TableMakerMC {
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
-  void skimCollisions(TEvents const& collisions, BCsWithTimestamps const&  /*bcs*/)
+  void skimCollisions(TEvents const& collisions, BCsWithTimestamps const& /*bcs*/)
   {
     // Skim collisions
     fCollIndexMap.clear();
@@ -485,7 +485,7 @@ struct TableMakerMC {
   }
 
   template <uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void skimTracks(TEvent const& collision, TTracks const&  /*tracks*/, TrackAssoc const& assocs, aod::McParticles const& mcTracks)
+  void skimTracks(TEvent const& collision, TTracks const& /*tracks*/, TrackAssoc const& assocs, aod::McParticles const& mcTracks)
   {
     // Skim the barrel tracks
     // Loop over the collision-track associations, retrieve the track, and apply track cuts for selection
@@ -622,7 +622,7 @@ struct TableMakerMC {
   } // end skimTracks
 
   template <uint32_t TMFTFillMap, typename TEvent>
-  void skimMFT(TEvent const& collision, MFTTracks const&  /*mfts*/, MFTTrackAssoc const& mftAssocs)
+  void skimMFT(TEvent const& collision, MFTTracks const& /*mfts*/, MFTTrackAssoc const& mftAssocs)
   {
     // Skim MFT tracks
     // So far no cuts are applied here
