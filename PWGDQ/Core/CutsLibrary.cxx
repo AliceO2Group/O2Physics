@@ -3189,7 +3189,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
                                         50000.};
 
   for (size_t icase = 0; icase < vecOccupancies.size() - 1; icase++) {
-    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice%i", icase))) {
+    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice%lu", icase))) {
       cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
       cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
       cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
