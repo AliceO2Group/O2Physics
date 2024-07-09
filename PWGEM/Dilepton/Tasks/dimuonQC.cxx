@@ -38,13 +38,12 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/DimuonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/EMFwdTrack.h"
-#include "PWGEM/PhotonMeson/Utils/EventMixingHandler.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Core/DimuonCut.h"
+#include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
+#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
+#include "PWGEM/Dilepton/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
@@ -53,9 +52,8 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
-using namespace o2::aod::pwgem::photonmeson::utils::emfwdtrack;
+using namespace o2::aod::pwgem::dilepton::utils;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
@@ -63,7 +61,7 @@ using MyCollision = MyCollisions::iterator;
 using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonsCov, aod::EMPrimaryMuonEMEventIds, aod::EMAmbiguousMuonSelfIds>;
 using MyTrack = MyTracks::iterator;
 
-using MyEMH = o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMFwdTrackWithCov>;
+using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMFwdTrackWithCov>;
 
 struct dimuonQC {
 
@@ -253,7 +251,7 @@ struct dimuonQC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDo_v2 | cfgDo_v3);
+    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDo_v2 || cfgDo_v3);
 
     // pair info
     const AxisSpec axis_mass{ConfMmumuBins, "m_{#mu#mu} (GeV/c^{2})"};
@@ -511,11 +509,11 @@ struct dimuonQC {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDo_v2 | cfgDo_v3);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDo_v2 || cfgDo_v3);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDo_v2 | cfgDo_v3);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDo_v2 || cfgDo_v3);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};

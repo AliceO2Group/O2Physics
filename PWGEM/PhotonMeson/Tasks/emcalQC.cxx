@@ -133,7 +133,7 @@ struct emcalQC {
     DefineEMCCut();
     DefineEMEventCut();
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, false | false);
+    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     o2::aod::pwgem::photonmeson::utils::clusterhistogram::addClusterHistograms(&fRegistry, cfgDo2DQA);
   }
 
@@ -143,14 +143,14 @@ struct emcalQC {
   {
     for (auto& collision : collisions) {
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, false);
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
       if (!collision.alias_bit(triggerAliases::kTVXinEMC) && emccuts.requireCaloReadout) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, false);
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 

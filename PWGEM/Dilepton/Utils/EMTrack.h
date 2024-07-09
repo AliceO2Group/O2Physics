@@ -12,12 +12,12 @@
 /// \class to store minimal track info
 /// \author daiki.sekihata@cern.ch
 
-#ifndef PWGEM_PHOTONMESON_UTILS_EMTRACK_H_
-#define PWGEM_PHOTONMESON_UTILS_EMTRACK_H_
+#ifndef PWGEM_DILEPTON_UTILS_EMTRACK_H_
+#define PWGEM_DILEPTON_UTILS_EMTRACK_H_
 
 #include <vector>
 
-namespace o2::aod::pwgem::photonmeson::utils::emtrack
+namespace o2::aod::pwgem::dilepton::utils
 {
 class EMTrack
 {
@@ -166,5 +166,5 @@ class EMTrackWithCov : public EMTrack
   float fC1Pt21Pt2;
 };
 
-} // namespace o2::aod::pwgem::photonmeson::utils::emtrack
-#endif // PWGEM_PHOTONMESON_UTILS_EMTRACK_H_
+} // namespace o2::aod::pwgem::dilepton::utils
+#endif // PWGEM_DILEPTON_UTILS_EMTRACK_H_
