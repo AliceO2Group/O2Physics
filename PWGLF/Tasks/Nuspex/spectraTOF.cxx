@@ -1831,7 +1831,7 @@ struct tofSpectra {
       }
     }
   }
-  PROCESS_SWITCH(tofSpectra, processMC, "Process MC", true);
+  PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
 
   void processMCgen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -1874,7 +1874,7 @@ struct tofSpectra {
       }
     }
   }
-  PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", true);
+  PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
   void processMCgen_RecoEvs(GenMCCollisions const& mcCollisions, RecoMCCollisions const& collisions, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
@@ -1923,7 +1923,7 @@ struct tofSpectra {
       }
     }
   }
-  PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", true);
+  PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", false);
 
 }; // end of spectra task
 
