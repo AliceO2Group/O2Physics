@@ -18,7 +18,7 @@
 
 ClassImp(EMEventCut);
 
-const char* EMEventCut::mCutNames[static_cast<int>(EMEventCut::EMEventCuts::kNCuts)] = {"Sel8", "FT0AND", "Zvtx", "eNoTFB", "RequireNoITSROFB", "NoSameBunchPileup", "GoodVertexITSTPC", "GoodZvtxFT0vsPV"};
+const char* EMEventCut::mCutNames[static_cast<int>(EMEventCut::EMEventCuts::kNCuts)] = {"Sel8", "FT0AND", "Zvtx", "eNoTFB", "RequireNoITSROFB", "NoSameBunchPileup", "GoodVertexITSTPC", "GoodZvtxFT0vsPV", "EMC MB Readout", "EMC L0 Triggered"};
 
 void EMEventCut::SetRequireSel8(bool flag)
 {
@@ -74,6 +74,18 @@ void EMEventCut::SetRequireGoodZvtxFT0vsPV(bool flag)
 {
   mRequireGoodZvtxFT0vsPV = flag;
   LOG(info) << "EM Event Cut, require good Zvtx between FT0 vs. PV: " << mRequireGoodZvtxFT0vsPV;
+}
+
+void EMEventCut::SetRequireEMCReadoutInMB(bool flag)
+{
+  mRequireEMCReadoutInMB = flag;
+  LOG(info) << "EM Event Cut, require the EMC to be read out in an MB collision by checking kTVXinEMC: " << mRequireEMCReadoutInMB;
+}
+
+void EMEventCut::SetRequireEMCHardwareTriggered(bool flag)
+{
+  mRequireEMCHardwareTriggered = flag;
+  LOG(info) << "EM Event Cut, require the EMC to be triggered by requiring kEMC7 or kDMC7: " << mRequireEMCHardwareTriggered;
 }
 
 void EMEventCut::print() const

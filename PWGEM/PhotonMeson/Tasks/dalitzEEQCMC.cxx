@@ -456,8 +456,8 @@ struct DalitzEEQCMC {
         continue;
       }
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
