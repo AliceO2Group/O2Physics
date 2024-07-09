@@ -644,7 +644,7 @@ struct HfTreeCreatorOmegacSt {
                     aod::Cascades const&,
                     aod::V0s const&,
                     // TracksExt const& tracks, // TODO: should be TracksExtMc
-                    TracksExtMc const& tracks,
+                    TracksExtMc const&,
                     aod::McParticles const&,
                     aod::BCsWithTimestamps const&)
   {
