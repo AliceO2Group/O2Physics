@@ -635,8 +635,8 @@ struct Pi0EtaToGammaGamma {
               used_dileptonIds.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
-          } // end of dielectron loop
-        } // end of g1 loop
+          }    // end of dielectron loop
+        }      // end of g1 loop
       } else { // PCM-EMC, PCM-PHOS. Nightmare. don't run these pairs.
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
@@ -667,7 +667,7 @@ struct Pi0EtaToGammaGamma {
           }
           ndiphoton++;
         } // end of pairing loop
-      } // end of pairing in same event
+      }   // end of pairing in same event
 
       // event mixing
       if (!cfgDoMix || !(ndiphoton > 0)) {
