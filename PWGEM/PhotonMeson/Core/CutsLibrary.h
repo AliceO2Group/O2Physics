@@ -16,7 +16,7 @@
 #define PWGEM_PHOTONMESON_CORE_CUTSLIBRARY_H_
 
 #include <string>
-#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"

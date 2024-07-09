@@ -30,7 +30,7 @@
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
@@ -46,7 +46,6 @@ class DalitzEECut : public TNamed
     kMee = 0,
     kPairPtRange,
     kPairYRange,
-    kPairDCARange,
     kPhiV,
     // track cut
     kTrackPtRange,
@@ -56,34 +55,19 @@ class DalitzEECut : public TNamed
     kTPCCrossedRowsOverNCls,
     kTPCChi2NDF,
     kTPCNsigmaEl,
-    kTPCNsigmaMu,
     kTPCNsigmaPi,
-    kTPCNsigmaKa,
-    kTPCNsigmaPr,
-    kTOFNsigmaEl,
-    kTOFNsigmaMu,
-    kTOFNsigmaPi,
-    kTOFNsigmaKa,
-    kTOFNsigmaPr,
-    kDCA3Dsigma,
     kDCAxy,
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
     kITSCluserSize,
-    kPrefilter,
     kNCuts
   };
   static const char* mCutNames[static_cast<int>(DalitzEECuts::kNCuts)];
 
   enum class PIDSchemes : int {
     kUnDef = -1,
-    kTOFreq = 0,
-    kTPChadrej = 1,
-    kTPChadrejORTOFreq = 2,
-    kTPConly = 3,
-    kMuon_lowB = 4,
-    kPIDML = 5,
+    kTPConly = 0,
   };
 
   template <typename T = int, typename TPair>
@@ -110,11 +94,7 @@ class DalitzEECut : public TNamed
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-
-    float dca_t1_3d = dca3DinSigma(t1);
-    float dca_t2_3d = dca3DinSigma(t2);
-    float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
-    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
 
     if (v12.M() < mMinMee || mMaxMee < v12.M()) {
       return false;
@@ -127,14 +107,11 @@ class DalitzEECut : public TNamed
     if (mApplyPhiV && ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(v12.M()) : mMaxPhivPair) < phiv) ^ mSelectPC)) {
       return false;
     }
-    if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
-      return false;
-    }
     return true;
   }
 
   template <bool isML = false, typename TTrack, typename TCollision = int>
-  bool IsSelectedTrack(TTrack const& track, TCollision const& collision = 0) const
+  bool IsSelectedTrack(TTrack const& track, TCollision const& = 0) const
   {
     if (!track.hasITS() || !track.hasTPC()) { // track has to be ITS-TPC matched track
       return false;
@@ -144,9 +121,6 @@ class DalitzEECut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kTrackEtaRange)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DalitzEECuts::kDCA3Dsigma)) {
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kDCAxy)) {
@@ -195,67 +169,20 @@ class DalitzEECut : public TNamed
       return false;
     }
 
-    if (mApplyPF && !IsSelectedTrack(track, DalitzEECuts::kPrefilter)) {
-      return false;
-    }
-
-    if (mApplyTOFbeta && (mMinTOFbeta < track.beta() && track.beta() < mMaxTOFbeta)) {
-      return false;
-    }
-
     // PID cuts
-    if constexpr (isML) {
-      if (!PassPIDML(track, collision)) {
-        return false;
-      }
-    } else {
-      if (!PassPID(track)) {
-        return false;
-      }
+    if (!PassPID(track)) {
+      return false;
     }
 
     return true;
-  }
-
-  template <typename TTrack, typename TCollision>
-  bool PassPIDML(TTrack const& track, TCollision const& collision) const
-  {
-    std::vector<float> inputFeatures{static_cast<float>(collision.numContrib()), track.p(), track.tgl(),
-                                     track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                                     track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                                     track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl()))};
-
-    // calculate classifier
-    float prob_ele = mPIDModel->evalModel(inputFeatures)[0];
-    // LOGF(info, "prob_ele = %f", prob_ele);
-    if (prob_ele < 0.95) {
-      return false;
-    } else {
-      return true;
-    }
   }
 
   template <typename T>
   bool PassPID(T const& track) const
   {
     switch (mPIDScheme) {
-      case static_cast<int>(PIDSchemes::kTOFreq):
-        return PassTOFreq(track);
-
-      case static_cast<int>(PIDSchemes::kTPChadrej):
-        return PassTPChadrej(track);
-
-      case static_cast<int>(PIDSchemes::kTPChadrejORTOFreq):
-        return PassTPChadrej(track) || PassTOFreq(track);
-
       case static_cast<int>(PIDSchemes::kTPConly):
         return PassTPConly(track);
-
-      case static_cast<int>(PIDSchemes::kMuon_lowB):
-        return PassMuon_lowB(track);
-
-      case static_cast<int>(PIDSchemes::kPIDML):
-        return true; // don't use kPIDML here.
 
       case static_cast<int>(PIDSchemes::kUnDef):
         return true;
@@ -266,52 +193,11 @@ class DalitzEECut : public TNamed
   }
 
   template <typename T>
-  bool PassTOFreq(T const& track) const
-  {
-    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    bool is_el_included_TOF = mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
-    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
-  }
-
-  template <typename T>
-  bool PassTPChadrej(T const& track) const
-  {
-    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
-    bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
-    bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
-    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
-  }
-
-  template <typename T>
   bool PassTPConly(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
     return is_el_included_TPC && is_pi_excluded_TPC;
-  }
-
-  template <typename T>
-  bool PassMuon_lowB(T const& track) const
-  {
-    bool is_el_excluded_TPC = track.tpcNSigmaEl() < mMinTPCNsigmaEl || mMaxTPCNsigmaEl < track.tpcNSigmaEl();
-    if (!is_el_excluded_TPC) {
-      return false;
-    }
-    if (track.hasTOF()) {
-      bool is_mu_included_TPC = mMinTPCNsigmaMu < track.tpcNSigmaMu() && track.tpcNSigmaMu() < mMaxTPCNsigmaMu;
-      bool is_mu_included_TOF = mMinTOFNsigmaMu < track.tofNSigmaMu() && track.tofNSigmaMu() < mMaxTOFNsigmaMu;
-      bool is_pi_excluded_TOF = track.tofNSigmaPi() < mMinTOFNsigmaPi;
-      return is_mu_included_TPC && is_mu_included_TOF && is_pi_excluded_TOF;
-    } else if (track.tpcInnerParam() < mMaxPinMuonTPConly) {
-      bool is_mu_included_TPC = mMinTPCNsigmaMu < track.tpcNSigmaMu() && track.tpcNSigmaMu() < mMaxTPCNsigmaMu;
-      bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi;
-      return is_mu_included_TPC && is_pi_excluded_TPC;
-    } else {
-      return false;
-    }
   }
 
   template <typename T>
@@ -336,9 +222,6 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
-      case DalitzEECuts::kDCA3Dsigma:
-        return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
-
       case DalitzEECuts::kDCAxy:
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
@@ -352,10 +235,7 @@ class DalitzEECut : public TNamed
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
       case DalitzEECuts::kITSCluserSize:
-        return mMinMeanClusterSizeITS < track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
-
-      case DalitzEECuts::kPrefilter:
-        return track.pfb() <= 0;
+        return mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
 
       default:
         return false;
@@ -365,7 +245,6 @@ class DalitzEECut : public TNamed
   // Setters
   void SetPairPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetPairYRange(float minY = -1e10f, float maxY = 1e10f);
-  void SetPairDCARange(float min = 0.f, float max = 1e10f); // 3D DCA in sigma
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
   void SelectPhotonConversion(bool flag);
@@ -378,52 +257,33 @@ class DalitzEECut : public TNamed
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
-  void SetMeanClusterSizeITSob(float min, float max);
+  void SetMeanClusterSizeITS(float min, float max);
 
   void SetPIDScheme(int scheme);
-  void SetMinPinTOF(float min);
-  void SetMuonExclusionTPC(bool flag);
-  void SetTOFbetaRange(bool flag, float min, float max);
   void SetTPCNsigmaElRange(float min = -1e+10, float max = 1e+10);
-  void SetTPCNsigmaMuRange(float min = -1e+10, float max = 1e+10);
   void SetTPCNsigmaPiRange(float min = -1e+10, float max = 1e+10);
-  void SetTPCNsigmaKaRange(float min = -1e+10, float max = 1e+10);
-  void SetTPCNsigmaPrRange(float min = -1e+10, float max = 1e+10);
-  void SetTOFNsigmaElRange(float min = -1e+10, float max = 1e+10);
-  void SetTOFNsigmaMuRange(float min = -1e+10, float max = 1e+10);
-  void SetTOFNsigmaPiRange(float min = -1e+10, float max = 1e+10);
-  void SetTOFNsigmaKaRange(float min = -1e+10, float max = 1e+10);
-  void SetTOFNsigmaPrRange(float min = -1e+10, float max = 1e+10);
-  void SetMaxPinMuonTPConly(float max);
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
 
-  void SetDca3DRange(float min, float max); // in sigma
-  void SetMaxDcaXY(float maxDcaXY);         // in cm
-  void SetMaxDcaZ(float maxDcaZ);           // in cm
+  void SetMaxDcaXY(float maxDcaXY); // in cm
+  void SetMaxDcaZ(float maxDcaZ);   // in cm
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
-
-  void SetPIDModel(o2::ml::OnnxModel* model)
-  {
-    mPIDModel = model;
-  }
 
   // Getters
   bool IsPhotonConversionSelected() const { return mSelectPC; }
 
   /// @brief Print the track selection
-  void print() const;
+  // void print() const;
 
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_any_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_1st_Requirement;
   // pair cuts
   float mMinMee{0.f}, mMaxMee{1e10f};
-  float mMinPairPt{0.f}, mMaxPairPt{1e10f};       // range in pT
-  float mMinPairY{-1e10f}, mMaxPairY{1e10f};      // range in rapidity
-  float mMinPairDCA3D{0.f}, mMaxPairDCA3D{1e10f}; // range in 3D DCA in sigma
+  float mMinPairPt{0.f}, mMaxPairPt{1e10f};  // range in pT
+  float mMinPairY{-1e10f}, mMaxPairY{1e10f}; // range in rapidity
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
@@ -443,32 +303,17 @@ class DalitzEECut : public TNamed
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
 
-  float mMinDca3D{0.0f};                        // min dca in 3D in units of sigma
-  float mMaxDca3D{1e+10};                       // max dca in 3D in units of sigma
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
   bool mApplyPhiV{true};
-  bool mApplyPF{false};
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
 
   // pid cuts
   int mPIDScheme{-1};
-  float mMinPinTOF{0.0f};        // min pin cut for TOF.
-  bool mMuonExclusionTPC{false}; // flag to reject muon in TPC for low B
-  bool mApplyTOFbeta{false};     // flag to reject hadron contamination with TOF
-  float mMinTOFbeta{0.0}, mMaxTOFbeta{0.96};
   float mMinTPCNsigmaEl{-1e+10}, mMaxTPCNsigmaEl{+1e+10};
-  float mMinTPCNsigmaMu{-1e+10}, mMaxTPCNsigmaMu{+1e+10};
   float mMinTPCNsigmaPi{-1e+10}, mMaxTPCNsigmaPi{+1e+10};
-  float mMinTPCNsigmaKa{-1e+10}, mMaxTPCNsigmaKa{+1e+10};
-  float mMinTPCNsigmaPr{-1e+10}, mMaxTPCNsigmaPr{+1e+10};
 
-  float mMinTOFNsigmaEl{-1e+10}, mMaxTOFNsigmaEl{+1e+10};
-  float mMinTOFNsigmaMu{-1e+10}, mMaxTOFNsigmaMu{+1e+10};
-  float mMinTOFNsigmaPi{-1e+10}, mMaxTOFNsigmaPi{+1e+10};
-  float mMinTOFNsigmaKa{-1e+10}, mMaxTOFNsigmaKa{+1e+10};
-  float mMinTOFNsigmaPr{-1e+10}, mMaxTOFNsigmaPr{+1e+10};
   o2::ml::OnnxModel* mPIDModel{nullptr};
 
   ClassDef(DalitzEECut, 1);

@@ -14,8 +14,8 @@
 // This code loops over v0 photons and makes pairs for photon HBT analysis.
 //    Please write to: daiki.sekihata@cern.ch
 
-#ifndef PWGEM_PHOTONMESON_CORE_PHOTONHBT_H_
-#define PWGEM_PHOTONMESON_CORE_PHOTONHBT_H_
+#ifndef PWGEM_DILEPTON_CORE_PHOTONHBT_H_
+#define PWGEM_DILEPTON_CORE_PHOTONHBT_H_
 
 #include <cstring>
 #include <iterator>
@@ -45,22 +45,22 @@
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
-#include "PWGEM/PhotonMeson/Utils/EMTrack.h"
-#include "PWGEM/PhotonMeson/Utils/EventMixingHandler.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+#include "PWGEM/Dilepton/Utils/EMTrack.h"
+#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
+#include "PWGEM/Dilepton/Utils/EventHistograms.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::photonpair;
+using namespace o2::aod::pwgem::photonmeson::photonpair;
 using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
-using namespace o2::aod::pwgem::photonmeson::utils::emtrack;
+using namespace o2::aod::pwgem::dilepton::utils;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
@@ -141,7 +141,7 @@ struct PhotonHBT {
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
   } pcmcuts;
 
-  DalitzEECut fDileptonCut;
+  DielectronCut fDileptonCut;
   struct : ConfigurableGroup {
     std::string prefix = "dileptoncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
@@ -169,7 +169,7 @@ struct PhotonHBT {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
 
-    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
+    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
@@ -219,7 +219,7 @@ struct PhotonHBT {
   std::vector<float> ep_bin_edges;
   std::vector<float> occ_bin_edges;
 
-  void init(InitContext& context)
+  void init(InitContext& /*context*/)
   {
     zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
     zvtx_bin_edges.erase(zvtx_bin_edges.begin());
@@ -289,7 +289,7 @@ struct PhotonHBT {
   static constexpr std::string_view pairnames[9] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
   void addhistograms()
   {
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, false);
+    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry, false);
 
     // pair info
     const AxisSpec axis_mass1{ConfM1Bins, "m1 (GeV/c^{2})"};
@@ -377,7 +377,7 @@ struct PhotonHBT {
 
   void DefineDileptonCut()
   {
-    fDileptonCut = DalitzEECut("fDileptonCut", "fDileptonCut");
+    fDileptonCut = DielectronCut("fDileptonCut", "fDileptonCut");
 
     // for pair
     fDileptonCut.SetMeeRange(dileptoncuts.cfg_min_mass, dileptoncuts.cfg_max_mass);
@@ -412,7 +412,7 @@ struct PhotonHBT {
     fDileptonCut.SetTPCNsigmaPrRange(dileptoncuts.cfg_min_TPCNsigmaPr, dileptoncuts.cfg_max_TPCNsigmaPr);
     fDileptonCut.SetTOFNsigmaElRange(dileptoncuts.cfg_min_TOFNsigmaEl, dileptoncuts.cfg_max_TOFNsigmaEl);
 
-    if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
+    if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
       if (dileptoncuts.loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
@@ -432,7 +432,7 @@ struct PhotonHBT {
   }
 
   template <int ev_id, typename TCollision>
-  void fillPairHistogram(TCollision const& collision, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float dca1, const float dca2)
+  void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float dca1, const float dca2)
   {
 
     //    if constexpr (ev_id == 1 && pairtype == PairType::kEEEE) {
@@ -493,11 +493,11 @@ struct PhotonHBT {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
@@ -578,7 +578,7 @@ struct PhotonHBT {
           if (pos1.trackId() == ele1.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
             continue;
           }
-          if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) {
+          if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
             if (!cut1.template IsSelectedTrack<true>(pos1, collision) || !cut1.template IsSelectedTrack<true>(ele1, collision)) {
               continue;
             }
@@ -602,7 +602,7 @@ struct PhotonHBT {
             if (pos2.trackId() == ele2.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
               continue;
             }
-            if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) {
+            if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
               if (!cut2.template IsSelectedTrack<true>(pos2, collision) || !cut2.template IsSelectedTrack<true>(ele2, collision)) {
                 continue;
               }
@@ -672,7 +672,7 @@ struct PhotonHBT {
             if (pos2.trackId() == ele2.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
               continue;
             }
-            if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) {
+            if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
               if (!cut2.template IsSelectedTrack<true>(pos2, collision) || !cut2.template IsSelectedTrack<true>(ele2, collision)) {
                 continue;
               }
@@ -819,7 +819,7 @@ struct PhotonHBT {
   Partition<MyPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
   Partition<MyPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
 
-  using MyEMH = o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
+  using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
   MyEMH* emh1 = nullptr;
   MyEMH* emh2 = nullptr;
   std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
@@ -857,4 +857,4 @@ struct PhotonHBT {
   PROCESS_SWITCH(PhotonHBT, processDummy, "Dummy function", true);
 };
 
-#endif // PWGEM_PHOTONMESON_CORE_PHOTONHBT_H_
+#endif // PWGEM_DILEPTON_CORE_PHOTONHBT_H_

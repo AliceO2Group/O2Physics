@@ -553,7 +553,7 @@ struct TreeCreatorElectronML {
     float lxy_proper = lxy * v12.M() / v12.Pt();
 
     bool isSM = false;
-    int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mc1, mc2, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
+    int isHF = o2::aod::pwgem::dilepton::utils::mcutil::IsHF(mc1, mc2, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
 
     bool is_prompt = false;
     int pdgCode = 0;
@@ -597,11 +597,11 @@ struct TreeCreatorElectronML {
             LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid_pair, mctracks.size());
           }
         }
-      } else if (isHF == static_cast<int>(o2::aod::pwgem::dilepton::mcutil::EM_HFeeType::kUndef)) {
+      } else if (isHF == static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kUndef)) {
         is_comb_bg = true;
       }
     } else { // LS
-      if (isHF == static_cast<int>(o2::aod::pwgem::dilepton::mcutil::EM_HFeeType::kUndef)) {
+      if (isHF == static_cast<int>(o2::aod::pwgem::dilepton::utils::mcutil::EM_HFeeType::kUndef)) {
         is_comb_bg = true;
       }
     }

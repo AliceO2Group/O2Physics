@@ -313,7 +313,7 @@ struct TreeCreatorSingleElectronQA {
                        track.tpcChi2NCl(), track.tpcInnerParam(),
                        track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                        track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                       track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl());
+                       track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), true);
   }
 
   SliceCache cache;
@@ -343,7 +343,7 @@ struct TreeCreatorSingleElectronQA {
       }
       fRegistry.fill(HIST("hCollisionCounter"), 1.f);
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange());
       event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
@@ -386,7 +386,7 @@ struct TreeCreatorSingleElectronQA {
       }
       fRegistry.fill(HIST("hCollisionCounter"), 1.f);
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange());
       event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
