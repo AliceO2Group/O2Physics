@@ -342,9 +342,9 @@ struct mcParticlePrediction {
     for (const auto& particle : mcParticles) {
       particle.pdgCode();
       const auto id = PIDExtended::pdgToId(particle);
-      // if (id < 0) {
-      //   continue;
-      // }
+      if (id < 0) {
+        continue;
+      }
       if (!enabledParticlesArray[id]) {
         continue;
       }
