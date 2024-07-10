@@ -217,11 +217,11 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
 
       try {
-      if (df.process(trackCasc, trackParCovCharmBachelor0, trackParCovCharmBachelor1) == 0) {
+        if (df.process(trackCasc, trackParCovCharmBachelor0, trackParCovCharmBachelor1) == 0) {
           continue;
         }
       } catch (const std::runtime_error& error) {
-        LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         continue;
       }
 
