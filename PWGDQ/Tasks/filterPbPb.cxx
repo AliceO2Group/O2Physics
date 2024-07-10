@@ -30,8 +30,8 @@ using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToB
 
 struct DQFilterPbPbTask {
   Produces<aod::DQEventFilter> eventFilter;
-  OutputObj<TH1I> fStats{"Statistics"};
-  OutputObj<TH1I> fFilterOutcome{"Filter outcome"};
+  OutputObj<TH1D> fStats{"Statistics"};
+  OutputObj<TH1D> fFilterOutcome{"Filter outcome"};
 
   Configurable<std::string> fConfigEventTypes{"cfgEventTypes", "doublegap,singlegap", "Which event types to select. doublegap, singlegap or both, comma separated"};
   Configurable<int> fConfigNDtColl{"cfgNDtColl", 4, "Number of standard deviations to consider in BC range"};
@@ -54,11 +54,11 @@ struct DQFilterPbPbTask {
   void init(o2::framework::InitContext&)
   {
     // setup the Stats histogram
-    fStats.setObject(new TH1I("Statistics", "Stats for DQ triggers", 2, -2.5, -0.5));
+    fStats.setObject(new TH1D("Statistics", "Stats for DQ triggers", 2, -2.5, -0.5));
     fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
     fStats->GetXaxis()->SetBinLabel(2, "Events selected");
     // setup the FilterOutcome histogram
-    fFilterOutcome.setObject(new TH1I("Filter outcome", "Filter outcome", 8, 0.5, 8.5));
+    fFilterOutcome.setObject(new TH1D("Filter outcome", "Filter outcome", 8, 0.5, 8.5));
     fFilterOutcome->GetXaxis()->SetBinLabel(1, "Events inspected");
     fFilterOutcome->GetXaxis()->SetBinLabel(2, "Events selected");
     fFilterOutcome->GetXaxis()->SetBinLabel(3, "!A && !C");
