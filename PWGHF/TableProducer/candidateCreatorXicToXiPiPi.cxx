@@ -216,8 +216,12 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
       auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
 
-      // reconstruct the 3-prong secondary vertex
+      try {
       if (df.process(trackCasc, trackParCovCharmBachelor0, trackParCovCharmBachelor1) == 0) {
+          continue;
+        }
+      } catch (const std::runtime_error& error) {
+        LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
         continue;
       }
 
