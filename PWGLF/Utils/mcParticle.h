@@ -72,8 +72,14 @@ class PIDExtended
   static_assert(XiMinus == o2::track::PID::XiMinus, "PID::XiMinus mismatch");
   static_assert(OmegaMinus == o2::track::PID::OmegaMinus, "PID::OmegaMinus mismatch");
 
+  static constexpr ID PIDCountsUntilAl = 9; // Number of indices defined in PID.h equivalent to o2::track::PID::NIDs
+  static_assert(PIDCountsUntilAl == o2::track::PID::NIDs, "PID::NIDs mismatch");
+
   static constexpr ID PIDCounts = 17; // Number of indices defined in PID.h
   static_assert(PIDCounts == o2::track::PID::NIDsTot, "PID::NIDsTot mismatch");
+  // Define an array of IDs
+  static constexpr std::array<ID, PIDCountsUntilAl> mIDsUntilAl = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha};
+  static constexpr std::array<ID, PIDCounts> mIDs = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha, PI0, Photon, K0, Lambda, HyperTriton, Hyperhydrog4, XiMinus, OmegaMinus};
 
   // Define the antiparticles
   static constexpr ID Positron = 17;
