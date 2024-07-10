@@ -42,7 +42,6 @@
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -73,7 +72,6 @@ constexpr bool isD0McCandidate()
 template <typename T>
 constexpr bool isD0Table()
 {
-
   return isD0Candidate<typename T::iterator>() || isD0Candidate<typename T::filtered_iterator>();
 }
 
@@ -83,7 +81,6 @@ constexpr bool isD0Table()
 template <typename T>
 constexpr bool isD0McTable()
 {
-
   return isD0McCandidate<typename T::iterator>() || isD0McCandidate<typename T::filtered_iterator>();
 }
 
@@ -178,13 +175,12 @@ constexpr bool isHFCandidate()
 }
 
 /**
- * returns true if the candidate is from a MC HF table
+ * returns true if the candidate is from a HF MC candidate table
  * * @param candidate candidate that is being checked
  */
 template <typename T>
 constexpr bool isHFMcCandidate()
 {
-
   if constexpr (isD0McCandidate<T>()) {
     return true;
   } else if constexpr (isLcMcCandidate<T>()) {
@@ -202,7 +198,6 @@ constexpr bool isHFMcCandidate()
 template <typename T>
 constexpr bool isHFTable()
 {
-
   if constexpr (isD0Candidate<typename T::iterator>() || isD0Candidate<typename T::filtered_iterator>()) {
     return true;
   } else if constexpr (isLcCandidate<typename T::iterator>() || isLcCandidate<typename T::filtered_iterator>()) {
@@ -215,12 +210,11 @@ constexpr bool isHFTable()
 }
 
 /**
- * returns true if the table type is a HF table
+ * returns true if the table type is a HF MC table
  */
 template <typename T>
 constexpr bool isHFMcTable()
 {
-
   if constexpr (isD0McCandidate<typename T::iterator>() || isD0McCandidate<typename T::filtered_iterator>()) {
     return true;
   } else if constexpr (isLcMcCandidate<typename T::iterator>() || isLcMcCandidate<typename T::filtered_iterator>()) {
@@ -239,7 +233,6 @@ constexpr bool isHFMcTable()
 template <typename T>
 constexpr bool isMatchedHFCandidate(T const& candidate)
 {
-
   if constexpr (isD0Candidate<T>()) {
     if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
       return true;
@@ -289,9 +282,8 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
  * @param tracks the track table
  */
 template <typename T, typename U, typename V>
-bool isDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
+bool isHFDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
 {
-
   if constexpr (isD0Candidate<U>()) {
     if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {
       return true;
@@ -310,73 +302,47 @@ bool isDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
     } else {
       return false;
     }
-  } else if constexpr (jetv0utilities::isV0Candidate<U>()) {
-    if (candidate.posTrackId() == track.globalIndex() || candidate.negTrackId() == track.globalIndex()) {
-      return true;
-    } else {
-      return false;
-    }
   } else {
     return false;
   }
 }
 
 /**
- * returns true if the particle has any daughters with the given global index
- *
- * @param candidate mother hf particle that is being checked
- * @param globalIndex global index of potnetial daughter particle
- */
-template <typename T>
-bool isDaughterParticle(const T& particle, int globalIndex)
-{
-  for (auto daughter : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
-    if (daughter.globalIndex() == globalIndex) {
-      return true;
-    }
-    if (isDaughterParticle(daughter, globalIndex)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * returns the index of the JMcParticle matched to the candidate
+ * returns the index of the JMcParticle matched to the HF candidate
  *
  * @param candidate hf candidate that is being checked
  * @param tracks track table
  * @param particles particle table
  */
 template <typename T, typename U, typename V>
-auto matchedParticleId(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
+auto matchedHFParticleId(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
 {
   const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
   return candidateDaughterParticle.template mothers_first_as<V>().globalIndex(); // can we get the Id directly?
 }
 
 /**
- * returns the JMcParticle matched to the candidate
+ * returns the JMcParticle matched to the HF candidate
  *
  * @param candidate hf candidate that is being checked
  * @param tracks track table
  * @param particles particle table
  */
 template <typename T, typename U, typename V>
-auto matchedParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
+auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
 {
   const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
   return candidateDaughterParticle.template mothers_first_as<V>();
 }
 
 /**
- * returns a slice of the table depending on the index of the candidate
+ * returns a slice of the table depending on the index of the HF candidate
  *
  * @param candidate HF candidate that is being checked
  * @param table the table to be sliced
  */
 template <typename T, typename U, typename V, typename M, typename N>
-auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candidate, M const& perLcCandidate, N const& perBplusCandidate)
+auto slicedPerHFCandidate(T const& table, U const& candidate, V const& perD0Candidate, M const& perLcCandidate, N const& perBplusCandidate)
 {
   if constexpr (isD0Candidate<U>()) {
     return table.sliceBy(perD0Candidate, candidate.globalIndex());
@@ -390,13 +356,13 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
 }
 
 /**
- * returns a slice of the table depending on the type of the candidate and index of the collision
+ * returns a slice of the table depending on the type of the HF candidate and index of the collision
  *
  * @param candidate HF candidate that is being checked
  * @param table the table to be sliced
  */
 template <typename T, typename U, typename V, typename M, typename N, typename O>
-auto slicedPerCollision(T const& table, U const& /*candidates*/, V const& collision, M const& D0CollisionPerCollision, N const& LcCollisionPerCollision, O const& BplusCollisionPerCollision)
+auto slicedPerHFCollision(T const& table, U const& /*candidates*/, V const& collision, M const& D0CollisionPerCollision, N const& LcCollisionPerCollision, O const& BplusCollisionPerCollision)
 {
   if constexpr (isD0Table<U>() || isD0McTable<U>()) {
     return table.sliceBy(D0CollisionPerCollision, collision.globalIndex());
@@ -409,8 +375,51 @@ auto slicedPerCollision(T const& table, U const& /*candidates*/, V const& collis
   }
 }
 
+/**
+ * returns the HF collision Id of candidate based on type of HF candidate
+ *
+ * @param candidate HF candidate that is being checked
+ */
 template <typename T>
-int getCandidatePDG(T const& /*candidate*/)
+int getHFCandidateCollisionId(T const& candidate)
+{
+  if constexpr (isD0Candidate<T>()) {
+    return candidate.hfCollBaseId();
+  } else if constexpr (isLcCandidate<T>()) {
+    return candidate.hfCollBaseId();
+  } else if constexpr (isBplusCandidate<T>()) {
+    return candidate.hfCollBaseId();
+  } else {
+    return -1;
+  }
+}
+
+/**
+ * returns the HF Mc collision Id of candidate based on type of HF candidate
+ *
+ * @param candidate HF candidate that is being checked
+ */
+template <typename T>
+int getHFMcCandidateCollisionId(T const& candidate)
+{
+  if constexpr (isD0McCandidate<T>()) {
+    return candidate.hfMcCollBaseId();
+  } else if constexpr (isLcMcCandidate<T>()) {
+    return candidate.hfMcCollBaseId();
+  } else if constexpr (isBplusMcCandidate<T>()) {
+    return candidate.hfMcCollBaseId();
+  } else {
+    return -1;
+  }
+}
+
+/**
+ * returns the PDG of the candidate based on HF Table
+ *
+ * @param candidate HF candidate that is being checked
+ */
+template <typename T>
+int getHFCandidatePDG(T const& /*candidate*/)
 {
   if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
     return static_cast<int>(o2::constants::physics::Pdg::kD0);
@@ -425,8 +434,11 @@ int getCandidatePDG(T const& /*candidate*/)
   }
 }
 
+/**
+ * returns the PDG of the candidates in the table type
+ */
 template <typename T>
-int getTablePDG()
+int getHFTablePDG()
 {
   if constexpr (isD0Table<T>() || isD0McTable<T>()) {
     return static_cast<int>(o2::constants::physics::Pdg::kD0);
@@ -441,10 +453,14 @@ int getTablePDG()
   }
 }
 
+/**
+ * returns the mass of the candidate based on HF Table
+ *
+ * @param candidate HF candidate that is being checked
+ */
 template <typename T>
-float getCandidatePDGMass(T const& /*candidate*/)
+float getHFCandidatePDGMass(T const& /*candidate*/)
 {
-
   if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
     return static_cast<float>(o2::constants::physics::MassD0);
   }
@@ -454,14 +470,17 @@ float getCandidatePDGMass(T const& /*candidate*/)
   if constexpr (isBplusCandidate<T>() || isBplusMcCandidate<T>()) {
     return static_cast<float>(o2::constants::physics::MassBPlus);
   } else {
-    return 0.;
+    return -1.0;
   }
 }
 
+/**
+ * returns the mass of the candidates in the table type
+ *
+ */
 template <typename T>
-float getTablePDGMass()
+float getHFTablePDGMass()
 {
-
   if constexpr (isD0Table<T>() || isD0McTable<T>()) {
     return static_cast<float>(o2::constants::physics::MassD0);
   }
@@ -471,7 +490,28 @@ float getTablePDGMass()
   if constexpr (isBplusTable<T>() || isBplusMcTable<T>()) {
     return static_cast<float>(o2::constants::physics::MassBPlus);
   } else {
-    return 0.;
+    return -1.0;
+  }
+}
+
+/**
+ * returns the mass of the candidate based on HF Table
+ *
+ * @param candidate HF candidate that is being checked
+ */
+template <typename T>
+float getHFCandidateInvariantMass(T const& candidate)
+{
+  if constexpr (isD0Candidate<T>()) {
+    return candidate.m();
+  }
+  if constexpr (isLcCandidate<T>()) {
+    return candidate.m();
+  }
+  if constexpr (isBplusCandidate<T>()) {
+    return candidate.m();
+  } else {
+    return -1.0;
   }
 }
 
@@ -485,7 +525,6 @@ void fillD0CollisionTable(T const& collision, U& D0CollisionTable, int32_t& D0Co
 template <typename T, typename U>
 void fillLcCollisionTable(T const& collision, U& LcCollisionTable, int32_t& LcCollisionTableIndex)
 {
-
   LcCollisionTable(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFV0A(), collision.multZeqNTracksPV());
   LcCollisionTableIndex = LcCollisionTable.lastIndex();
 }
@@ -671,7 +710,7 @@ void fillLcCandidateTable(T const& candidate, int32_t collisionIndex, U& LcBaseT
 }
 
 template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
-void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTable, V& HFParTable, M& HFParETable, N& HFSelectionFlagTable, O& HFMlTable, P& HFMCDTable, int32_t& HFCandidateTableIndex)
+void fillHFCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTable, V& HFParTable, M& HFParETable, N& HFSelectionFlagTable, O& HFMlTable, P& HFMCDTable, int32_t& HFCandidateTableIndex)
 {
   if constexpr (isD0Candidate<T>()) {
     fillD0CandidateTable<isMc>(candidate, collisionIndex, HFBaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMlTable, HFMCDTable, HFCandidateTableIndex);
@@ -695,7 +734,7 @@ void fillLcCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& LcP
 }
 
 template <typename T, typename U>
-void fillCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& BaseMcTable, int32_t& candidateTableIndex)
+void fillHFCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& BaseMcTable, int32_t& candidateTableIndex)
 {
   if constexpr (isD0McCandidate<T>()) {
     fillD0CandidateMcTable(candidate, mcCollisionIndex, BaseMcTable, candidateTableIndex);

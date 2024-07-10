@@ -33,7 +33,7 @@
 #include "MCHTracking/TrackParam.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -74,6 +74,7 @@ struct skimmerPrimaryMuon {
   Produces<aod::EMPrimaryMuonsCov> emprimarymuonscov;
 
   // Configurables
+  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -374,6 +375,7 @@ struct skimmerPrimaryMuon {
       rAtAbsorberEnd = std::sqrt(xAbs * xAbs + yAbs * yAbs); // Redo propagation only for muon tracks // propagation of MFT tracks alredy done in reconstruction
     }
 
+    bool isAssociatedToMPC = collision.globalIndex() == muon.collisionId();
     auto fwdcov = propmuonAtDCA.getCovariances();
     if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
       auto mftsa_track = muon.template matchMFTTrack_as<TMFTsaTracks>();
@@ -382,7 +384,7 @@ struct skimmerPrimaryMuon {
                      propmuonAtDCA.getX(), propmuonAtDCA.getY(), propmuonAtDCA.getZ(), propmuonAtDCA.getTgl(),
                      muon.nClusters(), muon.pDca(), rAtAbsorberEnd, muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                      new_muon_sa_id,
-                     muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), mftsa_track.mftClusterSizesAndTrackFlags());
+                     muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), mftsa_track.mftClusterSizesAndTrackFlags(), mftsa_track.chi2(), isAssociatedToMPC);
       emprimarymuonscov(
         fwdcov(0, 0),
         fwdcov(0, 1), fwdcov(1, 1),
@@ -394,7 +396,7 @@ struct skimmerPrimaryMuon {
                      propmuonAtDCA.getX(), propmuonAtDCA.getY(), propmuonAtDCA.getZ(), propmuonAtDCA.getTgl(),
                      muon.nClusters(), muon.pDca(), rAtAbsorberEnd, muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                      new_muon_sa_id,
-                     muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), 0);
+                     muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), 0, 999999.f, isAssociatedToMPC);
       emprimarymuonscov(
         fwdcov(0, 0),
         fwdcov(0, 1), fwdcov(1, 1),
@@ -414,18 +416,23 @@ struct skimmerPrimaryMuon {
 
   std::map<std::pair<int, int>, int> map_new_sa_muon_index; // new standalone muon index
 
+  // Preslice<aod::FwdTracks> fwdtrackIndicesPerMFTsa = aod::fwdtrack::matchMFTTrackId;
+
   // Filter muonFilter = (o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) || o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack));
   // using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyTracks> global_muons = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack); // MFT-MCH-MID
   Partition<MyTracks> sa_muons = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack); // MCH-MID
 
-  void processRec_SA(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&)
+  void processRec_SA(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
+      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
 
       auto sa_muons_per_coll = sa_muons->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
       auto global_muons_per_coll = global_muons->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
@@ -484,12 +491,15 @@ struct skimmerPrimaryMuon {
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_SA, "process reconstructed info only with standalone", true);
 
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
-  void processRec_TTCA(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processRec_TTCA(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
+      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
 
       int counter = 0;
       int offset = emprimarymuons.lastIndex() + 1;
@@ -548,7 +558,7 @@ struct skimmerPrimaryMuon {
   Partition<MyTracksMC> global_muons_mc = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack); // MFT-MCH-MID
   Partition<MyTracksMC> sa_muons_mc = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack); // MCH-MID
 
-  void processMC_SA(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const& mftsatracks)
+  void processMC_SA(soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const&)
   {
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -557,6 +567,9 @@ struct skimmerPrimaryMuon {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
+      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
 
       auto sa_muons_mc_per_coll = sa_muons_mc->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
       auto global_muons_mc_per_coll = global_muons_mc->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
@@ -618,7 +631,7 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processMC_SA, "process reconstructed and MC info", false);
 
-  void processMC_TTCA(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const& mftsatracks, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processMC_TTCA(soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const& mftsatracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -627,6 +640,9 @@ struct skimmerPrimaryMuon {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
+      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
 
       int counter = 0;
       int offset = emprimarymuons.lastIndex() + 1;

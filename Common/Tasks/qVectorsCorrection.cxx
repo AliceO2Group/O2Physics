@@ -93,6 +93,8 @@ struct qVectorsCorrection {
       return 4;
     } else if (name.value == "BNeg") {
       return 5;
+    } else if (name.value == "BTot") {
+      return 6;
     } else {
       return 0;
     }

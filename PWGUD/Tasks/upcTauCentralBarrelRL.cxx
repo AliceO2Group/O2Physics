@@ -136,11 +136,12 @@ struct UpcTauCentralBarrelRL {
 
   // declare configurables
   Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
-  Configurable<bool> verboseDebug{"verboseDebug", false, {"Print debug info to terminal; default it false."}};
   Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
+  Configurable<bool> usePIDwithTOF{"usePIDwithTOF", true, {"Determine whether also TOF should be used in testPIDhypothesis"}};
   Configurable<float> cutMyTPCnSigmaEl{"cutMyTPCnSigmaEl", 3.f, {"n sigma cut on el in absolut values"}};
   Configurable<float> cutMyTPCnSigmaMu{"cutMyTPCnSigmaMu", 3.f, {"n sigma cut on mu in absolut values"}};
   Configurable<float> cutMyTPCnSigmaPi{"cutMyTPCnSigmaPi", 3.f, {"n sigma cut on pi in absolut values"}};
+  Configurable<float> cutMyNsigmaPIDselector{"cutMyNsigmaPIDselector", 35.f, {"n sigma cut on all particles in absolut values for testPIDhypothesis"}};
   Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 2.05f, {"specific study"}};
   Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7f, {"specific study"}};
   Configurable<bool> cutMyGlobalTracksOnly{"cutMyGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
@@ -718,8 +719,7 @@ struct UpcTauCentralBarrelRL {
 
     if (verboseInfo)
       printLargeMessage("RUN METHOD");
-    if (verboseDebug)
-      LOGF(info, "countCollisions = %d", countCollisions);
+    printDebugMessage(Form("countCollisions = %d", countCollisions));
 
   } // end run
 
@@ -1071,7 +1071,7 @@ struct UpcTauCentralBarrelRL {
         countTPCxRws70++;
       if (track.tpcNClsCrossedRows() > 100)
         countTPCxRws100++;
-      int hypothesisID = testPIDhypothesis(track);
+      int hypothesisID = testPIDhypothesis(track, cutMyNsigmaPIDselector, usePIDwithTOF);
       vecPIDidx.push_back(hypothesisID);
       if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
         countPVGTselected++;
@@ -2112,9 +2112,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH2>(HIST("EventSixTracks/SixPions/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       }
     } else {
-      if (verboseDebug) {
-        printMediumMessage("Other particles");
-      }
+      printDebugMessage("Other particles");
     }
 
   } // end fillHistograms
@@ -2150,9 +2148,8 @@ struct UpcTauCentralBarrelRL {
   {
 
     if (verboseInfo)
-      LOGF(info, "####################################### END OF THIS DATAFRAME #######################################");
-    if (verboseDebug)
-      LOGF(info, "countCollisions = %d");
+      printLargeMessage("END OF THIS DATAFRAME");
+    printDebugMessage(Form("countCollisions = %d", countCollisions));
     isFirstReconstructedCollisions = true;
 
   } // end processAnalysisFinished

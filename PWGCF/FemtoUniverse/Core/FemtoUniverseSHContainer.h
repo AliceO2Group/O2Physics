@@ -67,7 +67,7 @@ class FemtoUniverseSHContainer
   /// \param registry Histogram registry to be passed
   /// \param kstarbins k* binning for the histograms
   template <typename T>
-  void init(HistogramRegistry* registry, T& kstarbins, int maxl)
+  void init(HistogramRegistry* registry, T& kstarbins, int /*maxl*/)
   {
     KStarBins = kstarbins;
     std::string femtoObs1D;

@@ -456,15 +456,15 @@ struct JetTaggerHFQA {
       if (fillIPxyz && vecSignImpXYZSig.empty())
         continue;
       for (int order = 1; order <= numOrder; order++) {
-        if (fillIPxy && order < vecSignImpXYSig.size()) {
+        if (fillIPxy && static_cast<std::vector<std::vector<float>>::size_type>(order) < vecSignImpXYSig.size()) {
           registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_tc"), jet.pt(), vecSignImpXYSig[order - 1][0], order);
           registry.fill(HIST("h3_track_pt_sign_impact_parameter_xy_significance_tc"), vecSignImpXYSig[order - 1][1], vecSignImpXYSig[order - 1][0], order);
         }
-        if (fillIPz && order < vecSignImpZSig.size()) {
+        if (fillIPz && static_cast<std::vector<std::vector<float>>::size_type>(order) < vecSignImpZSig.size()) {
           registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_tc"), jet.pt(), vecSignImpZSig[order - 1][0], order);
           registry.fill(HIST("h3_track_pt_sign_impact_parameter_z_significance_tc"), vecSignImpZSig[order - 1][1], vecSignImpZSig[order - 1][0], order);
         }
-        if (fillIPxyz && order < vecSignImpXYZSig.size()) {
+        if (fillIPxyz && static_cast<std::vector<std::vector<float>>::size_type>(order) < vecSignImpXYZSig.size()) {
           registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_tc"), jet.pt(), vecSignImpXYZSig[order - 1][0], order);
           registry.fill(HIST("h3_track_pt_sign_impact_parameter_xyz_significance_tc"), vecSignImpXYZSig[order - 1][1], vecSignImpXYZSig[order - 1][0], order);
         }
@@ -612,14 +612,14 @@ struct JetTaggerHFQA {
       if (vecSignImpXYSigTC.empty())
         continue;
       for (int order = 1; order <= numOrder; order++) {
-        if (fillIPxy && order < vecSignImpXYSigTC.size()) {
+        if (fillIPxy && static_cast<std::vector<std::vector<float>>::size_type>(order) < vecSignImpXYSigTC.size()) {
           registry.fill(HIST("h3_sign_impact_parameter_xy_significance_tc_flavour"), vecSignImpXYSigTC[order - 1][0], order, jetflavour);
         }
       }
       if (vecSignImpZSigTC.empty())
         continue;
       for (int order = 1; order <= numOrder; order++) {
-        if (fillIPxy && order < vecSignImpZSigTC.size()) {
+        if (fillIPxy && static_cast<std::vector<std::vector<float>>::size_type>(order) < vecSignImpZSigTC.size()) {
           registry.fill(HIST("h3_sign_impact_parameter_z_significance_tc_flavour"), vecSignImpZSigTC[order - 1][0], order, jetflavour);
         }
       }
@@ -627,7 +627,7 @@ struct JetTaggerHFQA {
       if (vecSignImpXYZSigTC.empty())
         continue;
       for (int order = 1; order <= numOrder; order++) {
-        if (fillIPxy && order < vecSignImpXYZSigTC.size()) {
+        if (fillIPxy && static_cast<std::vector<std::vector<float>>::size_type>(order) < vecSignImpXYZSigTC.size()) {
           registry.fill(HIST("h3_sign_impact_parameter_xyz_significance_tc_flavour"), vecSignImpXYZSigTC[order - 1][0], order, jetflavour);
         }
       }
@@ -671,7 +671,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV2ProngData(T const& collision, U const& jets, V const& prongs)
+  void fillHistogramSV2ProngData(T const& /*collision*/, U const& jets, V const& /*prongs*/)
   {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -712,7 +712,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV3ProngData(T const& collision, U const& jets, V const& prongs)
+  void fillHistogramSV3ProngData(T const& /*collision*/, U const& jets, V const& /*prongs*/)
   {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -753,7 +753,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV2ProngMCD(T const& collision, U const& mcdjets, V const& prongs)
+  void fillHistogramSV2ProngMCD(T const& /*collision*/, U const& mcdjets, V const& /*prongs*/)
   {
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -795,7 +795,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV3ProngMCD(T const& collision, U const& mcdjets, V const& prongs)
+  void fillHistogramSV3ProngMCD(T const& /*collision*/, U const& mcdjets, V const& /*prongs*/)
   {
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
