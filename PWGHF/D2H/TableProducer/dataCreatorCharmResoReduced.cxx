@@ -266,7 +266,7 @@ struct HfDataCreatorCharmResoReduced {
       return false;
     }
 
-    switch(cfgSingleTrackCuts.setTrackSelections) {
+    switch (cfgSingleTrackCuts.setTrackSelections) {
       case 1:
         if (!track.isGlobalTrackWoDCA()) {
           return false;
@@ -439,13 +439,13 @@ struct HfDataCreatorCharmResoReduced {
           // if information on V0 already stored, go to next V0
           if (!selectedV0s.count(v0.globalIndex())) {
             hfCandV0(v0.posTrackId(), v0.negTrackId(),
-                    indexHfReducedCollision,
-                    v0.x(), v0.y(), v0.z(),
-                    v0.pxpos(), v0.pypos(), v0.pzpos(),
-                    v0.pxneg(), v0.pyneg(), v0.pzneg(),
-                    v0.v0cosPA(),
-                    v0.dcav0topv(),
-                    v0type);
+                     indexHfReducedCollision,
+                     v0.x(), v0.y(), v0.z(),
+                     v0.pxpos(), v0.pypos(), v0.pzpos(),
+                     v0.pxneg(), v0.pyneg(), v0.pzneg(),
+                     v0.v0cosPA(),
+                     v0.dcav0topv(),
+                     v0type);
             selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
           }
           fillHfCandD = true;
@@ -466,10 +466,10 @@ struct HfDataCreatorCharmResoReduced {
           registry.fill(HIST("hMassDstarProton"), invMassKPiPiP - invMassD);
           if (!selectedTracks.count(track.globalIndex())) {
             hfTrackNoParam(indexHfReducedCollision,
-                          track.px(), track.py(), track.pz(), track.sign(),
-                          track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                          track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                          track.hasTOF());
+                           track.px(), track.py(), track.pz(), track.sign(),
+                           track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                           track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                           track.hasTOF());
             selectedTracks[track.globalIndex()] = hfTrackNoParam.lastIndex();
           }
           fillHfCandD = true;
