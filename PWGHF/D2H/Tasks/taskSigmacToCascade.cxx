@@ -58,7 +58,7 @@ struct HfTaskSigmacToCascade {
   HistogramRegistry registry{"registry"};
   HfHelper hfHelper;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // axes
     AxisSpec axisBinsPt = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -129,7 +129,7 @@ struct HfTaskSigmacToCascade {
   }
 
   void processSigmacToLcPi(aod::HfCandScCascades const& candScs,
-                           RecoLc const& candidatesLc,
+                           RecoLc const&,
                            aod::Tracks const&)
   {
     for (const auto& candSc : candScs) {
