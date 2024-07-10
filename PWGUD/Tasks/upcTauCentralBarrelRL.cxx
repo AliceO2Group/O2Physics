@@ -50,7 +50,7 @@ struct UpcTauCentralBarrelRL {
   int countCollisions;
   Service<o2::framework::O2DatabasePDG> pdg;
   SGSelector sgSelector;
-  
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // declare configurables
@@ -2144,7 +2144,7 @@ struct UpcTauCentralBarrelRL {
     int gapSide = reconstructedCollision.gapSide();
     int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutMyGapSideFV0, cutMyGapSideFT0A, cutMyGapSideFT0C, cutMyGapSideZDC);
     histos.fill(HIST("Events/UDtableGapSide"), gapSide);
-    histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide-trueGapSide);
+    histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide - trueGapSide);
     if (useTrueGap)
       gapSide = trueGapSide;
 
