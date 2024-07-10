@@ -238,7 +238,7 @@ struct kstarInJets {
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>; // , aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-				    aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa>;
+                                    aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa>;
   Filter jetCuts = aod::jet::pt > cfgjetPtMin&& aod::jet::r == nround(cfgjetR.node() * 100.0f);
 
   // Function for track quality cuts
@@ -564,8 +564,8 @@ struct kstarInJets {
       if (cfgSimPID) {
         if (!trackPIDKaon(originalTrack))
           continue;
-	if (!trackPIDPion(originalTrack))
-	  continue;
+        if (!trackPIDPion(originalTrack))
+          continue;
       }
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
@@ -583,12 +583,12 @@ struct kstarInJets {
         auto originalTrack2 = track2.track_as<myCompleteTracks>();
         if (!trackSelection(originalTrack2))
           continue;
-	if (cfgSimPID) {
-	  if (!trackPIDKaon(originalTrack))
-	    continue;
-	  if (!trackPIDPion(originalTrack))
-	    continue;
-	}
+        if (cfgSimPID) {
+          if (!trackPIDKaon(originalTrack))
+            continue;
+          if (!trackPIDPion(originalTrack))
+            continue;
+        }
 
         if (originalTrack.index() >= originalTrack2.index())
           continue;
@@ -1149,8 +1149,8 @@ struct kstarInJets {
       } // tracks 2
     }   // tracks 1
     // }   // tracks
-  }     // main fcn
- 
+  } // main fcn
+
   PROCESS_SWITCH(kstarInJets, processMatchedRec, "phi matched Rec level MC", true);
 
 }; // end of main struct
