@@ -16,7 +16,6 @@
 #include <memory>
 #include <cstring>
 #include <TH1F.h>
-#include <TH2I.h>
 #include <THashList.h>
 #include <TString.h>
 #include "Framework/AnalysisTask.h"
