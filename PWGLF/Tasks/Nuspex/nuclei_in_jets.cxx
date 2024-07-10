@@ -1067,14 +1067,15 @@ struct nuclei_in_jets {
 
       // Reduced Event
       std::vector<int> particle_ID;
-      int leading_ID = 0;
+      int leading_ID(0);
       float pt_max(0);
+      int i = -1;
 
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
-        // Global Index
-        int i = particle.globalIndex();
+        // Particle Index
+        i++;
 
         // Select Primary Particles
         float deltaX = particle.vx() - mccollision.posX();

@@ -984,7 +984,7 @@ struct phosNbar {
   PROCESS_SWITCH(phosNbar, processData, "process data", false);
 
   void processMC(SelCollisionMC const& coll,
-                 aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart, aod::McCollisions const& mcCol)
+                 aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart, aod::McCollisions const& /*mcCol*/)
   {
     // Initialize B-field
     if (mBz == 123456.) {

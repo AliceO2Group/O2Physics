@@ -279,6 +279,7 @@ struct AnalysisTrackSelection {
   // The user must ensure using them properly in the tasks downstream
   // NOTE: For now, the candidate electron cuts must be provided first, then followed by any other needed selections
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fConfigQAIfSelEvt{"cfgQAIfSelEvt", true, "If true, fill QA only for selected events"};
   Configurable<string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
   Configurable<int> fConfigPrefilterCutId{"cfgPrefilterCutId", 32, "Id of the Prefilter track cut (starting at 0)"}; // In order to create another column prefilter (should be temporary before improving cut selection in configurables, then displaced to AnalysisPrefilterSelection)
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -293,41 +294,41 @@ struct AnalysisTrackSelection {
   std::vector<AnalysisCompositeCut> fTrackCuts;
   struct : ConfigurableGroup {
     std::string prefix = "trackingcut_group";
-    Configurable<std::vector<float>> cfgEtaMax{"cfgEtaMax", {0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f}, "Comma separated list of eta ranges"};
-    Configurable<std::vector<float>> cfgPtMin{"cfgPtMin", {0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f}, "Comma separated list of pt min"};
-    Configurable<std::vector<float>> cfgPtMax{"cfgPtMax", {20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f, 20.f}, "Comma separated list of pt max"};
-    Configurable<std::vector<float>> cfgDCAxyMax{"cfgDCAxyMax", {3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f}, "Comma separated list of dcaxy max"};
-    Configurable<std::vector<float>> cfgDCAzMax{"cfgDCAzMax", {1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f}, "Comma separated list of dcaz max"};
-    Configurable<std::vector<int>> cfgIsSPDfirst{"cfgIsSPDfirst", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Comma separated list of if one requires one hit in the first ITS layer"};
-    Configurable<std::vector<int>> cfgIsSPDany{"cfgIsSPDany", {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, "Comma separated list of if one requires one hit in the first two ITS layers"};
-    Configurable<std::vector<int>> cfgIsITSibAny{"cfgIsITSibAny", {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, "Comma separated list of if one requires one hit in the first three ITS layers"};
-    Configurable<std::vector<float>> cfgITSchi2Max{"cfgITSchi2Max", {5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f, 5.f}, "Comma separated list of its chi2 max"};
-    Configurable<std::vector<float>> cfgITSnclsMin{"cfgITSnclsMin", {4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f, 4.5f}, "Comma separated list of min number of ITS clusters"};
-    Configurable<std::vector<float>> cfgITSnclsMax{"cfgITSnclsMax", {7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f, 7.5f}, "Comma separated list of max number of ITS clusters"};
-    Configurable<std::vector<float>> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f}, "Comma separated list of tpc chi2 max"};
-    Configurable<std::vector<float>> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f, 90.f}, "Comma separated list of min number of TPC clusters"};
-    Configurable<std::vector<float>> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f}, "Comma separated list of max number of TPC clusters"};
-    Configurable<std::vector<float>> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f, 80.f}, "Comma separated list of min number of TPC crossed rows"};
-    Configurable<std::vector<float>> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f, 170.f}, "Comma separated list of max number of TPC crossed rows"};
-    Configurable<std::vector<int>> cfgIsDalitzLeg{"cfgIsDalitzLeg", {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, "Comma separated list of if one requires hit for prefilter done during skimming, should be between 1 and 8"};
+    Configurable<std::vector<float>> cfgEtaMax{"cfgEtaMax", {0.8f}, "Comma separated list of eta ranges"};
+    Configurable<std::vector<float>> cfgPtMin{"cfgPtMin", {0.2f}, "Comma separated list of pt min"};
+    Configurable<std::vector<float>> cfgPtMax{"cfgPtMax", {20.f}, "Comma separated list of pt max"};
+    Configurable<std::vector<float>> cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "Comma separated list of dcaxy max"};
+    Configurable<std::vector<float>> cfgDCAzMax{"cfgDCAzMax", {1.f}, "Comma separated list of dcaz max"};
+    Configurable<std::vector<int>> cfgIsSPDfirst{"cfgIsSPDfirst", {1}, "Comma separated list of if one requires one hit in the first ITS layer"};
+    Configurable<std::vector<int>> cfgIsSPDany{"cfgIsSPDany", {-1}, "Comma separated list of if one requires one hit in the first two ITS layers"};
+    Configurable<std::vector<int>> cfgIsITSibAny{"cfgIsITSibAny", {-1}, "Comma separated list of if one requires one hit in the first three ITS layers"};
+    Configurable<std::vector<float>> cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "Comma separated list of its chi2 max"};
+    Configurable<std::vector<float>> cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "Comma separated list of min number of ITS clusters"};
+    Configurable<std::vector<float>> cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "Comma separated list of max number of ITS clusters"};
+    Configurable<std::vector<float>> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "Comma separated list of tpc chi2 max"};
+    Configurable<std::vector<float>> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "Comma separated list of min number of TPC clusters"};
+    Configurable<std::vector<float>> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "Comma separated list of max number of TPC clusters"};
+    Configurable<std::vector<float>> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "Comma separated list of min number of TPC crossed rows"};
+    Configurable<std::vector<float>> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {170.f}, "Comma separated list of max number of TPC crossed rows"};
+    Configurable<std::vector<int>> cfgIsDalitzLeg{"cfgIsDalitzLeg", {-1}, "Comma separated list of if one requires hit for prefilter done during skimming, should be between 1 and 8"};
   } trackcuts;
 
   struct : ConfigurableGroup {
     std::string prefix = "pidcut_group";
-    Configurable<std::vector<int>> cfgPIDmode{"cfgPIDmode", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "List of PID mode: 1 TPChadrrejection, 2 TOFreq, 3 OR between both"};
-    Configurable<std::vector<int>> cfgRejBadTOF{"cfgRejBadTOF", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "List of reject bad TOF: 1 yes, 0 no"};
-    Configurable<std::vector<float>> cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f}, "Comma separated list of min TPC nsigma e for inclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f, 3.f}, "Comma separated list of max TPC nsigma e for inclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f}, "Comma separated list of min TPC nsigma pion for exclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f}, "Comma separated list of max TPC nsigma pion for exclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f}, "Comma separated list of min TPC nsigma proton for exclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f}, "Comma separated list of max TPC nsigma proton for exclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f}, "Comma separated list of min TPC nsigma kaon for exclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f, 4.f}, "Comma separated list of max TPC nsigma kaon for exclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaMuMin{"cfgTPCNSigmaMuMin", {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}, "Comma separated list of min TPC nsigma muon for exclusion"};
-    Configurable<std::vector<float>> cfgTPCNSigmaMuMax{"cfgTPCNSigmaMuMax", {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}, "Comma separated list of max TPC nsigma muon for exclusion"};
-    Configurable<std::vector<float>> cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f, -3.f}, "Comma separated list of min TOF nsigma e for inclusion"};
-    Configurable<std::vector<float>> cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f}, "Comma separated list of max TOF nsigma e for inclusion"};
+    Configurable<std::vector<int>> cfgPIDmode{"cfgPIDmode", {1}, "List of PID mode: 1 TPChadrrejection, 2 TOFreq, 3 OR between both"};
+    Configurable<std::vector<int>> cfgRejBadTOF{"cfgRejBadTOF", {1}, "List of reject bad TOF: 1 yes, 0 no"};
+    Configurable<std::vector<float>> cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-1.f}, "Comma separated list of min TPC nsigma e for inclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {3.f}, "Comma separated list of max TPC nsigma e for inclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "Comma separated list of min TPC nsigma pion for exclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {4.f}, "Comma separated list of max TPC nsigma pion for exclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "Comma separated list of min TPC nsigma proton for exclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "Comma separated list of max TPC nsigma proton for exclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "Comma separated list of min TPC nsigma kaon for exclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "Comma separated list of max TPC nsigma kaon for exclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaMuMin{"cfgTPCNSigmaMuMin", {0.f}, "Comma separated list of min TPC nsigma muon for exclusion"};
+    Configurable<std::vector<float>> cfgTPCNSigmaMuMax{"cfgTPCNSigmaMuMax", {0.f}, "Comma separated list of max TPC nsigma muon for exclusion"};
+    Configurable<std::vector<float>> cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "Comma separated list of min TOF nsigma e for inclusion"};
+    Configurable<std::vector<float>> cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {2.f}, "Comma separated list of max TOF nsigma e for inclusion"};
   } pidcuts;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -341,7 +342,7 @@ struct AnalysisTrackSelection {
     fCurrentRun = 0;
 
     int nbofcuts = fConfigNbTrackCut;
-    if (nbofcuts > 0 && nbofcuts < 31) {
+    if (nbofcuts > 0 && CheckSize()) {
       for (unsigned int icut = 0; icut < nbofcuts; ++icut) {
         AnalysisCompositeCut* cut = new AnalysisCompositeCut(Form("trackcut%d", icut), Form("trackcut%d", icut));
         cut->AddCut(GetTrackCut(icut));
@@ -379,6 +380,105 @@ struct AnalysisTrackSelection {
       // Not later than now objects
       fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     }
+  }
+
+  bool CheckSize()
+  {
+    auto veceta = (std::vector<float>)trackcuts.cfgEtaMax;
+    auto vecptmin = (std::vector<float>)trackcuts.cfgPtMin;
+    auto vecptmax = (std::vector<float>)trackcuts.cfgPtMax;
+    auto vecDCAxymax = (std::vector<float>)trackcuts.cfgDCAxyMax;
+    auto vecDCAzmax = (std::vector<float>)trackcuts.cfgDCAzMax;
+    auto vecIsSPDfirst = (std::vector<int>)trackcuts.cfgIsSPDfirst;
+    auto vecIsSPDany = (std::vector<int>)trackcuts.cfgIsSPDany;
+    auto vecIsITSibAny = (std::vector<int>)trackcuts.cfgIsITSibAny;
+    auto vecITSchi2max = (std::vector<float>)trackcuts.cfgITSchi2Max;
+    auto vecITSnclsmin = (std::vector<float>)trackcuts.cfgITSnclsMin;
+    auto vecITSnclsmax = (std::vector<float>)trackcuts.cfgITSnclsMax;
+    auto vecTPCchi2max = (std::vector<float>)trackcuts.cfgTPCchi2Max;
+    auto vecTPCnclsmin = (std::vector<float>)trackcuts.cfgTPCnclsMin;
+    auto vecTPCnclsmax = (std::vector<float>)trackcuts.cfgTPCnclsMax;
+    auto vecTPCnclsCRmin = (std::vector<float>)trackcuts.cfgTPCnclsCRMin;
+    auto vecTPCnclsCRmax = (std::vector<float>)trackcuts.cfgTPCnclsCRMax;
+    auto vecIsDalitzLeg = (std::vector<int>)trackcuts.cfgIsDalitzLeg;
+    auto vecPIDmode = (std::vector<int>)pidcuts.cfgPIDmode;
+    auto vecrejbadtof = (std::vector<int>)pidcuts.cfgRejBadTOF;
+    auto vecTPCnsigmaelmin = (std::vector<float>)pidcuts.cfgTPCNSigmaElMin;
+    auto vecTPCnsigmaelmax = (std::vector<float>)pidcuts.cfgTPCNSigmaElMax;
+    auto vecTPCnsigmapimin = (std::vector<float>)pidcuts.cfgTPCNSigmaPiMin;
+    auto vecTPCnsigmapimax = (std::vector<float>)pidcuts.cfgTPCNSigmaPiMax;
+    auto vecTPCnsigmaprmin = (std::vector<float>)pidcuts.cfgTPCNSigmaPrMin;
+    auto vecTPCnsigmaprmax = (std::vector<float>)pidcuts.cfgTPCNSigmaPrMax;
+    auto vecTPCnsigmakamin = (std::vector<float>)pidcuts.cfgTPCNSigmaKaMin;
+    auto vecTPCnsigmakamax = (std::vector<float>)pidcuts.cfgTPCNSigmaKaMax;
+    auto vecTPCnsigmamumin = (std::vector<float>)pidcuts.cfgTPCNSigmaMuMin;
+    auto vecTPCnsigmamumax = (std::vector<float>)pidcuts.cfgTPCNSigmaMuMax;
+    auto vecTOFnsigmaelmin = (std::vector<float>)pidcuts.cfgTOFNSigmaElMin;
+    auto vecTOFnsigmaelmax = (std::vector<float>)pidcuts.cfgTOFNSigmaElMax;
+
+    if (veceta.size() != fConfigNbTrackCut)
+      return false;
+    if (vecptmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecptmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecDCAxymax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecDCAzmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecIsSPDfirst.size() != fConfigNbTrackCut)
+      return false;
+    if (vecIsSPDany.size() != fConfigNbTrackCut)
+      return false;
+    if (vecIsITSibAny.size() != fConfigNbTrackCut)
+      return false;
+    if (vecITSchi2max.size() != fConfigNbTrackCut)
+      return false;
+    if (vecITSnclsmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecITSnclsmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCchi2max.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnclsmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnclsmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnclsCRmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnclsCRmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecIsDalitzLeg.size() != fConfigNbTrackCut)
+      return false;
+    if (vecPIDmode.size() != fConfigNbTrackCut)
+      return false;
+    if (vecrejbadtof.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmaelmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmaelmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmapimin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmapimax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmaprmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmaprmax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmakamin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmakamax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmamumin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTPCnsigmamumax.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTOFnsigmaelmin.size() != fConfigNbTrackCut)
+      return false;
+    if (vecTOFnsigmaelmax.size() != fConfigNbTrackCut)
+      return false;
+    return true;
   }
 
   AnalysisCompositeCut* GetPIDCut(unsigned int i)
@@ -527,7 +627,13 @@ struct AnalysisTrackSelection {
       prefilterSelected = false;
       VarManager::FillTrack<TTrackFillMap>(track);
       if (fConfigQA) { // TODO: make this compile time
-        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
+        if (fConfigQAIfSelEvt) {
+          if (event.isEventSelected()) {
+            fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
+          }
+        } else {
+          fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
+        }
       }
       iCut = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
@@ -539,7 +645,13 @@ struct AnalysisTrackSelection {
             prefilterSelected = true;
           }
           if (fConfigQA) { // TODO: make this compile time
-            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+            if (fConfigQAIfSelEvt) {
+              if (event.isEventSelected()) {
+                fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+              }
+            } else {
+              fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+            }
           }
         }
       }
@@ -548,11 +660,11 @@ struct AnalysisTrackSelection {
     } // end loop over tracks
   }
 
-  void processSkimmed(MyEvents::iterator const& event, MyBarrelTracks const& tracks)
+  void processSkimmed(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks)
   {
     runTrackSelection<gkEventFillMap, gkTrackFillMap>(event, tracks);
   }
-  void processSkimmedWithCov(MyEventsVtxCov::iterator const& event, MyBarrelTracksWithCov const& tracks)
+  void processSkimmedWithCov(MyEventsVtxCovSelected::iterator const& event, MyBarrelTracksWithCov const& tracks)
   {
     runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks);
   }
@@ -572,7 +684,6 @@ struct AnalysisPrefilterSelection {
   Preslice<MyBarrelTracks> perCollision = aod::reducedtrack::reducedeventId;
 
   // Configurables
-  Configurable<std::string> fConfigPrefilterPairCut{"cfgPrefilterPairCut", "", "Prefilter pair cut"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
@@ -701,7 +812,7 @@ struct AnalysisEventMixing {
 
   NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext& /*context*/)
   {
     fCurrentRun = 0;
 
@@ -864,13 +975,34 @@ struct AnalysisSameEventPairing {
   std::vector<AnalysisCompositeCut> fPairCuts;
   struct : ConfigurableGroup {
     std::string prefix = "paircut_group";
-    Configurable<std::vector<int>> cfgRej{"cfgRej", {1, 1, 1, 1, 1}, "max. mass"};
-    Configurable<std::vector<float>> cfgMassMax{"cfgMassMax", {0.1f, 0.1f, 0.1f, 0.1f, 0.1f}, "max. mass"};
-    Configurable<std::vector<float>> cfgMassMin{"cfgMassMin", {0.f, 0.f, 0.f, 0.f, 0.f}, "min. mass"};
-    Configurable<std::vector<float>> cfgOpAngMax{"cfgOpAngMax", {-1.f, -1.f, -1.f, -1.f, -1.f}, "max. opening angle"};
-    Configurable<std::vector<float>> cfgPhiVMin{"cfgPhiVMin", {2.f, 2.f, 2.f, 2.f, 2.f}, "min. phiv"};
+    Configurable<std::vector<int>> cfgRej{"cfgRej", {1}, "max. mass"};
+    Configurable<std::vector<float>> cfgMassMax{"cfgMassMax", {0.1f}, "max. mass"};
+    Configurable<std::vector<float>> cfgMassMin{"cfgMassMin", {0.f}, "min. mass"};
+    Configurable<std::vector<float>> cfgOpAngMax{"cfgOpAngMax", {-1.f}, "max. opening angle"};
+    Configurable<std::vector<float>> cfgPhiVMin{"cfgPhiVMin", {2.f}, "min. phiv"};
 
   } paircuts;
+
+  bool CheckSize()
+  {
+    auto vecRej = (std::vector<int>)paircuts.cfgRej;
+    auto vecmassmin = (std::vector<float>)paircuts.cfgMassMin;
+    auto vecmassmax = (std::vector<float>)paircuts.cfgMassMax;
+    auto vecopamax = (std::vector<float>)paircuts.cfgOpAngMax;
+    auto vecphivmin = (std::vector<float>)paircuts.cfgPhiVMin;
+
+    if (vecRej.size() != fConfigNbPairCut)
+      return false;
+    if (vecmassmin.size() != fConfigNbPairCut)
+      return false;
+    if (vecmassmax.size() != fConfigNbPairCut)
+      return false;
+    if (vecopamax.size() != fConfigNbPairCut)
+      return false;
+    if (vecphivmin.size() != fConfigNbPairCut)
+      return false;
+    return true;
+  }
 
   AnalysisCompositeCut* GetPairCut(unsigned int i)
   {
@@ -919,7 +1051,7 @@ struct AnalysisSameEventPairing {
     }
   }
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext& /*context*/)
   {
     fCurrentRun = 0;
 
@@ -936,7 +1068,7 @@ struct AnalysisSameEventPairing {
     TString histNames = "";
     std::vector<TString> names;
 
-    if (fConfigNbPairCut > 0 && fConfigNbPairCut < 5) {
+    if (fConfigNbPairCut > 0 && CheckSize()) {
       for (int icut = 0; icut < fConfigNbPairCut; ++icut) {
         fPairCuts.push_back(*GetPairCut(icut));
       }
@@ -953,18 +1085,17 @@ struct AnalysisSameEventPairing {
         histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
         fTrackHistNames.push_back(names);
 
-        if (fConfigNbPairCut > 0 && fConfigNbPairCut < 5) {                 // if pair cuts
-          for (int iPairCut = 0; iPairCut < fConfigNbPairCut; ++iPairCut) { // loop over pair cuts
-            names = {
-              Form("PairsBarrelSEPM_trackcut%d_paircut%d", icut, iPairCut),
-              Form("PairsBarrelSEPP_trackcut%d_paircut%d", icut, iPairCut),
-              Form("PairsBarrelSEMM_trackcut%d_paircut%d", icut, iPairCut)};
+        unsigned int npaircuts = fPairCuts.size();
+        for (int iPairCut = 0; iPairCut < npaircuts; ++iPairCut) { // loop over pair cuts
+          names = {
+            Form("PairsBarrelSEPM_trackcut%d_paircut%d", icut, iPairCut),
+            Form("PairsBarrelSEPP_trackcut%d_paircut%d", icut, iPairCut),
+            Form("PairsBarrelSEMM_trackcut%d_paircut%d", icut, iPairCut)};
 
-            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
 
-            fTrackHistNames.push_back(names);
-          } // end loop (pair cuts)
-        }   // end if (pair cuts)
+          fTrackHistNames.push_back(names);
+        }   // end loop (pair cuts)
       }     // end loop (track cuts)
     }       // end if (track cuts)
 

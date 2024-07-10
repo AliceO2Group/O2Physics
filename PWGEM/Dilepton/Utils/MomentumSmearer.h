@@ -47,7 +47,7 @@ class MomentumSmearer
   }
 
   /// Constructor with resolution histograms and efficiency
-  MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString effFileName, TString effHistName)
+  MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString /*effFileName*/, TString /*effHistName*/)
   {
     setResFileName(resFileName);
     setResPtHistName(resPtHistName);

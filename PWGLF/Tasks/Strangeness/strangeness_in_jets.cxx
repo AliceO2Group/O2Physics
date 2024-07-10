@@ -67,6 +67,14 @@ struct strangeness_in_jets {
     true,
     true};
 
+  // QC Histograms
+  HistogramRegistry registryQC{
+    "registryQC",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
+
   // Global Parameters
   Configurable<int> particle_of_interest{"particle_of_interest", 0, "0=v0, 1=cascade, 2=pions"};
   Configurable<float> ptLeadingMin{"ptLeadingMin", 5.0f, "pt leading min"};
@@ -125,6 +133,7 @@ struct strangeness_in_jets {
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
+    registryQC.add("deltaPt_leading", "deltaPt leading part", HistType::kTH1F, {{1000, -0.1, 0.1, "#Delta p_{T}"}});
 
     // Multiplicity Binning
     std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
@@ -774,7 +783,7 @@ struct strangeness_in_jets {
     return;
   }
 
-  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::V0sLinked const& V0linked, FullTracks const& tracks)
+  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::V0sLinked const& /*V0linked*/, FullTracks const& tracks)
   {
     registryData.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
@@ -1094,7 +1103,7 @@ struct strangeness_in_jets {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<MCTracks> perCollisionTrk = o2::aod::track::collisionId;
 
-  void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
+  void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::McCollisions const& /*mcCollisions*/, const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {
       registryMC.fill(HIST("number_of_events_mc"), 0.5);
@@ -1348,11 +1357,13 @@ struct strangeness_in_jets {
       std::vector<int> particle_ID;
       int leading_ID = 0;
       float pt_max(0);
+      int i = -1;
 
       for (auto& particle : mcParticles_per_coll) {
 
         // Global Index
-        int i = particle.globalIndex();
+        // int i = particle.globalIndex();
+        i++;
 
         // Select Primary Particles
         float deltaX = particle.vx() - collision.posX();
@@ -1394,6 +1405,7 @@ struct strangeness_in_jets {
       // Momentum of the Leading Particle
       auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
       TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
+      registryQC.fill(HIST("deltaPt_leading"), pt_max - leading_track.pt());
 
       // Labels
       int exit(0);

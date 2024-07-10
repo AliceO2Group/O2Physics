@@ -137,6 +137,8 @@ struct Pi0QCTask {
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
+  Configurable<bool> mRequireCaloReadout{"RequireCaloReadout", 0, "require kTVXinEMC"};
+  Configurable<bool> mRequireEMCalCells{"RequireEMCalCells", 0, "require at least one EMC cell in each collision"};
   Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
   Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
   Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
@@ -266,7 +268,7 @@ struct Pi0QCTask {
     for (auto& collision : collisions) {
       mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
 
-      if (mDoEventSel && (!collision.sel8() || !collision.alias_bit(kTVXinEMC))) { // Check sel8 and whether EMC was read out
+      if (mDoEventSel && (!collision.sel8() || (mRequireCaloReadout && !collision.alias_bit(kTVXinEMC)))) { // Check sel8 and whether EMC was read out
         continue;
       }
       mHistManager.fill(HIST("events"), 2); // Fill sel8 + readout
@@ -290,7 +292,7 @@ struct Pi0QCTask {
 
       if (mDoEventSel) {
         auto found = cellGlobalBCs.find(collision.foundBC_as<MyBCs>().globalBC());
-        if (found == cellGlobalBCs.end() || found->second == 0) { // Skip collisions without any readout EMCal cells
+        if (mRequireEMCalCells && (found == cellGlobalBCs.end() || found->second == 0)) { // Skip collisions without any readout EMCal cells
           continue;
         }
       }
