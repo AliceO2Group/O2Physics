@@ -71,7 +71,7 @@ struct derivedCascadeAnalysis {
   Configurable<bool> doITSFrameBorderCut{"doITSFrameBorderCut", false, "Enable ITSFrame event cut"};
   Configurable<bool> doMultiplicityCorrCut{"doMultiplicityCorrCut", false, "Enable multiplicity vs centrality correlation cut"};
   Configurable<bool> doOccupancyCheck{"doOccupancyCheck", true, ""};
-  Configurable<bool> doTimeRangeStandardCut{"doTimeRangeStandardCut",true,"It rejects a given collision if there are other events nearby in |dt|< 10 μs"};
+  Configurable<bool> doTimeRangeStandardCut{"doTimeRangeStandardCut", true, "It rejects a given collision if there are other events nearby in |dt|< 10 μs"};
 
   Configurable<int> centMin{"centMin", 0, "Minimal accepted centrality"};
   Configurable<int> centMax{"centMax", 100, "Maximal accepted centrality"};
@@ -462,7 +462,7 @@ struct derivedCascadeAnalysis {
       histos.fill(HIST("hEventSelection"), 11.5 /* Remove outlyers */);
     }
 
-    if (doTimeRangeStandardCut && !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)){
+    if (doTimeRangeStandardCut && !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
 
