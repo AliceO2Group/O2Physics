@@ -216,6 +216,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
       auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
 
+      // reconstruct the 3-prong secondary vertex
       try {
         if (df.process(trackCasc, trackParCovCharmBachelor0, trackParCovCharmBachelor1) == 0) {
           continue;
