@@ -59,6 +59,7 @@ struct correlateStrangeness {
   Configurable<bool> doCorrelationOmegaMinus{"doCorrelationOmegaMinus", false, "do OmegaMinus correlation"};
   Configurable<bool> doCorrelationOmegaPlus{"doCorrelationOmegaPlus", false, "do OmegaPlus correlation"};
   Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
+  Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
   Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
   Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
   Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
@@ -663,7 +664,7 @@ struct correlateStrangeness {
     }
   }
 
-  void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+  void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision,
                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
                             V0DatasWithoutTrackX const&, aod::V0sLinked const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
@@ -676,6 +677,9 @@ struct correlateStrangeness {
       return;
     }
     if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
+      return;
+    }
+    if (!collision.isInelGt0() && selectINELgtZERO) {
       return;
     }
     // ________________________________________________
@@ -727,7 +731,7 @@ struct correlateStrangeness {
     fillCorrelationsV0(triggerTracks, associatedV0s, false, collision.posZ(), collision.centFT0M());
   }
 
-  void processSameEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+  void processSameEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision,
                                  aod::AssocV0s const&, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
                                  V0DatasWithoutTrackX const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
@@ -740,6 +744,9 @@ struct correlateStrangeness {
       return;
     }
     if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
+      return;
+    }
+    if (!collision.isInelGt0() && selectINELgtZERO) {
       return;
     }
     // ________________________________________________
@@ -787,7 +794,7 @@ struct correlateStrangeness {
     // Do hadron - cascade correlations
     fillCorrelationsCascade(triggerTracks, associatedCascades, false, collision.posZ(), collision.centFT0M());
   }
-  void processSameEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+  void processSameEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision,
                               aod::AssocPions const& associatedPions, aod::TriggerTracks const& triggerTracks,
                               TracksComplete const&, aod::BCsWithTimestamps const&)
   {
@@ -800,6 +807,9 @@ struct correlateStrangeness {
       return;
     }
     if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
+      return;
+    }
+    if (!collision.isInelGt0() && selectINELgtZERO) {
       return;
     }
     // ________________________________________________
@@ -824,7 +834,7 @@ struct correlateStrangeness {
     // Do hadron - Pion correlations
     fillCorrelationsPion(triggerTracks, associatedPions, false, collision.posZ(), collision.centFT0M());
   }
-  void processMixedEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processMixedEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
                              aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
                              V0DatasWithoutTrackX const&, aod::V0sLinked const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
@@ -842,6 +852,8 @@ struct correlateStrangeness {
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
+        continue;
+      if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
       if (!doprocessMixedEventHCascades) {
@@ -861,7 +873,7 @@ struct correlateStrangeness {
       fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true, collision1.posZ(), collision1.centFT0M());
     }
   }
-  void processMixedEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processMixedEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
                                   aod::AssocV0s const&, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
                                   V0DatasWithoutTrackX const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
@@ -880,6 +892,8 @@ struct correlateStrangeness {
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
+      if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
+        continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
         histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
@@ -897,7 +911,7 @@ struct correlateStrangeness {
       fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true, collision1.posZ(), collision1.centFT0M());
     }
   }
-  void processMixedEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processMixedEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
                                aod::AssocPions const& assocPions, aod::TriggerTracks const& triggerTracks,
                                TracksComplete const&)
   {
@@ -911,6 +925,8 @@ struct correlateStrangeness {
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
+        continue;
+      if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
@@ -929,7 +945,8 @@ struct correlateStrangeness {
       fillCorrelationsPion(slicedTriggerTracks, slicedAssocPions, true, collision1.posZ(), collision1.centFT0M());
     }
   }
-  void processMCGenerated(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms>> const& collisions, aod::McParticles const& mcParticles)
+
+  void processMCGenerated(aod::McCollision const& mccollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& collisions, aod::McParticles const& mcParticles)
   {
 
     for (auto const& mcParticle : mcParticles) {
@@ -960,12 +977,14 @@ struct correlateStrangeness {
     int bestCollisionFT0Mpercentile = -1;
     float bestCollisionVtxZ = 0.0f;
     bool bestCollisionSel8 = false;
+    bool bestCollisionINELgtZERO = false;
     for (auto& collision : collisions) {
       if (biggestNContribs < collision.numContrib()) {
         biggestNContribs = collision.numContrib();
         bestCollisionFT0Mpercentile = collision.centFT0M();
         bestCollisionSel8 = collision.sel8();
         bestCollisionVtxZ = collision.posZ();
+        bestCollisionINELgtZERO = collision.isInelGt0();
       }
     }
 
@@ -1000,6 +1019,8 @@ struct correlateStrangeness {
     if (!bestCollisionSel8)
       return;
     if (std::abs(bestCollisionVtxZ) > 10.0f)
+      return;
+    if (!bestCollisionINELgtZERO)
       return;
 
     for (auto const& mcParticle : mcParticles) {
