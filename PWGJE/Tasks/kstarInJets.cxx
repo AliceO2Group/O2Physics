@@ -237,7 +237,7 @@ struct kstarInJets {
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>; // , aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-				    aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+				    aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa>;
   Filter jetCuts = aod::jet::pt > cfgjetPtMin&& aod::jet::r == nround(cfgjetR.node() * 100.0f);
 
   // Function for track quality cuts
@@ -459,8 +459,8 @@ struct kstarInJets {
       return;
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
-      auto trk1 = track1.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>>();
-      auto trk2 = track2.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>>();
+      auto trk1 = track1.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa>>();
+      auto trk2 = track2.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa>>();
       minvReconstruction<false, false>(1.0, trk1, trk2, chargedjets);
     }
     int nJets = 0;
@@ -478,7 +478,7 @@ struct kstarInJets {
     //    return;
 
     for (auto& trackC : tracks) {
-      auto originalTrack = trackC.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>>();
+      auto originalTrack = trackC.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa>>();
       JEhistos.fill(HIST("hDCArToPv"), originalTrack.dcaXY());
       JEhistos.fill(HIST("hDCAzToPv"), originalTrack.dcaZ());
       JEhistos.fill(HIST("rawpT"), originalTrack.pt());
@@ -508,7 +508,7 @@ struct kstarInJets {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa>;
   using myCompleteJetTracks = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
   int nJEEvents = 0;
   int nprocessRecEvents = 0;
@@ -560,10 +560,12 @@ struct kstarInJets {
       auto originalTrack = track.track_as<myCompleteTracks>();
       if (!trackSelection(originalTrack))
         continue;
-      if (cfgSimPID)
-        if (!trackPID(originalTrack))
+      if (cfgSimPID) {
+        if (!trackPIDKaon(originalTrack))
           continue;
-
+	if (!trackPIDPion(originalTrack))
+	  continue;
+      }
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
 
@@ -580,9 +582,12 @@ struct kstarInJets {
         auto originalTrack2 = track2.track_as<myCompleteTracks>();
         if (!trackSelection(originalTrack2))
           continue;
-        if (cfgSimPID)
-          if (!trackPID(originalTrack2))
-            continue;
+	if (cfgSimPID) {
+	  if (!trackPIDKaon(originalTrack))
+	    continue;
+	  if (!trackPIDPion(originalTrack))
+	    continue;
+	}
 
         if (originalTrack.index() >= originalTrack2.index())
           continue;
@@ -832,7 +837,7 @@ struct kstarInJets {
       }   // check for rapidity
     }     // loop over particles
   }       // process switch
-  PROCESS_SWITCH(phiInJets, processSim, "pikp particle level MC", true);
+  PROCESS_SWITCH(kstarInJets, processSim, "pikp particle level MC", true);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1043,9 +1048,9 @@ struct kstarInJets {
           continue; // Not K+K-
         if (trackSelection(trk1) && trackSelection(trk2)) {
           if (cfgSimPID) {
-            if (!trackPID(trk1))
+            if (!trackPIDKaon(trk1))
               continue;
-            if (!trackPID(trk2))
+            if (!trackPIDPion(trk2))
               continue;
           }
           if (track1.has_mcParticle() && track2.has_mcParticle()) {
