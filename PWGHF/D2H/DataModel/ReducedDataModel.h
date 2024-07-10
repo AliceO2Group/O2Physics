@@ -494,11 +494,11 @@ DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float); //! TOF Nsigma for pion hyp
 DECLARE_SOA_COLUMN(NSigmaTofKa, nSigmaTofKa, float); //! TOF Nsigma for kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTofPr, nSigmaTofPr, float); //! TOF Nsigma for proton hypothesis
 DECLARE_SOA_COLUMN(HasTof, hasTof, bool);            //! flag for presence of TOF
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,           //!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                   //!
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
-DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,           //!
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //!
                            [](float px, float py) -> float { return RecoDecay::phi(px, py); });
-DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,           //!
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
                            [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array<float, 3>{px, py, pz}); });
 
 } // namespace hf_reso_track
