@@ -26,12 +26,6 @@ import os
 import pickle
 import sys
 
-import matplotlib.pyplot as plt  # pylint: disable=import-error
-import numpy as np  # pylint: disable=import-error
-import pandas as pd  # pylint: disable=import-error
-import xgboost as xgb  # pylint: disable=import-error
-import yaml  # pylint: disable=import-error
-
 # pylint: disable=import-error
 try:
     from hipe4ml import plot_utils
@@ -40,6 +34,12 @@ try:
     from sklearn.model_selection import train_test_split
 except ModuleNotFoundError:
     print("Module 'hipe4ml' is not installed. Please install it to run this macro")
+
+import matplotlib.pyplot as plt  # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
+import xgboost as xgb  # pylint: disable=import-error
+import yaml  # pylint: disable=import-error
 
 try:
     from hipe4ml_converter.h4ml_converter import H4MLConverter
