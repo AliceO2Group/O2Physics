@@ -59,7 +59,8 @@ static constexpr int trkCutIdxPassedITSPartial = 18;
 static constexpr int trkCutIdxPassedTPCPartial = 19;
 static constexpr int trkCutIdxPassedTOFPartial = 20;
 static constexpr int trkCutIdxPassedGlobal = 21;
-static constexpr int trkCutIdxN = 22;
+static constexpr int trkCutSameColl = 22;
+static constexpr int trkCutIdxN = 23;
 
 // Particle information
 static constexpr int nSpecies = o2::track::PID::NIDs; // One per PDG
@@ -67,8 +68,8 @@ static constexpr int nCharges = 2;
 static constexpr int nParticles = nSpecies * nCharges;
 static constexpr const char* particleTitle[nParticles] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha",
                                                           "e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
-static constexpr int PDGs[nParticles] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040,
-                                         -kElectron, -kMuonMinus, -kPiPlus, -kKPlus, -kProton, -1000010020, -1000010030, -1000020030, -1000020040};
+static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040,
+                                         -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
 // Histograms
 
@@ -105,6 +106,12 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcMat;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcMat;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofMat;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedMat;
+
+// Pt for tertiaries from secondary weak decay
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTer;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcTer;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofTer;
+std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedTer;
 
 // P
 std::array<std::shared_ptr<TH1>, nParticles> hPItsTpc;
@@ -149,6 +156,7 @@ std::array<std::shared_ptr<TH2>, nParticles> hPtEtaGenerated;
 
 struct QaEfficiency {
   // Track/particle selection
+  Configurable<bool> numSameCollision{"numSameCollision", false, "Flag to ask that the numerator is in the same collision as the denominator"};
   Configurable<bool> noFakesHits{"noFakesHits", false, "Flag to reject tracks that have fake hits"};
   Configurable<bool> skipEventsWithoutTPCTracks{"skipEventsWithoutTPCTracks", false, "Flag to reject events that have no tracks reconstructed in the TPC"};
   Configurable<float> maxProdRadius{"maxProdRadius", 9999.f, "Maximum production radius of the particle under study"};
@@ -214,6 +222,11 @@ struct QaEfficiency {
   // Output objects for TEfficiency
   OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
   OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
+
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
+  using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -317,6 +330,12 @@ struct QaEfficiency {
     hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
+
+    // Ter
+    hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtTrkItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from secondary weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcTofTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtGeneratedTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/generated", PDGs[histogramIndex]), "Generated (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
 
     // Mat
     hPtItsTpcMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from material)" + tagPt, kTH1D, {axisPt});
@@ -430,16 +449,18 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPt_Prm_Trk", hPtTrkItsTpcPrm[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPt_Prm", hPtItsTpcTofPrm[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", hPtTrkItsTpcTofPrm[histogramIndex]);
-
     makeEfficiency("ITS-TPC_vsPt_Prm_RecoEv", hPtItsTpcPrm[histogramIndex]);
 
     makeEfficiency("ITS-TPC_vsPt_Str", hPtItsTpcStr[histogramIndex]);
     makeEfficiency("ITS-TPC_vsPt_Str_Trk", hPtTrkItsTpcStr[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPt_Str", hPtItsTpcTofStr[histogramIndex]);
-
     makeEfficiency("ITS-TPC_vsPt_Mat", hPtItsTpcMat[histogramIndex]);
     makeEfficiency("ITS-TPC_vsPt_Mat_Trk", hPtTrkItsTpcMat[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPt_Mat", hPtItsTpcTofMat[histogramIndex]);
+
+    makeEfficiency("ITS-TPC_vsPt_Ter", hPtItsTpcTer[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Ter_Trk", hPtTrkItsTpcTer[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPt_Ter", hPtItsTpcTofTer[histogramIndex]);
 
     makeEfficiency("ITS-TPC_vsP", hPItsTpc[histogramIndex]);
     makeEfficiency("ITS-TPC_vsP_Trk", hPTrkItsTpc[histogramIndex]);
@@ -537,6 +558,7 @@ struct QaEfficiency {
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
+    h->GetXaxis()->SetBinLabel(trkCutSameColl, "passedSameColl");
 
     for (int i = 0; i < nSpecies; i++) {
       h->GetXaxis()->SetBinLabel(trkCutIdxN + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
@@ -883,18 +905,13 @@ struct QaEfficiency {
     }
   }
 
-  template <int pdgSign, o2::track::PID::ID id>
-  bool isPdgSelected(const o2::aod::McParticles::iterator& mcParticle)
+  template <int pdgSign, o2::track::PID::ID id, typename particleType>
+  bool isPdgSelected(const particleType& mcParticle)
   {
     static_assert(pdgSign == 0 || pdgSign == 1);
     static_assert(id > 0 || id < nSpecies);
-
-    // Selecting a specific PDG
-    if constexpr (pdgSign == 0) {
-      return mcParticle.pdgCode() == PDGs[id];
-    } else {
-      return mcParticle.pdgCode() == -PDGs[id];
-    }
+    constexpr int index = id + pdgSign * nSpecies;
+    return mcParticle.pdgCode() == PDGs[index];
   }
 
   bool isPhysicalPrimary(const o2::aod::McParticles::iterator& mcParticle)
@@ -906,9 +923,33 @@ struct QaEfficiency {
     }
     return mcParticle.isPhysicalPrimary();
   }
+  bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
+  {
+    // Example conditions to determine if a particle is final (tertiary)
+    // Here, we assume that final state particles are those not originating from primary vertex
+    // and not further decaying into other particles
+    // Check if the particle has no daughters
+    if (!mcParticle.has_daughters()) {
 
-  template <int pdgSign, o2::track::PID::ID id, typename trackType>
-  void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
+      // Check if the particle is not a primary particle
+      if (!mcParticle.isPhysicalPrimary()) {
+        // Check if the particle is produced in a secondary decay
+        if (mcParticle.getProcess() == 4) {
+          // Get the mother particle's index and the mother particle itself
+          auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+          for (const auto& mother : mothers) {
+            // Check if the mother particle is not primary and produced in a weak decay
+            if (!mother.isPhysicalPrimary() && mother.getProcess() == 4) {
+              return true; // Consider it as a tertiary particle
+            }
+          }
+        }
+      }
+    }
+    return false; // Otherwise, not considered a tertiary particle
+  }
+  template <int pdgSign, o2::track::PID::ID id>
+  void fillMCTrackHistograms(const TrackCandidatesMC::iterator& track, const bool doMakeHistograms)
   {
     static_assert(pdgSign == 0 || pdgSign == 1);
     if (!doMakeHistograms) {
@@ -924,10 +965,19 @@ struct QaEfficiency {
         return;
       }
     }
-
     constexpr int histogramIndex = id + pdgSign * nSpecies;
     LOG(debug) << "fillMCTrackHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
     const o2::aod::McParticles::iterator& mcParticle = track.mcParticle();
+    const CollisionCandidatesMC::iterator& collision = track.collision_as<CollisionCandidatesMC>();
+    if (numSameCollision) {
+      if (!collision.has_mcCollision()) {
+        return;
+      }
+      if (mcParticle.mcCollision().globalIndex() != collision.mcCollision().globalIndex()) {
+        return;
+      }
+    }
+    histos.fill(HIST("MC/trackSelection"), trkCutSameColl);
 
     if (!isPdgSelected<pdgSign, id>(mcParticle)) { // Selecting PDG code
       return;
@@ -1023,6 +1073,15 @@ struct QaEfficiency {
           hPtItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt());
         }
       }
+      if (isFinal(mcParticle)) {
+        if (passedITS && passedTPC && motherIsAccepted) {
+          hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
+          hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
+          if (passedTOF) {
+            hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
+          }
+        }
+      }
     } else { // Material
       if (passedITS && passedTPC) {
         hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
@@ -1094,12 +1153,14 @@ struct QaEfficiency {
         }
         if (motherIsAccepted) {
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
+          if (isFinal(mcParticle)) {
+            hPtGeneratedTer[histogramIndex]->Fill(mcParticle.pt());
+          }
         }
       } else { // Material
         hPtGeneratedMat[histogramIndex]->Fill(mcParticle.pt());
       }
     }
-
     hEtaGenerated[histogramIndex]->Fill(mcParticle.eta());
     hYGenerated[histogramIndex]->Fill(mcParticle.y());
     hPhiGenerated[histogramIndex]->Fill(mcParticle.phi());
@@ -1178,6 +1239,10 @@ struct QaEfficiency {
     doFillEfficiency("ITS-TPC_vsPt_Mat_Trk", hPtTrkItsTpcMat[histogramIndex], hPtGeneratedMat[histogramIndex]);
     doFillEfficiency("ITS-TPC-TOF_vsPt_Mat", hPtItsTpcTofMat[histogramIndex], hPtGeneratedMat[histogramIndex]);
 
+    doFillEfficiency("ITS-TPC_vsPt_Ter", hPtItsTpcTer[histogramIndex], hPtGeneratedTer[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPt_Ter_Trk", hPtTrkItsTpcTer[histogramIndex], hPtGeneratedTer[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Ter", hPtItsTpcTofTer[histogramIndex], hPtGeneratedTer[histogramIndex]);
+
     doFillEfficiency("ITS-TPC_vsP", hPItsTpc[histogramIndex], hPGenerated[histogramIndex]);
     doFillEfficiency("ITS-TPC_vsP_Trk", hPTrkItsTpc[histogramIndex], hPGenerated[histogramIndex]);
     doFillEfficiency("ITS-TPC-TOF_vsP", hPItsTpcTof[histogramIndex], hPGenerated[histogramIndex]);
@@ -1250,11 +1315,7 @@ struct QaEfficiency {
   }
 
   // Global process
-  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
-  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision)
-  {
-    isCollisionSelected<true>(collision);
-  }
+  void process(CollisionCandidates::iterator const& collision) { isCollisionSelected<true>(collision); }
 
   // Function to apply particle selection
   template <bool isMC = true, bool doFillHisto = true, typename particleType, typename histoType = int>
@@ -1486,11 +1547,11 @@ struct QaEfficiency {
   SliceCache cache;
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
-  PresliceUnsorted<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<CollisionCandidatesMC> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
   void processMC(o2::aod::McCollisions const& mcCollisions,
-                 // o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
-                 o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels> const& collisions,
-                 o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
+                 // o2::soa::SmallGroups<CollisionCandidatesMC> const& collisions,
+                 CollisionCandidatesMC const& collisions,
+                 TrackCandidatesMC const& tracks,
                  o2::aod::McParticles const& mcParticles)
   {
 
@@ -1664,8 +1725,10 @@ struct QaEfficiency {
   //  - considering also MC collisions without any reco. collision
   //  - considering also tracks not associated to any collision
   //  - ignoring the track-to-collision association
-  void processMCWithoutCollisions(o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks, o2::aod::Collisions const&,
-                                  o2::aod::McParticles const& mcParticles, o2::aod::McCollisions const&)
+  void processMCWithoutCollisions(TrackCandidatesMC const& tracks,
+                                  o2::aod::Collisions const&,
+                                  o2::aod::McParticles const& mcParticles,
+                                  o2::aod::McCollisions const&)
   {
     // Track loop
     for (const auto& track : tracks) {
@@ -1751,7 +1814,7 @@ struct QaEfficiency {
   }
   PROCESS_SWITCH(QaEfficiency, processMCWithoutCollisions, "process MC without the collision association", false);
 
-  void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
+  void processData(CollisionCandidates::iterator const& collision,
                    TrackCandidates const& tracks)
   {
 
@@ -1842,7 +1905,7 @@ struct QaEfficiency {
   }
   PROCESS_SWITCH(QaEfficiency, processData, "process data", true);
 
-  void processDataWithPID(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
+  void processDataWithPID(CollisionCandidates::iterator const& collision,
                           o2::soa::Join<TrackCandidates, o2::aod::pidTPCLfFullDe> const& tracks)
   {
 
@@ -1935,8 +1998,7 @@ struct QaEfficiency {
   }
   PROCESS_SWITCH(QaEfficiency, processDataWithPID, "process data with PID", false);
 
-  void processHmpid(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-                    TrackCandidates const&,
+  void processHmpid(CollisionCandidates::iterator const& collision, TrackCandidates const&,
                     o2::aod::HMPIDs const& hmpids)
   {
 

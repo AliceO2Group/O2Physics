@@ -10,11 +10,11 @@
 // or submit itself to any jurisdiction.
 
 //
-// Class for em photon event selection
+// Class for em event selection
 //
 
-#ifndef PWGEM_PHOTONMESON_CORE_EMEVENTCUT_H_
-#define PWGEM_PHOTONMESON_CORE_EMEVENTCUT_H_
+#ifndef PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
+#define PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
 
 #include "TNamed.h"
 #include "Common/CCDB/EventSelectionParams.h"
@@ -144,4 +144,4 @@ class EMEventCut : public TNamed
   ClassDef(EMEventCut, 1);
 };
 
-#endif // PWGEM_PHOTONMESON_CORE_EMEVENTCUT_H_
+#endif // PWGEM_DILEPTON_CORE_EMEVENTCUT_H_

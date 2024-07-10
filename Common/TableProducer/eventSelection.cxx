@@ -640,9 +640,7 @@ struct EventSelectionTask {
       int nITSTPCtracks = 0;
       int nTOFtracks = 0;
       int nTRDtracks = 0;
-      int nTRDnotTOFtracks = 0;
       double timeFromTOFtracks = 0;
-      double timeFromTRDtracks = 0;
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       for (auto& track : tracksGrouped) {
         if (!track.isPVContributor()) {
@@ -651,22 +649,17 @@ struct EventSelectionTask {
         nITSTPCtracks += track.hasITS() && track.hasTPC();
         nTOFtracks += track.hasTOF();
         nTRDtracks += track.hasTRD();
-        nTRDnotTOFtracks += track.hasTRD() && !track.hasTOF();
-        // calculate average time using TOF and TRD tracks
+        // calculate average time using TOF tracks
         if (track.hasTOF()) {
           timeFromTOFtracks += track.trackTime();
-        } else if (track.hasTRD()) {
-          timeFromTRDtracks += track.trackTime();
         }
+
         if (track.itsNCls() >= 5)
           nITS567cls++;
       }
-      LOGP(debug, "nContrib={} nITSTPCtracks={} nTOFtracks={} nTRDtracks={} nTRDnotTOFtracks={}", col.numContrib(), nITSTPCtracks, nTOFtracks, nTRDtracks, nTRDnotTOFtracks);
+      LOGP(debug, "nContrib={} nITSTPCtracks={} nTOFtracks={} nTRDtracks={}", col.numContrib(), nITSTPCtracks, nTOFtracks, nTRDtracks);
 
-      if (nTRDnotTOFtracks > 0) {
-        meanBC += TMath::Nint(timeFromTRDtracks / nTRDnotTOFtracks / bcNS); // assign collision bc using TRD-matched tracks
-        deltaBC = 0;                                                        // use precise bc from TRD-matched tracks
-      } else if (nTOFtracks > 0) {
+      if (nTOFtracks > 0) {
         meanBC += TMath::FloorNint(timeFromTOFtracks / nTOFtracks / bcNS); // assign collision bc using TOF-matched tracks
         deltaBC = 4;                                                       // use precise bc from TOF tracks with +/-4 bc margin
       } else if (nITSTPCtracks > 0) {
@@ -819,8 +812,12 @@ struct EventSelectionTask {
       bool decisions[4];
       for (int iCut = 0; iCut < 4; iCut++) {
         decisions[iCut] = true;
-        for (int iTime = 0; iTime < nTimeIntervals; iTime++)
-          decisions[iCut] *= (nITS567tracksInTimeBins[iTime] < coeffOccupInTimeBins[iCut] * confReferenceOccupanciesInTimeBins->at(iTime));
+        for (int iTime = 0; iTime < nTimeIntervals; iTime++) {
+          if (nITS567tracksInTimeBins[iTime] >= coeffOccupInTimeBins[iCut] * confReferenceOccupanciesInTimeBins->at(iTime)) {
+            decisions[iCut] = false;
+            break;
+          }
+        }
       }
       vNoOccupStrictCuts[colIndex] = decisions[0];
       vNoOccupMediumCuts[colIndex] = decisions[1];
