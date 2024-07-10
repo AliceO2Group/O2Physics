@@ -48,6 +48,7 @@ DECLARE_SOA_COLUMN(PProng2, pProng2, float);
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float);
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(MassKPi, massKPi, float); // invariant mass of the candidate Kpi daughters
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -82,6 +83,7 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+DECLARE_SOA_COLUMN(Channel, channel, int8_t); // direct or resonant
 // Events
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -144,7 +146,9 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   full::Y,
                   full::FlagMc,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped);
+                  full::IsCandidateSwapped,
+                  full::Channel,
+                  full::MassKPi);
 
 DECLARE_SOA_TABLE(HfCollIdLCLite, "AOD", "HFCOLLIDLCLITE",
                   full::CollisionId);
@@ -219,7 +223,9 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::FlagMc,
                   full::OriginMcRec,
                   full::IsCandidateSwapped,
-                  full::CandidateId);
+                  full::CandidateId,
+                  full::Channel,
+                  full::MassKPi);
 
 DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   full::CollisionId,
@@ -271,18 +277,42 @@ struct HfTreeCreatorLcToPKPi {
 
   void init(InitContext const&)
   {
+    std::array<bool, 4> processes = {doprocessDataNoCentrality, doprocessDataWithCentrality, doprocessMcNoCentrality, doprocessMcWithCentrality};
+    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process function must be enabled at a time.");
+    }
   }
 
-  void processMc(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
-                 aod::McCollisions const&,
-                 soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                 TracksWPid const&, aod::BCs const&)
+  /// \brief core function to fill tables in MC
+  /// \param collisions Collision table
+  /// \param mcCollisions MC collision table
+  /// \param candidates Lc->pKpi candidate table
+  /// \param particles Generated particle table
+  template <bool useCentrality, typename Colls>
+  void fillTablesMc(Colls const& collisions,
+                    aod::McCollisions const&,
+                    soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                    TracksWPid const&, aod::BCs const&)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
+
+      float centFT0A = -1.f;
+      float centFT0C = -1.f;
+      float centFT0M = -1.f;
+      float centFV0A = -1.f;
+      float centFDDM = -1.f;
+      if constexpr (useCentrality) {
+        centFT0A = collision.centFT0A();
+        centFT0C = collision.centFT0C();
+        centFT0M = collision.centFT0M();
+        centFV0A = collision.centFV0A();
+        centFDDM = collision.centFDDM();
+      }
+
       rowCandidateFullEvents(
         collision.globalIndex(),
         collision.mcCollisionId(),
@@ -292,11 +322,11 @@ struct HfTreeCreatorLcToPKPi {
         collision.posZ(),
         0,
         collision.bc().runNumber(),
-        collision.centFT0A(),
-        collision.centFT0C(),
-        collision.centFT0M(),
-        collision.centFV0A(),
-        collision.centFDDM(),
+        centFT0A,
+        centFT0C,
+        centFT0M,
+        centFV0A,
+        centFDDM,
         collision.multZeqNTracksPV());
     }
 
@@ -320,7 +350,8 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
-                           float FunctionE) {
+                           float FunctionE,
+                           float FunctionInvMassKPi) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           if (fillCandidateLiteTable) {
@@ -374,7 +405,9 @@ struct HfTreeCreatorLcToPKPi {
               FunctionY,
               candidate.flagMcMatchRec(),
               candidate.originMcRec(),
-              candidate.isCandidateSwapped());
+              candidate.isCandidateSwapped(),
+              candidate.flagMcDecayChanRec(),
+              FunctionInvMassKPi);
             // candidate.globalIndex());
 
             if (fillCollIdTable) {
@@ -453,13 +486,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.flagMcMatchRec(),
               candidate.originMcRec(),
               candidate.isCandidateSwapped(),
-              candidate.globalIndex());
+              candidate.globalIndex(),
+              candidate.flagMcDecayChanRec(),
+              FunctionInvMassKPi);
           }
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
+      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPKPi(candidate));
+      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPiKP(candidate));
     }
 
     // Filling particle properties
@@ -478,16 +513,66 @@ struct HfTreeCreatorLcToPKPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMc, "Process MC tree writer", true);
 
-  void processData(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
-                   soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
-                   TracksWPid const&, aod::BCs const&)
+  /// \brief process function for MC w/o centrality
+  /// \param collisions Collision table w/o join of the centrality table
+  /// \param mcCollisions MC collision table
+  /// \param candidates Lc->pKpi candidate table
+  /// \param particles Generated particle table
+  /// \param tracks Track table
+  /// \param bcs Bunch-crossing table
+  void processMcNoCentrality(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs> const& collisions,
+                             aod::McCollisions const& mcCollisions,
+                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                             soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                             TracksWPid const& tracks, aod::BCs const& bcs)
+  {
+    fillTablesMc<false>(collisions, mcCollisions, candidates, particles, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMcNoCentrality, "Process MC tree writer w/o centrality", false);
+
+  /// \brief process function for MC with centrality
+  /// \param collisions Collision table with join of the centrality table
+  /// \param mcCollisions MC collision table
+  /// \param candidates Lc->pKpi candidate table
+  /// \param tracks Track table
+  /// \param bcs Bunch-crossing table
+  void processMcWithCentrality(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
+                               aod::McCollisions const& mcCollisions,
+                               soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                               TracksWPid const& tracks, aod::BCs const& bcs)
+  {
+    fillTablesMc<true>(collisions, mcCollisions, candidates, particles, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMcWithCentrality, "Process MC tree writer with centrality", false);
+
+  /// \brief core function to fill tables in data
+  /// \param collisions Collision table
+  /// \param candidates Lc->pKpi candidate table
+  template <bool useCentrality, typename Colls>
+  void fillTablesData(Colls const& collisions,
+                      soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                      TracksWPid const&, aod::BCs const&)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
+
+      float centFT0A = -1.f;
+      float centFT0C = -1.f;
+      float centFT0M = -1.f;
+      float centFV0A = -1.f;
+      float centFDDM = -1.f;
+      if constexpr (useCentrality) {
+        centFT0A = collision.centFT0A();
+        centFT0C = collision.centFT0C();
+        centFT0M = collision.centFT0M();
+        centFV0A = collision.centFV0A();
+        centFDDM = collision.centFDDM();
+      }
+
       rowCandidateFullEvents(
         collision.globalIndex(),
         -1,
@@ -497,11 +582,11 @@ struct HfTreeCreatorLcToPKPi {
         collision.posZ(),
         0,
         collision.bc().runNumber(),
-        collision.centFT0A(),
-        collision.centFT0C(),
-        collision.centFT0M(),
-        collision.centFV0A(),
-        collision.centFDDM(),
+        centFT0A,
+        centFT0C,
+        centFT0M,
+        centFV0A,
+        centFDDM,
         collision.multZeqNTracksPV());
     }
 
@@ -524,7 +609,8 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
-                           float FunctionE) {
+                           float FunctionE,
+                           float FunctionInvMassKPi) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         if (FunctionSelection >= 1 && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
@@ -578,7 +664,9 @@ struct HfTreeCreatorLcToPKPi {
               FunctionY,
               0.,
               0.,
-              0.);
+              0.,
+              -1,
+              FunctionInvMassKPi);
             // candidate.globalIndex());
 
             if (fillCollIdTable) {
@@ -657,16 +745,43 @@ struct HfTreeCreatorLcToPKPi {
               0.,
               0.,
               0.,
-              candidate.globalIndex());
+              candidate.globalIndex(),
+              -1,
+              FunctionInvMassKPi);
           }
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate));
+      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPKPi(candidate));
+      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPiKP(candidate));
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processData, "Process data tree writer", false);
+
+  /// \brief process function for data w/o centrality
+  /// \param collisions Collision table w/o join of the centrality table
+  /// \param candidates Lc->pKpi candidate table
+  /// \param tracks Track table
+  /// \param bcs Bunch-crossing table
+  void processDataNoCentrality(soa::Join<aod::Collisions, aod::PVMultZeqs> const& collisions,
+                               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                               TracksWPid const& tracks, aod::BCs const& bcs)
+  {
+    fillTablesData<false>(collisions, candidates, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processDataNoCentrality, "Process data tree writer w/o centrality", false);
+
+  /// \brief process function for data with centrality
+  /// \param collisions Collision table with join of the centrality table
+  /// \param candidates Lc->pKpi candidate table
+  /// \param tracks Track table
+  /// \param bcs Bunch-crossing table
+  void processDataWithCentrality(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
+                                 soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                                 TracksWPid const& tracks, aod::BCs const& bcs)
+  {
+    fillTablesData<true>(collisions, candidates, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processDataWithCentrality, "Process data tree writer with centrality", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -37,6 +37,7 @@ struct UpcCandProducer {
 
   Produces<o2::aod::UDFwdTracks> udFwdTracks;
   Produces<o2::aod::UDFwdTracksExtra> udFwdTracksExtra;
+  Produces<o2::aod::UDFwdIndices> udFwdIndices;
   Produces<o2::aod::UDFwdTracksCls> udFwdTrkClusters;
   Produces<o2::aod::UDMcFwdTrackLabels> udFwdTrackLabels;
 
@@ -367,9 +368,13 @@ struct UpcCandProducer {
         mchmidChi2 = -999.;                                                                                                     // no MID match
       }
       double mchmftChi2 = track.chi2MatchMCHMFT();
+      int64_t globalIndex = track.globalIndex();
+      int64_t mchIndex = track.matchMCHTrackId();
+      int64_t mftIndex = track.matchMFTTrackId();
       udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
-      udFwdTracksExtra(track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2, mchmftChi2,
+      udFwdTracksExtra(track.trackType(), track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2, mchmftChi2,
                        track.mchBitMap(), track.midBitMap(), track.midBoards());
+      udFwdIndices(candID, globalIndex, mchIndex, mftIndex);
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trackID);
@@ -1000,7 +1005,7 @@ struct UpcCandProducer {
   void createCandidatesSemiFwd(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
                                ForwardTracks const& fwdTracks,
-                               o2::aod::FwdTrkCls const& fwdTrkClusters,
+                               o2::aod::FwdTrkCls const& /*fwdTrkClusters*/,
                                o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                                BCsWithBcSels const& bcs,
                                o2::aod::Collisions const& collisions,
@@ -1402,7 +1407,7 @@ struct UpcCandProducer {
   }
 
   void createCandidatesFwdGlobal(ForwardTracks const& fwdTracks,
-                                 o2::aod::FwdTrkCls const& fwdTrkClusters,
+                                 o2::aod::FwdTrkCls const& /*fwdTrkClusters*/,
                                  o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                                  o2::aod::BCs const& bcs,
                                  o2::aod::Collisions const& collisions,

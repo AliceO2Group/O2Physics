@@ -173,9 +173,6 @@ struct antidLambdaEbye {
   float d_bz;
   // o2::base::MatLayerCylSet* lut = nullptr;
 
-  Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 2, 6, particleNamesBB, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
-
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis subsampleAxis{"subsampleAxis", {30, 0, 30}, "binning of the subsample axis"};
   ConfigurableAxis deltaEtaAxis{"deltaEtaAxis", {4, 0, 0.8}, "binning of the delta eta axis"};
@@ -205,65 +202,69 @@ struct antidLambdaEbye {
   ConfigurableAxis tofAxis{"tofAxis", {1.e3, 0.f, 1.f}, "tof signal axis binning"};
   ConfigurableAxis tpcClsAxis{"tpcClsAxis", {160, 0.f, 160.f}, "tpc n clusters binning"};
 
-  Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
-  Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
-  Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
+  struct : ConfigurableGroup {
+    Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
+    Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 2, 6, particleNamesBB, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
+    Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
+    Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
+    Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
 
-  Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
+    Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
 
-  Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
-  Configurable<bool> kUseTPCPileUpCut{"kUseTPCPileUpCut", false, "toggle strong correlation cuts (Run 2)"};
-  Configurable<bool> kUseEstimatorsCorrelationCut{"kUseEstimatorsCorrelationCut", false, "toggle cut on the correlation between centrality estimators (2018 Pb-Pb)"};
+    Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
+    Configurable<bool> kUseTPCPileUpCut{"kUseTPCPileUpCut", false, "toggle strong correlation cuts (Run 2)"};
+    Configurable<bool> kUseEstimatorsCorrelationCut{"kUseEstimatorsCorrelationCut", false, "toggle cut on the correlation between centrality estimators (2018 Pb-Pb)"};
 
-  Configurable<float> antidPtMin{"antidPtMin", 0.8f, "minimum antideuteron pT (GeV/c)"};
-  Configurable<float> antidPtTof{"antidPtTof", 1.0f, "antideuteron pT to switch to TOF pid (GeV/c) "};
-  Configurable<float> antidPtMax{"antidPtMax", 1.8f, "maximum antideuteron pT (GeV/c)"};
+    Configurable<float> antidPtMin{"antidPtMin", 0.8f, "minimum antideuteron pT (GeV/c)"};
+    Configurable<float> antidPtTof{"antidPtTof", 1.0f, "antideuteron pT to switch to TOF pid (GeV/c) "};
+    Configurable<float> antidPtMax{"antidPtMax", 1.8f, "maximum antideuteron pT (GeV/c)"};
 
-  Configurable<float> antipPtMin{"antipPtMin", 0.4f, "minimum antiproton pT (GeV/c)"};
-  Configurable<float> antipPtTof{"antipPtTof", 0.6f, "antiproton pT to switch to TOF pid (GeV/c) "};
-  Configurable<float> antipPtMax{"antipPtMax", 0.9f, "maximum antiproton pT (GeV/c)"};
+    Configurable<float> antipPtMin{"antipPtMin", 0.4f, "minimum antiproton pT (GeV/c)"};
+    Configurable<float> antipPtTof{"antipPtTof", 0.6f, "antiproton pT to switch to TOF pid (GeV/c) "};
+    Configurable<float> antipPtMax{"antipPtMax", 0.9f, "maximum antiproton pT (GeV/c)"};
 
-  Configurable<float> lambdaPtMin{"lambdaPtMin", 0.5f, "minimum (anti)lambda pT (GeV/c)"};
-  Configurable<float> lambdaPtMax{"lambdaPtMax", 3.0f, "maximum (anti)lambda pT (GeV/c)"};
+    Configurable<float> lambdaPtMin{"lambdaPtMin", 0.5f, "minimum (anti)lambda pT (GeV/c)"};
+    Configurable<float> lambdaPtMax{"lambdaPtMax", 3.0f, "maximum (anti)lambda pT (GeV/c)"};
 
-  Configurable<float> trackNcrossedRows{"trackNcrossedRows", 70, "Minimum number of crossed TPC rows"};
-  Configurable<float> trackNclusItsCut{"trackNclusITScut", 5, "Minimum number of ITS clusters"};
-  Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 70, "Minimum number of TPC clusters"};
-  Configurable<float> trackDcaCut{"trackDcaCut", 0.1f, "DCA antid to PV"};
+    Configurable<float> trackNcrossedRows{"trackNcrossedRows", 70, "Minimum number of crossed TPC rows"};
+    Configurable<float> trackNclusItsCut{"trackNclusITScut", 5, "Minimum number of ITS clusters"};
+    Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 70, "Minimum number of TPC clusters"};
+    Configurable<float> trackDcaCut{"trackDcaCut", 0.1f, "DCA antid to PV"};
 
-  Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 70, "Minimum number of crossed TPC rows for V0 daughter"};
-  Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 1, "Minimum number of ITS clusters for V0 daughter"};
-  Configurable<float> v0trackNclusTpcCut{"v0trackNclusTPCcut", 70, "Minimum number of TPC clusters for V0 daughter"};
-  Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 10, "Maximum number of shared TPC clusters for V0 daughter"};
-  Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
-  Configurable<float> vetoMassK0Short{"vetoMassK0Short", -999.f, "veto for V0 compatible with K0s mass"};
-  Configurable<float> v0radiusMax{"v0radiusMax", 100.f, "maximum V0 radius eccepted"};
+    Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 70, "Minimum number of crossed TPC rows for V0 daughter"};
+    Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 1, "Minimum number of ITS clusters for V0 daughter"};
+    Configurable<float> v0trackNclusTpcCut{"v0trackNclusTPCcut", 70, "Minimum number of TPC clusters for V0 daughter"};
+    Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 10, "Maximum number of shared TPC clusters for V0 daughter"};
+    Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
+    Configurable<float> vetoMassK0Short{"vetoMassK0Short", -999.f, "veto for V0 compatible with K0s mass"};
+    Configurable<float> v0radiusMax{"v0radiusMax", 100.f, "maximum V0 radius eccepted"};
 
-  Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
-  Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
-  Configurable<float> antidNsigmaTofCut{"antidNsigmaTofCut", 4.f, "TOF PID cut"};
-  Configurable<float> antidTpcInnerParamMax{"tpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
-  Configurable<float> antidTofMassMax{"tofMassMax", 0.3f, "(temporary) tof mass cut"};
+    Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
+    Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
+    Configurable<float> antidNsigmaTofCut{"antidNsigmaTofCut", 4.f, "TOF PID cut"};
+    Configurable<float> antidTpcInnerParamMax{"tpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
+    Configurable<float> antidTofMassMax{"tofMassMax", 0.3f, "(temporary) tof mass cut"};
 
-  Configurable<float> antipNsigmaTpcCutLow{"antipNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
-  Configurable<float> antipNsigmaTpcCutUp{"antipNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
-  Configurable<float> antipNsigmaTofCut{"antipNsigmaTofCut", 4.f, "TOF PID cut"};
-  Configurable<float> antipTpcInnerParamMax{"antipTpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
-  Configurable<float> antipTofMassMax{"antipTofMassMax", 0.3f, "(temporary) tof mass cut"};
-  Configurable<float> tofMassMaxQA{"tofMassMaxQA", 0.6f, "(temporary) tof mass cut (for QA histograms)"};
+    Configurable<float> antipNsigmaTpcCutLow{"antipNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
+    Configurable<float> antipNsigmaTpcCutUp{"antipNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
+    Configurable<float> antipNsigmaTofCut{"antipNsigmaTofCut", 4.f, "TOF PID cut"};
+    Configurable<float> antipTpcInnerParamMax{"antipTpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
+    Configurable<float> antipTofMassMax{"antipTofMassMax", 0.3f, "(temporary) tof mass cut"};
+    Configurable<float> tofMassMaxQA{"tofMassMaxQA", 0.6f, "(temporary) tof mass cut (for QA histograms)"};
 
-  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
-  Configurable<float> v0setting_dcav0pv{"v0setting_dcav0pv", 1, "DCA V0 to Pv"};
-  Configurable<float> v0setting_dcadaughtopv{"v0setting_dcadaughtopv", 0.1f, "DCA Pos To PV"};
-  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
-  Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
-  Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
-  Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
-  Configurable<float> lambdaMassCut{"lambdaMassCut", 0.005f, "maximum deviation from PDG mass"};
-  Configurable<float> lambdaMassCutQA{"lambdaMassCutQA", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
+    Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
+    Configurable<float> v0setting_dcav0pv{"v0setting_dcav0pv", 1, "DCA V0 to Pv"};
+    Configurable<float> v0setting_dcadaughtopv{"v0setting_dcadaughtopv", 0.1f, "DCA Pos To PV"};
+    Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
+    Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
+    Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
+    Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
+    Configurable<float> lambdaMassCut{"lambdaMassCut", 0.005f, "maximum deviation from PDG mass"};
+    Configurable<float> lambdaMassCutQA{"lambdaMassCutQA", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
-  Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 2.f, "cluster size cut for antideuterons"};
-  Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 1.f, "pt for cluster size cut for antideuterons"};
+    Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 2.f, "cluster size cut for antideuterons"};
+    Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 1.f, "pt for cluster size cut for antideuterons"};
+  } config;
 
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
@@ -285,14 +286,14 @@ struct antidLambdaEbye {
   template <class T>
   bool selectV0Daughter(T const& track)
   {
-    if (std::abs(track.eta()) > etaMaxV0dau) {
+    if (std::abs(track.eta()) > config.etaMaxV0dau) {
       return false;
     }
-    if (track.itsNCls() < v0trackNclusItsCut ||
-        track.tpcNClsFound() < v0trackNclusTpcCut ||
-        track.tpcNClsCrossedRows() < v0trackNclusTpcCut ||
+    if (track.itsNCls() < config.v0trackNclusItsCut ||
+        track.tpcNClsFound() < config.v0trackNclusTpcCut ||
+        track.tpcNClsCrossedRows() < config.v0trackNclusTpcCut ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
-        track.tpcNClsShared() > v0trackNsharedClusTpc) {
+        track.tpcNClsShared() > config.v0trackNsharedClusTpc) {
       return false;
     }
     if (doprocessRun2 || doprocessMcRun2) {
@@ -300,7 +301,7 @@ struct antidLambdaEbye {
           !(track.flags() & o2::aod::track::TPCrefit)) {
         return false;
       }
-      if (v0requireITSrefit && !(track.flags() & o2::aod::track::ITSrefit)) {
+      if (config.v0requireITSrefit && !(track.flags() & o2::aod::track::ITSrefit)) {
         return false;
       }
     }
@@ -310,15 +311,15 @@ struct antidLambdaEbye {
   template <class T>
   bool selectTrack(T const& track)
   {
-    if (std::abs(track.eta()) > etaMax) {
+    if (std::abs(track.eta()) > config.etaMax) {
       return false;
     }
     if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
       return false;
     }
-    if (track.itsNCls() < trackNclusItsCut ||
-        track.tpcNClsFound() < trackNclusTpcCut ||
-        track.tpcNClsCrossedRows() < trackNcrossedRows ||
+    if (track.itsNCls() < config.trackNclusItsCut ||
+        track.tpcNClsFound() < config.trackNclusTpcCut ||
+        track.tpcNClsCrossedRows() < config.trackNcrossedRows ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
         track.tpcChi2NCl() > 4.f ||
         track.itsChi2NCl() > 36.f) {
@@ -429,7 +430,7 @@ struct antidLambdaEbye {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
-    int mat{static_cast<int>(cfgMaterialCorrection)};
+    int mat{static_cast<int>(config.cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
     uint32_t randomSeed = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -444,6 +445,8 @@ struct antidLambdaEbye {
     histos.add<TH2>("QA/nRecPerEvAntip", ";Centrality (%);#it{N}_{#bar{p}};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
     histos.add<TH2>("QA/nRecPerEvAntiL", ";Centrality (%);#it{N}_{#bar{#Lambda}};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
     histos.add<TH2>("QA/nRecPerEvL", ";Centrality (%);#it{N}_{#Lambda};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
+    histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| > 0.6; Tracklets |#eta| < 0.6", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
+    histos.add<TH1>("QA/TrklEta", ";Tracklets #eta; Entries", HistType::kTH1D, {{100, -3., 3.}});
 
     nAntid = histos.add<THnSparse>("nAntid", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{d}) (GeV/#it{c});", HistType::kTHnSparseD, {subsampleAxis, centAxis, deltaEtaAxis, ptAntidAxis});
     nAntip = histos.add<THnSparse>("nAntip", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{p}) (GeV/#it{c});", HistType::kTHnSparseD, {subsampleAxis, centAxis, deltaEtaAxis, ptAntipAxis});
@@ -555,15 +558,15 @@ struct antidLambdaEbye {
     tempLambda = tempHistos.add<TH2>("tempLambda", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {deltaEtaAxis, ptLambdaAxis});
     tempAntiLambda = tempHistos.add<TH2>("tempAntiLambda", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {deltaEtaAxis, ptLambdaAxis});
 
-    ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
-    ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
-    ptTof = std::array<float, kNpart>{antipPtTof, antidPtTof};
+    ptMin = std::array<float, kNpart>{config.antipPtMin, config.antidPtMin};
+    ptMax = std::array<float, kNpart>{config.antipPtMax, config.antidPtMax};
+    ptTof = std::array<float, kNpart>{config.antipPtTof, config.antidPtTof};
 
-    nSigmaTpcCutLow = std::array<float, kNpart>{antipNsigmaTpcCutLow, antidNsigmaTpcCutLow};
-    nSigmaTpcCutUp = std::array<float, kNpart>{antipNsigmaTpcCutUp, antidNsigmaTpcCutUp};
-    nSigmaTofCut = std::array<float, kNpart>{antipNsigmaTofCut, antidNsigmaTofCut};
-    tpcInnerParamMax = std::array<float, kNpart>{antipTpcInnerParamMax, antidTpcInnerParamMax};
-    tofMassMax = std::array<float, kNpart>{antipTofMassMax, antidTofMassMax};
+    nSigmaTpcCutLow = std::array<float, kNpart>{config.antipNsigmaTpcCutLow, config.antidNsigmaTpcCutLow};
+    nSigmaTpcCutUp = std::array<float, kNpart>{config.antipNsigmaTpcCutUp, config.antidNsigmaTpcCutUp};
+    nSigmaTofCut = std::array<float, kNpart>{config.antipNsigmaTofCut, config.antidNsigmaTofCut};
+    tpcInnerParamMax = std::array<float, kNpart>{config.antipTpcInnerParamMax, config.antidTpcInnerParamMax};
+    tofMassMax = std::array<float, kNpart>{config.antipTofMassMax, config.antidTofMassMax};
   }
 
   template <class C, class T>
@@ -582,10 +585,16 @@ struct antidLambdaEbye {
     auto subsample = static_cast<int>(rnd * nSubsamples);
 
     gpu::gpustd::array<float, 2> dcaInfo;
+    int nTracklets[2]{0, 0};
     for (const auto& track : tracks) {
 
       histos.fill(HIST("QA/nClsTPCBeforeCut"), track.tpcNClsFound());
       histos.fill(HIST("QA/nCrossedRowsTPCBeforeCut"), track.tpcNClsCrossedRows());
+
+      if (track.trackType() == 255 && std::abs(track.eta()) < 1.2) { // tracklet
+        nTracklets[std::abs(track.eta()) < 0.6]++;
+        histos.fill(HIST("QA/TrklEta"), track.eta());
+      }
 
       if (!selectTrack(track)) {
         continue;
@@ -601,7 +610,7 @@ struct antidLambdaEbye {
       auto trackPt = trackParCov.getPt();
       auto trackEta = trackParCov.getEta();
       histos.fill(HIST("QA/dcaPvBefore"), trackPt, dca);
-      if (dca > trackDcaCut) {
+      if (dca > config.trackDcaCut) {
         continue;
       }
       histos.fill(HIST("QA/dcaPv"), trackPt, dca);
@@ -618,13 +627,13 @@ struct antidLambdaEbye {
 
         if (doprocessRun3 || doprocessMcRun3) {
           float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
-          if (iP && getITSClSize(track) * cosL < antidItsClsSizeCut && trackPt < antidPtItsClsSizeCut) {
+          if (iP && getITSClSize(track) * cosL < config.antidItsClsSizeCut && trackPt < config.antidPtItsClsSizeCut) {
             continue;
           }
         }
 
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / partMass[iP]), cfgBetheBlochParams->get(iP, "p0"), cfgBetheBlochParams->get(iP, "p1"), cfgBetheBlochParams->get(iP, "p2"), cfgBetheBlochParams->get(iP, "p3"), cfgBetheBlochParams->get(iP, "p4"))};
-        double expSigma{expBethe * cfgBetheBlochParams->get(iP, "resolution")};
+        double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / partMass[iP]), config.cfgBetheBlochParams->get(iP, "p0"), config.cfgBetheBlochParams->get(iP, "p1"), config.cfgBetheBlochParams->get(iP, "p2"), config.cfgBetheBlochParams->get(iP, "p3"), config.cfgBetheBlochParams->get(iP, "p4"))};
+        double expSigma{expBethe * config.cfgBetheBlochParams->get(iP, "resolution")};
         auto nSigmaTPC = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
 
         float beta{track.hasTOF() ? track.length() / (track.tofSignal() - track.tofEvTime()) * o2::pid::tof::kCSPEDDInv : -999.f};
@@ -632,7 +641,7 @@ struct antidLambdaEbye {
         float mass{track.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f)};
         bool hasTof = track.hasTOF() && track.tofChi2() < 3;
 
-        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
+        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < config.tofMassMaxQA)) { // for QA histograms
           tpcNsigmaGlo[iP]->Fill(centrality, trackPt, nSigmaTPC);
           if (nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) {
             tofMass[iP]->Fill(centrality, trackPt, mass);
@@ -667,6 +676,7 @@ struct antidLambdaEbye {
         }
       }
     }
+    histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
 
     std::vector<int64_t> trkId;
     for (const auto& v0 : V0s) {
@@ -711,12 +721,12 @@ struct antidLambdaEbye {
       momTotXYZ(momV0, momPos, momNeg);
 
       auto ptV0 = std::hypot(momV0[0], momV0[1]);
-      if (ptV0 < lambdaPtMin || ptV0 > lambdaPtMax) {
+      if (ptV0 < config.lambdaPtMin || ptV0 > config.lambdaPtMax) {
         continue;
       }
 
       auto etaV0 = etaFromMom(momPos, momNeg);
-      if (std::abs(etaV0) > etaMax) {
+      if (std::abs(etaV0) > config.etaMax) {
         continue;
       }
 
@@ -728,25 +738,25 @@ struct antidLambdaEbye {
       auto mK0Short = invMass2Body(momV0, momPos, momNeg, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged);
 
       // pid selections
-      double expBethePos{tpc::BetheBlochAleph(static_cast<double>(posTrack.tpcInnerParam() / massPos), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
-      double expSigmaPos{expBethePos * cfgBetheBlochParams->get("resolution")};
+      double expBethePos{tpc::BetheBlochAleph(static_cast<double>(posTrack.tpcInnerParam() / massPos), config.cfgBetheBlochParams->get("p0"), config.cfgBetheBlochParams->get("p1"), config.cfgBetheBlochParams->get("p2"), config.cfgBetheBlochParams->get("p3"), config.cfgBetheBlochParams->get("p4"))};
+      double expSigmaPos{expBethePos * config.cfgBetheBlochParams->get("resolution")};
       auto nSigmaTPCPos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
-      double expBetheNeg{tpc::BetheBlochAleph(static_cast<double>(negTrack.tpcInnerParam() / massNeg), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
-      double expSigmaNeg{expBetheNeg * cfgBetheBlochParams->get("resolution")};
+      double expBetheNeg{tpc::BetheBlochAleph(static_cast<double>(negTrack.tpcInnerParam() / massNeg), config.cfgBetheBlochParams->get("p0"), config.cfgBetheBlochParams->get("p1"), config.cfgBetheBlochParams->get("p2"), config.cfgBetheBlochParams->get("p3"), config.cfgBetheBlochParams->get("p4"))};
+      double expSigmaNeg{expBetheNeg * config.cfgBetheBlochParams->get("resolution")};
       auto nSigmaTPCNeg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
-      if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
+      if (std::abs(nSigmaTPCPos) > config.v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > config.v0setting_nsigmatpc) {
         continue;
       }
 
       // veto on K0s mass
-      if (std::abs(mK0Short - o2::constants::physics::MassK0Short) < vetoMassK0Short) {
+      if (std::abs(mK0Short - o2::constants::physics::MassK0Short) < config.vetoMassK0Short) {
         continue;
       }
 
       float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
       histos.fill(HIST("QA/dcaV0daughBeforeCut"), dcaV0dau);
-      if (dcaV0dau > v0setting_dcav0dau) {
+      if (dcaV0dau > config.v0setting_dcav0dau) {
         continue;
       }
 
@@ -755,7 +765,7 @@ struct antidLambdaEbye {
 
       float radiusV0 = std::hypot(vtx[0], vtx[1]);
       histos.fill(HIST("QA/radiusBeforeCut"), radiusV0);
-      if (radiusV0 < v0setting_radius || radiusV0 > v0radiusMax) {
+      if (radiusV0 < config.v0setting_radius || radiusV0 > config.v0radiusMax) {
         continue;
       }
 
@@ -766,41 +776,41 @@ struct antidLambdaEbye {
         momPos[2] + momNeg[2],
         collision.posX(), collision.posY(), collision.posZ());
       histos.fill(HIST("QA/dcaV0PvBeforeCut"), dcaV0Pv);
-      if (std::abs(dcaV0Pv) > v0setting_dcav0pv) {
+      if (std::abs(dcaV0Pv) > config.v0setting_dcav0pv) {
         continue;
       }
 
       double cosPA = RecoDecay::cpa(primVtx, vtx, momV0);
       histos.fill(HIST("QA/cosPaBeforeCut"), cosPA);
-      if (cosPA < v0setting_cospa) {
+      if (cosPA < config.v0setting_cospa) {
         continue;
       }
 
       auto ptotal = RecoDecay::sqrtSumOfSquares(momV0[0], momV0[1], momV0[2]);
       auto lengthTraveled = RecoDecay::sqrtSumOfSquares(vtx[0] - primVtx[0], vtx[1] - primVtx[1], vtx[2] - primVtx[2]);
       float ML2P_Lambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
-      if (ML2P_Lambda > v0setting_lifetime) {
+      if (ML2P_Lambda > config.v0setting_lifetime) {
         continue;
       }
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto posDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (posDcaToPv < v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < v0setting_dcadaughtopv) {
+      if (posDcaToPv < config.v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < config.v0setting_dcadaughtopv) {
         continue;
       }
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto negDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (negDcaToPv < v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < v0setting_dcadaughtopv) {
+      if (negDcaToPv < config.v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < config.v0setting_dcadaughtopv) {
         continue;
       }
 
-      if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCutQA) { // for QA histograms
+      if (std::abs(mLambda - o2::constants::physics::MassLambda0) > config.lambdaMassCutQA) { // for QA histograms
         continue;
       }
       histos.fill(HIST("QA/massLambda"), centrality, ptV0, mLambda);
 
-      if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCut) {
+      if (std::abs(mLambda - o2::constants::physics::MassLambda0) > config.lambdaMassCut) {
         continue;
       }
       histos.fill(HIST("QA/cosPa"), cosPA);
@@ -833,7 +843,7 @@ struct antidLambdaEbye {
 
     // reject events having multiple v0s from same tracks (TODO: also across collisions?)
     std::sort(trkId.begin(), trkId.end());
-    if (std::adjacent_find(trkId.begin(), trkId.end()) != trkId.end()) {
+    if ((std::adjacent_find(trkId.begin(), trkId.end()) != trkId.end()) && config.fillOnlySignal) {
       candidateV0s.clear();
 
       CandidateV0 candV0;
@@ -850,7 +860,7 @@ struct antidLambdaEbye {
 
     histos.fill(HIST("nEv"), subsample, centrality);
 
-    if ((doprocessMcRun3 || doprocessMcRun2) && fillOnlySignal)
+    if ((doprocessMcRun3 || doprocessMcRun2) && config.fillOnlySignal)
       return subsample;
 
     fillHistoN(nAntip, tempTracks[0], subsample, centrality);
@@ -884,7 +894,7 @@ struct antidLambdaEbye {
       return;
     }
 
-    if (fillOnlySignal) {
+    if (config.fillOnlySignal) {
       tempTracks[0]->Reset();
       tempTracks[1]->Reset();
       tempLambda->Reset();
@@ -906,7 +916,7 @@ struct antidLambdaEbye {
             recTracks[iP]->Fill(centrality, candidateTrack.pt, std::abs(candidateTrack.eta));
           } else {
             recAntiTracks[iP]->Fill(centrality, candidateTrack.pt, std::abs(candidateTrack.eta));
-            if (fillOnlySignal)
+            if (config.fillOnlySignal)
               tempTracks[iP]->Fill(std::abs(candidateTrack.eta), candidateTrack.pt);
           }
         }
@@ -945,11 +955,11 @@ struct antidLambdaEbye {
               histos.fill(HIST("QA/massLambdaEvRejSig"), centrality, candidateV0.pt, candidateV0.mass);
               if (posMother.pdgCode() > 0) {
                 histos.fill(HIST("recL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
-                if (fillOnlySignal)
+                if (config.fillOnlySignal)
                   tempLambda->Fill(std::abs(candidateV0.eta), candidateV0.pt);
               } else {
                 histos.fill(HIST("recAntiL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
-                if (fillOnlySignal)
+                if (config.fillOnlySignal)
                   tempAntiLambda->Fill(std::abs(candidateV0.eta), candidateV0.pt);
               }
             }
@@ -958,7 +968,7 @@ struct antidLambdaEbye {
       }
     }
 
-    if (fillOnlySignal) {
+    if (config.fillOnlySignal) {
       fillHistoN(nAntip, tempTracks[0], subsample, centrality);
       fillHistoN(nAntid, tempTracks[1], subsample, centrality);
       fillHistoN(nAntiL, tempAntiLambda, subsample, centrality);
@@ -999,7 +1009,7 @@ struct antidLambdaEbye {
       auto mcParticles_thisCollision = mcParticles.sliceBy(perCollisionMcParts, iC);
       for (auto& mcPart : mcParticles_thisCollision) {
         auto genEta = mcPart.eta();
-        if (std::abs(genEta) > etaMax) {
+        if (std::abs(genEta) > config.etaMax) {
           continue;
         }
         if (((mcPart.flags() & 0x8) && doprocessMcRun2) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
@@ -1070,7 +1080,7 @@ struct antidLambdaEbye {
       if (!collision.sel8())
         continue;
 
-      if (std::abs(collision.posZ()) > zVtxMax)
+      if (std::abs(collision.posZ()) > config.zVtxMax)
         continue;
 
       if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
@@ -1107,21 +1117,21 @@ struct antidLambdaEbye {
       auto bc = collision.bc_as<BCsWithRun2Info>();
       initCCDB(bc);
 
-      if (std::abs(collision.posZ()) > zVtxMax)
+      if (std::abs(collision.posZ()) > config.zVtxMax)
         continue;
 
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
 
-      if (kUseTPCPileUpCut && !(bc.eventCuts() & BIT(aod::Run2EventCuts::kTPCPileUp)))
+      if (config.kUseTPCPileUpCut && !(bc.eventCuts() & BIT(aod::Run2EventCuts::kTPCPileUp)))
         continue;
 
       auto centrality = collision.centRun2V0M();
-      if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
+      if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!config.kINT7Intervals || (config.kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
         continue;
 
       auto centralityCl0 = collision.centRun2CL0();
-      if (kUseEstimatorsCorrelationCut) {
+      if (config.kUseEstimatorsCorrelationCut) {
         const auto& x = centralityCl0;
         const double center = estimatorsCorrelationCoef[0] + estimatorsCorrelationCoef[1] * x;
         const double sigma = estimatorsSigmaPars[0] + estimatorsSigmaPars[1] * x + estimatorsSigmaPars[2] * std::pow(x, 2) + estimatorsSigmaPars[3] * std::pow(x, 3);
@@ -1167,7 +1177,7 @@ struct antidLambdaEbye {
       if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
 
-      if (std::abs(collision.posZ()) > zVtxMax)
+      if (std::abs(collision.posZ()) > config.zVtxMax)
         continue;
 
       auto centrality = collision.centFT0C();
@@ -1197,7 +1207,7 @@ struct antidLambdaEbye {
       auto bc = collision.bc_as<BCsWithRun2Info>();
       initCCDB(bc);
 
-      if (std::abs(collision.posZ()) > zVtxMax)
+      if (std::abs(collision.posZ()) > config.zVtxMax)
         continue;
 
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))

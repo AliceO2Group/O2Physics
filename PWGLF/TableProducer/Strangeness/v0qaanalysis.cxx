@@ -23,6 +23,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,46 +66,77 @@ struct LfV0qaanalysis {
     }
     LOG(info) << "Number of process functions enabled: " << nProc;
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{8, 0.f, 8.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
-    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "zvertex");
-    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "Selected");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "TVX");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "zvertex");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "TFBorder");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "ITSROFBorder");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "Applied selection");
 
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     if (isMC) {
+      registry.add("hCentFT0M_RecoColl_MC", "hCentFT0M_RecoColl_MC", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+      registry.add("hCentFT0M_RecoColl_MC_INELgt0", "hCentFT0M_RecoColl_MC_INELgt0", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+      registry.add("hCentFT0M_GenRecoColl_MC", "hCentFT0M_GenRecoColl_MC", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+      registry.add("hCentFT0M_GenRecoColl_MC_INELgt0", "hCentFT0M_GenRecoColl_MC_INELgt0", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+      registry.add("hCentFT0M_GenColl_MC", "hCentFT0M_GenColl_MC", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+      registry.add("hCentFT0M_GenColl_MC_INELgt0", "hCentFT0M_GenColl_MC_INELgt0", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
       registry.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1I, {{4, 0.f, 4.f}}});
       registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(1, "all");
       registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(2, "zvertex_true");
       registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(3, "INELgt0_true");
-      registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(4, "sel8_true");
-      registry.add("hNEventsMC_AllColl", "hNEventsMC_AllColl", {HistType::kTH1I, {{2, 0.f, 2.f}}});
-      registry.add("hNEventsMC_RecoColl", "hNEventsMC_RecoColl", {HistType::kTH1I, {{2, 0.f, 2.f}}});
-      registry.add("Reconstructed_MCRecoColl_INEL_K0Short", "Reconstructed_MCRecoColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Reconstructed_MCRecoColl_INEL_Lambda", "Reconstructed_MCRecoColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Reconstructed_MCRecoColl_INEL_AntiLambda", "Reconstructed_MCRecoColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Reconstructed_MCRecoColl_INELgt0_K0Short", "Reconstructed_MCRecoColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Reconstructed_MCRecoColl_INELgt0_Lambda", "Reconstructed_MCRecoColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Reconstructed_MCRecoColl_INELgt0_AntiLambda", "Reconstructed_MCRecoColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCRecoColl_INEL_K0Short", "Generated_MCRecoColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCRecoColl_INEL_Lambda", "Generated_MCRecoColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCRecoColl_INEL_AntiLambda", "Generated_MCRecoColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCAllColl_INEL_K0Short", "Generated_MCAllColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCAllColl_INEL_Lambda", "Generated_MCAllColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCAllColl_INEL_AntiLambda", "Generated_MCAllColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCRecoColl_INELgt0_K0Short", "Generated_MCRecoColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCRecoColl_INELgt0_Lambda", "Generated_MCRecoColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCRecoColl_INELgt0_AntiLambda", "Generated_MCRecoColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCAllColl_INELgt0_K0Short", "Generated_MCAllColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCAllColl_INELgt0_Lambda", "Generated_MCAllColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
-      registry.add("Generated_MCAllColl_INELgt0_AntiLambda", "Generated_MCAllColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {100, -1.f, +1.f}}});
+      registry.add("hNEventsMCGenReco", "hNEventsMCGenReco", {HistType::kTH1I, {{2, 0.f, 2.f}}});
+      registry.get<TH1>(HIST("hNEventsMCGenReco"))->GetXaxis()->SetBinLabel(1, "INEL");
+      registry.get<TH1>(HIST("hNEventsMCGenReco"))->GetXaxis()->SetBinLabel(2, "INELgt0");
+      registry.add("hNEventsMCReco", "hNEventsMCReco", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+      registry.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(1, "all");
+      registry.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(2, "pass ev sel");
+      registry.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(3, "INELgt0");
+      registry.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(4, "check");
+      registry.add("Reconstructed_MCRecoColl_INEL_K0Short", "Reconstructed_MCRecoColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Reconstructed_MCRecoColl_INEL_Lambda", "Reconstructed_MCRecoColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Reconstructed_MCRecoColl_INEL_AntiLambda", "Reconstructed_MCRecoColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Reconstructed_MCRecoColl_INELgt0_K0Short", "Reconstructed_MCRecoColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Reconstructed_MCRecoColl_INELgt0_Lambda", "Reconstructed_MCRecoColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Reconstructed_MCRecoColl_INELgt0_AntiLambda", "Reconstructed_MCRecoColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INEL_K0Short", "Generated_MCGenRecoColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INEL_Lambda", "Generated_MCGenRecoColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INEL_AntiLambda", "Generated_MCGenRecoColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoColl_INEL_K0Short", "Generated_MCRecoColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoColl_INEL_Lambda", "Generated_MCRecoColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoColl_INEL_AntiLambda", "Generated_MCRecoColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoCollCheck_INEL_K0Short", "Generated_MCRecoCollCheck_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoCollCheck_INEL_Lambda", "Generated_MCRecoCollCheck_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoCollCheck_INEL_AntiLambda", "Generated_MCRecoCollCheck_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenColl_INEL_K0Short", "Generated_MCGenColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenColl_INEL_Lambda", "Generated_MCGenColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenColl_INEL_AntiLambda", "Generated_MCGenColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INELgt0_K0Short", "Generated_MCGenRecoColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INELgt0_Lambda", "Generated_MCGenRecoColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INELgt0_AntiLambda", "Generated_MCGenRecoColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoColl_INELgt0_K0Short", "Generated_MCRecoColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoColl_INELgt0_Lambda", "Generated_MCRecoColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoColl_INELgt0_AntiLambda", "Generated_MCRecoColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoCollCheck_INELgt0_K0Short", "Generated_MCRecoCollCheck_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoCollCheck_INELgt0_Lambda", "Generated_MCRecoCollCheck_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCRecoCollCheck_INELgt0_AntiLambda", "Generated_MCRecoCollCheck_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenColl_INELgt0_K0Short", "Generated_MCGenColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenColl_INELgt0_Lambda", "Generated_MCGenColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenColl_INELgt0_AntiLambda", "Generated_MCGenColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
     }
+    registry.print();
   }
 
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 15.0f, "Accepted z-vertex range (cm)"};
-  Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
+  Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<bool> isMC{"isMC", 0, "Is MC"};
+  Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Is Trigger TVX"};
+  Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "Is No Time Frame Border"};
+  Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
@@ -112,7 +145,6 @@ struct LfV0qaanalysis {
   Configurable<float> dcapostopv{"dcapostopv", 0.0, "DCA Pos To PV"};
   Configurable<float> v0radius{"v0radius", 0.0, "Radius"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
-  Configurable<bool> isMC{"isMC", 0, "Is MC"};
 
   // Event selection
   template <typename TCollision>
@@ -122,41 +154,24 @@ struct LfV0qaanalysis {
       return false;
     }
     registry.fill(HIST("hNEvents"), 1.5);
-
-    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     registry.fill(HIST("hNEvents"), 2.5);
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      return false;
+    }
+    registry.fill(HIST("hNEvents"), 3.5);
+    if (isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    registry.fill(HIST("hNEvents"), 4.5);
+    if (!isMC && isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    registry.fill(HIST("hNEvents"), 5.5);
 
     return true;
-  }
-
-  // Event selection
-  template <typename TMcParticles>
-  bool isTrueINELgt0(TMcParticles particles)
-  {
-    int nPart = 0;
-    for (const auto& particle : particles) {
-      if (particle.isPhysicalPrimary() == 0)
-        continue; // consider only primaries
-
-      const auto& pdgInfo = pdgDB->GetParticle(particle.pdgCode());
-      if (!pdgInfo) {
-        continue;
-      }
-      if (TMath::Abs(pdgInfo->Charge()) < 0.001) {
-        continue; // consider only charged particles
-      }
-
-      if (particle.eta() < -1.0 || particle.eta() > 1.0)
-        continue; // consider only particles in |eta| < 1
-
-      nPart++;
-    }
-    if (nPart > 0)
-      return true;
-    else
-      return false;
   }
 
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
@@ -172,7 +187,7 @@ struct LfV0qaanalysis {
     if (!AcceptEvent(collision)) {
       return;
     }
-    registry.fill(HIST("hNEvents"), 3.5);
+    registry.fill(HIST("hNEvents"), 6.5);
     registry.fill(HIST("hCentFT0M"), collision.centFT0M());
     registry.fill(HIST("hCentFV0A"), collision.centFV0A());
 
@@ -231,18 +246,16 @@ struct LfV0qaanalysis {
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
   SliceCache cache1;
-  SliceCache cache2;
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void processMCReco(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults> const& collisions,
-                     aod::McCollisions const& /*mcCollisions*/,
+                     soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& /*mcCollisions*/,
                      soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                      aod::McParticles const& mcParticles, DauTracksMC const& /*tracks*/)
   {
     for (const auto& collision : collisions) {
       // Apply event selection
-      registry.fill(HIST("hNEvents"), 0.5);
 
       if (!AcceptEvent(collision)) {
         continue;
@@ -250,15 +263,15 @@ struct LfV0qaanalysis {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      registry.fill(HIST("hNEvents"), 3.5);
+      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
 
-      registry.fill(HIST("hNEventsMC_RecoColl"), 0.5);
+      registry.fill(HIST("hNEventsMCReco"), 3.5);
+      const float cent = 0.f;
 
       // Event flags
       int evFlag = 0;
       if (collision.isInelGt0()) {
         evFlag = 1;
-        registry.fill(HIST("hNEventsMC_RecoColl"), 1.5);
       }
 
       auto v0sThisCollision = V0s.sliceBy(perCol, collision.globalIndex());
@@ -269,24 +282,28 @@ struct LfV0qaanalysis {
         }
         auto v0mcparticle = v0.mcParticle();
 
+        if (abs(v0mcparticle.y()) > 0.5f) {
+          continue;
+        }
+
         // Highest numerator of efficiency
         if (v0mcparticle.isPhysicalPrimary()) {
           if (v0mcparticle.pdgCode() == 310) {
-            registry.fill(HIST("Reconstructed_MCRecoColl_INEL_K0Short"), v0mcparticle.pt(), v0mcparticle.y()); // K0s
+            registry.fill(HIST("Reconstructed_MCRecoColl_INEL_K0Short"), v0mcparticle.pt(), mcCollision.centFT0M()); // K0s
             if (evFlag == 1) {
-              registry.fill(HIST("Reconstructed_MCRecoColl_INELgt0_K0Short"), v0mcparticle.pt(), v0mcparticle.y()); // K0s
+              registry.fill(HIST("Reconstructed_MCRecoColl_INELgt0_K0Short"), v0mcparticle.pt(), mcCollision.centFT0M()); // K0s
             }
           }
           if (v0mcparticle.pdgCode() == 3122) {
-            registry.fill(HIST("Reconstructed_MCRecoColl_INEL_Lambda"), v0mcparticle.pt(), v0mcparticle.y()); // Lambda
+            registry.fill(HIST("Reconstructed_MCRecoColl_INEL_Lambda"), v0mcparticle.pt(), mcCollision.centFT0M()); // Lambda
             if (evFlag == 1) {
-              registry.fill(HIST("Reconstructed_MCRecoColl_INELgt0_Lambda"), v0mcparticle.pt(), v0mcparticle.y()); // Lambda
+              registry.fill(HIST("Reconstructed_MCRecoColl_INELgt0_Lambda"), v0mcparticle.pt(), mcCollision.centFT0M()); // Lambda
             }
           }
           if (v0mcparticle.pdgCode() == -3122) {
-            registry.fill(HIST("Reconstructed_MCRecoColl_INEL_AntiLambda"), v0mcparticle.pt(), v0mcparticle.y()); // AntiLambda
+            registry.fill(HIST("Reconstructed_MCRecoColl_INEL_AntiLambda"), v0mcparticle.pt(), mcCollision.centFT0M()); // AntiLambda
             if (evFlag == 1) {
-              registry.fill(HIST("Reconstructed_MCRecoColl_INELgt0_AntiLambda"), v0mcparticle.pt(), v0mcparticle.y()); // AntiLambda
+              registry.fill(HIST("Reconstructed_MCRecoColl_INELgt0_AntiLambda"), v0mcparticle.pt(), mcCollision.centFT0M()); // AntiLambda
             }
           }
         }
@@ -318,8 +335,6 @@ struct LfV0qaanalysis {
             TMath::Abs(v0.negTrack_as<DauTracksMC>().eta()) < etadau // &&
         ) {
 
-          float cent = 0.;
-
           // Fill table
           myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
                 v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
@@ -333,105 +348,216 @@ struct LfV0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
                 v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
-                cent, cent, evFlag);
+                mcCollision.centFT0M(), cent, evFlag);
         }
       }
 
       // Generated particles
-      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache1);
+      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache1);
 
       for (auto& mcParticle : particlesInCollision) {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
+
+        if (abs(mcParticle.y()) > 0.5f) {
+          continue;
+        }
+
         if (mcParticle.pdgCode() == 310) {
-          registry.fill(HIST("Generated_MCRecoColl_INEL_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
+          registry.fill(HIST("Generated_MCRecoCollCheck_INEL_K0Short"), mcParticle.pt(), mcCollision.centFT0M()); // K0s
           if (evFlag == 1) {
-            registry.fill(HIST("Generated_MCRecoColl_INELgt0_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
+            registry.fill(HIST("Generated_MCRecoCollCheck_INELgt0_K0Short"), mcParticle.pt(), mcCollision.centFT0M()); // K0s
           }
         }
         if (mcParticle.pdgCode() == 3122) {
-          registry.fill(HIST("Generated_MCRecoColl_INEL_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
+          registry.fill(HIST("Generated_MCRecoCollCheck_INEL_Lambda"), mcParticle.pt(), mcCollision.centFT0M()); // Lambda
           if (evFlag == 1) {
-            registry.fill(HIST("Generated_MCRecoColl_INELgt0_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
+            registry.fill(HIST("Generated_MCRecoCollCheck_INELgt0_Lambda"), mcParticle.pt(), mcCollision.centFT0M()); // Lambda
           }
         }
         if (mcParticle.pdgCode() == -3122) {
-          registry.fill(HIST("Generated_MCRecoColl_INEL_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
+          registry.fill(HIST("Generated_MCRecoCollCheck_INEL_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
           if (evFlag == 1) {
-            registry.fill(HIST("Generated_MCRecoColl_INELgt0_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
+            registry.fill(HIST("Generated_MCRecoCollCheck_INELgt0_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
           }
         }
       }
     }
   }
-  PROCESS_SWITCH(LfV0qaanalysis, processMCReco, "Process MC Reco", true);
+  PROCESS_SWITCH(LfV0qaanalysis, processMCReco, "Process MC Reco", false);
 
-  void processMCGen(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
+                    aod::McParticles const& mcParticles,
+                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions)
   {
-    for (const auto& mccollision : mcCollisions) {
+    //====================================
+    //===== Event Loss Denominator =======
+    //====================================
 
-      registry.fill(HIST("hNEventsMCGen"), 0.5);
+    registry.fill(HIST("hNEventsMCGen"), 0.5);
 
-      if (TMath::Abs(mccollision.posZ()) > cutzvertex) {
+    if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
+      return;
+    }
+    registry.fill(HIST("hNEventsMCGen"), 1.5);
+    registry.fill(HIST("hCentFT0M_GenColl_MC"), mcCollision.centFT0M());
+
+    bool isINELgt0true = false;
+
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+      isINELgt0true = true;
+      registry.fill(HIST("hNEventsMCGen"), 2.5);
+      registry.fill(HIST("hCentFT0M_GenColl_MC_INELgt0"), mcCollision.centFT0M());
+    }
+
+    //=====================================
+    //===== Signal Loss Denominator =======
+    //=====================================
+
+    for (auto& mcParticle : mcParticles) {
+
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
-      registry.fill(HIST("hNEventsMCGen"), 1.5);
-
-      bool isFT0A = false;
-      bool isFT0C = false;
-
-      const auto particlesInMCCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache2);
-
-      registry.fill(HIST("hNEventsMC_AllColl"), 0.5);
-
-      bool isINELgt0true = false;
-      if (isTrueINELgt0(particlesInMCCollision)) {
-        isINELgt0true = true;
-        registry.fill(HIST("hNEventsMCGen"), 2.5);
-        registry.fill(HIST("hNEventsMC_AllColl"), 1.5);
+      if (abs(mcParticle.y()) > 0.5f) {
+        continue;
       }
 
-      for (auto& mcParticle : particlesInMCCollision) {
-
-        if (std::abs(mcParticle.pdgCode()) == 211) { // simulated sel8
-          if (mcParticle.eta() <= -2.3 && mcParticle.eta() >= -3.4) {
-            isFT0C = true;
-          }
-          if (mcParticle.eta() <= 5.0 && mcParticle.eta() >= 3.8) {
-            isFT0A = true;
-          }
+      if (mcParticle.pdgCode() == 310) {
+        registry.fill(HIST("Generated_MCGenColl_INEL_K0Short"), mcParticle.pt(), mcCollision.centFT0M()); // K0s
+        if (isINELgt0true) {
+          registry.fill(HIST("Generated_MCGenColl_INELgt0_K0Short"), mcParticle.pt(), mcCollision.centFT0M()); // K0s
         }
+      }
+      if (mcParticle.pdgCode() == 3122) {
+        registry.fill(HIST("Generated_MCGenColl_INEL_Lambda"), mcParticle.pt(), mcCollision.centFT0M()); // Lambda
+        if (isINELgt0true) {
+          registry.fill(HIST("Generated_MCGenColl_INELgt0_Lambda"), mcParticle.pt(), mcCollision.centFT0M()); // Lambda
+        }
+      }
+      if (mcParticle.pdgCode() == -3122) {
+        registry.fill(HIST("Generated_MCGenColl_INEL_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
+        if (isINELgt0true) {
+          registry.fill(HIST("Generated_MCGenColl_INELgt0_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
+        }
+      }
+    }
+
+    int recoCollIndex_INEL = 0;
+    int recoCollIndex_INELgt0 = 0;
+    for (auto& collision : collisions) { // loop on reconstructed collisions
+
+      //=====================================
+      //====== Event Split Numerator ========
+      //=====================================
+
+      registry.fill(HIST("hNEvents"), 0.5);
+      registry.fill(HIST("hNEventsMCReco"), 0.5);
+      if (!AcceptEvent(collision)) {
+        continue;
+      }
+
+      registry.fill(HIST("hNEvents"), 6.5);
+      registry.fill(HIST("hNEventsMCReco"), 1.5);
+      registry.fill(HIST("hCentFT0M_RecoColl_MC"), mcCollision.centFT0M());
+
+      recoCollIndex_INEL++;
+
+      if (collision.isInelGt0() && isINELgt0true) {
+        registry.fill(HIST("hNEventsMCReco"), 2.5);
+        registry.fill(HIST("hCentFT0M_RecoColl_MC_INELgt0"), mcCollision.centFT0M());
+
+        recoCollIndex_INELgt0++;
+      }
+
+      //=====================================
+      //======== Sgn Split Numerator ========
+      //=====================================
+
+      for (auto& mcParticle : mcParticles) {
 
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
+
+        if (abs(mcParticle.y()) > 0.5f) {
+          continue;
+        }
+
         if (mcParticle.pdgCode() == 310) {
-          registry.fill(HIST("Generated_MCAllColl_INEL_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
-          if (isINELgt0true) {
-            registry.fill(HIST("Generated_MCAllColl_INELgt0_K0Short"), mcParticle.pt(), mcParticle.y()); // K0s
+          registry.fill(HIST("Generated_MCRecoColl_INEL_K0Short"), mcParticle.pt(), mcCollision.centFT0M()); // K0s
+          if (recoCollIndex_INELgt0 > 0) {
+            registry.fill(HIST("Generated_MCRecoColl_INELgt0_K0Short"), mcParticle.pt(), mcCollision.centFT0M()); // K0s
           }
         }
         if (mcParticle.pdgCode() == 3122) {
-          registry.fill(HIST("Generated_MCAllColl_INEL_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
-          if (isINELgt0true) {
-            registry.fill(HIST("Generated_MCAllColl_INELgt0_Lambda"), mcParticle.pt(), mcParticle.y()); // Lambda
+          registry.fill(HIST("Generated_MCRecoColl_INEL_Lambda"), mcParticle.pt(), mcCollision.centFT0M()); // Lambda
+          if (recoCollIndex_INELgt0 > 0) {
+            registry.fill(HIST("Generated_MCRecoColl_INELgt0_Lambda"), mcParticle.pt(), mcCollision.centFT0M()); // Lambda
           }
         }
         if (mcParticle.pdgCode() == -3122) {
-          registry.fill(HIST("Generated_MCAllColl_INEL_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
-          if (isINELgt0true) {
-            registry.fill(HIST("Generated_MCAllColl_INELgt0_AntiLambda"), mcParticle.pt(), mcParticle.y()); // AntiLambda
+          registry.fill(HIST("Generated_MCRecoColl_INEL_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
+          if (recoCollIndex_INELgt0 > 0) {
+            registry.fill(HIST("Generated_MCRecoColl_INELgt0_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
           }
         }
       }
+    }
 
-      if (isFT0A && isFT0C) {
-        registry.fill(HIST("hNEventsMCGen"), 3.5);
+    // From now on keep only mc collisions with at least one reconstructed collision (INEL)
+    if (recoCollIndex_INEL < 1) {
+      return;
+    }
+
+    //=====================================
+    //====== Event Loss Numerator =========
+    //=====================================
+
+    registry.fill(HIST("hNEventsMCGenReco"), 0.5);
+    registry.fill(HIST("hCentFT0M_GenRecoColl_MC"), mcCollision.centFT0M());
+
+    if (recoCollIndex_INELgt0 > 0) {
+      registry.fill(HIST("hNEventsMCGenReco"), 1.5);
+      registry.fill(HIST("hCentFT0M_GenRecoColl_MC_INELgt0"), mcCollision.centFT0M());
+    }
+
+    //=====================================
+    //===== Signal Loss Numerator =========
+    //=====================================
+
+    for (auto& mcParticle : mcParticles) {
+
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+
+      if (abs(mcParticle.y()) > 0.5f) {
+        continue;
+      }
+
+      if (mcParticle.pdgCode() == 310) {
+        registry.fill(HIST("Generated_MCGenRecoColl_INEL_K0Short"), mcParticle.pt(), mcCollision.centFT0M()); // K0s
+        if (recoCollIndex_INELgt0 > 0) {
+          registry.fill(HIST("Generated_MCGenRecoColl_INELgt0_K0Short"), mcParticle.pt(), mcCollision.centFT0M()); // K0s
+        }
+      }
+      if (mcParticle.pdgCode() == 3122) {
+        registry.fill(HIST("Generated_MCGenRecoColl_INEL_Lambda"), mcParticle.pt(), mcCollision.centFT0M()); // Lambda
+        if (recoCollIndex_INELgt0 > 0) {
+          registry.fill(HIST("Generated_MCGenRecoColl_INELgt0_Lambda"), mcParticle.pt(), mcCollision.centFT0M()); // Lambda
+        }
+      }
+      if (mcParticle.pdgCode() == -3122) {
+        registry.fill(HIST("Generated_MCGenRecoColl_INEL_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
+        if (recoCollIndex_INELgt0 > 0) {
+          registry.fill(HIST("Generated_MCGenRecoColl_INELgt0_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
+        }
       }
     }
   }
-  PROCESS_SWITCH(LfV0qaanalysis, processMCGen, "Process MC Gen", true);
+  PROCESS_SWITCH(LfV0qaanalysis, processMCGen, "Process MC", false);
 };
 
 struct LfMyV0s {
@@ -461,6 +587,7 @@ struct LfMyV0s {
     registry.add("TPCNSigmaNegPr", "TPCNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
     registry.add("PosITSHits", "PosITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
     registry.add("NegITSHits", "NegITSHits", {HistType::kTH1F, {{8, -0.5f, 7.5f}}});
+    registry.add("multft0m", "multft0m", {HistType::kTH1F, {{100, 0.f, 100.f}}});
   }
 
   void process(aod::MyV0Candidates const& myv0s)
@@ -488,6 +615,7 @@ struct LfMyV0s {
       registry.fill(HIST("TPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
       registry.fill(HIST("PosITSHits"), candidate.v0positshits());
       registry.fill(HIST("NegITSHits"), candidate.v0negitshits());
+      registry.fill(HIST("multft0m"), candidate.multft0m());
     }
   }
 };

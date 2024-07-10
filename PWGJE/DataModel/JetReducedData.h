@@ -429,7 +429,7 @@ DECLARE_SOA_COLUMN(AmplitudeA, amplitudeA, std::vector<float>);
 DECLARE_SOA_TABLE(JMcClusterLbs, "AOD", "JMCCLUSTERLB", //!
                   jmcclusterlb::JMcParticleIds, jmcclusterlb::AmplitudeA);
 
-DECLARE_SOA_TABLE(StoredJMcClusterLbs, "AOD", "JMCCLUSTERLB", //!
+DECLARE_SOA_TABLE(StoredJMcClusterLbs, "AOD1", "JMCCLUSTERLB", //!
                   jmcclusterlb::JMcParticleIds, jmcclusterlb::AmplitudeA,
                   o2::soa::Marker<1>);
 

@@ -32,6 +32,11 @@ o2physics_add_dpl_workflow(qa-event-track-lite-producer
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ReconstructionDataFormats
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(qa-fakehits
+    SOURCES qaFakeHits.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(qa-efficiency
     SOURCES qaEfficiency.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -77,6 +82,6 @@ o2physics_add_dpl_workflow(qa-tracksplitting
 
 o2physics_add_dpl_workflow(tag-and-probe-dmesons
     SOURCES tagAndProbeDmesons.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
