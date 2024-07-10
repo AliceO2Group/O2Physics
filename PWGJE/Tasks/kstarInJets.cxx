@@ -14,6 +14,7 @@
 ///
 ///
 /// \author Jimun Lee <jimun.lee@cern.ch>
+/// \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>
 
 #include <TLorentzVector.h>
 #include <TVector2.h>
