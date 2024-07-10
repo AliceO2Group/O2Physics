@@ -111,7 +111,7 @@ class DalitzEECut : public TNamed
   }
 
   template <bool isML = false, typename TTrack, typename TCollision = int>
-  bool IsSelectedTrack(TTrack const& track, TCollision const& collision = 0) const
+  bool IsSelectedTrack(TTrack const& track, TCollision const& = 0) const
   {
     if (!track.hasITS() || !track.hasTPC()) { // track has to be ITS-TPC matched track
       return false;

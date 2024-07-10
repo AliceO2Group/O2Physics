@@ -253,7 +253,7 @@ struct DalitzEEQC {
   }
 
   template <typename TCollision, typename TTrack1, typename TTrack2>
-  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2)
+  bool fillPairInfo(TCollision const&, TTrack1 const& t1, TTrack2 const& t2)
   {
     if (t1.trackId() == t2.trackId()) { // this is protection against pairing identical 2 tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
       return false;

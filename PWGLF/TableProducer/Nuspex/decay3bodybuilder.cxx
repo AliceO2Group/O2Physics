@@ -898,7 +898,7 @@ struct decay3bodyBuilder {
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
-  void processRun3withKFParticle(soa::Filtered<MyCollisions>::iterator const& collision, FullTracksExtPIDIU const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3withKFParticle(soa::Filtered<MyCollisions>::iterator const& collision, FullTracksExtPIDIU const& /*tracksIU*/, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
     // for (const auto& collision : collisions) {
     LOG(debug) << "Start of processRun3withKFParticle.";

@@ -562,7 +562,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processSameEventMC(o2::aod::FDCollision& col,
-                          soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
+                          soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& /*parts*/,
                           o2::aod::FDMCParticles&)
   {
     fillCollision(col);
@@ -661,8 +661,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to fill covariance histograms
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processCov(soa::Filtered<o2::aod::FDCollisions>::iterator& col,
-                  FilteredFemtoFullParticles& parts)
+  void processCov(soa::Filtered<o2::aod::FDCollisions>::iterator& /*col*/,
+                  FilteredFemtoFullParticles& /*parts*/)
   {
     int JMax = (ConfLMax + 1) * (ConfLMax + 1);
     if (cfgProcessMM) {
@@ -685,7 +685,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMC(o2::aod::FDCollisions& cols,
-                           soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
+                           soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& /*parts*/,
                            o2::aod::FDMCParticles&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {

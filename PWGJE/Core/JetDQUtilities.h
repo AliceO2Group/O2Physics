@@ -87,7 +87,7 @@ constexpr bool isDielectronMcTable()
  * * @param candidate candidate that is being checked
  */
 template <typename T>
-constexpr bool isMatchedDielectronCandidate(T const& candidate)
+constexpr bool isMatchedDielectronCandidate(T const& /*candidate*/)
 {
   if constexpr (isDielectronCandidate<T>()) {
     // For now the decision to select signals is done in the DQ framework
