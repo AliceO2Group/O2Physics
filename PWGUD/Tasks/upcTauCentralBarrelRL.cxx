@@ -445,7 +445,6 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsMP", ";Muon #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsPP", ";Pion #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
 
-
       histos.add("EventTwoTracks/ElectronOther/hNeventsPtCuts", ";Selection (-);Number of events (-)", HistType::kTH1D, {{20, -0.5, 19.5}});
       histos.add("EventTwoTracks/ElectronOther/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventTwoTracks/ElectronOther/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -1976,8 +1975,6 @@ struct UpcTauCentralBarrelRL {
 
   } // end fillHistograms
 
-
-
   template <typename C, typename Ts>
   void fillPIDhistograms(C reconstructedCollision, Ts reconstructedBarrelTracks)
   {
@@ -2079,7 +2076,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcNSigmaEl());
-          if (track.hasTOF()){
+          if (track.hasTOF()) {
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTOFnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofNSigmaEl());
           }
@@ -2091,7 +2088,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcNSigmaMu());
-          if (track.hasTOF()){
+          if (track.hasTOF()) {
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTOFnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofNSigmaMu());
           }
@@ -2103,7 +2100,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcNSigmaPi());
-          if (track.hasTOF()){
+          if (track.hasTOF()) {
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTOFnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofNSigmaPi());
           }
@@ -2114,7 +2111,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
         histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
         histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy), track.tpcSignal());
-        if (track.hasTOF()){
+        if (track.hasTOF()) {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
         }
       }
@@ -2177,7 +2174,7 @@ struct UpcTauCentralBarrelRL {
         if (trkDaug2.hasTOF()) {
           histos.get<TH2>(HIST("EventTwoTracks/PID/hTOFsignalVsP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
         }
-        if (countPVGTelectrons == 2){
+        if (countPVGTelectrons == 2) {
           histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
           histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
           if (trkDaug2.hasTOF()) {
@@ -2256,7 +2253,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsMP"))->Fill(otherPt, otherNsigmaMu);
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsPP"))->Fill(otherPt, otherNsigmaPi);
           if (trkDaug1.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON){
+            if (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug1.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug1.tofNSigmaEl());
             } else {
@@ -2266,7 +2263,7 @@ struct UpcTauCentralBarrelRL {
             }
           }
           if (trkDaug2.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON){
+            if (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug2.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug2.tofNSigmaEl());
             } else {
@@ -2299,7 +2296,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsMP"))->Fill(otherPt, otherNsigmaMu);
           histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsPP"))->Fill(otherPt, otherNsigmaPi);
           if (trkDaug1.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON){
+            if (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug1.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug1.tofNSigmaEl());
             } else {
@@ -2309,7 +2306,7 @@ struct UpcTauCentralBarrelRL {
             }
           }
           if (trkDaug2.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON){
+            if (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug2.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug2.tofNSigmaEl());
             } else {
@@ -2419,15 +2416,15 @@ struct UpcTauCentralBarrelRL {
 
   } // end fillPIDhistograms
 
-
   void processDGrecoLevel(FullUDCollision const& reconstructedCollision,
                           FullUDTracks const& reconstructedBarrelTracks)
   {
     countCollisions++;
 
-    if (doMainHistos) fillHistograms(reconstructedCollision, reconstructedBarrelTracks);
-    if (doPIDhistos) fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
-
+    if (doMainHistos)
+      fillHistograms(reconstructedCollision, reconstructedBarrelTracks);
+    if (doPIDhistos)
+      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
 
   } // end processDGrecoLevel
 
@@ -2446,9 +2443,10 @@ struct UpcTauCentralBarrelRL {
     if (gapSide != whichGapSide)
       return;
 
-    if (doMainHistos) fillHistograms(reconstructedCollision, reconstructedBarrelTracks);
-    if (doPIDhistos) fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
-
+    if (doMainHistos)
+      fillHistograms(reconstructedCollision, reconstructedBarrelTracks);
+    if (doPIDhistos)
+      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
 
   } // end processDGrecoLevel
 
