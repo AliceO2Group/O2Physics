@@ -219,9 +219,9 @@ struct AngularCorrelationsInJets {
       return false;
     }
     if (doprocessRun2) {
-      if (!(track.trackType() & o2::aod::track::Run2Track) /*  ||
-           !(track.flags() & o2::aod::track::TPCrefit) ||
-           !(track.flags() & o2::aod::track::ITSrefit) */
+      if (!(track.trackType() & o2::aod::track::Run2Track) //||
+           //!(track.flags() & o2::aod::track::TPCrefit) ||
+           //!(track.flags() & o2::aod::track::ITSrefit)
       ) {
         return false;
       }
