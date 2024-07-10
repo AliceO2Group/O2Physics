@@ -50,7 +50,7 @@ struct AngularCorrelationsInJets {
   Configurable<float> fMaxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> fMaxDCAxy{"maxDCA_xy", 0.5f, "max DCA to vertex xy"};
   Configurable<float> fMaxDCAz{"maxDCA_z", 2.4f, "max DCA to vertex z"};
-  Configurable<float> fMaxEta{"maxEta", 0.8, "max pseudorapidity"}; //consider jet cone?
+  Configurable<float> fMaxEta{"maxEta", 0.8, "max pseudorapidity"}; // consider jet cone?
 
   // Jet Cuts
   Configurable<float> fJetR{"jetR", 0.4, "jet resolution parameter"};
@@ -100,7 +100,7 @@ struct AngularCorrelationsInJets {
   int mRunNumber;
 
   using FullTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
-                                   aod::TrackSelectionExtension,  aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFmass, aod::pidTOFbeta>;
+                                   aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFmass, aod::pidTOFbeta>;
   using FullTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
                                    aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFmass, aod::pidTOFbeta>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
@@ -128,7 +128,7 @@ struct AngularCorrelationsInJets {
 
   void init(o2::framework::InitContext&)
   {
-		mRunNumber = 0;
+    mRunNumber = 0;
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -181,16 +181,14 @@ struct AngularCorrelationsInJets {
     registryQA.add("hEtaFullEvent", "Particle pseudorapidity;#eta", HistType::kTH1F, {{200, -1, 1}});
     registryQA.get<TH2>(HIST("hTOFmass"))->Sumw2();
     registryQA.add("hCrossedRowsTPC", "Crossed rows TPC", HistType::kTH2I, {ptAxis, {135, 65, 200}});
-    registryQA.add("hClusterITS", "ITS clusters", HistType::kTH2I, {ptAxis, {10,0,10}});
+    registryQA.add("hClusterITS", "ITS clusters", HistType::kTH2I, {ptAxis, {10, 0, 10}});
     registryQA.add("hClusterTPC", "TPC clusters", HistType::kTH2I, {ptAxis, {135, 65, 200}});
-    registryQA.add("hRatioCrossedRowsTPC", "Ratio crossed rows/findable TPC", HistType::kTH2F, {ptAxis, {100,0.5,1.5}});
-    registryQA.add("hChi2ITS", "ITS #chi^{2}", HistType::kTH2F, {ptAxis, {400,0,40}});
-    registryQA.add("hChi2TPC", "TPC #chi^{2}", HistType::kTH2F, {ptAxis, {50,0,5}});
+    registryQA.add("hRatioCrossedRowsTPC", "Ratio crossed rows/findable TPC", HistType::kTH2F, {ptAxis, {100, 0.5, 1.5}});
+    registryQA.add("hChi2ITS", "ITS #chi^{2}", HistType::kTH2F, {ptAxis, {400, 0, 40}});
+    registryQA.add("hChi2TPC", "TPC #chi^{2}", HistType::kTH2F, {ptAxis, {50, 0, 5}});
     registryQA.add("hDCAxyFullEvent", "DCA_{xy} of full event", HistType::kTH2F, {ptAxis, dcaxyAxis});
     registryQA.add("hDCAzFullEvent", "DCA_{z} of full event", HistType::kTH2F, {ptAxis, dcazAxis});
-
   }
-
 
   std::vector<typename FullTracksRun2::iterator> fTrackBufferProtonRun2;
   std::vector<typename FullTracksRun2::iterator> fTrackBufferAntiprotonRun2;
@@ -200,7 +198,7 @@ struct AngularCorrelationsInJets {
   std::vector<typename FullTracksRun3::iterator> fTrackBufferAntiprotonRun3;
   std::vector<typename FullTracksRun3::iterator> fTrackBufferDeuteronRun3;
   std::vector<typename FullTracksRun3::iterator> fTrackBufferAntideuteronRun3;
-  //TODO: check if FullTracksRun2 works for Run3 too or add Run3 track buffers
+  // TODO: check if FullTracksRun2 works for Run3 too or add Run3 track buffers
 
   template <class Bc>
   void initCCDB(Bc const& bc)
@@ -221,9 +219,10 @@ struct AngularCorrelationsInJets {
       return false;
     }
     if (doprocessRun2) {
-      if (!(track.trackType() & o2::aod::track::Run2Track)/*  ||
-          !(track.flags() & o2::aod::track::TPCrefit) ||
-          !(track.flags() & o2::aod::track::ITSrefit) */) {
+      if (!(track.trackType() & o2::aod::track::Run2Track) /*  ||
+           !(track.flags() & o2::aod::track::TPCrefit) ||
+           !(track.flags() & o2::aod::track::ITSrefit) */
+      ) {
         return false;
       }
     }
@@ -274,7 +273,7 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("hJetConeRadius"), Delta);
     }
 
-    fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2)); //TODO: fix subtraction
+    fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2)); // TODO: fix subtraction
     fastjet::JetMedianBackgroundEstimator bkgEst(selector, jetDefBkg, areaDefBkg);
     fastjet::Subtractor subtractor(&bkgEst);
     subtractor.set_use_rho_m(true);
@@ -296,7 +295,7 @@ struct AngularCorrelationsInJets {
     if (track.sign() < 0)
       return isProton;
 
-    //TPC
+    // TPC
     if (track.pt() < fProtonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) < fProtonTPCnsigLow)
       isProton = true;
     if (track.pt() > fProtonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) < fProtonTPCnsigHigh)
@@ -309,7 +308,7 @@ struct AngularCorrelationsInJets {
     if (TMath::Abs(track.dcaZ()) > fProtonDCAz)
       return false;
 
-    //TOF
+    // TOF
     if (track.pt() < fProtonTPCTOFpT && TMath::Abs(track.tofNSigmaPr()) < fProtonTOFnsigLow)
       isProton = true;
     if (track.pt() > fProtonTPCTOFpT && TMath::Abs(track.tofNSigmaPr()) < fProtonTOFnsigHigh)
@@ -325,7 +324,7 @@ struct AngularCorrelationsInJets {
     if (track.sign() < 0)
       return isAntiproton;
 
-    //TPC
+    // TPC
     if (track.pt() < fAntiprotonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) < fAntiprotonTPCnsigLow)
       isAntiproton = true;
     if (track.pt() > fAntiprotonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) < fAntiprotonTPCnsigHigh)
@@ -338,7 +337,7 @@ struct AngularCorrelationsInJets {
     if (TMath::Abs(track.dcaZ()) > fAntiprotonDCAz)
       return false;
 
-    //TOF
+    // TOF
     if (track.pt() < fAntiprotonTPCTOFpT && TMath::Abs(track.tofNSigmaPr()) < fAntiprotonTOFnsigLow)
       isAntiproton = true;
     if (track.pt() > fAntiprotonTPCTOFpT && TMath::Abs(track.tofNSigmaPr()) < fAntiprotonTOFnsigHigh)
@@ -354,7 +353,7 @@ struct AngularCorrelationsInJets {
     if (track.sign() < 0)
       return isDeuteron;
 
-    //TPC
+    // TPC
     if (track.pt() < fDeuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fDeuteronTPCnsigLow)
       isDeuteron = true;
     if (track.pt() > fDeuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fDeuteronTPCnsigHigh)
@@ -367,7 +366,7 @@ struct AngularCorrelationsInJets {
     if (TMath::Abs(track.dcaZ()) > fDeuteronDCAz)
       return false;
 
-    //TOF
+    // TOF
     if (track.pt() < fDeuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fDeuteronTOFnsigLow)
       isDeuteron = true;
     if (track.pt() > fDeuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fDeuteronTOFnsigHigh)
@@ -383,7 +382,7 @@ struct AngularCorrelationsInJets {
     if (track.sign() < 0)
       return isAntideuteron;
 
-    //TPC
+    // TPC
     if (track.pt() < fAntideuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fAntideuteronTPCnsigLow)
       isAntideuteron = true;
     if (track.pt() > fAntideuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fAntideuteronTPCnsigHigh)
@@ -396,7 +395,7 @@ struct AngularCorrelationsInJets {
     if (TMath::Abs(track.dcaZ()) > fAntideuteronDCAz)
       return false;
 
-    //TOF
+    // TOF
     if (track.pt() < fAntideuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fAntideuteronTOFnsigLow)
       isAntideuteron = true;
     if (track.pt() > fAntideuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fAntideuteronTOFnsigHigh)
@@ -424,14 +423,14 @@ struct AngularCorrelationsInJets {
     for (int i = 0; i < static_cast<int>(buffer.size()); i++) {
       if (std::isnan(buffer.at(i).phi()))
         continue;
-      if (buffer.at(i).phi() > 2*TMath::Pi() || buffer.at(i).phi() < -2*TMath::Pi()) {
+      if (buffer.at(i).phi() > 2 * TMath::Pi() || buffer.at(i).phi() < -2 * TMath::Pi()) {
         registryData.fill(HIST("hTrackProtocol"), 13);
         continue;
       }
 
       double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - buffer.at(i).phi());
       if (DeltaPhi > (1.5 * TMath::Pi())) {
-            DeltaPhi = DeltaPhi - 2 * TMath::Pi();
+        DeltaPhi = DeltaPhi - 2 * TMath::Pi();
       }
       double DeltaEta = TMath::Abs(track.eta() - buffer.at(i).eta());
       registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
@@ -441,30 +440,30 @@ struct AngularCorrelationsInJets {
 
   void doCorrelations(const auto& particleVector, const auto& buffer, auto& tempBuffer, int particleType)
   {
-    for (int i = 0; i < static_cast<int>(particleVector.size()); i++) {// maybe simply introduce phi cut?
-      if (particleVector.at(i).phi() > 2*TMath::Pi() || particleVector.at(i).phi() < -2*TMath::Pi()) {
+    for (int i = 0; i < static_cast<int>(particleVector.size()); i++) { // maybe simply introduce phi cut?
+      if (particleVector.at(i).phi() > 2 * TMath::Pi() || particleVector.at(i).phi() < -2 * TMath::Pi()) {
         registryData.fill(HIST("hTrackProtocol"), 11);
         continue;
       }
-        for (int j = i + 1; j < static_cast<int>(particleVector.size()); j++) {
-          if ((j == static_cast<int>(particleVector.size())) || std::isnan(particleVector.at(j).phi()))
-            continue;
-          if (particleVector.at(j).phi() > 2*TMath::Pi() || particleVector.at(j).phi() < -2*TMath::Pi()) {
-            registryData.fill(HIST("hTrackProtocol"), 12);
-            continue;
-          }
-
-          double DeltaPhi = TVector2::Phi_0_2pi(particleVector.at(i).phi() - particleVector.at(j).phi());
-          double DeltaEta = TMath::Abs(particleVector.at(i).eta() - particleVector[j].eta());
-          if (DeltaPhi > (1.5 * TMath::Pi())) {
-            DeltaPhi = DeltaPhi - 2 * TMath::Pi();
-          }
-          registryData.fill(HIST("hDeltaPhiSE"), 1, DeltaPhi);
-          registryData.fill(HIST("hDeltaPhiEtaSE"), 1, DeltaPhi, DeltaEta);
+      for (int j = i + 1; j < static_cast<int>(particleVector.size()); j++) {
+        if ((j == static_cast<int>(particleVector.size())) || std::isnan(particleVector.at(j).phi()))
+          continue;
+        if (particleVector.at(j).phi() > 2 * TMath::Pi() || particleVector.at(j).phi() < -2 * TMath::Pi()) {
+          registryData.fill(HIST("hTrackProtocol"), 12);
+          continue;
         }
-        fillMixedEventDeltas(particleVector.at(i), buffer, particleType);
-        tempBuffer.emplace_back(particleVector.at(i));
+
+        double DeltaPhi = TVector2::Phi_0_2pi(particleVector.at(i).phi() - particleVector.at(j).phi());
+        double DeltaEta = TMath::Abs(particleVector.at(i).eta() - particleVector[j].eta());
+        if (DeltaPhi > (1.5 * TMath::Pi())) {
+          DeltaPhi = DeltaPhi - 2 * TMath::Pi();
+        }
+        registryData.fill(HIST("hDeltaPhiSE"), 1, DeltaPhi);
+        registryData.fill(HIST("hDeltaPhiEtaSE"), 1, DeltaPhi, DeltaEta);
       }
+      fillMixedEventDeltas(particleVector.at(i), buffer, particleType);
+      tempBuffer.emplace_back(particleVector.at(i));
+    }
   }
 
   template <typename T, typename U>
@@ -492,11 +491,11 @@ struct AngularCorrelationsInJets {
 
       double mass;
       if (track.hasTOF()) {
-        mass = track.mass(); //check reliability, maybe use only pion mass
+        mass = track.mass(); // check reliability, maybe use only pion mass
         registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
         registryData.fill(HIST("hTrackProtocol"), 4);
       } else {
-        mass = 0.139; //pion mass as default, ~80% are pions
+        mass = 0.139; // pion mass as default, ~80% are pions
         registryData.fill(HIST("hTrackProtocol"), 5);
       }
 
@@ -517,7 +516,7 @@ struct AngularCorrelationsInJets {
       jetInput.emplace_back(inputPseudoJet);
 
       index++;
-    } //for (const auto& track : tracks)
+    } // for (const auto& track : tracks)
 
     if (jetInput.size() < 2)
       return;
@@ -527,7 +526,7 @@ struct AngularCorrelationsInJets {
     if (constituents.empty())
       return;
 
-    std::vector<typename U::iterator> jetProtons; //replace with IDs?
+    std::vector<typename U::iterator> jetProtons; // replace with IDs?
     std::vector<typename U::iterator> jetAntiprotons;
     std::vector<typename U::iterator> jetDeuterons;
     std::vector<typename U::iterator> jetAntideuterons;
@@ -627,11 +626,11 @@ struct AngularCorrelationsInJets {
 
       double mass;
       if (track.hasTOF()) {
-        mass = track.mass(); //check reliability, maybe use only pion mass
+        mass = track.mass(); // check reliability, maybe use only pion mass
         registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
         registryData.fill(HIST("hTrackProtocol"), 4);
       } else {
-        mass = 0.139; //pion mass as default, ~80% are pions
+        mass = 0.139; // pion mass as default, ~80% are pions
         registryData.fill(HIST("hTrackProtocol"), 5);
       }
 
@@ -652,7 +651,7 @@ struct AngularCorrelationsInJets {
       jetInput.emplace_back(inputPseudoJet);
 
       index++;
-    } //for (const auto& track : tracks)
+    } // for (const auto& track : tracks)
 
     if (jetInput.size() < 2)
       return;
@@ -662,7 +661,7 @@ struct AngularCorrelationsInJets {
     if (constituents.empty())
       return;
 
-    std::vector<typename U::iterator> jetProtons; //replace with IDs?
+    std::vector<typename U::iterator> jetProtons; // replace with IDs?
     std::vector<typename U::iterator> jetAntiprotons;
     std::vector<typename U::iterator> jetDeuterons;
     std::vector<typename U::iterator> jetAntideuterons;
@@ -762,8 +761,6 @@ struct AngularCorrelationsInJets {
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun3, "process Run 3 data", false);
 };
-
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
