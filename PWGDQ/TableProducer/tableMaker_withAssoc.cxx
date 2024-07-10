@@ -212,6 +212,7 @@ struct TableMaker {
 
   // Muon related options
   Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propgate muon tracks through absorber (do not use if applying pairing)"};
+  Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Propgate muon tracks through absorber (do not use if applying pairing)"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -747,7 +748,7 @@ struct TableMaker {
         VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
       // recalculte pDca and global muon kinematics
-      if (static_cast<int>(muon.trackType()) < 2) {
+      if (static_cast<int>(muon.trackType()) < 2 && fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
