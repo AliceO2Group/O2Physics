@@ -31,7 +31,6 @@ try:
     from hipe4ml import plot_utils
     from hipe4ml.model_handler import ModelHandler
     from hipe4ml.tree_handler import TreeHandler
-    from sklearn.model_selection import train_test_split
 except ModuleNotFoundError:
     print("Module 'hipe4ml' is not installed. Please install it to run this macro")
 
@@ -40,6 +39,7 @@ import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import xgboost as xgb  # pylint: disable=import-error
 import yaml  # pylint: disable=import-error
+from sklearn.model_selection import train_test_split  # pylint: disable=import-error
 
 try:
     from hipe4ml_converter.h4ml_converter import H4MLConverter
