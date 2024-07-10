@@ -50,7 +50,7 @@ struct firstcorrelations {
   }
 
   template <typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget /*target*/, TTracks /*tracks1*/, TTracks /*tracks2*/, float centrality, float /*posZ*/)
+  void fillCorrelations(TTarget /*target*/, TTracks /*tracks1*/, TTracks /*tracks2*/, float /*centrality*/, float /*posZ*/)
   {
   }
 
