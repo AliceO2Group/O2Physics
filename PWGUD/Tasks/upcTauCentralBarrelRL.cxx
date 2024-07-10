@@ -32,6 +32,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/SGSelector.h"
 
 // ROOT headers
 #include "TLorentzVector.h"
@@ -48,10 +49,13 @@ struct UpcTauCentralBarrelRL {
   bool isFirstReconstructedCollisions;
   int countCollisions;
   Service<o2::framework::O2DatabasePDG> pdg;
+  SGSelector sgSelector;
 
   HistogramRegistry histos{
     "histos",
     {{"Events/hCountCollisions", ";Number of analysed collision (-)", {HistType::kTH1D, {{10, 0.5, 10.5}}}},
+     {"Events/UDtableGapSide", ";GapSide value from UD table (-)", {HistType::kTH1D, {{4, -1.5, 2.5}}}},
+     {"Events/TrueGapSideDiffToTableValue", ";Difference trueGapSide from SGselector and gapSide from UD table (-)", {HistType::kTH1D, {{7, -3.5, 3.5}}}},
      {"Events/hNreconstructedTracks", ";Number of tracks in a collision (-);Number of events (-)", {HistType::kTH1D, {{30, -0.5, 29.5}}}},
      {"Events/hNreconstructedPVGTelectrons", ";Number of good track electrons from primary vertex in a collision (-);Number of events (-)", {HistType::kTH1D, {{30, -0.5, 29.5}}}},
      {"Events/hNreconstructedPVGTmuons", ";Number of good track muons from primary vertex in a collision (-);Number of events (-)", {HistType::kTH1D, {{30, -0.5, 29.5}}}},
@@ -137,6 +141,11 @@ struct UpcTauCentralBarrelRL {
   // declare configurables
   Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
   Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
+  Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
+  Configurable<float> cutMyGapSideFV0{"FV0", -1, "FV0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0A{"FT0A", 150., "FT0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0C{"FT0C", 50., "FT0C threshold for SG selector"};
+  Configurable<float> cutMyGapSideZDC{"ZDC", 10., "ZDC threshold for SG selector"};
   Configurable<bool> usePIDwithTOF{"usePIDwithTOF", true, {"Determine whether also TOF should be used in testPIDhypothesis"}};
   Configurable<float> cutMyTPCnSigmaEl{"cutMyTPCnSigmaEl", 3.f, {"n sigma cut on el in absolut values"}};
   Configurable<float> cutMyTPCnSigmaMu{"cutMyTPCnSigmaMu", 3.f, {"n sigma cut on mu in absolut values"}};
@@ -171,7 +180,7 @@ struct UpcTauCentralBarrelRL {
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
-  using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions>::iterator;
+  using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
 
   TF1* funcPhiCutL = nullptr;
   TF1* funcPhiCutH = nullptr;
@@ -714,7 +723,7 @@ struct UpcTauCentralBarrelRL {
   } // end init
 
   // run (always called before process :( )
-  void run(ProcessingContext& /*context*/)
+  void run(ProcessingContext&)
   {
 
     if (verboseInfo)
@@ -2131,20 +2140,21 @@ struct UpcTauCentralBarrelRL {
   {
     countCollisions++;
 
-    if (reconstructedCollision.gapSide() == 0)
-      histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(1);
-    if (reconstructedCollision.gapSide() == 1)
-      histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(2);
-    if (reconstructedCollision.gapSide() == 2)
-      histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(3);
-    if (reconstructedCollision.gapSide() != whichGapSide)
+    int gapSide = reconstructedCollision.gapSide();
+    int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutMyGapSideFV0, cutMyGapSideFT0A, cutMyGapSideFT0C, cutMyGapSideZDC);
+    histos.fill(HIST("Events/UDtableGapSide"), gapSide);
+    histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide-trueGapSide);
+    if (useTrueGap)
+      gapSide = trueGapSide;
+
+    if (gapSide != whichGapSide)
       return;
 
     fillHistograms(reconstructedCollision, reconstructedBarrelTracks);
 
   } // end processDGrecoLevel
 
-  void processAnalysisFinished(FullUDCollision const& /*collisions*/)
+  void processAnalysisFinished(FullUDCollision const&)
   {
 
     if (verboseInfo)
