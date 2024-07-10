@@ -592,7 +592,7 @@ struct lambdaCorrelationAnalysis {
   Partition<Lambda_Tracks> part_lambda_tracks = aod::lambdatrack::flag == true;
   Partition<Lambda_Tracks> part_anti_lambda_tracks = aod::lambdatrack::flag == false;
 
-  void process(Lambda_Collisions::iterator const& collision, Lambda_Tracks const& lambdas)
+  void process(Lambda_Collisions::iterator const& collision, Lambda_Tracks const& /*lambdas*/)
   {
 
     histos.fill(HIST("Event/h1d_posz"), collision.posZ());
