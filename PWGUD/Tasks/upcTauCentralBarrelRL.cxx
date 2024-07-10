@@ -57,9 +57,9 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
   Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
   Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
-  Configurable<float> cutMyGapSideFV0{"FV0", -1, "FV0A threshold for SG selector"};
-  Configurable<float> cutMyGapSideFT0A{"FT0A", 150., "FT0A threshold for SG selector"};
-  Configurable<float> cutMyGapSideFT0C{"FT0C", 50., "FT0C threshold for SG selector"};
+  Configurable<float> cutMyGapSideFV0{"FV0", 100, "FV0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0A{"FT0A", 200., "FT0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0C{"FT0C", 100., "FT0C threshold for SG selector"};
   Configurable<float> cutMyGapSideZDC{"ZDC", 10., "ZDC threshold for SG selector"};
   Configurable<bool> usePIDwithTOF{"usePIDwithTOF", true, {"Determine whether also TOF should be used in testPIDhypothesis"}};
   Configurable<float> cutMyTPCnSigmaEl{"cutMyTPCnSigmaEl", 3.f, {"n sigma cut on el in absolut values"}};
