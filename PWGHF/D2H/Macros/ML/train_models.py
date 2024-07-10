@@ -37,10 +37,14 @@ try:
     from hipe4ml import plot_utils
     from hipe4ml.model_handler import ModelHandler
     from hipe4ml.tree_handler import TreeHandler
-    from hipe4ml_converter.h4ml_converter import H4MLConverter
     from sklearn.model_selection import train_test_split
 except ModuleNotFoundError:
     print("Module 'hipe4ml' is not installed. Please install it to run this macro")
+
+try:
+    from hipe4ml_converter.h4ml_converter import H4MLConverter
+except ModuleNotFoundError:
+    print("Module 'hipe4ml_converter' is not installed. Please install it to run this macro")
 
 LABEL_BKG = 0
 LABEL_PROMPT = 1
