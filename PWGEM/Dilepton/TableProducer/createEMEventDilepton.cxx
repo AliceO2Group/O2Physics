@@ -121,7 +121,7 @@ struct CreateEMEventDilepton {
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
 
   template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
+  void skimEvent(TCollisions const& collisions, TBCs const&)
   {
     for (auto& collision : collisions) {
       if constexpr (isMC) {

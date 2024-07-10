@@ -665,6 +665,14 @@ class HfHelper
     return candidate.y(o2::constants::physics::MassSigmaCPlusPlus);
   }
 
+  /// Σc0,++ → Λc+(→K0sP) π-,+
+  /// @brief Sc inv. mass using reco mass for Lc in K0sP and PDG mass for pion
+  template <typename T, typename U>
+  auto invMassScRecoLcToK0sP(const T& candidateSc, const U& candidateLc)
+  {
+    return candidateSc.m(std::array{static_cast<double>(invMassLcToK0sP(candidateLc)), o2::constants::physics::MassPiMinus});
+  }
+
   /// Apply topological cuts as defined in SelectorCuts.h
   /// \param candB0 B0 candidate
   /// \param cuts B0 candidate selection per pT bin"

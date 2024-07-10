@@ -308,7 +308,7 @@ struct DalitzEEQCMC {
   }
 
   template <typename TCollision, typename TTrack1, typename TTrack2, typename TMCParticles>
-  bool fillTruePairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TMCParticles const& mcparticles)
+  bool fillTruePairInfo(TCollision const&, TTrack1 const& t1, TTrack2 const& t2, TMCParticles const& mcparticles)
   {
     if (!fDileptonCut.IsSelectedTrack(t1) || !fDileptonCut.IsSelectedTrack(t2)) {
       return false;

@@ -147,7 +147,7 @@ struct JetSubstructureTask {
   }
 
   template <typename T, typename U>
-  void jetPairing(T const& jet, U const& tracks)
+  void jetPairing(T const& jet, U const& /*tracks*/)
   {
     pairPtVec.clear();
     pairEnergyVec.clear();
