@@ -725,12 +725,11 @@ struct TaskPolarisationCharmHadrons {
   };
 
   /// \param candidates are the selected candidates
-  /// \param tracks is the track table
   /// \param bkgRotationId is the id for the background rotation
   /// \param numPvContributors is the number of PV contributors
   /// \return true if candidate in signal region
   template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, typename Cand, typename Trk, typename Part>
-  bool runPolarisationAnalysis(Cand const& candidate, Trk const& tracks, Part const& particles, int bkgRotationId, int numPvContributors)
+  bool runPolarisationAnalysis(Cand const& candidate, Part const& particles, int bkgRotationId, int numPvContributors, Trk const&)
   {
     bool isCandidateInSignalRegion{false};
     int8_t origin{RecoDecay::OriginType::None};
@@ -1208,12 +1207,12 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate, -1 /*tracks*/, -1 /*MC particles*/, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate, -1 /*MC particles*/, 0, numPvContributors, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
 
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate, -1 /*tracks*/, -1 /*MC particles*/, iRotation, numPvContributors);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate, -1 /*MC particles*/, iRotation, numPvContributors, -1 /*tracks*/);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1233,12 +1232,12 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, -1 /*tracks*/, -1 /*MC particles*/, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, -1 /*MC particles*/, 0, numPvContributors, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
 
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, -1 /*tracks*/, -1 /*MC particles*/, iRotation, numPvContributors);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, -1 /*MC particles*/, iRotation, numPvContributors, -1 /*tracks*/);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1265,7 +1264,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(dstarCandidate, -1 /*tracks*/, -1 /*MC particles*/, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(dstarCandidate, -1 /*MC particles*/, 0, numPvContributors, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
       }
@@ -1297,7 +1296,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, -1 /*tracks*/, -1 /*MC particles*/, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, -1 /*MC particles*/, 0, numPvContributors, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
       }
@@ -1326,13 +1325,13 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, -1 /*tracks*/, -1 /*MC particles*/, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, -1 /*MC particles*/, 0, numPvContributors, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
 
         /// rotational background
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, -1 /*tracks*/, -1 /*MC particles*/, iRotation, numPvContributors);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, -1 /*MC particles*/, iRotation, numPvContributors, -1 /*tracks*/);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1352,13 +1351,13 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, -1 /*tracks*/, -1 /*MC particles*/, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, -1 /*MC particles*/, 0, numPvContributors, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
 
         /// rotational background
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, -1 /*tracks*/, -1 /*MC particles*/, iRotation, numPvContributors);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, -1 /*MC particles*/, iRotation, numPvContributors, -1 /*tracks*/);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1386,7 +1385,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, true>(lcCandidate, tracks, mcParticles, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, true>(lcCandidate, mcParticles, 0, numPvContributors, tracks)) {
           nCandsInSignalRegion++;
         }
       }
@@ -1419,7 +1418,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true>(lcCandidate, tracks, mcParticles, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true>(lcCandidate, mcParticles, 0, numPvContributors, tracks)) {
           nCandsInSignalRegion++;
         }
       }
