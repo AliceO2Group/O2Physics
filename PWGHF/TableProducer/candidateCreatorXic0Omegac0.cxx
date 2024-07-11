@@ -120,12 +120,6 @@ struct HfCandidateCreatorXic0Omegac0 {
   HistogramRegistry registry{"registry"};
   // Helper struct to pass  information
   struct {
-    float nSigmaTPCPiFromOmegac;
-    float nSigmaTOFPiFromOmegac;
-    float nSigmaTPCKaFromCasc;
-    float nSigmaTOFKaFromCasc;
-    float nSigmaTPCPiFromV0;
-    float nSigmaTPCPrFromV0;
     float chi2GeoV0;
     float ldlV0;
     float chi2TopoV0ToPv;
