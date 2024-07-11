@@ -137,9 +137,11 @@ struct HfCandidateCreatorXic0Omegac0 {
     float cosPaV0ToCasc; // PA
     float cosPaXYV0ToCasc;
     float cosPaV0ToPv;       // PA
+    float cosPaXYV0ToPv;                                
     float cosPaCascToOmegac; // PA
     float cosPaXYCascToOmegac;
     float cosPaCascToPv; // PA
+    float cosPaXYCascToPv; // PA                                
     float massV0;
     float massCasc;
     float ptPiFromOmegac;
@@ -918,6 +920,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.cosPaV0ToPv = cpaFromKF(kfpV0, KFPV);
       kfOmegac0Candidate.cosPaCascToPv = cpaFromKF(kfpCasc, KFPV);
       kfOmegac0Candidate.cosPaOmegacToPv = cpaFromKF(KFOmegaC0, KFPV);
+      kfOmegac0Candidate.cosPaXYV0ToPv = cpaXYFromKF(kfpV0, KFPV);
+      kfOmegac0Candidate.cosPaXYCascToPv = cpaXYFromKF(kfpCasc, KFPV);
       kfOmegac0Candidate.cosPaXYOmegacToPv = cpaXYFromKF(KFOmegaC0, KFPV);
 
       kfOmegac0Candidate.cosPaV0ToCasc = cpaFromKF(kfpV0, kfpCasc);
@@ -978,7 +982,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                        v0index, casc.posTrackId(), casc.negTrackId(),
                        casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
                        kfOmegac0Candidate.massV0, kfOmegac0Candidate.massCasc, kfOmegac0Candidate.massOmegac,
-                       kfOmegac0Candidate.cosPaV0ToCasc, kfOmegac0Candidate.cosPaOmegacToPv, kfOmegac0Candidate.cosPaCascToOmegac, kfOmegac0Candidate.cosPaXYV0ToCasc, kfOmegac0Candidate.cosPaXYOmegacToPv, kfOmegac0Candidate.cosPaXYCascToOmegac,
+                       kfOmegac0Candidate.cosPaV0ToPv, kfOmegac0Candidate.cosPaOmegacToPv, kfOmegac0Candidate.cosPaCascToPv, kfOmegac0Candidate.cosPaXYV0ToPv, kfOmegac0Candidate.cosPaXYOmegacToPv, kfOmegac0Candidate.cosPaXYCascToPv,
                        kfOmegac0Candidate.ctOmegac, kfOmegac0Candidate.ctCasc, kfOmegac0Candidate.ctV0,
                        pseudorapV0Dau0, pseudorapV0Dau1, pseudorapCascBachelor, pseudorapCharmBachelor,
                        kfOmegac0Candidate.etaOmegac, KFOmega.GetEta(), KFV0.GetEta(),
@@ -996,7 +1000,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                       kfOmegac0Candidate.chi2TopoV0ToPv, kfOmegac0Candidate.chi2TopoCascToPv, kfOmegac0Candidate.chi2TopoPiFromOmegacToPv, kfOmegac0Candidate.chi2TopoOmegacToPv,
                       kfOmegac0Candidate.chi2TopoV0ToCasc, kfOmegac0Candidate.chi2TopoCascToOmegac,
                       kfOmegac0Candidate.decayLenXYLambda, kfOmegac0Candidate.decayLenXYCasc, kfOmegac0Candidate.decayLenXYOmegac,
-                      kfOmegac0Candidate.cosPaV0ToPv, kfOmegac0Candidate.cosPaCascToPv,
+                      kfOmegac0Candidate.cosPaV0ToCasc, kfOmegac0Candidate.cosPaCascToOmegac,kfOmegac0Candidate.cosPaXYV0ToCasc,kfOmegac0Candidate.cosPaXYCascToOmegac,
                       kfOmegac0Candidate.rapOmegac, kfOmegac0Candidate.ptPiFromOmegac, kfOmegac0Candidate.ptOmegac,
                       kfOmegac0Candidate.cosThetaStarPiFromOmegac,
                       v0NDF, cascNDF, charmbaryonNDF, v0NDF_m, cascNDF_m,
