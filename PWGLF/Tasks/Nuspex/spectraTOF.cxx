@@ -64,6 +64,7 @@ struct tofSpectra {
     Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Remove TF border"};
     Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Remove TF border"};
     Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove TF border"};
+    Configurable<bool> requirekIsVertexTOFmatched{"requirekIsVertexTOFmatched", false, "Require requirekIsVertexTOFmatched"};
   } evselOptions;
 
   struct : ConfigurableGroup {
@@ -262,15 +263,16 @@ struct tofSpectra {
     h->GetXaxis()->SetBinLabel(3, "INEL>1 (fraction)");
     h->GetXaxis()->SetBinLabel(4, "Ev. sel. passed");
     h->GetXaxis()->SetBinLabel(5, "NoITSROFrameBorder");
-    h->GetXaxis()->SetBinLabel(6, "NoSameBunchPileup");
-    h->GetXaxis()->SetBinLabel(7, "IsGoodZvtxFT0vsPV");
-    h->GetXaxis()->SetBinLabel(8, "IsVertexITSTPC");
-    h->GetXaxis()->SetBinLabel(9, "NoTimeFrameBorder");
-    h->GetXaxis()->SetBinLabel(10, "INEL>0 (fraction)");
-    h->GetXaxis()->SetBinLabel(11, "INEL>1 (fraction)");
-    h->GetXaxis()->SetBinLabel(12, "posZ passed");
-    h->GetXaxis()->SetBinLabel(13, evselOptions.cfgINELCut.value == 1 ? "INEL>0" : "INEL>0 (fraction)");
-    h->GetXaxis()->SetBinLabel(14, evselOptions.cfgINELCut.value == 2 ? "INEL>1" : "INEL>1 (fraction)");
+    h->GetXaxis()->SetBinLabel(6, "NoITSROFrameBorder");
+    h->GetXaxis()->SetBinLabel(7, "NoSameBunchPileup");
+    h->GetXaxis()->SetBinLabel(8, "IsGoodZvtxFT0vsPV");
+    h->GetXaxis()->SetBinLabel(9, "IsVertexITSTPC");
+    h->GetXaxis()->SetBinLabel(10, "NoTimeFrameBorder");
+    h->GetXaxis()->SetBinLabel(11, "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(12, "INEL>1 (fraction)");
+    h->GetXaxis()->SetBinLabel(13, "posZ passed");
+    h->GetXaxis()->SetBinLabel(14, evselOptions.cfgINELCut.value == 1 ? "INEL>0" : "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(15, evselOptions.cfgINELCut.value == 2 ? "INEL>1" : "INEL>1 (fraction)");
 
     h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -932,57 +934,63 @@ struct tofSpectra {
         return false;
       }
     }
-    if (evselOptions.removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (evselOptions.requirekIsVertexTOFmatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 4.f);
     }
-    if (evselOptions.removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (evselOptions.removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 5.f);
     }
-    if (evselOptions.requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (evselOptions.removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 6.f);
     }
-    if (evselOptions.requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+    if (evselOptions.requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 7.f);
     }
-    if (evselOptions.removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (evselOptions.requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 8.f);
     }
+    if (evselOptions.removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 9.f);
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 10.f);
       if (collision.isInelGt0()) {
-        histos.fill(HIST("evsel"), 10.f);
+        histos.fill(HIST("evsel"), 11.f);
       }
       if (collision.isInelGt1()) {
-        histos.fill(HIST("evsel"), 11.f);
+        histos.fill(HIST("evsel"), 12.f);
       }
     }
     if (abs(collision.posZ()) > evselOptions.cfgCutVertex) {
       return false;
     }
     if constexpr (fillHistograms) {
-      histos.fill(HIST("evsel"), 12.f);
+      histos.fill(HIST("evsel"), 13.f);
       if (collision.isInelGt0()) {
-        histos.fill(HIST("evsel"), 13.f);
+        histos.fill(HIST("evsel"), 14.f);
       } else if (evselOptions.cfgINELCut == 1) {
         return false;
       }
       if (collision.isInelGt1()) {
-        histos.fill(HIST("evsel"), 14.f);
+        histos.fill(HIST("evsel"), 15.f);
       } else if (evselOptions.cfgINELCut == 2) {
         return false;
       }
