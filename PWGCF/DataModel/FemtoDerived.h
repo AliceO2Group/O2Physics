@@ -38,7 +38,6 @@ enum CollisionBinning {
   kNCollisionBinning
 };
 
-
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
 DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged tracks as defined in the producer
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event

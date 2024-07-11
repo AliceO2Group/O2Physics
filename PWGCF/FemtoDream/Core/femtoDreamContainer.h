@@ -280,8 +280,8 @@ class FemtoDreamContainer
       setPair_base<o2::aod::femtodreamMCparticle::MCType::kRecon, isHF>(femtoObs, mT, part1, part2, mult, multPercentile, use4dplots, extendedplots);
 
       if constexpr (isMC) {
-        if constexpr (isHF){
-                    // calculate the femto observable and the mT with MC truth information
+        if constexpr (isHF) {
+          // calculate the femto observable and the mT with MC truth information
           if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
             femtoObsMC = FemtoDreamMath::getkstar(part1.fdMCParticle(), mMassOne, part2, mMassTwo);
           }

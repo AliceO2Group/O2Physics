@@ -66,10 +66,10 @@ struct femtoDreamProducer {
 
   Configurable<bool> isDebug{"isDebug", true, "Enable Debug tables"};
   Configurable<bool> isRun3{"isRun3", true, "Running on Run3 or pilot"};
-  //Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
+  // Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event selection
-  //Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
+  // Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
   Configurable<float> evtZvtx{"evtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> evtTriggerCheck{"evtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> evtTriggerSel{"evtTriggerSel", kINT7, "Evt sel: trigger"};
@@ -80,7 +80,7 @@ struct femtoDreamProducer {
   Configurable<bool> useCent{"useCent", false, "Enable centrality for lc"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
 
-  //Configurable<bool> trkRejectNotPropagated{"trkRejectNotPropagated", false, "True: reject not propagated tracks"};
+  // Configurable<bool> trkRejectNotPropagated{"trkRejectNotPropagated", false, "True: reject not propagated tracks"};
   Configurable<int> trkPDGCode{"trkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
   Configurable<std::vector<float>> trkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "trk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
   Configurable<std::vector<float>> trkPtmin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "trk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ")};
@@ -260,8 +260,8 @@ struct femtoDreamProducer {
   void fillMCCollision(CollisionType const& col)
   {
     if (col.has_mcCollision()) {
-      //auto genMCcol = col.template mcCollision_as<FemtoFullMCgenCollisions>();
-      //outputMCCollision(genMCcol.multMCNParticlesEta08());
+      // auto genMCcol = col.template mcCollision_as<FemtoFullMCgenCollisions>();
+      // outputMCCollision(genMCcol.multMCNParticlesEta08());
       outputCollsMCLabels(outputMCCollision.lastIndex());
     } else {
       outputCollsMCLabels(-1);
@@ -311,7 +311,6 @@ struct femtoDreamProducer {
       if constexpr (isMC) {
         fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
-
     }
     return fIsTrackFilled;
   }
@@ -490,7 +489,7 @@ struct femtoDreamProducer {
                                FemtoHFMcTracks const& tracks,
                                aod::McParticles const&,
                                soa::Join<CandidateLcMC,
-                                                       aod::HfMlLcToPKPi> const& candidates)
+                                         aod::HfMlLcToPKPi> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
