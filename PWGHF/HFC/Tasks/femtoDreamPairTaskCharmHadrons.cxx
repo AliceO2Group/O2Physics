@@ -58,17 +58,17 @@ struct femtoDreamPairTaskCharmHadrons {
   Configurable<float> CPRdeltaPhiMax{"CPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<bool> extendedPlots{"extendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
   Configurable<float> highkstarCut{"highkstarCut", 100000., "Set a cut for high k*, above which the pairs are rejected"};
-  // Configurable<bool> isMc{"isMc", true, "Enable additional Histogramms in the case of a MonteCarlo Run"};
+  //Configurable<bool> isMc{"isMc", true, "Enable additional Histogramms in the case of a MonteCarlo Run"};
   Configurable<bool> isMc{"isMc", false, "Set true in the case of a MonteCarlo Run"};
   Configurable<bool> smearingByOrigin{"smearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption. Use with care!"};
   Configurable<bool> use4D{"use4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
   ConfigurableAxis dummy{"dummy", {1, 0, 1}, "dummy axis"};
 
   /// Event selection
-  // Configurable<int> event_maxMult{"event_maxMult", 99999, "Maximum Multiplicity (MultNtr)"};
-  // Configurable<float> event_maxMultPercentile{"event_maxMultPercentile", 100, "Maximum Multiplicity Percentile"};
-  // Configurable<int> event_minMult{"event_minMult", 0, "Minimum Multiplicity (MultNtr)"};
-  // Configurable<float> event_minMultPercentile{"event_minMultPercentile", 0, "Minimum Multiplicity Percentile"};
+  //Configurable<int> event_maxMult{"event_maxMult", 99999, "Maximum Multiplicity (MultNtr)"};
+  //Configurable<float> event_maxMultPercentile{"event_maxMultPercentile", 100, "Maximum Multiplicity Percentile"};
+  //Configurable<int> event_minMult{"event_minMult", 0, "Minimum Multiplicity (MultNtr)"};
+  //Configurable<float> event_minMultPercentile{"event_minMultPercentile", 0, "Minimum Multiplicity Percentile"};
 
   /// Particle 1 (track)
   Configurable<femtodreamparticle::cutContainerType> trk1_CutBit{"trk1_CutBit", 5542474, "Particle 1 (Track) - Selection bit from cutCulator"};
@@ -99,14 +99,14 @@ struct femtoDreamPairTaskCharmHadrons {
   ConfigurableAxis bin4DmT{"bin4DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
   ConfigurableAxis bin4DmultPercentile{"bin4DmultPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
   ConfigurableAxis binInvMass{"binInvMass", {300, 2.15, 2.45}, "InvMass binning"};
-  // ConfigurableAxis binTempFitVarHF{"binTempFitVarHF", {300, 0.9, 1}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0)"};
-  // ConfigurableAxis binTempFitVarHFChild{"binTempFitVarHFChild", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0 child)"};
+  //ConfigurableAxis binTempFitVarHF{"binTempFitVarHF", {300, 0.9, 1}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0)"};
+  //ConfigurableAxis binTempFitVarHFChild{"binTempFitVarHFChild", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0 child)"};
   ConfigurableAxis binTempFitVarTrack{"binTempFitVarTrack", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Track)"};
   ConfigurableAxis binmT{"binmT", {225, 0., 7.5}, "binning mT"};
   ConfigurableAxis binmultTempFit{"binmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
   ConfigurableAxis binpT{"binpT", {20, 0.5, 4.05}, "pT binning"};
-  // ConfigurableAxis binpTHF{"binpTHF", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
-  // ConfigurableAxis binpTHFChild{"binpTHFChild", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
+  //ConfigurableAxis binpTHF{"binpTHF", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
+  //ConfigurableAxis binpTHFChild{"binpTHFChild", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
   ConfigurableAxis binpTTrack{"binpTTrack", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
   ConfigurableAxis binkT{"binkT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis binkstar{"binkstar", {1500, 0., 6.}, "binning kstar"};
@@ -134,7 +134,7 @@ struct femtoDreamPairTaskCharmHadrons {
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCleaner;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejection;
-
+  
   Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
   Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
   Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < trk1_maxEta, true);
@@ -192,7 +192,7 @@ struct femtoDreamPairTaskCharmHadrons {
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
   Produces<o2::aod::FDResultsHF> fillFemtoResult;
 
-  void init(InitContext& /*context*/)
+  void init(InitContext& context)
   {
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, binmultTempFit, dummy, binpTTrack, dummy, dummy, binTempFitVarTrack, dummy, dummy, dummy, dummy, dummy, isMc, trk1_PDGCode);
@@ -221,7 +221,7 @@ struct femtoDreamPairTaskCharmHadrons {
 
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename TableCandidates, typename Collision>
-  void doSameEvent(PartitionType& SliceTrk1, CandType& SliceCharmHad, TableTracks const& parts, TableCandidates const& /*candidates*/, Collision const& col)
+  void doSameEvent(PartitionType& SliceTrk1, CandType& SliceCharmHad, TableTracks const& parts, TableCandidates const& candidates, Collision const& col)
   {
     processType = 1; // for same event
     /// Histogramming same event
@@ -242,7 +242,7 @@ struct femtoDreamPairTaskCharmHadrons {
       int pairSign = 0;
       if (chargeTrack == p2.charge()) {
         pairSign = likeSignPair;
-      } else {
+      } else { 
         pairSign = unLikeSignPair;
       }
 
@@ -250,11 +250,11 @@ struct femtoDreamPairTaskCharmHadrons {
       if (kstar > highkstarCut)
         continue;
 
-      // if (chargeTrack == 1) {
-      //   partSign = 1;
-      // } else {
-      //   partSign = 1 << 1;
-      // }
+     // if (chargeTrack == 1) {
+     //   partSign = 1;
+     // } else {
+     //   partSign = 1 << 1;
+     // }
 
       if (useCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, col.magField())) {
@@ -279,9 +279,9 @@ struct femtoDreamPairTaskCharmHadrons {
         continue;
       int charmHadMc = 0;
       int originType = 0;
-      if constexpr (isMc) {
-        charmHadMc = p2.flagMc();
-        originType = p2.originMcRec();
+      if constexpr (isMc){
+      charmHadMc = p2.flagMc();
+      originType = p2.originMcRec();
       }
       fillFemtoResult(
         invMass,
@@ -306,7 +306,7 @@ struct femtoDreamPairTaskCharmHadrons {
   }
 
   template <bool isMc, typename CollisionType, typename PartType, typename PartitionType1, typename PartitionType2, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& /*part2*/, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& part2, BinningType policy)
   {
     processType = 1 << 1; // for mixed event
 
@@ -317,22 +317,21 @@ struct femtoDreamPairTaskCharmHadrons {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceCharmHad))) {
 
         float chargeTrack = 0.;
-        if ((p1.cut() & 1) == 1) {
-          chargeTrack = positiveCharge;
-        } else {
-          chargeTrack = negativeCharge;
-        }
+      if ((p1.cut() & 1) == 1) {
+        chargeTrack = positiveCharge;
+      } else {
+        chargeTrack = negativeCharge;
+      }
 
-        int pairSign = 0;
-        if (chargeTrack == p2.charge()) {
-          pairSign = likeSignPair;
-        } else {
-          pairSign = unLikeSignPair;
-        }
+      int pairSign = 0;
+      if (chargeTrack == p2.charge()) {
+        pairSign = likeSignPair;
+      } else { 
+        pairSign = unLikeSignPair;
+      }
 
-        float kstar = FemtoDreamMath::getkstar(p1, MassOne, p2, MassTwo);
-        if (kstar > highkstarCut)
-          continue;
+      float kstar = FemtoDreamMath::getkstar(p1, MassOne, p2, MassTwo);
+      if (kstar > highkstarCut) continue;
 
         float invMass;
         if (p2.candidateSelFlag() == 1) {
@@ -341,29 +340,29 @@ struct femtoDreamPairTaskCharmHadrons {
           invMass = p2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
         }
 
-        int charmHadMc = 0;
-        int originType = 0;
-        if constexpr (isMc) {
-          charmHadMc = p2.flagMc();
-          originType = p2.originMcRec();
-        }
-        fillFemtoResult(
-          invMass,
-          p2.pt(),
-          p1.pt(),
-          p2.bdtBkg(),
-          p2.bdtPrompt(),
-          p2.bdtFD(),
-          kstar,
-          FemtoDreamMath::getkT(p1, MassOne, p2, MassTwo),
-          FemtoDreamMath::getmT(p1, MassOne, p2, MassTwo),
-          collision1.multNtr(),
-          collision1.multV0M(),
-          p2.charge(),
-          pairSign,
-          processType,
-          charmHadMc,
-          originType);
+      int charmHadMc = 0;
+      int originType = 0;
+      if constexpr (isMc){
+      charmHadMc = p2.flagMc();
+      originType = p2.originMcRec();
+      }
+      fillFemtoResult(
+        invMass,
+        p2.pt(),
+        p1.pt(),
+        p2.bdtBkg(),
+        p2.bdtPrompt(),
+        p2.bdtFD(),
+        kstar,
+        FemtoDreamMath::getkT(p1, MassOne, p2, MassTwo),
+        FemtoDreamMath::getmT(p1, MassOne, p2, MassTwo),
+        collision1.multNtr(),
+        collision1.multV0M(),
+        p2.charge(),
+        pairSign,
+        processType,
+        charmHadMc,
+        originType);
 
         if (useCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, collision1.magField())) {
@@ -373,7 +372,7 @@ struct femtoDreamPairTaskCharmHadrons {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        // if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
+        //if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
         mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
       }
     }
@@ -406,7 +405,7 @@ struct femtoDreamPairTaskCharmHadrons {
   }
   PROCESS_SWITCH(femtoDreamPairTaskCharmHadrons, processMixedEvent, "Enable processing mixed events", true);
 
-  /// process function for to call doSameEvent with Monte Carlo
+/// process function for to call doSameEvent with Monte Carlo
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// \param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
@@ -417,7 +416,7 @@ struct femtoDreamPairTaskCharmHadrons {
   {
     auto SliceMcTrk1 = PartitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMcCharmHad = PartitionMcHF->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-
+    
     if (SliceMcTrk1.size() == 0 && SliceMcCharmHad.size() == 0) {
       return;
     }
@@ -446,6 +445,7 @@ struct femtoDreamPairTaskCharmHadrons {
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskCharmHadrons, processMixedEventMc, "Enable processing mixed events MC", false);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
