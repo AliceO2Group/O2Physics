@@ -393,6 +393,9 @@ struct dimuonQCMC {
     if (abs(t1mc.pdgCode()) != 13 || abs(t2mc.pdgCode()) != 13) {
       return false;
     }
+    if (t1mc.emmceventId() != t2mc.emmceventId()) {
+      return false;
+    }
 
     int mother_id = FindLF(t1mc, t2mc, mcparticles);
     int hfee_type = IsHF(t1mc, t2mc, mcparticles);
