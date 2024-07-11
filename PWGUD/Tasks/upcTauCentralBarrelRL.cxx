@@ -1976,7 +1976,7 @@ struct UpcTauCentralBarrelRL {
   } // end fillHistograms
 
   template <typename C, typename Ts>
-  void fillPIDhistograms(C reconstructedCollision, Ts reconstructedBarrelTracks)
+  void fillPIDhistograms(C /*reconstructedCollision*/, Ts reconstructedBarrelTracks)
   {
 
     if (isFirstReconstructedCollisions) {
