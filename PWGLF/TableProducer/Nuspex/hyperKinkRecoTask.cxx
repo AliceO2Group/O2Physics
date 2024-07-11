@@ -492,7 +492,6 @@ struct hyperKinkRecoTask {
       if (mcLabHyper.has_mcParticle() && mcLabTrit.has_mcParticle()) {
         auto mcTrackHyper = mcLabHyper.mcParticle_as<aod::McParticles>();
         auto mcTrackTrit = mcLabTrit.mcParticle_as<aod::McParticles>();
-        // LOG(info) << "Hyper PDG: " << mcTrackHyper.pdgCode() << " Triton PDG: " << mcTrackTrit.pdgCode();
 
         if (abs(mcTrackHyper.pdgCode()) != hyperPdg || abs(mcTrackTrit.pdgCode()) != tritDauPdg) {
           continue;
@@ -601,20 +600,7 @@ struct hyperKinkRecoTask {
 
     selectGoodCollisionsMC(collisions);
     fillCandidateData(collisions, tracks, ambiTracks, bcs);
-
-    // crosscheck: loop over svcandpool and look for the corresponding MC particles
-    auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
-    for (auto& svCand : kinkPool) {
-      auto trackHyper = tracks.rawIteratorAt(svCand.tr0Idx);
-      auto trackTrit = tracks.rawIteratorAt(svCand.tr1Idx);
-      auto mcLabelHyper = trackLabelsMC.rawIteratorAt(trackHyper.globalIndex());
-      auto mcLabelTrit = trackLabelsMC.rawIteratorAt(trackTrit.globalIndex());
-      auto mcPart = mcLabelHyper.mcParticle_as<aod::McParticles>();
-      auto mcPartTrit = mcLabelTrit.mcParticle_as<aod::McParticles>();
-      LOG(info) << "Hyper PDG: " << mcPart.pdgCode() << " Triton PDG: " << mcPartTrit.pdgCode();
-    }
     fillMCinfo(trackLabelsMC, particlesMC);
-    LOG(info) << "Kink cand size: " << kinkCandidates.size();
 
     std::vector<int> mcToKinkCandidates;
     mcToKinkCandidates.resize(particlesMC.size(), -1);
@@ -665,7 +651,7 @@ struct hyperKinkRecoTask {
       auto mcLabel = trackLabelsMC.rawIteratorAt(track.globalIndex());
       if (mcLabel.has_mcParticle()) {
         auto mcTrack = mcLabel.mcParticle_as<aod::McParticles>();
-        if (mcToKinkCandidates[mcTrack.globalIndex()] < 0) {
+        if (mcToKinkCandidates[mcTrack.globalIndex()] < 0 || !track.hasITS()) {
           continue;
         }
         auto& kinkCand = kinkCandidates[mcToKinkCandidates[mcTrack.globalIndex()]];
