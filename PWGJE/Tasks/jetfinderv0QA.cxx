@@ -184,7 +184,7 @@ struct JetFinderV0QATask {
           break;
         }
       }
-      for (auto& hfconstituent : jet.template hfcandidates_as<U>()) {
+      for (auto& hfconstituent : jet.template candidates_as<U>()) {
         if (hfconstituent.pt() >= leadingConstituentPtMin) {
           isMinleadingConstituent = true;
           break;
@@ -210,18 +210,18 @@ struct JetFinderV0QATask {
       registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta"), jet.eta(), weight);
       registry.fill(HIST("h_jet_phi"), jet.phi(), weight);
-      registry.fill(HIST("h_jet_ntracks"), jet.tracksIds().size() + jet.hfcandidatesIds().size(), weight);
+      registry.fill(HIST("h_jet_ntracks"), jet.tracksIds().size() + jet.candidatesIds().size(), weight);
       registry.fill(HIST("h2_centrality_jet_pt"), centrality, jet.pt(), weight);
       registry.fill(HIST("h2_centrality_jet_eta"), centrality, jet.eta(), weight);
       registry.fill(HIST("h2_centrality_jet_phi"), centrality, jet.phi(), weight);
-      registry.fill(HIST("h2_centrality_jet_ntracks"), centrality, jet.tracksIds().size() + jet.hfcandidatesIds().size(), weight);
+      registry.fill(HIST("h2_centrality_jet_ntracks"), centrality, jet.tracksIds().size() + jet.candidatesIds().size(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_jet_pt_centrality"), jet.r() / 100.0, jet.pt(), centrality, weight);
     registry.fill(HIST("h3_jet_r_jet_pt_jet_eta"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
     registry.fill(HIST("h3_jet_r_jet_pt_jet_phi"), jet.r() / 100.0, jet.pt(), jet.phi(), weight);
     registry.fill(HIST("h3_jet_r_jet_eta_jet_phi"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_ntracks"), jet.r() / 100.0, jet.pt(), jet.tracksIds().size() + jet.hfcandidatesIds().size(), weight);
+    registry.fill(HIST("h3_jet_r_jet_pt_jet_ntracks"), jet.r() / 100.0, jet.pt(), jet.tracksIds().size() + jet.candidatesIds().size(), weight);
     registry.fill(HIST("h3_jet_r_jet_pt_jet_area"), jet.r() / 100.0, jet.pt(), jet.area(), weight);
 
     for (auto& constituent : jet.template tracks_as<JetTracks>()) {
@@ -231,7 +231,7 @@ struct JetFinderV0QATask {
       registry.fill(HIST("h3_jet_r_jet_pt_track_phi"), jet.r() / 100.0, jet.pt(), constituent.phi(), weight);
     }
 
-    for (auto& v0candidate : jet.template hfcandidates_as<std::decay_t<U>>()) {
+    for (auto& v0candidate : jet.template candidates_as<std::decay_t<U>>()) {
 
       registry.fill(HIST("h3_jet_r_jet_pt_track_pt"), jet.r() / 100.0, jet.pt(), v0candidate.pt(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_track_eta"), jet.r() / 100.0, jet.pt(), v0candidate.eta(), weight);
@@ -263,13 +263,13 @@ struct JetFinderV0QATask {
       registry.fill(HIST("h_jet_pt_part"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta_part"), jet.eta(), weight);
       registry.fill(HIST("h_jet_phi_part"), jet.phi(), weight);
-      registry.fill(HIST("h_jet_ntracks_part"), jet.tracksIds().size() + jet.hfcandidatesIds().size(), weight);
+      registry.fill(HIST("h_jet_ntracks_part"), jet.tracksIds().size() + jet.candidatesIds().size(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_eta_part"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_phi_part"), jet.r() / 100.0, jet.pt(), jet.phi(), weight);
     registry.fill(HIST("h3_jet_r_part_jet_eta_part_jet_phi_part"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
-    registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_ntracks_part"), jet.r() / 100.0, jet.pt(), jet.tracksIds().size() + jet.hfcandidatesIds().size(), weight);
+    registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_ntracks_part"), jet.r() / 100.0, jet.pt(), jet.tracksIds().size() + jet.candidatesIds().size(), weight);
 
     for (auto& constituent : jet.template tracks_as<std::decay_t<U>>()) {
 
@@ -278,7 +278,7 @@ struct JetFinderV0QATask {
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_phi_part"), jet.r() / 100.0, jet.pt(), constituent.phi(), weight);
     }
 
-    for (auto& v0candidate : jet.template hfcandidates_as<std::decay_t<V>>()) {
+    for (auto& v0candidate : jet.template candidates_as<std::decay_t<V>>()) {
 
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_pt_part"), jet.r() / 100.0, jet.pt(), v0candidate.pt(), weight);
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_eta_part"), jet.r() / 100.0, jet.pt(), v0candidate.eta(), weight);

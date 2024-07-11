@@ -24,6 +24,7 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 namespace o2::aod
 {
@@ -54,6 +55,12 @@ namespace bkgbplus
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCandBplus, "_0");
 } // namespace bkgbplus
 
+namespace bkgdielectron
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, Dielectrons, "_0");
+// DECLARE_SOA_INDEX_COLUMN(Dielectron, candidate);
+} // namespace bkgdielectron
+
 DECLARE_SOA_TABLE(BkgChargedRhos, "AOD", "BkgCRho",
                   o2::soa::Index<>,
                   bkgcharged::JCollisionId,
@@ -75,6 +82,12 @@ DECLARE_SOA_TABLE(BkgLcRhos, "AOD", "BkgLcRho",
 DECLARE_SOA_TABLE(BkgBplusRhos, "AOD", "BkgBPlRho",
                   o2::soa::Index<>,
                   bkgbplus::CandidateId,
+                  bkgrho::Rho,
+                  bkgrho::RhoM);
+
+DECLARE_SOA_TABLE(BkgDielectronRhos, "AOD", "BkgDIELRho",
+                  o2::soa::Index<>,
+                  bkgdielectron::CandidateId,
                   bkgrho::Rho,
                   bkgrho::RhoM);
 
@@ -155,6 +168,21 @@ DECLARE_SOA_TABLE(JTrackBplusSubs, "AOD", "JTrackBPlSubs",
                   jtracksub::P<jtracksub::Pt, jtracksub::Eta>);
 
 using JTrackBplusSub = JTrackBplusSubs::iterator;
+
+DECLARE_SOA_TABLE(JTrackDielectronSubs, "AOD", "JTrackDIELSubs",
+                  o2::soa::Index<>,
+                  bkgdielectron::CandidateId,
+                  jtracksub::Pt,
+                  jtracksub::Eta,
+                  jtracksub::Phi,
+                  jtracksub::Energy,
+                  jtracksub::TrackSel,
+                  jtracksub::Px<jtracksub::Pt, jtracksub::Phi>,
+                  jtracksub::Py<jtracksub::Pt, jtracksub::Phi>,
+                  jtracksub::Pz<jtracksub::Pt, jtracksub::Eta>,
+                  jtracksub::P<jtracksub::Pt, jtracksub::Eta>);
+
+using JTrackDielectronSub = JTrackDielectronSubs::iterator;
 
 } // namespace o2::aod
 

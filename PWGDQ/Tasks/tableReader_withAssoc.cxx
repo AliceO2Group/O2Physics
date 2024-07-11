@@ -108,6 +108,7 @@ using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, a
 using MyBarrelTracksWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
+using MyBarrelTracksWithCovWithAmbiguitiesWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities, aod::ReducedTracksBarrelInfo>;
 using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra>;
 using MyDitrackCandidates = soa::Join<aod::Ditracks, aod::DitracksExtra>;
 using MyDimuonCandidates = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
@@ -124,7 +125,7 @@ constexpr static uint32_t gkEventFillMapWithCovZdc = VarManager::ObjTypes::Reduc
 // constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
-// constexpr static uint32_t gkTrackFillMapWithColl = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID | VarManager::ObjTypes::ReducedTrackCollInfo;
+constexpr static uint32_t gkTrackFillMapWithCovWithColl = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID | VarManager::ObjTypes::ReducedTrackCollInfo;
 
 // constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
@@ -812,6 +813,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::Dielectrons> dielectronList;
   Produces<aod::Dimuons> dimuonList;
   Produces<aod::DielectronsExtra> dielectronsExtraList;
+  Produces<aod::DielectronsInfo> dielectronInfoList;
   Produces<aod::DimuonsExtra> dimuonsExtraList;
   Produces<aod::DielectronsAll> dielectronAllList;
   Produces<aod::DimuonsAll> dimuonAllList;
@@ -1147,6 +1149,7 @@ struct AnalysisSameEventPairing {
     dielectronList.reserve(1);
     dimuonList.reserve(1);
     dielectronsExtraList.reserve(1);
+    dielectronInfoList.reserve(1);
     dimuonsExtraList.reserve(1);
     dileptonInfoList.reserve(1);
     dileptonFlowList.reserve(1);
@@ -1212,6 +1215,7 @@ struct AnalysisSameEventPairing {
                          t1.sign() + t2.sign(), twoTrackFilter, 0);
 
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
+            dielectronInfoList(t1.collisionId(), t1.trackId(), t2.trackId());
             dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
           }
           if constexpr (trackHasCov && TTwoProngFitter) {
@@ -1458,6 +1462,13 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
+  void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
+                                        soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                        MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks)
+  {
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  }
+
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
                               soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCov const& muons)
   {
@@ -1479,6 +1490,7 @@ struct AnalysisSameEventPairing {
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processAllSkimmed, "Run all types of pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmed, "Run barrel only pairing, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithCollSkimmed, "Run barrel only pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingAllSkimmed, "Run all types of mixed pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
@@ -1784,7 +1796,7 @@ struct AnalysisAsymmetricPairing {
 
   // Template function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& tracks)
+  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
   {
     if (events.size() > 0) { // Additional protection to avoid crashing of events.begin().runNumber()
       if (fCurrentRun != events.begin().runNumber()) {
@@ -2002,7 +2014,7 @@ struct AnalysisAsymmetricPairing {
 
   // Helper function to process triplet
   template <bool TThreeProngFitter, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TTrackAssoc, typename TTracks, typename TEvent>
-  void readTriplet(TTrackAssoc const& a1, TTrackAssoc const& a2, TTrackAssoc const& a3, TTracks const& tracks, TEvent const& event, VarManager::PairCandidateType tripletType, std::map<int, std::vector<TString>> histNames)
+  void readTriplet(TTrackAssoc const& a1, TTrackAssoc const& a2, TTrackAssoc const& a3, TTracks const& /*tracks*/, TEvent const& event, VarManager::PairCandidateType tripletType, std::map<int, std::vector<TString>> histNames)
   {
     uint32_t threeTrackFilter = 0;
     // Find out which leg cut combination the triplet passes

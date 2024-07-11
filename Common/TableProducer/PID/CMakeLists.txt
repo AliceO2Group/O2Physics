@@ -48,11 +48,6 @@ o2physics_add_dpl_workflow(pid-tpc
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-tpc-full
-                    SOURCES pidTPCFull.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
 # HMPID
 
 # BAYES

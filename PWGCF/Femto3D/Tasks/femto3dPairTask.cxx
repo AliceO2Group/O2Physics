@@ -50,7 +50,10 @@ struct FemtoCorrelations {
   Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
   Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+  Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
+  Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
   Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
+  Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
 
   Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.0, "upper mometum limit"};
@@ -85,6 +88,7 @@ struct FemtoCorrelations {
   Configurable<float> _deta{"deta", 0.01, "minimum allowed defference in eta between two tracks in a pair"};
   Configurable<float> _dphi{"dphi", 0.01, "minimum allowed defference in phi_star between two tracks in a pair"};
   Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
+  Configurable<float> _avgSepTPC{"avgSepTPC", 10, "average sep. (cm) in TPC"};
 
   Configurable<int> _vertexNbinsToMix{"vertexNbinsToMix", 10, "Number of vertexZ bins for the mixing"};
   Configurable<std::vector<float>> _centBins{"multBins", std::vector<float>{0.0f, 100.0f}, "multiplicity percentile/centrality binning (min:0, max:100)"};
@@ -281,7 +285,9 @@ struct FemtoCorrelations {
         if (_fillDetaDphi % 2 == 0)
           DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
 
-        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+        if (_deta > 0 && _dphi > 0 && Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
+        if (_avgSepTPC > 0 && Pair->IsClosePair(_avgSepTPC))
           continue;
 
         if (_fillDetaDphi > 0)
@@ -331,7 +337,9 @@ struct FemtoCorrelations {
             DoubleTrack_ME_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         }
 
-        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+        if (_deta > 0 && _dphi > 0 && Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
+        if (_avgSepTPC > 0 && Pair->IsClosePair(_avgSepTPC))
           continue;
 
         if (_fillDetaDphi > 0) {
@@ -380,11 +388,17 @@ struct FemtoCorrelations {
         continue;
       if (_requestVertexITSTPC && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexITSTPC())
         continue;
+      if (_requestVertexTOForTRDmatched > track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexTOForTRDmatched())
+        continue;
+      if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().noCollInTimeRangeStandard())
+        continue;
       if (track.tpcFractionSharedCls() > _tpcFractionSharedCls || track.itsNCls() < _itsNCls)
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() < *_centBins.value.begin() || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() >= *(_centBins.value.end() - 1))
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() < _IRcut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() >= _IRcut.value.second)
+        continue;
+      if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() < _OccupancyCut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() >= _OccupancyCut.value.second)
         continue;
       if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
         continue;
@@ -441,12 +455,18 @@ struct FemtoCorrelations {
         continue;
       if (collision.hadronicRate() < _IRcut.value.first || collision.hadronicRate() >= _IRcut.value.second)
         continue;
+      if (collision.occupancy() < _OccupancyCut.value.first || collision.occupancy() >= _OccupancyCut.value.second)
+        continue;
 
       if (_removeSameBunchPileup && !collision.isNoSameBunchPileup())
         continue;
       if (_requestGoodZvtxFT0vsPV && !collision.isGoodZvtxFT0vsPV())
         continue;
       if (_requestVertexITSTPC && !collision.isVertexITSTPC())
+        continue;
+      if (_requestVertexTOForTRDmatched > collision.isVertexTOForTRDmatched())
+        continue;
+      if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
         continue;
 
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {

@@ -65,6 +65,9 @@ struct phianalysisrun3_PbPb {
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+  Configurable<bool> tof{"TOF", true, "TOF"};
+  Configurable<bool> tpc{"TPC", false, "TPC"};
+  Configurable<bool> combined{"combined", true, "combined"};
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "isEtaAssym"};
   Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
@@ -142,10 +145,10 @@ struct phianalysisrun3_PbPb {
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombined * nsigmaCutCombined)) {
+    if (tof && combined && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombined * nsigmaCutCombined)) {
       return true;
     }
-    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+    if (tpc && combined && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
       return true;
     }
     return false;
@@ -412,7 +415,7 @@ struct phianalysisrun3_PbPb {
   }
 
   PROCESS_SWITCH(phianalysisrun3_PbPb, processGen, "Process Generated", false);
-  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!collision.has_mcCollision()) {
       return;
