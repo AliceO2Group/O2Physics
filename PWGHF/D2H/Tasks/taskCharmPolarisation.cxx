@@ -64,10 +64,7 @@ enum MassHyposLcToPKPi : uint8_t {
 DECLARE_SOA_COLUMN(MassLc, massLc, float);
 DECLARE_SOA_COLUMN(PtLc, ptLc, float);
 DECLARE_SOA_COLUMN(RapidityLc, rapidityLc, float);
-DECLARE_SOA_COLUMN(CosThetaStarHelicity, cosThetaStarHelicity, float);
-DECLARE_SOA_COLUMN(CosThetaStarProduction, cosThetaStarProduction, float);
-DECLARE_SOA_COLUMN(CosThetaStarBeam, cosThetaStarBeam, float);
-DECLARE_SOA_COLUMN(CosThetaStarRandom, cosThetaStarRandom, float);
+DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
 DECLARE_SOA_COLUMN(PdgMotherProng0, pdgMotherProng0, int);
 DECLARE_SOA_COLUMN(PdgMotherProng1, pdgMotherProng1, int);
 DECLARE_SOA_COLUMN(PdgMotherProng2, pdgMotherProng2, int);
@@ -85,10 +82,7 @@ DECLARE_SOA_TABLE(HfLcPolBkg, "AOD", "HFLCPOLBKG",
                   charm_polarisation::MassLc,
                   charm_polarisation::PtLc,
                   charm_polarisation::RapidityLc,
-                  charm_polarisation::CosThetaStarHelicity,
-                  charm_polarisation::CosThetaStarProduction,
-                  charm_polarisation::CosThetaStarBeam,
-                  charm_polarisation::CosThetaStarRandom,
+                  charm_polarisation::CosThetaStar,
                   charm_polarisation::PdgMotherProng0,
                   charm_polarisation::PdgMotherProng1,
                   charm_polarisation::PdgMotherProng2,
@@ -147,6 +141,7 @@ struct TaskPolarisationCharmHadrons {
 
   /// table for Lc->pKpi background studies in MC
   Configurable<bool> activateTableLcPKPiBkgMc{"activateTableLcPKPiBkgMc", false, "Activate the filling of the table to study Lc->PKPi background from MC"};
+  Configurable<int> cosThStarAxisLcPKPiBkgMc{"cosThStarAxisLcPKPiBkgMc", 1, "cos(Theta*) axis for background studies (1 = helicity; 2 = production; 3 = beam; 4 = random)"};
 
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
@@ -217,6 +212,11 @@ struct TaskPolarisationCharmHadrons {
     // check bkg rotation for MC (not supported currently)
     if (nBkgRotations > 0 && (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl)) {
       LOGP(fatal, "No background rotation supported for MC.");
+    }
+
+    /// check configurations of the table for Lc->pKpi background studies
+    if (activateTableLcPKPiBkgMc && (cosThStarAxisLcPKPiBkgMc < 1 || cosThStarAxisLcPKPiBkgMc > 4)) {
+      LOGP(fatal, "cosThStarAxisLcPKPiBkgMc axis chosen is wrong. Fix it! (1 = helicity; 2 = production; 3 = beam; 4 = random)");
     }
 
     massPi = o2::constants::physics::MassPiPlus;
@@ -705,8 +705,8 @@ struct TaskPolarisationCharmHadrons {
     return true;
   }
 
-  template <typename TRK, typename PART>
-  void searchFirstLevelMother(TRK const& prongTrack, std::vector<int>& idMothers, PART const&)
+  template <typename Trk, typename Part>
+  void searchFirstLevelMother(Trk const& prongTrack, std::vector<int>& idMothers, Part const&)
   {
     /// particle associated to the prong track
     if (!prongTrack.has_mcParticle()) {
@@ -719,11 +719,8 @@ struct TaskPolarisationCharmHadrons {
     }
     // loop over the mother particles of the analysed particle
     for (auto iMother = prongParticle.mothersIds().front(); iMother <= prongParticle.mothersIds().back(); ++iMother) {
-      // if a mother is already present in the vector, do not check it again
-      if (std::find(idMothers.begin(), idMothers.end(), iMother) != idMothers.end()) {
-        continue;
-      }
       idMothers.push_back(iMother);
+      break; // we keep only the first one
     }
   };
 
@@ -1007,7 +1004,6 @@ struct TaskPolarisationCharmHadrons {
           std::vector<int> idMothersProng0 = {};
           std::vector<int> idMothersProng1 = {};
           std::vector<int> idMothersProng2 = {};
-
           searchFirstLevelMother(trackProng0, idMothersProng0, particles);
           searchFirstLevelMother(trackProng1, idMothersProng1, particles);
           searchFirstLevelMother(trackProng2, idMothersProng2, particles);
@@ -1050,8 +1046,23 @@ struct TaskPolarisationCharmHadrons {
 
           /// Fill the table for selected candidates
           /// No need to check explicitly if candidates are selected, since the Filter is applied
+          float cosThetaStarForTable = -10.f;
+          switch (cosThStarAxisLcPKPiBkgMc) {
+            case 1:
+              cosThetaStarForTable = cosThetaStarHelicity;
+              break;
+            case 2:
+              cosThetaStarForTable = cosThetaStarProduction;
+              break;
+            case 3:
+              cosThetaStarForTable = cosThetaStarBeam;
+              break;
+            case 4:
+              cosThetaStarForTable = cosThetaStarRandom;
+              break;
+          }
           rowCandLcBkg(invMassCharmHadForSparse, ptCharmHad, rapidity,
-                       cosThetaStarHelicity, cosThetaStarProduction, cosThetaStarBeam, cosThetaStarRandom,
+                       cosThetaStarForTable,
                        pdgMotherProng0, pdgMotherProng1, pdgMotherProng2,
                        massKPi, massKProton, massPiProton,
                        outputMl.at(0),
