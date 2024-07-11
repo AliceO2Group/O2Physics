@@ -294,7 +294,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   }
 
   template <typename T>
-  void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
+  void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
     rowKfCandidateFull(
       candidate.tpcNSigmaPiFromCharmBaryon(),
@@ -382,7 +382,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowKfCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillKfCandidate(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataFull, "Process KF data", false);
