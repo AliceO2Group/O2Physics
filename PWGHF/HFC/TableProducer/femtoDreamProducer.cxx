@@ -381,13 +381,14 @@ struct femtoDreamProducer {
         if (FunctionSelection >= 1){
         // Fill tracks if it is not filled for Lc Candidate in an event
             if (!isTrackFilled) {
-                isTrackFilled = fillTracksForCharmHadron<isMC>(col, tracks, trackPos1, trackNeg, trackPos2, sizeCand);
+              isTrackFilled = fillTracksForCharmHadron<isMC>(col, tracks, trackPos1, trackNeg, trackPos2, sizeCand);
 
-                // If track filling was successful, fill the collision table
-                if (isTrackFilled) {
-                    outputCollision(vtxZ, mult, multNtr, spher, magField);
+              // If track filling was successful, fill the collision table
+              if (isTrackFilled) {
+                  outputCollision(vtxZ, mult, multNtr, spher, magField);
                 if constexpr (isMC) {
-              fillMCCollision(col);}
+                  fillMCCollision(col);
+                }
                 }
             }
 
