@@ -85,8 +85,8 @@ DECLARE_SOA_COLUMN(Cut, cut, cutContainerType);          //! Bit-wise container 
 DECLARE_SOA_COLUMN(PIDCut, pidcut, cutContainerType);    //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
 DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);       //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Children, children); //! Field for the track indices to remove auto-correlations
-DECLARE_SOA_COLUMN(MParticle, mParticle, float);             //! The invariant mass of V0 candidate, assuming lambda
-DECLARE_SOA_COLUMN(MAntiParticle, mAntiParticle, float);     //! The invariant mass of V0 candidate, assuming antilambda
+DECLARE_SOA_COLUMN(MParticle, mParticle, float);         //! The invariant mass of V0 candidate, assuming lambda
+DECLARE_SOA_COLUMN(MAntiParticle, mAntiParticle, float); //! The invariant mass of V0 candidate, assuming antilambda
 
 DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                            [](float eta) -> float {
