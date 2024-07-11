@@ -792,13 +792,12 @@ struct LfTreeCreatorClusterStudies {
   void fillKTable(const CandidateK& candK)
   {
     m_ClusterStudiesTable(
-      candK.p_K,         // p_K
-      candK.eta_K,       // eta_K
-      candK.phi_K,       // phi_K
-      candK.itsClsize_K, // itsClSize_K
-      candK.partID_K,    // pdgCode_K
-      candK.isPositive_K // isPositive_K
-    );
+      candK.p_K,           // p_K
+      candK.eta_K,         // eta_K
+      candK.phi_K,         // phi_K
+      candK.itsClsize_K,   // itsClSize_K
+      candK.partID_K,      // pdgCode_K
+      candK.isPositive_K); // isPositive_K
 
     m_hAnalysis.fill(HIST("isPositive"), candK.isPositive_K);
   }
@@ -829,8 +828,7 @@ struct LfTreeCreatorClusterStudies {
       track.phi(),              // phi_De,
       track.itsClusterSizes(),  // itsClSize_De,
       partID,                   // pdgCode_De,
-      track.sign() > 0          // isPositive_De
-    );
+      track.sign() > 0);        // isPositive_De
 
     m_hAnalysis.fill(HIST("isPositive"), track.sign() > 0);
   }
@@ -862,8 +860,7 @@ struct LfTreeCreatorClusterStudies {
       track.phi(),              // phi_He3,
       track.itsClusterSizes(),  // itsClSize_He3,
       partID,                   // pdgCode_He3,
-      track.sign() > 0          // isPositive_He3
-    );
+      track.sign() > 0);        // isPositive_He3
 
     m_hAnalysis.fill(HIST("isPositive"), track.sign() > 0);
   }
@@ -875,7 +872,7 @@ struct LfTreeCreatorClusterStudies {
       initCCDB(bc);
 
       m_collisionCounter++;
-      if (m_collisionCounter % int(1e3) == 0)
+      if (m_collisionCounter % static_cast<int>(1e3) == 0)
         LOG(info) << "Processing collision " << m_collisionCounter << " with zVtx = " << collision.posZ();
 
       if (!collisionSelection(collision)) {
@@ -915,7 +912,7 @@ struct LfTreeCreatorClusterStudies {
   {
     for (const auto& collision : collisions) {
       m_collisionCounter++;
-      if (m_collisionCounter % int(1e3) == 0)
+      if (m_collisionCounter % static_cast<int>(1e3) == 0)
         LOG(info) << "Processing collision " << m_collisionCounter << " with zVtx = " << collision.posZ();
 
       if (!collisionSelection(collision)) {
