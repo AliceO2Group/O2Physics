@@ -374,7 +374,7 @@ bool isGreaterThanTaggingPoint(T const& collision, U const& jet, V const& jtrack
   orderForIPJetTracks(collision, jet, jtracks, tracks, vecSignImpSig);
   if (vecSignImpSig.size() > static_cast<std::vector<float>::size_type>(cnt) - 1) {
     for (int i = 0; i < cnt; i++) {
-      if (0 < vecSignImpSig[i] && vecSignImpSig[i] < taggingPoint) { // tagger point set
+      if (vecSignImpSig[i] < taggingPoint) { // tagger point set
         return false;
       }
     }
