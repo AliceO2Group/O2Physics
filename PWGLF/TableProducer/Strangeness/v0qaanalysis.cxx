@@ -175,7 +175,7 @@ struct LfV0qaanalysis {
       return false;
     }
     registry.fill(HIST("hNEvents"), 5.5);
-    if (isVertexTOFmatched && !collision.selection_bit(aod::evsel::kVertexTOFmatched)) {
+    if (isVertexTOFmatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
     registry.fill(HIST("hNEvents"), 6.5);
