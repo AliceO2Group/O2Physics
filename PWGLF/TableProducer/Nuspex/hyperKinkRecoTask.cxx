@@ -369,11 +369,10 @@ struct hyperKinkRecoTask {
         continue;
 
       int pdgHypo = isHyp ? hyperPdg : tritDauPdg;
-      // LOG(info) << "Appending track cand with pdg hypo: " << pdgHypo;
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
     auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
-    LOG(info) << "SV pool size: " << kinkPool.size();
+    LOG(debug) << "SV pool size: " << kinkPool.size();
 
     for (auto& svCand : kinkPool) {
 
