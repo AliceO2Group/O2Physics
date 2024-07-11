@@ -658,7 +658,6 @@ struct hyperKinkRecoTask {
       kinkCand.isSignal = true;
       kinkCandidates.push_back(kinkCand);
       mcToKinkCandidates[hyperMCIndex] = kinkCandidates.size() - 1;
-      LOG(info) << "Gen Pt: " << std::sqrt(momMother[0] * momMother[0] + momMother[1] * momMother[1]) << ", gen Radius: " << std::sqrt(secVtx[0] * secVtx[0] + secVtx[1] * secVtx[1]);
     }
 
     // look for hypertriton or triton tracks, findable part!
@@ -669,8 +668,6 @@ struct hyperKinkRecoTask {
         if (mcToKinkCandidates[mcTrack.globalIndex()] < 0) {
           continue;
         }
-        LOG(info) << "MC track found, trackId: " << track.globalIndex() << " MC trackId: " << mcTrack.globalIndex() << " pt: " << track.pt() << " mcMask: " << mcLabel.mcMask() << "PDG: " << mcTrack.pdgCode();
-        LOG(info) << "track has ITS: " << track.hasITS() << " has TPC: " << track.hasTPC() << " has TOF: " << track.hasTOF();
         auto& kinkCand = kinkCandidates[mcToKinkCandidates[mcTrack.globalIndex()]];
         kinkCand.mcMask = mcLabel.mcMask();
         kinkCand.itsPt = track.pt();
