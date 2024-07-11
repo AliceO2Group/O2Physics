@@ -159,7 +159,7 @@ struct lambdaCorrTableProducer {
 
     const AxisSpec axisV0Mass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
     const AxisSpec axisV0Pt(200, 0., 5., "p_{T} (GeV/#it{c})");
-    const AxisSpec axisV0Rap(16, -cfg_v0_rap_max, cfg_v0_rap_max, "rap");
+    const AxisSpec axisV0Rap(20, -1., 1., "rap");
     const AxisSpec axisV0Phi(36, 0., 2 * TMath::Pi(), "#phi (rad)");
 
     const AxisSpec axisRadius(500, 0, 100, "r(cm)");
