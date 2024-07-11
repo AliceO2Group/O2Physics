@@ -88,6 +88,7 @@ TH1F* fhDeltaNA[kIdBfNoOfSpecies] = {nullptr};
 
 TH2F* fhNSigmaTPC[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhNSigmaTOF[kIdBfNoOfSpecies] = {nullptr};
+TH2F* fhNSigmaCombo[kIdBfNoOfSpecies] = {nullptr};
 
 TH1F* fhEtaB = nullptr;
 TH1F* fhEtaA = nullptr;
@@ -739,6 +740,10 @@ struct IdentifiedBfFilterTracks {
                                    TString::Format("N Sigma from TOF vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
                                    48, -6, 6,
                                    ptbins, ptlow, ptup);
+        fhNSigmaCombo[sp] = new TH2F(TString::Format("fhNSigmaCombo_%s", speciesName[sp]).Data(),
+                                   TString::Format("N Sigma from Combo vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                   48, -6, 6,
+                                   ptbins, ptlow, ptup);      
         fhdEdxA[sp] = new TH2F(TString::Format("fhdEdxA_%s", speciesName[sp]).Data(),
                                TString::Format("dE/dx vs P reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
@@ -787,6 +792,7 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhDeltaNA[sp]);
         fOutputList->Add(fhNSigmaTPC[sp]);
         fOutputList->Add(fhNSigmaTOF[sp]);
+        fOutputList->Add(fhNSigmaCombo[sp]);
         fOutputList->Add(fhdEdxA[sp]);
         fOutputList->Add(fhdEdxIPTPCA[sp]);
       }
@@ -1161,6 +1167,11 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   fhNSigmaTOF[kIdBfKaon]->Fill(track.tofNSigmaKa(), track.tpcInnerParam());
   fhNSigmaTOF[kIdBfProton]->Fill(track.tofNSigmaPr(), track.tpcInnerParam());
 
+  fhNSigmaCombo[kIdBfElectron]->Fill(sqrtf(track.tofNSigmaEl() * track.tofNSigmaEl() + track.tpcNSigmaEl() * track.tpcNSigmaEl()), track.tpcInnerParam());
+  fhNSigmaCombo[kIdBfPion]->Fill(sqrtf(track.tofNSigmaPi() * track.tofNSigmaPi() + track.tpcNSigmaPi() * track.tpcNSigmaPi()), track.tpcInnerParam());
+  fhNSigmaCombo[kIdBfKaon]->Fill(sqrtf(track.tofNSigmaKa() * track.tofNSigmaKa() + track.tpcNSigmaKa() * track.tpcNSigmaKa()), track.tpcInnerParam());
+  fhNSigmaCombo[kIdBfProton]->Fill(sqrtf(track.tofNSigmaPr() * track.tofNSigmaPr() + track.tpcNSigmaPr() * track.tpcNSigmaPr()), track.tpcInnerParam());
+  
   float nsigmas[kIdBfNoOfSpecies];
   if (track.p() < 0.8 && !reqTOF && !onlyTOF) {
     nsigmas[kIdBfElectron] = track.tpcNSigmaEl();
