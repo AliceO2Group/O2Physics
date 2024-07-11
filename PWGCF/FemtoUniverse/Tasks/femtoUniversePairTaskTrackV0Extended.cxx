@@ -230,7 +230,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mParticle(), part.mAntiParticle()))
         continue;
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
@@ -264,7 +264,7 @@ struct femtoUniversePairTaskTrackV0Extended {
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       // Lambda invariant mass cut
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mParticle(), p2.mAntiParticle()))
         continue;
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -303,7 +303,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mParticle(), part.mAntiParticle()))
         continue;
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
@@ -325,10 +325,10 @@ struct femtoUniversePairTaskTrackV0Extended {
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
       // Lambda invariant mass cut for p1
-      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+      if (!invMLambda(p1.mParticle(), p1.mAntiParticle()))
         continue;
       // Lambda invariant mass cut for p2
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mParticle(), p2.mAntiParticle()))
         continue;
       // track cleaning
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
@@ -378,7 +378,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMLambda(p2.mParticle(), p2.mAntiParticle()))
           continue;
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -426,10 +426,10 @@ struct femtoUniversePairTaskTrackV0Extended {
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut for p1
-        if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+        if (!invMLambda(p1.mParticle(), p1.mAntiParticle()))
           continue;
         // Lambda invariant mass cut for p2
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMLambda(p2.mParticle(), p2.mAntiParticle()))
           continue;
         // track cleaning
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {

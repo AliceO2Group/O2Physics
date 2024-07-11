@@ -329,7 +329,7 @@ struct femtoUniversePairTaskTrackPhi {
     float tpcNSigma;
     float tofNSigma;
     for (auto& phidaugh : groupPartsPhiDaugh) {
-      if (phidaugh.mAntiLambda() == 1) { // workaround
+      if (phidaugh.mAntiParticle() == 1) { // workaround
         tpcNSigma = trackCuts.getNsigmaTPC(phidaugh, o2::track::PID::Kaon);
         tofNSigma = trackCuts.getNsigmaTOF(phidaugh, o2::track::PID::Kaon);
 
@@ -339,7 +339,7 @@ struct femtoUniversePairTaskTrackPhi {
         qaRegistry.fill(HIST("PhiDaugh_pos/pt"), phidaugh.pt());
         qaRegistry.fill(HIST("PhiDaugh_pos/eta"), phidaugh.eta());
         qaRegistry.fill(HIST("PhiDaugh_pos/phi"), phidaugh.phi());
-      } else if (phidaugh.mAntiLambda() == -1) { // workaround
+      } else if (phidaugh.mAntiParticle() == -1) { // workaround
         tpcNSigma = trackCuts.getNsigmaTPC(phidaugh, o2::track::PID::Kaon);
         tofNSigma = trackCuts.getNsigmaTOF(phidaugh, o2::track::PID::Kaon);
 

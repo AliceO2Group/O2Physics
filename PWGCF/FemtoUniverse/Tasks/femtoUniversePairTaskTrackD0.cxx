@@ -144,7 +144,7 @@ struct femtoUniversePairTaskTrackD0 {
 
   /// Partitions for particle 2
   Partition<FemtoFullParticles> partsAllDmesons = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
-  Partition<FemtoFullParticles> partsOnlyD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f || aod::femtouniverseparticle::mAntiLambda < 0.0f);
+  Partition<FemtoFullParticles> partsOnlyD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mParticle < 0.0f || aod::femtouniverseparticle::mAntiParticle < 0.0f);
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsD0D0barMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
 
   /// Partition for D0/D0bar daughters
@@ -398,14 +398,14 @@ struct femtoUniversePairTaskTrackD0 {
     // loop over all D mesons
     for (auto const& dmeson : groupPartsAllDmesons) {
 
-      if (dmeson.mLambda() > 0.0f) {
-        registry.fill(HIST("hMassVsPt"), dmeson.mLambda(), dmeson.pt());
-        registry.fill(HIST("hMassVsPtFinerBinning"), dmeson.mLambda(), dmeson.pt());
+      if (dmeson.mParticle() > 0.0f) {
+        registry.fill(HIST("hMassVsPt"), dmeson.mParticle(), dmeson.pt());
+        registry.fill(HIST("hMassVsPtFinerBinning"), dmeson.mParticle(), dmeson.pt());
       }
 
-      if (dmeson.mAntiLambda() > 0.0f) {
-        registry.fill(HIST("hMassVsPt"), dmeson.mAntiLambda(), dmeson.pt());
-        registry.fill(HIST("hMassVsPtFinerBinning"), dmeson.mAntiLambda(), dmeson.pt());
+      if (dmeson.mAntiParticle() > 0.0f) {
+        registry.fill(HIST("hMassVsPt"), dmeson.mAntiParticle(), dmeson.pt());
+        registry.fill(HIST("hMassVsPtFinerBinning"), dmeson.mAntiParticle(), dmeson.pt());
       }
 
       registry.fill(HIST("hPtDmesonCand"), dmeson.pt());
@@ -418,19 +418,19 @@ struct femtoUniversePairTaskTrackD0 {
 
       registry.fill(HIST("hPtD0D0bar"), d0d0bar.pt());
 
-      if (d0d0bar.mLambda() > 0.0f && d0d0bar.mAntiLambda() < 0.0f) {
-        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mLambda(), d0d0bar.pt());
-        if (d0d0bar.mLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
-          registry.fill(HIST("hInvMassD0"), d0d0bar.mLambda());
+      if (d0d0bar.mParticle() > 0.0f && d0d0bar.mAntiParticle() < 0.0f) {
+        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mParticle(), d0d0bar.pt());
+        if (d0d0bar.mParticle() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mParticle() < ConfDmesons.ConfMaxInvMassD0D0bar) {
+          registry.fill(HIST("hInvMassD0"), d0d0bar.mParticle());
         }
         registry.fill(HIST("hPtD0"), d0d0bar.pt());
         registry.fill(HIST("hPhiD0"), d0d0bar.phi());
         registry.fill(HIST("hEtaD0"), d0d0bar.eta());
       }
-      if (d0d0bar.mLambda() < 0.0f && d0d0bar.mAntiLambda() > 0.0f) {
-        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mAntiLambda(), d0d0bar.pt());
-        if (d0d0bar.mAntiLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mAntiLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
-          registry.fill(HIST("hInvMassD0bar"), d0d0bar.mAntiLambda());
+      if (d0d0bar.mParticle() < 0.0f && d0d0bar.mAntiParticle() > 0.0f) {
+        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mAntiParticle(), d0d0bar.pt());
+        if (d0d0bar.mAntiParticle() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mAntiParticle() < ConfDmesons.ConfMaxInvMassD0D0bar) {
+          registry.fill(HIST("hInvMassD0bar"), d0d0bar.mAntiParticle());
         }
         registry.fill(HIST("hPtD0bar"), d0d0bar.pt());
         registry.fill(HIST("hPhiD0bar"), d0d0bar.phi());
@@ -456,13 +456,13 @@ struct femtoUniversePairTaskTrackD0 {
     // loop over D0/D0bar candidates (ONLY)
     for (auto const& cand1 : groupPartsOnlyD0D0bar) {
       // Check if the first candidate is D0 meson
-      if (cand1.mLambda() < 0.0f && cand1.mAntiLambda() > 0.0f) {
+      if (cand1.mParticle() < 0.0f && cand1.mAntiParticle() > 0.0f) {
         continue;
       }
 
       for (auto const& cand2 : groupPartsOnlyD0D0bar) {
         // Check if the second candidate is D0bar meson
-        if (cand2.mLambda() > 0.0f && cand2.mAntiLambda() < 0.0f) {
+        if (cand2.mParticle() > 0.0f && cand2.mAntiParticle() < 0.0f) {
           continue;
         }
         // deltaPhi = getDeltaPhi(cand1.phi(), cand2.phi());
@@ -474,26 +474,26 @@ struct femtoUniversePairTaskTrackD0 {
         registry.fill(HIST("hDeltaEtaDeltaPhi"), deltaEta, deltaPhi);
 
         // ----------------------------------- Creating D0-D0bar pairs correlations ------------------------------------------------
-        if (cand1.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand1.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
+        if (cand1.mParticle() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand1.mParticle() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
           // S(D0) x S(D0bar) correlation
-          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
+          if (cand2.mAntiParticle() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiParticle() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
             registry.fill(HIST("hDeltaPhiSigSig"), deltaPhi);
           }
           // S(D0) x B(D0bar) correlation
-          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
-              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
+          if ((cand2.mAntiParticle() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiParticle() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+              (cand2.mAntiParticle() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiParticle() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
             registry.fill(HIST("hDeltaPhiD0SigD0barBg"), deltaPhi);
           }
         }
-        if ((cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
-            (cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
+        if ((cand1.mParticle() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand1.mParticle() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+            (cand1.mParticle() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand1.mParticle() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
           // B(D0) x S (D0bar) correlation
-          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
+          if (cand2.mAntiParticle() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiParticle() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
             registry.fill(HIST("hDeltaPhiD0BgD0barSig"), deltaPhi);
           }
           // B(D0) x B(D0bar) correlation
-          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
-              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
+          if ((cand2.mAntiParticle() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiParticle() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+              (cand2.mAntiParticle() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiParticle() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
             registry.fill(HIST("hDeltaPhiBgBg"), deltaPhi);
           }
         }
@@ -546,7 +546,7 @@ struct femtoUniversePairTaskTrackD0 {
       }
       // // Set inv. mass cut for D0/D0bar candidates
       if (ConfUseMassCutForD0D0bar) {
-        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
+        if ((d0candidate.mParticle() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mParticle() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiParticle() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiParticle() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
           continue;
         }
       }
@@ -631,7 +631,7 @@ struct femtoUniversePairTaskTrackD0 {
       }
       // // Set inv. mass cut for D0/D0bar candidates
       if (ConfUseMassCutForD0D0bar) {
-        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
+        if ((d0candidate.mParticle() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mParticle() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiParticle() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiParticle() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
           continue;
         }
       }

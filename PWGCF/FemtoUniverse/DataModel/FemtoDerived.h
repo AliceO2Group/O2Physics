@@ -70,10 +70,11 @@ enum TrackType {
   kNoChild,    //! Not a V0 child
   kPosChild,   //! Positive V0 child
   kNegChild,   //! Negative V0 child
+  kBachelor,   //! Cascade bachelor
   kNTrackTypes //! Number of child types
 };
 
-static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg"}; //! Naming of the different particle types
+static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg", "Bach"}; //! Naming of the different particle types
 
 DECLARE_SOA_INDEX_COLUMN(FDCollision, fdCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                       //! p_T (GeV/c)
@@ -84,8 +85,8 @@ DECLARE_SOA_COLUMN(Cut, cut, cutContainerType);          //! Bit-wise container 
 DECLARE_SOA_COLUMN(PIDCut, pidcut, cutContainerType);    //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
 DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);       //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Children, children); //! Field for the track indices to remove auto-correlations
-DECLARE_SOA_COLUMN(MLambda, mLambda, float);             //! The invariant mass of V0 candidate, assuming lambda
-DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);     //! The invariant mass of V0 candidate, assuming antilambda
+DECLARE_SOA_COLUMN(MParticle, mParticle, float);             //! The invariant mass of V0 candidate, assuming lambda
+DECLARE_SOA_COLUMN(MAntiParticle, mAntiParticle, float);     //! The invariant mass of V0 candidate, assuming antilambda
 
 DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                            [](float eta) -> float {
@@ -136,8 +137,8 @@ DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   femtouniverseparticle::PIDCut,
                   femtouniverseparticle::TempFitVar,
                   femtouniverseparticle::ChildrenIds,
-                  femtouniverseparticle::MLambda,
-                  femtouniverseparticle::MAntiLambda,
+                  femtouniverseparticle::MParticle,
+                  femtouniverseparticle::MAntiParticle,
                   femtouniverseparticle::Theta<femtouniverseparticle::Eta>,
                   femtouniverseparticle::Px<femtouniverseparticle::Pt, femtouniverseparticle::Phi>,
                   femtouniverseparticle::Py<femtouniverseparticle::Pt, femtouniverseparticle::Phi>,
