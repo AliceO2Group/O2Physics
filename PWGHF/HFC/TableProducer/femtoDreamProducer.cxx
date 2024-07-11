@@ -59,45 +59,45 @@ struct femtoDreamProducer {
   Produces<aod::FDExtMCParticles> outputDebugPartsMC;
   Produces<aod::FDExtMCLabels> outputPartsExtMCLabels;
 
-  Configurable<std::string> ccdbUrl{ "ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository" };
-  Configurable<std::string> ccdbPathLut{ "ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization" };
-  Configurable<std::string> ccdbPathGrp{ "ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)" };
-  Configurable<std::string> ccdbPathGrpMag{ "ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)" };
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  Configurable<bool> isDebug{ "isDebug", true, "Enable Debug tables" };
-  Configurable<bool> isRun3{ "isRun3", true, "Running on Run3 or pilot" };
+  Configurable<bool> isDebug{"isDebug", true, "Enable Debug tables"};
+  Configurable<bool> isRun3{"isRun3", true, "Running on Run3 or pilot"};
   // Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event selection
   // Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
-  Configurable<float> evtZvtx{ "evtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)" };
-  Configurable<bool> evtTriggerCheck{ "evtTriggerCheck", true, "Evt sel: check for trigger" };
-  Configurable<int> evtTriggerSel{ "evtTriggerSel", kINT7, "Evt sel: trigger" };
-  Configurable<bool> evtOfflineCheck{ "evtOfflineCheck", false, "Evt sel: check for offline selection" };
-  Configurable<bool> evtAddOfflineCheck{ "evtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)" };
+  Configurable<float> evtZvtx{"evtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+  Configurable<bool> evtTriggerCheck{"evtTriggerCheck", true, "Evt sel: check for trigger"};
+  Configurable<int> evtTriggerSel{"evtTriggerSel", kINT7, "Evt sel: trigger"};
+  Configurable<bool> evtOfflineCheck{"evtOfflineCheck", false, "Evt sel: check for offline selection"};
+  Configurable<bool> evtAddOfflineCheck{"evtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)"};
 
   /// Lc table
-  Configurable<bool> useCent{ "useCent", false, "Enable centrality for lc" };
-  Configurable<int> selectionFlagLc{ "selectionFlagLc", 1, "Selection Flag for Lc" };
+  Configurable<bool> useCent{"useCent", false, "Enable centrality for lc"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
 
   // Configurable<bool> trkRejectNotPropagated{"trkRejectNotPropagated", false, "True: reject not propagated tracks"};
-  Configurable<int> trkPDGCode{ "trkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth" };
-  Configurable<std::vector<float>> trkCharge{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "trk"), std::vector<float>{ -1, 1 }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ") };
-  Configurable<std::vector<float>> trkPtmin{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "trk"), std::vector<float>{ 0.5f, 0.4f, 0.6f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ") };
-  Configurable<std::vector<float>> trkPtmax{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMax, "trk"), std::vector<float>{ 5.4f, 5.6f, 5.5f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMax, "Track selection: ") };
-  Configurable<std::vector<float>> trkEta{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kEtaMax, "trk"), std::vector<float>{ 0.8f, 0.7f, 0.9f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kEtaMax, "Track selection: ") };
-  Configurable<std::vector<float>> trkTPCnclsMin{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCnClsMin, "trk"), std::vector<float>{ 80.f, 70.f, 60.f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCnClsMin, "Track selection: ") };
-  Configurable<std::vector<float>> trkTPCfCls{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCfClsMin, "trk"), std::vector<float>{ 0.7f, 0.83f, 0.9f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCfClsMin, "Track selection: ") };
-  Configurable<std::vector<float>> trkTPCcRowsMin{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCcRowsMin, "trk"), std::vector<float>{ 70.f, 60.f, 80.f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCcRowsMin, "Track selection: ") };
-  Configurable<std::vector<float>> trkTPCsCls{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCsClsMax, "trk"), std::vector<float>{ 0.1f, 160.f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCsClsMax, "Track selection: ") };
-  Configurable<std::vector<float>> trkITSnclsMin{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsMin, "trk"), std::vector<float>{ -1.f, 2.f, 4.f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsMin, "Track selection: ") };
-  Configurable<std::vector<float>> trkITSnclsIbMin{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsIbMin, "trk"), std::vector<float>{ -1.f, 1.f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ") };
-  Configurable<std::vector<float>> trkDCAxyMax{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAxyMax, "trk"), std::vector<float>{ 0.1f, 3.5f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAxyMax, "Track selection: ") };
-  Configurable<std::vector<float>> trkDCAzMax{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAzMax, "trk"), std::vector<float>{ 0.2f, 3.5f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAzMax, "Track selection: ") };
-  Configurable<std::vector<float>> trkPIDnSigmaMax{ FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "trk"), std::vector<float>{ 3.5f, 3.f, 2.5f }, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ") };
-  Configurable<float> trkPIDnSigmaOffsetTPC{ "trkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration" };
-  Configurable<float> trkPIDnSigmaOffsetTOF{ "trkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration" };
-  Configurable<std::vector<int>> trkPIDspecies{ "trkPIDspecies", std::vector<int>{ o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton }, "Trk sel: Particles species for PID" };
+  Configurable<int> trkPDGCode{"trkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
+  Configurable<std::vector<float>> trkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "trk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
+  Configurable<std::vector<float>> trkPtmin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "trk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ")};
+  Configurable<std::vector<float>> trkPtmax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMax, "trk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMax, "Track selection: ")};
+  Configurable<std::vector<float>> trkEta{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kEtaMax, "trk"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kEtaMax, "Track selection: ")};
+  Configurable<std::vector<float>> trkTPCnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCnClsMin, "trk"), std::vector<float>{80.f, 70.f, 60.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCnClsMin, "Track selection: ")};
+  Configurable<std::vector<float>> trkTPCfCls{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCfClsMin, "trk"), std::vector<float>{0.7f, 0.83f, 0.9f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCfClsMin, "Track selection: ")};
+  Configurable<std::vector<float>> trkTPCcRowsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCcRowsMin, "trk"), std::vector<float>{70.f, 60.f, 80.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCcRowsMin, "Track selection: ")};
+  Configurable<std::vector<float>> trkTPCsCls{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCsClsMax, "trk"), std::vector<float>{0.1f, 160.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCsClsMax, "Track selection: ")};
+  Configurable<std::vector<float>> trkITSnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsMin, "trk"), std::vector<float>{-1.f, 2.f, 4.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsMin, "Track selection: ")};
+  Configurable<std::vector<float>> trkITSnclsIbMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsIbMin, "trk"), std::vector<float>{-1.f, 1.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ")};
+  Configurable<std::vector<float>> trkDCAxyMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAxyMax, "trk"), std::vector<float>{0.1f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAxyMax, "Track selection: ")};
+  Configurable<std::vector<float>> trkDCAzMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAzMax, "trk"), std::vector<float>{0.2f, 3.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAzMax, "Track selection: ")};
+  Configurable<std::vector<float>> trkPIDnSigmaMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "trk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ")};
+  Configurable<float> trkPIDnSigmaOffsetTPC{"trkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
+  Configurable<float> trkPIDnSigmaOffsetTOF{"trkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
+  Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID"};
 
   using CandidateLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
   using CandidateLcMC = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
@@ -118,8 +118,8 @@ struct femtoDreamProducer {
 
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
-  HistogramRegistry qaRegistry{ "QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject };
-  HistogramRegistry TrackRegistry{ "Tracks", {}, OutputObjHandlingPolicy::AnalysisObject };
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   HfHelper hfHelper;
   int runNumber;
@@ -130,13 +130,13 @@ struct femtoDreamProducer {
 
   void init(InitContext&)
   {
-    std::array<bool, 5> processes = { doprocessDataCharmHad, doprocessMCCharmHad, doprocessDataCharmHadWithML, doprocessMCCharmHadWithML, doprocessMCCharmHadGen };
+    std::array<bool, 5> processes = {doprocessDataCharmHad, doprocessMCCharmHad, doprocessDataCharmHadWithML, doprocessMCCharmHadWithML, doprocessMCCharmHadGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
-    TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, { { CutBits + 1, -0.5, CutBits + 0.5 } });
+    TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
 
     colCuts.setCuts(evtZvtx.value, evtTriggerCheck.value, evtTriggerSel.value, evtOfflineCheck.value, evtAddOfflineCheck.value, isRun3.value);
     colCuts.init(&qaRegistry);
@@ -272,7 +272,7 @@ struct femtoDreamProducer {
   bool fillTracksForCharmHadron(CollisionType const& col, TrackType const& tracks, ProngType const& prong0, ProngType const& prong1, ProngType const& prong2, int candSize)
   {
 
-    std::vector<int> childIDs = { 0, 0 }; // these IDs are necessary to keep track of the children
+    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     // std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     bool fIsTrackFilled = false;
 
@@ -353,8 +353,8 @@ struct femtoDreamProducer {
     rowCandCharmHad.reserve(sizeCand);
     bool isTrackFilled = false;
     for (const auto& candidate : candidates) {
-      std::array<float, 3> outputMlPKPi{ -1., -1., -1. };
-      std::array<float, 3> outputMlPiKP{ -1., -1., -1. };
+      std::array<float, 3> outputMlPKPi{-1., -1., -1.};
+      std::array<float, 3> outputMlPiKP{-1., -1., -1.};
       if constexpr (useCharmMl) {
         /// fill with ML information
         /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
@@ -508,5 +508,5 @@ struct femtoDreamProducer {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{ adaptAnalysisTask<femtoDreamProducer>(cfgc) };
+  return WorkflowSpec{adaptAnalysisTask<femtoDreamProducer>(cfgc)};
 }
