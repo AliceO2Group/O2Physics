@@ -647,7 +647,7 @@ struct TableMakerMC {
   }
 
   template <uint32_t TMuonFillMap, typename TEvent, typename TMuons>
-  void skimMuons(TEvent const& collision, TMuons const& muons, FwdTrackAssoc const& muonAssocs, aod::McParticles const& mcTracks, MFTTracks const& mftTracks)
+  void skimMuons(TEvent const& collision, TMuons const& muons, FwdTrackAssoc const& muonAssocs, aod::McParticles const& mcTracks, MFTTracks const& /*mftTracks*/)
   {
     // Skim the fwd-tracks (muons)
     // Loop over the collision-track associations, recompute track properties depending on the collision assigned, and apply track cuts for selection
