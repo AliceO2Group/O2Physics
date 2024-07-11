@@ -1190,8 +1190,10 @@ DECLARE_SOA_COLUMN(Chi2TopoCascToOmegac, chi2TopoCascToOmegac, float);
 DECLARE_SOA_COLUMN(DecayLenXYLambda, decayLenXYLambda, float);
 DECLARE_SOA_COLUMN(DecayLenXYCasc, decayLenXYCasc, float);
 DECLARE_SOA_COLUMN(DecayLenXYOmegac, decayLenXYOmegac, float);
-DECLARE_SOA_COLUMN(CosPaV0ToPv, cosPaV0ToPv, float);
-DECLARE_SOA_COLUMN(CosPaCascToPv, cosPaCascToPv, float);
+DECLARE_SOA_COLUMN(CosPaV0ToCasc, cosPaV0ToCasc, float);
+DECLARE_SOA_COLUMN(CosPaCascToOmegac, cosPaCascToOmegac, float);
+DECLARE_SOA_COLUMN(CosPaXYV0ToCasc, cosPaXYV0ToCasc, float);
+DECLARE_SOA_COLUMN(CosPaXYCascToOmegac, cosPaXYCascToOmegac, float);
 DECLARE_SOA_COLUMN(KfMassV0, kfMassV0, float);
 DECLARE_SOA_COLUMN(KfMassCasc, kfMassCasc, float);
 DECLARE_SOA_COLUMN(KfMassOmegac, kfMassOmegac, float);
@@ -1349,7 +1351,7 @@ DECLARE_SOA_TABLE(HfOmegacKf, "AOD", "HFOMEGACKF", //!
                   hf_cand_xic0_omegac0::Chi2TopoV0ToPv, hf_cand_xic0_omegac0::Chi2TopoCascToPv, hf_cand_xic0_omegac0::Chi2TopoPiFromOmegacToPv, hf_cand_xic0_omegac0::Chi2TopoOmegacToPv,
                   hf_cand_xic0_omegac0::Chi2TopoV0ToCasc, hf_cand_xic0_omegac0::Chi2TopoCascToOmegac,
                   hf_cand_xic0_omegac0::DecayLenXYLambda, hf_cand_xic0_omegac0::DecayLenXYCasc, hf_cand_xic0_omegac0::DecayLenXYOmegac,
-                  hf_cand_xic0_omegac0::CosPaV0ToPv, hf_cand_xic0_omegac0::CosPaCascToPv,
+                  hf_cand_xic0_omegac0::CosPaV0ToCasc, hf_cand_xic0_omegac0::CosPaCascToOmegac,hf_cand_xic0_omegac0::CosPaXYV0ToCasc, hf_cand_xic0_omegac0::CosPaXYCascToOmegac,
                   hf_cand_xic0_omegac0::KfRapOmegac,
                   hf_cand_xic0_omegac0::KfptPiFromOmegac, hf_cand_xic0_omegac0::KfptOmegac,
                   hf_cand_xic0_omegac0::CosThetaStarPiFromOmegac,
