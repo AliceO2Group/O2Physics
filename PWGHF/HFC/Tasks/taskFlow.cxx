@@ -102,10 +102,10 @@ struct HfTaskFlow {
 
   OutputObj<CorrelationContainer> sameTPCTPCChCh{"sameTPCTPCChCh"};
   OutputObj<CorrelationContainer> mixedTPCTPCChCh{"mixedTPCTPCChCh"};
-  OutputObj<CorrelationContainer> sameTPCTPCHfCh{"sameTPCTPCHfChs"};
+  OutputObj<CorrelationContainer> sameTPCTPCHfCh{"sameTPCTPCHfCh"};
   OutputObj<CorrelationContainer> mixedTPCTPCHfCh{"mixedTPCTPCHfCh"};
   OutputObj<CorrelationContainer> sameTPCMFTChCh{"sameTPCMFTChCh"};
-  OutputObj<CorrelationContainer> mixedTPCMFTChCh{"mixedTPCMFTChC"};
+  OutputObj<CorrelationContainer> mixedTPCMFTChCh{"mixedTPCMFTChCh"};
 
   //  =========================
   //      init()
