@@ -385,11 +385,11 @@ struct femtoDreamProducer {
 
               // If track filling was successful, fill the collision table
               if (isTrackFilled) {
-                  outputCollision(vtxZ, mult, multNtr, spher, magField);
+                outputCollision(vtxZ, mult, multNtr, spher, magField);
                 if constexpr (isMC) {
                   fillMCCollision(col);
                 }
-                }
+              }
             }
 
             // fill collision table if track table is filled, i.e., there is at least one Lc-p pair
