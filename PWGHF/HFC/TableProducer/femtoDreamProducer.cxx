@@ -66,10 +66,10 @@ struct femtoDreamProducer {
 
   Configurable<bool> isDebug{"isDebug", true, "Enable Debug tables"};
   Configurable<bool> isRun3{"isRun3", true, "Running on Run3 or pilot"};
-  Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
+  //Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event selection
-  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
+  //Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
   Configurable<float> evtZvtx{"evtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> evtTriggerCheck{"evtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> evtTriggerSel{"evtTriggerSel", kINT7, "Evt sel: trigger"};
@@ -80,7 +80,7 @@ struct femtoDreamProducer {
   Configurable<bool> useCent{"useCent", false, "Enable centrality for lc"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
 
-  Configurable<bool> trkRejectNotPropagated{"trkRejectNotPropagated", false, "True: reject not propagated tracks"};
+  //Configurable<bool> trkRejectNotPropagated{"trkRejectNotPropagated", false, "True: reject not propagated tracks"};
   Configurable<int> trkPDGCode{"trkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
   Configurable<std::vector<float>> trkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "trk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
   Configurable<std::vector<float>> trkPtmin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "trk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ")};
@@ -108,6 +108,8 @@ struct femtoDreamProducer {
   using FemtoFullMCgenCollision = FemtoFullMCgenCollisions::iterator;
   using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
+  using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
+  using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
 
   using GeneratedMC = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
@@ -170,41 +172,7 @@ struct femtoDreamProducer {
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
   void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
   {
-    // auto bc = col.bc_as<o2::aod::BCsWithTimestamps>();
     initCCDB(bc, runNumber, ccdb, !isRun3 ? ccdbPathGrp : ccdbPathGrpMag, lut, !isRun3);
-
-    //    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    //    // get magnetic field for run
-    //    if (runNumber == bc.runNumber())
-    //      return;
-    //    auto timestamp = bc.timestamp();
-    //    float output = -999;
-    //
-    //    if (isRun3 && !isForceGRP) {
-    //      static o2::parameters::GRPMagField* grpo = nullptr;
-    //      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
-    //      if (grpo == nullptr) {
-    //        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-    //        return;
-    //      }
-    //      LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
-    //      // taken from GRP onject definition of getNominalL3Field; update later to something smarter (mNominalL3Field = std::lround(5.f * mL3Current / 30000.f);)
-    //      auto NominalL3Field = std::lround(5.f * grpo->getL3Current() / 30000.f);
-    //      output = 0.1 * (NominalL3Field);
-    //
-    //    } else {
-    //
-    //      static o2::parameters::GRPObject* grpo = nullptr;
-    //      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-    //      if (grpo == nullptr) {
-    //        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-    //        return;
-    //      }
-    //      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
-    //      output = 0.1 * (grpo->getNominalL3Field());
-    //    }
-    //    magField = output;
-    //    runNumber = bc.runNumber();
   }
 
   template <typename ParticleType>
@@ -239,27 +207,37 @@ struct femtoDreamProducer {
       auto pdgCode = particleMC.pdgCode();
       int particleOrigin = 99;
       int pdgCodeMother = -1;
-      // get list of mothers
-      // could be empty (for example in case of injected light nuclei)
+      // get list of mothers, but it could be empty (for example in case of injected light nuclei)
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
       // check pdg code
-      if (std::abs(pdgCode) == abs(trkPDGCode.value)) {
+      // if this fails, the particle is a fake
+      if (abs(pdgCode) == abs(trkPDGCode.value)) {
+        // check first if particle is from pile up
+        // check if the collision associated with the particle is the same as the analyzed collision by checking their Ids
         if ((col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
+          // check if particle is primary
         } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (particleMC.getGenStatusCode() == -1) {
-          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
-        } else if (!motherparticlesMC.empty()) {
-          // get direct mother of the particle
+          // check if particle is secondary
+          // particle is from a decay -> getProcess() == 4
+          // particle is generated during transport -> getGenStatusCode() == -1
+          // list of mothers is not empty
+        } else if (particleMC.getProcess() == 4 && particleMC.getGenStatusCode() == -1 && !motherparticlesMC.empty()) {
+          // get direct mother
           auto motherparticleMC = motherparticlesMC.front();
           pdgCodeMother = motherparticleMC.pdgCode();
-          if (motherparticleMC.isPhysicalPrimary() && particleMC.getProcess() == 4) {
-            particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-          }
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+          // check if particle is material
+          // particle is from inelastic hadronic interaction -> getProcess() == 23
+          // particle is generated during transport -> getGenStatusCode() == -1
+        } else if (particleMC.getProcess() == 23 && particleMC.getGenStatusCode() == -1) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+          // cross check to see if we missed a case
         } else {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;
         }
+        // if pdg code is wrong, particle is fake
       } else {
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
       }
@@ -282,16 +260,16 @@ struct femtoDreamProducer {
   void fillMCCollision(CollisionType const& col)
   {
     if (col.has_mcCollision()) {
-      auto genMCcol = col.template mcCollision_as<FemtoFullMCgenCollisions>();
-      outputMCCollision(genMCcol.multMCNParticlesEta08());
+      //auto genMCcol = col.template mcCollision_as<FemtoFullMCgenCollisions>();
+      //outputMCCollision(genMCcol.multMCNParticlesEta08());
       outputCollsMCLabels(outputMCCollision.lastIndex());
     } else {
       outputCollsMCLabels(-1);
     }
   }
 
-  template <bool isMC, typename TrackType>
-  bool fillTracksForCharmHadron(TrackType const& tracks, FemtoHFTrack const& prong0, FemtoHFTrack const& prong1, FemtoHFTrack const& prong2, int candSize)
+  template <bool isMC = false, typename TrackType, typename CollisionType, typename ProngType>
+  bool fillTracksForCharmHadron(CollisionType const& col, TrackType const& tracks, ProngType const& prong0, ProngType const& prong1, ProngType const& prong2, int candSize)
   {
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
@@ -331,11 +309,9 @@ struct femtoDreamProducer {
       }
 
       if constexpr (isMC) {
-        fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
-        //    if constexpr (isMC) {
-        //      fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
-        //    }
+        fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
+
     }
     return fIsTrackFilled;
   }
@@ -394,9 +370,9 @@ struct femtoDreamProducer {
           outputMlPiKP.at(2) = candidate.mlProbLcToPiKP()[2]; /// non-prompt score
         }
       }
-      auto trackPos1 = candidate.template prong0_as<FemtoHFTracks>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.template prong1_as<FemtoHFTracks>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.template prong2_as<FemtoHFTracks>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.template prong2_as<TrackType>(); // positive daughter (negative for the antiparticles)
 
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
@@ -406,11 +382,13 @@ struct femtoDreamProducer {
         if (FunctionSelection >= 1){
         // Fill tracks if it is not filled for Lc Candidate in an event
             if (!isTrackFilled) {
-                isTrackFilled = fillTracksForCharmHadron<false>(tracks, trackPos1, trackNeg, trackPos2, sizeCand);
+                isTrackFilled = fillTracksForCharmHadron<isMC>(col, tracks, trackPos1, trackNeg, trackPos2, sizeCand);
 
                 // If track filling was successful, fill the collision table
                 if (isTrackFilled) {
                     outputCollision(vtxZ, mult, multNtr, spher, magField);
+                if constexpr (isMC) {
+              fillMCCollision(col);}
                 }
             }
 
@@ -496,10 +474,9 @@ struct femtoDreamProducer {
 
   void processMCCharmHad(FemtoFullCollisionMC const& col,
                          aod::BCsWithTimestamps const&,
-                         soa::Join<FemtoHFTracks,
-                                   aod::McTrackLabels> const& tracks,
-                         soa::Filtered<CandidateLcMC> const& candidates,
-                         GeneratedMC const& particles)
+                         FemtoHFMcTracks const& tracks,
+                         aod::McParticles const&,
+                         CandidateLcMC const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -510,11 +487,10 @@ struct femtoDreamProducer {
 
   void processMCCharmHadWithML(FemtoFullCollisionMC const& col,
                                aod::BCsWithTimestamps const&,
-                               soa::Join<FemtoHFTracks,
-                                         aod::McTrackLabels> const& tracks,
-                               soa::Filtered<soa::Join<CandidateLcMC,
-                                                       aod::HfMlLcToPKPi>> const& candidates,
-                               GeneratedMC const& particles)
+                               FemtoHFMcTracks const& tracks,
+                               aod::McParticles const&,
+                               soa::Join<CandidateLcMC,
+                                                       aod::HfMlLcToPKPi> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
