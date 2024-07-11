@@ -49,7 +49,7 @@ class PairSHCentMultKt
   /// \param maxl Maximum valie of L component of the spherical harmonics
   template <typename t1>
   void init(HistogramRegistry* registry, t1& kstarbins, t1& centmultbins,
-            t1& ktbins, int maxl)
+            t1& ktbins, int /*maxl*/)
   {
     PairSHCentMultKtRegistry = registry;
     AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};
@@ -262,7 +262,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void AddEventPair(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int maxl, int multval, int ktval)
+                    int /*maxl*/, int multval, int ktval)
   {
     int fMultBin = multval;
     int fKtBin = ktval;
@@ -329,7 +329,7 @@ class PairSHCentMultKt
   /// \param MaxJM Maximum value of J
   /// \param multval Multiplicity value
   /// \param ktval kT value
-  void PackCov(uint8_t ChosenEventType, int MaxJM, int multval, int ktval)
+  void PackCov(uint8_t ChosenEventType, int /*MaxJM*/, int multval, int ktval)
   {
     int fMultBin = multval;
     int fKtBin = ktval;

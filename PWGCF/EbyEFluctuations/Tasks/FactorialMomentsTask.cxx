@@ -203,9 +203,10 @@ struct FactorialMoments {
     for (auto const& h : mHistArrReset) {
       h->Reset();
     }
+
     countTracks = {0, 0, 0, 0, 0};
-    fqEvent = {{{0, 0, 0, 0, 0, 0}}};
-    binConEvent = {{0, 0, 0, 0, 0}};
+    fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
+    binConEvent = {{{0, 0, 0, 0, 0}}};
 
     for (auto const& track : tracks) {
       if ((track.pt() < confPtMin) || (!track.isGlobalTrack()) || (track.tpcNClsFindable() < confMinTPCCls)) {
@@ -255,13 +256,14 @@ struct FactorialMoments {
     histos.fill(HIST("mVertexY"), coll.posY());
     histos.fill(HIST("mVertexZ"), coll.posZ());
     histos.fill(HIST("mCentFT0M"), coll.centRun2V0M());
+
     for (auto const& h : mHistArrReset) {
       h->Reset();
     }
 
     countTracks = {0, 0, 0, 0, 0};
-    fqEvent = {{{0, 0, 0, 0, 0, 0}}};
-    binConEvent = {{0, 0, 0, 0, 0}};
+    fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
+    binConEvent = {{{0, 0, 0, 0, 0}}};
 
     for (auto const& track : tracks) {
       if ((track.pt() < confPtMin) || (!track.isGlobalTrack()) || (track.tpcNClsFindable() < confMinTPCCls)) {

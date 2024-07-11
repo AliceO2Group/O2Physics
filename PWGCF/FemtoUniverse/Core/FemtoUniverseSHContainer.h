@@ -67,7 +67,7 @@ class FemtoUniverseSHContainer
   /// \param registry Histogram registry to be passed
   /// \param kstarbins k* binning for the histograms
   template <typename T>
-  void init(HistogramRegistry* registry, T& kstarbins, int maxl)
+  void init(HistogramRegistry* registry, T& kstarbins, int /*maxl*/)
   {
     KStarBins = kstarbins;
     std::string femtoObs1D;
@@ -159,7 +159,7 @@ class FemtoUniverseSHContainer
   /// \param ChosenEventType same or mixed event
   /// \param maxl Maximum valie of L component of the spherical harmonics
   template <bool isMC, typename T>
-  void AddEventPair(T const& part1, T const& part2, uint8_t ChosenEventType, int maxl)
+  void AddEventPair(T const& part1, T const& part2, uint8_t ChosenEventType, int /*maxl*/)
   {
     // int fMaxL = 2;
     // int fMaxJM = (2+1)*(2+1);
@@ -216,7 +216,7 @@ class FemtoUniverseSHContainer
   /// Function to fill covariance matrix in 3D histograms
   /// \param ChosenEventType same or mixed event
   /// \param MaxJM Maximum value of J
-  void PackCov(uint8_t ChosenEventType, int MaxJM)
+  void PackCov(uint8_t ChosenEventType, int /*MaxJM*/)
   {
     if (ChosenEventType == femtoUniverseSHContainer::EventType::same) {
       for (int ibin = 1; ibin <= fcovnum->GetNbinsX(); ibin++) {
