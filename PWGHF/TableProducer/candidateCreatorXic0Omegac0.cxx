@@ -827,13 +827,6 @@ struct HfCandidateCreatorXic0Omegac0 {
         trackPiFromV0 = trackV0Dau0;
       }
 
-      kfOmegac0Candidate.nSigmaTPCPiFromV0 = trackPiFromV0.tpcNSigmaPi();
-      kfOmegac0Candidate.nSigmaTPCPrFromV0 = trackPrFromV0.tpcNSigmaPr();
-      kfOmegac0Candidate.nSigmaTOFKaFromCasc = trackKaFromCasc.tofNSigmaKa();
-      kfOmegac0Candidate.nSigmaTPCKaFromCasc = trackKaFromCasc.tpcNSigmaKa();
-      kfOmegac0Candidate.nSigmaTOFPiFromOmegac = trackPiFromOmegac.tofNSigmaPi();
-      kfOmegac0Candidate.nSigmaTPCPiFromOmegac = trackPiFromOmegac.tpcNSigmaPi();
-
       KFParticle kfpNegToV0 = kfpNeg;
       KFParticle kfpPosToV0 = kfpPos;
       kfpNegToV0.SetProductionVertex(KFV0);
@@ -991,10 +984,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                        kfOmegac0Candidate.kfDcaCascDau, kfOmegac0Candidate.kfDcaV0Dau, kfOmegac0Candidate.kfDcaOmegacDau,
                        decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon);
       // fill kf table
-      kfCandidateData(kfOmegac0Candidate.nSigmaTPCPiFromOmegac, kfOmegac0Candidate.nSigmaTOFPiFromOmegac,
-                      kfOmegac0Candidate.nSigmaTPCKaFromCasc, kfOmegac0Candidate.nSigmaTOFKaFromCasc,
-                      kfOmegac0Candidate.nSigmaTPCPiFromV0, kfOmegac0Candidate.nSigmaTPCPrFromV0,
-                      kfOmegac0Candidate.kfDcaXYPiFromOmegac, kfOmegac0Candidate.kfDcaXYCascToPv,
+      kfCandidateData(kfOmegac0Candidate.kfDcaXYPiFromOmegac, kfOmegac0Candidate.kfDcaXYCascToPv,
                       kfOmegac0Candidate.chi2GeoV0, kfOmegac0Candidate.chi2GeoCasc, kfOmegac0Candidate.chi2GeoOmegac, kfOmegac0Candidate.chi2MassV0, kfOmegac0Candidate.chi2MassCasc,
                       kfOmegac0Candidate.ldlV0, kfOmegac0Candidate.ldlCasc, kfOmegac0Candidate.ldlOmegac,
                       kfOmegac0Candidate.chi2TopoV0ToPv, kfOmegac0Candidate.chi2TopoCascToPv, kfOmegac0Candidate.chi2TopoPiFromOmegacToPv, kfOmegac0Candidate.chi2TopoOmegacToPv,

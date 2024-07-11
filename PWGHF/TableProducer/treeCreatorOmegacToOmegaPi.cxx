@@ -297,11 +297,11 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
     rowKfCandidateFull(
-      candidate.nSigmaTPCPiFromOmegac(),
-      candidate.nSigmaTOFPiFromOmegac(),
-      candidate.nSigmaTPCKaFromCasc(),
-      candidate.nSigmaTOFKaFromCasc(),
-      candidate.nSigmaTPCPiFromV0(),
+      candidate.tpcNSigmaPiFromCharmBaryon(),
+      candidate.tofNSigmaPiFromCharmBaryon(),
+      candidate.tpcNSigmaKaFromCasc(),
+      candidate.tofNSigmaKaFromCasc(),
+      candidate.tpcNSigmaPrFromLambda(),
       candidate.nSigmaTPCPrFromV0(),
       candidate.kfDcaXYPiFromOmegac(),
       candidate.dcaCascDau(),
@@ -371,7 +371,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataLite, "Process data", true);
 
   void processKfDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf> const& candidates)
+                         soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
