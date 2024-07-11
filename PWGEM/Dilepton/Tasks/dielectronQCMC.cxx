@@ -489,6 +489,9 @@ struct dielectronQCMC {
     if (abs(t1mc.pdgCode()) != 11 || abs(t2mc.pdgCode()) != 11) {
       return false;
     }
+    if (t1mc.emmceventId() != t2mc.emmceventId()) {
+      return false;
+    }
 
     int mother_id = FindLF(t1mc, t2mc, mcparticles);
     int hfee_type = IsHF(t1mc, t2mc, mcparticles);

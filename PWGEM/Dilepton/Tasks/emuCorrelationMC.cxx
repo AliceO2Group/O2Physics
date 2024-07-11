@@ -478,6 +478,10 @@ struct emuCorrelationMC {
       return false;
     }
 
+    if (t1mc.emmceventId() != t2mc.emmceventId()) {
+      return false;
+    }
+
     int hfee_type = IsHF(t1mc, t2mc, mcparticles);
     if (hfee_type < 0) {
       return false;
@@ -822,7 +826,102 @@ struct emuCorrelationMC {
       auto pos_mus_per_coll = pos_mus_MC->sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
       auto neg_mus_per_coll = neg_mus_MC->sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
 
-      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(pos_els_per_coll, neg_mus_per_coll))) { // ULS
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(pos_els_per_coll, neg_mus_per_coll))) { // ULS+-
+
+        if (!isElectronInAcceptance(t1) || !isMuonInAcceptance(t2)) {
+          continue;
+        }
+
+        if (!t1.isPhysicalPrimary() && !t1.producedByGenerator()) {
+          continue;
+        }
+        if (!t2.isPhysicalPrimary() && !t2.producedByGenerator()) {
+          continue;
+        }
+
+        int hfee_type = IsHF(t1, t2, mcparticles);
+        if (hfee_type < 0) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float dphi = t1.phi() - t2.phi();
+        if (-2 * M_PI < dphi && dphi < -M_PI) {
+          dphi += 2 * M_PI;
+        } else if (-M_PI < dphi && dphi < 0) {
+          dphi += M_PI;
+        } else if (dphi > M_PI) {
+          dphi -= M_PI;
+        }
+
+        auto mp1 = mcparticles.iteratorAt(t1.mothersIds()[0]);
+        auto mp2 = mcparticles.iteratorAt(t2.mothersIds()[0]);
+        switch (hfee_type) {
+          case static_cast<int>(EM_HFeeType::kCe_Ce): {
+            fRegistry.fill(HIST("Generated/ccbar/c2e_c2mu/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
+              fRegistry.fill(HIST("Generated/ccbar/c2e_c2mu/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
+              fRegistry.fill(HIST("Generated/ccbar/c2e_c2mu/baryon_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            } else {
+              fRegistry.fill(HIST("Generated/ccbar/c2e_c2mu/meson_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            }
+            break;
+          }
+          case static_cast<int>(EM_HFeeType::kBe_Be): {
+            fRegistry.fill(HIST("Generated/bbbar/b2e_b2mu/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            if (isBeautyMeson(mp1) && isBeautyMeson(mp2)) {
+              fRegistry.fill(HIST("Generated/bbbar/b2e_b2mu/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            } else if (isBeautyBaryon(mp1) && isBeautyBaryon(mp2)) {
+              fRegistry.fill(HIST("Generated/bbbar/b2e_b2mu/baryon_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            } else {
+              fRegistry.fill(HIST("Generated/bbbar/b2e_b2mu/meson_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            }
+            break;
+          }
+          case static_cast<int>(EM_HFeeType::kBCe_BCe): {
+            fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2c2mu/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
+              fRegistry.fill(HIST("Generated/bbbar/b2e_b2mu/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
+              fRegistry.fill(HIST("Generated/bbbar/b2e_b2mu/baryon_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            } else {
+              fRegistry.fill(HIST("Generated/bbbar/b2e_b2mu/meson_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+            }
+            break;
+          }
+          case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): { // ULS
+            if (isBeautyMeson(mp2) || isBeautyBaryon(mp2)) {   // muon is from b hadron.
+              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2mu_sameb/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+              if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2mu_sameb/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+              } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2mu_sameb/baryon_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+              } else {
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2mu_sameb/meson_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+              }
+            } else { // electron is from b hadron
+              fRegistry.fill(HIST("Generated/bbbar/b2c2mu_b2e_sameb/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+              if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
+                fRegistry.fill(HIST("Generated/bbbar/b2c2mu_b2e_sameb/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+              } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
+                fRegistry.fill(HIST("Generated/bbbar/b2c2mu_b2e_sameb/baryon_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+              } else {
+                fRegistry.fill(HIST("Generated/bbbar/b2c2mu_b2e_sameb/meson_baryon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi);
+              }
+            }
+            break;
+          }
+          case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): // LS
+            LOGF(info, "You should not see kBCe_Be_DiffB in ULS. Good luck.");
+            break;
+          default:
+            break;
+        }
+      } // end of true ULS pair loop
+
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(neg_els_per_coll, pos_mus_per_coll))) { // ULS-+
 
         if (!isElectronInAcceptance(t1) || !isMuonInAcceptance(t2)) {
           continue;
