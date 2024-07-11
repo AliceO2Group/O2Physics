@@ -810,17 +810,6 @@ struct HfCandidateCreatorXic0Omegac0 {
       hCandidateCounter->Fill(3);
 
       //// KFParticle table information
-      // PID information
-      auto trackPrFromV0 = trackV0Dau0;
-      auto trackPiFromV0 = trackV0Dau1;
-      auto trackKaFromCasc = trackCascDauCharged;
-      auto trackPiFromOmegac = trackCharmBachelor;
-
-      if (bachCharge > 0) {
-        trackPrFromV0 = trackV0Dau1;
-        trackPiFromV0 = trackV0Dau0;
-      }
-
       KFParticle kfpNegToV0 = kfpNeg;
       KFParticle kfpPosToV0 = kfpPos;
       kfpNegToV0.SetProductionVertex(KFV0);
