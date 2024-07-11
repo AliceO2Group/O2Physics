@@ -211,6 +211,9 @@ struct TableMaker {
   Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
   Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
 
+  // Track related options
+  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
+
   // Muon related options
   Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propgate muon tracks through absorber (do not use if applying pairing)"};
 
@@ -590,12 +593,23 @@ struct TableMaker {
     uint64_t trackFilteringTag = uint64_t(0);
     uint64_t trackTempFilterMap = uint8_t(0);
 
+    // material correction for track propagation
+    // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+
     for (const auto& assoc : assocs) {
+      // get track
       auto track = assoc.template track_as<TTracks>();
 
       trackFilteringTag = uint64_t(0);
       trackTempFilterMap = uint8_t(0);
       VarManager::FillTrack<TTrackFillMap>(track);
+
+      // compute quantities which depend on the associated collision, such as DCA
+      if (fPropTrack && (track.collisionId() != collision.globalIndex())) {
+        VarManager::FillTrackCollisionMatCorr<TTrackFillMap>(track, collision, noMatCorr, o2::base::Propagator::Instance());
+      }
+
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
