@@ -164,7 +164,7 @@ struct TableMakerMC {
   Configurable<std::string> grpmagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
 
   // Muon related options
-  Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propgate muon tracks through absorber (do not use if applying pairing)"};
+  Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
   Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Propgate muon tracks through absorber (do not use if applying pairing)"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
