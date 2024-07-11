@@ -10,11 +10,11 @@
 // or submit itself to any jurisdiction.
 
 //
-// Class for em photon event selection
+// Class for em event selection
 //
 
-#ifndef PWGEM_PHOTONMESON_CORE_EMEVENTCUT_H_
-#define PWGEM_PHOTONMESON_CORE_EMEVENTCUT_H_
+#ifndef PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
+#define PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
 
 #include "TNamed.h"
 #include "Common/CCDB/EventSelectionParams.h"
@@ -37,6 +37,8 @@ class EMEventCut : public TNamed
     kNoSameBunchPileup,
     kIsVertexITSTPC,
     kIsGoodZvtxFT0vsPV,
+    kEMCReadoutInMB,
+    kEMCHardwareTriggered,
     kOccupancy,
     kNCuts
   };
@@ -68,6 +70,12 @@ class EMEventCut : public TNamed
       return false;
     }
     if (mRequireGoodZvtxFT0vsPV && !IsSelected(collision, EMEventCuts::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if (mRequireEMCReadoutInMB && !IsSelected(collision, EMEventCuts::kEMCReadoutInMB)) {
+      return false;
+    }
+    if (mRequireEMCHardwareTriggered && !IsSelected(collision, EMEventCuts::kEMCHardwareTriggered)) {
       return false;
     }
     if (!IsSelected(collision, EMEventCuts::kOccupancy)) {
@@ -104,6 +112,12 @@ class EMEventCut : public TNamed
       case EMEventCuts::kIsGoodZvtxFT0vsPV:
         return collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
 
+      case EMEventCuts::kEMCReadoutInMB:
+        return (collision.alias_bit(kTVXinEMC));
+
+      case EMEventCuts::kEMCHardwareTriggered:
+        return (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7));
+
       case EMEventCuts::kOccupancy: {
         if (mMinOccupancy < 0) {
           return true;
@@ -126,6 +140,8 @@ class EMEventCut : public TNamed
   void SetRequireNoSameBunchPileup(bool flag);
   void SetRequireVertexITSTPC(bool flag);
   void SetRequireGoodZvtxFT0vsPV(bool flag);
+  void SetRequireEMCReadoutInMB(bool flag);
+  void SetRequireEMCHardwareTriggered(bool flag);
 
   /// @brief Print the track selection
   void print() const;
@@ -140,8 +156,10 @@ class EMEventCut : public TNamed
   bool mRequireNoSameBunchPileup{false};
   bool mRequireVertexITSTPC{false};
   bool mRequireGoodZvtxFT0vsPV{false};
+  bool mRequireEMCReadoutInMB{false};
+  bool mRequireEMCHardwareTriggered{false};
 
   ClassDef(EMEventCut, 1);
 };
 
-#endif // PWGEM_PHOTONMESON_CORE_EMEVENTCUT_H_
+#endif // PWGEM_DILEPTON_CORE_EMEVENTCUT_H_

@@ -425,7 +425,7 @@ struct HfTreeCreatorOmegacSt {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Pr-Pi cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Pr-Pi cannot work, skipping the candidate.";
           hCandidatesPrPi->Fill(SVFitting::Fail);
           continue;
         }
@@ -446,7 +446,7 @@ struct HfTreeCreatorOmegacSt {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for V0-bachelor cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for V0-bachelor cannot work, skipping the candidate.";
           hCandidatesV0Pi->Fill(SVFitting::Fail);
           continue;
         }
@@ -612,7 +612,7 @@ struct HfTreeCreatorOmegacSt {
                     continue;
                   }
                 } catch (const std::runtime_error& error) {
-                  LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Casc-Pi cannot work, skipping the candidate.";
+                  LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Casc-Pi cannot work, skipping the candidate.";
                   hCandidatesCascPi->Fill(SVFitting::Fail);
                   continue;
                 }
@@ -644,7 +644,7 @@ struct HfTreeCreatorOmegacSt {
                     aod::Cascades const&,
                     aod::V0s const&,
                     // TracksExt const& tracks, // TODO: should be TracksExtMc
-                    TracksExtMc const& tracks,
+                    TracksExtMc const&,
                     aod::McParticles const&,
                     aod::BCsWithTimestamps const&)
   {
@@ -764,7 +764,7 @@ struct HfTreeCreatorOmegacSt {
                     hCandidatesCascPi->Fill(SVFitting::FitOk);
                   }
                 } catch (const std::runtime_error& error) {
-                  LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Casc-Pi cannot work, skipping the candidate.";
+                  LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Casc-Pi cannot work, skipping the candidate.";
                   hCandidatesCascPi->Fill(SVFitting::Fail);
                   continue;
                 }

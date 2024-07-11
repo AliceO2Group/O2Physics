@@ -12,14 +12,14 @@
 /// \event mixing handler
 /// \author daiki.sekihata@cern.ch
 
-#ifndef PWGEM_PHOTONMESON_UTILS_EVENTMIXINGHANDLER_H_
-#define PWGEM_PHOTONMESON_UTILS_EVENTMIXINGHANDLER_H_
+#ifndef PWGEM_DILEPTON_UTILS_EVENTMIXINGHANDLER_H_
+#define PWGEM_DILEPTON_UTILS_EVENTMIXINGHANDLER_H_
 
 #include <map>
 #include <utility>
 #include <vector>
 
-namespace o2::aod::pwgem::photonmeson::utils
+namespace o2::aod::pwgem::dilepton::utils
 {
 template <typename T, typename U, typename V>
 class EventMixingHandler
@@ -73,5 +73,5 @@ class EventMixingHandler
   std::map<T, std::vector<U>> fMapMixBins;               // map : e.g. <zbin, centbin, epbin> -> pair<df index, global collision index>
   std::map<U, std::vector<V>> fMap_Tracks_per_collision; // map : e.g. pair<df index, global collision index> -> track array
 };
-} // namespace o2::aod::pwgem::photonmeson::utils
-#endif // PWGEM_PHOTONMESON_UTILS_EVENTMIXINGHANDLER_H_
+} // namespace o2::aod::pwgem::dilepton::utils
+#endif // PWGEM_DILEPTON_UTILS_EVENTMIXINGHANDLER_H_

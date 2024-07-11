@@ -339,17 +339,17 @@ struct JetTaggerHFQA {
   bool trackAcceptance(T const& track)
   {
     if (track.pt() < trackPtMin || track.pt() > trackPtMax)
-      return 0;
+      return false;
 
-    return 1;
+    return true;
   }
 
   bool prongAcceptance(float sigmaDecayLength, float decayLengthSig, float maxSigmaDecayLength, float minDecayLengthSig)
   {
     if ((sigmaDecayLength < maxSigmaDecayLength) && (decayLengthSig > minDecayLengthSig))
-      return 1;
+      return true;
 
-    return 0;
+    return false;
   }
 
   template <typename V, typename JetType>
@@ -404,9 +404,9 @@ struct JetTaggerHFQA {
         if (fillIPxy) {
           float varImpXY, varSignImpXY, varImpXYSig, varSignImpXYSig;
           varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
-          varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * jettaggingutilities::cmTomum;
-          varImpXYSig = track.dcaXY() / TMath::Sqrt(track.sigmaDcaXY2());
-          varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+          varSignImpXY = geoSign * std::abs(track.dcaXY()) * jettaggingutilities::cmTomum;
+          varImpXYSig = track.dcaXY() / std::sqrt(track.sigmaDcaXY2());
+          varSignImpXYSig = geoSign * std::abs(track.dcaXY()) / std::sqrt(track.sigmaDcaXY2());
           registry.fill(HIST("h2_jet_pt_impact_parameter_xy"), jet.pt(), varImpXY);
           registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xy"), jet.pt(), varSignImpXY);
           registry.fill(HIST("h2_jet_pt_impact_parameter_xy_significance"), jet.pt(), varImpXYSig);
@@ -416,9 +416,9 @@ struct JetTaggerHFQA {
         if (fillIPz) {
           float varImpZ, varSignImpZ, varImpZSig, varSignImpZSig;
           varImpZ = track.dcaZ() * jettaggingutilities::cmTomum;
-          varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * jettaggingutilities::cmTomum;
-          varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
-          varSignImpZSig = geoSign * TMath::Abs(track.dcaZ()) / TMath::Sqrt(track.sigmaDcaZ2());
+          varSignImpZ = geoSign * std::abs(track.dcaZ()) * jettaggingutilities::cmTomum;
+          varImpZSig = track.dcaZ() / std::sqrt(track.sigmaDcaZ2());
+          varSignImpZSig = geoSign * std::abs(track.dcaZ()) / std::sqrt(track.sigmaDcaZ2());
           registry.fill(HIST("h2_jet_pt_impact_parameter_z"), jet.pt(), varImpZ);
           registry.fill(HIST("h2_jet_pt_sign_impact_parameter_z"), jet.pt(), varSignImpZ);
           registry.fill(HIST("h2_jet_pt_impact_parameter_z_significance"), jet.pt(), varImpZSig);
@@ -430,9 +430,9 @@ struct JetTaggerHFQA {
           float dcaXYZ = jtrack.dcaXYZ();
           float sigmaDcaXYZ2 = jtrack.sigmaDcaXYZ2();
           varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
-          varSignImpXYZ = geoSign * TMath::Abs(dcaXYZ) * jettaggingutilities::cmTomum;
-          varImpXYZSig = dcaXYZ / TMath::Sqrt(sigmaDcaXYZ2);
-          varSignImpXYZSig = geoSign * TMath::Abs(dcaXYZ) / TMath::Sqrt(sigmaDcaXYZ2);
+          varSignImpXYZ = geoSign * std::abs(dcaXYZ) * jettaggingutilities::cmTomum;
+          varImpXYZSig = dcaXYZ / std::sqrt(sigmaDcaXYZ2);
+          varSignImpXYZSig = geoSign * std::abs(dcaXYZ) / std::sqrt(sigmaDcaXYZ2);
           registry.fill(HIST("h2_jet_pt_impact_parameter_xyz"), jet.pt(), varImpXYZ);
           registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xyz"), jet.pt(), varSignImpXYZ);
           registry.fill(HIST("h2_jet_pt_impact_parameter_xyz_significance"), jet.pt(), varImpXYZSig);
@@ -503,9 +503,9 @@ struct JetTaggerHFQA {
           float varImpXY, varSignImpXY, varImpXYSig, varSignImpXYSig;
           varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
           float varSigmaImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
-          varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * jettaggingutilities::cmTomum;
-          varImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
-          varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+          varSignImpXY = geoSign * std::abs(track.dcaXY()) * jettaggingutilities::cmTomum;
+          varImpXYSig = std::abs(track.dcaXY()) / std::sqrt(track.sigmaDcaXY2());
+          varSignImpXYSig = geoSign * std::abs(track.dcaXY()) / std::sqrt(track.sigmaDcaXY2());
           registry.fill(HIST("h3_jet_pt_impact_parameter_xy_flavour"), mcdjet.pt(), varImpXY, jetflavour);
           registry.fill(HIST("h3_jet_pt_sigma_impact_parameter_xy_flavour"), mcdjet.pt(), varSigmaImpXY, jetflavour);
           registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_flavour"), mcdjet.pt(), varSignImpXY, jetflavour);
@@ -524,9 +524,9 @@ struct JetTaggerHFQA {
         if (fillIPz) {
           float varImpZ, varSignImpZ, varImpZSig, varSignImpZSig;
           varImpZ = track.dcaZ() * jettaggingutilities::cmTomum;
-          varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * jettaggingutilities::cmTomum;
-          varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
-          varSignImpZSig = geoSign * TMath::Abs(track.dcaZ()) / TMath::Sqrt(track.sigmaDcaZ2());
+          varSignImpZ = geoSign * std::abs(track.dcaZ()) * jettaggingutilities::cmTomum;
+          varImpZSig = track.dcaZ() / std::sqrt(track.sigmaDcaZ2());
+          varSignImpZSig = geoSign * std::abs(track.dcaZ()) / std::sqrt(track.sigmaDcaZ2());
           registry.fill(HIST("h3_jet_pt_impact_parameter_z_flavour"), mcdjet.pt(), varImpZ, jetflavour);
           registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_flavour"), mcdjet.pt(), varSignImpZ, jetflavour);
           registry.fill(HIST("h3_jet_pt_impact_parameter_z_significance_flavour"), mcdjet.pt(), varImpZSig, jetflavour);
@@ -546,9 +546,9 @@ struct JetTaggerHFQA {
           float dcaXYZ = jtrack.dcaXYZ();
           float sigmaDcaXYZ2 = jtrack.sigmaDcaXYZ2();
           varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
-          varSignImpXYZ = geoSign * TMath::Abs(dcaXYZ) * jettaggingutilities::cmTomum;
-          varImpXYZSig = dcaXYZ / TMath::Sqrt(sigmaDcaXYZ2);
-          varSignImpXYZSig = geoSign * TMath::Abs(dcaXYZ) / TMath::Sqrt(sigmaDcaXYZ2);
+          varSignImpXYZ = geoSign * std::abs(dcaXYZ) * jettaggingutilities::cmTomum;
+          varImpXYZSig = dcaXYZ / std::sqrt(sigmaDcaXYZ2);
+          varSignImpXYZSig = geoSign * std::abs(dcaXYZ) / std::sqrt(sigmaDcaXYZ2);
           registry.fill(HIST("h3_jet_pt_impact_parameter_xyz_flavour"), mcdjet.pt(), varImpXYZ, jetflavour);
           registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_flavour"), mcdjet.pt(), varSignImpXYZ, jetflavour);
           registry.fill(HIST("h3_jet_pt_impact_parameter_xyz_significance_flavour"), mcdjet.pt(), varImpXYZSig, jetflavour);
@@ -642,7 +642,7 @@ struct JetTaggerHFQA {
         continue;
       }
       registry.fill(HIST("h2_jet_pt_JP"), jet.pt(), jet.jetProb()[0]);
-      registry.fill(HIST("h2_jet_pt_neg_log_JP"), jet.pt(), -1 * TMath::Log(jet.jetProb()[0]));
+      registry.fill(HIST("h2_jet_pt_neg_log_JP"), jet.pt(), -1 * std::log(jet.jetProb()[0]));
       registry.fill(HIST("h2_jet_pt_JP_N1"), jet.pt(), jet.jetProb()[1]);
       registry.fill(HIST("h2_jet_pt_neg_log_JP_N1"), jet.pt(), -1 * TMath::Log(jet.jetProb()[1]));
       registry.fill(HIST("h2_jet_pt_JP_N2"), jet.pt(), jet.jetProb()[2]);
@@ -671,7 +671,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV2ProngData(T const& collision, U const& jets, V const& prongs)
+  void fillHistogramSV2ProngData(T const& /*collision*/, U const& jets, V const& /*prongs*/)
   {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -712,7 +712,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV3ProngData(T const& collision, U const& jets, V const& prongs)
+  void fillHistogramSV3ProngData(T const& /*collision*/, U const& jets, V const& /*prongs*/)
   {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -753,7 +753,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV2ProngMCD(T const& collision, U const& mcdjets, V const& prongs)
+  void fillHistogramSV2ProngMCD(T const& /*collision*/, U const& mcdjets, V const& /*prongs*/)
   {
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -795,7 +795,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramSV3ProngMCD(T const& collision, U const& mcdjets, V const& prongs)
+  void fillHistogramSV3ProngMCD(T const& /*collision*/, U const& mcdjets, V const& /*prongs*/)
   {
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -851,13 +851,13 @@ struct JetTaggerHFQA {
 
       float varImpXY, varImpXYSig, varImpZ, varImpZSig, varImpXYZ, varImpXYZSig;
       varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
-      varImpXYSig = track.dcaXY() / TMath::Sqrt(track.sigmaDcaXY2());
+      varImpXYSig = track.dcaXY() / std::sqrt(track.sigmaDcaXY2());
       varImpZ = track.dcaZ() * jettaggingutilities::cmTomum;
-      varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
+      varImpZSig = track.dcaZ() / std::sqrt(track.sigmaDcaZ2());
       float dcaXYZ = jtrack.dcaXYZ();
       float sigmaDcaXYZ2 = jtrack.sigmaDcaXYZ2();
       varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
-      varImpXYZSig = dcaXYZ / TMath::Sqrt(sigmaDcaXYZ2);
+      varImpXYZSig = dcaXYZ / std::sqrt(sigmaDcaXYZ2);
 
       registry.fill(HIST("h_impact_parameter_xy"), varImpXY);
       registry.fill(HIST("h_impact_parameter_xy_significance"), varImpXYSig);

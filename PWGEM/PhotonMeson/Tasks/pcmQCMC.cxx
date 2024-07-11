@@ -22,15 +22,17 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/Core/EMEventCut.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::pwgem::mcutil;
+using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
+using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::photon;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
@@ -108,16 +110,16 @@ struct PCMQCMC {
   {
     std::vector<double> ptbins;
     for (int i = 0; i < 2; i++) {
-      ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.1 GeV/c, every 0.05 GeV/c
+      ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.05 GeV/c, every 0.05 GeV/c
     }
-    for (int i = 2; i < 52; i++) {
-      ptbins.emplace_back(0.1 * (i - 2) + 0.1); // from 0.1 to 5 GeV/c, every 0.1 GeV/c
+    for (int i = 2; i < 51; i++) {
+      ptbins.emplace_back(0.1 * (i - 2) + 0.1); // from 0.1 to 4.9 GeV/c, every 0.1 GeV/c
     }
-    for (int i = 52; i < 62; i++) {
-      ptbins.emplace_back(0.5 * (i - 52) + 5.0); // from 5 to 10 GeV/c, evety 0.5 GeV/c
+    for (int i = 51; i < 61; i++) {
+      ptbins.emplace_back(0.5 * (i - 51) + 5.0); // from 5 to 9.5 GeV/c, every 0.5 GeV/c
     }
-    for (int i = 62; i < 73; i++) {
-      ptbins.emplace_back(1.0 * (i - 62) + 10.0); // from 10 to 20 GeV/c, evety 1 GeV/c
+    for (int i = 61; i < 72; i++) {
+      ptbins.emplace_back(1.0 * (i - 61) + 10.0); // from 10 to 20 GeV/c, every 1 GeV/c
     }
     const AxisSpec axis_pt{ptbins, "p_{T,#gamma} (GeV/c)"};
     const AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y_{#gamma}|"};

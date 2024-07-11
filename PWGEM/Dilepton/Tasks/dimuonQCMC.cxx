@@ -31,12 +31,11 @@
 #include "Common/Core/trackUtilities.h"
 #include "DCAFitter/FwdDCAFitterN.h"
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/DimuonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
-#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Core/DimuonCut.h"
+#include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+#include "PWGEM/Dilepton/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
@@ -45,9 +44,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::pwgem::mcutil;
-using namespace o2::aod::pwgem::photon;
-using namespace o2::aod::pwgem::dilepton::mcutil;
+using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels>;
@@ -101,7 +98,7 @@ struct dimuonQCMC {
     Configurable<float> cfg_min_pair_dcaxy{"cfg_min_pair_dcaxy", 0.0, "min pair dca3d in sigma"};
     Configurable<float> cfg_max_pair_dcaxy{"cfg_max_pair_dcaxy", 1e+10, "max pair dca3d in sigma"};
 
-    Configurable<int> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
+    Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -4.0, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", -2.5, "max eta for single track"};
@@ -113,6 +110,7 @@ struct dimuonQCMC {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
     Configurable<float> cfg_max_rabs{"cfg_max_rabs", 89.5, "max Radius at the absorber end"};
+    Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
   } dimuoncuts;
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -139,7 +137,7 @@ struct dimuonQCMC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
+    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
 
     const AxisSpec axis_mass{ConfMmumuBins, "m_{#mu#mu} (GeV/c^{2})"};
     const AxisSpec axis_pt{ConfPtmumuBins, "p_{T,#mu#mu} (GeV/c)"};
@@ -376,7 +374,7 @@ struct dimuonQCMC {
   }
 
   template <typename TCollision, typename TTrack1, typename TTrack2, typename TMCParticles>
-  bool fillTruePairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TMCParticles const& mcparticles)
+  bool fillTruePairInfo(TCollision const& /*collision*/, TTrack1 const& t1, TTrack2 const& t2, TMCParticles const& mcparticles)
   {
     if (!fDimuonCut.IsSelectedTrack(t1) || !fDimuonCut.IsSelectedTrack(t2)) {
       return false;
@@ -597,7 +595,8 @@ struct dimuonQCMC {
   std::vector<int> used_trackIds;
   SliceCache cache;
   Preslice<MyMCTracks> perCollision_track = aod::emprimarymuon::emeventId;
-  Filter trackFilter = static_cast<float>(dimuoncuts.cfg_min_pt_track) < o2::aod::fwdtrack::pt && static_cast<float>(dimuoncuts.cfg_min_eta_track) < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < static_cast<float>(dimuoncuts.cfg_max_eta_track);
+  Filter trackFilter = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track;
+  Filter ttcaFilter = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
   using FilteredMyMCTracks = soa::Filtered<MyMCTracks>;
   Partition<FilteredMyMCTracks> posTracks = o2::aod::emprimarymuon::sign > int8_t(0);
@@ -617,11 +616,11 @@ struct dimuonQCMC {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 

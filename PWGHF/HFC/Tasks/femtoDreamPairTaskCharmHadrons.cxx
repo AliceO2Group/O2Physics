@@ -192,7 +192,7 @@ struct femtoDreamPairTaskCharmHadrons {
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
   Produces<o2::aod::FDResultsHF> fillFemtoResult;
 
-  void init(InitContext& context)
+  void init(InitContext& /*context*/)
   {
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, binmultTempFit, dummy, binpTTrack, dummy, dummy, binTempFitVarTrack, dummy, dummy, dummy, dummy, dummy, isMc, trk1_PDGCode);
@@ -221,7 +221,7 @@ struct femtoDreamPairTaskCharmHadrons {
 
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename TableCandidates, typename Collision>
-  void doSameEvent(PartitionType& SliceTrk1, CandType& SliceCharmHad, TableTracks const& parts, TableCandidates const& candidates, Collision const& col)
+  void doSameEvent(PartitionType& SliceTrk1, CandType& SliceCharmHad, TableTracks const& parts, TableCandidates const& /*candidates*/, Collision const& col)
   {
     processType = 1; // for same event
     /// Histogramming same event
@@ -306,7 +306,7 @@ struct femtoDreamPairTaskCharmHadrons {
   }
 
   template <bool isMc, typename CollisionType, typename PartType, typename PartitionType1, typename PartitionType2, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& part2, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& /*part2*/, BinningType policy)
   {
     processType = 1 << 1; // for mixed event
 

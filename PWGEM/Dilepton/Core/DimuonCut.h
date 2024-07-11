@@ -13,8 +13,8 @@
 // Class for dimuon selection
 //
 
-#ifndef PWGEM_PHOTONMESON_CORE_DIMUONCUT_H_
-#define PWGEM_PHOTONMESON_CORE_DIMUONCUT_H_
+#ifndef PWGEM_DILEPTON_CORE_DIMUONCUT_H_
+#define PWGEM_DILEPTON_CORE_DIMUONCUT_H_
 
 #include <algorithm>
 #include <set>
@@ -254,4 +254,4 @@ class DimuonCut : public TNamed
   ClassDef(DimuonCut, 1);
 };
 
-#endif // PWGEM_PHOTONMESON_CORE_DIMUONCUT_H_
+#endif // PWGEM_DILEPTON_CORE_DIMUONCUT_H_

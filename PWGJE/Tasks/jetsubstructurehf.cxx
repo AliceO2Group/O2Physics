@@ -160,7 +160,7 @@ struct JetSubstructureHFTask {
   }
 
   template <typename T, typename U, typename V>
-  void jetPairing(T const& jet, U const& tracks, V const& candidates)
+  void jetPairing(T const& jet, U const& /*tracks*/, V const& /*candidates*/)
   {
     pairPtVec.clear();
     pairEnergyVec.clear();

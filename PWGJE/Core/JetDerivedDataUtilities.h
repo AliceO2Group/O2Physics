@@ -31,7 +31,8 @@ enum JCollisionSel {
   sel8Full = 1,
   sel7 = 2,
   selMC = 3,
-  selUnanchoredMC = 4
+  selUnanchoredMC = 4,
+  sel7KINT7 = 5
 };
 
 template <typename T>
@@ -60,6 +61,9 @@ int initialiseEventSelection(std::string eventSelection)
   if (eventSelection == "selUnanchoredMC") {
     return JCollisionSel::selUnanchoredMC;
   }
+  if (eventSelection == "sel7KINT7") {
+    return JCollisionSel::sel7KINT7;
+  }
   return -1;
 }
 
@@ -75,6 +79,9 @@ uint8_t setEventSelectionBit(T const& collision)
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
+    if (collision.alias_bit(kINT7)) {
+      SETBIT(bit, JCollisionSel::sel7KINT7);
+    }
   }
   if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
     SETBIT(bit, JCollisionSel::selUnanchoredMC);

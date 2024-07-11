@@ -12,12 +12,12 @@
 /// \class to store minimal fwdtrack info
 /// \author daiki.sekihata@cern.ch
 
-#ifndef PWGEM_PHOTONMESON_UTILS_EMFWDTRACK_H_
-#define PWGEM_PHOTONMESON_UTILS_EMFWDTRACK_H_
+#ifndef PWGEM_DILEPTON_UTILS_EMFWDTRACK_H_
+#define PWGEM_DILEPTON_UTILS_EMFWDTRACK_H_
 
 #include <vector>
 
-namespace o2::aod::pwgem::photonmeson::utils::emfwdtrack
+namespace o2::aod::pwgem::dilepton::utils
 {
 class EMFwdTrack
 {
@@ -163,5 +163,5 @@ class EMFwdTrackWithCov : public EMFwdTrack
   float fChi2;
 };
 
-} // namespace o2::aod::pwgem::photonmeson::utils::emfwdtrack
-#endif // PWGEM_PHOTONMESON_UTILS_EMFWDTRACK_H_
+} // namespace o2::aod::pwgem::dilepton::utils
+#endif // PWGEM_DILEPTON_UTILS_EMFWDTRACK_H_
