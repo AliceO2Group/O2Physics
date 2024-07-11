@@ -440,7 +440,7 @@ struct lambdaCorrTableProducer {
     }
 
     if (v0part == kAntiLambda) {
-      histos.fill(HIST("QA_Checks/h1d_lambda_mass"), v0track.mLambda());
+      histos.fill(HIST("QA_Checks/h1d_lambda_mass"), v0track.mAntiLambda());
     }
 
     // apply further mass window selection [central, left, right]
