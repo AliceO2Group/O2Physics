@@ -469,7 +469,7 @@ struct HfTaskFlow {
   //    process same event correlations: h-h case
   // =====================================
   void processSameTpcTpcChCh(FilteredCollisionsWSelMult::iterator const& collision,
-                           TracksWDcaSel const& tracks)
+                             TracksWDcaSel const& tracks)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
@@ -499,8 +499,8 @@ struct HfTaskFlow {
   //    process same event correlations: HF-h case
   // =====================================
   void processSameTpcTpcHfCh(FilteredCollisionsWSelMult::iterator const& collision,
-                            TracksWDcaSel const& tracks,
-                            HfCandidatesSel const& candidates)
+                             TracksWDcaSel const& tracks,
+                             HfCandidatesSel const& candidates)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
@@ -518,8 +518,8 @@ struct HfTaskFlow {
   //    process same event correlations: h-MFT case
   // =====================================
   void processSameTpcMftChCh(FilteredCollisionsWSelMult::iterator const& collision,
-                           TracksWDcaSel const& tracks,
-                           aod::MFTTracks const& mfttracks)
+                             TracksWDcaSel const& tracks,
+                             aod::MFTTracks const& mfttracks)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
@@ -537,7 +537,7 @@ struct HfTaskFlow {
   //    process mixed event correlations: h-h case
   // =====================================
   void processMixedTpcTpcChCh(FilteredCollisionsWSelMult const& collisions,
-                            TracksWDcaSel const& tracks)
+                              TracksWDcaSel const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
@@ -554,8 +554,8 @@ struct HfTaskFlow {
   //    process mixed event correlations: h-HF case
   // =====================================
   void processMixedTpcTpcHfCh(FilteredCollisionsWSelMult const& collisions,
-                             TracksWDcaSel const& tracks,
-                             HfCandidatesSel const& candidates)
+                              TracksWDcaSel const& tracks,
+                              HfCandidatesSel const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
@@ -572,8 +572,8 @@ struct HfTaskFlow {
   //    process mixed event correlations: h-MFT case
   // =====================================
   void processMixedTpcMftChCh(FilteredCollisionsWSelMult const& collisions,
-                            TracksWDcaSel const& tracks,
-                            aod::MFTTracks const& mfttracks)
+                              TracksWDcaSel const& tracks,
+                              aod::MFTTracks const& mfttracks)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
