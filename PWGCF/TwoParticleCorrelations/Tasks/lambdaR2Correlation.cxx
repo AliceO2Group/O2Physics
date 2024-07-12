@@ -13,7 +13,8 @@
 /// \brief R2 correlation of Lambda baryons.
 /// \author Yash Patley <yash.patley@cern.ch>
 
-#include <TMath.h>
+#include <TLorentzVector.h>
+#include <TRandom.h>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -159,8 +160,8 @@ struct lambdaCorrTableProducer {
 
     const AxisSpec axisV0Mass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
     const AxisSpec axisV0Pt(200, 0., 5., "p_{T} (GeV/#it{c})");
-    const AxisSpec axisV0Rap(20, -1., 1., "rap");
-    const AxisSpec axisV0Phi(36, 0., 2 * TMath::Pi(), "#phi (rad)");
+    const AxisSpec axisV0Rap(16, -1., 1., "rap");
+    const AxisSpec axisV0Phi(36, 0., 2. * TMath::Pi(), "#phi (rad)");
 
     const AxisSpec axisRadius(500, 0, 100, "r(cm)");
     const AxisSpec axisCosPA(120, 0.97, 1.0, "cos(#theta_{PA})");
@@ -297,44 +298,33 @@ struct lambdaCorrTableProducer {
   {
 
     bool selTPCv0type = false, selTOFv0type = false;
+    float tpcNSigma = 0., tofNSigma = 0.;
 
     switch (pid) {
 
       case kPion:
-        if (track.hasTOF()) {
-          if (fabs(track.tofNSigmaPi()) < cfg_tof_nsigma) {
-            selTOFv0type = true;
-          }
-          if (fabs(track.tpcNSigmaPi()) < cfg_tpc_nsigma) {
-            selTPCv0type = true;
-          }
-        } else {
-          selTOFv0type = true;
-          if (fabs(track.tpcNSigmaPi()) < cfg_tpc_nsigma) {
-            selTPCv0type = true;
-          }
-        }
+        tpcNSigma = track.tpcNSigmaPi();
+        tofNSigma = track.tofNSigmaPi();
         break;
 
       case kProton:
-        if (track.hasTOF()) {
-          if (fabs(track.tofNSigmaPr()) < cfg_tof_nsigma) {
-            selTOFv0type = true;
-          }
-          if (fabs(track.tpcNSigmaPr()) < cfg_tpc_nsigma) {
-            selTPCv0type = true;
-          }
-        } else {
-          selTOFv0type = true;
-          if (fabs(track.tpcNSigmaPr()) < cfg_tpc_nsigma) {
-            selTPCv0type = true;
-          }
-        }
+        tpcNSigma = track.tpcNSigmaPr();
+        tofNSigma = track.tofNSigmaPr();
         break;
+    }
 
-      default:
-        LOGF(error, "NO Particle Selected for PID");
-        break;
+    if (track.hasTOF()) {
+      if (fabs(tofNSigma) < cfg_tof_nsigma) {
+        selTOFv0type = true;
+      }
+      if (fabs(tpcNSigma) < cfg_tpc_nsigma) {
+        selTPCv0type = true;
+      }
+    } else {
+      selTOFv0type = true;
+      if (fabs(tpcNSigma) < cfg_tpc_nsigma) {
+        selTPCv0type = true;
+      }
     }
 
     if (selTPCv0type && selTOFv0type) {
@@ -395,12 +385,15 @@ struct lambdaCorrTableProducer {
     }
   }
 
-  template <ParticleType v0part, PidType pos_prong, PidType neg_prong, MassWindowType masswin, typename C, typename V, typename P, typename T>
-  void selV0Particle(C const& collision, V const& v0track, P const& postrack, P const& negtrack, T const& tracks)
+  template <ParticleType v0part, PidType pos_prong, PidType neg_prong, MassWindowType masswin, typename C, typename V, typename T>
+  void selV0Particle(C const& collision, V const& v0track, T const& tracks)
   {
 
     // initialize variables
+    auto postrack = v0track.template posTrack_as<T>();
+    auto negtrack = v0track.template negTrack_as<T>();
     float mass = 0., rap = 0.;
+
     if (v0part == kLambda) {
       mass = v0track.mLambda();
     }
@@ -472,15 +465,12 @@ struct lambdaCorrTableProducer {
         continue;
       }
 
-      auto postrack = v0.template posTrack_as<Tracks>();
-      auto negtrack = v0.template negTrack_as<Tracks>();
-
-      selV0Particle<kLambda, kProton, kPion, kCentralWindow>(collision, v0, postrack, negtrack, tracks);
-      selV0Particle<kLambda, kProton, kPion, kLeftWindow>(collision, v0, postrack, negtrack, tracks);
-      selV0Particle<kLambda, kProton, kPion, kRightWindow>(collision, v0, postrack, negtrack, tracks);
-      selV0Particle<kAntiLambda, kPion, kProton, kCentralWindow>(collision, v0, postrack, negtrack, tracks);
-      selV0Particle<kAntiLambda, kPion, kProton, kLeftWindow>(collision, v0, postrack, negtrack, tracks);
-      selV0Particle<kAntiLambda, kPion, kProton, kRightWindow>(collision, v0, postrack, negtrack, tracks);
+      selV0Particle<kLambda, kProton, kPion, kCentralWindow>(collision, v0, tracks);
+      selV0Particle<kLambda, kProton, kPion, kLeftWindow>(collision, v0, tracks);
+      selV0Particle<kLambda, kProton, kPion, kRightWindow>(collision, v0, tracks);
+      selV0Particle<kAntiLambda, kPion, kProton, kCentralWindow>(collision, v0, tracks);
+      selV0Particle<kAntiLambda, kPion, kProton, kLeftWindow>(collision, v0, tracks);
+      selV0Particle<kAntiLambda, kPion, kProton, kRightWindow>(collision, v0, tracks);
     }
   }
 };
@@ -621,7 +611,7 @@ struct lambdaCorrelationAnalysis {
   Partition<Lambda_Tracks> part_lambda_tracks_right_masswin = (aod::lambdatrack::v0type == (int8_t)kLambda && aod::lambdatrack::masswindow == (int8_t)kRightWindow);
   Partition<Lambda_Tracks> part_anti_lambda_tracks_right_masswin = (aod::lambdatrack::v0type == (int8_t)kAntiLambda && aod::lambdatrack::masswindow == (int8_t)kRightWindow);
 
-  void process(Lambda_Collisions::iterator const& collision, Lambda_Tracks const& lambdas)
+  void process(Lambda_Collisions::iterator const& collision, Lambda_Tracks const&)
   {
 
     histos.fill(HIST("Event/h1d_posz"), collision.posZ());
