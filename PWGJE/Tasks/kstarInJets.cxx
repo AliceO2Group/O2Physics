@@ -1151,9 +1151,7 @@ struct kstarInJets {
     }   // tracks 1
     // tracks
   } // main fcn
-  
   PROCESS_SWITCH(kstarInJets, processMatchedRec, "phi matched Rec level MC", true);
-  
 }; // end of main struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
