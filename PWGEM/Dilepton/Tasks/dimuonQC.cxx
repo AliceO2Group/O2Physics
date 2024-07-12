@@ -118,7 +118,7 @@ struct dimuonQC {
     Configurable<float> cfg_min_pair_dcaxy{"cfg_min_pair_dcaxy", 0.0, "min pair dca3d in sigma"};
     Configurable<float> cfg_max_pair_dcaxy{"cfg_max_pair_dcaxy", 1e+10, "max pair dca3d in sigma"};
 
-    Configurable<int> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
+    Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -4.0, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", -2.5, "max eta for single track"};
@@ -130,6 +130,7 @@ struct dimuonQC {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
     Configurable<float> cfg_max_rabs{"cfg_max_rabs", 89.5, "max Radius at the absorber end"};
+    Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
   } dimuoncuts;
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -484,9 +485,8 @@ struct dimuonQC {
 
   SliceCache cache;
   Preslice<MyTracks> perCollision_track = aod::emprimarymuon::emeventId;
-  // Filter trackFilter =  o2::aod::fwdtrack::pt > 1.f * dimuoncuts.cfg_min_pt_track.node();
-  Filter trackFilter = static_cast<float>(dimuoncuts.cfg_min_pt_track) < o2::aod::fwdtrack::pt && static_cast<float>(dimuoncuts.cfg_min_eta_track) < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < static_cast<float>(dimuoncuts.cfg_max_eta_track);
-  // Filter trackFilter = o2::aod::fwdtrack::trackType == static_cast<uint8_t>(dimuoncuts.cfg_track_type) && static_cast<float>(dimuoncuts.cfg_min_pt_track) < o2::aod::fwdtrack::pt && static_cast<float>(dimuoncuts.cfg_min_eta_track) < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < static_cast<float>(dimuoncuts.cfg_max_eta_track);
+  Filter trackFilter = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track;
+  Filter ttcaFilter = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
   using FilteredMyTracks = soa::Filtered<MyTracks>;
 
   MyEMH* emh_pos = nullptr;

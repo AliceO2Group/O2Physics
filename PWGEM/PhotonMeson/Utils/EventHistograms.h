@@ -21,7 +21,7 @@ namespace o2::aod::pwgem::photonmeson::utils::eventhistogram
 void addEventHistograms(HistogramRegistry* fRegistry)
 {
   // event info
-  auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{10, 0.5, 10.5}}, false);
+  auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{12, 0.5, 12.5}}, false);
   hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
   hCollisionCounter->GetXaxis()->SetBinLabel(2, "No TF border");
   hCollisionCounter->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
@@ -31,7 +31,9 @@ void addEventHistograms(HistogramRegistry* fRegistry)
   hCollisionCounter->GetXaxis()->SetBinLabel(7, "FT0AND");
   hCollisionCounter->GetXaxis()->SetBinLabel(8, "sel8");
   hCollisionCounter->GetXaxis()->SetBinLabel(9, "|Z_{vtx}| < 10 cm");
-  hCollisionCounter->GetXaxis()->SetBinLabel(10, "accepted");
+  hCollisionCounter->GetXaxis()->SetBinLabel(10, "EMC MB Readout");
+  hCollisionCounter->GetXaxis()->SetBinLabel(11, "EMC L0 Triggered");
+  hCollisionCounter->GetXaxis()->SetBinLabel(12, "accepted");
 
   fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
   fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
@@ -76,6 +78,12 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision)
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 9.0);
   }
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
+  if (collision.alias_bit(kTVXinEMC)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 10.0);
+  }
+  if (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 11.0);
+  }
 
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV());
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPVeta1"), collision.multNTracksPVeta1());
