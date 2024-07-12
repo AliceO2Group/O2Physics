@@ -13,6 +13,8 @@
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
+#include <iostream>
+
 #include <TDirectory.h>
 #include <TH1F.h>
 #include <THn.h>
@@ -70,28 +72,31 @@ struct HfTaskFlow {
   //      DATA : Filters & partitions
   // =========================
 
-  //using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
-  //using TracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
-  //using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+  using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using TracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
+  using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
+
+  /*
   // Without filters
   using FilteredCollisionsWSelMult = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TracksWDcaSel = soa::Join<aod::TracksWDca, aod::TrackSelection>;
   using HfCandidatesSel = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
-
+  */
 
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
-  //Filter collisionVtxZFilter = nabs(aod::collision::posZ) < zVertexMax;
+  Filter collisionVtxZFilter = nabs(aod::collision::posZ) < zVertexMax;
+
   //  Charged track filters
-  /*
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackAssocMax) &&
                        (aod::track::pt > ptTrackAssocMin) &&
                        requireGlobalTrackWoPtEtaInFilter();
-  */
+  
   //  HF candidate filter
   //  TODO: use Partition instead of filter
-  //Filter candidateFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Filter candidateFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || 
+                           aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   //Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
@@ -101,14 +106,12 @@ struct HfTaskFlow {
 
   //using FilteredCollisionsWSelMultMC = soa::Filtered<soa::Join<aod::McCollisions, aod::EvSels, aod::Mults>>;
   //using FilteredCollisionsWSelMultMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults>>;
-  // Without filters
-  using FilteredCollisionsWSelMultMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults>;
+  
   // Even add McCollisions in the join ?
   //using FilteredCollisionsWSelMultMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::McCollisions>>;
-  //using TracksWDcaSelMC = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::McTrackLabels>>;
-  // Without filters
-  using TracksWDcaSelMC = soa::Join<aod::TracksWDca, aod::TrackSelection, aod::McTrackLabels>;
-  // McTracks ????
+  using FilteredCollisionsWSelMultMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults>>;
+  using TracksWDcaSelMC = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::McTrackLabels>>;
+  
 
 
   //  configurables for containers
@@ -216,6 +219,13 @@ struct HfTaskFlow {
     registry.add("Data/TpcTpc/HfHadron/MixedEvent/hEtaHFMixing", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("Data/TpcTpc/HfHadron/MixedEvent/hPhiHFMixing", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
 
+    
+    registry.add("MC/TpcTpc/HadronHadron/SameEvent/hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("MC/TpcTpc/HadronHadron/SameEvent/hVtxZ", "hVtxZ", {HistType::kTH1F, {{400, -50, 50}}});
+    registry.add("MC/TpcTpc/HadronHadron/SameEvent/hEventCountSame", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+
+    registry.add("MC/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+
     //  set axes of the correlation container
     std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
@@ -269,8 +279,11 @@ struct HfTaskFlow {
       //  Run 3: selection
       if (fillHistograms)
         registry.fill(HIST("Data/hEventCounter"), 1);
-      if (!collision.sel8()) {
-        return false;
+      
+      if (processMc == false) {
+        if (!collision.sel8()) {
+          return false;
+        }
       }
       if (fillHistograms)
         registry.fill(HIST("Data/hEventCounter"), 3);
@@ -472,6 +485,7 @@ struct HfTaskFlow {
   template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc, typename TLambda>
   void mixCollisions(TCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
+
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
@@ -492,13 +506,32 @@ struct HfTaskFlow {
       const auto multiplicity = tracks2.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
       const auto vz = collision1.posZ();
 
-      if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
-        registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
-        fillHFMixingQA(multiplicity, vz, tracks1);
-      } else {
-        registry.fill(HIST("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
-        fillMixingQA(multiplicity, vz, tracks1);
+
+      // TO BE DONE : ADD ONE MORE IF CONDITION TO FILL THE MC CASE
+      if constexpr (std::is_same_v<FilteredCollisionsWSelMultMC, TCollisions>) {
+        registry.fill(HIST("MC/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
+        // TO BE DONE : ADD QA FUNCTION FOR MC
+        //fillMixingQA(multiplicity, vz, tracks1);
+        /*
+        if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
+          registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
+          fillHFMixingQA(multiplicity, vz, tracks1);
+        } else {
+          registry.fill(HIST("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
+          fillMixingQA(multiplicity, vz, tracks1);
+        }
+        */
       }
+      else {
+        if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
+          registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
+          fillHFMixingQA(multiplicity, vz, tracks1);
+        } else {
+          registry.fill(HIST("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
+          fillMixingQA(multiplicity, vz, tracks1);
+        }
+      }
+
 
       // TO-DO : add the same thing above but for MC
 
@@ -579,33 +612,35 @@ struct HfTaskFlow {
   //    MONTE-CARLO : process same event correlations: h-h case
   // =====================================
 
-  void processSameTpcTpcHHmc(FilteredCollisionsWSelMultMC::iterator const& mccollision,
+  void processSameTpcTpcChChmc(FilteredCollisionsWSelMultMC::iterator const& mccollision,
                              TracksWDcaSelMC const& mctracks)
   {
+    /*
     if (!(isCollisionSelected(mccollision, true))) {
       return;
     }
+    */
 
     const auto multiplicity = mctracks.size();
-    registry.fill(HIST("MC/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
-    registry.fill(HIST("MC/HadronHadron/SameEvent/hVtxZ"), mccollision.posZ());
+    registry.fill(HIST("MC/TpcTpc/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
+    registry.fill(HIST("MC/TpcTpc/HadronHadron/SameEvent/hVtxZ"), mccollision.posZ());
 
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(mccollision.posZ(), multiplicity));
-    registry.fill(HIST("MC/HadronHadron/SameEvent/hEventCountSame"), bin);
+    registry.fill(HIST("MC/TpcTpc/HadronHadron/SameEvent/hEventCountSame"), bin);
 
-    sameTPCTPCChMC->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    sameTPCTPCChChMC->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    fillCorrelations(sameTPCTPCChMC, mctracks, mctracks, multiplicity, mccollision.posZ());
+    fillCorrelations(sameTPCTPCChChMC, mctracks, mctracks, multiplicity, mccollision.posZ());
   }
-  PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcHHmc, "MONTE-CARLO : Process same-event correlations for TPC-TPC h-h case", true);
+  PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcChChmc, "MONTE-CARLO : Process same-event correlations for TPC-TPC h-h case", true);
   
 
   // =====================================
   //    DATA : process mixed event correlations: h-h case
   // =====================================
   void processMixedTpcTpcChCh(FilteredCollisionsWSelMult const& collisions,
-                            TracksWDcaSel const& tracks)
+                              TracksWDcaSel const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
@@ -653,6 +688,28 @@ struct HfTaskFlow {
     mixCollisions(collisions, tracks, mfttracks, getTracksSize, mixedTPCMFTChCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftChCh, "DATA : Process mixed-event correlations for TPC-MFT h-h case", true);
+
+  // =====================================
+  //    MONTE-CARLO : process mixed event correlations: h-h case
+  // =====================================
+
+  void processMixedTpcTpcChChmc(FilteredCollisionsWSelMultMC const& mccollisions,
+                                TracksWDcaSelMC const& mctracks)
+  {
+    // use normal index instead of globalIndex for MixedEvent ??
+
+
+    //  we want to group collisions based on charged-track multiplicity
+    auto getTracksSize = [&mctracks, this](FilteredCollisionsWSelMultMC::iterator const& mccol) {
+      //auto associatedTracks = mctracks.sliceByCached(o2::aod::track::collisionId, mccol.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
+      auto associatedTracks = mctracks.sliceByCached(o2::aod::track::collisionId, mccol.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
+      auto size = associatedTracks.size();
+      return size;
+    };
+
+    mixCollisions(mccollisions, mctracks, mctracks, getTracksSize, mixedTPCTPCChChMC);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcChChmc, "MONTE-CARLO : Process mixed-event correlations for TPC-TPC h-h case", true);
 }; // End of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
