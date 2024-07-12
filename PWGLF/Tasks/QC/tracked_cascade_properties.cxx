@@ -162,54 +162,54 @@ struct tracked_cascade_properties {
       averageClusterSize = averageClusterSize / static_cast<double>(track.itsNCls());
 
       // Track Inclination
-      registryQC.fill(HIST("tgl_Distr"), trackedCascade.tgl());
-      double lambda = atan(trackedCascade.tgl());
+      registryQC.fill(HIST("tgl_Distr"), track.tgl());
+      double lambda = atan(track.tgl());
       double cosL = cos(lambda);
       double sinL = sin(lambda);
 
       // Xi
       if (trackedCascade.xiMass() > mMin_xi && trackedCascade.xiMass() < mMax_xi) {
-        registryQC.fill(HIST("nITS_Xi"), trackedCascade.p(), track.itsNCls());
+        registryQC.fill(HIST("nITS_Xi"), track.p(), track.itsNCls());
         if (btrack.sign() > 0) {
           for (int i = 0; i < 7; i++) {
-            registryData.fill(HIST("xi_pos_clustersize"), clusterSize[i], trackedCascade.p(), trackedCascade.eta());
+            registryData.fill(HIST("xi_pos_clustersize"), clusterSize[i], track.p(), track.eta());
           }
-          registryData.fill(HIST("xi_pos_avgclustersize"), averageClusterSize, trackedCascade.p(), trackedCascade.eta());
-          registryData.fill(HIST("xi_pos_avgclustersize_cosL"), averageClusterSize * cosL, trackedCascade.p());
-          registryData.fill(HIST("xi_pos_avgclustersize_sinL"), averageClusterSize * sinL, trackedCascade.p());
-          registryData.fill(HIST("xi_mass_pos"), trackedCascade.p(), trackedCascade.xiMass());
+          registryData.fill(HIST("xi_pos_avgclustersize"), averageClusterSize, track.p(), track.eta());
+          registryData.fill(HIST("xi_pos_avgclustersize_cosL"), averageClusterSize * cosL, track.p());
+          registryData.fill(HIST("xi_pos_avgclustersize_sinL"), averageClusterSize * sinL, track.p());
+          registryData.fill(HIST("xi_mass_pos"), track.p(), trackedCascade.xiMass());
         }
         if (btrack.sign() < 0) {
           for (int i = 0; i < 7; i++) {
-            registryData.fill(HIST("xi_neg_clustersize"), clusterSize[i], trackedCascade.p(), trackedCascade.eta());
+            registryData.fill(HIST("xi_neg_clustersize"), clusterSize[i], track.p(), track.eta());
           }
-          registryData.fill(HIST("xi_neg_avgclustersize"), averageClusterSize, trackedCascade.p(), trackedCascade.eta());
-          registryData.fill(HIST("xi_neg_avgclustersize_cosL"), averageClusterSize * cosL, trackedCascade.p());
-          registryData.fill(HIST("xi_neg_avgclustersize_sinL"), averageClusterSize * sinL, trackedCascade.p());
-          registryData.fill(HIST("xi_mass_neg"), trackedCascade.p(), trackedCascade.xiMass());
+          registryData.fill(HIST("xi_neg_avgclustersize"), averageClusterSize, track.p(), track.eta());
+          registryData.fill(HIST("xi_neg_avgclustersize_cosL"), averageClusterSize * cosL, track.p());
+          registryData.fill(HIST("xi_neg_avgclustersize_sinL"), averageClusterSize * sinL, track.p());
+          registryData.fill(HIST("xi_mass_neg"), track.p(), trackedCascade.xiMass());
         }
       }
 
       // Omega
       if (trackedCascade.omegaMass() > mMin_omega && trackedCascade.omegaMass() < mMax_omega) {
-        registryQC.fill(HIST("nITS_Omega"), trackedCascade.p(), track.itsNCls());
+        registryQC.fill(HIST("nITS_Omega"), track.p(), track.itsNCls());
         if (btrack.sign() > 0) {
           for (int i = 0; i < 7; i++) {
-            registryData.fill(HIST("omega_pos_clustersize"), clusterSize[i], trackedCascade.p(), trackedCascade.eta());
+            registryData.fill(HIST("omega_pos_clustersize"), clusterSize[i], track.p(), track.eta());
           }
-          registryData.fill(HIST("omega_pos_avgclustersize"), averageClusterSize, trackedCascade.p(), trackedCascade.eta());
-          registryData.fill(HIST("omega_pos_avgclustersize_cosL"), averageClusterSize * cosL, trackedCascade.p());
-          registryData.fill(HIST("omega_pos_avgclustersize_sinL"), averageClusterSize * sinL, trackedCascade.p());
-          registryData.fill(HIST("omega_mass_pos"), trackedCascade.p(), trackedCascade.omegaMass());
+          registryData.fill(HIST("omega_pos_avgclustersize"), averageClusterSize, track.p(), track.eta());
+          registryData.fill(HIST("omega_pos_avgclustersize_cosL"), averageClusterSize * cosL, track.p());
+          registryData.fill(HIST("omega_pos_avgclustersize_sinL"), averageClusterSize * sinL, track.p());
+          registryData.fill(HIST("omega_mass_pos"), track.p(), trackedCascade.omegaMass());
         }
         if (btrack.sign() < 0) {
           for (int i = 0; i < 7; i++) {
-            registryData.fill(HIST("omega_neg_clustersize"), clusterSize[i], trackedCascade.p(), trackedCascade.eta());
+            registryData.fill(HIST("omega_neg_clustersize"), clusterSize[i], track.p(), track.eta());
           }
-          registryData.fill(HIST("omega_neg_avgclustersize"), averageClusterSize, trackedCascade.p(), trackedCascade.eta());
-          registryData.fill(HIST("omega_neg_avgclustersize_cosL"), averageClusterSize * cosL, trackedCascade.p());
-          registryData.fill(HIST("omega_neg_avgclustersize_sinL"), averageClusterSize * sinL, trackedCascade.p());
-          registryData.fill(HIST("omega_mass_neg"), trackedCascade.p(), trackedCascade.omegaMass());
+          registryData.fill(HIST("omega_neg_avgclustersize"), averageClusterSize, track.p(), track.eta());
+          registryData.fill(HIST("omega_neg_avgclustersize_cosL"), averageClusterSize * cosL, track.p());
+          registryData.fill(HIST("omega_neg_avgclustersize_sinL"), averageClusterSize * sinL, track.p());
+          registryData.fill(HIST("omega_mass_neg"), track.p(), trackedCascade.omegaMass());
         }
       }
     }
