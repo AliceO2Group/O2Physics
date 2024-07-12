@@ -36,7 +36,7 @@ DECLARE_SOA_COLUMN(QtAPMother, qtAPMother, float);
 DECLARE_SOA_COLUMN(McPdgCodeMother, mcPdgCodeMother, int);
 
 /**
- * PartID: 
+ * PartID:
  * 0: e
  * 1: #pi
  * 2: K
