@@ -84,7 +84,7 @@ int testPIDhypothesis(T trackPIDinfo, float maxNsigmaTPC = 5.0, float maxNsigmaT
         printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTOF is higher than %f", maxNsigmaTPC));
         return -1;
       }
-    } else if (trackPIDinfo.hasTOF() && useTOFsigmaAfterTPC){
+    } else if (trackPIDinfo.hasTOF() && useTOFsigmaAfterTPC) {
       if (nSigmaTPC[enumChoiceTPC] < maxNsigmaTPC && nSigmaTOF[enumChoiceTPC] < maxNsigmaTOF) {
         return enumChoiceTPC;
       } else {
