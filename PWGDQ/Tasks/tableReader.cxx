@@ -76,6 +76,22 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
+
+// Xcandidate columns
+DECLARE_SOA_COLUMN(massXcandidate, MXcandidate, float);
+DECLARE_SOA_COLUMN(pTXcandidate, PtXcandidate, float);
+DECLARE_SOA_COLUMN(rapidityXcandidate, YXcandidate, float);
+DECLARE_SOA_COLUMN(etaXcandidate, EtaXcandidate, float);
+DECLARE_SOA_COLUMN(massJpsicandidate, MJpsicandidate, float);
+DECLARE_SOA_COLUMN(massDipioncandidate, MDipioncandidate, float);
+DECLARE_SOA_COLUMN(pTJpsicandidate, PtJpsicandidate, float);
+DECLARE_SOA_COLUMN(massDiff, Q, float);
+DECLARE_SOA_COLUMN(angDistPion1, DeltaR1, float);
+DECLARE_SOA_COLUMN(angDistPion2, DeltaR2, float);
+DECLARE_SOA_COLUMN(cosDileptonDipion, CosDileptonDipion, float);
+DECLARE_SOA_COLUMN(dcaxy, DcaXY, float);
+DECLARE_SOA_COLUMN(dcaz, DcaZ, float);
+  
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
@@ -84,6 +100,7 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBar
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
+DECLARE_SOA_TABLE(XCandidates, "AOD", "DQX3872", dqanalysisflags::massXcandidate, dqanalysisflags::pTXcandidate, dqanalysisflags::rapidityXcandidate, dqanalysisflags::etaXcandidate, dqanalysisflags::massJpsicandidate, dqanalysisflags::massDipioncandidate, dqanalysisflags::pTJpsicandidate, dqanalysisflags::massDiff, dqanalysisflags::angDistPion1, dqanalysisflags::angDistPion2, dqanalysisflags::cosDileptonDipion, dqanalysisflags::dcaxy, dqanalysisflags::dcaz);
 } // namespace o2::aod
 
 // Declarations of various short names
