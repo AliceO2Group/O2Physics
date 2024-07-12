@@ -553,8 +553,9 @@ struct kstarInJets {
       registry.fill(HIST("h_jet_eta"), mcdjet.eta());
       registry.fill(HIST("h_jet_phi"), mcdjet.phi());
     }
-    if (hasJets)
+    if (hasJets) {
       JEhistos.fill(HIST("nEvents_MCRec"), 2.5);
+    }
 
     // Track Eff
     for (const auto& track : tracks) {
@@ -1148,11 +1149,11 @@ struct kstarInJets {
 
       } // tracks 2
     }   // tracks 1
-    // }   // tracks
+    // tracks
   } // main fcn
-
+  
   PROCESS_SWITCH(kstarInJets, processMatchedRec, "phi matched Rec level MC", true);
-
+  
 }; // end of main struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
