@@ -697,10 +697,21 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXYPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter DCA_{XY} (cm)", HistType::kTH2D, {axisPt, axisDCA});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPvsITSclusterSize", ";Average ITS cluster size;Daughter #it{p} (GeV/c)", HistType::kTH2D, {axisAvgITSclsSizes, axisMomSigned});
         histos.add("EventTwoTracks/MuonsSelection/hDaughtersPvsITSclusterSizeXcos", ";Average ITS cluster size x cos(#lambda);Daughter #it{p} (GeV/c)", HistType::kTH2D, {axisAvgITSclsSizes, axisMomSigned});
-
         histos.add("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWidePtFitPlot", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
         histos.add("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWideCS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsLP", ";Leading #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsOP", ";Other #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsP", ";Track #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {axisMom, axisTOFsignal});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsLP", ";Leading #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {axisMom, axisTOFsignal});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsOP", ";Other #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {axisMom, axisTOFsignal});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsP", ";Track #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsLP", ";Leading #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsOP", ";Other #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsP", ";Track #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsLP", ";Leading #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+        histos.add("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsOP", ";Other #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       }
     }
 
@@ -2050,6 +2061,7 @@ struct UpcTauCentralBarrelRL {
     int countPVGTelectrons = 0;
     int countPVGTmuons = 0;
     int countPVGTpions = 0;
+    int countPVGTmuonsSelection = 0;
     std::vector<int> vecPVidx;
     // Loop over tracks with selections
     for (auto& track : reconstructedBarrelTracks) {
@@ -2165,6 +2177,8 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
         }
       }
+      if (abs(track.tpcNSigmaMu()) < cutMyTPCnSigmaMu)
+        countPVGTmuonsSelection++;
 
     } // Loop over tracks with selections
 
@@ -2190,6 +2204,14 @@ struct UpcTauCentralBarrelRL {
           if (trkDaug1.hasTOF()) {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFsignalVsP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
+          }
+        }
+        if (countPVGTmuonsSelection == 2) {
+          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
+          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
+          if (trkDaug1.hasTOF()) {
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
           }
         }
         if (countPVGTmuons == 2)
@@ -2230,6 +2252,14 @@ struct UpcTauCentralBarrelRL {
           if (trkDaug2.hasTOF()) {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFsignalVsP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
+          }
+        }
+        if (countPVGTmuonsSelection == 2) {
+          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
+          histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
+          if (trkDaug1.hasTOF()) {
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
           }
         }
         if (countPVGTmuons == 2)
@@ -2286,6 +2316,35 @@ struct UpcTauCentralBarrelRL {
             if (trkDaug2.hasTOF()) {
               histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFsignalVsLP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsLP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
+            }
+          }
+        }
+        if (countPVGTmuonsSelection == 2) {
+          if (daug[0].P() > daug[1].P()) {
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsLP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsOP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsLP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsOP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
+            if (trkDaug1.hasTOF()) {
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsLP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsLP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
+            }
+            if (trkDaug2.hasTOF()) {
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsOP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsOP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
+            }
+          } else {
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsOP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsLP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsOP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
+            histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsLP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
+            if (trkDaug1.hasTOF()) {
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsOP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsOP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
+            }
+            if (trkDaug2.hasTOF()) {
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFsignalVsLP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
+              histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTOFnSigmaVsLP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
             }
           }
         }
