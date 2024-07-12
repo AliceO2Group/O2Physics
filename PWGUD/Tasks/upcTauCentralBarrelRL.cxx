@@ -61,11 +61,13 @@ struct UpcTauCentralBarrelRL {
   Configurable<float> cutMyGapSideFT0A{"FT0A", 200., "FT0A threshold for SG selector"};
   Configurable<float> cutMyGapSideFT0C{"FT0C", 100., "FT0C threshold for SG selector"};
   Configurable<float> cutMyGapSideZDC{"ZDC", 10., "ZDC threshold for SG selector"};
-  Configurable<bool> usePIDwithTOF{"usePIDwithTOF", true, {"Determine whether also TOF should be used in testPIDhypothesis"}};
+  Configurable<bool> usePIDwithTOF{"usePIDwithTOF", false, {"Determine whether also TOF should be used in testPIDhypothesis"}};
+  Configurable<bool> usePIDwithTOFsigmaAfterTPC{"usePIDwithTOFsigmaAfterTPC", true, {"Determine whether cut on TOF n sigma should be used after TPC-based decision in testPIDhypothesis"}};
   Configurable<float> cutMyTPCnSigmaEl{"cutMyTPCnSigmaEl", 3.f, {"n sigma cut on el in absolut values"}};
   Configurable<float> cutMyTPCnSigmaMu{"cutMyTPCnSigmaMu", 3.f, {"n sigma cut on mu in absolut values"}};
   Configurable<float> cutMyTPCnSigmaPi{"cutMyTPCnSigmaPi", 3.f, {"n sigma cut on pi in absolut values"}};
-  Configurable<float> cutMyNsigmaPIDselector{"cutMyNsigmaPIDselector", 35.f, {"n sigma cut on all particles in absolut values for testPIDhypothesis"}};
+  Configurable<float> cutMyNsigmaTPCPIDselector{"cutMyNsigmaTPCPIDselector", 35.f, {"n sigma TPC cut on all particles in absolut values for testPIDhypothesis"}};
+  Configurable<float> cutMyNsigmaTOFPIDselector{"cutMyNsigmaTOFPIDselector", 35.f, {"n sigma TOF cut on all particles in absolut values for testPIDhypothesis"}};
   Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 2.05f, {"specific study"}};
   Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7f, {"specific study"}};
   Configurable<bool> cutMyGlobalTracksOnly{"cutMyGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
@@ -227,6 +229,14 @@ struct UpcTauCentralBarrelRL {
     histos.add("Tracks/GoodTrack/PID/Electron/hTOFsignalVsP", "Identified electrons;Track #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {axisMom, axisTOFsignal});
     histos.add("Tracks/GoodTrack/PID/Electron/hTPCnSigmaVsP", "Identified electrons;Track #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
     histos.add("Tracks/GoodTrack/PID/Electron/hTOFnSigmaVsP", "Identified electrons;Track #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Electron/hTPCnSigmaElVsMu", "Identified electrons;n#sigma^{#it{e}}_{TPC} (arb. units);n#sigma^{#mu}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Electron/hTOFnSigmaElVsMu", "Identified electrons;n#sigma^{#it{e}}_{TOF} (arb. units);n#sigma^{#mu}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Electron/hTPCnSigmaElVsPi", "Identified electrons;n#sigma^{#it{e}}_{TPC} (arb. units);n#sigma^{#pi}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Electron/hTOFnSigmaElVsPi", "Identified electrons;n#sigma^{#it{e}}_{TOF} (arb. units);n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Electron/hTPCnSigmaElVsKa", "Identified electrons;n#sigma^{#it{e}}_{TPC} (arb. units);n#sigma^{#it{K}}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Electron/hTOFnSigmaElVsKa", "Identified electrons;n#sigma^{#it{e}}_{TOF} (arb. units);n#sigma^{#it{K}}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Electron/hTPCnSigmaElVsPr", "Identified electrons;n#sigma^{#it{e}}_{TPC} (arb. units);n#sigma^{p}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Electron/hTOFnSigmaElVsPr", "Identified electrons;n#sigma^{#it{e}}_{TOF} (arb. units);n#sigma^{p}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
     histos.add("Tracks/GoodTrack/PID/Muon/hTPCsignalVsZ", "Identified muons;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisZvtx, axisTPCdEdx});
     histos.add("Tracks/GoodTrack/PID/Muon/hTPCsignalVsP", "Identified muons;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
     histos.add("Tracks/GoodTrack/PID/Muon/hTPCsignalVsPt", "Identified muons;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisPt, axisTPCdEdx});
@@ -235,6 +245,14 @@ struct UpcTauCentralBarrelRL {
     histos.add("Tracks/GoodTrack/PID/Muon/hTOFsignalVsP", "Identified muons;Track #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {axisMom, axisTOFsignal});
     histos.add("Tracks/GoodTrack/PID/Muon/hTPCnSigmaVsP", "Identified muons;Track #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
     histos.add("Tracks/GoodTrack/PID/Muon/hTOFnSigmaVsP", "Identified muons;Track #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Muon/hTPCnSigmaMuVsEl", "Identified muons;n#sigma^{#mu}_{TPC} (arb. units);n#sigma^{#it{e}}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Muon/hTOFnSigmaMuVsEl", "Identified muons;n#sigma^{#mu}_{TOF} (arb. units);n#sigma^{#it{e}}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Muon/hTPCnSigmaMuVsPi", "Identified muons;n#sigma^{#mu}_{TPC} (arb. units);n#sigma^{#pi}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Muon/hTOFnSigmaMuVsPi", "Identified muons;n#sigma^{#mu}_{TOF} (arb. units);n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Muon/hTPCnSigmaMuVsKa", "Identified muons;n#sigma^{#mu}_{TPC} (arb. units);n#sigma^{#it{K}}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Muon/hTOFnSigmaMuVsKa", "Identified muons;n#sigma^{#mu}_{TOF} (arb. units);n#sigma^{#it{K}}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Muon/hTPCnSigmaMuVsPr", "Identified muons;n#sigma^{#mu}_{TPC} (arb. units);n#sigma^{p}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Muon/hTOFnSigmaMuVsPr", "Identified muons;n#sigma^{#mu}_{TOF} (arb. units);n#sigma^{p}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
     histos.add("Tracks/GoodTrack/PID/Pion/hTPCsignalVsZ", "Identified pions;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisZvtx, axisTPCdEdx});
     histos.add("Tracks/GoodTrack/PID/Pion/hTPCsignalVsP", "Identified pions;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
     histos.add("Tracks/GoodTrack/PID/Pion/hTPCsignalVsPt", "Identified pions;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisPt, axisTPCdEdx});
@@ -243,6 +261,14 @@ struct UpcTauCentralBarrelRL {
     histos.add("Tracks/GoodTrack/PID/Pion/hTOFsignalVsP", "Identified pions;Track #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {axisMom, axisTOFsignal});
     histos.add("Tracks/GoodTrack/PID/Pion/hTPCnSigmaVsP", "Identified pions;Track #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
     histos.add("Tracks/GoodTrack/PID/Pion/hTOFnSigmaVsP", "Identified pions;Track #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Pion/hTPCnSigmaPiVsEl", "Identified pions;n#sigma^{#pi}_{TPC} (arb. units);n#sigma^{#it{e}}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Pion/hTOFnSigmaPiVsEl", "Identified pions;n#sigma^{#pi}_{TOF} (arb. units);n#sigma^{#it{e}}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Pion/hTPCnSigmaPiVsMu", "Identified pions;n#sigma^{#pi}_{TPC} (arb. units);n#sigma^{#mu}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Pion/hTOFnSigmaPiVsMu", "Identified pions;n#sigma^{#pi}_{TOF} (arb. units);n#sigma^{#mu}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Pion/hTPCnSigmaPiVsKa", "Identified pions;n#sigma^{#pi}_{TPC} (arb. units);n#sigma^{#it{K}}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Pion/hTOFnSigmaPiVsKa", "Identified pions;n#sigma^{#pi}_{TOF} (arb. units);n#sigma^{#it{K}}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Pion/hTPCnSigmaPiVsPr", "Identified pions;n#sigma^{#pi}_{TPC} (arb. units);n#sigma^{p}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
+    histos.add("Tracks/GoodTrack/PID/Pion/hTOFnSigmaPiVsPr", "Identified pions;n#sigma^{#pi}_{TOF} (arb. units);n#sigma^{p}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
     histos.add("Tracks/GoodTrack/PID/Others/hTPCsignalVsZ", "Identified NOT electron/Muon/Pion;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisZvtx, axisTPCdEdx});
     histos.add("Tracks/GoodTrack/PID/Others/hTPCsignalVsP", "Identified NOT electron/Muon/Pion;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
     histos.add("Tracks/GoodTrack/PID/Others/hTPCsignalVsPt", "Identified NOT electron/Muon/Pion;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisPt, axisTPCdEdx});
@@ -1089,7 +1115,7 @@ struct UpcTauCentralBarrelRL {
         countTPCxRws70++;
       if (track.tpcNClsCrossedRows() > 100)
         countTPCxRws100++;
-      int hypothesisID = testPIDhypothesis(track, cutMyNsigmaPIDselector, usePIDwithTOF);
+      int hypothesisID = testPIDhypothesis(track, cutMyNsigmaTPCPIDselector, cutMyNsigmaTOFPIDselector, usePIDwithTOF, usePIDwithTOFsigmaAfterTPC);
       vecPIDidx.push_back(hypothesisID);
       if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
         countPVGTselected++;
@@ -2064,7 +2090,7 @@ struct UpcTauCentralBarrelRL {
           printMediumMessage("Track has no charge");
         }
       }
-      int hypothesisID = testPIDhypothesis(track, cutMyNsigmaPIDselector, usePIDwithTOF);
+      int hypothesisID = testPIDhypothesis(track, cutMyNsigmaTPCPIDselector, cutMyNsigmaTOFPIDselector, usePIDwithTOF, usePIDwithTOFsigmaAfterTPC);
       if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
         countPVGTselected++;
         vecPVidx.push_back(track.index());
@@ -2076,9 +2102,17 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcNSigmaEl());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCnSigmaElVsMu"))->Fill(track.tpcNSigmaEl(),track.tpcNSigmaMu());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCnSigmaElVsPi"))->Fill(track.tpcNSigmaEl(),track.tpcNSigmaPi());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCnSigmaElVsKa"))->Fill(track.tpcNSigmaEl(),track.tpcNSigmaKa());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCnSigmaElVsPr"))->Fill(track.tpcNSigmaEl(),track.tpcNSigmaPr());
           if (track.hasTOF()) {
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTOFnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofNSigmaEl());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTOFnSigmaElVsMu"))->Fill(track.tofNSigmaEl(),track.tofNSigmaMu());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTOFnSigmaElVsPi"))->Fill(track.tofNSigmaEl(),track.tofNSigmaPi());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTOFnSigmaElVsKa"))->Fill(track.tofNSigmaEl(),track.tofNSigmaKa());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTOFnSigmaElVsPr"))->Fill(track.tofNSigmaEl(),track.tofNSigmaPr());
           }
         } else if (hypothesisID == P_MUON) {
           countPVGTmuons++;
@@ -2088,9 +2122,17 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcNSigmaMu());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCnSigmaMuVsEl"))->Fill(track.tpcNSigmaMu(),track.tpcNSigmaEl());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCnSigmaMuVsPi"))->Fill(track.tpcNSigmaMu(),track.tpcNSigmaPi());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCnSigmaMuVsKa"))->Fill(track.tpcNSigmaMu(),track.tpcNSigmaKa());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCnSigmaMuVsPr"))->Fill(track.tpcNSigmaMu(),track.tpcNSigmaPr());
           if (track.hasTOF()) {
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTOFnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofNSigmaMu());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTOFnSigmaMuVsEl"))->Fill(track.tofNSigmaMu(),track.tofNSigmaEl());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTOFnSigmaMuVsPi"))->Fill(track.tofNSigmaMu(),track.tofNSigmaPi());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTOFnSigmaMuVsKa"))->Fill(track.tofNSigmaMu(),track.tofNSigmaKa());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTOFnSigmaMuVsPr"))->Fill(track.tofNSigmaMu(),track.tofNSigmaPr());
           }
         } else {
           countPVGTpions++;
@@ -2100,9 +2142,17 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcNSigmaPi());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCnSigmaPiVsEl"))->Fill(track.tpcNSigmaPi(),track.tpcNSigmaEl());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCnSigmaPiVsMu"))->Fill(track.tpcNSigmaPi(),track.tpcNSigmaMu());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCnSigmaPiVsKa"))->Fill(track.tpcNSigmaPi(),track.tpcNSigmaKa());
+          histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCnSigmaPiVsPr"))->Fill(track.tpcNSigmaPi(),track.tpcNSigmaPr());
           if (track.hasTOF()) {
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTOFnSigmaVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofNSigmaPi());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTOFnSigmaPiVsEl"))->Fill(track.tofNSigmaPi(),track.tofNSigmaEl());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTOFnSigmaPiVsMu"))->Fill(track.tofNSigmaPi(),track.tofNSigmaMu());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTOFnSigmaPiVsKa"))->Fill(track.tofNSigmaPi(),track.tofNSigmaKa());
+            histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTOFnSigmaPiVsPr"))->Fill(track.tofNSigmaPi(),track.tofNSigmaPr());
           }
         }
       } else {
