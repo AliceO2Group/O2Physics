@@ -4061,8 +4061,8 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
   ROOT::Math::PtEtaPhiMVector v2(hadron1.pt(), hadron1.eta(), hadron1.phi(), hadronMass1);
   ROOT::Math::PtEtaPhiMVector v3(hadron2.pt(), hadron2.eta(), hadron2.phi(), hadronMass2);
   ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
-  values[kQuadMass] = v123.M()
-                        values[kQuadDefaultDileptonMass] = v123.M() - v1.M() + defaultDileptonMass;
+  values[kQuadMass] = v123.M();
+  values[kQuadDefaultDileptonMass] = v123.M() - v1.M() + defaultDileptonMass;
   values[kQuadPt] = v123.Pt();
   values[kQuadEta] = v123.Eta();
   values[kQuadPhi] = v123.Phi();
