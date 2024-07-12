@@ -91,7 +91,7 @@ DECLARE_SOA_COLUMN(angDistPion2, DeltaR2, float);
 DECLARE_SOA_COLUMN(cosDileptonDipion, CosDileptonDipion, float);
 DECLARE_SOA_COLUMN(dcaxy, DcaXY, float);
 DECLARE_SOA_COLUMN(dcaz, DcaZ, float);
-  
+
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
