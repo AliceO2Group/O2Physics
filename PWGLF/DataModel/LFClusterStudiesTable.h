@@ -43,7 +43,7 @@ DECLARE_SOA_COLUMN(McPdgCodeMother, mcPdgCodeMother, int);
  * 3: p
  * 4: d
  * 5: ^{3}He
-*/
+ */
 DECLARE_SOA_COLUMN(PartID, partID, uint8_t);
 DECLARE_SOA_COLUMN(IsPositive, isPositive, bool);
 
@@ -77,17 +77,14 @@ DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, int);
 } // namespace LFClusterStudiesTables
 
 DECLARE_SOA_TABLE(
-    ClStTable, "AOD", "CLSTTABLE",
-    LFClusterStudiesTables::P,
-    LFClusterStudiesTables::Eta,
-    LFClusterStudiesTables::Phi,
-    LFClusterStudiesTables::ItsClusterSize,
-    LFClusterStudiesTables::PartID,
-    LFClusterStudiesTables::IsPositive
-);
-
+  ClStTable, "AOD", "CLSTTABLE",
+  LFClusterStudiesTables::P,
+  LFClusterStudiesTables::Eta,
+  LFClusterStudiesTables::Phi,
+  LFClusterStudiesTables::ItsClusterSize,
+  LFClusterStudiesTables::PartID,
+  LFClusterStudiesTables::IsPositive);
 
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFCLUSTERSTUDIESTABLE_H_
-

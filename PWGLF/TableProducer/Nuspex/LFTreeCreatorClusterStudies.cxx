@@ -398,7 +398,7 @@ struct LfTreeCreatorClusterStudies {
     return true;
   }
 
-  bool qualitySelectionV0(const double dcaV0toPV, const double dcaV0daughters, const double radiusV0, const double cosPA)
+  bool qualitySelectionV0(const double /*dcaV0toPV*/, const double dcaV0daughters, const double radiusV0, const double cosPA)
   {
     if (std::abs(dcaV0daughters) > v0setting_dcaV0daughters) {
       return false;
@@ -498,7 +498,7 @@ struct LfTreeCreatorClusterStudies {
     // o2::base::Propagator::Instance()->setMatLUT(lut);
   }
 
-  void init(o2::framework::InitContext& ic)
+  void init(o2::framework::InitContext&)
   {
     m_runNumber = 0;
     m_d_bz = 0;
@@ -700,7 +700,7 @@ struct LfTreeCreatorClusterStudies {
     return true;
   }
 
-  void fillV0CandMC(const aod::McParticles::iterator& mcV0, CandidateV0& candV0)
+  void fillV0CandMC(const aod::McParticles::iterator& /*mcV0*/, CandidateV0& /*candV0*/)
   {
     // candV0.mc_pdgCode_V0 = mcV0.pdgCode();
     // candV0.mc_pdgCode_pos = mcV0.daughterPdgCode(0);
