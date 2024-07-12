@@ -60,7 +60,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     if (usePid) {
       // pion

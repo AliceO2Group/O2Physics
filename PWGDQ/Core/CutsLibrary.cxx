@@ -362,6 +362,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("JpsiPWGSkimmedCuts3")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed2"));
+    cut->AddCut(GetAnalysisCut("electronPIDLooseSkimmed2"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiO2MCdebugCuts13_Corr")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly")); // no cut on ITS clusters
@@ -812,6 +819,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug7")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug2"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug7"));
+    return cut;
+  }
+
+  if (!nameStr.compare("Jpsi_TPCPost_calib_debug8")) {
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug3"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug8"));
     return cut;
   }
 
@@ -3189,7 +3202,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
                                         50000.};
 
   for (size_t icase = 0; icase < vecOccupancies.size() - 1; icase++) {
-    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice%i", icase))) {
+    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice%lu", icase))) {
       cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
       cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
       cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
@@ -3557,6 +3570,20 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsi_trackCut_debug3")) {
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 90., 159);
+    cut->AddCut(VarManager::kIsTPCrefit, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCnclsCR, 70., 159);
+    cut->AddCut(VarManager::kITSncls, 2.5, 7.5);
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+    cut->AddCut(VarManager::kTrackDCAxy, -0.05, 0.05);
+    cut->AddCut(VarManager::kTrackDCAz, -1.0, 1.0);
+    return cut;
+  }
+
   if (!nameStr.compare("lmee_trackCut_debug")) {
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
@@ -3768,6 +3795,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronTrackQualitySkimmed2")) {
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+    cut->AddCut(VarManager::kTPCncls, 60, 161);
+    return cut;
+  }
+
   if (!nameStr.compare("pionQualityCut1")) {
     cut->AddCut(VarManager::kPt, 0.15, 1000.0);
     cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
@@ -3941,6 +3975,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 3.5, 999);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 999);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_TPCPID_debug8")) {
+    cut->AddCut(VarManager::kTOFbeta, 0.975, 1.025, false, VarManager::kPin, 0.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 2.0, 999, false, VarManager::kPin, 3.0, 999.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 2.0, 999, false, VarManager::kPin, 3.0, 999.0);
     return cut;
   }
 

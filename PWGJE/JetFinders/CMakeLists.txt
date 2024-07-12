@@ -104,4 +104,19 @@ o2physics_add_dpl_workflow(jet-finder-v0-mcp-charged
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(jet-finder-dielectron-data-charged
+                    SOURCES jetfinderDielectrondatacharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-dielectron-mcd-charged
+                    SOURCES jetfinderDielectronmcdcharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-dielectron-mcp-charged
+                    SOURCES jetfinderDielectronmcpcharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
 endif()

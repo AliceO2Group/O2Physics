@@ -369,7 +369,6 @@ struct hyperKinkRecoTask {
         continue;
 
       int pdgHypo = isHyp ? hyperPdg : tritDauPdg;
-
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
     auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
@@ -382,7 +381,7 @@ struct hyperKinkRecoTask {
       auto trackHyper = tracks.rawIteratorAt(svCand.tr0Idx);
       auto trackTrit = tracks.rawIteratorAt(svCand.tr1Idx);
 
-      auto const& collision = trackHyper.template collision_as<CollisionsFull>();
+      auto const& collision = trackHyper.template collision_as<Tcolls>();
       o2::dataformats::VertexBase primaryVertex;
       primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
       primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());

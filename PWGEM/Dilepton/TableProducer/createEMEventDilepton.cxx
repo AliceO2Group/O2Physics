@@ -25,6 +25,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 using namespace o2;
@@ -43,9 +44,9 @@ using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, MyQvectors>;
 
-struct CreateEMEvent {
+struct CreateEMEventDilepton {
   Produces<o2::aod::EMEvents> event;
-  Produces<o2::aod::EMEventsCov> eventcov;
+  // Produces<o2::aod::EMEventsCov> eventcov;
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   Produces<o2::aod::EMEventsQvec> event_qvec;
@@ -62,6 +63,7 @@ struct CreateEMEvent {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -114,20 +116,13 @@ struct CreateEMEvent {
     mRunNumber = bc.runNumber();
   }
 
-  PresliceUnsorted<MyCollisions> preslice_collisions_per_bc = o2::aod::evsel::foundBCId;
-  std::unordered_map<uint64_t, int> map_ncolls_per_bc;
+  Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
+  PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
+  PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
 
-  //! Please don't skip any event!
   template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
+  void skimEvent(TCollisions const& collisions, TBCs const&)
   {
-    // first count the number of collisions per bc
-    for (auto& bc : bcs) {
-      auto collisions_per_bc = collisions.sliceBy(preslice_collisions_per_bc, bc.globalIndex());
-      map_ncolls_per_bc[bc.globalIndex()] = collisions_per_bc.size();
-      // LOGF(info, "bc-loop | bc.globalIndex() = %d , collisions_per_bc.size() = %d", bc.globalIndex(), collisions_per_bc.size());
-    }
-
     for (auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -138,7 +133,21 @@ struct CreateEMEvent {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      // LOGF(info, "collision-loop | bc.globalIndex() = %d, ncolls_per_bc = %d", bc.globalIndex(), map_ncolls_per_bc[bc.globalIndex()]);
+      bool is_sel8_by_hand = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+      // LOGF(info, "collision.sel8() = %d, is_sel8_by_hand = %d", collision.sel8(), is_sel8_by_hand);
+
+      if (is_sel8_by_hand != collision.sel8()) {
+        LOGF(info, "================================================================= collision.sel8() = %d, is_sel8_by_hand = %d ==================================================================================", collision.sel8(), is_sel8_by_hand);
+      }
+
+      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+
+      // if(!(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      //   continue;
+      // }
+
       registry.fill(HIST("hEventCounter"), 1);
 
       if (collision.sel8()) {
@@ -146,11 +155,11 @@ struct CreateEMEvent {
       }
 
       // uint64_t tag = collision.selection_raw();
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange());
 
-      eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+      // eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
       event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
@@ -187,125 +196,78 @@ struct CreateEMEvent {
         event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot, q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       }
     } // end of collision loop
-    map_ncolls_per_bc.clear();
-  } // end of skimEvent
+  }   // end of skimEvent
 
   void processEvent(MyCollisions const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEvent>(collisions, bcs);
   }
-  PROCESS_SWITCH(CreateEMEvent, processEvent, "process event info", false);
-
-  void processEventMC(MyCollisionsMC const& collisions, MyBCs const& bcs)
-  {
-    skimEvent<true, EMEventType::kEvent>(collisions, bcs);
-  }
-  PROCESS_SWITCH(CreateEMEvent, processEventMC, "process event info", false);
+  PROCESS_SWITCH(CreateEMEventDilepton, processEvent, "process event info", false);
 
   void processEvent_Cent(MyCollisions_Cent const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEvent_Cent>(collisions, bcs);
   }
-  PROCESS_SWITCH(CreateEMEvent, processEvent_Cent, "process event info", false);
+  PROCESS_SWITCH(CreateEMEventDilepton, processEvent_Cent, "process event info", false);
 
   void processEvent_Cent_Qvec(MyCollisions_Cent_Qvec const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
   }
-  PROCESS_SWITCH(CreateEMEvent, processEvent_Cent_Qvec, "process event info", false);
+  PROCESS_SWITCH(CreateEMEventDilepton, processEvent_Cent_Qvec, "process event info", false);
+
+  void processEventMC(MyCollisionsMC const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<true, EMEventType::kEvent>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEventDilepton, processEventMC, "process event info", false);
 
   void processEventMC_Cent(MyCollisionsMC_Cent const& collisions, MyBCs const& bcs)
   {
     skimEvent<true, EMEventType::kEvent_Cent>(collisions, bcs);
   }
-  PROCESS_SWITCH(CreateEMEvent, processEventMC_Cent, "process event info", false);
+  PROCESS_SWITCH(CreateEMEventDilepton, processEventMC_Cent, "process event info", false);
 
   void processEventMC_Cent_Qvec(MyCollisionsMC_Cent_Qvec const& collisions, MyBCs const& bcs)
   {
     skimEvent<true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
   }
-  PROCESS_SWITCH(CreateEMEvent, processEventMC_Cent_Qvec, "process event info", false);
+  PROCESS_SWITCH(CreateEMEventDilepton, processEventMC_Cent_Qvec, "process event info", false);
 
   void processDummy(aod::Collisions const&) {}
-  PROCESS_SWITCH(CreateEMEvent, processDummy, "processDummy", true);
+  PROCESS_SWITCH(CreateEMEventDilepton, processDummy, "processDummy", true);
 };
-struct AssociatePhotonToEMEvent {
+struct AssociateDileptonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
   Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
-  Produces<o2::aod::PHOSEMEventIds> phoseventid;
-  Produces<o2::aod::EMCEMEventIds> emceventid;
-
-  Produces<o2::aod::EMEventsNgPCM> event_ng_pcm;
-  Produces<o2::aod::EMEventsNgPHOS> event_ng_phos;
-  Produces<o2::aod::EMEventsNgEMC> event_ng_emc;
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
-  Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
-  Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  bool doPCM = false, doElectron = false, doFwdMuon = false, doPHOS = false, doEMC = false;
-  void init(o2::framework::InitContext& context)
-  {
-    if (context.mOptions.get<bool>("processPCM")) {
-      doPCM = true;
-    }
-    if (context.mOptions.get<bool>("processElectron")) {
-      doElectron = true;
-    }
-    if (context.mOptions.get<bool>("processFwdMuon")) {
-      doFwdMuon = true;
-    }
-    if (context.mOptions.get<bool>("processPHOS")) {
-      doPHOS = true;
-    }
-    if (context.mOptions.get<bool>("processEMC")) {
-      doEMC = true;
-    }
-  }
+  void init(o2::framework::InitContext&) {}
 
-  template <typename TCollisions, typename TEventNg>
-  void zero_padding(TCollisions const& collisions, TEventNg& event_ng)
-  {
-    int nc = collisions.size();
-    for (int ic = 0; ic < nc; ic++) {
-      event_ng(0);
-    } // end of collision loop
-  }
-
-  template <typename TCollisions, typename TPhotons, typename TEventIds, typename TEventNg, typename TPreslice>
-  void fillEventId_Ng(TCollisions const& collisions, TPhotons const& photons, TEventIds& eventIds, TEventNg& event_ng, TPreslice const& perCollision)
+  template <typename TCollisions, typename TLeptons, typename TEventIds, typename TPreslice>
+  void fillEventId(TCollisions const& collisions, TLeptons const& leptons, TEventIds& eventIds, TPreslice const& perCollision)
   {
     for (auto& collision : collisions) {
-      auto photons_coll = photons.sliceBy(perCollision, collision.collisionId());
-      int ng = photons_coll.size();
-      for (int ig = 0; ig < ng; ig++) {
-        eventIds(collision.globalIndex());
-      } // end of photon loop
-      event_ng(ng);
-    } // end of collision loop
-  }
+      auto leptons_coll = leptons.sliceBy(perCollision, collision.collisionId());
+      int nl = leptons_coll.size();
+      // LOGF(info, "collision.collisionId() = %d , nl = %d", collision.collisionId(), nl);
 
-  template <typename TCollisions, typename TPhotons, typename TEventIds, typename TPreslice>
-  void fillEventId(TCollisions const& collisions, TPhotons const& photons, TEventIds& eventIds, TPreslice const& perCollision)
-  {
-    for (auto& collision : collisions) {
-      auto photons_coll = photons.sliceBy(perCollision, collision.collisionId());
-      int ng = photons_coll.size();
-      for (int ig = 0; ig < ng; ig++) {
+      for (int il = 0; il < nl; il++) {
         eventIds(collision.globalIndex());
       } // end of photon loop
     }   // end of collision loop
   }
 
   // This struct is for both data and MC.
-  // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEvent in MC.
+  // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEventDilepton in MC.
 
   void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
   {
-    fillEventId_Ng(collisions, photons, v0kfeventid, event_ng_pcm, perCollision_pcm);
+    fillEventId(collisions, photons, v0kfeventid, perCollision_pcm);
   }
 
   void processElectron(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
@@ -318,40 +280,16 @@ struct AssociatePhotonToEMEvent {
     fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
   }
 
-  void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
-  {
-    fillEventId_Ng(collisions, photons, phoseventid, event_ng_phos, perCollision_phos);
-  }
+  void processDummy(aod::EMEvents const&) {}
 
-  void processEMC(aod::EMEvents const& collisions, aod::SkimEMCClusters const& photons)
-  {
-    fillEventId_Ng(collisions, photons, emceventid, event_ng_emc, perCollision_emc);
-  }
-
-  void processZeroPadding(aod::EMEvents const& collisions)
-  {
-    if (!doPCM) {
-      zero_padding(collisions, event_ng_pcm);
-    }
-    if (!doPHOS) {
-      zero_padding(collisions, event_ng_phos);
-    }
-    if (!doEMC) {
-      zero_padding(collisions, event_ng_emc);
-    }
-  }
-
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectron, "process dalitzee-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processFwdMuon, "process forward muon indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processZeroPadding, "process zero padding.", true);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processPCM, "process pcm-event indexing", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processElectron, "process dalitzee-event indexing", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processFwdMuon, "process forward muon indexing", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processDummy, "process dummy", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CreateEMEvent>(cfgc, TaskName{"create-emevent"}),
-    adaptAnalysisTask<AssociatePhotonToEMEvent>(cfgc, TaskName{"associate-photon-to-emevent"}),
-  };
+    adaptAnalysisTask<CreateEMEventDilepton>(cfgc, TaskName{"create-emevent-dilepton"}),
+    adaptAnalysisTask<AssociateDileptonToEMEvent>(cfgc, TaskName{"associate-dilepton-to-emevent"})};
 }

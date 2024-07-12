@@ -127,7 +127,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting) false positive: https://github.com/cpplint/cpplint/issues/131
 {
   TComplex corr[kNH][nKL];
   TComplex ncorr[kNH][nKL];
@@ -282,33 +282,36 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
     pht[HIST_THN_V7V2starV5star]->Fill(fCent, nV7V2starV5star.Re(), ebe_3p_weight);
     pht[HIST_THN_V7V3starV4star]->Fill(fCent, nV7V3starV4star.Re(), ebe_3p_weight);
 
-    Double_t event_weight_four = 1.0;
-    Double_t event_weight_two = 1.0;
     Double_t event_weight_two_gap = 1.0;
     if (flags & kFlucEbEWeighting) {
-      event_weight_four = Four(0, 0, 0, 0).Re();
-      event_weight_two = Two(0, 0).Re();
       event_weight_two_gap = (Qa[0][1] * Qb[0][1]).Re();
     }
 
     for (UInt_t ih = 2; ih < kNH; ih++) {
-      for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : static_cast<UInt_t>(kcNH)); ihh < mm; ihh++) {
-        TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
-
-        pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, ih, ihh, scfour.Re(), event_weight_four);
-      }
-
-      TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
-      pht[HIST_THN_SC_with_QC_2corr]->Fill(fCent, ih, sctwo.Re(), event_weight_two);
-
       TComplex sctwoGap = (Qa[ih][1] * TComplex::Conjugate(Qb[ih][1])) / (Qa[0][1] * Qb[0][1]).Re();
       pht[HIST_THN_SC_with_QC_2corr_gap]->Fill(fCent, ih, sctwoGap.Re(), event_weight_two_gap);
     }
   }
+
+  Double_t event_weight_four = 1.0;
+  Double_t event_weight_two = 1.0;
+  if (flags & kFlucEbEWeighting) {
+    event_weight_four = Four(0, 0, 0, 0).Re();
+    event_weight_two = Two(0, 0).Re();
+  }
+
+  for (UInt_t ih = 2; ih < kNH; ih++) {
+    for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : static_cast<UInt_t>(kcNH)); ihh < mm; ihh++) {
+      TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
+      pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, ih, ihh, scfour.Re(), event_weight_four);
+    }
+    TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
+    pht[HIST_THN_SC_with_QC_2corr]->Fill(fCent, ih, sctwo.Re(), event_weight_two);
+  }
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
+void JFFlucAnalysis::Terminate(Option_t* /*popt*/) // NOLINT(readability/casting) false positive: https://github.com/cpplint/cpplint/issues/131
 {
   //
 }

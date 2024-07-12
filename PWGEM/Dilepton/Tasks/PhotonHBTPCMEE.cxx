@@ -33,7 +33,7 @@
 #include "CCDB/BasicCCDBManager.h"
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/PhotonHBT.h"
+#include "PWGEM/Dilepton/Core/PhotonHBT.h"
 
 using namespace o2;
 using namespace o2::aod;

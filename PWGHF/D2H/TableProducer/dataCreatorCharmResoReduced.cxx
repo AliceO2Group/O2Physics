@@ -13,6 +13,7 @@
 /// \brief Creation of D-V0 pairs
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, UniTO Turin
+/// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
 #include <cmath>
 #include <map>
@@ -27,6 +28,7 @@
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -55,13 +57,15 @@ enum Event : uint8_t {
 
 enum DecayChannel : uint8_t {
   DstarV0 = 0,
-  DplusV0
+  DplusV0,
+  DstarTrack
 };
 
-enum V0Type : uint8_t {
+enum BachelorType : uint8_t {
   K0s = 0,
   Lambda,
-  AntiLambda
+  AntiLambda,
+  Track
 };
 
 enum DType : uint8_t {
@@ -75,8 +79,9 @@ struct HfDataCreatorCharmResoReduced {
   // Produces AOD tables to store track information
   Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
-  // V0 and D candidates reduced tables
+  // tracks, V0 and D candidates reduced tables
   Produces<aod::HfRedVzeros> hfCandV0;   // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  Produces<aod::HfRedTrkNoParams> hfTrackNoParam; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRed3PrNoTrks> hfCandD; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // ML optional Tables
   Produces<aod::HfRed3ProngsMl> hfCandDMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
@@ -90,18 +95,39 @@ struct HfDataCreatorCharmResoReduced {
 
   int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
   // selection D
-  Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for D"};
-  Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
+  struct : ConfigurableGroup {
+    std::string prefix = "dmesons";
+    Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for D"};
+    Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
+  } cfgDmesCuts;
+
   // selection V0
-  Configurable<float> minK0sLambdaCosinePa{"minK0sLambdaCosinePa", 0.97, "minimum cosp for K0S and Lambda"};
-  Configurable<float> minK0sLambdaRadius{"minK0sLambdaRadius", 0.5, "minimum radius for K0S and Lambda"};
-  Configurable<float> deltaMassK0s{"deltaMassK0s", 0.03, "delta mass cut for K0S"};
-  Configurable<float> deltaMassLambda{"deltaMassLambda", 0.015, "delta mass cut for Lambda"};
-  Configurable<float> minV0dauEta{"minV0dauEta", 1., "minimum eta for V0 daughters"};
-  Configurable<float> maxV0DCA{"maxV0DCA", 0.1, "maximum DCA for K0S and Lambda"};
-  Configurable<float> minV0dauDCA{"minV0dauDCA", 0.05, "minimum DCA for V0 daughters"};
-  Configurable<float> maxV0dauDCA{"maxV0dauDCA", 1., "maximum DCA for V0 daughters"};
-  Configurable<float> maxNsigmaPrForLambda{"maxNsigmaPrForLambda", 4., "maximum proton NSigma in TPC and TOF for Lambdas"};
+  struct : ConfigurableGroup {
+    std::string prefix = "v0s";
+    Configurable<float> minK0sLambdaCosinePa{"minK0sLambdaCosinePa", 0.97, "minimum cosp for K0S and Lambda"};
+    Configurable<float> minK0sLambdaRadius{"minK0sLambdaRadius", 0.5, "minimum radius for K0S and Lambda"};
+    Configurable<float> deltaMassK0s{"deltaMassK0s", 0.03, "delta mass cut for K0S"};
+    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.015, "delta mass cut for Lambda"};
+    Configurable<float> minV0dauEta{"minV0dauEta", 1., "minimum eta for V0 daughters"};
+    Configurable<float> maxV0DCA{"maxV0DCA", 0.1, "maximum DCA for K0S and Lambda"};
+    Configurable<float> minV0dauDCA{"minV0dauDCA", 0.05, "minimum DCA for V0 daughters"};
+    Configurable<float> maxV0dauDCA{"maxV0dauDCA", 1., "maximum DCA for V0 daughters"};
+    Configurable<float> maxNsigmaPrForLambda{"maxNsigmaPrForLambda", 4., "maximum proton NSigma in TPC and TOF for Lambdas"};
+  } cfgV0Cuts;
+
+  // selection single tracks
+  struct : ConfigurableGroup {
+    std::string prefix = "single_tracks";
+    Configurable<int> setTrackSelections{"setTrackSelections", 2, "flag to apply track selections: 0=none; 1=global track w/o DCA selection; 2=global track; 3=only ITS quality"};
+    Configurable<float> maxEta{"maxEta", 0.8, "maximum pseudorapidity for single tracks to be paired with D mesons"};
+    Configurable<float> minPt{"minPt", 0.1, "minimum pT for single tracks to be paired with D mesons"};
+    Configurable<float> maxNsigmaTpcPi{"maxNsigmaTpcPi", -1., "maximum pion NSigma in TPC for single tracks to be paired with D mesons; set negative to reject"};
+    Configurable<float> maxNsigmaTpcKa{"maxNsigmaTpcKa", -1., "maximum kaon NSigma in TPC for single tracks to be paired with D mesons; set negative to reject"};
+    Configurable<float> maxNsigmaTpcPr{"maxNsigmaTpcPr", 3., "maximum proton NSigma in TPC for single tracks to be paired with D mesons; set negative to reject"};
+  } cfgSingleTrackCuts;
+
+  // other configurables
+  Configurable<bool> rejectPairsWithCommonDaughter{"rejectPairsWithCommonDaughter", true, "flag to reject already at this stage the pairs that share a daughter track"};
 
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
@@ -115,16 +141,17 @@ struct HfDataCreatorCharmResoReduced {
   using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
   using CandDstarFilteredWithMl = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
-  using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
-  Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus);
-  Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi);
+  Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= cfgDmesCuts.selectionFlagDplus);
+  Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == cfgDmesCuts.selectionFlagDstarToD0Pi);
 
-  Preslice<CandsDplusFiltered> candsDplusPerCollision = aod::track_association::collisionId;
-  Preslice<CandsDplusFilteredWithMl> candsDplusPerCollisionWithMl = aod::track_association::collisionId;
-  Preslice<CandDstarFiltered> candsDstarPerCollision = aod::track_association::collisionId;
-  Preslice<CandDstarFilteredWithMl> candsDstarPerCollisionWithMl = aod::track_association::collisionId;
-  Preslice<aod::V0Datas> candsV0PerCollision = aod::track_association::collisionId;
+  Preslice<CandsDplusFiltered> candsDplusPerCollision = aod::hf_cand::collisionId;
+  Preslice<CandsDplusFilteredWithMl> candsDplusPerCollisionWithMl = aod::hf_cand::collisionId;
+  Preslice<CandDstarFiltered> candsDstarPerCollision = aod::hf_cand::collisionId;
+  Preslice<CandDstarFilteredWithMl> candsDstarPerCollisionWithMl = aod::hf_cand::collisionId;
+  Preslice<aod::V0Datas> candsV0PerCollision = aod::v0data::collisionId;
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   HistogramRegistry registry{"registry"};
 
@@ -141,16 +168,28 @@ struct HfDataCreatorCharmResoReduced {
     for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
-    registry.add("hMassDplus", "Dplus candidates;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1.7, 2}}});
-    registry.add("hMassDstar", "Dstar candidates;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.14, 0.17}}});
-    registry.add("hMassK0s", "K0^{s} candidates;inv. mass (#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.35, 0.65}}});
-    registry.add("hMassLambda", "Lambda candidates;inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1.05, 1.35}}});
-    registry.add("hPtDplus", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hPtDstar", "D^{*} candidates;D^{*} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hPtV0", "V0 candidates;V0 candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.4, 2.7}}});
-    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.4, 2.7}}});
-    registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.9, 3.3}}});
+
+    const AxisSpec axisPt{50, 0.f, 50.f, ""};
+    const AxisSpec axisP{10, 0.f, 10.f, ""};
+    const AxisSpec axisDeDx{500, 0.f, 2000.f, ""};
+    const AxisSpec axisMassDplus{200, 1.7f, 2.1f, ""};
+    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, ""};
+    const AxisSpec axisMassLambda{100, 1.05f, 1.35f, ""};
+    const AxisSpec axisMassKzero{100, 0.35f, 0.65f, ""};
+
+    registry.add("hMassVsPtDplusAll", "Dplus candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
+    registry.add("hMassVsPtDstarAll", "Dstar candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
+    registry.add("hMassVsPtDplusPaired", "Dplus candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
+    registry.add("hMassVsPtDstarPaired", "Dstar candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
+
+    registry.add("hMassVsPtK0s", "K0^{s} candidates;#it{p}_{T} (GeV/#it{c});inv. mass (#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassKzero}});
+    registry.add("hMassVsPtLambda", "Lambda candidates;#it{p}_{T} (GeV/#it{c});inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassLambda}});
+    registry.add("hdEdxVsP", "Tracks;#it{p} (GeV/#it{c});d#it{E}/d#it{x};entries", {HistType::kTH2F, {axisP, axisDeDx}});
+
+    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{400, 0.49, 0.89}}});
+    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{400, 0.49, 0.89}}});
+    registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.1, 1.4}}});
+    registry.add("hMassDstarProton", "D^{*}-proton candidates;m_{D^{*}p} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0.9, 1.4}}});
     registry.add("hV0Type", "V0 selection flag", {HistType::kTH1F, {{8, -0.5, 7.5}}});
     registry.add("hDType", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
 
@@ -166,59 +205,108 @@ struct HfDataCreatorCharmResoReduced {
   /// \param v0 is the v0 candidate
   /// \param collision is the current collision
   /// \param dauTracks are the v0 daughter tracks
-  /// \param dDaughtersIDs are the IDs of the D meson daughter tracks
+  /// \param dDaughtersIds are the IDs of the D meson daughter tracks
   /// \return a bitmap with mass hypotesis if passes all cuts
   template <typename V0, typename Coll, typename Tr>
-  inline uint8_t getSelectionMapV0(const V0& v0, const Coll& /*collision*/, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
+  uint8_t getSelectionMapV0(const V0& v0, const Coll& /*collision*/, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIds)
   {
     uint8_t selMap{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
     // reject VOs that share daughters with D
-    if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), v0.posTrackId()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), v0.negTrackId()) != dDaughtersIDs.end()) {
+    if (rejectPairsWithCommonDaughter && (std::find(dDaughtersIds.begin(), dDaughtersIds.end(), v0.posTrackId()) != dDaughtersIds.end() || std::find(dDaughtersIds.begin(), dDaughtersIds.end(), v0.negTrackId()) != dDaughtersIds.end())) {
       return 0;
     }
     // eta of daughters
-    if (std::fabs(v0.negativeeta()) > minV0dauEta || std::fabs(v0.positiveeta()) > minV0dauEta) { // cut all V0 daughters with |eta| > 1.
+    if (std::fabs(v0.negativeeta()) > cfgV0Cuts.minV0dauEta || std::fabs(v0.positiveeta()) > cfgV0Cuts.minV0dauEta) { // cut all V0 daughters with |eta| > 1.
       return 0;
     }
     // minimum v0radius
-    if (v0.v0radius() < minK0sLambdaRadius) {
+    if (v0.v0radius() < cfgV0Cuts.minK0sLambdaRadius) {
       return 0;
     }
     // cosine of pointing angle
     auto v0CosinePa = v0.v0cosPA();
-    if (v0CosinePa < minK0sLambdaCosinePa) {
+    if (v0CosinePa < cfgV0Cuts.minK0sLambdaCosinePa) {
       return 0;
     }
     // DCA V0 and V0 daughters to select for primary V0s
-    if (v0.dcav0topv() > maxV0DCA || v0.dcaV0daughters() > maxV0dauDCA || std::fabs(v0.dcapostopv()) < minV0dauDCA || std::fabs(v0.dcanegtopv()) < minV0dauDCA) {
+    if (v0.dcav0topv() > cfgV0Cuts.maxV0DCA || v0.dcaV0daughters() > cfgV0Cuts.maxV0dauDCA || std::fabs(v0.dcapostopv()) < cfgV0Cuts.minV0dauDCA || std::fabs(v0.dcanegtopv()) < cfgV0Cuts.minV0dauDCA) {
       return 0;
     }
     // mass hypotesis
-    if (std::fabs(v0.mK0Short() - MassK0) > deltaMassK0s) {
+    if (std::fabs(v0.mK0Short() - MassK0) > cfgV0Cuts.deltaMassK0s) {
       CLRBIT(selMap, K0s);
     }
-    if (std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda) {
+    if (std::fabs(v0.mLambda() - MassLambda0) > cfgV0Cuts.deltaMassLambda) {
       CLRBIT(selMap, Lambda);
     }
-    if (std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda) {
+    if (std::fabs(v0.mAntiLambda() - MassLambda0) > cfgV0Cuts.deltaMassLambda) {
       CLRBIT(selMap, AntiLambda);
     }
     // PID (Lambda/AntiLambda only)
     float nSigmaPrTpc[2] = {dauTracks[0].tpcNSigmaPr(), dauTracks[1].tpcNSigmaPr()};
     float nSigmaPrTof[2] = {dauTracks[0].tofNSigmaPr(), dauTracks[1].tofNSigmaPr()};
-    if (TESTBIT(selMap, Lambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > maxNsigmaPrForLambda))) {
+    if (TESTBIT(selMap, Lambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > cfgV0Cuts.maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > cfgV0Cuts.maxNsigmaPrForLambda))) {
       CLRBIT(selMap, Lambda);
     }
-    if (TESTBIT(selMap, AntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > maxNsigmaPrForLambda))) {
+    if (TESTBIT(selMap, AntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > cfgV0Cuts.maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > cfgV0Cuts.maxNsigmaPrForLambda))) {
       CLRBIT(selMap, AntiLambda);
     }
     return selMap;
   }
 
-  template <bool withMl, uint8_t DecayChannel, typename Coll, typename CCands>
+  /// Basic selection of tracks
+  /// \param track is the track
+  /// \param dDaughtersIds are the IDs of the D meson daughter tracks
+  /// \return true if passes all cuts
+  template <typename Tr>
+  bool isTrackSelected(const Tr& track, const std::array<int, 3>& dDaughtersIds)
+  {
+
+    if (rejectPairsWithCommonDaughter && std::find(dDaughtersIds.begin(), dDaughtersIds.end(), track.globalIndex())) {
+      return false;
+    }
+
+    switch (cfgSingleTrackCuts.setTrackSelections) {
+      case 1:
+        if (!track.isGlobalTrackWoDCA()) {
+          return false;
+        }
+        break;
+      case 2:
+        if (!track.isGlobalTrack()) {
+          return false;
+        }
+        break;
+      case 3:
+        if (!track.isQualityTrackITS()) {
+          return false;
+        }
+        break;
+    }
+
+    if (track.pt() < cfgSingleTrackCuts.minPt) {
+      return false;
+    }
+
+    if (std::abs(track.eta()) < cfgSingleTrackCuts.maxEta) {
+      return false;
+    }
+
+    if (!track.hasTPC()) {
+      return false;
+    }
+
+    if (std::abs(track.tpcNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTpcPi && std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa && std::abs(track.tpcNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTpcPr) { // we keep the track if is it compatible with at least one of the PID hypotheses selected
+      return false;
+    }
+
+    return true;
+  }
+
+  template <bool withMl, uint8_t DecayChannel, typename Coll, typename CCands, typename BBach>
   void runDataCreation(Coll const& collision,
                        CCands const& candsD,
-                       aod::V0Datas const& V0s,
+                       BBach const& bachelors,
                        TracksWithPID const&,
                        aod::BCsWithTimestamps const&)
   {
@@ -227,6 +315,7 @@ struct HfDataCreatorCharmResoReduced {
     // std::map where the key is the V0.globalIndex() and
     // the value is the V0 index in the table of the selected v0s
     std::map<int64_t, int64_t> selectedV0s;
+    std::map<int64_t, int64_t> selectedTracks;
     bool fillHfReducedCollision = false;
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
@@ -234,9 +323,7 @@ struct HfDataCreatorCharmResoReduced {
     for (const auto& candD : candsD) {
       // initialize variables depending on decay channel
       bool fillHfCandD = false;
-      float invMassD;
-      float massD;
-      float massV0{0.};
+      float invMassD{0.f}, invMassDdau{0.f};
       std::array<float, 3> pVecD;
       std::array<float, 3> pVecProng2;
       std::array<float, 3> secondaryVertexD;
@@ -244,12 +331,14 @@ struct HfDataCreatorCharmResoReduced {
       uint8_t v0type;
       int8_t dtype;
       std::array<float, 3> bdtScores;
-      if constexpr (DecayChannel == DecayChannel::DstarV0) {
-        if (candD.signSoftPi() > 0)
-          invMassD = candD.invMassDstar() - candD.invMassD0();
-        else
-          invMassD = candD.invMassAntiDstar() - candD.invMassD0Bar();
-        massD = MassDStar;
+      if constexpr (DecayChannel == DecayChannel::DstarV0 || DecayChannel == DecayChannel::DstarTrack) {
+        if (candD.signSoftPi() > 0) {
+          invMassD = candD.invMassDstar();
+          invMassDdau = candD.invMassD0();
+        } else {
+          invMassD = candD.invMassAntiDstar();
+          invMassDdau = candD.invMassD0Bar();
+        }
         pVecD = candD.pVector();
         secondaryVertexD[0] = candD.xSecondaryVertexD0();
         secondaryVertexD[1] = candD.ySecondaryVertexD0();
@@ -257,18 +346,16 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
-        pVecProng2[0] = candD.pxSoftPi();
-        pVecProng2[1] = candD.pySoftPi();
-        pVecProng2[2] = candD.pzSoftPi();
+        pVecProng2 = candD.pVecSoftPi();
 
         dtype = candD.signSoftPi() * DType::Dstar;
         if constexpr (withMl) {
           std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
         }
+        registry.fill(HIST("hMassVsPtDstarAll"), candD.pt(), invMassD - invMassDdau);
       } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
         auto prong0 = candD.template prong0_as<TracksWithPID>();
         invMassD = hfHelper.invMassDplusToPiKPi(candD);
-        massD = MassDPlus;
         pVecD = candD.pVector();
         secondaryVertexD[0] = candD.xSecondaryVertex();
         secondaryVertexD[1] = candD.ySecondaryVertex();
@@ -276,85 +363,118 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
-        pVecProng2[0] = candD.pxProng2();
-        pVecProng2[1] = candD.pyProng2();
-        pVecProng2[2] = candD.pzProng2();
+        pVecProng2 = candD.pVectorProng2();
         dtype = static_cast<int8_t>(prong0.sign() * DType::Dplus);
         if constexpr (withMl) {
           std::copy(candD.mlProbDplusToPiKPi().begin(), candD.mlProbDplusToPiKPi().end(), bdtScores.begin());
         }
+        registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), invMassD);
       } // else if
 
-      // Loop on V0 candidates
-      for (const auto& v0 : V0s) {
-        auto posTrack = v0.posTrack_as<TracksWithPID>();
-        auto negTrack = v0.negTrack_as<TracksWithPID>();
-        // Apply selsection
-        v0type = getSelectionMapV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
-        if (v0type == 0) {
-          continue;
-        }
-        // propagate V0 to primary vertex (if enabled)
-        std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
-        if (propagateV0toPV) {
-          std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
-          std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
-          gpu::gpustd::array<float, 2> dcaInfo;
-          auto trackParK0 = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-          trackParK0.setPID(o2::track::PID::K0);
-          trackParK0.setAbsCharge(0);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
-          getPxPyPz(trackParK0, pVecV0);
-        }
-        float ptV0 = RecoDecay::pt(pVecV0); // fill histos
-        registry.fill(HIST("hPtV0"), ptV0);
-        registry.fill(HIST("hV0Type"), v0type);
-        if (TESTBIT(v0type, K0s)) {
-          massV0 = MassK0;
-          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
-          registry.fill(HIST("hMassK0s"), v0.mK0Short());
-          switch (DecayChannel) {
-            case DecayChannel::DstarV0:
-              registry.fill(HIST("hMassDs1"), invMassDV0);
-              break;
-            case DecayChannel::DplusV0:
-              registry.fill(HIST("hMassDsStar2"), invMassDV0);
-              break;
-            default:
-              break;
+      if constexpr (DecayChannel == DecayChannel::DplusV0 || DecayChannel == DecayChannel::DstarV0) {
+        // Loop on V0 candidates
+        for (const auto& v0 : bachelors) {
+          auto posTrack = v0.template posTrack_as<TracksWithPID>();
+          auto negTrack = v0.template negTrack_as<TracksWithPID>();
+          // Apply selsection
+          v0type = getSelectionMapV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
+          if (v0type == 0) {
+            continue;
           }
-        }
-        if (TESTBIT(v0type, Lambda)) {
-          massV0 = MassLambda0;
-          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
-          registry.fill(HIST("hMassLambda"), v0.mLambda());
-          if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), invMassDV0);
+          // propagate V0 to primary vertex (if enabled)
+          std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
+          if (propagateV0toPV) {
+            std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
+            std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
+            gpu::gpustd::array<float, 2> dcaInfo;
+            auto trackParK0 = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+            trackParK0.setPID(o2::track::PID::K0);
+            trackParK0.setAbsCharge(0);
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
+            getPxPyPz(trackParK0, pVecV0);
           }
-        }
-        if (TESTBIT(v0type, AntiLambda)) {
-          massV0 = MassLambda0;
-          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
-          registry.fill(HIST("hMassLambda"), v0.mAntiLambda());
-          if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), invMassDV0);
+          float ptV0 = RecoDecay::pt(pVecV0); // fill histos
+          float invMassKPiPiV0{0.f};
+          if (TESTBIT(v0type, K0s)) {
+            if constexpr (DecayChannel == DecayChannel::DplusV0) {
+              invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+            } else if (DecayChannel == DecayChannel::DstarV0) {
+              if (candD.signSoftPi() > 0) {
+                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+              } else {
+                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+              }
+            }
+
+            registry.fill(HIST("hMassVsPtK0s"), ptV0, v0.mK0Short());
+            if constexpr (DecayChannel == DecayChannel::DstarV0) {
+              registry.fill(HIST("hMassDs1"), invMassKPiPiV0 - invMassD);
+            } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
+              registry.fill(HIST("hMassDsStar2"), invMassKPiPiV0 - invMassD);
+            }
           }
-        }
-        // fill V0 table
-        // if information on V0 already stored, go to next V0
-        if (!selectedV0s.count(v0.globalIndex())) {
-          hfCandV0(v0.posTrackId(), v0.negTrackId(),
-                   indexHfReducedCollision,
-                   v0.x(), v0.y(), v0.z(),
-                   v0.pxpos(), v0.pypos(), v0.pzpos(),
-                   v0.pxneg(), v0.pyneg(), v0.pzneg(),
-                   v0.v0cosPA(),
-                   v0.dcav0topv(),
-                   v0type);
-          selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
-        }
-        fillHfCandD = true;
-      } // V0 loop
+          bool isLambda = TESTBIT(v0type, Lambda);
+          bool isAntiLambda = TESTBIT(v0type, AntiLambda);
+          if (isLambda || isAntiLambda) {
+            if constexpr (DecayChannel == DecayChannel::DplusV0) {
+              invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+            } else if (DecayChannel == DecayChannel::DstarV0) {
+              if (candD.signSoftPi() > 0) {
+                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+              } else {
+                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+              }
+            }
+            if (isLambda) {
+              registry.fill(HIST("hMassVsPtLambda"), ptV0, v0.mLambda());
+            }
+            if (isAntiLambda) {
+              registry.fill(HIST("hMassVsPtLambda"), ptV0, v0.mAntiLambda());
+            }
+            if constexpr (DecayChannel == DecayChannel::DplusV0) {
+              registry.fill(HIST("hMassXcRes"), invMassKPiPiV0 - invMassD);
+            }
+          }
+          // fill V0 table
+          // if information on V0 already stored, go to next V0
+          if (!selectedV0s.count(v0.globalIndex())) {
+            hfCandV0(v0.posTrackId(), v0.negTrackId(),
+                     indexHfReducedCollision,
+                     v0.x(), v0.y(), v0.z(),
+                     v0.pxpos(), v0.pypos(), v0.pzpos(),
+                     v0.pxneg(), v0.pyneg(), v0.pzneg(),
+                     v0.v0cosPA(),
+                     v0.dcav0topv(),
+                     v0type);
+            selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
+          }
+          fillHfCandD = true;
+        } // V0 loop
+      } else if constexpr (DecayChannel == DecayChannel::DstarTrack) {
+        for (const auto& trackIndex : bachelors) {
+          auto track = trackIndex.template track_as<TracksWithPID>();
+          if (!isTrackSelected(track, prongIdsD)) {
+            continue;
+          }
+          registry.fill(HIST("hdEdxVsP"), track.p(), track.tpcSignal());
+          float invMassKPiPiP{0.f};
+          if (candD.signSoftPi() > 0) {
+            invMassKPiPiP = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), track.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
+          } else {
+            invMassKPiPiP = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), track.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
+          }
+          registry.fill(HIST("hMassDstarProton"), invMassKPiPiP - invMassD);
+          if (!selectedTracks.count(track.globalIndex())) {
+            hfTrackNoParam(indexHfReducedCollision,
+                           track.px(), track.py(), track.pz(), track.sign(),
+                           track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                           track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                           track.hasTOF());
+            selectedTracks[track.globalIndex()] = hfTrackNoParam.lastIndex();
+          }
+          fillHfCandD = true;
+        } // track loop
+      }
 
       if (fillHfCandD) { // fill candDplus table only once per D candidate, only if at least one V0 is found
         hfCandD(prongIdsD[0], prongIdsD[1], prongIdsD[2],
@@ -368,17 +488,10 @@ struct HfDataCreatorCharmResoReduced {
           hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2]);
         }
         fillHfReducedCollision = true;
-        switch (DecayChannel) {
-          case DecayChannel::DstarV0:
-            registry.fill(HIST("hMassDstar"), invMassD);
-            registry.fill(HIST("hPtDstar"), candD.pt());
-            break;
-          case DecayChannel::DplusV0:
-            registry.fill(HIST("hMassDplus"), invMassD);
-            registry.fill(HIST("hPtDplus"), candD.pt());
-            break;
-          default:
-            break;
+        if constexpr (DecayChannel == DecayChannel::DstarV0) {
+          registry.fill(HIST("hMassVsPtDstarPaired"), candD.pt(), invMassD - invMassDdau);
+        } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
+          registry.fill(HIST("hMassVsPtDplusPaired"), candD.pt(), invMassD);
         }
         registry.fill(HIST("hDType"), dtype);
       }
@@ -395,7 +508,6 @@ struct HfDataCreatorCharmResoReduced {
 
   void processDplusV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       CandsDplusFiltered const& candsDplus,
-                      aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
                       TracksWithPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
@@ -414,9 +526,8 @@ struct HfDataCreatorCharmResoReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
-  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates paired with V0s without MC info and without ML info", true);
 
   void processDplusV0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                             CandsDplusFilteredWithMl const& candsDplus,
@@ -438,13 +549,11 @@ struct HfDataCreatorCharmResoReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
-  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0WithMl, "Process Dplus candidates with ML info", false);
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0WithMl, "Process Dplus candidates paired with V0s with ML info", false);
 
   void processDstarV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       CandDstarFiltered const& candsDstar,
-                      aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
                       TracksWithPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
@@ -463,9 +572,8 @@ struct HfDataCreatorCharmResoReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
-  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process DStar candidates paired with V0s without MC info and without ML info", false);
 
   void processDstarV0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                             CandDstarFilteredWithMl const& candsDstar,
@@ -488,9 +596,56 @@ struct HfDataCreatorCharmResoReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0WithMl, "Process DStar candidates paired with V0s with ML info", false);
+
+  void processDstarTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                         CandDstarFiltered const& candsDstar,
+                         aod::TrackAssoc const& trackIndices,
+                         TracksWithPID const& tracks,
+                         aod::BCsWithTimestamps const& bcs)
+  {
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<false, DecayChannel::DstarTrack>(collision, candsDThisColl, trackIdsThisColl, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
-  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0WithMl, "Process DStar candidates with ML info", false);
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarTrack, "Process DStar candidates paired with tracks without MC info and without ML info", false);
+
+  void processDstarTrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                               CandDstarFilteredWithMl const& candsDstar,
+                               aod::TrackAssoc const& trackIndices,
+                               TracksWithPID const& tracks,
+                               aod::BCsWithTimestamps const& bcs)
+  {
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb);
+
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<true, DecayChannel::DstarTrack>(collision, candsDThisColl, trackIdsThisColl, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarTrackWithMl, "Process DStar candidates paired with tracks with ML info", false);
+
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

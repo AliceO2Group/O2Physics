@@ -34,7 +34,7 @@ namespace pwglf
 class PIDExtended
 {
  public:
-  typedef o2::track::PID::ID ID;
+  typedef int16_t ID;
 
   static constexpr ID Electron = 0;
   static constexpr ID Muon = 1;
@@ -72,8 +72,14 @@ class PIDExtended
   static_assert(XiMinus == o2::track::PID::XiMinus, "PID::XiMinus mismatch");
   static_assert(OmegaMinus == o2::track::PID::OmegaMinus, "PID::OmegaMinus mismatch");
 
+  static constexpr ID PIDCountsUntilAl = 9; // Number of indices defined in PID.h equivalent to o2::track::PID::NIDs
+  static_assert(PIDCountsUntilAl == o2::track::PID::NIDs, "PID::NIDs mismatch");
+
   static constexpr ID PIDCounts = 17; // Number of indices defined in PID.h
   static_assert(PIDCounts == o2::track::PID::NIDsTot, "PID::NIDsTot mismatch");
+  // Define an array of IDs
+  static constexpr std::array<ID, PIDCountsUntilAl> mIDsUntilAl = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha};
+  static constexpr std::array<ID, PIDCounts> mIDs = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha, PI0, Photon, K0, Lambda, HyperTriton, Hyperhydrog4, XiMinus, OmegaMinus};
 
   // Define the antiparticles
   static constexpr ID Positron = 17;
@@ -191,7 +197,7 @@ class PIDExtended
 
   /// \brief Convert PDG code to PID index
   template <typename TrackType>
-  static o2::track::pid_constants::ID pdgToId(const TrackType& particle)
+  static ID pdgToId(const TrackType& particle)
   {
     switch (particle.pdgCode()) {
       case 11:

@@ -40,6 +40,7 @@ namespace reducedevent
 {
 
 // basic event information
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
 DECLARE_SOA_BITMAP_COLUMN(Tag, tag, 64);       //!  Bit-field for storing event information (e.g. high level info, cut decisions)
 DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);     //!  MC event position X
 DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);     //!  MC event position Y
@@ -102,6 +103,13 @@ DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event informa
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                   collision::CollisionTime, collision::CollisionTimeRes);
 
+DECLARE_SOA_TABLE(StoredReducedEvents, "AOD1", "REDUCEDEVENT", //!   Main event information table
+                  o2::soa::Index<>,
+                  reducedevent::Tag, bc::RunNumber,
+                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
+                  collision::CollisionTime, collision::CollisionTimeRes,
+                  o2::soa::Marker<1>);
+
 DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended event information
                   bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
                   mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
@@ -143,6 +151,9 @@ DECLARE_SOA_TABLE(ReducedEventsRefFlow, "AOD", "REREFFLOW", //!    Event Ref Flo
 DECLARE_SOA_TABLE(ReducedEventsQvectorZN, "AOD", "REQVECTORZN", //!    Event Q-vector information from ZNs detectors
                   reducedevent::Q1ZNAX, reducedevent::Q1ZNAY, reducedevent::Q1ZNCX, reducedevent::Q1ZNCY);
 
+DECLARE_SOA_TABLE(ReducedEventsInfo, "AOD", "REDUCEVENTINFO", //!   Main event index table
+                  reducedevent::CollisionId);
+
 // TODO and NOTE: This table is just an extension of the ReducedEvents table
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
@@ -153,6 +164,7 @@ DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REDUCEDMCEVENT", //!   Event level MC
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
 
 using ReducedEvent = ReducedEvents::iterator;
+using StoredReducedEvent = StoredReducedEvents::iterator;
 using ReducedEventExtended = ReducedEventsExtended::iterator;
 using ReducedEventVtxCov = ReducedEventsVtxCov::iterator;
 using ReducedEventMultPV = ReducedEventsMultPV::iterator;
@@ -198,6 +210,7 @@ namespace reducedtrack
 {
 // basic track information
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);               //!
 // ----  flags reserved for storing various information during filtering
 DECLARE_SOA_BITMAP_COLUMN(FilteringFlags, filteringFlags, 64); //!
 // -----------------------------------------------------
@@ -272,7 +285,7 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelPID, "AOD", "RTBARRELPID", //!
 
 // barrel collision information (joined with ReducedTracks) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(ReducedTracksBarrelInfo, "AOD", "RTBARRELINFO",
-                  reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+                  reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ, reducedtrack::TrackId);
 
 using ReducedTrack = ReducedTracks::iterator;
 using ReducedTrackBarrel = ReducedTracksBarrel::iterator;
@@ -314,24 +327,24 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 } // namespace reducedtrackMC
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
 //       This table contains all MC truth tracks (both barrel and muon)
-DECLARE_SOA_TABLE_FULL(ReducedMCTracks, "ReducedMCTracks", "AOD", "REDUCEDMCTRACK", //!  MC track information (on disk)
-                       o2::soa::Index<>, reducedtrackMC::ReducedMCEventId,
-                       mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
-                       reducedtrackMC::MothersIds, reducedtrackMC::DaughtersIdSlice,
-                       mcparticle::Weight,
-                       reducedtrackMC::Pt, reducedtrackMC::Eta, reducedtrackMC::Phi, reducedtrackMC::E,
-                       mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
-                       reducedtrackMC::McReducedFlags,
-                       reducedtrackMC::Px<reducedtrackMC::Pt, reducedtrackMC::Phi>,
-                       reducedtrackMC::Py<reducedtrackMC::Pt, reducedtrackMC::Phi>,
-                       reducedtrackMC::Pz<reducedtrackMC::Pt, reducedtrackMC::Eta>,
-                       reducedtrackMC::P<reducedtrackMC::Pt, reducedtrackMC::Eta>,
-                       reducedtrackMC::Y<reducedtrackMC::Pt, reducedtrackMC::Eta, reducedtrackMC::E>,
-                       mcparticle::ProducedByGenerator<mcparticle::Flags>,
-                       mcparticle::FromBackgroundEvent<mcparticle::Flags>,
-                       mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
-                       mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
-                       mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
+DECLARE_SOA_TABLE(ReducedMCTracks, "AOD", "REDUCEDMCTRACK", //!  MC track information (on disk)
+                  o2::soa::Index<>, reducedtrackMC::ReducedMCEventId,
+                  mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
+                  reducedtrackMC::MothersIds, reducedtrackMC::DaughtersIdSlice,
+                  mcparticle::Weight,
+                  reducedtrackMC::Pt, reducedtrackMC::Eta, reducedtrackMC::Phi, reducedtrackMC::E,
+                  mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
+                  reducedtrackMC::McReducedFlags,
+                  reducedtrackMC::Px<reducedtrackMC::Pt, reducedtrackMC::Phi>,
+                  reducedtrackMC::Py<reducedtrackMC::Pt, reducedtrackMC::Phi>,
+                  reducedtrackMC::Pz<reducedtrackMC::Pt, reducedtrackMC::Eta>,
+                  reducedtrackMC::P<reducedtrackMC::Pt, reducedtrackMC::Eta>,
+                  reducedtrackMC::Y<reducedtrackMC::Pt, reducedtrackMC::Eta, reducedtrackMC::E>,
+                  mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                  mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                  mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                  mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
+                  mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using ReducedMCTrack = ReducedMCTracks::iterator;
 
@@ -365,9 +378,9 @@ DECLARE_SOA_COLUMN(MftNClusters, mftNClusters, int);                            
 } // namespace reducedmft
 
 // MFT track kinematics
-DECLARE_SOA_TABLE_FULL(ReducedMFTs, "ReducedMFTs", "AOD", "REDUCEDMFT", //!
-                       o2::soa::Index<>, reducedmft::ReducedEventId, reducedmft::FilteringFlags,
-                       reducedmft::Pt, reducedmft::Eta, reducedmft::Phi);
+DECLARE_SOA_TABLE(ReducedMFTs, "AOD", "REDUCEDMFT", //!
+                  o2::soa::Index<>, reducedmft::ReducedEventId, reducedmft::FilteringFlags,
+                  reducedmft::Pt, reducedmft::Eta, reducedmft::Phi);
 
 // MFT tracks extra info (cluster size, sign)
 DECLARE_SOA_TABLE(ReducedMFTsExtra, "AOD", "RMFTEXTRA", //!
@@ -413,15 +426,15 @@ DECLARE_SOA_INDEX_COLUMN(ReducedMFT, matchMFTTrack); //!  matching index pointin
 } // namespace reducedmuon
 
 // Muon track kinematics
-DECLARE_SOA_TABLE_FULL(ReducedMuons, "ReducedMuons", "AOD", "REDUCEDMUON", //!
-                       o2::soa::Index<>, reducedmuon::ReducedEventId,
-                       reducedmuon::MatchMCHTrackId, reducedmuon::ReducedMFTId,
-                       reducedmuon::FilteringFlags,
-                       reducedmuon::Pt, reducedmuon::Eta, reducedmuon::Phi, reducedmuon::Sign, reducedmuon::IsAmbiguous,
-                       reducedmuon::Px<reducedmuon::Pt, reducedmuon::Phi>,
-                       reducedmuon::Py<reducedmuon::Pt, reducedmuon::Phi>,
-                       reducedmuon::Pz<reducedmuon::Pt, reducedmuon::Eta>,
-                       reducedmuon::P<reducedmuon::Pt, reducedmuon::Eta>);
+DECLARE_SOA_TABLE(ReducedMuons, "AOD", "REDUCEDMUON", //!
+                  o2::soa::Index<>, reducedmuon::ReducedEventId,
+                  reducedmuon::MatchMCHTrackId, reducedmuon::ReducedMFTId,
+                  reducedmuon::FilteringFlags,
+                  reducedmuon::Pt, reducedmuon::Eta, reducedmuon::Phi, reducedmuon::Sign, reducedmuon::IsAmbiguous,
+                  reducedmuon::Px<reducedmuon::Pt, reducedmuon::Phi>,
+                  reducedmuon::Py<reducedmuon::Pt, reducedmuon::Phi>,
+                  reducedmuon::Pz<reducedmuon::Pt, reducedmuon::Eta>,
+                  reducedmuon::P<reducedmuon::Pt, reducedmuon::Eta>);
 
 // Muon track quality details
 DECLARE_SOA_TABLE(ReducedMuonsExtra, "AOD", "RTMUONEXTRA", //!
@@ -590,6 +603,8 @@ namespace reducedpair
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);                    //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedTracks, "_0"); //! Index to first prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ReducedTracks, "_1"); //! Index to second prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0");        //! Index of first prong in Tracks table
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1");        //! Index of second prong in Tracks table
 DECLARE_SOA_COLUMN(Mass, mass, float);                                   //!
 DECLARE_SOA_COLUMN(Pt, pt, float);                                       //!
 DECLARE_SOA_COLUMN(Eta, eta, float);                                     //!
@@ -657,33 +672,52 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Rap, rap, //!
                            [](float pt, float eta, float m) -> float { return std::log((std::sqrt(m * m + pt * pt * std::cosh(eta) * std::cosh(eta)) + pt * std::sinh(eta)) / std::sqrt(m * m + pt * pt)); });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //!
+                           [](float pt, float eta, float m) -> float { return std::log((std::sqrt(m * m + pt * pt * std::cosh(eta) * std::cosh(eta)) + pt * std::sinh(eta)) / std::sqrt(m * m + pt * pt)); });
 } // namespace reducedpair
 
-DECLARE_SOA_TABLE_FULL(Dielectrons, "Dielectrons", "AOD", "RTDIELECTRON", //!
-                       o2::soa::Index<>, reducedpair::ReducedEventId,
-                       reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
-                       reducedpair::FilterMap, reducedpair::McDecision,
-                       reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
-                       reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
-                       reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
-                       reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
-                       reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
+DECLARE_SOA_TABLE(Dielectrons, "AOD", "RTDIELECTRON", //!
+                  o2::soa::Index<>, reducedpair::ReducedEventId,
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::FilterMap, reducedpair::McDecision,
+                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
 
-DECLARE_SOA_TABLE_FULL(Dimuons, "Dimuons", "AOD", "RTDIMUON", //!
-                       o2::soa::Index<>, reducedpair::ReducedEventId,
-                       reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
-                       reducedpair::FilterMap, reducedpair::McDecision,
-                       reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
-                       reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
-                       reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
-                       reducedpair::P<reducedpair::Pt, reducedpair::Eta>,
-                       reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>);
+DECLARE_SOA_TABLE(StoredDielectrons, "AOD1", "RTDIELECTRON", //!
+                  o2::soa::Index<>, reducedpair::ReducedEventId,
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::FilterMap, reducedpair::McDecision,
+                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(Dimuons, "AOD", "RTDIMUON", //!
+                  o2::soa::Index<>, reducedpair::ReducedEventId,
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::FilterMap, reducedpair::McDecision,
+                  reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>);
 
 DECLARE_SOA_TABLE(DielectronsExtra, "AOD", "RTDIELEEXTRA", //!
                   reducedpair::Index0Id, reducedpair::Index1Id,
                   reducedpair::Tauz,
                   reducedpair::Lz,
                   reducedpair::Lxy);
+
+DECLARE_SOA_TABLE(DielectronsInfo, "AOD", "RTDIELINFO",
+                  reducedpair::CollisionId, reducedpair::Prong0Id, reducedpair::Prong1Id);
 
 DECLARE_SOA_TABLE(DimuonsExtra, "AOD", "RTDIMUEXTRA", //!
                   dilepton_track_index::Index0Id, dilepton_track_index::Index1Id,
@@ -759,8 +793,10 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::SVertex);
 
 using Dielectron = Dielectrons::iterator;
+using StoredDielectron = StoredDielectrons::iterator;
 using Dimuon = Dimuons::iterator;
 using DielectronExtra = DielectronsExtra::iterator;
+using DielectronInfo = DielectronsInfo::iterator;
 using DimuonExtra = DimuonsExtra::iterator;
 using DileptonFlow = DileptonsFlow::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
@@ -768,15 +804,16 @@ using DielectronAll = DielectronsAll::iterator;
 using DimuonAll = DimuonsAll::iterator;
 
 // Tables for using analysis-dilepton-track with analysis-asymmetric-pairing
-DECLARE_SOA_TABLE_FULL(Ditracks, "Ditracks", "AOD", "RTDITRACK", //!
-                       o2::soa::Index<>, reducedpair::ReducedEventId,
-                       reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
-                       reducedpair::FilterMap, reducedpair::PairFilterMap,
-                       reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
-                       reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
-                       reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
-                       reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
-                       reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
+DECLARE_SOA_TABLE(Ditracks, "AOD", "RTDITRACK", //!
+                  o2::soa::Index<>, reducedpair::ReducedEventId,
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::FilterMap, reducedpair::PairFilterMap,
+                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
 
 DECLARE_SOA_TABLE(DitracksExtra, "AOD", "RTDITRKEXTRA", //!
                   reducedpair::Index0Id, reducedpair::Index1Id,
