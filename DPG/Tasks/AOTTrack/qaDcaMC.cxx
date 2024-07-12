@@ -68,8 +68,6 @@ static constexpr const char* chargeNames[nSpecies] = {"pos_pdg", "neg_pdg"};
 static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040};
 
 // Histograms
-static constexpr int nHistograms = nSpecies * 2;
-
 // Pt
 std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtPrm;
 std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtStr;
