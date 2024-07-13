@@ -2206,7 +2206,7 @@ struct UpcTauCentralBarrelRL {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
           }
         }
-        if (countPVGTmuonsSelection == 2) {
+        if (countPVGTmuonsSelection == 2 && doMuonStudy) {
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
           if (trkDaug1.hasTOF()) {
@@ -2254,7 +2254,7 @@ struct UpcTauCentralBarrelRL {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
           }
         }
-        if (countPVGTmuonsSelection == 2) {
+        if (countPVGTmuonsSelection == 2 && doMuonStudy) {
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
           if (trkDaug1.hasTOF()) {
@@ -2319,7 +2319,7 @@ struct UpcTauCentralBarrelRL {
             }
           }
         }
-        if (countPVGTmuonsSelection == 2) {
+        if (countPVGTmuonsSelection == 2 && doMuonStudy) {
           if (daug[0].P() > daug[1].P()) {
             histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsLP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
             histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/PID/hTPCsignalVsOP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
