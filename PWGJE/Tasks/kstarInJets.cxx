@@ -692,8 +692,8 @@ struct kstarInJets {
           }
           JEhistos.fill(HIST("minvJEHistogramPhi"), lResonance.M());
         } // mcpart check
-      } // tracks2
-    } // tracks1
+      }   // tracks2
+    }     // tracks1
     // Jet Eff
   }
   PROCESS_SWITCH(kstarInJets, processRec, "pikp detector level MC JE", true);
@@ -836,9 +836,9 @@ struct kstarInJets {
           } // check for jets
 
         } // check for phi
-      } // check for rapidity
-    } // loop over particles
-  } // process switch
+      }   // check for rapidity
+    }     // loop over particles
+  }       // process switch
   PROCESS_SWITCH(kstarInJets, processSim, "pikp particle level MC", true);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -914,7 +914,7 @@ struct kstarInJets {
         mcp_eta.push_back(mcpjet.eta());
         mcp_phi.push_back(mcpjet.phi());
       } // mcpjets
-    } // mcdjets
+    }   // mcdjets
 
     if (hasJets)
       JEhistos.fill(HIST("nEvents_MCGen_MATCHED"), 2.5);
@@ -968,9 +968,9 @@ struct kstarInJets {
           JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE"), 1.0, lResonance.Pt(), lResonance.M());
 
         } //! jetflag
-      } // chech for phi
-    } // MC Particles
-  } // main fcn
+      }   // chech for phi
+    }     // MC Particles
+  }       // main fcn
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   int nprocessRecJEEvents = 0;
@@ -1033,7 +1033,7 @@ struct kstarInJets {
         mcp_eta.push_back(mcpjet.eta());
         mcp_phi.push_back(mcpjet.phi());
       } // mcpjets
-    } // mcdjets
+    }   // mcdjets
     // Now we do REC part
     if (hasJets)
       JEhistos.fill(HIST("nEvents_MCRec_MATCHED"), 2.5);
@@ -1145,10 +1145,10 @@ struct kstarInJets {
             } //! jetflag
 
           } // pass track cut
-        } // has mc particle
+        }   // has mc particle
 
       } // tracks 2
-    } // tracks 1
+    }   // tracks 1
     // tracks
   } // main fcn
   PROCESS_SWITCH(kstarInJets, processMatchedRec, "phi matched Rec level MC", true);
