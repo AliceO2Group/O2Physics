@@ -13,8 +13,8 @@
 ///
 /// \author Roman Nepeivoda (roman.nepeivoda@cern.ch)
 
-#ifndef PWGLF_DATAMODEL_STRANGENESSTABLESQC_H_
-#define PWGLF_DATAMODEL_STRANGENESSTABLESQC_H_
+#ifndef PWGLF_DATAMODEL_QC_STRANGENESSTABLESQC_H_
+#define PWGLF_DATAMODEL_QC_STRANGENESSTABLESQC_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -112,4 +112,4 @@ DECLARE_SOA_TABLE(VZerosQC, "AOD", "VZEROSQC", o2::soa::Index<>,
                   vZerosQC::PosPhi, vZerosQC::NegPhi);
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_STRANGENESSTABLESQC_H_
+#endif // PWGLF_DATAMODEL_QC_STRANGENESSTABLESQC_H_
