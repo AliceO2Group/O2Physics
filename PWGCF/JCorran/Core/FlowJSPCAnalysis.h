@@ -43,6 +43,7 @@ class FlowJSPCAnalysis
   void Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, Double_t* correlData);
   void CalculateCorrelators(const Int_t fCentBin);
   void FillHistograms(const Int_t fCentBin, Int_t ind, Double_t cNum, Double_t cDenom, Double_t wNum, Double_t wDenom);
+  void FillQAHistograms(const Int_t fCentBin, Double_t phi, Double_t phiWeight);
   TComplex Recursion(int n, int* harmonic, int mult, int skip);
   TComplex Q(const Int_t harmN, const Int_t p);
 
@@ -55,6 +56,8 @@ class FlowJSPCAnalysis
     mHistRegistry->add("FullCentrality", "FullCentrality", HistType::kTH1D, {{100, 0., 100.}}, true);
     mHistRegistry->add("Centrality_0/fResults", "Numerators and denominators", {HistType::kTProfile, {{24, 0., 24.}}}, true);
     mHistRegistry->add("Centrality_0/fCovResults", "Covariance N*D", {HistType::kTProfile, {{48, 0., 48.}}}, true);
+    mHistRegistry->add("Centrality_0/phiBefore", "Phi before", {HistType::kTH1D, {{100, 0., TMath::TwoPi()}}}, true);
+    mHistRegistry->add("Centrality_0/phiAfter", "Phi after", {HistType::kTH1D, {{100, 0., TMath::TwoPi()}}}, true);
 
     for (UInt_t i = 1; i < 8; i++) {
       mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
@@ -72,16 +75,6 @@ class FlowJSPCAnalysis
     memcpy(fHarmosArray, harmo, sizeof(Int_t) * 12 * 8);
   }
 
- private:
-  const Int_t mNqHarmos = 113; ///< Highest harmo for Q(n,p): (v8*14part)+1.
-  const Int_t mNqPowers = 15;  ///< Max power for Q(n,p): 14part+1.
-  const JQVectorsT* qvecs;
-
-  HistogramRegistry* mHistRegistry = nullptr;
-
-  Int_t fHarmosArray[12][8];
-
-  Double_t fCorrelDenoms[14];
   static constexpr std::string_view mCentClasses[] = {
     "Centrality_0/",
     "Centrality_1/",
@@ -93,6 +86,17 @@ class FlowJSPCAnalysis
     "Centrality_7/",
     "Centrality_8/",
     "Centrality_9/"};
+
+ private:
+  const Int_t mNqHarmos = 113; ///< Highest harmo for Q(n,p): (v8*14part)+1.
+  const Int_t mNqPowers = 15;  ///< Max power for Q(n,p): 14part+1.
+  const JQVectorsT* qvecs;
+
+  HistogramRegistry* mHistRegistry = nullptr;
+
+  Int_t fHarmosArray[12][8];
+
+  Double_t fCorrelDenoms[14];
 
   ClassDefNV(FlowJSPCAnalysis, 1);
 };

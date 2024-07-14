@@ -36,6 +36,9 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
 #include "PWGCF/JCorran/Core/FlowJSPCAnalysis.h"
 #include "PWGCF/JCorran/Core/FlowJSPCObservables.h"
 #include "PWGCF/JCorran/Core/FlowJHistManager.h"
@@ -50,12 +53,14 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As,
                                aod::CentFDDMs, aod::CentNTPVs>;
 
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::JWeights>;
 
 struct flowJSPCAnalysis {
   HistogramRegistry SPCHistograms{"SPCResults", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJSPCAnalysis spcAnalysis;
   FlowJSPCAnalysis::JQVectorsT jqvecs;
+  template <class T>
+  using hasWeightNUA = decltype(std::declval<T&>().weightNUA());
 
   HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJHistManager histManager;
@@ -103,6 +108,7 @@ struct flowJSPCAnalysis {
   // // and thus only the final distributions of the data for analysis are saved.
   Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
   Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
+  Filter cftrackFilter = (aod::cftrack::pt > cfgTrackCuts.cfgPtMin) && (aod::cftrack::pt < cfgTrackCuts.cfgPtMax); // eta cuts done by jfluc
 
   void init(InitContext const&)
   {
@@ -125,58 +131,92 @@ struct flowJSPCAnalysis {
     ccdb->setCreatedNotAfter(cfgCCDB.cfgTime.value);
   }
 
-  void process(soa::Filtered<MyCollisions>::iterator const& coll, soa::Filtered<MyTracks> const& tracks)
+  template <class CollisionT, class TrackT>
+  void analyze(CollisionT const& collision, TrackT const& tracks)
+// void process(soa::Filtered<MyCollisions>::iterator const& coll, soa::Filtered<soa::Join<aod::MyTracks, aod::JWeights>> const& tracks)
   {
     if (tracks.size() < cfgEventCuts.cfgMultMin)
       return;
 
-    float cent = -1.;
-    switch (cfgEventCuts.cfgCentEst) {
-      case FT0M:
-        cent = coll.centFT0M();
-        break;
-      case FT0A:
-        cent = coll.centFT0A();
-        break;
-      case FT0C:
-        cent = coll.centFT0C();
-        break;
-      case FDDM:
-        cent = coll.centFDDM();
-        break;
-      case NTPV:
-        cent = coll.centNTPV();
-        break;
-    }
+    float cent = collision.multiplicity();
+    // switch (cfgEventCuts.cfgCentEst) {
+    //   case FT0M:
+    //     cent = collision.centFT0M();
+    //     break;
+    //   case FT0A:
+    //     cent = collision.centFT0A();
+    //     break;
+    //   case FT0C:
+    //     cent = collision.centFT0C();
+    //     break;
+    //   case FDDM:
+    //     cent = collision.centFDDM();
+    //     break;
+    //   case NTPV:
+    //     cent = collision.centNTPV();
+    //     break;
+    // }
     if (cent < 0. || cent > 70.) {
       return;
     }
     Int_t cBin = histManager.GetCentBin(cent);
     SPCHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
-
     for (auto& track : tracks) {
-      if (cfgFillQA)
-        histManager.FillTrackQA<1>(track, cBin, coll.posZ());
+      if (cfgFillQA){
+        // histManager.FillTrackQA<0>(track, cBin, collision.posZ());
 
-      if (cfgUseNUE) {
-        ;
-      }
-      if (cfgUseNUA) {
-        ;
+        using JInputClassIter = typename TrackT::iterator;
+        if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value) {
+          // LOGF(info, "Filling phi");
+          spcAnalysis.FillQAHistograms(cBin, track.phi(), 1./track.weightNUA());
+        }
+
+    //   if (cfgUseNUE) {
+    //     ;
+    //   }
+    //   if (cfgUseNUA) {
+    //     ;
       }
     }
 
     if (cfgFillQA)
-      histManager.FillEventQA<1>(coll, cBin, cent, nTracks);
+      histManager.FillEventQA<1>(collision, cBin, cent, nTracks);
 
     jqvecs.Calculate(tracks, 0.0, cfgTrackCuts.cfgEtaMax);
     spcAnalysis.SetQvectors(&jqvecs);
     spcAnalysis.CalculateCorrelators(cBin);
 
-    LOGF(info, "Collision analysed. Next...");
+    //LOGF(info, "Collision analysed. Next...");
   }
+
+
+  void processJDerived(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
+  {
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(flowJSPCAnalysis, processJDerived, "Process derived data", false);
+
+  void processJDerivedCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
+  {
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(flowJSPCAnalysis, processJDerivedCorrected, "Process derived data with corrections", false);
+
+  void processCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(flowJSPCAnalysis, processCFDerived, "Process CF derived data", false);
+
+  void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
+  {
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(flowJSPCAnalysis, processCFDerivedCorrected, "Process CF derived data with corrections", true);
 };
+
+
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

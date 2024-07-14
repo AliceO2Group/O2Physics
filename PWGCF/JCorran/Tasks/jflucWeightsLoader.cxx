@@ -42,7 +42,7 @@ using namespace o2::framework::expressions;
 // The standalone jfluc code expects the entire list of tracks for an event. At the same time, it expects weights together with other track attributes.
 // This workflow creates a table of weights that can be joined with track tables.
 struct jflucWeightsLoader {
-  O2_DEFINE_CONFIGURABLE(pathPhiWeights, std::string, "", "Local (local://) or CCDB path for the phi acceptance correction histogram");
+  O2_DEFINE_CONFIGURABLE(pathPhiWeights, std::string, "local:///home/maxim/Documents/Work/SPC_Run3/Run3_test_data/corrections/correction_LHC23zzh_pass3_v4.root", "Local (local://) or CCDB path for the phi acceptance correction histogram");
 
   THnF* ph = 0;
   TFile* pf = 0;
@@ -60,17 +60,21 @@ struct jflucWeightsLoader {
 
   void init(InitContext const&)
   {
-    if (!doprocessLoadWeights && !doprocessLoadWeightsCF)
+    if (!doprocessLoadWeights && !doprocessLoadWeightsCF) {
       return;
+    }
     if (doprocessLoadWeights && doprocessLoadWeightsCF)
       LOGF(fatal, "Only one of JTracks or CFTracks processing can be enabled at a time.");
     if (pathPhiWeights.value.substr(0, 8) == "local://") {
+      LOGF(info, "Using corrections from: %s", pathPhiWeights.value.substr(8).c_str());
       pf = new TFile(pathPhiWeights.value.substr(8).c_str(), "read");
       if (!pf->IsOpen()) {
         delete pf;
         pf = 0;
         LOGF(fatal, "NUA correction weights file not found: %s", pathPhiWeights.value.substr(8).c_str());
       }
+    } else {
+      LOGF(info, "Didn't find \"local://\"");
     }
   }
 

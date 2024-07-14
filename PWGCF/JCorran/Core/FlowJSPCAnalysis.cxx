@@ -192,6 +192,47 @@ void FlowJSPCAnalysis::FillHistograms(const Int_t fCentBin, Int_t ind, Double_t 
   }
 }
 
+void FlowJSPCAnalysis::FillQAHistograms(const Int_t fCentBin, Double_t phi, Double_t phiWeight)
+{
+  switch (fCentBin) {
+    case 0: {
+      mHistRegistry->fill(HIST(mCentClasses[0]) + HIST("phiBefore"), phi);
+      mHistRegistry->fill(HIST(mCentClasses[0]) + HIST("phiAfter"), phi*phiWeight);
+    } break;
+    case 1: {
+      mHistRegistry->fill(HIST(mCentClasses[1]) + HIST("phiBefore"), phi);
+      mHistRegistry->fill(HIST(mCentClasses[1]) + HIST("phiAfter"), phi*phiWeight);
+    } break;
+    case 2: {
+      mHistRegistry->fill(HIST(mCentClasses[2]) + HIST("phiBefore"), phi);
+      mHistRegistry->fill(HIST(mCentClasses[2]) + HIST("phiAfter"), phi*phiWeight);
+    } break;
+    case 3: {
+      mHistRegistry->fill(HIST(mCentClasses[3]) + HIST("phiBefore"), phi);
+      mHistRegistry->fill(HIST(mCentClasses[3]) + HIST("phiAfter"), phi*phiWeight);
+    } break;
+    case 4: {
+      mHistRegistry->fill(HIST(mCentClasses[4]) + HIST("phiBefore"), phi);
+      mHistRegistry->fill(HIST(mCentClasses[4]) + HIST("phiAfter"), phi*phiWeight);
+    } break;
+    case 5: {
+      mHistRegistry->fill(HIST(mCentClasses[5]) + HIST("phiBefore"), phi);
+      mHistRegistry->fill(HIST(mCentClasses[5]) + HIST("phiAfter"), phi*phiWeight);
+    } break;
+    case 6: {
+      mHistRegistry->fill(HIST(mCentClasses[6]) + HIST("phiBefore"), phi);
+      mHistRegistry->fill(HIST(mCentClasses[6]) + HIST("phiAfter"), phi*phiWeight);
+    } break;
+    case 7: {
+      mHistRegistry->fill(HIST(mCentClasses[7]) + HIST("phiBefore"), phi);
+      mHistRegistry->fill(HIST(mCentClasses[7]) + HIST("phiAfter"), phi*phiWeight);
+    } break;
+    default:
+      return;
+  }
+}
+
+
 void FlowJSPCAnalysis::Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, Double_t* correlData)
 {
   // Calculate the correlators for the provided set of harmonics using Q-vectors.
