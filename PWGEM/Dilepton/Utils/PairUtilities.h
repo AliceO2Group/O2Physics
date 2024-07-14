@@ -45,7 +45,7 @@ using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
 //_______________________________________________________________________
-template <typename TTrack1, typename TTrack2>
+template <bool isMC = false, typename TTrack1, typename TTrack2>
 void getAngleCS(TTrack1 const& t1, TTrack2 const& t2, const float m1, const float m2, const float beamE1, const float beamE2, const float beamP1, const float beamP2, float& cos_thetaCS, float& phiCS)
 {
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
@@ -67,8 +67,16 @@ void getAngleCS(TTrack1 const& t1, TTrack2 const& t2, const float m1, const floa
   ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
   ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
 
-  cos_thetaCS = t1.sign() > 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM);
-  phiCS = t1.sign() > 0 ? std::atan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : std::atan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM));
+  // pdgCode : 11 for electron, -11 for positron
+  // pdgCode : 13 for negative muon, -13 for positive muon
+
+  if constexpr (isMC) {
+    cos_thetaCS = t1.pdgCode() < 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM);
+    phiCS = t1.pdgCode() < 0 ? std::atan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : std::atan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM));
+  } else {
+    cos_thetaCS = t1.sign() > 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM);
+    phiCS = t1.sign() > 0 ? std::atan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : std::atan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM));
+  }
 }
 
 //_______________________________________________________________________

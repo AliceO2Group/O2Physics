@@ -122,11 +122,11 @@ struct dielectronQC {
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
 
-    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
-    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", 0.9, "max eta for single track"};
+    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
+    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", 0.8, "max eta for single track"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
-    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 70, "min ncrossed rows"};
+    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 100, "min ncrossed rows"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
@@ -301,12 +301,11 @@ struct dielectronQC {
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
       fRegistry.addClone("Pair/same/", "Pair/mix/");
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kUPC)) {
-      const AxisSpec axis_pt2{ConfPteeBins, "p_{T,ee}^{2} (GeV/c)^{2}"};
       const AxisSpec axis_aco{10, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};
       const AxisSpec axis_asym_pt{10, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"};
       const AxisSpec axis_dphi_e_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{e} - #varphi_{ee} (rad.)"};
       const AxisSpec axis_cos_theta_cs{10, 0.f, 1.f, "|cos(#theta_{CS})|"};
-      fRegistry.add("Pair/same/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_pt2, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_cos_theta_cs}, true);
+      fRegistry.add("Pair/same/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_cos_theta_cs}, true);
       fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
@@ -566,16 +565,16 @@ struct dielectronQC {
       o2::math_utils::bringToPMPi(dphi_e_ee);
 
       float cos_thetaCS = 999, phiCS = 999.f;
-      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d, pow(v12.Pt(), 2), aco, asym, abs(dphi_e_ee), abs(cos_thetaCS));
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d, aco, asym, abs(dphi_e_ee), abs(cos_thetaCS));
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsPhiV"), phiv, v12.M());
       } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d, pow(v12.Pt(), 2), aco, asym, abs(dphi_e_ee), abs(cos_thetaCS));
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d, aco, asym, abs(dphi_e_ee), abs(cos_thetaCS));
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsPhiV"), phiv, v12.M());
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d, pow(v12.Pt(), 2), aco, asym, abs(dphi_e_ee), abs(cos_thetaCS));
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d, aco, asym, abs(dphi_e_ee), abs(cos_thetaCS));
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsPhiV"), phiv, v12.M());
       }
 
@@ -637,7 +636,7 @@ struct dielectronQC {
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) {
       float cos_thetaCS = 999, phiCS = 999.f;
-      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
       // LOGF(info, "cos_thetaCS = %f, phiCS = %f", cos_thetaCS, phiCS);
       o2::math_utils::bringToPMPi(phiCS);
 

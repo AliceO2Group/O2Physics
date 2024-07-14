@@ -19,6 +19,9 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "CommonConstants/LHCConstants.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPECSObject.h"
 
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -102,11 +105,11 @@ struct dielectronQCMC {
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
 
-    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
-    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", 0.9, "max eta for single track"};
+    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
+    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", 0.8, "max eta for single track"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
-    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 70, "min ncrossed rows"};
+    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 100, "min ncrossed rows"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
@@ -137,7 +140,7 @@ struct dielectronQCMC {
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::vertexing::DCAFitterN<2> fitter;
+  // o2::vertexing::DCAFitterN<2> fitter;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int mRunNumber;
   float d_bz;
@@ -146,7 +149,8 @@ struct dielectronQCMC {
     std::string prefix = "mctrackcut_group";
     Configurable<float> min_mcPt{"min_mcPt", 0.05, "min. MC pT"};
     Configurable<float> max_mcPt{"max_mcPt", 1e+10, "max. MC pT"};
-    Configurable<float> max_mcEta{"max_mcEta", 0.9, "max. MC eta"};
+    Configurable<float> min_mcEta{"min_mcEta", -0.9, "max. MC eta"};
+    Configurable<float> max_mcEta{"max_mcEta", +0.9, "max. MC eta"};
   } mctrackcuts;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -164,26 +168,35 @@ struct dielectronQCMC {
     const AxisSpec axis_pt{ConfPteeBins, "p_{T,ee} (GeV/c)"};
     const AxisSpec axis_dca{ConfDCAeeBins, "DCA_{ee}^{3D} (#sigma)"};
     // const AxisSpec axis_pca{ConfPCAeeBins, "PCA (mm)"}; // particle closest approach
-    const AxisSpec axis_pt_meson{ConfPteeBins, "p_{T} (GeV/c)"};
-    const AxisSpec axis_y_meson{20, -1.f, +1.f, "y"}; // rapidity of meson
+    const AxisSpec axis_pt_meson{ConfPteeBins, "p_{T} (GeV/c)"}; // for omega, phi meson pT spectra
+    const AxisSpec axis_y_meson{20, -1.f, +1.f, "y"};            // rapidity of meson
+
+    const AxisSpec axis_dphi_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{e1} - #varphi_{e2} (rad.)"};                 // for kHFll
+    const AxisSpec axis_cos_theta_cs{10, 0.f, 1.f, "|cos(#theta_{CS})|"};                                           // for kPolarization
+    const AxisSpec axis_phi_cs{18, 0.f, M_PI, "|#varphi_{CS}| (rad.)"};                                             // for kPolarization
+    const AxisSpec axis_aco{10, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};            // for kUPC
+    const AxisSpec axis_asym_pt{10, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"}; // for kUPC
+    const AxisSpec axis_dphi_e_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{e} - #varphi_{ee} (rad.)"};                // for kUPC
 
     // generated info
-    fRegistry.add("Generated/sm/Pi0/hMvsPt", "m_{ee} vs. p_{T,ee} ULS", kTH2F, {axis_mass, axis_pt}, true);
+    fRegistry.add("Generated/sm/Pi0/hs", "m_{ee} vs. p_{T,ee} ULS", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Eta/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/EtaPrime/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Rho/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Omega/");
+    fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Omega2ee/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Phi/");
+    fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Phi2ee/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/PromptJPsi/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/NonPromptJPsi/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/PromptPsi2S/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/NonPromptPsi2S/");
-    fRegistry.add("Generated/sm/Omega/hPt", "pT of #omega meson", kTH1F, {axis_pt_meson}, true);
-    fRegistry.add("Generated/sm/Omega/hY", "rapidity of #omega meson", kTH1F, {axis_y_meson}, true);
-    fRegistry.add("Generated/sm/Phi/hPt", "pT of #phi meson", kTH1F, {axis_pt_meson}, true);
-    fRegistry.add("Generated/sm/Phi/hY", "rapidity of #phi meson", kTH1F, {axis_y_meson}, true);
+    fRegistry.add("Generated/sm/Omega2ee/hPt", "pT of #omega meson", kTH1F, {axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Omega2ee/hY", "rapidity of #omega meson", kTH1F, {axis_y_meson}, true);
+    fRegistry.add("Generated/sm/Phi2ee/hPt", "pT of #phi meson", kTH1F, {axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Phi2ee/hY", "rapidity of #phi meson", kTH1F, {axis_y_meson}, true);
 
-    fRegistry.add("Generated/ccbar/c2e_c2e/hadron_hadron/hMvsPt", "m_{ee} vs. p_{T,ee}", kTH2F, {axis_mass, axis_pt}, true);
+    fRegistry.add("Generated/ccbar/c2e_c2e/hadron_hadron/hs", "m_{ee} vs. p_{T,ee}", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/ccbar/c2e_c2e/hadron_hadron/", "Generated/ccbar/c2e_c2e/meson_meson/");
     fRegistry.addClone("Generated/ccbar/c2e_c2e/hadron_hadron/", "Generated/ccbar/c2e_c2e/baryon_baryon/");
     fRegistry.addClone("Generated/ccbar/c2e_c2e/hadron_hadron/", "Generated/ccbar/c2e_c2e/meson_baryon/");
@@ -193,7 +206,7 @@ struct dielectronQCMC {
     fRegistry.addClone("Generated/ccbar/c2e_c2e/", "Generated/bbbar/b2c2e_b2e_diffb/"); // LS
 
     // reconstructed pair info
-    fRegistry.add("Pair/sm/Photon/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dca}, true);
+    fRegistry.add("Pair/sm/Photon/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Pi0/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Eta/");
@@ -208,7 +221,7 @@ struct dielectronQCMC {
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/PromptPsi2S/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/NonPromptPsi2S/");
 
-    fRegistry.add("Pair/ccbar/c2e_c2e/hadron_hadron/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dca}, true);
+    fRegistry.add("Pair/ccbar/c2e_c2e/hadron_hadron/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.addClone("Pair/ccbar/c2e_c2e/hadron_hadron/", "Pair/ccbar/c2e_c2e/meson_meson/");
     fRegistry.addClone("Pair/ccbar/c2e_c2e/hadron_hadron/", "Pair/ccbar/c2e_c2e/baryon_baryon/");
     fRegistry.addClone("Pair/ccbar/c2e_c2e/hadron_hadron/", "Pair/ccbar/c2e_c2e/meson_baryon/");
@@ -262,6 +275,13 @@ struct dielectronQCMC {
     fRegistry.addClone("Track/lf/", "Track/b2c2e/");
   }
 
+  float beamM1 = o2::constants::physics::MassProton; // mass of beam
+  float beamM2 = o2::constants::physics::MassProton; // mass of beam
+  float beamE1 = 0.f;                                // beam energy
+  float beamE2 = 0.f;                                // beam energy
+  float beamP1 = 0.f;                                // beam momentum
+  float beamP2 = 0.f;                                // beam momentum
+
   bool cfgDoFlow = false;
   void init(InitContext&)
   {
@@ -277,15 +297,15 @@ struct dielectronQCMC {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(5.f);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true);
-    fitter.setWeightedFinalPCA(false);
-    fitter.setMatCorrType(matCorr);
+    // fitter.setPropagateToPCA(true);
+    // fitter.setMaxR(5.f);
+    // fitter.setMinParamChange(1e-3);
+    // fitter.setMinRelChi2Change(0.9);
+    // fitter.setMaxDZIni(1e9);
+    // fitter.setMaxChi2(1e9);
+    // fitter.setUseAbsDCA(true);
+    // fitter.setWeightedFinalPCA(false);
+    // fitter.setMatCorrType(matCorr);
   }
 
   template <typename TCollision>
@@ -303,7 +323,7 @@ struct dielectronQCMC {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       mRunNumber = collision.runNumber();
-      fitter.setBz(d_bz);
+      // fitter.setBz(d_bz);
       return;
     }
 
@@ -326,7 +346,20 @@ struct dielectronQCMC {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = collision.runNumber();
-    fitter.setBz(d_bz);
+    // fitter.setBz(d_bz);
+
+    auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", collision.timestamp());
+    int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
+    int beamZ2 = grplhcif->getBeamZ(o2::constants::lhc::BeamA);
+    int beamA1 = grplhcif->getBeamA(o2::constants::lhc::BeamC);
+    int beamA2 = grplhcif->getBeamA(o2::constants::lhc::BeamA);
+    beamE1 = grplhcif->getBeamEnergyPerNucleonInGeV(o2::constants::lhc::BeamC);
+    beamE2 = grplhcif->getBeamEnergyPerNucleonInGeV(o2::constants::lhc::BeamA);
+    beamM1 = o2::constants::physics::MassProton * beamA1;
+    beamM2 = o2::constants::physics::MassProton * beamA2;
+    beamP1 = std::sqrt(std::pow(beamE1, 2) - std::pow(beamM1, 2));
+    beamP2 = std::sqrt(std::pow(beamE2, 2) - std::pow(beamM2, 2));
+    LOGF(info, "beamZ1 = %d, beamZ2 = %d, beamA1 = %d, beamA2 = %d, beamE1 = %f (GeV), beamE2 = %f (GeV), beamM1 = %f (GeV), beamM2 = %f (GeV), beamP1 = %f (GeV), beamP2 = %f (GeV)", beamZ1, beamZ2, beamA1, beamA2, beamE1, beamE2, beamM1, beamM2, beamP1, beamP2);
   }
 
   void DefineEMEventCut()
@@ -422,7 +455,7 @@ struct dielectronQCMC {
   template <typename T>
   bool isInAcceptance(T const& t1)
   {
-    if ((mctrackcuts.min_mcPt < t1.pt() && t1.pt() < mctrackcuts.max_mcPt) && abs(t1.eta()) < mctrackcuts.max_mcEta) {
+    if ((mctrackcuts.min_mcPt < t1.pt() && t1.pt() < mctrackcuts.max_mcPt) && (mctrackcuts.min_mcEta < t1.eta() && t1.eta() < mctrackcuts.max_mcEta)) {
       return true;
     } else {
       return false;
@@ -520,63 +553,73 @@ struct dielectronQCMC {
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
+    float dphi = v1.Phi() - v2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    float aco = 1.f - abs(dphi) / M_PI;
+    float asym = abs(v1.Pt() - v2.Pt()) / (v1.Pt() + v2.Pt());
+    float dphi_e_ee = v1.Phi() - v12.Phi();
+    o2::math_utils::bringToPMPi(dphi_e_ee);
+
+    float cos_thetaCS = 999, phiCS = 999.f;
+    o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+
     if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);
       if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
         if ((t1mc.isPhysicalPrimary() || t1mc.producedByGenerator()) && (t2mc.isPhysicalPrimary() || t2mc.producedByGenerator())) {
           switch (abs(mcmother.pdgCode())) {
             case 111:
-              fRegistry.fill(HIST("Pair/sm/Pi0/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/sm/Pi0/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 221:
-              fRegistry.fill(HIST("Pair/sm/Eta/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/sm/Eta/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               fRegistry.fill(HIST("Pair/sm/Eta/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 331:
-              fRegistry.fill(HIST("Pair/sm/EtaPrime/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/sm/EtaPrime/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 113:
-              fRegistry.fill(HIST("Pair/sm/Rho/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/sm/Rho/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               fRegistry.fill(HIST("Pair/sm/Rho/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
               break;
             case 223:
-              fRegistry.fill(HIST("Pair/sm/Omega/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               fRegistry.fill(HIST("Pair/sm/Omega/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
               if (mcmother.daughtersIds().size() == 2) { // omeag->ee
-                fRegistry.fill(HIST("Pair/sm/Omega2ee/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/sm/Omega2ee/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fRegistry.fill(HIST("Pair/sm/Omega2ee/hMvsPhiV"), phiv, v12.M());
               }
               break;
             case 333:
-              fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               fRegistry.fill(HIST("Pair/sm/Phi/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
               if (mcmother.daughtersIds().size() == 2) { // omeag->ee
-                fRegistry.fill(HIST("Pair/sm/Phi2ee/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/sm/Phi2ee/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fRegistry.fill(HIST("Pair/sm/Phi2ee/hMvsPhiV"), phiv, v12.M());
               }
               break;
             case 443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
-                fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hMvsPhiV"), phiv, v12.M());
                 fillTrackInfo<3, TMCParticles>(t1);
                 fillTrackInfo<3, TMCParticles>(t2);
               } else {
-                fRegistry.fill(HIST("Pair/sm/PromptJPsi/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/sm/PromptJPsi/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fRegistry.fill(HIST("Pair/sm/PromptJPsi/hMvsPhiV"), phiv, v12.M());
                 fillTrackInfo<2, TMCParticles>(t1);
                 fillTrackInfo<2, TMCParticles>(t2);
@@ -585,12 +628,12 @@ struct dielectronQCMC {
             }
             case 100443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
-                fRegistry.fill(HIST("Pair/sm/NonPromptPsi2S/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/sm/NonPromptPsi2S/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fRegistry.fill(HIST("Pair/sm/NonPromptPsi2S/hMvsPhiV"), phiv, v12.M());
                 fillTrackInfo<5, TMCParticles>(t1);
                 fillTrackInfo<5, TMCParticles>(t2);
               } else {
-                fRegistry.fill(HIST("Pair/sm/PromptPsi2S/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/sm/PromptPsi2S/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fRegistry.fill(HIST("Pair/sm/PromptPsi2S/hMvsPhiV"), phiv, v12.M());
                 fillTrackInfo<4, TMCParticles>(t1);
                 fillTrackInfo<4, TMCParticles>(t2);
@@ -604,7 +647,7 @@ struct dielectronQCMC {
         } else if (!(t1mc.isPhysicalPrimary() || t1mc.producedByGenerator()) && !(t2mc.isPhysicalPrimary() || t2mc.producedByGenerator())) {
           switch (abs(mcmother.pdgCode())) {
             case 22:
-              fRegistry.fill(HIST("Pair/sm/Photon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/sm/Photon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               fRegistry.fill(HIST("Pair/sm/Photon/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<1, TMCParticles>(t1);
               fillTrackInfo<1, TMCParticles>(t2);
@@ -621,64 +664,64 @@ struct dielectronQCMC {
         if (t1mc.pdgCode() * t2mc.pdgCode() < 0) { // ULS
           switch (hfee_type) {
             case static_cast<int>(EM_HFeeType::kCe_Ce): {
-              fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
-                fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/meson_meson/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<6, TMCParticles>(t1);
                 fillTrackInfo<6, TMCParticles>(t2);
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
-                fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<6, TMCParticles>(t1);
                 fillTrackInfo<6, TMCParticles>(t2);
               } else {
-                fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/ccbar/c2e_c2e/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<6, TMCParticles>(t1);
                 fillTrackInfo<6, TMCParticles>(t2);
               }
               break;
             }
             case static_cast<int>(EM_HFeeType::kBe_Be): {
-              fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               if (isBeautyMeson(mp1) && isBeautyMeson(mp2)) {
-                fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/meson_meson/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<7, TMCParticles>(t1);
                 fillTrackInfo<7, TMCParticles>(t2);
               } else if (isBeautyBaryon(mp1) && isBeautyBaryon(mp2)) {
-                fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<7, TMCParticles>(t1);
                 fillTrackInfo<7, TMCParticles>(t2);
               } else {
-                fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2e_b2e/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<7, TMCParticles>(t1);
                 fillTrackInfo<7, TMCParticles>(t2);
               }
               break;
             }
             case static_cast<int>(EM_HFeeType::kBCe_BCe): {
-              fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/meson_meson/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<8, TMCParticles>(t1);
                 fillTrackInfo<8, TMCParticles>(t2);
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<8, TMCParticles>(t1);
                 fillTrackInfo<8, TMCParticles>(t2);
               } else {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2c2e/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fillTrackInfo<8, TMCParticles>(t1);
                 fillTrackInfo<8, TMCParticles>(t2);
               }
               break;
             }
             case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): { // ULS
-              fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/meson_meson/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               } else {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_sameb/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               }
               if ((isCharmMeson(mp1) || isCharmBaryon(mp1)) && (isBeautyMeson(mp2) || isBeautyBaryon(mp2))) {
                 fillTrackInfo<7, TMCParticles>(t1);
@@ -710,13 +753,13 @@ struct dielectronQCMC {
               LOGF(info, "You should not see kBCe_Be_SameB in LS. Good luck.");
               break;
             case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): { // LS
-              fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/hadron_hadron/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+              fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/meson_meson/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/baryon_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               } else {
-                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/meson_baryon/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/bbbar/b2c2e_b2e_diffb/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
               }
               if ((isCharmMeson(mp1) || isCharmBaryon(mp1)) && (isBeautyMeson(mp2) || isBeautyBaryon(mp2))) {
                 fillTrackInfo<7, TMCParticles>(t1);
@@ -758,11 +801,6 @@ struct dielectronQCMC {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
-      }
-
-      bool is_sel8_by_hand = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
-      if (is_sel8_by_hand != collision.sel8()) {
-        LOGF(info, "collision.sel8() = %d, is_sel8_by_hand = %d", collision.sel8(), is_sel8_by_hand);
       }
 
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
@@ -846,42 +884,63 @@ struct dielectronQCMC {
           continue;
         }
 
+        float dphi = v1.Phi() - v2.Phi();
+        o2::math_utils::bringToPMPi(dphi);
+        float aco = 1.f - abs(dphi) / M_PI;
+        float asym = abs(v1.Pt() - v2.Pt()) / (v1.Pt() + v2.Pt());
+        float dphi_e_ee = v1.Phi() - v12.Phi();
+        o2::math_utils::bringToPMPi(dphi_e_ee);
+
+        float cos_thetaCS = 999, phiCS = 999.f;
+        o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<true>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+
         if (mother_id > -1) {
           auto mcmother = mcparticles.iteratorAt(mother_id);
           if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
 
             switch (abs(mcmother.pdgCode())) {
               case 111:
-                fRegistry.fill(HIST("Generated/sm/Pi0/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/sm/Pi0/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 break;
               case 221:
-                fRegistry.fill(HIST("Generated/sm/Eta/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/sm/Eta/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 break;
               case 331:
-                fRegistry.fill(HIST("Generated/sm/EtaPrime/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/sm/EtaPrime/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 break;
               case 113:
-                fRegistry.fill(HIST("Generated/sm/Rho/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/sm/Rho/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 break;
               case 223:
-                fRegistry.fill(HIST("Generated/sm/Omega/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
+                // LOGF(info, "mcmother.daughtersIds().size() = %d, v12.M() = %f, v12.Rapidity() = %f, mcmother.y() = %f, v12.Pt() = %f, mcmother.pt() = %f", mcmother.daughtersIds().size(), v12.M(), v12.Rapidity(), mcmother.y(), v12.Pt(), mcmother.pt());
+                // for (auto& daughterId : mcmother.daughtersIds()) {
+                //   auto daughter = mcparticles.iteratorAt(daughterId);
+                //   LOGF(info, "daughter.globalIndex() = %d, daughter.pdgCode() = %d", daughter.globalIndex(), daughter.pdgCode());
+                // }
+                if (mcmother.daughtersIds().size() == 2) { // omega->ee
+                  fRegistry.fill(HIST("Generated/sm/Omega2ee/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
+                }
                 break;
               case 333:
-                fRegistry.fill(HIST("Generated/sm/Phi/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/sm/Phi/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
+                if (mcmother.daughtersIds().size() == 2) { // phi->ee
+                  fRegistry.fill(HIST("Generated/sm/Phi2ee/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
+                }
                 break;
               case 443: {
                 if (IsFromBeauty(mcmother, mcparticles) > 0) {
-                  fRegistry.fill(HIST("Generated/sm/NonPromptJPsi/hMvsPt"), v12.M(), v12.Pt());
+                  fRegistry.fill(HIST("Generated/sm/NonPromptJPsi/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 } else {
-                  fRegistry.fill(HIST("Generated/sm/PromptJPsi/hMvsPt"), v12.M(), v12.Pt());
+                  fRegistry.fill(HIST("Generated/sm/PromptJPsi/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 }
                 break;
               }
               case 100443: {
                 if (IsFromBeauty(mcmother, mcparticles) > 0) {
-                  fRegistry.fill(HIST("Generated/sm/NonPromptPsi2S/hMvsPt"), v12.M(), v12.Pt());
+                  fRegistry.fill(HIST("Generated/sm/NonPromptPsi2S/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 } else {
-                  fRegistry.fill(HIST("Generated/sm/PromptPsi2S/hMvsPt"), v12.M(), v12.Pt());
+                  fRegistry.fill(HIST("Generated/sm/PromptPsi2S/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 }
                 break;
               }
@@ -894,46 +953,46 @@ struct dielectronQCMC {
           auto mp2 = mcparticles.iteratorAt(t2.mothersIds()[0]);
           switch (hfee_type) {
             case static_cast<int>(EM_HFeeType::kCe_Ce): {
-              fRegistry.fill(HIST("Generated/ccbar/c2e_c2e/hadron_hadron/hMvsPt"), v12.M(), v12.Pt());
+              fRegistry.fill(HIST("Generated/ccbar/c2e_c2e/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
-                fRegistry.fill(HIST("Generated/ccbar/c2e_c2e/meson_meson/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/ccbar/c2e_c2e/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
-                fRegistry.fill(HIST("Generated/ccbar/c2e_c2e/baryon_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/ccbar/c2e_c2e/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else {
-                fRegistry.fill(HIST("Generated/ccbar/c2e_c2e/meson_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/ccbar/c2e_c2e/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               }
               break;
             }
             case static_cast<int>(EM_HFeeType::kBe_Be): {
-              fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/hadron_hadron/hMvsPt"), v12.M(), v12.Pt());
+              fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               if (isBeautyMeson(mp1) && isBeautyMeson(mp2)) {
-                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/meson_meson/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else if (isBeautyBaryon(mp1) && isBeautyBaryon(mp2)) {
-                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/baryon_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else {
-                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/meson_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               }
               break;
             }
             case static_cast<int>(EM_HFeeType::kBCe_BCe): {
-              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2c2e/hadron_hadron/hMvsPt"), v12.M(), v12.Pt());
+              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2c2e/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
-                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/meson_meson/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
-                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/baryon_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else {
-                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/meson_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2e_b2e/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               }
               break;
             }
             case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): { // ULS
-              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_sameb/hadron_hadron/hMvsPt"), v12.M(), v12.Pt());
+              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_sameb/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_sameb/meson_meson/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_sameb/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_sameb/baryon_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_sameb/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_sameb/meson_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_sameb/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               }
               break;
             }
@@ -970,6 +1029,16 @@ struct dielectronQCMC {
         if (abs(v12.Rapidity()) > maxY) {
           continue;
         }
+        float dphi = v1.Phi() - v2.Phi();
+        o2::math_utils::bringToPMPi(dphi);
+        float aco = 1.f - abs(dphi) / M_PI;
+        float asym = abs(v1.Pt() - v2.Pt()) / (v1.Pt() + v2.Pt());
+        float dphi_e_ee = v1.Phi() - v12.Phi();
+        o2::math_utils::bringToPMPi(dphi_e_ee);
+
+        float cos_thetaCS = 999, phiCS = 999.f;
+        o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<true>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+
         if (hfee_type > -1) {
           auto mp1 = mcparticles.iteratorAt(t1.mothersIds()[0]);
           auto mp2 = mcparticles.iteratorAt(t2.mothersIds()[0]);
@@ -987,13 +1056,13 @@ struct dielectronQCMC {
               LOGF(info, "You should not see kBCe_Be_SameB in LS++. Good luck.");
               break;
             case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): { // LS
-              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/hadron_hadron/hMvsPt"), v12.M(), v12.Pt());
+              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/meson_meson/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/baryon_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/meson_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               }
               break;
             }
@@ -1027,6 +1096,15 @@ struct dielectronQCMC {
         if (abs(v12.Rapidity()) > maxY) {
           continue;
         }
+        float dphi = v1.Phi() - v2.Phi();
+        o2::math_utils::bringToPMPi(dphi);
+        float aco = 1.f - abs(dphi) / M_PI;
+        float asym = abs(v1.Pt() - v2.Pt()) / (v1.Pt() + v2.Pt());
+        float dphi_e_ee = v1.Phi() - v12.Phi();
+        o2::math_utils::bringToPMPi(dphi_e_ee);
+
+        float cos_thetaCS = 999, phiCS = 999.f;
+        o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<true>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
         if (hfee_type > -1) {
           auto mp1 = mcparticles.iteratorAt(t1.mothersIds()[0]);
           auto mp2 = mcparticles.iteratorAt(t2.mothersIds()[0]);
@@ -1044,13 +1122,13 @@ struct dielectronQCMC {
               LOGF(info, "You should not see kBCe_Be_SameB in LS--. Good luck.");
               break;
             case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): { // LS
-              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/hadron_hadron/hMvsPt"), v12.M(), v12.Pt());
+              fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/hadron_hadron/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/meson_meson/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/meson_meson/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/baryon_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/baryon_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               } else {
-                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/meson_baryon/hMvsPt"), v12.M(), v12.Pt());
+                fRegistry.fill(HIST("Generated/bbbar/b2c2e_b2e_diffb/meson_baryon/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
               }
               break;
             }
@@ -1082,12 +1160,12 @@ struct dielectronQCMC {
         }
         switch (abs(mctrack.pdgCode())) {
           case 223:
-            fRegistry.fill(HIST("Generated/sm/Omega/hPt"), mctrack.pt());
-            fRegistry.fill(HIST("Generated/sm/Omega/hY"), mctrack.y());
+            fRegistry.fill(HIST("Generated/sm/Omega2ee/hPt"), mctrack.pt());
+            fRegistry.fill(HIST("Generated/sm/Omega2ee/hY"), mctrack.y());
             break;
           case 333:
-            fRegistry.fill(HIST("Generated/sm/Phi/hPt"), mctrack.pt());
-            fRegistry.fill(HIST("Generated/sm/Phi/hY"), mctrack.y());
+            fRegistry.fill(HIST("Generated/sm/Phi2ee/hPt"), mctrack.pt());
+            fRegistry.fill(HIST("Generated/sm/Phi2ee/hY"), mctrack.y());
             break;
           default:
             break;
