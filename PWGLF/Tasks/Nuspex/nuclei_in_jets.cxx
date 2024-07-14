@@ -498,7 +498,6 @@ struct nuclei_in_jets {
       double nsigmaTOFDe = track.tofNSigmaDe();
       double nsigmaTPCHe = track.tpcNSigmaHe();
       double pt = track.pt();
-      double eta = track.eta();
       double dcaxy = track.dcaXY();
       double dcaz = track.dcaZ();
       double y_proton = get_rapidity(track.px(), track.py(), track.pz(), 0.93827208816);
