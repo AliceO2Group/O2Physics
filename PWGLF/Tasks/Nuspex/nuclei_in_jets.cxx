@@ -532,7 +532,7 @@ struct nuclei_in_jets {
       if (TMath::Abs(dcaz) > max_dcaz)
         continue;
 
-      //Jet
+      // Jet
       if (deltaR_jet < Rmax) {
 
         // Antiproton
@@ -557,7 +557,7 @@ struct nuclei_in_jets {
         }
       }
 
-      //UE
+      // UE
       if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
 
         // Antiproton
