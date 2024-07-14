@@ -62,13 +62,14 @@ struct dielectronQCMC {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
+  Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kFlowV4:4, kPolarization:5, kHFll:6"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
 
   ConfigurableAxis ConfMeeBins{"ConfMeeBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00}, "mee bins for output histograms"};
-  ConfigurableAxis ConfPteeBins{"ConfPteeBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00}, "pTee bins for output histograms"};
+  ConfigurableAxis ConfPteeBins{"ConfPteeBins", {VARIABLE_WIDTH, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00}, "pTee bins for output histograms"};
   ConfigurableAxis ConfDCAeeBins{"ConfDCAeeBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCAee bins for output histograms"};
   // ConfigurableAxis ConfPCAeeBins{"ConfPCAeeBins", {VARIABLE_WIDTH, 0.0, 0.5, 1.0, 1.5, 2, 3, 4, 5}, "PCAee bins for output histograms in mm"};
 
@@ -89,7 +90,7 @@ struct dielectronQCMC {
 
   DielectronCut fDielectonCut;
   struct : ConfigurableGroup {
-    std::string prefix = "dielectoncut_group";
+    std::string prefix = "dielectroncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
     Configurable<float> cfg_max_mass{"cfg_max_mass", 1e+10, "max mass"};
     Configurable<float> cfg_min_pair_dca3d{"cfg_min_pair_dca3d", 0.0, "min pair dca3d in sigma"};
@@ -163,6 +164,8 @@ struct dielectronQCMC {
     const AxisSpec axis_pt{ConfPteeBins, "p_{T,ee} (GeV/c)"};
     const AxisSpec axis_dca{ConfDCAeeBins, "DCA_{ee}^{3D} (#sigma)"};
     // const AxisSpec axis_pca{ConfPCAeeBins, "PCA (mm)"}; // particle closest approach
+    const AxisSpec axis_pt_meson{ConfPteeBins, "p_{T} (GeV/c)"};
+    const AxisSpec axis_y_meson{20, -1.f, +1.f, "y"}; // rapidity of meson
 
     // generated info
     fRegistry.add("Generated/sm/Pi0/hMvsPt", "m_{ee} vs. p_{T,ee} ULS", kTH2F, {axis_mass, axis_pt}, true);
@@ -175,6 +178,10 @@ struct dielectronQCMC {
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/NonPromptJPsi/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/PromptPsi2S/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/NonPromptPsi2S/");
+    fRegistry.add("Generated/sm/Omega/hPt", "pT of #omega meson", kTH1F, {axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Omega/hY", "rapidity of #omega meson", kTH1F, {axis_y_meson}, true);
+    fRegistry.add("Generated/sm/Phi/hPt", "pT of #phi meson", kTH1F, {axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Phi/hY", "rapidity of #phi meson", kTH1F, {axis_y_meson}, true);
 
     fRegistry.add("Generated/ccbar/c2e_c2e/hadron_hadron/hMvsPt", "m_{ee} vs. p_{T,ee}", kTH2F, {axis_mass, axis_pt}, true);
     fRegistry.addClone("Generated/ccbar/c2e_c2e/hadron_hadron/", "Generated/ccbar/c2e_c2e/meson_meson/");
@@ -193,7 +200,9 @@ struct dielectronQCMC {
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/EtaPrime/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Rho/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Omega/");
+    fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Omega2ee/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Phi/");
+    fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Phi2ee/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/PromptJPsi/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/NonPromptJPsi/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/PromptPsi2S/");
@@ -545,12 +554,20 @@ struct dielectronQCMC {
               fRegistry.fill(HIST("Pair/sm/Omega/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
+              if (mcmother.daughtersIds().size() == 2) { // omeag->ee
+                fRegistry.fill(HIST("Pair/sm/Omega2ee/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/sm/Omega2ee/hMvsPhiV"), phiv, v12.M());
+              }
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), dca_ee_3d);
               fRegistry.fill(HIST("Pair/sm/Phi/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
+              if (mcmother.daughtersIds().size() == 2) { // omeag->ee
+                fRegistry.fill(HIST("Pair/sm/Phi2ee/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+                fRegistry.fill(HIST("Pair/sm/Phi2ee/hMvsPhiV"), phiv, v12.M());
+              }
               break;
             case 443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
@@ -1042,6 +1059,41 @@ struct dielectronQCMC {
           }
         }
       } // end of true LS++ pair loop
+
+    } // end of collision loop
+
+    // for oemga, phi efficiency
+    for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      auto mccollision = collision.emmcevent_as<aod::EMMCEvents>();
+
+      auto mctracks_per_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+
+      for (auto& mctrack : mctracks_per_coll) {
+        if (!(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) || abs(mctrack.y()) > maxY) {
+          continue;
+        }
+        switch (abs(mctrack.pdgCode())) {
+          case 223:
+            fRegistry.fill(HIST("Generated/sm/Omega/hPt"), mctrack.pt());
+            fRegistry.fill(HIST("Generated/sm/Omega/hY"), mctrack.y());
+            break;
+          case 333:
+            fRegistry.fill(HIST("Generated/sm/Phi/hPt"), mctrack.pt());
+            fRegistry.fill(HIST("Generated/sm/Phi/hY"), mctrack.y());
+            break;
+          default:
+            break;
+        }
+
+      } // end of mctracks per mccollision
 
     } // end of collision loop
   }
