@@ -40,14 +40,9 @@
 
 #include "TPDGCode.h"
 
-using namespace o2;
-using namespace o2::track;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
-static constexpr PID::ID Np = 9;
+static constexpr o2::track::PID::ID Np = 9;
 static constexpr int NCharges = 2;
-static constexpr PID::ID NpCharge = Np * NCharges;
+static constexpr o2::track::PID::ID NpCharge = Np * NCharges;
 static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "{}^{3}He", "#alpha"};
 static constexpr const char* pN[Np] = {"el", "mu", "pi", "ka", "pr", "de", "tr", "he", "al"};
 static constexpr const char* cN[NCharges] = {"pos", "neg"};
