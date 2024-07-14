@@ -734,7 +734,6 @@ struct LfTreeCreatorClusterStudies {
 
     auto v0Track = cascade.template v0_as<aod::V0s>();
     auto bachelorTrack = cascade.template bachelor_as<TracksFullIU>();
-    auto bachelorTrackPar = getTrackPar(bachelorTrack);
 
     auto itv0 = std::find_if(m_v0TrackParCovs.begin(), m_v0TrackParCovs.end(), [&](const V0TrackParCov& v0) { return v0.globalIndex == v0Track.globalIndex(); });
     if (itv0 == m_v0TrackParCovs.end()) {
