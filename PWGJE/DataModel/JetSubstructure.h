@@ -24,8 +24,6 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGJE/DataModel/Jet.h"
 
-using namespace o2::analysis;
-
 namespace o2::aod
 {
 
