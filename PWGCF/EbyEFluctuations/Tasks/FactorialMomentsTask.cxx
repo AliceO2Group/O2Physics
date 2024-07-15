@@ -163,7 +163,7 @@ struct FactorialMoments {
               if (binconVal >= iOrder + 2) {
                 fqBin = TMath::Factorial(binconVal) / (TMath::Factorial(binconVal - (iOrder + 2)));
               }
-              if (isnan(fqBin)) {
+              if (std::isnan(fqBin)) {
                 break;
               }
               sumfqBin[iOrder] += fqBin;
