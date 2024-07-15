@@ -1121,6 +1121,21 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", false);
 
+  void processTrackPhiMC(aod::FemtoFullCollisionMC const& col,
+                         aod::BCsWithTimestamps const&,
+                         soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                         aod::McCollisions const&,
+                         aod::McParticles const&)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisions<true>(col, tracks);
+    fillTracks<true>(tracks);
+    fillPhi<true>(col, tracks);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiMC, "Provide MC data for track Phi analysis", false);
+
   void processTrackData(aod::FemtoFullCollision const& col,
                         aod::BCsWithTimestamps const&,
                         aod::FemtoFullTracks const& tracks)
