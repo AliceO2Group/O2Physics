@@ -57,15 +57,6 @@ using Track = o2::track::TrackParCov;
 using TracksFullIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCHe, aod::pidTOFEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe, aod::pidTOFHe>;
 using CollisionsCustom = soa::Join<aod::Collisions, aod::EvSels>;
 
-namespace physics
-{
-namespace pdg
-{
-constexpr int Deuteron = 1000010020;
-constexpr int He3 = 1000020030;
-} // namespace pdg
-} // namespace physics
-
 namespace BetheBloch
 {
 
