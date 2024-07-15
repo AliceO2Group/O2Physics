@@ -157,7 +157,6 @@ struct TrackEfficiencyJets {
       registry.add("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_split_primary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisHigh, etaAxis, phiAxis}});
       registry.add("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_split_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisHigh, etaAxis, phiAxis}});
 
-
       registry.add("h2_particle_pt_track_pt_residual_associatedtrack_primary", "(#it{p}_{T, mcpart} - #it{p}_{T, track}) / #it{p}_{T, mcpart}; #it{p}_{T, mcpart} (GeV/#it{c})", {HistType::kTH2F, {ptAxis, {200, -1., 1.}}});
     }
 
@@ -169,7 +168,7 @@ struct TrackEfficiencyJets {
       registry.add("h2_centrality_track_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {centAxis, {100, -1.0, 1.0}}});
       registry.add("h2_centrality_track_phi", "centrality vs track #varphi; centrality; #varphi_{track}", {HistType::kTH2F, {centAxis, {160, -1.0, 7.}}});
       registry.add("h2_centrality_track_energy", "centrality vs track energy; centrality; Energy GeV", {HistType::kTH2F, {centAxis, {100, 0.0, 100.0}}});
-      registry.add("h2_track_pt_track_sigmapt", "#it{p}_{T,track} (GeV/#it{c}); #sigma(#it{p}_{T})", {HistType::kTH2F, {{500, 0., 100.}, {10000, 0.0, 100.0}}}); // c'est sigma(pt)/pt
+      registry.add("h2_track_pt_track_sigmapt", "#it{p}_{T,track} (GeV/#it{c}); #sigma(#it{p}_{T})", {HistType::kTH2F, {{500, 0., 100.}, {10000, 0.0, 100.0}}});        // c'est sigma(pt)/pt
       registry.add("h2_track_pt_track_sigma1overpt", "#it{p}_{T,track} (GeV/#it{c}); #sigma(1/#it{p}_{T})", {HistType::kTH2F, {{500, 0., 100.}, {10000, 0.0, 100.0}}}); // ici sigma(1/pt)
       if (doprocessTracksWeighted) {
         registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
@@ -320,7 +319,7 @@ struct TrackEfficiencyJets {
 
         registry.fill(HIST("h3_track_pt_high_track_eta_track_phi_associatedtrack_primary"), track.pt(), track.eta(), track.phi());
         registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
-        
+
         registry.fill(HIST("h2_particle_pt_track_pt_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
 
         if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
