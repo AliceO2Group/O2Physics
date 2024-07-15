@@ -880,6 +880,8 @@ struct dielectronQCMC {
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
+        // LOGF(info, "t1.e() = %f, v1.E() = %f, t2.e() = %f, v2.E() = %f", t1.e(), v1.E(), t2.e(), v2.E());//OK
+
         if (abs(v12.Rapidity()) > maxY) {
           continue;
         }
@@ -913,11 +915,6 @@ struct dielectronQCMC {
                 break;
               case 223:
                 fRegistry.fill(HIST("Generated/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
-                // LOGF(info, "mcmother.daughtersIds().size() = %d, v12.M() = %f, v12.Rapidity() = %f, mcmother.y() = %f, v12.Pt() = %f, mcmother.pt() = %f", mcmother.daughtersIds().size(), v12.M(), v12.Rapidity(), mcmother.y(), v12.Pt(), mcmother.pt());
-                // for (auto& daughterId : mcmother.daughtersIds()) {
-                //   auto daughter = mcparticles.iteratorAt(daughterId);
-                //   LOGF(info, "daughter.globalIndex() = %d, daughter.pdgCode() = %d", daughter.globalIndex(), daughter.pdgCode());
-                // }
                 if (mcmother.daughtersIds().size() == 2) { // omega->ee
                   fRegistry.fill(HIST("Generated/sm/Omega2ee/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 }
