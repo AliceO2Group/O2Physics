@@ -138,6 +138,7 @@ struct HfTaskFlow {
   OutputObj<CorrelationContainer> mixedTPCTPCHfCh{"mixedTPCTPCHfCh"};
   OutputObj<CorrelationContainer> sameTPCMFTChCh{"sameTPCMFTChCh"};
   OutputObj<CorrelationContainer> mixedTPCMFTChCh{"mixedTPCMFTChCh"};
+  OutputObj<CorrelationContainer> mixedTPCMFTChCh{"mixedTPCMFTChCh"};
 
   // Correlation containers used for Monte-Carlo
   OutputObj<CorrelationContainer> sameTPCTPCChChMC{"sameTPCTPCChChMC"};
@@ -240,7 +241,7 @@ struct HfTaskFlow {
 
     // initialization of correlation containers for data
     sameTPCTPCChCh.setObject(new CorrelationContainer("sameTPCTPCChCh", "sameTPCTPCChCh", corrAxis, effAxis, {}));
-    mixedTPCTPCChCh.setObject(new CorrelationContainer("ixedTPCTPCChCh", "ixedTPCTPCChCh", corrAxis, effAxis, {}));
+    mixedTPCTPCChCh.setObject(new CorrelationContainer("mixedTPCTPCChCh", "mixedTPCTPCChCh", corrAxis, effAxis, {}));
     sameTPCTPCHfCh.setObject(new CorrelationContainer("sameTPCTPCHfCh", "sameTPCTPCHfCh", corrAxis, effAxis, userAxis));
     mixedTPCTPCHfCh.setObject(new CorrelationContainer("mixedTPCTPCHfCh", "mixedTPCTPCHfCh", corrAxis, effAxis, userAxis));
     sameTPCMFTChCh.setObject(new CorrelationContainer("sameTPCMFTChCh", "sameTPCMFTChCh", corrAxis, effAxis, {}));
@@ -471,7 +472,6 @@ struct HfTaskFlow {
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
         } else {
-
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
@@ -544,7 +544,7 @@ struct HfTaskFlow {
   //    DATA : process same event correlations: h-h case
   // =====================================
   void processSameTpcTpcChCh(FilteredCollisionsWSelMult::iterator const& collision,
-                           TracksWDcaSel const& tracks)
+                             TracksWDcaSel const& tracks)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
@@ -574,18 +574,18 @@ struct HfTaskFlow {
   //    DATA : process same event correlations: HF-h case
   // =====================================
   void processSameTpcTpcHfCh(FilteredCollisionsWSelMult::iterator const& collision,
-                            TracksWDcaSel const& tracks,
-                            HfCandidatesSel const& candidates)
+                             TracksWDcaSel const& tracks,
+                             HfCandidatesSel const& candidates)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
     }
     const auto multiplicity = tracks.size();
 
-    sameTPCTPCChCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    sameTPCTPCHfCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
     fillCandidateQA(candidates);
-    fillCorrelations(sameTPCTPCChCh, candidates, tracks, multiplicity, collision.posZ());
+    fillCorrelations(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ());
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcHfCh, "DATA : Process same-event correlations for TPC-TPC HF-h case", true);
 
@@ -593,8 +593,8 @@ struct HfTaskFlow {
   //    DATA : process same event correlations: h-MFT case
   // =====================================
   void processSameTpcMftChCh(FilteredCollisionsWSelMult::iterator const& collision,
-                           TracksWDcaSel const& tracks,
-                           aod::MFTTracks const& mfttracks)
+                             TracksWDcaSel const& tracks,
+                             aod::MFTTracks const& mfttracks)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
@@ -657,8 +657,8 @@ struct HfTaskFlow {
   //    DATA : process mixed event correlations: h-HF case
   // =====================================
   void processMixedTpcTpcHfCh(FilteredCollisionsWSelMult const& collisions,
-                             TracksWDcaSel const& tracks,
-                             HfCandidatesSel const& candidates)
+                              TracksWDcaSel const& tracks,
+                              HfCandidatesSel const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
@@ -675,8 +675,8 @@ struct HfTaskFlow {
   //    DATA : process mixed event correlations: h-MFT case
   // =====================================
   void processMixedTpcMftChCh(FilteredCollisionsWSelMult const& collisions,
-                            TracksWDcaSel const& tracks,
-                            aod::MFTTracks const& mfttracks)
+                              TracksWDcaSel const& tracks,
+                              aod::MFTTracks const& mfttracks)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
