@@ -78,6 +78,11 @@ o2physics_add_dpl_workflow(femtouniverse-efficiency-task
           SOURCES femtoUniverseEfficiencyTask.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
+    
+o2physics_add_dpl_workflow(femtouniverse-efficiency-base
+          SOURCES femtoUniverseEfficiencyBase.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
 
 o2physics_add_executable(femtouniverse-cutculator
           SOURCES femtoUniverseCutCulator.cxx
