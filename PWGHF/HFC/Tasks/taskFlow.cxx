@@ -13,8 +13,6 @@
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
-#include <iostream>
-
 #include <TDirectory.h>
 #include <TH1F.h>
 #include <THn.h>
@@ -508,7 +506,7 @@ struct HfTaskFlow {
     }
     const auto multiplicity = tracks.size();
 
-    sameTPCTPCChCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    sameTPCTPCHfCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
     fillCandidateQA(candidates);
     fillCorrelations(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ());
