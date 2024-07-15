@@ -66,7 +66,7 @@ using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 struct decay3bodyBuilder {
 
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
-  Produces<aod::StoredKFVtx3BodyDatas> kfvtx3bodydata;
+  Produces<aod::KFVtx3BodyDatas> kfvtx3bodydata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -939,10 +939,33 @@ struct decay3bodyDataLinkBuilder {
   }
 };
 
+struct kfdecay3bodyDataLinkBuilder {
+  Produces<aod::KFDecay3BodyDataLink> kfvtxdataLink;
+
+  void init(InitContext const&) {}
+
+  // build Decay3Body -> KFDecay3BodyData link table
+  void process(aod::Decay3Bodys const& decay3bodytable, aod::KFVtx3BodyDatas const& vtxdatatable)
+  {
+    std::vector<int> lIndices;
+    lIndices.reserve(decay3bodytable.size());
+    for (int ii = 0; ii < decay3bodytable.size(); ii++)
+      lIndices[ii] = -1;
+    for (auto& vtxdata : vtxdatatable) {
+      lIndices[vtxdata.decay3bodyId()] = vtxdata.globalIndex();
+    }
+    for (int ii = 0; ii < decay3bodytable.size(); ii++) {
+      kfvtxdataLink(lIndices[ii]);
+    }
+  }
+};
+
 struct decay3bodyLabelBuilder {
 
   Produces<aod::McVtx3BodyLabels> vtxlabels;
   Produces<aod::McFullVtx3BodyLabels> vtxfulllabels;
+  Produces<aod::McKFVtx3BodyLabels> kfvtxlabels;
+  Produces<aod::McFullKFVtx3BodyLabels> kfvtxfulllabels;
 
   // for bookkeeping purposes: how many V0s come from same mother etc
   HistogramRegistry registry{
@@ -967,17 +990,12 @@ struct decay3bodyLabelBuilder {
 
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
-  void processDoNotBuildLabels(aod::Collisions::iterator const&)
-  {
-    // dummy process function - should not be required in the future
-  }
-  PROCESS_SWITCH(decay3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
-
-  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const&)
+  template <typename TDecay3BodysLinkedTable, typename TVtx3BodyDatasTable, typename TLabeledTracksTable, typename TMCParticleTable>
+  void buildLabels(TDecay3BodysLinkedTable decay3bodys, TVtx3BodyDatasTable vtx3bodyDatas, TMCParticleTable mcParticles)
   {
     std::vector<int> lIndices;
-    lIndices.reserve(vtx3bodydatas.size());
-    for (int ii = 0; ii < vtx3bodydatas.size(); ii++) {
+    lIndices.reserve(vtx3bodyDatas.size());
+    for (int ii = 0; ii < vtx3bodyDatas.size(); ii++) {
       lIndices[ii] = -1;
     }
 
@@ -990,9 +1008,9 @@ struct decay3bodyLabelBuilder {
       bool is3bodyDecay = false;
       int lGlobalIndex = -1;
 
-      auto lTrack0 = decay3body.track0_as<MCLabeledTracksIU>();
-      auto lTrack1 = decay3body.track1_as<MCLabeledTracksIU>();
-      auto lTrack2 = decay3body.track2_as<MCLabeledTracksIU>();
+      auto lTrack0 = decay3body.template track0_as<MCLabeledTracksIU>();
+      auto lTrack1 = decay3body.template track1_as<MCLabeledTracksIU>();
+      auto lTrack2 = decay3body.template track2_as<MCLabeledTracksIU>();
       registry.fill(HIST("hLabelCounter"), 0.5);
 
       // Association check
@@ -1001,17 +1019,17 @@ struct decay3bodyLabelBuilder {
         vtxfulllabels(-1);
         continue;
       }
-      auto lMCTrack0 = lTrack0.mcParticle_as<aod::McParticles>();
-      auto lMCTrack1 = lTrack1.mcParticle_as<aod::McParticles>();
-      auto lMCTrack2 = lTrack2.mcParticle_as<aod::McParticles>();
+      auto lMCTrack0 = lTrack0.template mcParticle_as<aod::McParticles>();
+      auto lMCTrack1 = lTrack1.template mcParticle_as<aod::McParticles>();
+      auto lMCTrack2 = lTrack2.template mcParticle_as<aod::McParticles>();
       if (!lMCTrack0.has_mothers() || !lMCTrack1.has_mothers() || !lMCTrack2.has_mothers()) {
         vtxfulllabels(-1);
         continue;
       }
 
-      for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
-        for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
-          for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
+      for (auto& lMother0 : lMCTrack0.template mothers_as<aod::McParticles>()) {
+        for (auto& lMother1 : lMCTrack1.template mothers_as<aod::McParticles>()) {
+          for (auto& lMother2 : lMCTrack2.template mothers_as<aod::McParticles>()) {
             if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
               lGlobalIndex = lMother1.globalIndex();
               lPt = lMother1.pt();
@@ -1054,15 +1072,33 @@ struct decay3bodyLabelBuilder {
         lIndices[decay3body.vtx3BodyDataId()] = lLabel;
       }
     }
-    for (int ii = 0; ii < vtx3bodydatas.size(); ii++) {
+    for (int ii = 0; ii < vtx3bodyDatas.size(); ii++) {
       vtxlabels(lIndices[ii]);
     }
   }
+
+  void processDoNotBuildLabels(aod::Collisions::iterator const&)
+  {
+    // dummy process function - should not be required in the future
+  }
+  PROCESS_SWITCH(decay3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
+
+  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const&)
+  {
+    buildLabels(decay3bodys, vtx3bodydatas);
+  }
   PROCESS_SWITCH(decay3bodyLabelBuilder, processBuildLabels, "Produce MC label tables", false);
+
+  void processBuildKFLabels(aod::KFDecay3BodysLinked const& decay3bodys, aod::KFVtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const&)
+  {
+    buildLabels(decay3bodys, vtx3bodydatas);
+  }
+  PROCESS_SWITCH(decay3bodyLabelBuilder, processBuildKFLabels, "Produce MC KF label tables", false);
 };
 
 struct decay3bodyInitializer {
   Spawns<aod::Vtx3BodyDatas> vtx3bodydatas;
+  Spawns<aod::KFVtx3BodyDatas> kfvtx3bodydatas;
   void init(InitContext const&) {}
 };
 
@@ -1071,6 +1107,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<decay3bodyBuilder>(cfgc),
     adaptAnalysisTask<decay3bodyDataLinkBuilder>(cfgc),
+    adaptAnalysisTask<kfdecay3bodyDataLinkBuilder>(cfgc),
     adaptAnalysisTask<decay3bodyLabelBuilder>(cfgc),
     adaptAnalysisTask<decay3bodyInitializer>(cfgc),
   };
