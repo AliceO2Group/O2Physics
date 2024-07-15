@@ -1688,7 +1688,7 @@ void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& /*trac
     values[kQ2Y0A2] = ev2.q2y0a();
   }
 
-  if (isnan(VarManager::fgValues[VarManager::kTwoR2SP1]) == true || isnan(VarManager::fgValues[VarManager::kTwoR2EP1]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kTwoR2SP1]) == true || std::isnan(VarManager::fgValues[VarManager::kTwoR2EP1]) == true) {
     values[kTwoR2SP1] = -999.;
     values[kTwoR2SP2] = -999.;
     values[kTwoR2EP1] = -999.;
@@ -3861,23 +3861,23 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kCos2DeltaPhiMu1] = std::cos(2 * (v1.Phi() - v12.Phi()));
   values[kCos2DeltaPhiMu2] = std::cos(2 * (v2.Phi() - v12.Phi()));
 
-  if (isnan(VarManager::fgValues[VarManager::kU2Q2]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kU2Q2]) == true) {
     values[kU2Q2] = -999.;
     values[kR2SP_AB] = -999.;
     values[kR2SP_AC] = -999.;
     values[kR2SP_BC] = -999.;
   }
-  if (isnan(VarManager::fgValues[VarManager::kU3Q3]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kU3Q3]) == true) {
     values[kU3Q3] = -999.;
     values[kR3SP] = -999.;
   }
-  if (isnan(VarManager::fgValues[VarManager::kCos2DeltaPhi]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kCos2DeltaPhi]) == true) {
     values[kCos2DeltaPhi] = -999.;
     values[kR2EP_AB] = -999.;
     values[kR2EP_AC] = -999.;
     values[kR2EP_BC] = -999.;
   }
-  if (isnan(VarManager::fgValues[VarManager::kCos3DeltaPhi]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kCos3DeltaPhi]) == true) {
     values[kCos3DeltaPhi] = -999.;
     values[kR3EP] = -999.;
   }
