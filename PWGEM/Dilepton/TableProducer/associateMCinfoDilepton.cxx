@@ -172,6 +172,45 @@ struct AssociateMCInfoDilepton {
                 fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
                 fCounters[0]++;
               }
+
+              // store daughter of vector mesons
+              if (mctrack.has_daughters()) {
+                bool is_lepton_involved = false;
+                for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+                  // TODO: remove this check as soon as issues with MC production are fixed
+                  if (d < mcTracks.size()) { // protect against bad daughter indices
+                    auto daughter = mcTracks.iteratorAt(d);
+                    if (abs(daughter.pdgCode()) == 11 || abs(daughter.pdgCode()) == 13) {
+                      is_lepton_involved = true;
+                      break;
+                    }
+                  } else {
+                    std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcTracks.size() << ")" << std::endl;
+                    std::cout << " Check the MC generator" << std::endl;
+                  }
+                }
+
+                if (is_lepton_involved) {
+                  for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+                    // TODO: remove this check as soon as issues with MC production are fixed
+                    if (d < mcTracks.size()) { // protect against bad daughter indices
+                      auto daughter = mcTracks.iteratorAt(d);
+
+                      // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+                      if (!(fNewLabels.find(daughter.globalIndex()) != fNewLabels.end())) {
+                        fNewLabels[daughter.globalIndex()] = fCounters[0];
+                        fNewLabelsReversed[fCounters[0]] = daughter.globalIndex();
+                        // fMCFlags[daughter.globalIndex()] = mcflags;
+                        fEventIdx[daughter.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                        fCounters[0]++;
+                      }
+                    } else {
+                      std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcTracks.size() << ")" << std::endl;
+                      std::cout << " Check the MC generator" << std::endl;
+                    }
+                  } // end of daughter loop
+                }
+              }
             } // end of primary omega, phi
           }
 
