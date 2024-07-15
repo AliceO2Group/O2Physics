@@ -13,6 +13,8 @@
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
+#include <iostream>
+
 #include <TDirectory.h>
 #include <TH1F.h>
 #include <THn.h>
@@ -420,7 +422,6 @@ struct HfTaskFlow {
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
         } else {
-
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
@@ -510,7 +511,7 @@ struct HfTaskFlow {
     sameTPCTPCChCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
     fillCandidateQA(candidates);
-    fillCorrelations(sameTPCTPCChCh, candidates, tracks, multiplicity, collision.posZ());
+    fillCorrelations(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ());
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcHfCh, "Process same-event correlations for TPC-TPC HF-h case", true);
 
