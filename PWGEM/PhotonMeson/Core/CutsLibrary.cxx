@@ -36,9 +36,9 @@ std::vector<std::string> splitString(const std::string& str, char delimiter)
   return ret;
 }
 //_______________________________________________
-EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
+EMPhotonEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
 {
-  EMEventCut* cut = new EMEventCut(cutName, cutName);
+  EMPhotonEventCut* cut = new EMPhotonEventCut(cutName, cutName);
   std::string nameStr = cutName;
 
   if (!nameStr.compare("nocut")) {
