@@ -236,6 +236,7 @@ struct dielectronQCMC {
     fRegistry.add("Track/lf/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
     fRegistry.add("Track/lf/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/lf/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
+    fRegistry.add("Track/lf/hDCA3DSigma", "DCA 3D;DCA_{3D} (#sigma);", kTH1F, {{100, 0.0f, 10.0f}}, false);
     fRegistry.add("Track/lf/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
     fRegistry.add("Track/lf/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
     fRegistry.add("Track/lf/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
@@ -468,11 +469,13 @@ struct dielectronQCMC {
     // fill track info that belong to true pairs.
     if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
       auto mctrack = track.template emmcparticle_as<TMCParticles>();
+      float dca_3d = dca3DinSigma(track);
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPt"), track.pt());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hEtaPhi"), track.phi(), track.eta());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCA3DSigma"), dca_3d);
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxy_Pt"), track.pt(), track.dcaXY());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAz_Pt"), track.pt(), track.dcaZ());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um

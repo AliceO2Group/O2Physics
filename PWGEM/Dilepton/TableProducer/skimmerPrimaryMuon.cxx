@@ -51,12 +51,6 @@ using MFTTracksMC = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 using MFTTrackMC = MFTTracksMC::iterator;
 
 struct skimmerPrimaryMuon {
-  enum class EM_MuMuPairType : int {
-    kULS = 0,
-    kLSpp = +1,
-    kLSnn = -1,
-  };
-
   // Index used to set different options for Muon propagation
   enum class MuonExtrapolation : int {
     kToVertex = 0, // propagtion to vertex by default
@@ -80,14 +74,12 @@ struct skimmerPrimaryMuon {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  // Configurable<float> minpt{"minpt", 0.1, "min pt for track"};
   Configurable<float> mineta{"mineta", -4.0, "eta acceptance"};
   Configurable<float> maxeta{"maxeta", -2.5, "eta acceptance"};
   Configurable<float> mineta_mft{"mineta_mft", -3.6, "eta acceptance"};
   Configurable<float> maxeta_mft{"maxeta_mft", -2.5, "eta acceptance"};
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
-  // Configurable<float> maxPDCA{"maxPDCA", 1e+3, "max. p DCA to reject beam-gas background"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -268,9 +260,9 @@ struct skimmerPrimaryMuon {
   {
     double chi2 = muon.chi2();
     SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
-    std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
-                           muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
-                           muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
+    std::vector<float> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
+                          muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
+                          muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
     SMatrix55 tcovs(v1.begin(), v1.end());
     o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
     o2::dataformats::GlobalFwdTrack propmuon;
@@ -307,6 +299,10 @@ struct skimmerPrimaryMuon {
       propmuon.setZ(fwdtrack.getZ());
       propmuon.setCovariances(fwdtrack.getCovariances());
     }
+
+    v1.clear();
+    v1.shrink_to_fit();
+
     return propmuon;
   }
 

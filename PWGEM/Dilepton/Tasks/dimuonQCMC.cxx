@@ -203,6 +203,7 @@ struct dimuonQCMC {
     fRegistry.add("Track/lf/hTrackType", "track type", kTH1F, {{6, -0.5f, 5.5}}, false);
     fRegistry.add("Track/lf/hDCAxy", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/lf/hDCAxySigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
+    fRegistry.add("Track/lf/hDCA2DSigma", "DCA xy;DCA_{xy} (#sigma)", kTH1F, {{100, 0.0f, 10.0f}}, false);
     fRegistry.add("Track/lf/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{1000, 0, 10}, {200, 0., 200}}, false);
     fRegistry.add("Track/lf/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{1000, 0, 10}, {200, 0., 200}}, false);
     fRegistry.add("Track/lf/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
@@ -383,12 +384,14 @@ struct dimuonQCMC {
     // fill track info that belong to true pairs.
     if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
       auto mctrack = track.template emmcparticle_as<TMCParticles>();
+      float dca_xy = fwdDcaXYinSigma(track);
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPt"), track.pt());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hEtaPhi"), track.phi(), track.eta());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hTrackType"), track.trackType());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxy"), track.fwdDcaX(), track.fwdDcaY());
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxySigma"), track.fwdDcaX() / std::sqrt(track.cXX()), track.fwdDcaY() / std::sqrt(track.cYY()));
+      fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCA2DSigma"), dca_xy);
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXX()) * 1e+4);
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);
       fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hNclsMCH"), track.nClusters());
