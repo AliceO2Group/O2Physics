@@ -290,8 +290,6 @@ struct emuCorrelationMC {
     fRegistry.add("Track/Electron/c2e/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
     fRegistry.add("Track/Electron/c2e/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/Electron/c2e/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-    fRegistry.add("Track/Electron/c2e/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
-    fRegistry.add("Track/Electron/c2e/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
     fRegistry.add("Track/Electron/c2e/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
     fRegistry.add("Track/Electron/c2e/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
     fRegistry.add("Track/Electron/c2e/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -650,8 +648,6 @@ struct emuCorrelationMC {
       fRegistry.fill(HIST("Track/Electron/") + HIST(lepton_source_types[e_source_id]) + HIST("hEtaPhi"), track.phi(), track.eta());
       fRegistry.fill(HIST("Track/Electron/") + HIST(lepton_source_types[e_source_id]) + HIST("hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/Electron/") + HIST(lepton_source_types[e_source_id]) + HIST("hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
-      fRegistry.fill(HIST("Track/Electron/") + HIST(lepton_source_types[e_source_id]) + HIST("hDCAxy_Pt"), track.pt(), track.dcaXY());
-      fRegistry.fill(HIST("Track/Electron/") + HIST(lepton_source_types[e_source_id]) + HIST("hDCAz_Pt"), track.pt(), track.dcaZ());
       fRegistry.fill(HIST("Track/Electron/") + HIST(lepton_source_types[e_source_id]) + HIST("hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("Track/Electron/") + HIST(lepton_source_types[e_source_id]) + HIST("hDCAzRes_Pt"), track.pt(), sqrt(track.cZZ()) * 1e+4);  // convert cm to um
       fRegistry.fill(HIST("Track/Electron/") + HIST(lepton_source_types[e_source_id]) + HIST("hNclsITS"), track.itsNCls());
