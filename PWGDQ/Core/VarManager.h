@@ -2164,15 +2164,12 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
 
-    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(track, collision);
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(track, collision, kToDCA);
 
     float dcaX = (propmuonAtDCA.getX() - collision.posX());
     float dcaY = (propmuonAtDCA.getY() - collision.posY());
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
     values[kMuonPDca] = track.p() * dcaXY;
-    values[kMuonDCAx] = dcaX;
-    values[kMuonDCAy] = dcaY;
   }
 }
 
