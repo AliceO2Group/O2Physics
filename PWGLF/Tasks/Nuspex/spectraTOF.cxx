@@ -1540,18 +1540,37 @@ struct tofSpectra {
 
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
+        if (includeCentralityMC) {
+          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
+        } else {
+          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity);
+        }
         if (track.hasTOF()) {
-          histos.fill(HIST(hpt_numtof_str[i]), track.pt(), multiplicity, track.dcaXY());
+          if (includeCentralityMC) {
+            histos.fill(HIST(hpt_numtof_str[i]), track.pt(), multiplicity, track.dcaXY());
+          } else {
+            histos.fill(HIST(hpt_numtof_str[i]), track.pt(), multiplicity);
+          }
         }
       } else {
-        histos.fill(HIST(hpt_num_mat[i]), track.pt(), multiplicity, track.dcaXY());
-        if (track.hasTOF()) {
-          histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), multiplicity, track.dcaXY());
+        if (includeCentralityMC) {
+          histos.fill(HIST(hpt_num_mat[i]), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), multiplicity, track.dcaXY());
+          }
+        } else {
+          histos.fill(HIST(hpt_num_mat[i]), track.pt(), multiplicity);
+          if (track.hasTOF()) {
+            histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), multiplicity);
+          }
         }
       }
     } else {
-      histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity, track.dcaXY());
+      if (includeCentralityMC) {
+        histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity, track.dcaXY());
+      } else {
+        histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity);
+      }
       if (track.hasTRD() && trkselOptions.lastRequiredTrdCluster > 0) {
         int lastLayer = 0;
         for (int l = 7; l >= 0; l--) {
@@ -1565,7 +1584,11 @@ struct tofSpectra {
         }
       }
       if (track.hasTOF()) {
-        histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity, track.dcaXY());
+        if (includeCentralityMC) {
+          histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity, track.dcaXY());
+        } else {
+          histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity);
+        }
         if (!(track.mcMask() & (1 << 11))) {
           if (includeCentralityMC) {
             histos.fill(HIST(hpt_numtofgoodmatch_prm[i]), track.pt(), multiplicity, track.eta()); // RD
