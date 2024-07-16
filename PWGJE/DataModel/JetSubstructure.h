@@ -93,17 +93,17 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
 #define JETMATCHING_TABLE_DEF(_jet_type_, _matched_jet_type_, _matched_jet_description_, _name_, _description_)                                                                                                                                \
   namespace _name_##geomatched                                                                                                                                                                                                                 \
   {                                                                                                                                                                                                                                            \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL_CUSTOM(_matched_jet_type_, matchedJetGeo, int32_t, _matched_jet_type_##Os, _matched_jet_description_ "Os", "_geo");                                                                                    \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL_CUSTOM(_matched_jet_type_, matchedJetGeo, int32_t, _matched_jet_type_##Os, _matched_jet_description_ "O", "_geo");                                                                                     \
   }                                                                                                                                                                                                                                            \
                                                                                                                                                                                                                                                \
   namespace _name_##ptmatched                                                                                                                                                                                                                  \
   {                                                                                                                                                                                                                                            \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL_CUSTOM(_matched_jet_type_, matchedJetPt, int32_t, _matched_jet_type_##Os, _matched_jet_description_ "Os", "_pt");                                                                                      \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL_CUSTOM(_matched_jet_type_, matchedJetPt, int32_t, _matched_jet_type_##Os, _matched_jet_description_ "O", "_pt");                                                                                       \
   }                                                                                                                                                                                                                                            \
                                                                                                                                                                                                                                                \
   namespace _name_##candmatched                                                                                                                                                                                                                \
   {                                                                                                                                                                                                                                            \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL_CUSTOM(_matched_jet_type_, matchedJetCand, int32_t, _matched_jet_type_##Os, _matched_jet_description_ "Os", "_hf");                                                                                    \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL_CUSTOM(_matched_jet_type_, matchedJetCand, int32_t, _matched_jet_type_##Os, _matched_jet_description_ "O", "_hf");                                                                                     \
   }                                                                                                                                                                                                                                            \
   DECLARE_SOA_TABLE(_jet_type_##MOs, "AOD", _description_ "MO", _name_##substructure::_jet_type_##OId, _name_##geomatched::_matched_jet_type_##Ids, _name_##ptmatched::_matched_jet_type_##Ids, _name_##candmatched::_matched_jet_type_##Ids); \
   using _jet_type_##MO = _jet_type_##MOs::iterator;
@@ -118,11 +118,11 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
   JETMATCHING_TABLE_DEF(_jet_type_##MCDJet, _jet_type_##MCPJet, _jet_description_ "MCPJET", _jet_type_##mcdjet, _jet_description_ "MCDJET")                                                                                                         \
   JETMATCHING_TABLE_DEF(_jet_type_##MCPJet, _jet_type_##MCDJet, _jet_description_ "MCDJET", _jet_type_##mcpjet, _jet_description_ "MCPJET")
 
-JETSUBSTRUCTURE_TABLES_DEF(C, "C", CJetCOs, "CJETCOS", CEWSJetCOs, "CEWSJETCOS", CMCDJetCOs, "CMCDJETCOS", CMCPJetCOs, "CMCPJETCOS");
-JETSUBSTRUCTURE_TABLES_DEF(D0C, "D0C", HfD0Bases, "HFD0BASES", HfD0Bases, "HFD0BASES", HfD0Bases, "HFD0BASES", HfD0PBases, "HFD0PBASES");
-JETSUBSTRUCTURE_TABLES_DEF(LcC, "LCC", Hf3PBases, "HF3PBASES", Hf3PBases, "HF3PBASES", Hf3PBases, "HF3PBASES", Hf3PPBases, "HF3PPBASES");
-JETSUBSTRUCTURE_TABLES_DEF(BplusC, "BPLUSC", HfD0Bases, "HFD0BASES", HfD0Bases, "HFD0BASES", HfD0Bases, "HFD0BASES", HfD0PBases, "HFD0PBASES");
-JETSUBSTRUCTURE_TABLES_DEF(DielectronC, "DIELC", Dielectrons, "RTDIELECTRONS", Dielectrons, "RTDIELECTRONS", Dielectrons, "RTDIELECTRONS", JDielectronMcs, "JDIELECTRONMCS");
+JETSUBSTRUCTURE_TABLES_DEF(C, "C", CJetCOs, "CJETCO", CEWSJetCOs, "CEWSJETCO", CMCDJetCOs, "CMCDJETCO", CMCPJetCOs, "CMCPJETCO");
+JETSUBSTRUCTURE_TABLES_DEF(D0C, "D0C", HfD0Bases, "HFD0BASE", HfD0Bases, "HFD0BASE", HfD0Bases, "HFD0BASE", HfD0PBases, "HFD0PBASE");
+JETSUBSTRUCTURE_TABLES_DEF(LcC, "LCC", Hf3PBases, "HF3PBASE", Hf3PBases, "HF3PBASE", Hf3PBases, "HF3PBASE", Hf3PPBases, "HF3PPBASE");
+JETSUBSTRUCTURE_TABLES_DEF(BplusC, "BPLUSC", HfD0Bases, "HFD0BASE", HfD0Bases, "HFD0BASE", HfD0Bases, "HFD0BASE", HfD0PBases, "HFD0PBASE");
+JETSUBSTRUCTURE_TABLES_DEF(DielectronC, "DIELC", Dielectrons, "RTDIELECTRON", Dielectrons, "RTDIELECTRON", Dielectrons, "RTDIELECTRON", JDielectronMcs, "JDIELMC");
 
 } // namespace o2::aod
 
