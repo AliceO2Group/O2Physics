@@ -263,6 +263,9 @@ struct centralEventFilterTask {
         col.second = filterOpt.get(col.first.data(), 0u);
       }
     }
+    if (cfgDisableDownscalings.value) {
+      LOG(info) << "Downscalings are disabled for all channels.";
+    }
   }
 
   void run(ProcessingContext& pc)
