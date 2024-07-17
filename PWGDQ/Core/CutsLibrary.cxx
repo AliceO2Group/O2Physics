@@ -362,6 +362,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("JpsiPWGSkimmedCuts3")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed2"));
+    cut->AddCut(GetAnalysisCut("electronPIDLooseSkimmed2"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiO2MCdebugCuts13_Corr")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly")); // no cut on ITS clusters
@@ -3785,6 +3792,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCncls, 60, 161);
     cut->AddCut(VarManager::kTrackDCAxy, -1.5, 1.5);
     cut->AddCut(VarManager::kTrackDCAz, -1.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("electronTrackQualitySkimmed2")) {
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+    cut->AddCut(VarManager::kTPCncls, 60, 161);
     return cut;
   }
 

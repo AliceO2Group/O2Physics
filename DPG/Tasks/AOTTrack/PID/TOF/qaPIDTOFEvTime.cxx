@@ -508,7 +508,7 @@ struct tofPidCollisionTimeQa {
       }
     }
   }
-  PROCESS_SWITCH(tofPidCollisionTimeQa, processMC, "Process MC", true);
+  PROCESS_SWITCH(tofPidCollisionTimeQa, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofPidCollisionTimeQa>(cfgc)}; }

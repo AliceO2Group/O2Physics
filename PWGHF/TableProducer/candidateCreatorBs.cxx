@@ -221,7 +221,7 @@ struct HfCandidateCreatorBs {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for D cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for D cannot work, skipping the candidate.";
           hCandidatesD->Fill(SVFitting::Fail);
           continue;
         }
@@ -284,7 +284,7 @@ struct HfCandidateCreatorBs {
               continue;
             }
           } catch (const std::runtime_error& error) {
-            LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for B cannot work, skipping the candidate.";
+            LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for B cannot work, skipping the candidate.";
             hCandidatesB->Fill(SVFitting::Fail);
             continue;
           }

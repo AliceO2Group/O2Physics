@@ -15,8 +15,7 @@
 #include <vector>
 #include <memory>
 #include <cstring>
-#include <TH1F.h>
-#include <TH2I.h>
+#include <TH1.h>
 #include <THashList.h>
 #include <TString.h>
 #include "Framework/AnalysisTask.h"
@@ -506,7 +505,7 @@ struct DQFilterPPTask {
   Produces<aod::DQEventFilter> eventFilter;
   Produces<aod::DqFilters> dqtable;
   OutputObj<THashList> fOutputList{"output"};
-  OutputObj<TH1F> fStats{"Statistics"};
+  OutputObj<TH1D> fStats{"Statistics"};
   HistogramManager* fHistMan;
 
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
@@ -588,7 +587,7 @@ struct DQFilterPPTask {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);
 
     // setup the Stats histogram
-    fStats.setObject(new TH1F("Statistics", "Stats for DQ triggers", fNBarrelCuts + fNMuonCuts + 2, -2.5, -0.5 + fNBarrelCuts + fNMuonCuts));
+    fStats.setObject(new TH1D("Statistics", "Stats for DQ triggers", fNBarrelCuts + fNMuonCuts + 2, -2.5, -0.5 + fNBarrelCuts + fNMuonCuts));
     fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
     fStats->GetXaxis()->SetBinLabel(2, "Events selected");
     if (fNBarrelCuts) {
