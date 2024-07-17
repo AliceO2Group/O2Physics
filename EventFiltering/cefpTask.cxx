@@ -213,6 +213,8 @@ struct centralEventFilterTask {
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
 
+  Configurable<bool> cfgDisableDownscalings{"cfgDisableDownscalings", false, "Disable downscalings"};
+
   FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
@@ -327,7 +329,7 @@ struct centralEventFilterTask {
         uint64_t decisionBin{(bin - 2) / 64};
         uint64_t triggerBit{BIT((bin - 2) % 64)};
         auto column{tablePtr->GetColumnByName(colName.first)};
-        double downscaling{colName.second};
+        double downscaling{cfgDisableDownscalings.value ? 1. : colName.second};
         if (column) {
           int entry = 0;
           for (int64_t iC{0}; iC < column->num_chunks(); ++iC) {
