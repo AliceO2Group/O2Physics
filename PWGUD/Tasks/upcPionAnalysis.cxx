@@ -42,6 +42,10 @@ struct UPCPionAnalysis {
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   Configurable<float> gap_Side{"gap", 2, "gap selection"};
 
+  // Collision selection
+  Configurable<float> collcontrib_cut{"collcontrib_cut", 10, "no. of PV contributor per collsion"};
+  Configurable<float> Zvtx_cut{"Zvtx_cut", 15, "z-vertex selection"};
+
   // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
@@ -55,6 +59,7 @@ struct UPCPionAnalysis {
 
   // Kinmatic cuts
   Configurable<float> PID_cut{"PID_cut", 5, "TPC PID"};
+  Configurable<float> Rap_cut{"Rap_cut", 0.9, "Track rapidity"};
   Configurable<float> Mass_Max{"Mass_Max", 10, "Invariant Mass range high"};
   Configurable<float> Mass_Min{"Mass_Min", 0, "Invariant Mass range low"};
   Configurable<float> Pt_coherent{"Pt_coherent", 0.15, "Coherent selection"};
@@ -295,12 +300,16 @@ struct UPCPionAnalysis {
     registry.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
 
-    auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{10, 0., 10.}});
+    registry.add("posx", "Vertex position in x", kTH1F, {{100, -0.5, 0.5}});
+    registry.add("posy", "Vertex position in y", kTH1F, {{100, -0.5, 0.5}});
+    registry.add("posz", "Vertex position in z", kTH1F, {{1000, -100., 100.}});
 
-    TString SelectionCuts[7] = {"NoSelection", "2pioncandidates", "tpcNClsCrossedRows", "opposite_charge", "|nsigmapi|<3", "nsigmael", "track_momenta>0.3GeV/c"};
+    auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{20, 0., 20.}});
+
+    TString SelectionCuts[18] = {"NoSelection", "gapside", "goodtracks", "truegap", "ncollcontrib ", "zvtx", "2collcontrib", "2goodtrk", "TPCPID", "Rap_cut", "unlikesign", "mass_cut", "coherent", "incoherent", "likesign", "mass_cut", "coherent", "incoherent"};
     // now we can set BinLabel in histogram Registry
 
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 18; i++) {
       hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, SelectionCuts[i].Data());
     }
     // tracks
@@ -337,12 +346,12 @@ struct UPCPionAnalysis {
     registry.add("TwoPion/hP2", "P vs TPC signal;#it{P_{track}}, GeV/c; signal_{TPC} t1", kTH2F, {{100, 0., 2.}, {300, 0, 150}});
     registry.add("TwoPion/hTPCsig1", "TPC signal;signal_{TPC} t2; signal_{TPC} t2", kTH2F, {{300, 0., 150.}, {300, 0, 150}});
 
-    registry.add("TwoPion/hMassLike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 20.}});
-    registry.add("TwoPion/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 20.}});
-    registry.add("TwoPion/Coherent/hMassUnlikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 20.}});
-    registry.add("TwoPion/Coherent/hMassLikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 20.}});
-    registry.add("TwoPion/Incoherent/hMassUnlikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 20.}});
-    registry.add("TwoPion/Incoherent/hMassLikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 20.}});
+    registry.add("TwoPion/hMassLike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+    registry.add("TwoPion/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+    registry.add("TwoPion/Coherent/hMassUnlikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+    registry.add("TwoPion/Coherent/hMassLikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+    registry.add("TwoPion/Incoherent/hMassUnlikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+    registry.add("TwoPion/Incoherent/hMassLikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
     registry.add("hMassFourPionsCoherent", "Raw Inv.M;#it{M_{#pi#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
     registry.add("hMassSixPionsCoherent", "Raw Inv.M;#it{M_{6#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
     registry.add("hMassEightPionsCoherent", "Raw Inv.M;#it{M_{6#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
@@ -430,15 +439,21 @@ struct UPCPionAnalysis {
     if (gapSide < 0 || gapSide > 2)
       return;
 
+    registry.fill(HIST("hSelectionCounter"), 1);
+
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
+    registry.fill(HIST("hSelectionCounter"), 2);
+
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
 
     if (gapSide == gap_Side) {
+
+      registry.fill(HIST("hSelectionCounter"), 3);
       //_____________________________________
       // Create pions and apply TPC Pion PID
       std::vector<TLorentzVector> allTracks;
@@ -452,7 +467,13 @@ struct UPCPionAnalysis {
       TLorentzVector p;
       registry.fill(HIST("hTracks"), tracks.size());
 
-      // if(collision.numContrib() > 10) return;
+      if (collision.numContrib() > collcontrib_cut)
+        return;
+
+      registry.fill(HIST("hSelectionCounter"), 4);
+      if ((collision.posZ() < -(Zvtx_cut)) || (collision.posZ() > Zvtx_cut))
+        return;
+      registry.fill(HIST("hSelectionCounter"), 5);
 
       for (auto t : tracks) {
         if (!t.isPVContributor()) {
@@ -468,14 +489,6 @@ struct UPCPionAnalysis {
         }
 
         double dEdx = t.tpcSignal();
-
-        /*if (TMath::Abs(eta(t.px(), t.py(), t.pz()) > 0.9)) {
-          continue;
-        }
-
-        if (t.pt() < 0.15) {
-          continue;
-        }*/
 
         registry.fill(HIST("hdEdx"), t.tpcInnerParam() / t.sign(), dEdx);
         TLorentzVector a;
@@ -544,27 +557,28 @@ struct UPCPionAnalysis {
           auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
           registry.fill(HIST("hPhi4Pion"), phihel);
 
-          if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
-            if (sign != 0) {
-              registry.fill(HIST("hMassFourPions"), p.M());
-              registry.fill(HIST("hPt4Pion"), p.Pt());
-              // LOGF(info, "pt eta phi sign %f %f %f %f", p.Pt(), p.Eta(), p.Phi(), sign);
-            }
-
-            if (sign == 0) {
-              registry.fill(HIST("hCharge"), sign);
-              registry.fill(HIST("h4TracksPions"), onlyPionTracks.size());
-              if (p.Pt() < Pt_coherent) {
-                registry.fill(HIST("hMassFourPionsCoherent"), p.M());
+          if ((p.Rapidity() > -Rap_cut) && (p.Rapidity() < Rap_cut)) {
+            if ((p.M() > 0.8) && (p.M() < 2.5)) {
+              if (sign != 0) {
+                registry.fill(HIST("hMassFourPions"), p.M());
+                registry.fill(HIST("hPt4Pion"), p.Pt());
               }
-              // if ((p.M() > 0.8) && (p.M() < 2.5)) {
-              registry.fill(HIST("hPt4PionRightSign"), p.Pt());
-              // }
-              registry.fill(HIST("hMassFourPionsRightSign"), p.M());
-              registry.fill(HIST("hMPt1"), p.M(), p.Pt());
-              registry.fill(HIST("hRap4Pion"), p.Rapidity());
-              registry.fill(HIST("hEta4Pion"), p.Eta());
 
+              if (sign == 0) {
+                registry.fill(HIST("hCharge"), sign);
+                registry.fill(HIST("h4TracksPions"), onlyPionTracks.size());
+
+                if (p.Pt() < Pt_coherent) {
+                  registry.fill(HIST("hMassFourPionsCoherent"), p.M());
+                }
+
+                registry.fill(HIST("hPt4PionRightSign"), p.Pt());
+
+                registry.fill(HIST("hMassFourPionsRightSign"), p.M());
+                registry.fill(HIST("hMPt1"), p.M(), p.Pt());
+                registry.fill(HIST("hRap4Pion"), p.Rapidity());
+                registry.fill(HIST("hEta4Pion"), p.Eta());
+              }
               for (auto pion : onlyPionTracks) {
                 registry.fill(HIST("hPhiEtaFourPionsRightSign"), pion.Phi(), pion.Eta());
               }
@@ -604,7 +618,7 @@ struct UPCPionAnalysis {
           auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
           registry.fill(HIST("hPhi6Pion"), phihel);
 
-          if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
+          if ((p.Rapidity() > -Rap_cut) && (p.Rapidity() < Rap_cut)) {
             if (sign != 0) {
               registry.fill(HIST("hMassSixPions"), p.M());
               registry.fill(HIST("hPt6Pion"), p.Pt());
@@ -663,7 +677,7 @@ struct UPCPionAnalysis {
           auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
           registry.fill(HIST("hPhi8Pion"), phihel);
 
-          if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
+          if ((p.Rapidity() > -Rap_cut) && (p.Rapidity() < Rap_cut)) {
             if (sign != 0) {
               registry.fill(HIST("hMassEightPions"), p.M());
               registry.fill(HIST("hPt8Pion"), p.Pt());
@@ -688,115 +702,137 @@ struct UPCPionAnalysis {
       //_____________________________________
       // CUTS
       if (collision.numContrib() == 2) {
-        if (onlyPionTracks.size() != 2) {
-          return;
-        }
-        registry.fill(HIST("TwoPion/h2TracksPions"), onlyPionTracks.size());
+        registry.fill(HIST("hSelectionCounter"), 6);
 
-        if ((onlyPionSigma[0] * onlyPionSigma[0] + onlyPionSigma[1] * onlyPionSigma[1]) > (PID_cut * PID_cut)) {
-          return;
-        }
+        if ((rawPionTracks.size() == 2) && (onlyPionTracks.size() == 2)) {
+          registry.fill(HIST("hSelectionCounter"), 7);
 
-        /*if (onlyPionTracks[0].P() < 0.3 || onlyPionTracks[1].P() < 0.3) {
-         return;
-         }*/
-        if (p.Rapidity() < -0.9 || p.Rapidity() > 0.9) {
-          return;
-        }
+          registry.fill(HIST("TwoPion/h2TracksPions"), onlyPionTracks.size());
+          registry.fill(HIST("TwoPion/hNsigPivsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
+          registry.fill(HIST("TwoPion/hNsigPivsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
+          registry.fill(HIST("TwoPion/hTPCsig"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
+          registry.fill(HIST("TwoPion/hNsigPi1vsPi2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
 
-        // Quality Control
-        registry.fill(HIST("TwoPion/hEta_t1"), onlyPionTracks[0].Eta());
-        registry.fill(HIST("TwoPion/hEta_t2"), onlyPionTracks[1].Eta());
-
-        registry.fill(HIST("TwoPion/hNsigPi1vsPi2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
-        registry.fill(HIST("TwoPion/hNsigEl1vsEl2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
-        registry.fill(HIST("TwoPion/hNsigPivsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
-        registry.fill(HIST("TwoPion/hNsigPivsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
-        registry.fill(HIST("TwoPion/hNsigElvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaEl());
-        registry.fill(HIST("TwoPion/hNsigElvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaEl());
-
-        registry.fill(HIST("TwoPion/hNsigMuvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaMu());
-        registry.fill(HIST("TwoPion/hNsigMuvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaMu());
-
-        registry.fill(HIST("TwoPion/hPtsingle_track1"), onlyPionTracks[0].Pt());
-        registry.fill(HIST("TwoPion/hPtsingle_track2"), onlyPionTracks[1].Pt());
-        registry.fill(HIST("TwoPion/hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
-        registry.fill(HIST("TwoPion/hTPCsig"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
-        registry.fill(HIST("TwoPion/hP2"), onlyPionTracks[1].P(), rawPionTracks[1].tpcSignal());
-        registry.fill(HIST("TwoPion/hTPCsig1"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
-
-        if (rawPionTracks[0].sign() == rawPionTracks[1].sign()) {
-          registry.fill(HIST("TwoPion/hMassLike"), p.M());
-          registry.fill(HIST("TwoPion/hPtLike"), p.Pt());
-          if (p.Pt() < Pt_coherent) {
-            registry.fill(HIST("TwoPion/Coherent/hMassLikeCoherent"), p.M());
+          if ((onlyPionSigma[0] * onlyPionSigma[0] + onlyPionSigma[1] * onlyPionSigma[1]) > (PID_cut * PID_cut)) {
+            return;
           }
-          if (p.Pt() > Pt_coherent) {
-            registry.fill(HIST("TwoPion/Incoherent/hMassLikeInCoherent"), p.M());
+          registry.fill(HIST("hSelectionCounter"), 8);
+          if ((p.Rapidity() < -Rap_cut) || (p.Rapidity() > Rap_cut)) {
+            return;
           }
-        }
+          registry.fill(HIST("hSelectionCounter"), 9);
 
-        TLorentzVector tplus, tminus;
-        if (rawPionTracks[0].sign() > 0) {
-          tplus = onlyPionTracks[0];
-        } else {
-          tminus = onlyPionTracks[0];
-        }
-        if (rawPionTracks[1].sign() < 0) {
-          tminus = onlyPionTracks[1];
-        } else {
-          tplus = onlyPionTracks[1];
-        }
+          TLorentzVector tplus, tminus;
+          if (rawPionTracks[0].sign() > 0) {
+            tplus = onlyPionTracks[0];
+          } else {
+            tminus = onlyPionTracks[0];
+          }
+          if (rawPionTracks[1].sign() < 0) {
+            tminus = onlyPionTracks[1];
+          } else {
+            tplus = onlyPionTracks[1];
+          }
 
-        auto costheta = CosThetaHelicityFrame(tplus, tminus, p);
-        // registry.fill(HIST("hCostheta"), costheta);
-        auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(tplus, tminus, p);
-        // registry.fill(HIST("hPhi"), phihel);
+          auto costheta = CosThetaHelicityFrame(tplus, tminus, p);
+          auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(tplus, tminus, p);
 
-        if (rawPionTracks[0].sign() != rawPionTracks[1].sign()) {
-          registry.fill(HIST("TwoPion/hMassUnlike"), p.M());
+          // Unlike sign
+          if (rawPionTracks[0].sign() != rawPionTracks[1].sign()) {
 
-          registry.fill(HIST("TwoPion/hPt"), p.Pt());
-          registry.fill(HIST("TwoPion/hEta"), p.Eta());
-          registry.fill(HIST("TwoPion/hRap"), p.Rapidity());
-          registry.fill(HIST("TwoPion/hPhiSystem"), p.Phi());
-          registry.fill(HIST("TwoPion/hMPt"), p.M(), p.Pt());
+            registry.fill(HIST("hSelectionCounter"), 10);
+            registry.fill(HIST("TwoPion/hMassUnlike"), p.M());
 
-          if ((p.M() > Mass_Min) && (p.M() < Mass_Max)) {
-            if (p.Pt() < Pt_coherent) {
-              registry.fill(HIST("TwoPion/Coherent/hCostheta"), costheta);
-              registry.fill(HIST("TwoPion/Coherent/hPhi"), phihel);
-              registry.fill(HIST("TwoPion/Coherent/hMassUnlikeCoherent"), p.M());
+            if ((p.M() > Mass_Min) && (p.M() < Mass_Max)) {
 
-              // angular correlations
-              float* q = AngCorrelation(&onlyPionTracks[0], &onlyPionTracks[1], &p);
-              registry.fill(HIST("TwoPion/Coherent/Phi"), q[1], 1.);
-              registry.fill(HIST("TwoPion/Coherent/Phi1"), RecoDecay::phi(onlyPionTracks[0]), 1.);
-              registry.fill(HIST("TwoPion/Coherent/Phi2"), RecoDecay::phi(onlyPionTracks[1]), 1.);
-              registry.fill(HIST("TwoPion/Coherent/CosTheta"), q[2], 1.);
-              registry.fill(HIST("TwoPion/Coherent/CosThetaPhi"), q[2], q[1]);
-              registry.fill(HIST("TwoPion/Coherent/AccoplAngle"), q[0], 1.);
+              registry.fill(HIST("hSelectionCounter"), 11);
 
-              double delphi = DeltaPhi(onlyPionTracks[0], onlyPionTracks[1]);
-              registry.fill(HIST("TwoPion/Coherent/DeltaPhi"), delphi);
+              registry.fill(HIST("TwoPion/hPt"), p.Pt());
+              registry.fill(HIST("TwoPion/hEta"), p.Eta());
+              registry.fill(HIST("TwoPion/hRap"), p.Rapidity());
+              registry.fill(HIST("TwoPion/hPhiSystem"), p.Phi());
+              registry.fill(HIST("TwoPion/hMPt"), p.M(), p.Pt());
+
+              if (p.Pt() < Pt_coherent) {
+
+                registry.fill(HIST("hSelectionCounter"), 12);
+
+                // Quality Control
+                registry.fill(HIST("TwoPion/hEta_t1"), onlyPionTracks[0].Eta());
+                registry.fill(HIST("TwoPion/hEta_t2"), onlyPionTracks[1].Eta());
+                registry.fill(HIST("TwoPion/hPtsingle_track1"), onlyPionTracks[0].Pt());
+                registry.fill(HIST("TwoPion/hPtsingle_track2"), onlyPionTracks[1].Pt());
+
+                registry.fill(HIST("TwoPion/hNsigMuvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
+                registry.fill(HIST("TwoPion/hNsigMuvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
+                registry.fill(HIST("TwoPion/hNsigElvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaEl());
+                registry.fill(HIST("TwoPion/hNsigElvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaEl());
+                registry.fill(HIST("TwoPion/hNsigEl1vsEl2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
+
+                registry.fill(HIST("TwoPion/hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
+                registry.fill(HIST("TwoPion/hP2"), onlyPionTracks[1].P(), rawPionTracks[1].tpcSignal());
+                registry.fill(HIST("TwoPion/hTPCsig1"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
+
+                registry.fill(HIST("posx"), collision.posX());
+                registry.fill(HIST("posy"), collision.posY());
+                registry.fill(HIST("posz"), collision.posZ());
+
+                registry.fill(HIST("TwoPion/Coherent/hCostheta"), costheta);
+                registry.fill(HIST("TwoPion/Coherent/hPhi"), phihel);
+                registry.fill(HIST("TwoPion/Coherent/hMassUnlikeCoherent"), p.M());
+
+                // angular correlations
+                float* q = AngCorrelation(&onlyPionTracks[0], &onlyPionTracks[1], &p);
+                registry.fill(HIST("TwoPion/Coherent/Phi"), q[1], 1.);
+                registry.fill(HIST("TwoPion/Coherent/Phi1"), RecoDecay::phi(onlyPionTracks[0]), 1.);
+                registry.fill(HIST("TwoPion/Coherent/Phi2"), RecoDecay::phi(onlyPionTracks[1]), 1.);
+                registry.fill(HIST("TwoPion/Coherent/CosTheta"), q[2], 1.);
+                registry.fill(HIST("TwoPion/Coherent/CosThetaPhi"), q[2], q[1]);
+                registry.fill(HIST("TwoPion/Coherent/AccoplAngle"), q[0], 1.);
+
+                double delphi = DeltaPhi(onlyPionTracks[0], onlyPionTracks[1]);
+                registry.fill(HIST("TwoPion/Coherent/DeltaPhi"), delphi);
+              }
+
+              if (p.Pt() > Pt_coherent) {
+
+                registry.fill(HIST("hSelectionCounter"), 13);
+
+                registry.fill(HIST("TwoPion/Incoherent/hCosthetaInCoherent"), costheta);
+                registry.fill(HIST("TwoPion/Incoherent/hPhiInCoherent"), phihel);
+                registry.fill(HIST("TwoPion/Incoherent/hMassUnlikeInCoherent"), p.M());
+
+                // angular correlations
+                float* q = AngCorrelation(&onlyPionTracks[0], &onlyPionTracks[1], &p);
+                registry.fill(HIST("TwoPion/Incoherent/Phi"), q[1], 1.);
+                registry.fill(HIST("TwoPion/Incoherent/Phi1"), RecoDecay::phi(onlyPionTracks[0]), 1.);
+                registry.fill(HIST("TwoPion/Incoherent/Phi2"), RecoDecay::phi(onlyPionTracks[1]), 1.);
+                registry.fill(HIST("TwoPion/Incoherent/CosTheta"), q[2], 1.);
+                registry.fill(HIST("TwoPion/Incoherent/CosThetaPhi"), q[2], q[1]);
+                registry.fill(HIST("TwoPion/Incoherent/AccoplAngle"), q[0], 1.);
+
+                double delphi = DeltaPhi(onlyPionTracks[0], onlyPionTracks[1]);
+                registry.fill(HIST("TwoPion/Incoherent/DeltaPhi"), delphi);
+              }
             }
+          }
 
-            if (p.Pt() > Pt_coherent) {
-              registry.fill(HIST("TwoPion/Incoherent/hCosthetaInCoherent"), costheta);
-              registry.fill(HIST("TwoPion/Incoherent/hPhiInCoherent"), phihel);
-              registry.fill(HIST("TwoPion/Incoherent/hMassUnlikeInCoherent"), p.M());
+          // Like sign
+          if (rawPionTracks[0].sign() == rawPionTracks[1].sign()) {
 
-              // angular correlations
-              float* q = AngCorrelation(&onlyPionTracks[0], &onlyPionTracks[1], &p);
-              registry.fill(HIST("TwoPion/Incoherent/Phi"), q[1], 1.);
-              registry.fill(HIST("TwoPion/Incoherent/Phi1"), RecoDecay::phi(onlyPionTracks[0]), 1.);
-              registry.fill(HIST("TwoPion/Incoherent/Phi2"), RecoDecay::phi(onlyPionTracks[1]), 1.);
-              registry.fill(HIST("TwoPion/Incoherent/CosTheta"), q[2], 1.);
-              registry.fill(HIST("TwoPion/Incoherent/CosThetaPhi"), q[2], q[1]);
-              registry.fill(HIST("TwoPion/Incoherent/AccoplAngle"), q[0], 1.);
-
-              double delphi = DeltaPhi(onlyPionTracks[0], onlyPionTracks[1]);
-              registry.fill(HIST("TwoPion/Incoherent/DeltaPhi"), delphi);
+            registry.fill(HIST("hSelectionCounter"), 14);
+            registry.fill(HIST("TwoPion/hMassLike"), p.M());
+            if ((p.M() > Mass_Min) && (p.M() < Mass_Max)) {
+              registry.fill(HIST("hSelectionCounter"), 15);
+              registry.fill(HIST("TwoPion/hPtLike"), p.Pt());
+              if (p.Pt() < Pt_coherent) {
+                registry.fill(HIST("hSelectionCounter"), 16);
+                registry.fill(HIST("TwoPion/Coherent/hMassLikeCoherent"), p.M());
+              }
+              if (p.Pt() > Pt_coherent) {
+                registry.fill(HIST("hSelectionCounter"), 17);
+                registry.fill(HIST("TwoPion/Incoherent/hMassLikeInCoherent"), p.M());
+              }
             }
           }
         }
