@@ -89,6 +89,7 @@ TH1F* fhDeltaNA[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhNSigmaTPC[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhNSigmaTOF[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhNSigmaCombo[kIdBfNoOfSpecies] = {nullptr};
+TH2F* fhNSigmaTPC_IdTrks[kIdBfNoOfSpecies] = {nullptr};
 
 TH1F* fhEtaB = nullptr;
 TH1F* fhEtaA = nullptr;
@@ -744,6 +745,10 @@ struct IdentifiedBfFilterTracks {
                                    TString::Format("N Sigma from Combo vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
                                    48, -6, 6,
                                    ptbins, ptlow, ptup);      
+        fhNSigmaTPC_IdTrks[sp] = new TH2F(TString::Format("fhNSigmaTPC_IdTrks_%s", speciesName[sp]).Data(),
+                                   TString::Format("N Sigma from TPC vs P for Identified %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                   48, -6, 6,
+                                   ptbins, ptlow, ptup);
         fhdEdxA[sp] = new TH2F(TString::Format("fhdEdxA_%s", speciesName[sp]).Data(),
                                TString::Format("dE/dx vs P reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
@@ -793,6 +798,7 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhNSigmaTPC[sp]);
         fOutputList->Add(fhNSigmaTOF[sp]);
         fOutputList->Add(fhNSigmaCombo[sp]);
+        fOutputList->Add(fhNSigmaTPC_IdTrks[sp]);
         fOutputList->Add(fhdEdxA[sp]);
         fOutputList->Add(fhdEdxIPTPCA[sp]);
       }
@@ -1152,16 +1158,16 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyParticle(ParticleOb
 }
 
 template <typename TrackObject>
-inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject const& track)
+void fillNSigmaHistos(TrackObject const& track)
 {
-  using namespace o2::analysis::identifiedbffilter;
 
-  if (!onlyTOF) {
-    fhNSigmaTPC[kIdBfElectron]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
-    fhNSigmaTPC[kIdBfPion]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
-    fhNSigmaTPC[kIdBfKaon]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
-    fhNSigmaTPC[kIdBfProton]->Fill(track.tpcNSigmaPr(), track.tpcInnerParam());
-  }
+
+
+  fhNSigmaTPC[kIdBfElectron]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
+  fhNSigmaTPC[kIdBfPion]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
+  fhNSigmaTPC[kIdBfKaon]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
+  fhNSigmaTPC[kIdBfProton]->Fill(track.tpcNSigmaPr(), track.tpcInnerParam());
+
   fhNSigmaTOF[kIdBfElectron]->Fill(track.tofNSigmaEl(), track.tpcInnerParam());
   fhNSigmaTOF[kIdBfPion]->Fill(track.tofNSigmaPi(), track.tpcInnerParam());
   fhNSigmaTOF[kIdBfKaon]->Fill(track.tofNSigmaKa(), track.tpcInnerParam());
@@ -1171,7 +1177,17 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   fhNSigmaCombo[kIdBfPion]->Fill(sqrtf(track.tofNSigmaPi() * track.tofNSigmaPi() + track.tpcNSigmaPi() * track.tpcNSigmaPi()), track.tpcInnerParam());
   fhNSigmaCombo[kIdBfKaon]->Fill(sqrtf(track.tofNSigmaKa() * track.tofNSigmaKa() + track.tpcNSigmaKa() * track.tpcNSigmaKa()), track.tpcInnerParam());
   fhNSigmaCombo[kIdBfProton]->Fill(sqrtf(track.tofNSigmaPr() * track.tofNSigmaPr() + track.tpcNSigmaPr() * track.tpcNSigmaPr()), track.tpcInnerParam());
-  
+
+
+}
+
+template <typename TrackObject>
+inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject const& track)
+{
+  using namespace o2::analysis::identifiedbffilter;
+
+  fillNSigmaHistos(track);
+
   float nsigmas[kIdBfNoOfSpecies];
   if (track.p() < 0.8 && !reqTOF && !onlyTOF) {
     nsigmas[kIdBfElectron] = track.tpcNSigmaEl();
@@ -1242,18 +1258,18 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       fhDoublePID->Fill(sp_min_nsigma, spDouble);
       return kWrongSpecies; // Return wrong species value
     } else {
-      if (track.hasTOF() && onlyTOF) {
+      if (track.hasTOF() && (reqTOF||onlyTOF)) {
         if (sp_min_nsigma == 0) {
-          fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
+          fhNSigmaTPC_IdTrks[sp_min_nsigma]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
         }
         if (sp_min_nsigma == 1) {
-          fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
+          fhNSigmaTPC_IdTrks[sp_min_nsigma]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
         }
         if (sp_min_nsigma == 2) {
-          fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
+          fhNSigmaTPC_IdTrks[sp_min_nsigma]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
         }
         if (sp_min_nsigma == 3) {
-          fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaPr(), track.tpcInnerParam());
+          fhNSigmaTPC_IdTrks[sp_min_nsigma]->Fill(track.tpcNSigmaPr(), track.tpcInnerParam());
         }
       }
       return sp_min_nsigma;
