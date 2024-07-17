@@ -309,6 +309,7 @@ struct tofSpectra {
       histos.add("Mult/PerBC/sel8/FT0M", "FT0M", HistType::kTH1D, {{binsOptions.binsMultiplicity, "Multiplicity FT0M"}});
       histos.add("Mult/PerBC/sel8/FT0A", "FT0A", HistType::kTH1D, {{binsOptions.binsMultiplicity, "Multiplicity FT0A"}});
       histos.add("Mult/PerBC/sel8/FT0C", "FT0C", HistType::kTH1D, {{binsOptions.binsMultiplicity, "Multiplicity FT0C"}});
+      histos.add("Mult/PerBC/sel8/FT0AvsFT0C", "FT0C", HistType::kTH2D, {{binsOptions.binsMultiplicity, "Multiplicity FT0A"}, {binsOptions.binsMultiplicity, "Multiplicity FT0C"}});
     }
     // histos.add("Mult/Tracklets", "MultTracklets", HistType::kTH1D, {{binsOptions.binsMultiplicity, "MultTracklets"}});
     histos.add("Mult/TPC", "MultTPC", HistType::kTH1D, {{binsOptions.binsMultiplicity, "MultTPC"}});
@@ -647,6 +648,8 @@ struct tofSpectra {
     histos.fill(HIST("Mult/PerBC/sel8/FT0M"), ft0.sumAmpA() + ft0.sumAmpC());
     histos.fill(HIST("Mult/PerBC/sel8/FT0A"), ft0.sumAmpA());
     histos.fill(HIST("Mult/PerBC/sel8/FT0C"), ft0.sumAmpC());
+
+    histos.fill(HIST("Mult/PerBC/sel8/FT0AvsFT0C"), ft0.sumAmpA(), ft0.sumAmpC());
 
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processBC, "Processor of BCs for the FT0 calibration", true);
@@ -1537,18 +1540,37 @@ struct tofSpectra {
 
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
+        if (includeCentralityMC) {
+          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
+        } else {
+          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity);
+        }
         if (track.hasTOF()) {
-          histos.fill(HIST(hpt_numtof_str[i]), track.pt(), multiplicity, track.dcaXY());
+          if (includeCentralityMC) {
+            histos.fill(HIST(hpt_numtof_str[i]), track.pt(), multiplicity, track.dcaXY());
+          } else {
+            histos.fill(HIST(hpt_numtof_str[i]), track.pt(), multiplicity);
+          }
         }
       } else {
-        histos.fill(HIST(hpt_num_mat[i]), track.pt(), multiplicity, track.dcaXY());
-        if (track.hasTOF()) {
-          histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), multiplicity, track.dcaXY());
+        if (includeCentralityMC) {
+          histos.fill(HIST(hpt_num_mat[i]), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), multiplicity, track.dcaXY());
+          }
+        } else {
+          histos.fill(HIST(hpt_num_mat[i]), track.pt(), multiplicity);
+          if (track.hasTOF()) {
+            histos.fill(HIST(hpt_numtof_mat[i]), track.pt(), multiplicity);
+          }
         }
       }
     } else {
-      histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity, track.dcaXY());
+      if (includeCentralityMC) {
+        histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity, track.dcaXY());
+      } else {
+        histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity);
+      }
       if (track.hasTRD() && trkselOptions.lastRequiredTrdCluster > 0) {
         int lastLayer = 0;
         for (int l = 7; l >= 0; l--) {
@@ -1562,7 +1584,11 @@ struct tofSpectra {
         }
       }
       if (track.hasTOF()) {
-        histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity, track.dcaXY());
+        if (includeCentralityMC) {
+          histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity, track.dcaXY());
+        } else {
+          histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity);
+        }
         if (!(track.mcMask() & (1 << 11))) {
           if (includeCentralityMC) {
             histos.fill(HIST(hpt_numtofgoodmatch_prm[i]), track.pt(), multiplicity, track.eta()); // RD

@@ -20,7 +20,7 @@ o2physics_add_executable(lmee-lf-cocktail
                   PUBLIC_LINK_LIBRARIES O2::Framework O2::SimulationDataFormat O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
-o2physics_add_executable(lmee-hf-cocktail
+o2physics_add_dpl_workflow(lmee-hf-cocktail
                   SOURCES lmeeHFCocktail.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
@@ -38,6 +38,11 @@ o2physics_add_dpl_workflow(smearing
 o2physics_add_dpl_workflow(table-reader-barrel
                     SOURCES tableReaderBarrel.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(single-electron-qc-mc
+                    SOURCES singleElectronQCMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dielectron-qc

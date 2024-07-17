@@ -163,7 +163,7 @@ template <typename T>
 bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& candidate, float candPtMin, float candPtMax, float candYMin, float candYMax)
 {
   auto candMass = jetcandidateutilities::getCandidatePDGMass(candidate);
-  if (isnan(candidate.y())) {
+  if (std::isnan(candidate.y())) {
     return false;
   }
   if (candidate.y() < candYMin || candidate.y() > candYMax) {
@@ -227,7 +227,7 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
       }
       v0Y = v0.rapidity(v0Index);
     }
-    if (isnan(v0Y)) {
+    if (std::isnan(v0Y)) {
       continue;
     }
     if (v0Y < v0YMin || v0Y > v0YMax) {
@@ -331,7 +331,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
     } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
       continue;
     }
-    if (isinf(particle.eta())) {
+    if (std::isinf(particle.eta())) {
       continue;
     }
     auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
