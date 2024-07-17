@@ -76,6 +76,22 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
+
+// Xcandidate columns
+DECLARE_SOA_COLUMN(massXcandidate, MXcandidate, float);
+DECLARE_SOA_COLUMN(pTXcandidate, PtXcandidate, float);
+DECLARE_SOA_COLUMN(rapidityXcandidate, YXcandidate, float);
+DECLARE_SOA_COLUMN(etaXcandidate, EtaXcandidate, float);
+DECLARE_SOA_COLUMN(massJpsicandidate, MJpsicandidate, float);
+DECLARE_SOA_COLUMN(massDipioncandidate, MDipioncandidate, float);
+DECLARE_SOA_COLUMN(pTJpsicandidate, PtJpsicandidate, float);
+DECLARE_SOA_COLUMN(massDiff, Q, float);
+DECLARE_SOA_COLUMN(angDistPion1, DeltaR1, float);
+DECLARE_SOA_COLUMN(angDistPion2, DeltaR2, float);
+DECLARE_SOA_COLUMN(cosDileptonDipion, CosDileptonDipion, float);
+DECLARE_SOA_COLUMN(dcaxy, DcaXY, float);
+DECLARE_SOA_COLUMN(dcaz, DcaZ, float);
+
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
@@ -84,6 +100,7 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBar
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
+DECLARE_SOA_TABLE(XCandidates, "AOD", "DQX3872", dqanalysisflags::massXcandidate, dqanalysisflags::pTXcandidate, dqanalysisflags::rapidityXcandidate, dqanalysisflags::etaXcandidate, dqanalysisflags::massJpsicandidate, dqanalysisflags::massDipioncandidate, dqanalysisflags::pTJpsicandidate, dqanalysisflags::massDiff, dqanalysisflags::angDistPion1, dqanalysisflags::angDistPion2, dqanalysisflags::cosDileptonDipion, dqanalysisflags::dcaxy, dqanalysisflags::dcaz);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -1783,13 +1800,15 @@ struct AnalysisDileptonHadron {
 struct AnalysisDileptonTrackTrack {
   OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"}; // used for select the tracks from SelectedTracks
-  Configurable<std::string> fConfigDileptonCut{"cfgDiLeptonCut", "pairJpsi", "Dilepton cut"};
-  Configurable<std::string> fConfigDitrackCut{"cfgDiTrackCut", "pairNoCut", "Track-Track cut"};
-  Configurable<std::string> fConfigQuadrupletCut{"cfgQuadrupletCut", "pairNoCut", "Dilepton-Track-Track cut"};
-  Configurable<std::string> fConfigAddDileptonHistogram{"cfgAddDileptonHistogram", "berral", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddDitrackHistogram{"cfgAddDitrackHistogram", "berral", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddQuadrupletHistogram{"cfgAddQuadrupletHistogram", "XtoJpsipipi", "Comma separated list of histograms"};
+  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "pionPIDCut1", "Comma separated list of barrel track cuts"}; // used for select the tracks from SelectedTracks
+  Configurable<std::string> fConfigDileptonCut{"cfgDiLeptonCut", "pairJpsi2", "Dilepton cut"};
+  Configurable<std::string> fConfigDitrackCut{"cfgDiTrackCut", "DipionPairCut1", "Track-Track cut"};
+  Configurable<std::string> fConfigQuadrupletCut{"cfgQuadrupletCut", "pairX3872Cut1", "Dilepton-Track-Track cut"};
+  Configurable<std::string> fConfigAddDileptonHistogram{"cfgAddDileptonHistogram", "barrel", "Comma separated list of histograms"};
+  Configurable<std::string> fConfigAddDitrackHistogram{"cfgAddDitrackHistogram", "barrel", "Comma separated list of histograms"};
+  Configurable<std::string> fConfigAddQuadrupletHistogram{"cfgAddQuadrupletHistogram", "xtojpsipipi", "Comma separated list of histograms"};
+
+  Produces<aod::XCandidates> XTable;
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
   Filter dileptonFilter = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 4.0f;
@@ -1922,6 +1941,8 @@ struct AnalysisDileptonTrackTrack {
                 if (fIsUnlikeSignDilepton) {
                   if (fIsUnlikeSignDitrack) {
                     fHistMan->FillHistClass(Form("QuadrupletSEUSUS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
+                    XTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kRap], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kPairMass], fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kPairPt], fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kCosthetaDileptonDitrack], fValuesQuadruplet[VarManager::kTrackDCAxy], fValuesQuadruplet[VarManager::kTrackDCAz]);
+
                   } else {
                     fHistMan->FillHistClass(Form("QuadrupletSEUSLS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
                   }
@@ -1934,7 +1955,7 @@ struct AnalysisDileptonTrackTrack {
                 }
               }
             }
-          } // check if the diTrack cut is selected
+          } // check if the Ditrack cut is selected
         }   // loop over hadron cuts
       }
     }

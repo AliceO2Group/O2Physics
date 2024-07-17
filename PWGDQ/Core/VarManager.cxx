@@ -889,4 +889,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDitrackMass] = "GeV/c2";
   fgVariableNames[kDitrackPt] = "p_{T}";
   fgVariableUnits[kDitrackPt] = "GeV/c";
+  fgVariableNames[kQ] = "mass difference";
+  fgVariableUnits[kQ] = "GeV/c2";
+  fgVariableNames[kDeltaR1] = "angular distance prong 1";
+  fgVariableUnits[kDeltaR1] = "";
+  fgVariableNames[kDeltaR2] = "angular distance prong 2";
+  fgVariableUnits[kDeltaR2] = "";
 }
