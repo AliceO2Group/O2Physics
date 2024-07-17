@@ -288,7 +288,7 @@ struct HfDataCreatorCharmResoReduced {
       return false;
     }
 
-    if (std::abs(track.eta()) < cfgSingleTrackCuts.maxEta) {
+    if (std::abs(track.eta()) > cfgSingleTrackCuts.maxEta) {
       return false;
     }
 

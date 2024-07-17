@@ -331,7 +331,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
     } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
       continue;
     }
-    if (isinf(particle.eta())) {
+    if (std::isinf(particle.eta())) {
       continue;
     }
     auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
