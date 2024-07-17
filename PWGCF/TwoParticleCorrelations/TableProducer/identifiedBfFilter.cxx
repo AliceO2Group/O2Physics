@@ -742,13 +742,13 @@ struct IdentifiedBfFilterTracks {
                                    48, -6, 6,
                                    ptbins, ptlow, ptup);
         fhNSigmaCombo[sp] = new TH2F(TString::Format("fhNSigmaCombo_%s", speciesName[sp]).Data(),
-                                   TString::Format("N Sigma from Combo vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                   48, -6, 6,
-                                   ptbins, ptlow, ptup);      
+                                     TString::Format("N Sigma from Combo vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                     48, -6, 6,
+                                     ptbins, ptlow, ptup);
         fhNSigmaTPC_IdTrks[sp] = new TH2F(TString::Format("fhNSigmaTPC_IdTrks_%s", speciesName[sp]).Data(),
-                                   TString::Format("N Sigma from TPC vs P for Identified %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                   48, -6, 6,
-                                   ptbins, ptlow, ptup);
+                                          TString::Format("N Sigma from TPC vs P for Identified %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                          48, -6, 6,
+                                          ptbins, ptlow, ptup);
         fhdEdxA[sp] = new TH2F(TString::Format("fhdEdxA_%s", speciesName[sp]).Data(),
                                TString::Format("dE/dx vs P reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
@@ -1161,8 +1161,6 @@ template <typename TrackObject>
 void fillNSigmaHistos(TrackObject const& track)
 {
 
-
-
   fhNSigmaTPC[kIdBfElectron]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
   fhNSigmaTPC[kIdBfPion]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
   fhNSigmaTPC[kIdBfKaon]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
@@ -1177,8 +1175,6 @@ void fillNSigmaHistos(TrackObject const& track)
   fhNSigmaCombo[kIdBfPion]->Fill(sqrtf(track.tofNSigmaPi() * track.tofNSigmaPi() + track.tpcNSigmaPi() * track.tpcNSigmaPi()), track.tpcInnerParam());
   fhNSigmaCombo[kIdBfKaon]->Fill(sqrtf(track.tofNSigmaKa() * track.tofNSigmaKa() + track.tpcNSigmaKa() * track.tpcNSigmaKa()), track.tpcInnerParam());
   fhNSigmaCombo[kIdBfProton]->Fill(sqrtf(track.tofNSigmaPr() * track.tofNSigmaPr() + track.tpcNSigmaPr() * track.tpcNSigmaPr()), track.tpcInnerParam());
-
-
 }
 
 template <typename TrackObject>
@@ -1258,7 +1254,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       fhDoublePID->Fill(sp_min_nsigma, spDouble);
       return kWrongSpecies; // Return wrong species value
     } else {
-      if (track.hasTOF() && (reqTOF||onlyTOF)) {
+      if (track.hasTOF() && (reqTOF || onlyTOF)) {
         if (sp_min_nsigma == 0) {
           fhNSigmaTPC_IdTrks[sp_min_nsigma]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
         }
