@@ -12,7 +12,6 @@
 /// \brief write relevant information for dalitz ee analysis to an AO2D.root file. This file is then the only necessary input to perform pcm analysis.
 /// \author daiki.sekihata@cern.ch
 
-#include <unordered_map>
 #include <random>
 
 #include "Framework/runDataProcessing.h"
@@ -318,21 +317,14 @@ struct TreeCreatorSingleElectronQA {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCollision_track = o2::aod::track::collisionId;
-  PresliceUnsorted<MyCollisions_Cent> preslice_collisions_per_bc = o2::aod::evsel::foundBCId;
-  std::unordered_map<uint64_t, int> map_ncolls_per_bc;
 
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   Filter pidFilter = (minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   // ---------- for data ----------
-  void processRec(MyCollisions_Cent const& collisions, MyBCs const& bcs, MyFilteredTracks const& tracks)
+  void processRec(MyCollisions_Cent const& collisions, MyBCs const&, MyFilteredTracks const& tracks)
   {
-    for (auto& bc : bcs) {
-      auto collisions_per_bc = collisions.sliceBy(preslice_collisions_per_bc, bc.globalIndex());
-      map_ncolls_per_bc[bc.globalIndex()] = collisions_per_bc.size();
-    }
-
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<MyBCs>();
       initCCDB(bc);
@@ -366,13 +358,8 @@ struct TreeCreatorSingleElectronQA {
 
   // ---------- for MC ----------
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
-  void processMC(MyCollisionsMC_Cent const& collisions, aod::McCollisions const&, MyBCs const& bcs, MyFilteredTracksMC const& tracks)
+  void processMC(MyCollisionsMC_Cent const& collisions, aod::McCollisions const&, MyBCs const&, MyFilteredTracksMC const& tracks)
   {
-    for (auto& bc : bcs) {
-      auto collisions_per_bc = collisions.sliceBy(preslice_collisions_per_bc, bc.globalIndex());
-      map_ncolls_per_bc[bc.globalIndex()] = collisions_per_bc.size();
-    }
-
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
         continue;

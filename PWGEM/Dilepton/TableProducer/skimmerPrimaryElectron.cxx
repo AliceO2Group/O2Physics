@@ -12,7 +12,7 @@
 /// \brief write relevant information about primary electrons.
 /// \author daiki.sekihata@cern.ch
 
-#include <map>
+#include <unordered_map>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -34,7 +34,6 @@ using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
-// using namespace o2::aod::pwgem::photonmeson;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -275,7 +274,7 @@ struct skimmerPrimaryElectron {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
-    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track);
+    return isElectron_TPChadrej(track) || isElectron_TOFreq(track);
   }
 
   template <typename TTrack>
@@ -300,7 +299,7 @@ struct skimmerPrimaryElectron {
   }
 
   template <typename TTrack>
-  bool isElectron_TOFrecovery(TTrack const& track)
+  bool isElectron_TOFreq(TTrack const& track)
   {
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
       return false;
@@ -314,7 +313,7 @@ struct skimmerPrimaryElectron {
   template <typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
-    if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
+    if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::pair<int, int>{collision.globalIndex(), track.globalIndex()}) == stored_trackIds.end()) {
       gpu::gpustd::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
       track_par_cov_recalc.setPID(o2::track::PID::Electron);
@@ -356,7 +355,7 @@ struct skimmerPrimaryElectron {
         track_par_cov_recalc.getSigma1PtTgl(),
         track_par_cov_recalc.getSigma1Pt2());
 
-      stored_trackIds.emplace_back(std::make_pair(collision.globalIndex(), track.globalIndex()));
+      stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});
 
       if (fillQAHistogram) {
         uint32_t itsClusterSizes = track.itsClusterSizes();
@@ -404,7 +403,7 @@ struct skimmerPrimaryElectron {
     }
   }
 
-  std::vector<std::pair<int64_t, int64_t>> stored_trackIds;
+  std::vector<std::pair<int, int>> stored_trackIds;
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.96f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.04f) || o2::aod::pidtofbeta::beta < 0.f) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   using MyFilteredTracks = soa::Filtered<MyTracks>;
@@ -755,7 +754,7 @@ struct prefilterPrimaryElectron {
 
   void processPrefilter_TTCA(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracks const&, aod::EMPrimaryElectrons const& primaryelectrons, aod::TrackAssoc const& trackIndices)
   {
-    std::map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
+    std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -834,7 +833,7 @@ struct prefilterPrimaryElectron {
 
   void processPrefilter_SA(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const&, aod::EMPrimaryElectrons const& primaryelectrons)
   {
-    std::map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
+    std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -908,11 +907,11 @@ struct associateAmbiguousElectron {
     for (auto& electron : electrons) {
       auto electrons_with_same_trackId = electrons.sliceBy(perTrack, electron.trackId());
       ambele_self_Ids.reserve(electrons_with_same_trackId.size());
-      for (auto& amp_ele : electrons_with_same_trackId) {
-        if (amp_ele.globalIndex() == electron.globalIndex()) { // don't store myself.
+      for (auto& amb_ele : electrons_with_same_trackId) {
+        if (amb_ele.globalIndex() == electron.globalIndex()) { // don't store myself.
           continue;
         }
-        ambele_self_Ids.emplace_back(amp_ele.globalIndex());
+        ambele_self_Ids.emplace_back(amb_ele.globalIndex());
       }
       em_amb_ele_ids(ambele_self_Ids);
       ambele_self_Ids.clear();
