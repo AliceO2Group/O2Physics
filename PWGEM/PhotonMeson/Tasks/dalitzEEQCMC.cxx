@@ -28,11 +28,10 @@
 #include "Common/Core/RecoDecay.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
-#include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 using namespace o2;
@@ -63,7 +62,7 @@ struct DalitzEEQCMC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
 
-  EMEventCut fEMEventCut;
+  EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
@@ -238,7 +237,7 @@ struct DalitzEEQCMC {
 
   void DefineEMEventCut()
   {
-    fEMEventCut = EMEventCut("fEMEventCut", "fEMEventCut");
+    fEMEventCut = EMPhotonEventCut("fEMEventCut", "fEMEventCut");
     fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
     fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
     fEMEventCut.SetZvtxRange(-eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);

@@ -284,6 +284,7 @@ struct dimuonQC {
     fRegistry.add("Track/hTrackType", "track type", kTH1F, {{6, -0.5f, 5.5}}, false);
     fRegistry.add("Track/hDCAxy", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/hDCAxySigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
+    fRegistry.add("Track/hDCA2DSigma", "DCA xy;DCA_{xy} (#sigma)", kTH1F, {{100, 0.0f, 10.0f}}, false);
     fRegistry.add("Track/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{1000, 0, 10}, {200, 0., 200}}, false);
     fRegistry.add("Track/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{1000, 0, 10}, {200, 0., 200}}, false);
     fRegistry.add("Track/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
@@ -463,12 +464,14 @@ struct dimuonQC {
   template <typename TTrack>
   void fillTrackInfo(TTrack const& track)
   {
+    float dca_xy = fwdDcaXYinSigma(track);
     fRegistry.fill(HIST("Track/hPt"), track.pt());
     fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
     fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
     fRegistry.fill(HIST("Track/hTrackType"), track.trackType());
     fRegistry.fill(HIST("Track/hDCAxy"), track.fwdDcaX(), track.fwdDcaY());
     fRegistry.fill(HIST("Track/hDCAxySigma"), track.fwdDcaX() / sqrt(track.cXX()), track.fwdDcaY() / sqrt(track.cYY()));
+    fRegistry.fill(HIST("Track/hDCA2DSigma"), dca_xy);
     fRegistry.fill(HIST("Track/hDCAxRes_Pt"), track.pt(), sqrt(track.cXX()) * 1e+4); // convert cm to um
     fRegistry.fill(HIST("Track/hDCAyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
     fRegistry.fill(HIST("Track/hNclsMFT"), track.nClustersMFT());
