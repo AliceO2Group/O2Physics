@@ -58,6 +58,7 @@ struct singleElectronQCMC {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
+  Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
@@ -396,6 +397,11 @@ struct singleElectronQCMC {
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
+      auto mccollision = collision.emmcevent_as<aod::EMMCEvents>();
+      if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
+        continue;
+      }
+
       auto tracks_per_coll = tracks.sliceBy(perCollision_track, collision.globalIndex());
 
       for (auto& track : tracks_per_coll) {
@@ -473,7 +479,11 @@ struct singleElectronQCMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+
       auto mccollision = collision.emmcevent_as<aod::EMMCEvents>();
+      if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
+        continue;
+      }
 
       auto electronsMC_per_coll = electronsMC->sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
 
