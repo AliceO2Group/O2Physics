@@ -135,6 +135,7 @@ struct phik0shortanalysis {
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "Maximum DCAxy to primary vertex"};
   Configurable<float> dcazMax{"dcazMax", 0.1f, "Maximum DCAz to primary vertex"};
+  Configurable<float> NSigmaTOFPion{"NSigmaTOFPion", 5.0, "NSigmaTOFPion"};
 
   // Configurables for invariant mass histograms filling
   Configurable<double> cfgFirstCutonDeltay{"cgfFirstCutonDeltay", 0.5, "First upper bound on Deltay selection"};
@@ -373,6 +374,10 @@ struct phik0shortanalysis {
     if (std::abs(track.dcaXY()) > dcaxyMax)
       return false;
     if (std::abs(track.dcaZ()) > dcazMax)
+      return false;
+    if (!track.hasTOF())
+      return false;
+    if (std::abs(track.tofNSigmaPi()) > NSigmaTOFPion)
       return false;
     return true;
   }
