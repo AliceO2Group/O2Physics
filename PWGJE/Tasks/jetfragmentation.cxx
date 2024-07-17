@@ -740,7 +740,7 @@ struct JetFragmentation {
   template <typename JetType>
   bool JetContainsV0s(JetType const& jet)
   {
-    return (jet.hfcandidatesIds().size() > 0);
+    return (jet.candidatesIds().size() > 0);
   }
   template <typename T, typename U, typename V>
   bool V0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
@@ -1998,7 +1998,7 @@ struct JetFragmentation {
       fillDataJetHistograms(jet);
 
       int nV0inJet = 0, nLambdainJet = 0, nAntiLambdainJet = 0, nK0SinJet = 0;
-      for (const auto& v0 : jet.hfcandidates_as<CandidatesV0Data>()) {
+      for (const auto& v0 : jet.candidates_as<CandidatesV0Data>()) {
         nV0inJet++;
         fillDataV0FragHistograms(jcoll, jet, v0);
         if (IsK0SCandidate(jcoll, v0)) {
@@ -2049,7 +2049,7 @@ struct JetFragmentation {
 
       int nV0inJet = 0, nLambdainJet = 0, nAntiLambdainJet = 0, nK0SinJet = 0;
       if (!detJet.has_matchedJetGeo()) {
-        for (const auto& detV0 : detJet.hfcandidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+        for (const auto& detV0 : detJet.candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
           fillMatchingV0Fake(jcoll, detJet, detV0, weight);
         }
         continue;
@@ -2057,13 +2057,13 @@ struct JetFragmentation {
 
       for (const auto& partJet : detJet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
         fillMatchingHistogramsJet(detJet, partJet, weight);
-        for (const auto& detV0 : detJet.hfcandidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+        for (const auto& detV0 : detJet.candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
           if (!detV0.has_mcParticle()) {
             fillMatchingV0Fake(jcoll, detJet, detV0, weight);
             continue;
           }
           bool isV0Matched = false;
-          for (const auto& partV0 : partJet.template hfcandidates_as<CandidatesV0MCP>()) {
+          for (const auto& partV0 : partJet.template candidates_as<CandidatesV0MCP>()) {
             if (V0sAreMatched(detV0, partV0, jTracks)) {
               isV0Matched = true;
               nV0inJet++;
@@ -2096,7 +2096,7 @@ struct JetFragmentation {
       fillMCPJetHistograms(partJet, weight);
 
       if (!partJet.has_matchedJetGeo()) {
-        for (const auto& partV0 : partJet.hfcandidates_as<CandidatesV0MCP>()) {
+        for (const auto& partV0 : partJet.candidates_as<CandidatesV0MCP>()) {
           fillMatchingV0Miss(partJet, partV0, weight);
         }
         continue;
@@ -2108,9 +2108,9 @@ struct JetFragmentation {
           continue;
         }
         isJetMatched = true;
-        for (const auto& partV0 : partJet.hfcandidates_as<CandidatesV0MCP>()) {
+        for (const auto& partV0 : partJet.candidates_as<CandidatesV0MCP>()) {
           bool isV0Matched = false;
-          for (const auto& detV0 : detJet.hfcandidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+          for (const auto& detV0 : detJet.candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
             if (V0sAreMatched(detV0, partV0, jTracks)) {
               isV0Matched = true;
               break;
@@ -2124,7 +2124,7 @@ struct JetFragmentation {
 
       // To account for matched jets where the detector level jet is outside of the eta range (cut applied within this task)
       if (!isJetMatched) {
-        for (const auto& partV0 : partJet.hfcandidates_as<CandidatesV0MCP>()) {
+        for (const auto& partV0 : partJet.candidates_as<CandidatesV0MCP>()) {
           fillMatchingV0Miss(partJet, partV0, weight);
         }
       }

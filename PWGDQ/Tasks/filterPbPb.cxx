@@ -30,8 +30,8 @@ using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToB
 
 struct DQFilterPbPbTask {
   Produces<aod::DQEventFilter> eventFilter;
-  OutputObj<TH1I> fStats{"Statistics"};
-  OutputObj<TH1I> fFilterOutcome{"Filter outcome"};
+  OutputObj<TH1D> fStats{"Statistics"};
+  OutputObj<TH1D> fFilterOutcome{"Filter outcome"};
 
   Configurable<std::string> fConfigEventTypes{"cfgEventTypes", "doublegap,singlegap", "Which event types to select. doublegap, singlegap or both, comma separated"};
   Configurable<int> fConfigNDtColl{"cfgNDtColl", 4, "Number of standard deviations to consider in BC range"};
@@ -54,16 +54,19 @@ struct DQFilterPbPbTask {
   void init(o2::framework::InitContext&)
   {
     // setup the Stats histogram
-    fStats.setObject(new TH1I("Statistics", "Stats for DQ triggers", 2, -2.5, -0.5));
+    fStats.setObject(new TH1D("Statistics", "Stats for DQ triggers", 2, -2.5, -0.5));
     fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
     fStats->GetXaxis()->SetBinLabel(2, "Events selected");
     // setup the FilterOutcome histogram
-    fFilterOutcome.setObject(new TH1I("Filter outcome", "Filter outcome", 5, -0.5, 4.5));
+    fFilterOutcome.setObject(new TH1D("Filter outcome", "Filter outcome", 8, 0.5, 8.5));
     fFilterOutcome->GetXaxis()->SetBinLabel(1, "Events inspected");
     fFilterOutcome->GetXaxis()->SetBinLabel(2, "Events selected");
-    fFilterOutcome->GetXaxis()->SetBinLabel(3, "Failed FIT veto");
-    fFilterOutcome->GetXaxis()->SetBinLabel(4, Form("numContrib not in [%d, %d]", fConfigMinNPVCs.value, fConfigMaxNPVCs.value));
-    fFilterOutcome->GetXaxis()->SetBinLabel(5, "BC not found");
+    fFilterOutcome->GetXaxis()->SetBinLabel(3, "!A && !C");
+    fFilterOutcome->GetXaxis()->SetBinLabel(4, "!A && C");
+    fFilterOutcome->GetXaxis()->SetBinLabel(5, "A && !C");
+    fFilterOutcome->GetXaxis()->SetBinLabel(6, "A && C");
+    fFilterOutcome->GetXaxis()->SetBinLabel(7, Form("numContrib not in [%d, %d]", fConfigMinNPVCs.value, fConfigMaxNPVCs.value));
+    fFilterOutcome->GetXaxis()->SetBinLabel(8, "BC not found");
 
     TString eventTypesString = fConfigEventTypes.value;
     for (std::vector<std::string>::size_type i = 0; i < eventTypeOptions.size(); i++) {
@@ -84,10 +87,10 @@ struct DQFilterPbPbTask {
                              int eventTypes, std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, int minNPVCs, int maxNPVCs, float maxFITTime,
                              bool useFV0, bool useFT0, bool useFDD)
   {
-    fFilterOutcome->Fill(0., 1.);
+    fFilterOutcome->Fill(1., 1.);
     // Find BC associated with collision
     if (!collision.has_foundBC()) {
-      fFilterOutcome->Fill(4., 1);
+      fFilterOutcome->Fill(8., 1);
       return 0;
     }
     // foundBCId is stored in EvSels
@@ -212,31 +215,38 @@ struct DQFilterPbPbTask {
 
     // Compute FIT decision
     uint64_t FITDecision = 0;
-    if (eventTypes & (uint32_t(1) << 0)) {
-      if (isSideAClean && isSideCClean) {
+    if (isSideAClean && isSideCClean) {
+      fFilterOutcome->Fill(3, 1);
+      if (eventTypes & (uint32_t(1) << 0)) {
         FITDecision |= (uint64_t(1) << VarManager::kDoubleGap);
       }
     }
-    if (eventTypes & (uint32_t(1) << 1)) {
-      if (isSideAClean && !isSideCClean) {
+    if (isSideAClean && !isSideCClean) {
+      fFilterOutcome->Fill(4, 1);
+      if (eventTypes & (uint32_t(1) << 1)) {
         FITDecision |= (uint64_t(1) << VarManager::kSingleGapA);
-      } else if (!isSideAClean && isSideCClean) {
+      }
+    } else if (!isSideAClean && isSideCClean) {
+      fFilterOutcome->Fill(5, 1);
+      if (eventTypes & (uint32_t(1) << 1)) {
         FITDecision |= (uint64_t(1) << VarManager::kSingleGapC);
       }
+    } else if (!isSideAClean && !isSideCClean) {
+      fFilterOutcome->Fill(6, 1);
     }
+
     if (!FITDecision) {
-      fFilterOutcome->Fill(2, 1);
       return 0;
     }
 
     // Number of primary vertex contributors
     if (collision.numContrib() < minNPVCs || collision.numContrib() > maxNPVCs) {
-      fFilterOutcome->Fill(3, 1);
+      fFilterOutcome->Fill(7, 1);
       return 0;
     }
 
     // If we made it here, the event passed
-    fFilterOutcome->Fill(1, 1);
+    fFilterOutcome->Fill(2, 1);
     // Return filter bitmap corresponding to FIT decision
     return FITDecision;
   }

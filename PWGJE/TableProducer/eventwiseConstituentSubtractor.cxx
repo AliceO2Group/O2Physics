@@ -41,6 +41,7 @@ struct eventWiseConstituentSubtractorTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  Configurable<double> trackingEfficiency{"trackingEfficiency", 1.0, "tracking efficiency applied to jet finding"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   Configurable<float> alpha{"alpha", 1.0, "exponent of transverse momentum in calculating the distance measure between pairs"};
@@ -68,6 +69,7 @@ struct eventWiseConstituentSubtractorTask {
   Preslice<aod::BkgD0Rhos> perD0Candidate = aod::bkgd0::candidateId;
   Preslice<aod::BkgLcRhos> perLcCandidate = aod::bkglc::candidateId;
   Preslice<aod::BkgBplusRhos> perBplusCandidate = aod::bkgbplus::candidateId;
+  Preslice<aod::BkgDielectronRhos> perDielectronCandidate = aod::bkgdielectron::candidateId;
 
   template <typename T, typename U, typename V, typename M>
   void analyseHF(T const& tracks, U const& candidates, V const& bkgRhos, M& trackSubtractedTable)
@@ -75,12 +77,12 @@ struct eventWiseConstituentSubtractorTask {
 
     for (auto& candidate : candidates) {
 
-      auto const bkgRhosSliced = jethfutilities::slicedPerCandidate(bkgRhos, candidate, perD0Candidate, perLcCandidate, perBplusCandidate);
+      auto const bkgRhosSliced = jetcandidateutilities::slicedPerCandidate(bkgRhos, candidate, perD0Candidate, perLcCandidate, perBplusCandidate, perDielectronCandidate);
       auto const bkgRho = bkgRhosSliced.iteratorAt(0);
 
       inputParticles.clear();
       tracksSubtracted.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
 
       tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, bkgRho.rho(), bkgRho.rhoM());
       for (auto const& trackSubtracted : tracksSubtracted) {
@@ -95,7 +97,7 @@ struct eventWiseConstituentSubtractorTask {
 
     inputParticles.clear();
     tracksSubtracted.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
+    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
 
     tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, collision.rho(), collision.rhoM());
 

@@ -54,7 +54,7 @@ DECLARE_SOA_COLUMN(JetFlavor, jetFl, int16_t); //! The jet flavor (b, c, or lf)
 DECLARE_SOA_COLUMN(JetR, jetR, int16_t);       //! The jet radius
 } // namespace jetInfo
 
-DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAMS",
+DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAM",
                   o2::soa::Index<>,
                   jetInfo::JetpT,
                   jetInfo::JetEta,
@@ -84,7 +84,7 @@ DECLARE_SOA_COLUMN(DeltaRTrackVertex, rtrackvertex, float);            //! DR be
 // DECLARE_SOA_COLUMN(DCATrackJet, dcatrackjet, float);                              //! The distance between track and jet, unfortunately it cannot be calculated in O2
 } // namespace trackInfo
 
-DECLARE_SOA_TABLE(bjetTracksParams, "AOD", "BJETTRACKPARAMS",
+DECLARE_SOA_TABLE(bjetTracksParams, "AOD", "BJETTRACKSPARAM",
                   o2::soa::Index<>,
                   trackInfo::bjetParamId,
                   trackInfo::TrackpT,
@@ -118,7 +118,7 @@ DECLARE_SOA_COLUMN(DecayLength3DError, lxyzsigma, float); //! The decay length o
 // DECLARE_SOA_COLUMN(SVDispersion, svdispersion, float);                              //! The SV dispersion, unfortunately it cannot be calculated in O2
 } // namespace SVInfo
 
-DECLARE_SOA_TABLE(bjetSVParams, "AOD", "BJETSVPARAMS",
+DECLARE_SOA_TABLE(bjetSVParams, "AOD", "BJETSVPARAM",
                   o2::soa::Index<>,
                   SVInfo::bjetParamId,
                   SVInfo::SVpT,
@@ -177,6 +177,9 @@ struct BJetTreeCreator {
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
 
+  Configurable<float> svReductionFactor{"svReductionFactor", 1.0, "factor for how many SVs to keep"};
+  Configurable<float> eventReductionFactor{"eventReductionFactor", 0.0, "Percentage of events to be removed"};
+
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
 
   Configurable<bool> produceTree{"produceTree", true, "produce the jet TTree"};
@@ -187,6 +190,9 @@ struct BJetTreeCreator {
 
   void init(InitContext const&)
   {
+    // Seed the random number generator using current time
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
     jetRadiiValues = (std::vector<double>)jetRadii;
 
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
@@ -252,10 +258,23 @@ struct BJetTreeCreator {
   using DataJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::DataSecondaryVertex3ProngIndices>>;
 
   // Looping over the SV info and writing them to a table
-  template <typename AnalysisJet, typename SecondaryVertices>
-  void analyzeJetSVInfo(AnalysisJet const& myJet, SecondaryVertices const& allSVs, std::vector<int>& svIndices, int jetFlavor = 0, double eventweight = 1.0)
+  template <typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
+  void analyzeJetSVInfo(AnalysisJet const& myJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<int>& svIndices, int jetFlavor = 0, double eventweight = 1.0)
   {
-    for (const auto& candSV : myJet.template secondaryVertices_as<SecondaryVertices>()) {
+    using SVType = typename SecondaryVertices::iterator;
+
+    // Min-heap to store the top 30 SVs by decayLengthXY/errorDecayLengthXY
+    auto compare = [](SVType& sv1, SVType& sv2) {
+      return (sv1.decayLengthXY() / sv1.errorDecayLengthXY()) > (sv2.decayLengthXY() / sv2.errorDecayLengthXY());
+    };
+
+    auto svs = myJet.template secondaryVertices_as<SecondaryVertices>();
+
+    // Sort the SVs based on their decay length significance in descending order
+    // This is needed in order to select longest SVs since some jets could have thousands of SVs
+    std::sort(svs.begin(), svs.end(), compare);
+
+    for (const auto& candSV : svs) {
 
       if (candSV.pt() < svPtMin) {
         continue;
@@ -265,10 +284,12 @@ struct BJetTreeCreator {
       double massSV = candSV.m();
       double energySV = candSV.e();
 
-      if (produceTree) {
-        bjetSVParamsTable(bjetParamsTable.lastIndex() + 1, candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength());
+      if (svIndices.size() < (svReductionFactor * myJet.template tracks_as<AnyTracks>().size())) {
+        if (produceTree) {
+          bjetSVParamsTable(bjetParamsTable.lastIndex() + 1, candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength());
+        }
+        svIndices.push_back(bjetSVParamsTable.lastIndex());
       }
-      svIndices.push_back(bjetSVParamsTable.lastIndex());
 
       registry.fill(HIST("h2_LxyS_jetpT"), myJet.pt(), candSV.decayLengthXY() / candSV.errorDecayLengthXY(), eventweight);
       registry.fill(HIST("h2_Dispersion_jetpT"), myJet.pt(), candSV.chi2PCA(), eventweight);
@@ -293,7 +314,7 @@ struct BJetTreeCreator {
   }
 
   template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
-  void analyzeJetTrackInfo(AnyCollision const& collision, AnalysisJet const& analysisJet, AnyTracks const& allTracks, SecondaryVertices const& allSVs, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
+  void analyzeJetTrackInfo(AnyCollision const& collision, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
   {
 
     for (auto& jconstituent : analysisJet.template tracks_as<AnyTracks>()) {
@@ -342,14 +363,14 @@ struct BJetTreeCreator {
     }
   }
 
-  void processDummy(FilteredCollision::iterator const& collision)
+  void processDummy(FilteredCollision::iterator const& /*collision*/)
   {
   }
   PROCESS_SWITCH(BJetTreeCreator, processDummy, "Dummy process function turned on by default", true);
 
-  void processDataJets(FilteredCollision::iterator const& collision, DataJets const& alljets, JetTrackswID const& allTracks, OriginalTracks const& allOrigTracks, aod::DataSecondaryVertex3Prongs const& allSVs)
+  void processDataJets(FilteredCollision::iterator const& collision, DataJets const& alljets, JetTrackswID const& allTracks, OriginalTracks const& /*allOrigTracks*/, aod::DataSecondaryVertex3Prongs const& allSVs)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
       return;
     }
 
@@ -372,7 +393,7 @@ struct BJetTreeCreator {
       std::vector<int> tracksIndices;
       std::vector<int> SVsIndices;
 
-      analyzeJetSVInfo(analysisJet, allSVs, SVsIndices);
+      analyzeJetSVInfo(analysisJet, allTracks, allSVs, SVsIndices);
       analyzeJetTrackInfo(collision, analysisJet, allTracks, allSVs, tracksIndices);
 
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass());
@@ -395,9 +416,9 @@ struct BJetTreeCreator {
   Preslice<aod::JMcParticles> McParticlesPerCollision = aod::jmcparticle::mcCollisionId;
   Preslice<MCPJetTable> McPJetsPerCollision = aod::jet::mcCollisionId;
 
-  void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, JetParticles const& MCParticles, aod::MCDSecondaryVertex3Prongs const& allSVs, OriginalTracks const& origTracks)
+  void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, JetParticles const& MCParticles, aod::MCDSecondaryVertex3Prongs const& allSVs, OriginalTracks const& /*origTracks*/)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
       return;
     }
 
@@ -434,7 +455,7 @@ struct BJetTreeCreator {
         jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, mcParticlesPerColl);
         // jetFlavor = jettaggingutilities::mcpJetFromHFShower(mcpjet, mcParticlesPerColl, (float)(mcpjet.r() / 100.));
       }
-      analyzeJetSVInfo(analysisJet, allSVs, SVsIndices, jetFlavor, eventWeight);
+      analyzeJetSVInfo(analysisJet, allTracks, allSVs, SVsIndices, jetFlavor, eventWeight);
       analyzeJetTrackInfo(collision, analysisJet, allTracks, allSVs, tracksIndices, jetFlavor, eventWeight);
 
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
@@ -474,7 +495,7 @@ struct BJetTreeCreator {
   Filter mccollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
   using FilteredCollisionMCP = soa::Filtered<aod::JMcCollisions>;
 
-  void processMCTruthJets(FilteredCollisionMCP::iterator const& collision, MCPJetTable const& MCPjets, JetParticles const& MCParticles)
+  void processMCTruthJets(FilteredCollisionMCP::iterator const& /*collision*/, MCPJetTable const& MCPjets, JetParticles const& MCParticles)
   {
 
     for (const auto& mcpjet : MCPjets) {

@@ -33,14 +33,15 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
-using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>;
+using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
-using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>;
+using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, MyQvectors>;
 
 struct CreateEMEvent {
   Produces<o2::aod::EMEvents> event;
@@ -61,6 +62,7 @@ struct CreateEMEvent {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -116,7 +118,6 @@ struct CreateEMEvent {
   PresliceUnsorted<MyCollisions> preslice_collisions_per_bc = o2::aod::evsel::foundBCId;
   std::unordered_map<uint64_t, int> map_ncolls_per_bc;
 
-  //! Please don't skip any event!
   template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const& bcs)
   {
@@ -137,6 +138,10 @@ struct CreateEMEvent {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
+      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+
       // LOGF(info, "collision-loop | bc.globalIndex() = %d, ncolls_per_bc = %d", bc.globalIndex(), map_ncolls_per_bc[bc.globalIndex()]);
       registry.fill(HIST("hEventCounter"), 1);
 
@@ -145,46 +150,45 @@ struct CreateEMEvent {
       }
 
       // uint64_t tag = collision.selection_raw();
-      event(collision.globalIndex(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange());
 
       eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
-      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
+      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
+
+      float q2xft0m = 999.f, q2yft0m = 999.f, q2xft0a = 999.f, q2yft0a = 999.f, q2xft0c = 999.f, q2yft0c = 999.f, q2xbpos = 999.f, q2ybpos = 999.f, q2xbneg = 999.f, q2ybneg = 999.f, q2xbtot = 999.f, q2ybtot = 999.f;
+      float q3xft0m = 999.f, q3yft0m = 999.f, q3xft0a = 999.f, q3yft0a = 999.f, q3xft0c = 999.f, q3yft0c = 999.f, q3xbpos = 999.f, q3ybpos = 999.f, q3xbneg = 999.f, q3ybneg = 999.f, q3xbtot = 999.f, q3ybtot = 999.f;
 
       if constexpr (eventype == EMEventType::kEvent) {
         event_cent(105.f, 105.f, 105.f, 105.f);
-        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-                   // 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-                   // 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f);
+        event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot, q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       } else if constexpr (eventype == EMEventType::kEvent_Cent) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
-        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-                   // 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-                   // 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f);
+        event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot, q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       } else if constexpr (eventype == EMEventType::kEvent_Cent_Qvec) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
-        event_qvec(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(),
-                   // collision.qvecFV0ARe(), collision.qvecFV0AIm(),
-                   collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-                   // 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f); // as of 20240416, only 2nd harmonics is supported.
+
+        // std::vector<float> qvec;
+        // std::copy(collision.qvecFT0MReVec().begin(), collision.qvecFT0MReVec().end(), std::back_inserter(qvec));
+        // LOGF(info, "qvec.at(0) = %f", qvec.at(0));
+
+        // LOGF(info, "collision.qvecFT0MReVec()[0] = %f, collision.qvecFT0MImVec()[0] = %f, collision.qvecFT0MReVec()[1] = %f, collision.qvecFT0MImVec()[1] = %f", collision.qvecFT0MReVec()[0], collision.qvecFT0MImVec()[0], collision.qvecFT0MReVec()[1], collision.qvecFT0MImVec()[1]);
+
+        if (collision.qvecFT0CReVec().size() >= 2) { // both harmonics 2,3
+          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
+          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecBPosImVec()[0], q2ybneg = collision.qvecBNegImVec()[0], q2ybtot = collision.qvecBTotImVec()[0];
+          q3xft0m = collision.qvecFT0MReVec()[1], q3xft0a = collision.qvecFT0AReVec()[1], q3xft0c = collision.qvecFT0CReVec()[1], q3xbpos = collision.qvecBPosReVec()[1], q3xbneg = collision.qvecBNegReVec()[1], q3xbtot = collision.qvecBTotReVec()[1];
+          q3yft0m = collision.qvecFT0MImVec()[1], q3yft0a = collision.qvecFT0AImVec()[1], q3yft0c = collision.qvecFT0CImVec()[1], q3ybpos = collision.qvecBPosImVec()[1], q3ybneg = collision.qvecBNegImVec()[1], q3ybtot = collision.qvecBTotImVec()[1];
+        } else if (collision.qvecFT0CReVec().size() >= 1) { // only harmonics 2
+          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
+          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecBPosImVec()[0], q2ybneg = collision.qvecBNegImVec()[0], q2ybtot = collision.qvecBTotImVec()[0];
+        }
+        event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot, q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       } else {
         event_cent(105.f, 105.f, 105.f, 105.f);
-        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-                   // 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-                   // 999.f, 999.f,
-                   999.f, 999.f, 999.f, 999.f);
+        event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot, q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       }
     } // end of collision loop
     map_ncolls_per_bc.clear();
@@ -232,61 +236,17 @@ struct CreateEMEvent {
 struct AssociatePhotonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
-  // Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
+  Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
 
-  Produces<o2::aod::EMEventsNgPCM> event_ng_pcm;
-  Produces<o2::aod::EMEventsNgPHOS> event_ng_phos;
-  Produces<o2::aod::EMEventsNgEMC> event_ng_emc;
-
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
-  PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
-  // PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  PresliceUnsorted<aod::EMPrimaryElectronsFromDalitz> perCollision_el = aod::emprimaryelectron::collisionId;
+  PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  bool doPCM = false, doDalitzEE = false, doDalitzMuMu = false, doPHOS = false, doEMC = false;
-  void init(o2::framework::InitContext& context)
-  {
-    if (context.mOptions.get<bool>("processPCM")) {
-      doPCM = true;
-    }
-    if (context.mOptions.get<bool>("processDalitzEE")) {
-      doDalitzEE = true;
-    }
-    // if (context.mOptions.get<bool>("processDalitzMuMu")) {
-    //   doDalitzMuMu = true;
-    // }
-    if (context.mOptions.get<bool>("processPHOS")) {
-      doPHOS = true;
-    }
-    if (context.mOptions.get<bool>("processEMC")) {
-      doEMC = true;
-    }
-  }
-
-  template <typename TCollisions, typename TEventNg>
-  void zero_padding(TCollisions const& collisions, TEventNg& event_ng)
-  {
-    int nc = collisions.size();
-    for (int ic = 0; ic < nc; ic++) {
-      event_ng(0);
-    } // end of collision loop
-  }
-
-  template <typename TCollisions, typename TPhotons, typename TEventIds, typename TEventNg, typename TPreslice>
-  void fillEventId_Ng(TCollisions const& collisions, TPhotons const& photons, TEventIds& eventIds, TEventNg& event_ng, TPreslice const& perCollision)
-  {
-    for (auto& collision : collisions) {
-      auto photons_coll = photons.sliceBy(perCollision, collision.collisionId());
-      int ng = photons_coll.size();
-      for (int ig = 0; ig < ng; ig++) {
-        eventIds(collision.globalIndex());
-      } // end of photon loop
-      event_ng(ng);
-    } // end of collision loop
-  }
+  void init(o2::framework::InitContext&) {}
 
   template <typename TCollisions, typename TPhotons, typename TEventIds, typename TPreslice>
   void fillEventId(TCollisions const& collisions, TPhotons const& photons, TEventIds& eventIds, TPreslice const& perCollision)
@@ -305,53 +265,36 @@ struct AssociatePhotonToEMEvent {
 
   void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
   {
-    fillEventId_Ng(collisions, photons, v0kfeventid, event_ng_pcm, perCollision_pcm);
+    fillEventId(collisions, photons, v0kfeventid, perCollision_pcm);
   }
 
-  void processDalitzEE(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
+  void processElectronFromDalitz(aod::EMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollision_el);
   }
 
-  // void processDalitzMuMu(aod::EMEvents const& collisions, aod::EMPrimaryMuons const& tracks)
-  // {
-  //   fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
-  // }
-
   void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
   {
-    fillEventId_Ng(collisions, photons, phoseventid, event_ng_phos, perCollision_phos);
+    fillEventId(collisions, photons, phoseventid, perCollision_phos);
   }
 
   void processEMC(aod::EMEvents const& collisions, aod::SkimEMCClusters const& photons)
   {
-    fillEventId_Ng(collisions, photons, emceventid, event_ng_emc, perCollision_emc);
+    fillEventId(collisions, photons, emceventid, perCollision_emc);
   }
 
-  void processZeroPadding(aod::EMEvents const& collisions)
-  {
-    if (!doPCM) {
-      zero_padding(collisions, event_ng_pcm);
-    }
-    if (!doPHOS) {
-      zero_padding(collisions, event_ng_phos);
-    }
-    if (!doEMC) {
-      zero_padding(collisions, event_ng_emc);
-    }
-  }
+  void processDummy(aod::EMEvents const&) {}
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzEE, "process dalitzee-event indexing", false);
-  // PROCESS_SWITCH(AssociatePhotonToEMEvent, processDalitzMuMu, "process dalitzmumu-event indexing", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processZeroPadding, "process zero padding.", true);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processDummy, "process dummy", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CreateEMEvent>(cfgc, TaskName{"create-emevent"}),
+    adaptAnalysisTask<CreateEMEvent>(cfgc, TaskName{"create-emevent-photon"}),
     adaptAnalysisTask<AssociatePhotonToEMEvent>(cfgc, TaskName{"associate-photon-to-emevent"}),
   };
 }

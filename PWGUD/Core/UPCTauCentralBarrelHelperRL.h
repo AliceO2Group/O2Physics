@@ -43,8 +43,14 @@ void printMediumMessage(std::string info)
   LOGF(info, "+++++++++++++ %s +++++++++++++", info);
 }
 
+void printDebugMessage(std::string info)
+// Helper to printf info message to terminal
+{
+  LOGF(debug, "X!X!X!X!X!X!X!X!X %s X!X!X!X!X!X!X!X!X", info);
+}
+
 template <typename T>
-int testPIDhypothesis(T trackPIDinfo, float nSigmaShift = 0., bool isMC = false)
+int testPIDhypothesis(T trackPIDinfo, float maxNsigmaTPC = 5.0, float maxNsigmaTOF = 5.0, bool useTOF = true, bool useTOFsigmaAfterTPC = true, float nSigmaShift = 0., bool isMC = false)
 // Choose, which particle it is according to PID
 {
   float nSigmaTPC[5];
@@ -70,14 +76,31 @@ int testPIDhypothesis(T trackPIDinfo, float nSigmaShift = 0., bool isMC = false)
   int enumChoiceTOF = std::distance(std::begin(nSigmaTOF),
                                     std::min_element(std::begin(nSigmaTOF), std::end(nSigmaTOF)));
 
-  if (trackPIDinfo.hasTPC() || trackPIDinfo.hasTOF()) {
-    if (trackPIDinfo.hasTOF()) {
-      return enumChoiceTOF;
+  if (trackPIDinfo.hasTPC()) {
+    if (trackPIDinfo.hasTOF() && useTOF) {
+      if (nSigmaTOF[enumChoiceTOF] < maxNsigmaTOF) {
+        return enumChoiceTOF;
+      } else {
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTOF is higher than %f", maxNsigmaTPC));
+        return -1;
+      }
+    } else if (trackPIDinfo.hasTOF() && useTOFsigmaAfterTPC) {
+      if (nSigmaTPC[enumChoiceTPC] < maxNsigmaTPC && nSigmaTOF[enumChoiceTPC] < maxNsigmaTOF) {
+        return enumChoiceTPC;
+      } else {
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f or the lowest nSigmaTOF is higher than %f", maxNsigmaTPC, maxNsigmaTOF));
+        return -1;
+      }
     } else {
-      return enumChoiceTPC;
+      if (nSigmaTPC[enumChoiceTPC] < maxNsigmaTPC) {
+        return enumChoiceTPC;
+      } else {
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f", maxNsigmaTPC));
+        return -1;
+      }
     }
   } else {
-    LOGF(debug, "testPIDhypothesis failed - track did not leave information in TPC or TOF");
+    printDebugMessage("testPIDhypothesis failed - track did not leave information in TPC");
     return -1;
   }
 }
@@ -97,7 +120,7 @@ int trackPDG(T trackPIDinfo)
   } else if (testPIDhypothesis(trackPIDinfo) == P_PROTON) {
     return 2212;
   } else {
-    printMediumMessage("Something is wrong with track PDG selector");
+    printDebugMessage("Something is wrong with track PDG selector");
     return -1.;
   }
 }
@@ -116,7 +139,7 @@ int enumMyParticle(int valuePDG)
   } else if (std::abs(valuePDG) == 2212) {
     return P_PROTON;
   } else {
-    printMediumMessage("PDG value not found in enumMyParticle. Returning -1.");
+    printDebugMessage("PDG value not found in enumMyParticle. Returning -1.");
     return -1.;
   }
 }

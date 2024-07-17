@@ -877,6 +877,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::Dielectrons> dielectronList;
   Produces<aod::Dimuons> dimuonList;
   Produces<aod::DielectronsExtra> dielectronExtraList;
+  Produces<aod::DielectronsInfo> dielectronInfoList;
   Produces<aod::DimuonsExtra> dimuonExtraList;
   Produces<aod::DielectronsAll> dielectronAllList;
   Produces<aod::DimuonsAll> dimuonAllList;
@@ -1136,6 +1137,7 @@ struct AnalysisSameEventPairing {
     dielectronList.reserve(1);
     dimuonList.reserve(1);
     dielectronExtraList.reserve(1);
+    dielectronInfoList.reserve(1);
     dimuonExtraList.reserve(1);
     dileptonInfoList.reserve(1);
     dileptonFlowList.reserve(1);
@@ -1196,6 +1198,9 @@ struct AnalysisSameEventPairing {
 
       if constexpr (TPairType == pairTypeEE) {
         dielectronList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
+          dielectronInfoList(t1.collisionId(), t1.trackId(), t2.trackId());
+        }
       }
       if constexpr ((TPairType == pairTypeEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
         if (fConfigFlatTables.value) {
@@ -1250,9 +1255,12 @@ struct AnalysisSameEventPairing {
                         VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI], VarManager::fgValues[VarManager::kMultDimuons],
                         VarManager::fgValues[VarManager::kVertexingPz], VarManager::fgValues[VarManager::kVertexingSV]);
         }
+        auto collId = 0;
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
+          collId = t1.collisionId();
+        }
           if constexpr (eventHasQvector == true || eventHasQvectorCentr == true) {
-            dileptonFlowList(t1.collisionId(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kCentFT0C],
+            dileptonFlowList(collId, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kCentFT0C],
                              VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), isFirst,
                              VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kR2SP_AC], VarManager::fgValues[VarManager::kR2SP_BC],
                              VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kR3SP],
@@ -1262,7 +1270,6 @@ struct AnalysisSameEventPairing {
                              VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF],
                              VarManager::fgValues[VarManager::kMultDimuons], VarManager::fgValues[VarManager::kMultA]);
           }
-        }
         if (t1.sign() != t2.sign()) {
           isFirst = false;
         }

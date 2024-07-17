@@ -42,6 +42,7 @@
 #include "Framework/AnalysisTask.h"              //
 #include "Framework/runDataProcessing.h"         //
 #include "PWGLF/DataModel/LFStrangenessTables.h" //
+#include "Framework/O2DatabasePDGPlugin.h"
 // #include "CommonConstants/PhysicsConstants.h"
 // #include "Framework/HistogramRegistry.h"
 
@@ -75,14 +76,18 @@ struct strangeness_tutorial {
   Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
 
-  // Configurable parameters for V0 selection
+  // Configurable parameters for V0 selection daughters
   Configurable<float> ConfV0DCADaughMax{"ConfV0DCADaughMax", 1.0f, "DCA b/w V0 daughters"};
   Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.06, "DCA Pos To PV"};
   Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.06, "DCA Neg To PV"};
-  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1, "DCA V0 to PV"};
-  // Configurable<bool> isStandarv0{"isStandarv0", false, "Standard V0"};
+  Configurable<float> ConfDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
+  Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 70.f, "V0 Daugh sel: Min. nCls TPC"};
+  Configurable<float> ConfTPCnsimacutpi{"ConfTPCnsimacutpi", 5, "PID selections for KS0 daughters"};
+  Configurable<float> ConfKsrapidity{"ConfKsrapidity", 0.5f, "Rapidity cut on K0s"};
   // Configurable<float> ConfDaughDCAMin{"ConfDaughDCAMin", 0.06f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"}; // same as DCA pos to pv and neg to pv
 
+  // Configurable parameters for V0 selection
+  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1, "DCA V0 to PV"};
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<float> ConfV0CPAMin{"ConfV0CPAMin", 0.97f, "Minimum CPA of V0"};
   Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 0.5f, "Minimum transverse radius"};
@@ -90,13 +95,10 @@ struct strangeness_tutorial {
   Configurable<double> cMaxV0LifeTime{"cMaxV0LifeTime", 15, "Maximum V0 life time"};
   Configurable<double> cSigmaMassKs0{"cSigmaMassKs0", 4, "n Sigma cut on Ks0 mass (Mass (Ks) - cSigmaMassKs0*cWidthKs0)"};
   Configurable<double> cWidthKs0{"cWidthKs0", 0.005, "Width of KS0"};
-  Configurable<float> ConfDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
-  Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 70.f, "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 5, "PID selections for KS0 daughters"};
   Configurable<float> Confarmcut{"Confarmcut", 0.2f, "Armenteros cut"};
-  Configurable<float> ConfKsrapidity{"ConfKsrapidity", 0.5f, "Rapidity cut on K0s"};
   // Configurable<float> lowmasscutks0{"lowmasscutks0", 0.497 - 4 * 0.005, "Low mass cut on K0s"};
   // Configurable<float> highmasscutks0{"highmasscutks0", 0.497 + 4 * 0.005, "High mass cut on K0s"};
+  // Configurable<bool> isStandarv0{"isStandarv0", false, "Standard V0"};
 
   // Configurable for track selection and multiplicity
   Configurable<float> cfgPTcut{"cfgPTcut", 0.2f, "Track PT cut"};
@@ -106,9 +108,9 @@ struct strangeness_tutorial {
 
   // Other cuts on Ks and glueball
   Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
-  Configurable<bool> masslambda{"masslambda", false, "mass under lambda hypothesis"};
-  Configurable<float> competingcascrejlambda{"competingcascrejlambda", 4.3, "rejecting competing cascade lambda"};
-  Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 4.3, "rejecting competing cascade anti-lambda"};
+  Configurable<bool> CompetingCascadeRejection{"CompetingCascadeRejection", false, "mass under lambda hypothesis"};
+  Configurable<float> LambdaRejectionCut{"LambdaRejectionCut", 4.3, "rejecting competing cascade lambda (MeV)"};
+  Configurable<float> AntiLambdaRejectionCut{"AntiLambdaRejectionCut", 4.3, "rejecting competing cascade anti-lambda (MeV)"};
   Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
   Configurable<float> tpcCrossedrowsOverfcls{"tpcCrossedrowsOverfcls", 0.8, "TPC crossed rows over findable clusters"};
 
@@ -129,6 +131,9 @@ struct strangeness_tutorial {
   TF1* fMultCutLow = nullptr;
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
+
+  // to get the particle masses
+  Service<o2::framework::O2DatabasePDG> pdgDB; // pdg database
 
   void init(InitContext const&)
   {
@@ -196,6 +201,8 @@ struct strangeness_tutorial {
       rKzeroShort.add("positive_eta", "Positive daughter eta", kTH1F, {{100, -1.0f, 1.0f}});
       rKzeroShort.add("negative_phi", "Negative daughter phi", kTH1F, {{70, 0.0f, 7.0f}});
       rKzeroShort.add("positive_phi", "Positive daughter phi", kTH1F, {{70, 0.0f, 7.0f}});
+      rKzeroShort.add("negative_y", "Negative daughter y", kTH1F, {{100, -1.0f, 1.0f}});
+      rKzeroShort.add("positive_y", "Positive daughter y", kTH1F, {{100, -1.0f, 1.0f}});
     }
     if (additionalEvsel) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -249,90 +256,9 @@ struct strangeness_tutorial {
     return true;
   }
 
-  template <typename Collision, typename V0>
-  bool SelectionV0(Collision const& collision, V0 const& candidate,
-                   float /*multiplicity*/)
-  {
-    const float qtarm = candidate.qtarm();
-    const float alph = candidate.alpha();
-    float arm = qtarm / alph;
-    const float pT = candidate.pt();
-    const float tranRad = candidate.v0radius();
-    const float dcaDaughv0 = candidate.dcaV0daughters();
-    const float cpav0 = candidate.v0cosPA();
-
-    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
-    float lowmasscutks0 = 0.497 - cWidthKs0 * cSigmaMassKs0;
-    float highmasscutks0 = 0.497 + cWidthKs0 * cSigmaMassKs0;
-    // float decayLength = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::sqrtSumOfSquares(candidate.px(), candidate.py(), candidate.pz());
-
-    if (QAv0) {
-      rKzeroShort.fill(HIST("hMassK0Shortbefore"), candidate.mK0Short(), candidate.pt());
-      rKzeroShort.fill(HIST("hLT"), CtauK0s);
-      rKzeroShort.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
-      rKzeroShort.fill(HIST("hV0CosPA"), candidate.v0cosPA());
-      rKzeroShort.fill(HIST("Mass_lambda"), candidate.mLambda());
-      rKzeroShort.fill(HIST("mass_AntiLambda"), candidate.mAntiLambda());
-      rKzeroShort.fill(HIST("mass_Gamma"), candidate.mGamma());
-      // rKzeroShort.fill(HIST("mass_Hypertriton"), candidate.mHypertriton());
-      // rKzeroShort.fill(HIST("mass_AnitHypertriton"), candidate.mAntiHypertriton());
-      rKzeroShort.fill(HIST("rapidity"), candidate.yK0Short());
-      rKzeroShort.fill(HIST("hv0radius"), candidate.v0radius());
-      rKzeroShort.fill(HIST("hDCApostopv"), candidate.dcapostopv());
-      rKzeroShort.fill(HIST("hDCAnegtopv"), candidate.dcanegtopv());
-      rKzeroShort.fill(HIST("hDCAv0topv"), candidate.dcav0topv());
-      rKzeroShort.fill(HIST("halpha"), candidate.alpha());
-      rKzeroShort.fill(HIST("hqtarm"), candidate.qtarm());
-      rKzeroShort.fill(HIST("hpsipair"), candidate.psipair());
-    }
-
-    if (!DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
-      return false;
-    }
-
-    if (rapidityks && TMath::Abs(candidate.yK0Short()) >= ConfKsrapidity) {
-      return false;
-    }
-
-    if (masslambda && TMath::Abs(candidate.mLambda() - candidate.mK0Short()) >= competingcascrejlambda && TMath::Abs(candidate.mAntiLambda() - candidate.mK0Short()) >= competingcascrejlambdaanti) {
-      return false;
-    }
-
-    // if (isStandarv0 && candidate.isStandardV0 == 0) {
-    //   return false;
-    // }
-
-    if (pT < ConfV0PtMin) {
-      return false;
-    }
-    if (dcaDaughv0 > ConfV0DCADaughMax) {
-      return false;
-    }
-    if (cpav0 < ConfV0CPAMin) {
-      return false;
-    }
-    if (tranRad < ConfV0TranRadV0Min) {
-      return false;
-    }
-    if (tranRad > ConfV0TranRadV0Max) {
-      return false;
-    }
-    if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
-      return false;
-    }
-    if (!armcut && arm < Confarmcut) {
-      return false;
-    }
-
-    if (QAv0) {
-      rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
-    }
-    return true;
-  }
-
   template <typename T, typename V0s>
-  bool isSelectedV0Daughter(T const& track, float charge,
-                            double nsigmaV0Daughter, V0s const& /*candidate*/)
+  bool SelectionV0Daughter(T const& track, float charge,
+                           double nsigmaV0Daughter, V0s const& /*candidate*/)
   {
     if (QAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
@@ -369,7 +295,7 @@ struct strangeness_tutorial {
     //   return false;
     // }
     // v0 PID selection
-    if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
+    if (std::abs(nsigmaV0Daughter) > ConfTPCnsimacutpi) {
       return false;
     }
 
@@ -383,8 +309,89 @@ struct strangeness_tutorial {
       (charge == 1) ? rKzeroShort.fill(HIST("positive_pt"), track.pt()) : rKzeroShort.fill(HIST("negative_pt"), track.pt());
       (charge == 1) ? rKzeroShort.fill(HIST("positive_eta"), track.eta()) : rKzeroShort.fill(HIST("negative_eta"), track.eta());
       (charge == 1) ? rKzeroShort.fill(HIST("positive_phi"), track.phi()) : rKzeroShort.fill(HIST("negative_phi"), track.phi());
+      (charge == 1) ? rKzeroShort.fill(HIST("positive_y"), track.y()) : rKzeroShort.fill(HIST("negative_y"), track.y());
     }
 
+    return true;
+  }
+
+  template <typename Collision, typename V0>
+  bool SelectionV0(Collision const& collision, V0 const& candidate,
+                   float /*multiplicity*/)
+  {
+    const float qtarm = candidate.qtarm();
+    const float alph = candidate.alpha();
+    float arm = qtarm / alph;
+    const float pT = candidate.pt();
+    const float tranRad = candidate.v0radius();
+    const float dcaDaughv0 = candidate.dcaV0daughters();
+    const float cpav0 = candidate.v0cosPA();
+    auto pdgmasslambda = pdgDB->GetParticle(3122)->Mass();
+    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pdgDB->GetParticle(310)->Mass();
+    float lowmasscutks0 = 0.497 - cWidthKs0 * cSigmaMassKs0;
+    float highmasscutks0 = 0.497 + cWidthKs0 * cSigmaMassKs0;
+    // float decayLength = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::sqrtSumOfSquares(candidate.px(), candidate.py(), candidate.pz());
+
+    if (QAv0) {
+      rKzeroShort.fill(HIST("hMassK0Shortbefore"), candidate.mK0Short(), candidate.pt());
+      rKzeroShort.fill(HIST("hLT"), CtauK0s);
+      rKzeroShort.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
+      rKzeroShort.fill(HIST("hV0CosPA"), candidate.v0cosPA());
+      rKzeroShort.fill(HIST("Mass_lambda"), candidate.mLambda());
+      rKzeroShort.fill(HIST("mass_AntiLambda"), candidate.mAntiLambda());
+      rKzeroShort.fill(HIST("mass_Gamma"), candidate.mGamma());
+      // rKzeroShort.fill(HIST("mass_Hypertriton"), candidate.mHypertriton());
+      // rKzeroShort.fill(HIST("mass_AnitHypertriton"), candidate.mAntiHypertriton());
+      rKzeroShort.fill(HIST("rapidity"), candidate.yK0Short());
+      rKzeroShort.fill(HIST("hv0radius"), candidate.v0radius());
+      rKzeroShort.fill(HIST("hDCApostopv"), candidate.dcapostopv());
+      rKzeroShort.fill(HIST("hDCAnegtopv"), candidate.dcanegtopv());
+      rKzeroShort.fill(HIST("hDCAv0topv"), candidate.dcav0topv());
+      rKzeroShort.fill(HIST("halpha"), candidate.alpha());
+      rKzeroShort.fill(HIST("hqtarm"), candidate.qtarm());
+      rKzeroShort.fill(HIST("hpsipair"), candidate.psipair());
+    }
+
+    if (!DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
+      return false;
+    }
+
+    if (rapidityks && TMath::Abs(candidate.yK0Short()) >= ConfKsrapidity) {
+      return false;
+    }
+    if (CompetingCascadeRejection && (TMath::Abs(candidate.mLambda() - pdgmasslambda) <= LambdaRejectionCut * 1e-3 || TMath::Abs(candidate.mAntiLambda() - pdgmasslambda) <= AntiLambdaRejectionCut * 1e-3)) {
+      return false;
+    }
+    // std::cout<<"candidate.mLambda() = "<<candidate.mLambda()<<", candidate.mAntiLambda() = "<<candidate.mAntiLambda()<<", pdgmasslambda = "<<pdgmasslambda<<std::endl;
+    // if (isStandarv0 && candidate.isStandardV0 == 0) {
+    //   return false;
+    // }
+
+    if (pT < ConfV0PtMin) {
+      return false;
+    }
+    if (dcaDaughv0 > ConfV0DCADaughMax) {
+      return false;
+    }
+    if (cpav0 < ConfV0CPAMin) {
+      return false;
+    }
+    if (tranRad < ConfV0TranRadV0Min) {
+      return false;
+    }
+    if (tranRad > ConfV0TranRadV0Max) {
+      return false;
+    }
+    if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
+      return false;
+    }
+    if (!armcut && arm < Confarmcut) {
+      return false;
+    }
+
+    if (QAv0) {
+      rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
+    }
     return true;
   }
 
@@ -410,7 +417,7 @@ struct strangeness_tutorial {
   void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
   {
     hglue.fill(HIST("heventscheck"), 0.5);
-    const double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
+    const double massK0s = pdgDB->GetParticle(310)->Mass();
     float multiplicity = 0.0f;
     if (cfgMultFOTM) {
       multiplicity = collision.centFT0M();
@@ -457,16 +464,16 @@ struct strangeness_tutorial {
       double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
       double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
 
-      if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1)) {
+      if (!SelectionV0Daughter(postrack1, 1, nTPCSigmaPos1, v1)) {
         continue;
       }
-      if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2)) {
+      if (!SelectionV0Daughter(postrack2, 1, nTPCSigmaPos2, v2)) {
         continue;
       }
-      if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1)) {
+      if (!SelectionV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1)) {
         continue;
       }
-      if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2)) {
+      if (!SelectionV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2)) {
         continue;
       }
 
@@ -509,7 +516,7 @@ struct strangeness_tutorial {
   {
     hglue.fill(HIST("heventscheck"), 4.5);
 
-    const double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
+    const double massK0s = pdgDB->GetParticle(310)->Mass();
     auto tracksTuple = std::make_tuple(v0s);
     BinningTypeVertexContributor binningOnPositions1{{mevz, memult}, true};
     BinningTypeCentralityM binningOnPositions2{{mevz, memult}, true};
@@ -557,16 +564,16 @@ struct strangeness_tutorial {
           double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
           double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
 
-          if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
+          if (!SelectionV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
             continue;
           }
-          if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
+          if (!SelectionV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
             continue;
           }
-          if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
+          if (!SelectionV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
             continue;
           }
-          if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
+          if (!SelectionV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
             continue;
           }
 
@@ -619,16 +626,16 @@ struct strangeness_tutorial {
           double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
           double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
 
-          if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
+          if (!SelectionV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
             continue;
           }
-          if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
+          if (!SelectionV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
             continue;
           }
-          if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
+          if (!SelectionV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
             continue;
           }
-          if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
+          if (!SelectionV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
             continue;
           }
 

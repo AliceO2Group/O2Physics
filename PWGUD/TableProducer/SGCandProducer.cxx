@@ -81,7 +81,8 @@ struct SGCandProducer {
     outputFwdTracks(outputCollisions.lastIndex(),
                     fwdtrack.px(), fwdtrack.py(), fwdtrack.pz(), fwdtrack.sign(),
                     bcnum, fwdtrack.trackTime(), fwdtrack.trackTimeRes());
-    outputFwdTracksExtra(fwdtrack.nClusters(),
+    outputFwdTracksExtra(fwdtrack.trackType(),
+                         fwdtrack.nClusters(),
                          fwdtrack.pDca(),
                          fwdtrack.rAtAbsorberEnd(),
                          fwdtrack.chi2(),

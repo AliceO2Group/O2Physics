@@ -26,18 +26,19 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/DataTypes.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/TrackParametrization.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "DetectorsBase/Propagator.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/PID.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "DataFormatsParameters/GRPMagField.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -78,9 +79,23 @@ struct AntimatterAbsorptionHMPID {
   Configurable<float> maxDCAxy{"maxDCAxy", 0.5f, "maxDCAxy"};
   Configurable<float> maxDCAz{"maxDCAz", 0.5f, "maxDCAz"};
   Configurable<bool> use_hmpid_mom{"use_hmpid_mom", true, "use hmpid momentum"};
+  // CCDB configurable
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  } ccdbConfig;
 
   void init(o2::framework::InitContext&)
   {
+    // Configure CCDB
+    ccdb->setURL(ccdbConfig.ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
     // Event Counter
     registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
@@ -304,6 +319,19 @@ struct AntimatterAbsorptionHMPID {
     return true;
   }
 
+  int mCCDBRunNumber = 0;
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mCCDBRunNumber == bc.runNumber()) {
+      return;
+    }
+    o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbConfig.grpmagPath, bc.timestamp());
+    o2::base::MatLayerCylSet* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfig.lutPath));
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+    mCCDBRunNumber = bc.runNumber();
+  }
+
   o2::track::TrackParametrizationWithError<float> mPropagatedTrack;
   template <typename trackType>
   bool propagateToRadius(const trackType& track, const float radius, const o2::track::PID::ID pidForTracking)
@@ -322,16 +350,18 @@ struct AntimatterAbsorptionHMPID {
   }
 
   // Full Tracks
-  using TracksCandidates = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra,
-                                     aod::TrackSelectionExtension, aod::TracksDCA,
-                                     aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                     aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
+                                    aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
   // Process Data
-  void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& event,
+  void processData(CollisionCandidates::iterator const& event,
                    o2::aod::HMPIDs const& hmpids,
-                   TracksCandidates const&)
+                   TrackCandidates const&,
+                   aod::BCsWithTimestamps const&)
   {
+    initCCDB(event.bc_as<aod::BCsWithTimestamps>());
     // Event Selection
     registryQC.fill(HIST("number_of_events_data"), 0.5);
 
@@ -353,7 +383,7 @@ struct AntimatterAbsorptionHMPID {
     for (const auto& hmpid : hmpids) {
 
       // Get Track
-      const auto& track = hmpid.track_as<TracksCandidates>();
+      const auto& track = hmpid.track_as<TrackCandidates>();
 
       // Track Momentum
       float momentum = track.p();
