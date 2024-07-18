@@ -112,7 +112,7 @@ struct flowQC {
 
   // Flow analysis
   using CollWithEPandQvec = soa::Join<aod::Collisions,
-                                      aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
+                                      aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs>::iterator;
 
   HistogramRegistry general{"general", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry flow_ep{"flow_ep", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -289,13 +289,13 @@ struct flowQC {
     float QmodFT0C_Qvec = std::hypot(QxFT0C_Qvec, QyFT0C_Qvec);
     float psiFT0C_Qvec = computeEventPlane(QyFT0C_Qvec, QxFT0A_Qvec);
 
-    float QxTPCl_Qvec = collision.qvecBNegRe();
-    float QyTPCl_Qvec = collision.qvecBNegIm();
+    float QxTPCl_Qvec = collision.qvecTPCnegRe();
+    float QyTPCl_Qvec = collision.qvecTPCnegIm();
     float QmodTPCl_Qvec = std::hypot(QxTPCl_Qvec, QyTPCl_Qvec);
     float psiTPCl_Qvec = computeEventPlane(QyTPCl_Qvec, QxTPCl_Qvec);
 
-    float QxTPCr_Qvec = collision.qvecBPosRe();
-    float QyTPCr_Qvec = collision.qvecBPosIm();
+    float QxTPCr_Qvec = collision.qvecTPCposRe();
+    float QyTPCr_Qvec = collision.qvecTPCposIm();
     float QmodTPCr_Qvec = std::hypot(QxTPCr_Qvec, QyTPCr_Qvec);
     float psiTPCr_Qvec = computeEventPlane(QyTPCr_Qvec, QxTPCr_Qvec);
 

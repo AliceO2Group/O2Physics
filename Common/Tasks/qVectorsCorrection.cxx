@@ -58,8 +58,8 @@ struct qVectorsCorrection {
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest"};
 
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
-  Configurable<std::string> cfgRefAName{"cfgRefAName", "BPos", "The name of detector for reference A"};
-  Configurable<std::string> cfgRefBName{"cfgRefBName", "BNeg", "The name of detector for reference B"};
+  Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCpos", "The name of detector for reference A"};
+  Configurable<std::string> cfgRefBName{"cfgRefBName", "TPCneg", "The name of detector for reference B"};
   Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number"};
@@ -89,11 +89,11 @@ struct qVectorsCorrection {
       return 2;
     } else if (name.value == "FV0A") {
       return 3;
-    } else if (name.value == "BPos") {
+    } else if (name.value == "TPCpos") {
       return 4;
-    } else if (name.value == "BNeg") {
+    } else if (name.value == "TPCneg") {
       return 5;
-    } else if (name.value == "BTot") {
+    } else if (name.value == "TPCall") {
       return 6;
     } else {
       return 0;
@@ -107,7 +107,7 @@ struct qVectorsCorrection {
     RefBId = GetDetId(cfgRefBName);
 
     if (DetId == RefAId || DetId == RefBId || RefAId == RefBId) {
-      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The BPos and BNeg will be used as reference systems");
+      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The TPCpos and TPCneg will be used as reference systems");
       DetId = 0;
       RefAId = 4;
       RefBId = 5;
