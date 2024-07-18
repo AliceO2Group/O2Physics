@@ -21,16 +21,14 @@
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
+#include <array>
+#include <cmath>
+#include <cstdlib>
 #include "TF1.h"
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
 #include "Math/GenVector/Boost.h"
-#include "TF1.h"
-
-#include <array>
-#include <cmath>
-#include <cstdlib>
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -47,8 +45,6 @@
 #include "Framework/AnalysisTask.h"              //
 #include "Framework/runDataProcessing.h"         //
 #include "PWGLF/DataModel/LFStrangenessTables.h" //
-// #include "CommonConstants/PhysicsConstants.h"
-// #include "Framework/HistogramRegistry.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -562,9 +558,7 @@ struct strangeness_tutorial {
             hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity);
           }
 
-        }
-
-        else if (activateTHnSparseCosThStarProduction) {
+        } else if (activateTHnSparseCosThStarProduction) {
           ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
           auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
           hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
@@ -574,9 +568,7 @@ struct strangeness_tutorial {
             lv5 = lv2 + lv4;
             hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction);
           }
-        }
-
-        else if (activateTHnSparseCosThStarBeam) {
+        } else if (activateTHnSparseCosThStarBeam) {
           ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
           auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
           hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
@@ -586,9 +578,7 @@ struct strangeness_tutorial {
             lv5 = lv2 + lv4;
             hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam);
           }
-        }
-
-        else if (activateTHnSparseCosThStarRandom) {
+        } else if (activateTHnSparseCosThStarRandom) {
           ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
           auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
           hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
