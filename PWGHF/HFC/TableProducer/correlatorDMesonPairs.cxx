@@ -62,6 +62,7 @@ struct HfCorrelatorDMesonPairs {
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "maxmum |y| of D0 candidates"};
   Configurable<float> ptCandMin{"ptCandMin", -1., "minimum pT of D0 candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
@@ -74,7 +75,7 @@ struct HfCorrelatorDMesonPairs {
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
   HistogramConfigSpec hTH1Pt{HistType::kTH1F, {{180, 0., 36.}}};
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{100, -5., 5.}}};
@@ -370,11 +371,9 @@ struct HfCorrelatorDMesonPairs {
   }
 
   /// Fill selection status histogram
-  /// \param candidate1 is the first candidate of the pair
-  /// \param candidate2 is the second candidate of the pair
-  template <typename T>
-  void fillEntry(const T& candidate1, const T& candidate2, const bool& isDCand1, const bool& isDbarCand1,
-                 const bool& isDCand2, const bool& isDbarCand2, const uint8_t& candidateType1, const uint8_t& candidateType2)
+  void fillEntry(const bool& isDCand1, const bool& isDbarCand1, const bool& isDCand2, const bool& isDbarCand2,
+                 const uint8_t& candidateType1, const uint8_t& candidateType2, float yCand1, float yCand2,
+                 double ptCand1, double ptCand2, float massDCand1, float massDbarCand1, float massDCand2, float massDbarCand2)
   {
 
     /// Fill information on the D candidates
@@ -399,12 +398,6 @@ struct HfCorrelatorDMesonPairs {
     /// Collect information on the D pairs
     uint8_t pairType(0);
     registry.fill(HIST("hSelectionStatus"), 1);
-    float yCand1 = hfHelper.yD0(candidate1);
-    float yCand2 = hfHelper.yD0(candidate2);
-    float massDCand1 = hfHelper.invMassD0ToPiK(candidate1);
-    float massDbarCand1 = hfHelper.invMassD0barToKPi(candidate1);
-    float massDCand2 = hfHelper.invMassD0ToPiK(candidate2);
-    float massDbarCand2 = hfHelper.invMassD0barToKPi(candidate2);
     if (isDCand1 && isDCand2) {
       SETBIT(pairType, DD);
       registry.fill(HIST("hSelectionStatus"), 14);
@@ -434,7 +427,7 @@ struct HfCorrelatorDMesonPairs {
       }
     }
 
-    entryD0Pair(candidate1.pt(), candidate2.pt(), yCand1, yCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
+    entryD0Pair(ptCand1, ptCand2, yCand1, yCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
   }
 
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -493,7 +486,9 @@ struct HfCorrelatorDMesonPairs {
         bool isDCand2 = isD(candidateType2);
         bool isDbarCand2 = isDbar(candidateType2);
 
-        fillEntry(candidate1, candidate2, isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2);
+        fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, hfHelper.yD0(candidate1), hfHelper.yD0(candidate2),
+                  candidate1.pt(), candidate2.pt(), hfHelper.invMassD0ToPiK(candidate1), hfHelper.invMassD0barToKPi(candidate1),
+                  hfHelper.invMassD0ToPiK(candidate2), hfHelper.invMassD0barToKPi(candidate2));
       } // end inner loop (Cand2)
     }   // end outer loop (Cand1)
   }
@@ -512,18 +507,25 @@ struct HfCorrelatorDMesonPairs {
       return;
     }
     for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
+      auto ptCandidate1 = candidate1.pt();
+      auto yCandidate1 = hfHelper.yD0(candidate1);
+      float massD0Cand1 = hfHelper.invMassD0ToPiK(candidate1);
+      float massD0barCand1 = hfHelper.invMassD0barToKPi(candidate1);
+      auto prong0Cand1 = candidate1.template prong0_as<TracksWPid>();
+      auto prong1Cand1 = candidate1.template prong1_as<TracksWPid>();
+
       if (abs(hfHelper.yD0(candidate1)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
-      auto prong0Cand1 = candidate1.template prong0_as<TracksWPid>();
-      auto prong1Cand1 = candidate1.template prong1_as<TracksWPid>();
-
-      bool isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
-      bool isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
+      bool isSignalD0Cand1 = std::abs(massD0Cand1 - MassD0) < massCut;
+      bool isSignalD0barCand1 = std::abs(massD0barCand1 - MassD0Bar) < massCut;
       if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
+        continue;
+      }
+      if (!(candidate1.isSelD0() >= selectionFlagD0 || candidate1.isSelD0bar() >= selectionFlagD0bar)) {
         continue;
       }
 
@@ -544,21 +546,28 @@ struct HfCorrelatorDMesonPairs {
       }
 
       for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGroupedMc.end(); ++candidate2) {
+        auto ptCandidate2 = candidate2.pt();
+        auto yCandidate2 = hfHelper.yD0(candidate2);
+        float massD0Cand2 = hfHelper.invMassD0ToPiK(candidate2);
+        float massD0barCand2 = hfHelper.invMassD0barToKPi(candidate2);
+        auto prong0Cand2 = candidate2.template prong0_as<TracksWPid>();
+        auto prong1Cand2 = candidate2.template prong1_as<TracksWPid>();
+
         if (abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
-        auto prong0Cand2 = candidate2.template prong0_as<TracksWPid>();
-        auto prong1Cand2 = candidate2.template prong1_as<TracksWPid>();
-        if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
+        bool isSignalD0Cand2 = std::abs(massD0Cand2 - MassD0) < massCut;
+        bool isSignalD0barCand2 = std::abs(massD0barCand2 - MassD0Bar) < massCut;
+        if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
           continue;
         }
-
-        bool isSignalD0Cand2 = std::abs(hfHelper.invMassD0ToPiK(candidate2) - MassD0) < massCut;
-        bool isSignalD0barCand2 = std::abs(hfHelper.invMassD0barToKPi(candidate2) - MassD0Bar) < massCut;
-        if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
+        if (!(candidate2.isSelD0() >= selectionFlagD0 || candidate2.isSelD0bar() >= selectionFlagD0bar)) {
+          continue;
+        }
+        if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0<true>(candidate2); // Candidate type attribution
@@ -609,7 +618,8 @@ struct HfCorrelatorDMesonPairs {
         } else if (isTrueDbarCand1 && isTrueDCand2) {
           registry.fill(HIST("hSelectionStatus"), 25);
         }
-        fillEntry(candidate1, candidate2, isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2);
+        fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2,
+                  ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
         entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
       } // end inner loop (Cand2)
     }   // end outer loop (Cand1)
