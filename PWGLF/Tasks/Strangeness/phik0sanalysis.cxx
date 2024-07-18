@@ -82,11 +82,14 @@ static constexpr std::string_view PhiPiSESCut[nMultBin] = {"h2PhiPiSESCut_0_1", 
 struct phik0shortanalysis {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry eventHist{"eventHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry K0SHist{"K0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry MCeventHist{"MCeventHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhicandHist{"PhicandHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry K0SHist{"K0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhipurHist{"PhipurHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhiK0SHist{"PhiK0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry MCPhiK0SHist{"MCPhiK0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhiPionHist{"PhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry MCPhiPionHist{"MCPhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -206,6 +209,14 @@ struct phik0shortanalysis {
     eventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "INEL>0 cut");
     eventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi cand");
 
+    // Number of MC events per selection
+    MCeventHist.add("hMCEventSelection", "hMCEVentSelection", kTH1F, {{6, -0.5f, 5.5f}});
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(4, "INEL>0 cut");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi cand");
+
     // Event information
     eventHist.add("hVertexZRec", "hVertexZRec", kTH1F, {vertexZAxis});
     eventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
@@ -270,6 +281,27 @@ struct phik0shortanalysis {
     if (!collision.isInelGt0())
       return false;
     eventHist.fill(HIST("hEventSelection"), 3); // INEL>0 collisions
+    return true;
+  }
+
+  // MC Event selection and QA filling
+  template <typename T>
+  bool acceptMCEventQA(const T& collision)
+  {
+    eventHist.fill(HIST("hEventSelection"), 0); // all collisions
+    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX))
+      return false;
+    eventHist.fill(HIST("hEventSelection"), 1); // kIsTriggerTVX collisions
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return false;
+    eventHist.fill(HIST("hEventSelection"), 2); // kNoTimeFrameBorder collisions
+    if (std::abs(collision.posZ()) > cutzvertex)
+      return false;
+    eventHist.fill(HIST("hEventSelection"), 3); // vertex-Z selected
+    eventHist.fill(HIST("hVertexZRec"), collision.posZ());
+    if (!collision.isInelGt0())
+      return false;
+    eventHist.fill(HIST("hEventSelection"), 4); // INEL>0 collisions
     return true;
   }
 
