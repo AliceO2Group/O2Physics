@@ -228,9 +228,9 @@ struct lambdakzeromcbuilder {
         thisInfo.label = -1;
         thisInfo.motherLabel = -1;
         thisInfo.pdgCode = 0;
-        thisInfo.pdgCodeMother = 0;
-        thisInfo.pdgCodePositive = 0;
-        thisInfo.pdgCodeNegative = 0;
+        thisInfo.pdgCodeMother = -1;
+        thisInfo.pdgCodePositive = -1;
+        thisInfo.pdgCodeNegative = -1;
         thisInfo.mcCollision = -1;
         thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
         thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
@@ -249,6 +249,7 @@ struct lambdakzeromcbuilder {
           (addGeneratedGamma && mcParticle.pdgCode() == 22)) {
           thisInfo.pdgCode = mcParticle.pdgCode();
           thisInfo.isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+          thisInfo.label = mcParticle.globalIndex();
 
           if (mcParticle.has_mcCollision()) {
             thisInfo.mcCollision = mcParticle.mcCollisionId(); // save this reference, please
@@ -259,6 +260,24 @@ struct lambdakzeromcbuilder {
           thisInfo.posP[0] = mcParticle.px();
           thisInfo.posP[1] = mcParticle.py();
           thisInfo.posP[2] = mcParticle.pz();
+
+          if (mcParticle.has_mothers()) {
+            auto const& mother = mcParticle.mothers_first_as<aod::McParticles>();
+            thisInfo.pdgCodeMother = mother.pdgCode();
+            thisInfo.motherLabel = mother.globalIndex();
+          }
+          if (mcParticle.has_daughters()) {
+            auto const& daughters = mcParticle.daughters_as<aod::McParticles>();
+            if(daughters.size() > 2)
+              LOGF(info, "V0 candidates with more than 2 daughters!");
+            for (auto& dau : daughters) {
+              if(dau.pdgCode() > 0)
+                thisInfo.pdgCodePositive = dau.pdgCode();
+              if(dau.pdgCode() < 0)
+                thisInfo.pdgCodeNegative = dau.pdgCode();
+            }
+          }
+
 
           // if I got here, it means this MC particle was not recoed and is of interest. Add it please
           mcV0infos.push_back(thisInfo);
@@ -272,7 +291,7 @@ struct lambdakzeromcbuilder {
           info.isPhysicalPrimary, info.xyz[0], info.xyz[1], info.xyz[2],
           info.posP[0], info.posP[1], info.posP[2],
           info.negP[0], info.negP[1], info.negP[2]);
-        v0mccollref(thisInfo.mcCollision);
+        v0mccollref(info.mcCollision);
       }
     }
 
