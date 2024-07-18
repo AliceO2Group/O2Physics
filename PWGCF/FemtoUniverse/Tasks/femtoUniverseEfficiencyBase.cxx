@@ -167,8 +167,8 @@ struct femtoUniverseEfficiencyBase {
   /// @param parts femtoUniverseParticles table (in case of Monte Carlo joined with FemtoUniverseMCLabels)
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
-  template <bool isMC, typename PartitionType, typename PartType>
-  void doMCGen(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, PartType parts, float /*magFieldTesla*/, int multCol)
+  template <bool isMC, typename PartitionType>
+  void doMCGen(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, float /*magFieldTesla*/, int multCol)
   {
     bool swpart = fNeventsProcessed % 2;
     fNeventsProcessed++;
@@ -210,8 +210,8 @@ struct femtoUniverseEfficiencyBase {
   /// @param parts femtoUniverseParticles table (in case of Monte Carlo joined with FemtoUniverseMCLabels)
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
-  template <bool isMC, typename PartitionType, typename PartType>
-  void doMCRec(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, PartType parts, float /*magFieldTesla*/, int multCol)
+  template <bool isMC, typename PartitionType>
+  void doMCRec(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, float /*magFieldTesla*/, int multCol)
   {
     bool swpart = fNeventsProcessed % 2;
     fNeventsProcessed++;
@@ -247,17 +247,17 @@ struct femtoUniverseEfficiencyBase {
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
   void processTrackTrack(o2::aod::FDCollision& col,
-                         o2::aod::FDParticles& parts)
+                         o2::aod::FDParticles&)
   {
     fillCollision(col);
     // MCGen
     auto thegrouppartsOneMCGen = partsOneMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegrouppartsTwoGen = partsTwoGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoGen, parts, col.magField(), col.multNtr());
+    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoGen, col.magField(), col.multNtr());
     // MCRec
     auto thegroupPartsTrackOneRec = partsTrackOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrackTwoReco = partsTrackTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCRec<false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoReco, parts, col.magField(), col.multNtr());
+    doMCRec<false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoReco, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoUniverseEfficiencyBase, processTrackTrack, "Enable processing track-track efficiency task", true);
 };
