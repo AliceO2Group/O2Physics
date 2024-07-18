@@ -32,13 +32,15 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-namespace o2::aod{
-  namespace hf_cent_mc_dstar{
-    DECLARE_SOA_COLUMN(CentMcCollision, centMcCollision,float);
-  }
-  DECLARE_SOA_TABLE(HfCentMcCollisions,"AOD","HfCentMcCol",hf_cent_mc_dstar::CentMcCollision); // Joinable with McCollisions
-  using HfCentMcCollision = HfCentMcCollisions::iterator;
+namespace o2::aod
+{
+namespace hf_cent_mc_dstar
+{
+DECLARE_SOA_COLUMN(CentMcCollision, centMcCollision, float);
 }
+DECLARE_SOA_TABLE(HfCentMcCollisions, "AOD", "HfCentMcCol", hf_cent_mc_dstar::CentMcCollision); // Joinable with McCollisions
+using HfCentMcCollision = HfCentMcCollisions::iterator;
+} // namespace o2::aod
 
 using namespace o2;
 using namespace o2::analysis;
@@ -46,45 +48,43 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-struct HfCentMcDstarToD0Pi{
+struct HfCentMcDstarToD0Pi {
   Produces<aod::HfCentMcCollisions> rowsCentMcCollision;
 
   using CollisionsWCentMcLabel = o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::CentFT0Ms>;
 
   SliceCache cache;
-  
+
   // Unsorted Slicing is working and also faster than partition defined within process function
   PresliceUnsorted<CollisionsWCentMcLabel> recColsPerMcColPreSlice = aod::mccollisionlabel::mcCollisionId;
 
   HistogramRegistry registry{
-     "registry",
-     {
-      {"QA/hCentGen","#{Delta}Cent % distribution of Collisions having same MC Collision;FT0M Centrality %; Counts",{HistType::kTH1F,{{100,0.0,100.0}}}}
-     }
-  };
+    "registry",
+    {{"QA/hCentGen", "#{Delta}Cent % distribution of Collisions having same MC Collision;FT0M Centrality %; Counts", {HistType::kTH1F, {{100, 0.0, 100.0}}}}}};
 
-  void process(aod::McCollisions const & mcCollisions, CollisionsWCentMcLabel const & collisions){
-    for(const auto & mcCollision: mcCollisions){
+  void process(aod::McCollisions const& mcCollisions, CollisionsWCentMcLabel const& collisions)
+  {
+    for (const auto& mcCollision : mcCollisions) {
       auto gIMcCollision = mcCollision.globalIndex();
-      auto recColsPerMcCol = collisions.sliceByCachedUnsorted(aod::mccollisionlabel::mcCollisionId,gIMcCollision,cache);
+      auto recColsPerMcCol = collisions.sliceByCachedUnsorted(aod::mccollisionlabel::mcCollisionId, gIMcCollision, cache);
 
       // LOGF(info,"recColsPerMcCol size: %d",recColsPerMcCol.size());
       // looking if a generated collision reconstructed more than a times.
-      if(recColsPerMcCol.size() > 1){
-        for(const auto & [c1,c2]: combinations(CombinationsStrictlyUpperIndexPolicy(recColsPerMcCol,recColsPerMcCol))){
+      if (recColsPerMcCol.size() > 1) {
+        for (const auto& [c1, c2] : combinations(CombinationsStrictlyUpperIndexPolicy(recColsPerMcCol, recColsPerMcCol))) {
           auto deltaCent = abs(c1.centFT0M() - c2.centFT0M());
-          registry.fill(HIST("QA/hCentGen"),deltaCent);
+          registry.fill(HIST("QA/hCentGen"), deltaCent);
         }
       }
 
-      if(recColsPerMcCol.size()){
+      if (recColsPerMcCol.size()) {
         // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
         std::vector<float> colCentVec;
-        for(const auto & recCol: recColsPerMcCol){
+        for (const auto& recCol : recColsPerMcCol) {
           colCentVec.push_back(recCol.centFT0M());
         }
         std::sort(colCentVec.begin(), colCentVec.end());
-        auto centFT0MGen = colCentVec[colCentVec.size()-1];
+        auto centFT0MGen = colCentVec[colCentVec.size() - 1];
 
         // filling centrality table at gen level if collision was reconstructed at REC level successfully
         rowsCentMcCollision(centFT0MGen);
@@ -119,8 +119,8 @@ struct HfTaskDstarToD0Pi {
   ConfigurableAxis binningImpactParam{"binningImpactParam", {1000, 0.1, -0.1}, " Bins of Impact Parameter"};
   ConfigurableAxis binningDecayLength{"binningDecayLength", {1000, 0.0, 0.7}, "Bins of Decay Length"};
   ConfigurableAxis binningNormDecayLength{"binningNormDecayLength", {1000, 0.0, 40.0}, "Bins of Normalised Decay Length"};
-  
-  ConfigurableAxis binningCentrality{"binningCentrality",{VARIABLE_WIDTH,0.0,10.0,20.0,30.0,60.0,100.0},"centrality binning"};
+
+  ConfigurableAxis binningCentrality{"binningCentrality", {VARIABLE_WIDTH, 0.0, 10.0, 20.0, 30.0, 60.0, 100.0}, "centrality binning"};
 
   HistogramRegistry registry{
     "registry",
@@ -141,7 +141,7 @@ struct HfTaskDstarToD0Pi {
     AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
     AxisSpec axisCentrality = {binningCentrality, "centrality (%)"};
 
-    registry.add("Yield/hDeltaInvMassDstar3D","#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality",{HistType::kTH3F,{{100, 0.13, 0.16},{vecPtBins, "#it{p}_{T} (GeV/#it{c})"},{axisCentrality}}}, true);
+    registry.add("Yield/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
     registry.add("Yield/hDeltaInvMassDstar1D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{100, 0.13, 0.16}}}, true);
     registry.add("Yield/hInvMassDstar", "#Delta #it{M}_{inv} D* Candidate; inv. mass (#pi #pi k) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{500, 0., 5.0}}}, true);
@@ -170,7 +170,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hEtaSkimDstarRecSig", "MC Matched Skimed D* Candidates at Reconstruction Level; #it{#eta} of D* Candidate", {HistType::kTH1F, {{100, -2., 2.}}});
     // pt vs y
     registry.add("QA/hPtSkimDstarGenSig", "MC Matched Skimed D* Reconstructed Candidates at Generator Level; #it{p}_{T} of D* at Generator Level (GeV/#it{c})", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
-    registry.add("Efficiency/hPtVsCentSkimDstarGenSig", "MC Matched Skimed D* Reconstructed Candidates at Generator Level; #it{p}_{T} of D* at Generator Level (GeV/#it{c}); Centrality (%)",{HistType::kTH2F,{{vecPtBins, "#it{p}_{T} (GeV/#it{c})"},{axisCentrality}}}, true); 
+    registry.add("Efficiency/hPtVsCentSkimDstarGenSig", "MC Matched Skimed D* Reconstructed Candidates at Generator Level; #it{p}_{T} of D* at Generator Level (GeV/#it{c}); Centrality (%)", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     registry.add("QA/hPtVsYSkimDstarRecSig", "MC Matched Skimed D* Candidates at Reconstruction Level; #it{p}_{T} of D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoTopolDstarRecSig", "MC Matched RecoTopol D* Candidates at Reconstruction Level; #it{p}_{T} of D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoPidDstarRecSig", "MC Matched RecoPid D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
@@ -194,7 +194,7 @@ struct HfTaskDstarToD0Pi {
     // MC Matching at Generator level Successful
     registry.add("QA/hEtaDstarGen", "MC Matched D* Candidates at Generator Level; #it{#eta}", {HistType::kTH1F, {{100, -2., 2.}}});
     registry.add("QA/hPtDstarGen", "MC Matched D* Candidates at Generator Level; #it{p}_{T} of  D*", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Efficiency/hPtVsCentDstarGen","MC Matched D* Candidates at Generator Level; #it{p}_{T} of  D*;Centrality (%) ",{HistType::kTH2F,{{vecPtBins, "#it{p}_{T} (GeV/#it{c})"},{axisCentrality}}}, true);
+    registry.add("Efficiency/hPtVsCentDstarGen", "MC Matched D* Candidates at Generator Level; #it{p}_{T} of  D*;Centrality (%) ", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     registry.add("QA/hPtVsYDstarGen", "MC Matched D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     // Prompt Gen
     registry.add("QA/hPtPromptDstarGen", "MC Matched Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -204,7 +204,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hPtVsYNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  void process(CollisionsWCent const&, CandDstarWSelFlag const& )
+  void process(CollisionsWCent const&, CandDstarWSelFlag const&)
   {
     for (const auto& candDstar : rowsSelectedCandDstar) {
       auto yDstar = candDstar.y(constants::physics::MassDStar);
@@ -244,7 +244,7 @@ struct HfTaskDstarToD0Pi {
 
       auto signDstar = candDstar.signSoftPi();
       if (signDstar > 0) {
-        registry.fill(HIST("Yield/hDeltaInvMassDstar3D"),(invDstar - invD0), candDstar.pt(), centrality);
+        registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), (invDstar - invD0), candDstar.pt(), centrality);
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invDstar - invD0));
@@ -253,7 +253,7 @@ struct HfTaskDstarToD0Pi {
         registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
       } else if (signDstar < 0) {
-        registry.fill(HIST("Yield/hDeltaInvMassDstar3D"),(invAntiDstar - invD0Bar), candDstar.pt(), centrality);
+        registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), (invAntiDstar - invD0Bar), candDstar.pt(), centrality);
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invAntiDstar - invD0Bar));
@@ -265,12 +265,11 @@ struct HfTaskDstarToD0Pi {
     }
   }
 
-  void processMC(CollisionsWCent const&, 
-                CandDstarWSelFlagMcRec const&,
-                aod::TracksWMc const&,
-                CandDstarMcGen const& rowsMcPartilces,
-                McCollisionWCentFT0M const &
-                 )
+  void processMC(CollisionsWCent const&,
+                 CandDstarWSelFlagMcRec const&,
+                 aod::TracksWMc const&,
+                 CandDstarMcGen const& rowsMcPartilces,
+                 McCollisionWCentFT0M const&)
   {
 
     int8_t signDstar = 0;
@@ -282,7 +281,7 @@ struct HfTaskDstarToD0Pi {
         continue;
       }
       auto collision = candDstarMcRec.collision_as<CollisionsWCent>();
-      auto centrality = collision.centFT0M(); // 0-100%
+      auto centrality = collision.centFT0M();                                                               // 0-100%
       if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
         // get MC Mother particle
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, candDstarMcRec.prong0_as<aod::TracksWMc>().mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
@@ -341,7 +340,7 @@ struct HfTaskDstarToD0Pi {
     // MC at Generator Level
     for (const auto& mcParticle : rowsMcPartilces) {
       if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
-        
+
         auto mcCollision = mcParticle.mcCollision_as<McCollisionWCentFT0M>();
         auto centMcCol = mcCollision.centMcCollision();
         auto ptGen = mcParticle.pt();
@@ -353,12 +352,12 @@ struct HfTaskDstarToD0Pi {
         registry.fill(HIST("QA/hEtaDstarGen"), mcParticle.eta());
         registry.fill(HIST("QA/hPtDstarGen"), ptGen);
         registry.fill(HIST("QA/hPtVsYDstarGen"), ptGen, yGen);
-        registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen,centMcCol);
+        registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centMcCol);
         // only promt Dstar candidate at Generator level
         if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("QA/hPtPromptDstarGen"), ptGen);
           registry.fill(HIST("QA/hPtVsYPromptDstarGen"), ptGen, yGen);
-        } else if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) { 
+        } else if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           // only non-prompt Dstar candidate at Generator level
           registry.fill(HIST("QA/hPtNonPromptDstarGen"), ptGen);
           registry.fill(HIST("QA/hPtVsYNonPromptDstarGen"), ptGen, yGen);
@@ -372,5 +371,5 @@ struct HfTaskDstarToD0Pi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfTaskDstarToD0Pi>(cfgc),
-  adaptAnalysisTask<HfCentMcDstarToD0Pi>(cfgc)};
+                      adaptAnalysisTask<HfCentMcDstarToD0Pi>(cfgc)};
 }
