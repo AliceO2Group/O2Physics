@@ -402,7 +402,14 @@ struct qVectorsTable {
         continue;
       }
       histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
-      if (std::abs(trk.eta()) < 0.1 || std::abs(trk.eta()) > 0.8) {
+      if (std::abs(trk.eta()) > 0.8) {
+        continue;
+      }
+      qVectBTot[0] += trk.pt() * std::cos(trk.phi() * nmode);
+      qVectBTot[1] += trk.pt() * std::sin(trk.phi() * nmode);
+      TrkBTotLabel.push_back(trk.globalIndex());
+      nTrkBTot++;
+      if (std::abs(trk.eta()) < 0.1) {
         continue;
       }
       if (trk.eta() > 0 && useDetector["QvectorBPoss"]) {
@@ -416,10 +423,6 @@ struct qVectorsTable {
         TrkBNegLabel.push_back(trk.globalIndex());
         nTrkBNeg++;
       }
-      qVectBTot[0] += trk.pt() * std::cos(trk.phi() * nmode);
-      qVectBTot[1] += trk.pt() * std::sin(trk.phi() * nmode);
-      TrkBTotLabel.push_back(trk.globalIndex());
-      nTrkBTot++;
     }
     if (nTrkBPos > 0) {
       qVectBPos[0] /= nTrkBPos;
@@ -527,7 +530,7 @@ struct qVectorsTable {
       int ind = cfgnMods->at(id);
       CalQvec(ind, coll, tracks, qvecRe, qvecIm, qvecAmp, TrkBPosLabel, TrkBNegLabel, TrkBTotLabel);
       if (cent < 80) {
-        for (auto i{0u}; i < 6; i++) {
+        for (auto i{0u}; i < kBTot + 1; i++) {
           helperEP.DoRecenter(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 1], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 1],
                               objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
 

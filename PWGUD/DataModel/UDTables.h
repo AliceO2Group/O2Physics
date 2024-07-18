@@ -355,6 +355,22 @@ DECLARE_SOA_TABLE(UDFwdTracks, "AOD", "UDFWDTRACK",
                   udfwdtrack::TrackTime,
                   udfwdtrack::TrackTimeRes);
 
+namespace udfwdmatchindex
+{
+DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);    //!
+DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int64_t); //! Index of the track in the global track table
+DECLARE_SOA_COLUMN(MCHTrackId, mchTrackId, int64_t);   //! Id of original MCH track used for matching
+DECLARE_SOA_COLUMN(MFTTrackId, mftTrackId, int64_t);   //! Id of original MFT track used for matching
+} // namespace udfwdmatchindex
+
+// Details about FWD indices
+DECLARE_SOA_TABLE(UDFwdIndices, "AOD", "UDFWDINDEX",
+                  o2::soa::Index<>,
+                  udfwdmatchindex::UDCollisionId,
+                  udfwdmatchindex::GlobalIndex,
+                  udfwdmatchindex::MCHTrackId,
+                  udfwdmatchindex::MFTTrackId);
+
 // Muon track quality details
 DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
                   fwdtrack::TrackType,
@@ -364,13 +380,12 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
                   fwdtrack::Chi2,
                   fwdtrack::Chi2MatchMCHMID,
                   fwdtrack::Chi2MatchMCHMFT,
-                  fwdtrack::MFTTrackId,
-                  fwdtrack::MCHTrackId,
                   fwdtrack::MCHBitMap,
                   fwdtrack::MIDBitMap,
                   fwdtrack::MIDBoards);
 
 using UDFwdTrack = UDFwdTracks::iterator;
+using UDFwdIndex = UDFwdIndices::iterator;
 using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
 
 DECLARE_SOA_TABLE(UDFwdTracksProp, "AOD", "UDFWDTRACKPROP",

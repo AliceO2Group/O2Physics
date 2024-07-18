@@ -174,7 +174,7 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
   ConfigurableAxis axisITScluMap{"axisITSMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
   ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
-  ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {13, -0.5f, 12.5f}, "ITS Coarse cluster map"};
+  ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {16, -3.5f, 12.5f}, "ITS Coarse cluster map"};
   ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
 
   // MC coll assoc QA axis
@@ -693,10 +693,10 @@ struct derivedlambdakzeroanalysis {
     return (bitmap & mask) == mask;
   }
 
-  uint computeITSclusBitmap(uint8_t itsClusMap)
+  int computeITSclusBitmap(uint8_t itsClusMap, bool fromAfterburner)
   // Focus on the 12 dominant ITS cluster configurations
   {
-    uint bitMap = 0;
+    int bitMap = 0;
 
     if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
@@ -718,16 +718,22 @@ struct derivedlambdakzeroanalysis {
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :          x  x  x  x
       bitMap = 9;
+      if (fromAfterburner)
+        bitMap = -3;
     } else if (verifyMask(itsClusMap, ((uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :             x  x  x
       bitMap = 8;
+      if (fromAfterburner)
+        bitMap = -2;
     } else if (verifyMask(itsClusMap, ((uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :                x  x
       bitMap = 7;
+      if (fromAfterburner)
+        bitMap = -1;
     } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
@@ -800,10 +806,13 @@ struct derivedlambdakzeroanalysis {
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
+    bool posIsFromAfterburner = posTrackExtra.itsChi2PerNcl() < 0;
+    bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
+
     uint posDetMap = computeDetBitmap(posTrackExtra.detectorMap());
-    uint posITSclusMap = computeITSclusBitmap(posTrackExtra.itsClusterMap());
+    int posITSclusMap = computeITSclusBitmap(posTrackExtra.itsClusterMap(), posIsFromAfterburner);
     uint negDetMap = computeDetBitmap(negTrackExtra.detectorMap());
-    uint negITSclusMap = computeITSclusBitmap(negTrackExtra.itsClusterMap());
+    int negITSclusMap = computeITSclusBitmap(negTrackExtra.itsClusterMap(), negIsFromAfterburner);
 
     // __________________________________________
     // fill with no selection if plain QA requested

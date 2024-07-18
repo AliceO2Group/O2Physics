@@ -111,10 +111,12 @@ struct TableMakerMC {
   Produces<ReducedEvents> event;
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
+  Produces<ReducedEventsInfo> eventInfo;
   Produces<ReducedEventsMultPV> multPV;
   Produces<ReducedEventsMultAll> multAll;
   Produces<ReducedMCEventLabels> eventMClabels;
   Produces<ReducedMCEvents> eventMC;
+  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedTracks> trackBasic;
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
@@ -453,6 +455,7 @@ struct TableMakerMC {
         eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
       }
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+      eventInfo(collision.globalIndex());
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
         eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
@@ -515,6 +518,7 @@ struct TableMakerMC {
       int isAmbiguous = 0;
       // loop over reconstructed tracks
       if constexpr (static_cast<bool>(TTrackFillMap)) {
+        trackBarrelInfo.reserve(tracksBarrel.size());
         trackBasic.reserve(tracksBarrel.size());
         trackBarrel.reserve(tracksBarrel.size());
         trackBarrelPID.reserve(tracksBarrel.size());
@@ -622,6 +626,7 @@ struct TableMakerMC {
             fCounters[0]++;
           }
 
+          trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
           trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
           trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                       track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
@@ -1010,6 +1015,7 @@ struct TableMakerMC {
         eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
       }
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+      eventInfo(collision.globalIndex());
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
         eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
@@ -1066,6 +1072,7 @@ struct TableMakerMC {
       int isAmbiguous = 0;
       // loop over reconstructed tracks
       if constexpr (static_cast<bool>(TTrackFillMap)) {
+        trackBarrelInfo.reserve(tracksBarrel.size());
         trackBasic.reserve(tracksBarrel.size());
         trackBarrel.reserve(tracksBarrel.size());
         trackBarrelPID.reserve(tracksBarrel.size());
@@ -1168,6 +1175,7 @@ struct TableMakerMC {
             fCounters[0]++;
           }
 
+          trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
           trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
           trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                       track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),

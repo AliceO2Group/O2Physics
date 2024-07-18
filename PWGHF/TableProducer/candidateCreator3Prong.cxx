@@ -205,7 +205,7 @@ struct HfCandidateCreator3Prong {
           continue;
         }
       } catch (const std::runtime_error& error) {
-        LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         hCandidates->Fill(SVFitting::Fail);
         continue;
       }
@@ -406,7 +406,7 @@ struct HfCandidateCreator3Prong {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
@@ -423,7 +423,7 @@ struct HfCandidateCreator3Prong {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
@@ -440,7 +440,7 @@ struct HfCandidateCreator3Prong {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
