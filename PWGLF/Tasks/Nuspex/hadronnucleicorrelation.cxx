@@ -560,7 +560,7 @@ struct hadronnucleicorrelation {
     LOGP(info, "Opened histogram {}", Form("%s_antideuteron", histname.Data()));
   }
 
-  void processData(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::BCsWithTimestamps const&)
+  void processData(FilteredCollisions const& collisions, FilteredTracks const& tracks)
   {
     for (auto track : tracks) {
       if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
