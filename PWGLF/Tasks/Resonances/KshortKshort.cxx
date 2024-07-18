@@ -687,28 +687,18 @@ struct strangeness_tutorial {
           if (TMath::Abs(lv3.Rapidity() < 0.5)) {
 
             if (activateTHnSparseCosThStarHelicity) {
-              // --- Calculation of the azimuthal angle (Helicity)
-              // auto CosThetaHE = zaxis.Dot(threeVecDauCM.Unit());
-              // auto phi = TMath::ATan2(threeVecDauCM.Dot(yaxis), threeVecDauCM.Dot(xaxis));
-
               ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
               auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
-            }
-
-            else if (activateTHnSparseCosThStarProduction) {
+            } else if (activateTHnSparseCosThStarProduction) {
               ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
               auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
-            }
-
-            else if (activateTHnSparseCosThStarBeam) {
+            } else if (activateTHnSparseCosThStarBeam) {
               ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
-            }
-
-            else if (activateTHnSparseCosThStarRandom) {
+            } else if (activateTHnSparseCosThStarRandom) {
               ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
@@ -788,28 +778,18 @@ struct strangeness_tutorial {
           if (TMath::Abs(lv3.Rapidity() < 0.5)) {
 
             if (activateTHnSparseCosThStarHelicity) {
-              // --- Calculation of the azimuthal angle (Helicity)
-              // auto CosThetaHE = zaxis.Dot(threeVecDauCM.Unit());
-              // auto phi = TMath::ATan2(threeVecDauCM.Dot(yaxis), threeVecDauCM.Dot(xaxis));
-
               ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
               auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
-            }
-
-            else if (activateTHnSparseCosThStarProduction) {
+            } else if (activateTHnSparseCosThStarProduction) {
               ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
               auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
-            }
-
-            else if (activateTHnSparseCosThStarBeam) {
+            } else if (activateTHnSparseCosThStarBeam) {
               ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
-            }
-
-            else if (activateTHnSparseCosThStarRandom) {
+            } else if (activateTHnSparseCosThStarRandom) {
               ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
