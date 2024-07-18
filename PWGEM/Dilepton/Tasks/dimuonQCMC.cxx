@@ -455,7 +455,7 @@ struct dimuonQCMC {
     o2::math_utils::bringToPMPi(dphi_e_ee);
 
     float cos_thetaCS = 999, phiCS = 999.f;
-    o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+    o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
 
     if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);
