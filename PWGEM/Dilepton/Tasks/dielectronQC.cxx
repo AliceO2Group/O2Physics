@@ -316,12 +316,12 @@ struct dielectronQC {
       const AxisSpec axis_cos_2dphi1{10, -1.f, 1.f, "cos(2 (#varphi_{e1} - #varphi_{ee}))"};
       const AxisSpec axis_cos_2dphi2{10, -1.f, 1.f, "cos(2 (#varphi_{e2} - #varphi_{ee}))"};
 
-      const AxisSpec axis_ev1_sp2_ft0mbpos{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{TPCpos} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp2_ft0mbneg{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{TPCneg} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp2_bposbneg{40, -10.f, 10.f, "Q_{2}^{TPCpos} #upoint Q_{2}^{TPCneg} in event1"};
-      const AxisSpec axis_ev2_sp2_ft0mbpos{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{TPCpos} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp2_ft0mbneg{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{TPCneg} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp2_bposbneg{40, -10.f, 10.f, "Q_{2}^{TPCpos} #upoint Q_{2}^{TPCneg} in event2"};
+      const AxisSpec axis_ev1_sp2_ft0mbpos{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{BPos} in event1", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev1_sp2_ft0mbneg{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{BNeg} in event1", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev1_sp2_bposbneg{40, -10.f, 10.f, "Q_{2}^{BPos} #upoint Q_{2}^{BNeg} in event1"};
+      const AxisSpec axis_ev2_sp2_ft0mbpos{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{BPos} in event2", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev2_sp2_ft0mbneg{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{BNeg} in event2", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev2_sp2_bposbneg{40, -10.f, 10.f, "Q_{2}^{BPos} #upoint Q_{2}^{BNeg} in event2"};
 
       fRegistry.add("Pair/mix/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp2_l1, axis_cos_2dphi1, axis_sp2_l2, axis_cos_2dphi2}, true);
       fRegistry.add("Pair/mix/uls/hs_R", "dielectron qvector resolution R_{2}", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_ev1_sp2_ft0mbpos, axis_ev1_sp2_ft0mbneg, axis_ev1_sp2_bposbneg, axis_ev2_sp2_ft0mbpos, axis_ev2_sp2_ft0mbneg, axis_ev2_sp2_bposbneg}, true);
@@ -341,12 +341,12 @@ struct dielectronQC {
       const AxisSpec axis_cos_3dphi1{10, -1.f, 1.f, "cos(3 (#varphi_{e1} - #varphi_{ee}))"};
       const AxisSpec axis_cos_3dphi2{10, -1.f, 1.f, "cos(3 (#varphi_{e2} - #varphi_{ee}))"};
 
-      const AxisSpec axis_ev1_sp3_ft0mbpos{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{TPCpos} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp3_ft0mbneg{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{TPCneg} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp3_bposbneg{40, -10.f, 10.f, "Q_{3}^{TPCpos} #upoint Q_{3}^{TPCneg} in event1"};
-      const AxisSpec axis_ev2_sp3_ft0mbpos{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{TPCpos} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp3_ft0mbneg{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{TPCneg} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp3_bposbneg{40, -10.f, 10.f, "Q_{3}^{TPCpos} #upoint Q_{3}^{TPCneg} in event2"};
+      const AxisSpec axis_ev1_sp3_ft0mbpos{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{BPos} in event1", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev1_sp3_ft0mbneg{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{BNeg} in event1", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev1_sp3_bposbneg{40, -10.f, 10.f, "Q_{3}^{BPos} #upoint Q_{3}^{BNeg} in event1"};
+      const AxisSpec axis_ev2_sp3_ft0mbpos{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{BPos} in event2", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev2_sp3_ft0mbneg{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{BNeg} in event2", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev2_sp3_bposbneg{40, -10.f, 10.f, "Q_{3}^{BPos} #upoint Q_{3}^{BNeg} in event2"};
 
       fRegistry.add("Pair/mix/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp3_l1, axis_cos_3dphi1, axis_sp3_l2, axis_cos_3dphi2}, true);
       fRegistry.add("Pair/mix/uls/hs_R", "dielectron qvector resolution R_{3}", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_ev1_sp3_ft0mbpos, axis_ev1_sp3_ft0mbneg, axis_ev1_sp3_bposbneg, axis_ev2_sp3_ft0mbpos, axis_ev2_sp3_ft0mbneg, axis_ev2_sp3_bposbneg}, true);
@@ -366,12 +366,12 @@ struct dielectronQC {
       const AxisSpec axis_cos_4dphi1{10, -1.f, 1.f, "cos(4 (#varphi_{e1} - #varphi_{ee}))"};
       const AxisSpec axis_cos_4dphi2{10, -1.f, 1.f, "cos(4 (#varphi_{e2} - #varphi_{ee}))"};
 
-      const AxisSpec axis_ev1_sp4_ft0mbpos{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{TPCpos} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp4_ft0mbneg{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{TPCneg} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp4_bposbneg{40, -10.f, 10.f, "Q_{4}^{TPCpos} #upoint Q_{4}^{TPCneg} in event1"};
-      const AxisSpec axis_ev2_sp4_ft0mbpos{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{TPCpos} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp4_ft0mbneg{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{TPCneg} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp4_bposbneg{40, -10.f, 10.f, "Q_{4}^{TPCpos} #upoint Q_{4}^{TPCneg} in event2"};
+      const AxisSpec axis_ev1_sp4_ft0mbpos{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{BPos} in event1", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev1_sp4_ft0mbneg{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{BNeg} in event1", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev1_sp4_bposbneg{40, -10.f, 10.f, "Q_{4}^{BPos} #upoint Q_{4}^{BNeg} in event1"};
+      const AxisSpec axis_ev2_sp4_ft0mbpos{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{BPos} in event2", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev2_sp4_ft0mbneg{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{BNeg} in event2", qvec_det_names[cfgQvecEstimator].data())};
+      const AxisSpec axis_ev2_sp4_bposbneg{40, -10.f, 10.f, "Q_{4}^{BPos} #upoint Q_{4}^{BNeg} in event2"};
 
       fRegistry.add("Pair/mix/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp4_l1, axis_cos_4dphi1, axis_sp4_l2, axis_cos_4dphi2}, true);
       fRegistry.add("Pair/mix/uls/hs_R", "dielectron qvector resolution R_{4}", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_ev1_sp4_ft0mbpos, axis_ev1_sp4_ft0mbneg, axis_ev1_sp4_bposbneg, axis_ev2_sp4_ft0mbpos, axis_ev2_sp4_ft0mbneg, axis_ev2_sp4_bposbneg}, true);
@@ -636,13 +636,13 @@ struct dielectronQC {
         cos_dphi1 = std::cos(nmod * (v1.Phi() - v12.Phi()));
         cos_dphi2 = std::cos(nmod * (v2.Phi() - v12.Phi()));
 
-        float sp_ab_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][3]); // FT0 - TPCpos
-        float sp_ac_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][4]); // FT0 - TPCneg
-        float sp_bc_ev1 = RecoDecay::dotProd(qvectors[nmod][3], qvectors[nmod][4]);                // TPCpos - TPCneg
+        float sp_ab_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][3]); // FT0 - BPos
+        float sp_ac_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][4]); // FT0 - BNeg
+        float sp_bc_ev1 = RecoDecay::dotProd(qvectors[nmod][3], qvectors[nmod][4]);                // BPos - BNeg
 
-        float sp_ab_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][3]); // FT0 - TPCpos
-        float sp_ac_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][4]); // FT0 - TPCneg
-        float sp_bc_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][3], qvectors_mix[nmod][4]);                // TPCpos - TPCneg
+        float sp_ab_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][3]); // FT0 - BPos
+        float sp_ac_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][4]); // FT0 - BNeg
+        float sp_bc_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][3], qvectors_mix[nmod][4]);                // BPos - BNeg
 
         if (t1.sign() * t2.sign() < 0) { // ULS
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp1, cos_dphi1, sp2, cos_dphi2);

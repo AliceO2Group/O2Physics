@@ -104,17 +104,17 @@ void FillHistClass(THashList* list, const char* subGroup, T1 const& obj1 /*, con
       reinterpret_cast<TH2F*>(list->FindObject("hQ2yFT0C_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2yft0c());
       // reinterpret_cast<TH2F*>(list->FindObject("hQ2xFV0A_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2xfv0a());
       // reinterpret_cast<TH2F*>(list->FindObject("hQ2yFV0A_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2yfv0a());
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2xTPCpos_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2xbpos());
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2yTPCpos_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2ybpos());
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2xTPCneg_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2xbneg());
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2yTPCneg_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2ybneg());
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2xBPos_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2xbpos());
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2yBPos_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2ybpos());
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2xBNeg_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2xbneg());
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2yBNeg_CentFT0C"))->Fill(obj1.centFT0C(), obj1.q2ybneg());
 
       reinterpret_cast<TH2F*>(list->FindObject("hEP2FT0M_CentFT0C"))->Fill(obj1.centFT0C(), obj1.ep2ft0m());
       reinterpret_cast<TH2F*>(list->FindObject("hEP2FT0A_CentFT0C"))->Fill(obj1.centFT0C(), obj1.ep2ft0a());
       reinterpret_cast<TH2F*>(list->FindObject("hEP2FT0C_CentFT0C"))->Fill(obj1.centFT0C(), obj1.ep2ft0c());
       // reinterpret_cast<TH2F*>(list->FindObject("hEP2FV0A_CentFT0C"))->Fill(obj1.centFT0C(), obj1.ep2fv0a());
-      reinterpret_cast<TH2F*>(list->FindObject("hEP2TPCpos_CentFT0C"))->Fill(obj1.centFT0C(), obj1.ep2bpos());
-      reinterpret_cast<TH2F*>(list->FindObject("hEP2TPCneg_CentFT0C"))->Fill(obj1.centFT0C(), obj1.ep2bneg());
+      reinterpret_cast<TH2F*>(list->FindObject("hEP2BPos_CentFT0C"))->Fill(obj1.centFT0C(), obj1.ep2bpos());
+      reinterpret_cast<TH2F*>(list->FindObject("hEP2BNeg_CentFT0C"))->Fill(obj1.centFT0C(), obj1.ep2bneg());
 
       std::array<float, 2> q2ft0m = {obj1.q2xft0m(), obj1.q2yft0m()};
       std::array<float, 2> q2ft0a = {obj1.q2xft0a(), obj1.q2yft0a()};
@@ -123,15 +123,15 @@ void FillHistClass(THashList* list, const char* subGroup, T1 const& obj1 /*, con
       std::array<float, 2> q2bpos = {obj1.q2xbpos(), obj1.q2ybpos()};
       std::array<float, 2> q2bneg = {obj1.q2xbneg(), obj1.q2ybneg()};
 
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0MQ2TPCpos_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0m, q2bpos));
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0MQ2TPCneg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0m, q2bneg));
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0AQ2TPCpos_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bpos));
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0AQ2TPCneg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bneg));
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0CQ2TPCpos_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bpos));
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0CQ2TPCneg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bneg));
-      // reinterpret_cast<TH2F*>(list->FindObject("hQ2FV0AQ2TPCpos_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bpos));
-      // reinterpret_cast<TH2F*>(list->FindObject("hQ2FV0AQ2TPCneg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bneg));
-      reinterpret_cast<TH2F*>(list->FindObject("hQ2TPCposQ2TPCneg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2bpos, q2bneg));
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0MQ2BPos_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0m, q2bpos));
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0MQ2BNeg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0m, q2bneg));
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0AQ2BPos_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bpos));
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0AQ2BNeg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bneg));
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0CQ2BPos_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bpos));
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2FT0CQ2BNeg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bneg));
+      // reinterpret_cast<TH2F*>(list->FindObject("hQ2FV0AQ2BPos_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bpos));
+      // reinterpret_cast<TH2F*>(list->FindObject("hQ2FV0AQ2BNeg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bneg));
+      reinterpret_cast<TH2F*>(list->FindObject("hQ2BPosQ2BNeg_CentFT0C"))->Fill(obj1.centFT0C(), RecoDecay::dotProd(q2bpos, q2bneg));
     }
   } else if constexpr (htype1 == EMHistType::kV0) {
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj1.pt());

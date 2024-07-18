@@ -67,35 +67,35 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       list->Add(new TH2F("hQ2yFT0C_CentFT0C", "hQ2yFT0C_CentFT0C;centrality FT0C (%);Q_{2,y}^{FT0C}", 110, 0, 110, 200, -10, +10));
       list->Add(new TH2F("hQ2xFV0A_CentFT0C", "hQ2xFV0A_CentFT0C;centrality FT0C (%);Q_{2,x}^{FV0A}", 110, 0, 110, 200, -10, +10));
       list->Add(new TH2F("hQ2yFV0A_CentFT0C", "hQ2yFV0A_CentFT0C;centrality FT0C (%);Q_{2,y}^{FV0A}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2xTPCpos_CentFT0C", "hQ2xTPCpos_CentFT0C;centrality FT0C (%);Q_{2,x}^{TPCpos}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2yTPCpos_CentFT0C", "hQ2yTPCpos_CentFT0C;centrality FT0C (%);Q_{2,y}^{TPCpos}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2xTPCneg_CentFT0C", "hQ2xTPCneg_CentFT0C;centrality FT0C (%);Q_{2,x}^{TPCneg}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2yTPCneg_CentFT0C", "hQ2yTPCneg_CentFT0C;centrality FT0C (%);Q_{2,y}^{TPCneg}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2xBPos_CentFT0C", "hQ2xBPos_CentFT0C;centrality FT0C (%);Q_{2,x}^{BPos}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2yBPos_CentFT0C", "hQ2yBPos_CentFT0C;centrality FT0C (%);Q_{2,y}^{BPos}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2xBNeg_CentFT0C", "hQ2xBNeg_CentFT0C;centrality FT0C (%);Q_{2,x}^{BNeg}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2yBNeg_CentFT0C", "hQ2yBNeg_CentFT0C;centrality FT0C (%);Q_{2,y}^{BNeg}", 110, 0, 110, 200, -10, +10));
 
       // event plane
       list->Add(new TH2F("hEP2FT0M_CentFT0C", "2nd harmonics event plane FT0M;centrality FT0C (%);#Psi_{2}^{FT0M} (rad.)", 110, 0, 110, 180, -M_PI_2, +M_PI_2));
       list->Add(new TH2F("hEP2FT0A_CentFT0C", "2nd harmonics event plane FT0A;centrality FT0C (%);#Psi_{2}^{FT0A} (rad.)", 110, 0, 110, 180, -M_PI_2, +M_PI_2));
       list->Add(new TH2F("hEP2FT0C_CentFT0C", "2nd harmonics event plane FT0C;centrality FT0C (%);#Psi_{2}^{FT0C} (rad.)", 110, 0, 110, 180, -M_PI_2, +M_PI_2));
       list->Add(new TH2F("hEP2FV0A_CentFT0C", "2nd harmonics event plane FV0A;centrality FT0C (%);#Psi_{2}^{FV0A} (rad.)", 110, 0, 110, 180, -M_PI_2, +M_PI_2));
-      list->Add(new TH2F("hEP2TPCpos_CentFT0C", "2nd harmonics event plane TPCpos;centrality FT0C (%);#Psi_{2}^{TPCpos} (rad.)", 110, 0, 110, 180, -M_PI_2, +M_PI_2));
-      list->Add(new TH2F("hEP2TPCneg_CentFT0C", "2nd harmonics event plane TPCneg;centrality FT0C (%);#Psi_{2}^{TPCneg} (rad.)", 110, 0, 110, 180, -M_PI_2, +M_PI_2));
+      list->Add(new TH2F("hEP2BPos_CentFT0C", "2nd harmonics event plane BPos;centrality FT0C (%);#Psi_{2}^{BPos} (rad.)", 110, 0, 110, 180, -M_PI_2, +M_PI_2));
+      list->Add(new TH2F("hEP2BNeg_CentFT0C", "2nd harmonics event plane BNeg;centrality FT0C (%);#Psi_{2}^{BNeg} (rad.)", 110, 0, 110, 180, -M_PI_2, +M_PI_2));
 
       // q vector resolution FT0M
-      list->Add(new TH2F("hQ2FT0MQ2TPCpos_CentFT0C", "Q_{2}^{FT0M} #upoint Q_{2}^{TPCpos};centrality FT0C (%);Q_{2}^{FT0M} #upoint Q_{2}^{TPCpos}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2FT0MQ2TPCneg_CentFT0C", "Q_{2}^{FT0M} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{FT0M} #upoint Q_{2}^{TPCneg}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2TPCposQ2TPCneg_CentFT0C", "Q_{2}^{TPCpos} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{TPCpos} #upoint Q_{2}^{TPCneg}", 110, 0, 110, 200, -10, +10)); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
+      list->Add(new TH2F("hQ2FT0MQ2BPos_CentFT0C", "Q_{2}^{FT0M} #upoint Q_{2}^{BPos};centrality FT0C (%);Q_{2}^{FT0M} #upoint Q_{2}^{BPos}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2FT0MQ2BNeg_CentFT0C", "Q_{2}^{FT0M} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FT0M} #upoint Q_{2}^{BNeg}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2BPosQ2BNeg_CentFT0C", "Q_{2}^{BPos} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{BPos} #upoint Q_{2}^{BNeg}", 110, 0, 110, 200, -10, +10)); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
 
       // q vector resolution FT0C
-      list->Add(new TH2F("hQ2FT0CQ2TPCpos_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{TPCpos};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{TPCpos}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2FT0CQ2TPCneg_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{TPCneg}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2FT0CQ2BPos_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{BPos};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{BPos}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2FT0CQ2BNeg_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{BNeg}", 110, 0, 110, 200, -10, +10));
 
       // q vector resolution FT0A
-      list->Add(new TH2F("hQ2FT0AQ2TPCpos_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{TPCpos};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{TPCpos}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2FT0AQ2TPCneg_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{TPCneg}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2FT0AQ2BPos_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{BPos};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{BPos}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2FT0AQ2BNeg_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{BNeg}", 110, 0, 110, 200, -10, +10));
 
       // q vector resolution FV0A
-      list->Add(new TH2F("hQ2FV0AQ2TPCpos_CentFT0C", "Q_{2}^{FV0A} #upoint Q_{2}^{TPCpos};centrality FT0C (%);Q_{2}^{FV0A} #upoint Q_{2}^{TPCpos}", 110, 0, 110, 200, -10, +10));
-      list->Add(new TH2F("hQ2FV0AQ2TPCneg_CentFT0C", "Q_{2}^{FV0A} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{FV0A} #upoint Q_{2}^{TPCneg}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2FV0AQ2BPos_CentFT0C", "Q_{2}^{FV0A} #upoint Q_{2}^{BPos};centrality FT0C (%);Q_{2}^{FV0A} #upoint Q_{2}^{BPos}", 110, 0, 110, 200, -10, +10));
+      list->Add(new TH2F("hQ2FV0AQ2BNeg_CentFT0C", "Q_{2}^{FV0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FV0A} #upoint Q_{2}^{BNeg}", 110, 0, 110, 200, -10, +10));
     }
   }
   if (TString(histClass) == "V0Leg") {

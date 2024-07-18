@@ -548,12 +548,12 @@ struct dimuonQC {
         cos_dphi1 = std::cos(nmod * (v1.Phi() - v12.Phi()));
         cos_dphi2 = std::cos(nmod * (v2.Phi() - v12.Phi()));
 
-        float sp_ab_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][1]); // TPCall - FT0A
-        float sp_ac_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][2]); // TPCall - FT0C
+        float sp_ab_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][1]); // BTot - FT0A
+        float sp_ac_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][2]); // BTot - FT0C
         float sp_bc_ev1 = RecoDecay::dotProd(qvectors[nmod][1], qvectors[nmod][2]);                // FT0A - FT0C
 
-        float sp_ab_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][1]); // TPCall - FT0A
-        float sp_ac_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][2]); // TPCall - FT0C
+        float sp_ab_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][1]); // BTot - FT0A
+        float sp_ac_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][2]); // BTot - FT0C
         float sp_bc_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][1], qvectors_mix[nmod][2]);                // FT0A - FT0C
 
         if (t1.sign() * t2.sign() < 0) { // ULS
