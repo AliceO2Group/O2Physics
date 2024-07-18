@@ -608,7 +608,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
@@ -625,7 +625,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
@@ -642,7 +642,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
