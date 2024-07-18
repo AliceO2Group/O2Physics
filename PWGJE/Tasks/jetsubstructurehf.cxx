@@ -53,6 +53,7 @@ struct JetSubstructureHFTask {
   // Jet level configurables
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
+  Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
   float candMass;
@@ -168,7 +169,9 @@ struct JetSubstructureHFTask {
     std::vector<std::decay_t<typename U::iterator>> tracksVec;
     std::vector<std::decay_t<typename V::iterator>> candidatesVec;
     for (auto& constituent : jet.template tracks_as<U>()) {
-      tracksVec.push_back(constituent);
+      if (constituent.pt() >= pairConstituentPtMin) {
+        tracksVec.push_back(constituent);
+      }
     }
     for (auto& candidate : jet.template candidates_as<V>()) {
       candidatesVec.push_back(candidate);
