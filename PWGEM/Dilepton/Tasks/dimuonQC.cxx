@@ -499,7 +499,7 @@ struct dimuonQC {
       o2::math_utils::bringToPMPi(dphi_mu_mumu);
 
       float cos_thetaCS = 999, phiCS = 999.f;
-      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy, aco, asym, abs(dphi_mu_mumu), abs(cos_thetaCS));
@@ -569,8 +569,12 @@ struct dimuonQC {
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) {
       float cos_thetaCS = 999, phiCS = 999.f;
-      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
       o2::math_utils::bringToPMPi(phiCS);
+
+      // float mt = std::sqrt(std::pow(v12.M(), 2) + std::pow(v12.Pt(),2));
+      // float cos_thetaCS_byhand =  2.f * (v1.E() * v2.Pz() - v2.E() * v1.Pz()) / (v12.M() * mt);
+      // LOGF(info, "cos_thetaCS = %f, cos_thetaCS_byhand = %f", cos_thetaCS, cos_thetaCS_byhand);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy, abs(cos_thetaCS), abs(phiCS));
