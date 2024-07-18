@@ -11,7 +11,7 @@
 //
 // ========================
 //
-// This code runs loop over dalitz ee table for dalitz QC.
+// Analysis task for dimuon in MC.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "TString.h"
@@ -27,11 +27,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Tools/ML/MlResponse.h"
-#include "Tools/ML/model.h"
-
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
 #include "DCAFitter/FwdDCAFitterN.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
@@ -119,7 +115,7 @@ struct dimuonQCMC {
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   // o2::vertexing::FwdDCAFitterN<2> fitter;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int mRunNumber;
   float d_bz;
 
@@ -140,7 +136,7 @@ struct dimuonQCMC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
+    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry);
 
     const AxisSpec axis_mass{ConfMmumuBins, "m_{#mu#mu} (GeV/c^{2})"};
     const AxisSpec axis_pt{ConfPtmumuBins, "p_{T,#mu#mu} (GeV/c)"};
@@ -181,7 +177,9 @@ struct dimuonQCMC {
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/EtaPrime/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Rho/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Omega/");
+    fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Omega2mumu/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Phi/");
+    fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Phi2mumu/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/PromptJPsi/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/NonPromptJPsi/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/PromptPsi2S/");
@@ -483,11 +481,17 @@ struct dimuonQCMC {
               fRegistry.fill(HIST("Pair/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_mumu_xy);
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
+              if (mcmother.daughtersIds().size() == 2) { // omeag->mumu
+                fRegistry.fill(HIST("Pair/sm/Omega2mumu/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_mumu_xy);
+              }
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_mumu_xy);
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
+              if (mcmother.daughtersIds().size() == 2) { // omeag->mumu
+                fRegistry.fill(HIST("Pair/sm/Phi2mumu/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_mumu_xy);
+              }
               break;
             case 443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
