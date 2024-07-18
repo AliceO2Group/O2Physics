@@ -378,7 +378,7 @@ struct HfTaskCharmHadronsFemtoDream {
   }
   PROCESS_SWITCH(HfTaskCharmHadronsFemtoDream, processSameEvent, "Enable processing same event", false);
 
-  void processMixedEvent(FilteredColisions const& cols, FilteredFDParticles const& parts, FilteredCharmCands const& candidates)
+  void processMixedEvent(FilteredColisions const& cols, FilteredFDParticles const& parts, FilteredCharmCands const&)
   {
     switch (mixingPolicy.value) {
       case femtodreamcollision::kMult:
