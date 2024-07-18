@@ -45,8 +45,10 @@
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
+
+#include "PWGJE/Core/JetCandidateUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
 
 namespace jetfindingutilities
 {
@@ -87,7 +89,7 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
     }
     if (candidate != std::nullopt) {
       auto cand = candidate.value();
-      if (jethfutilities::isDaughterTrack(track, cand, tracks)) {
+      if (jetcandidateutilities::isDaughterTrack(track, cand, tracks)) {
         continue;
       }
     }
@@ -118,7 +120,7 @@ void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParti
       continue;
     }
     for (auto& candidate : candidates) {
-      if (jethfutilities::isDaughterTrack(track, candidate, tracks)) {
+      if (jetcandidateutilities::isDaughterTrack(track, candidate, tracks)) {
         continue;
       }
     }
@@ -160,8 +162,8 @@ void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& c
 template <typename T>
 bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& candidate, float candPtMin, float candPtMax, float candYMin, float candYMax)
 {
-  auto candMass = jethfutilities::getCandidatePDGMass(candidate);
-  if (isnan(candidate.y())) {
+  auto candMass = jetcandidateutilities::getCandidatePDGMass(candidate);
+  if (std::isnan(candidate.y())) {
     return false;
   }
   if (candidate.y() < candYMin || candidate.y() > candYMax) {
@@ -170,7 +172,7 @@ bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& 
   if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
     return false;
   }
-  fastjetutilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), candMass);
+  fastjetutilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), candMass);
   return true;
 }
 
@@ -188,7 +190,7 @@ bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& 
 template <typename T>
 bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, T const& candidate, float candPtMin, float candPtMax, float candYMin, float candYMax, bool rejectBackgroundMCCandidates)
 {
-  if (rejectBackgroundMCCandidates && !jethfutilities::isMatchedHFCandidate(candidate)) {
+  if (rejectBackgroundMCCandidates && !jetcandidateutilities::isMatchedCandidate(candidate)) {
     return false;
   }
   return analyseCandidate(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax);
@@ -225,7 +227,7 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
       }
       v0Y = v0.rapidity(v0Index);
     }
-    if (isnan(v0Y)) {
+    if (std::isnan(v0Y)) {
       continue;
     }
     if (v0Y < v0YMin || v0Y > v0YMax) {
@@ -234,7 +236,7 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
     if (v0.pt() < v0PtMin || v0.pt() >= v0PtMax) {
       continue;
     }
-    fastjetutilities::fillTracks(v0, inputParticles, v0.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), v0Mass);
+    fastjetutilities::fillTracks(v0, inputParticles, v0.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), v0Mass);
     nSelectedV0s++;
   }
   if (nSelectedV0s > 0) {
@@ -276,7 +278,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       if (doCandidateJetFinding) {
         for (const auto& constituent : jet.constituents()) {
           auto constituentStatus = constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus();
-          if (constituentStatus == static_cast<int>(JetConstituentStatus::candidateHF)) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
+          if (constituentStatus == static_cast<int>(JetConstituentStatus::candidate)) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
             isCandidateJet = true;
             break;
           }
@@ -297,7 +299,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
         if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::cluster)) {
           clusters.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidate)) {
           cands.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
       }
@@ -329,7 +331,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
     } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
       continue;
     }
-    if (isinf(particle.eta())) {
+    if (std::isinf(particle.eta())) {
       continue;
     }
     auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
@@ -340,14 +342,14 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
     if (jetTypeParticleLevel == static_cast<int>(JetType::neutral) && pdgCharge != 0.0) {
       continue;
     }
-    if constexpr (jethfutilities::isHFMcCandidate<U>()) {
+    if constexpr (jetcandidateutilities::isMcCandidate<U>() && !jetv0utilities::isV0McCandidate<U>()) {
       if (candidate != std::nullopt) {
         auto cand = candidate.value();
         if (cand.mcParticleId() == particle.globalIndex()) {
           continue;
         }
         auto hfParticle = cand.template mcParticle_as<T>();
-        if (jethfutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
+        if (jetcandidateutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
           continue;
         }
       }
@@ -360,7 +362,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
             continue;
           }
           auto v0Particle = cand.template mcParticle_as<T>();
-          if (jethfutilities::isDaughterParticle(v0Particle, particle.globalIndex())) {
+          if (jetcandidateutilities::isDaughterParticle(v0Particle, particle.globalIndex())) {
             continue;
           }
         }

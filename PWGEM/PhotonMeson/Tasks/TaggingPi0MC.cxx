@@ -41,14 +41,16 @@
 #include "PWGEM/PhotonMeson/Core/PairCut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::photonpair;
-using namespace o2::aod::pwgem::mcutil;
+using namespace o2::aod::pwgem::photonmeson::photonpair;
+using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
+using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::photon;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
@@ -62,7 +64,7 @@ using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct TaggingPi0MC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
-  using MyMCTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronsPrefilterBit>;
+  using MyMCTracks = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronMCLabels>;
   using MyMCTrack = MyMCTracks::iterator;
 
   // Configurables
@@ -99,7 +101,7 @@ struct TaggingPi0MC {
   Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
-  EMEventCut fEMEventCut;
+  EMPhotonEventCut fEMEventCut;
   static constexpr std::string_view event_types[2] = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
@@ -365,11 +367,11 @@ struct TaggingPi0MC {
   {
     bool is_selected_pair = false;
     if constexpr (pairtype == PairType::kPCMPHOS) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, int>(g1, g2, cut1, cut2);
+      is_selected_pair = o2::aod::pwgem::photonmeson::photonpair::IsSelectedPair<MyMCV0Legs, int>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPCMEMC) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
+      is_selected_pair = o2::aod::pwgem::photonmeson::photonpair::IsSelectedPair<MyMCV0Legs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, MyMCTracks>(g1, g2, cut1, cut2);
+      is_selected_pair = o2::aod::pwgem::photonmeson::photonpair::IsSelectedPair<MyMCV0Legs, MyMCTracks>(g1, g2, cut1, cut2);
     } else {
       is_selected_pair = true;
     }
@@ -491,11 +493,11 @@ struct TaggingPi0MC {
 
               if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
                 if constexpr (pairtype == PairType::kPCMPHOS) {
-                  if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos1, g2, 0.02, 0.4, 0.2) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele1, g2, 0.02, 0.4, 0.2)) {
+                  if (o2::aod::pwgem::photonmeson::photonpair::DoesV0LegMatchWithCluster(pos1, g2, 0.02, 0.4, 0.2) || o2::aod::pwgem::photonmeson::photonpair::DoesV0LegMatchWithCluster(ele1, g2, 0.02, 0.4, 0.2)) {
                     continue;
                   }
                 } else if constexpr (pairtype == PairType::kPCMEMC) {
-                  if (o2::aod::photonpair::DoesV0LegMatchWithCluster(pos1, g2, 0.02, 0.4, 0.5) || o2::aod::photonpair::DoesV0LegMatchWithCluster(ele1, g2, 0.02, 0.4, 0.5)) {
+                  if (o2::aod::pwgem::photonmeson::photonpair::DoesV0LegMatchWithCluster(pos1, g2, 0.02, 0.4, 0.5) || o2::aod::pwgem::photonmeson::photonpair::DoesV0LegMatchWithCluster(ele1, g2, 0.02, 0.4, 0.5)) {
                     continue;
                   }
                 }

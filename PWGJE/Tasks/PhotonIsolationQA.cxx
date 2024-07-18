@@ -77,7 +77,6 @@ struct PhotonIsolationQA {
   Configurable<int> minNCells{"minNCelss", 2, "Minimal amount of cells per cluster"};
   Configurable<int> maxNLM{"maxNLM", 2, "Maximal amount of local maxima per cluster"};
   Configurable<bool> ExoticContribution{"ExoticContribution", false, "Exotic cluster in the data"};
-  Configurable<float> TrackMatchingRadius{"TrackMatchingRadius", 0.05, "maximum radius between track and cluster in eta phi plane"};
   Configurable<float> minDPhi{"minDPhi", 0.01, "Minimum dPhi between track and cluster"};
 
   Filter PosZFilter = nabs(aod::collision::posZ) < maxPosZ;
@@ -104,7 +103,7 @@ struct PhotonIsolationQA {
     const o2Axis Phi_Axis{100, 1, 6, "#phi"};
     const o2Axis Eta_Axis{100, -0.9, 0.9, "#eta"};
     const o2Axis Energy_Axis{100, 0, 100, "E (GeV/c)"};
-    const o2Axis NCells_Axis{30, 0, 30, "N Cells"};
+    const o2Axis NCells_Axis{50, 0, 50, "N Cells"};
     const o2Axis Pt_Axis{100, 0, 100, "P_{T} (GeV/c)"};
     const o2Axis P_Axis{100, 0, 100, "P (GeV/c)"};
     const o2Axis RatioP_Axis{50, 0, 10, "E/P"};
@@ -112,6 +111,8 @@ struct PhotonIsolationQA {
     const o2Axis PtIso_Axis{100, -10, 15, "P_{T, Iso} (GeV/c)"};
     const o2Axis Rho_Axis{100, 0, 100, "#rho (#frac{GeV/c}{A})"};
     const o2Axis ABCD_Axis{5, 0, 5, "ABCD"};
+    const o2Axis NLM_Axis{3, 0, 3, "NLM"};
+    const o2Axis Fraction_Axis{50, 0, 2};
 
     Data_Info.add("hPosZ", "Z Position of collision", o2HistType::kTH1F, {PosZ_Axis});
     Data_Info.add("hNumClusters", "Number of cluster per collision", o2HistType::kTH1F, {Num_Cluster_Axis});
@@ -119,6 +120,7 @@ struct PhotonIsolationQA {
     Data_Info.add("hEnergy", "Energy of the cluster", o2HistType::kTH1F, {Energy_Axis});
     Data_Info.add("hEnergy_ShowerShapeLong", "Energy vs Shower shape long axis", o2HistType::kTH2F, {{Energy_Axis}, {Shower_Shape_Long_Axis}});
     Data_Info.add("hEnergy_ShowerShapeShort", "Energy vs Shower shape short axis", o2HistType::kTH2F, {{Energy_Axis}, {Shower_Shape_Short_Axis}});
+    Data_Info.add("hEnergy_m02_m20", "Energy cluster Vs m02 vs m20", o2HistType::kTHnSparseL, {{Energy_Axis}, {Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}});
     Data_Info.add("hEnergy_NCells", "Energy vs Number of cells in cluster", o2HistType::kTH2F, {{Energy_Axis}, {NCells_Axis}});
 
     Data_Info.add("hEvsNumTracks", "Energy of cluster vs matched tracks", o2HistType::kTH2F, {{Energy_Axis}, {Num_Track_Axis}});
@@ -133,6 +135,7 @@ struct PhotonIsolationQA {
     Data_Info.add("hShowerShape", "Shower shape", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}});
     Data_Info.add("hSigmaLongvsPtIso", "Long shower shape vs Pt_Iso", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {PtIso_Axis}});
     Data_Info.add("hABCDControlRegion", "Yield Control Regions", o2HistType::kTH2F, {{ABCD_Axis}, {Energy_Axis}});
+    Data_Info.add("hE_M02_M20_NLM_NCells_PtIso", "Energy vs M02 vs M20 vs NLM vs NCells vs PtIso", o2HistType::kTHnSparseL, {{Energy_Axis}, {Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}, {NLM_Axis}, {NCells_Axis}, {PtIso_Axis}});
 
     MC_Info.add("hPosZ", "Z Position of collision", o2HistType::kTH1F, {PosZ_Axis});
     MC_Info.add("hNumClusters", "Number of cluster per collision", o2HistType::kTH1F, {Num_Cluster_Axis});
@@ -140,6 +143,7 @@ struct PhotonIsolationQA {
     MC_Info.add("hEnergy", "Energy of the cluster", o2HistType::kTH1F, {Energy_Axis});
     MC_Info.add("hEnergy_ShowerShapeLong", "Energy vs Shower shape long axis", o2HistType::kTH2F, {{Energy_Axis}, {Shower_Shape_Long_Axis}});
     MC_Info.add("hEnergy_ShowerShapeShort", "Energy vs Shower shape short axis", o2HistType::kTH2F, {{Energy_Axis}, {Shower_Shape_Short_Axis}});
+    MC_Info.add("hEnergy_m02_m20", "Energy cluster Vs m02 vs m20", o2HistType::kTHnSparseL, {{Energy_Axis}, {Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}});
     MC_Info.add("hEnergy_NCells", "Energy vs Number of cells in cluster", o2HistType::kTH2F, {{Energy_Axis}, {NCells_Axis}});
 
     MC_Info.add("hEvsNumTracks", "Energy of cluster vs matched tracks", o2HistType::kTH2F, {{Energy_Axis}, {Num_Track_Axis}});
@@ -148,17 +152,19 @@ struct PhotonIsolationQA {
     MC_Info.add("hTrackPhi", "Phi of matched track", o2HistType::kTH1F, {Phi_Axis});
     MC_Info.add("hRatioClusterETrackP", "Ratio between energy of cluster and P of tracks", o2HistType::kTH1F, {RatioP_Axis});
     MC_Info.add("hRatioClusterETrackPrackPt", "Ratio between E and P vs Pt of matched tracks", o2HistType::kTH2F, {{RatioP_Axis}, {Pt_Axis}});
+    MC_Info.add("hE_M02_M20_NLM_NCells_PtIso", "Energy vs M02 vs M20 vs NLM vs NCells vs PtIso", o2HistType::kTHnSparseL, {{Energy_Axis}, {Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}, {NLM_Axis}, {NCells_Axis}, {PtIso_Axis}});
 
     MC_Info.add("hEvsPtIso", "Pt_Iso", o2HistType::kTH2F, {{Energy_Axis}, {PtIso_Axis}});
     MC_Info.add("hRho_Perpen_Cone", "Density of perpendicular cone", o2HistType::kTH1F, {Rho_Axis});
     MC_Info.add("hShowerShape", "Shower shape", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}});
     MC_Info.add("hSigmaLongvsPtIso", "Long shower shape vs Pt_Iso", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {PtIso_Axis}});
     MC_Info.add("hABCDControlRegion", "Yield Control Regions", o2HistType::kTH2F, {{ABCD_Axis}, {Energy_Axis}});
-    MC_Info.add("hMcParticlesToCluster", "Energy of particles linked to mc cluster", o2HistType::kTH1F, {{100, 0, 20}});
-    MC_Info.add("hMcParticleStatusCode", "status code of mc particle linked to mc cluster", o2HistType::kTH1F, {{100, 0, 100}});
+    MC_Info.add("hMcParticlesToCluster", "Energy of particles linked to mc cluster", o2HistType::kTH1F, {{100, 0, 100}});
+    MC_Info.add("hMcParticleStatusCode", "generator status code of mc particle linked to mc cluster", o2HistType::kTH1F, {{200, 0, 200}});
+    MC_Info.add("hMcParticleProcessCode", "physical process code of mc particle linked to mc cluster", o2HistType::kTH1F, {{200, 0, 200}});
 
     std::vector<std::string> bin_names = {"A", "B", "C", "D", "True Bckgr A"};
-    for (int i = 0; i < bin_names.size(); i++) {
+    for (size_t i = 0; i < bin_names.size(); i++) {
       MC_Info.get<TH2>(HIST("hABCDControlRegion"))->GetXaxis()->SetBinLabel(i + 1, bin_names[i].c_str());
       Data_Info.get<TH2>(HIST("hABCDControlRegion"))->GetXaxis()->SetBinLabel(i + 1, bin_names[i].c_str());
     }
@@ -168,17 +174,9 @@ struct PhotonIsolationQA {
   bool track_matching(const auto& cluster, o2::aod::EMCALMatchedTracks const& matched_tracks)
   {
     for (const auto& match : matched_tracks) {
-      double dEta = abs(match.track_as<myGlobTracks>().trackEtaEmcal() - cluster.eta());
-      double dPhi = match.track_as<myGlobTracks>().trackPhiEmcal() - cluster.phi();
-      if (dPhi < 0) {
-        dPhi = 2. * M_PI - dPhi;
-      }
-      double distance = sqrt(pow(dEta, 2) + pow(dPhi, 2));
-      if (distance <= TrackMatchingRadius) {
-        double abs_p = abs(match.track_as<myGlobTracks>().p());
-        if ((cluster.energy() / abs_p) < 1.75) {
-          return true;
-        }
+      double abs_pt = abs(match.track_as<myGlobTracks>().pt());
+      if ((cluster.energy() / abs_pt) < 1.75) {
+        return true;
       }
     }
     return false;
@@ -190,8 +188,8 @@ struct PhotonIsolationQA {
     double sum_Pt = 0.;
     for (const auto& track : tracks) {
       double dphi = cluster.phi() - track.phi();
-      if (dphi < 0) {
-        dphi = 2. * M_PI - dphi;
+      if (abs(dphi) > M_PI) {
+        dphi = 2. * M_PI - abs(dphi);
       }
       double distance = sqrt(pow((cluster.eta() - track.eta()), 2) + pow(dphi, 2));
       if (distance < Cone_Radius) {
@@ -207,20 +205,20 @@ struct PhotonIsolationQA {
     double sum_Pt = 0.;
     double Perpendicular_Phi1 = cluster.phi() + (1. / 2.) * M_PI;
     double Perpendicular_Phi2 = cluster.phi() - (1. / 2.) * M_PI;
-    if (Perpendicular_Phi1 > 2 * M_PI) {
-      Perpendicular_Phi1 = Perpendicular_Phi1 - 2 * M_PI;
+    if (Perpendicular_Phi1 > 2. * M_PI) {
+      Perpendicular_Phi1 = Perpendicular_Phi1 - 2. * M_PI;
     }
     if (Perpendicular_Phi2 < 0.) {
-      Perpendicular_Phi2 = 2 * M_PI + Perpendicular_Phi2;
+      Perpendicular_Phi2 = 2. * M_PI + Perpendicular_Phi2;
     }
     for (const auto& track : tracks) {
       double dphi1 = Perpendicular_Phi1 - track.phi();
       double dphi2 = Perpendicular_Phi2 - track.phi();
-      if (dphi1 < 0) {
-        dphi1 = 2. * M_PI - dphi1;
+      if (abs(dphi1) > M_PI) {
+        dphi1 = 2. * M_PI - abs(dphi1);
       }
-      if (dphi2 < 0) {
-        dphi2 = 2. * M_PI - dphi2;
+      if (abs(dphi2) > M_PI) {
+        dphi2 = 2. * M_PI - abs(dphi2);
       }
       double distance1 = sqrt(pow((cluster.eta() - track.eta()), 2) + pow(dphi1, 2));
       double distance2 = sqrt(pow((cluster.eta() - track.eta()), 2) + pow(dphi2, 2));
@@ -231,7 +229,7 @@ struct PhotonIsolationQA {
         sum_Pt += track.pt();
       }
     }
-    double Rho = sum_Pt / (2 * M_PI * pow(Perpendicular_Cone_Radius, 2));
+    double Rho = sum_Pt / (2. * M_PI * pow(Perpendicular_Cone_Radius, 2));
     return Rho;
   }
 
@@ -249,6 +247,7 @@ struct PhotonIsolationQA {
     registry.fill(HIST("hEnergy_ShowerShapeLong"), cluster.energy(), cluster.m02());
     registry.fill(HIST("hEnergy_ShowerShapeShort"), cluster.energy(), cluster.m20());
     registry.fill(HIST("hEnergy_NCells"), cluster.energy(), cluster.nCells());
+    registry.fill(HIST("hEnergy_m02_m20"), cluster.energy(), cluster.m02(), cluster.m20());
   }
 
   void fillABCDHisto(HistogramRegistry registry, const auto& cluster, double Pt_iso)
@@ -279,7 +278,7 @@ struct PhotonIsolationQA {
   }
 
   // process monte carlo data
-  void processMC(selectedCollisions::iterator const& theCollision, selectedMCClusters const& mcclusters, aod::StoredMcParticles_001 const&, myGlobTracks const& tracks, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::EMCALMatchedTracks const& matchedtracks)
+  void processMC(selectedCollisions::iterator const& theCollision, selectedMCClusters const& mcclusters, aod::StoredMcParticles_001 const&, myGlobTracks const& tracks, o2::aod::EMCALClusterCells const& /*emccluscells*/, o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
     MC_Info.fill(HIST("hPosZ"), theCollision.posZ());
 
@@ -302,23 +301,23 @@ struct PhotonIsolationQA {
         MC_Info.fill(HIST("hRho_Perpen_Cone"), Rho_Perpen_Cone);
         MC_Info.fill(HIST("hShowerShape"), mccluster.m02(), mccluster.m20());
         MC_Info.fill(HIST("hSigmaLongvsPtIso"), mccluster.m02(), Pt_iso);
+        MC_Info.fill(HIST("hE_M02_M20_NLM_NCells_PtIso"), mccluster.energy(), mccluster.m02(), mccluster.m20(), mccluster.nlm(), mccluster.nCells(), Pt_iso);
         fillABCDHisto(MC_Info, mccluster, Pt_iso);
-
         // acces mc true info
         auto ClusterParticles = mccluster.mcParticle_as<aod::StoredMcParticles_001>();
         bool background = true;
         for (auto& clusterparticle : ClusterParticles) {
           if (clusterparticle.pdgCode() == 22) {
             MC_Info.fill(HIST("hMcParticlesToCluster"), clusterparticle.e());
+            MC_Info.fill(HIST("hMcParticleProcessCode"), clusterparticle.getProcess());
             MC_Info.fill(HIST("hMcParticleStatusCode"), clusterparticle.getGenStatusCode());
-            if ((clusterparticle.getGenStatusCode() >= 21) && (clusterparticle.getGenStatusCode() <= 29))
+            if ((clusterparticle.getProcess() >= 21) && (clusterparticle.getProcess() <= 29))
               background = false; // Particles from the hardest subprocess
           }
         }
 
         if (background) {
           if ((Pt_iso < 1.5) && (mccluster.m02() < 0.3) && (mccluster.m02() > 0.1)) {
-            // fillABCDHistograms(MC_Info, 4.5, mccluster);
             MC_Info.fill(HIST("hABCDControlRegion"), 4.5, mccluster.energy());
           }
         }
@@ -328,7 +327,7 @@ struct PhotonIsolationQA {
 
   PROCESS_SWITCH(PhotonIsolationQA, processMC, "proces MC data", true);
 
-  void processData(selectedCollisions::iterator const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::EMCALMatchedTracks const& matchedtracks, myGlobTracks const& alltracks)
+  void processData(selectedCollisions::iterator const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& /*emccluscells*/, o2::aod::EMCALMatchedTracks const& matchedtracks, myGlobTracks const& alltracks)
   {
     Data_Info.fill(HIST("hPosZ"), theCollision.posZ());
 
@@ -350,6 +349,7 @@ struct PhotonIsolationQA {
         Data_Info.fill(HIST("hRho_Perpen_Cone"), Rho_Perpen_Cone);
         Data_Info.fill(HIST("hShowerShape"), cluster.m02(), cluster.m20());
         Data_Info.fill(HIST("hSigmaLongvsPtIso"), cluster.m02(), Pt_iso);
+        Data_Info.fill(HIST("hE_M02_M20_NLM_NCells_PtIso"), cluster.energy(), cluster.m02(), cluster.m20(), cluster.nlm(), cluster.nCells(), Pt_iso);
         fillABCDHisto(Data_Info, cluster, Pt_iso);
       }
     }

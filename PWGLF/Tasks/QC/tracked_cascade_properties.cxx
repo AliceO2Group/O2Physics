@@ -121,7 +121,7 @@ struct tracked_cascade_properties {
   }
 
   void processData(SelectedCollisions::iterator const& collision, aod::AssignedTrackedCascades const& trackedCascades,
-                   aod::Cascades const&, FullTracks const& tracks)
+                   aod::Cascades const&, FullTracks const&)
   {
     registryData.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
@@ -135,7 +135,7 @@ struct tracked_cascade_properties {
 
     for (const auto& trackedCascade : trackedCascades) {
 
-      const auto track = trackedCascade.track_as<FullTracks>();
+      const auto track = trackedCascade.itsTrack_as<FullTracks>();
       const auto& casc = trackedCascade.cascade();
       const auto& btrack = casc.bachelor_as<FullTracks>();
       double dx = trackedCascade.decayX();

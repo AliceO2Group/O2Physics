@@ -59,10 +59,46 @@ enum MassHyposLcToPKPi : uint8_t {
   PiKP,
   NMassHypoLcToPKPi
 };
+
+/// columns for table to study the Lc->PKPi background
+DECLARE_SOA_COLUMN(MassLc, massLc, float);
+DECLARE_SOA_COLUMN(PtLc, ptLc, float);
+DECLARE_SOA_COLUMN(RapidityLc, rapidityLc, float);
+DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
+DECLARE_SOA_COLUMN(PdgMotherProng0, pdgMotherProng0, int);
+DECLARE_SOA_COLUMN(PdgMotherProng1, pdgMotherProng1, int);
+DECLARE_SOA_COLUMN(PdgMotherProng2, pdgMotherProng2, int);
+DECLARE_SOA_COLUMN(MassKPi, massKPi, float);
+DECLARE_SOA_COLUMN(MassKProton, massKProton, float);
+DECLARE_SOA_COLUMN(MassPiProton, massPiProton, float);
+DECLARE_SOA_COLUMN(BdtBkgScore, bdtBkgScore, float);
+DECLARE_SOA_COLUMN(IsRealPKPi, isRealPKPi, int8_t);
+DECLARE_SOA_COLUMN(IsRealLcPKPi, isRealLcPKPi, int8_t);
+DECLARE_SOA_COLUMN(IsReflected, isReflected, int8_t);
+
 } // namespace charm_polarisation
+
+/// table to study the Lc->PKPi background
+DECLARE_SOA_TABLE(HfLcPolBkg, "AOD", "HFLCPOLBKG",
+                  charm_polarisation::MassLc,
+                  charm_polarisation::PtLc,
+                  charm_polarisation::RapidityLc,
+                  charm_polarisation::CosThetaStar,
+                  charm_polarisation::PdgMotherProng0,
+                  charm_polarisation::PdgMotherProng1,
+                  charm_polarisation::PdgMotherProng2,
+                  charm_polarisation::MassKPi,
+                  charm_polarisation::MassKProton,
+                  charm_polarisation::MassPiProton,
+                  charm_polarisation::BdtBkgScore,
+                  charm_polarisation::IsRealPKPi,
+                  charm_polarisation::IsRealLcPKPi,
+                  charm_polarisation::IsReflected);
+
 } // namespace o2::aod
 
 struct TaskPolarisationCharmHadrons {
+  Produces<o2::aod::HfLcPolBkg> rowCandLcBkg;
 
   float massPi{0.f};
   float massProton{0.f};
@@ -105,10 +141,14 @@ struct TaskPolarisationCharmHadrons {
   float minInvMass{0.f};
   float maxInvMass{1000.f};
 
+  /// table for Lc->pKpi background studies in MC
+  Configurable<int> cosThStarAxisLcPKPiBkgMc{"cosThStarAxisLcPKPiBkgMc", 1, "cos(Theta*) axis for background studies (1 = helicity; 2 = production; 3 = beam; 4 = random)"};
+
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
 
   using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
+  using TracksWithMcLabels = soa::Join<Tracks, aod::McTrackLabels>;
 
   using McParticlesDstarMatched = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
@@ -143,7 +183,7 @@ struct TaskPolarisationCharmHadrons {
   void init(InitContext&)
   {
     /// check process functions
-    std::array<int, 8> processes = {doprocessDstar, doprocessDstarWithMl, doprocessLcToPKPi, doprocessLcToPKPiWithMl, doprocessDstarMc, doprocessDstarMcWithMl, doprocessLcToPKPiMc, doprocessLcToPKPiMcWithMl};
+    std::array<int, 9> processes = {doprocessDstar, doprocessDstarWithMl, doprocessLcToPKPi, doprocessLcToPKPiWithMl, doprocessDstarMc, doprocessDstarMcWithMl, doprocessLcToPKPiMc, doprocessLcToPKPiMcWithMl, doprocessLcToPKPiBackgroundMcWithMl};
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -171,7 +211,7 @@ struct TaskPolarisationCharmHadrons {
     }
 
     // check bkg rotation for MC (not supported currently)
-    if (nBkgRotations > 0 && (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl)) {
+    if (nBkgRotations > 0 && (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl)) {
       LOGP(fatal, "No background rotation supported for MC.");
     }
 
@@ -240,7 +280,7 @@ struct TaskPolarisationCharmHadrons {
           registry.add("hRecoNonPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisInvMassD0, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisPtB});
         }
       }
-    } else if (doprocessLcToPKPiWithMl || doprocessLcToPKPiMcWithMl) {
+    } else if (doprocessLcToPKPiWithMl || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
       /// analysis for Lc+ baryon with ML, w/ rot. background axis (for data only)
       if (doprocessLcToPKPiWithMl) {
         if (activateTHnSparseCosThStarHelicity) {
@@ -342,7 +382,7 @@ struct TaskPolarisationCharmHadrons {
     }
 
     // MC Gen histos
-    if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl) {
+    if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
       if (activateTHnSparseCosThStarHelicity) {
         registry.add("hGenPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- gen prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisDausAcc, thnAxisResoChannelLc});
         registry.add("hGenNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- gen non-prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc});
@@ -661,12 +701,36 @@ struct TaskPolarisationCharmHadrons {
     return true;
   }
 
+  /// \param prongTrack is the track we want to find the mother of
+  /// \param idMothers is the vector containing the mother IDs
+  /// \param particles are the MC particles
+  template <typename Trk, typename Part>
+  void searchFirstLevelMother(Trk const& prongTrack, std::vector<int>& idMothers, Part const& /*particles*/)
+  {
+    /// particle associated to the prong track
+    if (!prongTrack.has_mcParticle()) {
+      return;
+    }
+    auto prongParticle = prongTrack.template mcParticle_as<Part>();
+    /// leave the vector of mother indices empty if the currect paticle has no mothers
+    if (!prongParticle.has_mothers()) {
+      return;
+    }
+    // loop over the mother particles of the analysed particle
+    for (auto iMother = prongParticle.mothersIds().front(); iMother <= prongParticle.mothersIds().back(); ++iMother) {
+      idMothers.push_back(iMother);
+      break; // we keep only the first one
+    }
+  };
+
   /// \param candidates are the selected candidates
   /// \param bkgRotationId is the id for the background rotation
   /// \param numPvContributors is the number of PV contributors
+  /// \param particles are the generated particles
+  /// \param tracks are the reconstructed tracks
   /// \return true if candidate in signal region
-  template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, typename Cand>
-  bool runPolarisationAnalysis(Cand const& candidate, int bkgRotationId, int numPvContributors)
+  template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, bool studyLcPKPiBkgMc = false, typename Cand, typename Part, typename Trk>
+  bool runPolarisationAnalysis(Cand const& candidate, int bkgRotationId, int numPvContributors, Part const& particles, Trk const& /*tracks*/)
   {
     bool isCandidateInSignalRegion{false};
     int8_t origin{RecoDecay::OriginType::None};
@@ -686,16 +750,18 @@ struct TaskPolarisationCharmHadrons {
           return isCandidateInSignalRegion;
         }
       } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-        if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) { // this candidate is not signal, skip
-          return isCandidateInSignalRegion;
+        if constexpr (!studyLcPKPiBkgMc) {                                                                // skip this if studyLcPKPiBkgMc is true, since we are interested in background
+          if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) { // this candidate is not signal, skip
+            return isCandidateInSignalRegion;
+          }
+          origin = candidate.originMcRec();
+          if (candidate.isCandidateSwapped()) {
+            massHypoMcTruth = charm_polarisation::MassHyposLcToPKPi::PiKP;
+          } else {
+            massHypoMcTruth = charm_polarisation::MassHyposLcToPKPi::PKPi;
+          }
+          resoChannelLc = candidate.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
         }
-        origin = candidate.originMcRec();
-        if (candidate.isCandidateSwapped()) {
-          massHypoMcTruth = charm_polarisation::MassHyposLcToPKPi::PiKP;
-        } else {
-          massHypoMcTruth = charm_polarisation::MassHyposLcToPKPi::PKPi;
-        }
-        resoChannelLc = candidate.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
       }
     }
 
@@ -874,26 +940,175 @@ struct TaskPolarisationCharmHadrons {
         isCandidateInSignalRegion = isInSignalRegion<channel>(invMassCharmHadForSparse);
       }
 
+      float cosThetaStarHelicity = -10.f;
+      float cosThetaStarProduction = -10.f;
+      float cosThetaStarBeam = -10.f;
+      float cosThetaStarRandom = -10.f;
       if (activateTHnSparseCosThStarHelicity) {
         ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
-        float cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
+        cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
         fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Helicity>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarHelicity, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc);
       }
       if (activateTHnSparseCosThStarProduction) {
         ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
-        float cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
+        cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
         fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Production>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarProduction, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc);
       }
       if (activateTHnSparseCosThStarBeam) {
         ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
-        float cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+        cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
         fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Beam>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarBeam, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc);
       }
       if (activateTHnSparseCosThStarRandom) {
         ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
-        float cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+        cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
         fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Random>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarRandom, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc);
       }
+
+      /// Table for Lc->pKpi background studies
+      /// Defined only in MC simulations, to study resonances and reflected signal
+      if constexpr (doMc && channel == charm_polarisation::DecayChannel::LcToPKPi) {
+        if constexpr (studyLcPKPiBkgMc) {
+          /******************************************************************************************
+          The code below can work only without grouping on "mcCollision".
+          In fact, grouping by "mcCollision" introduces the following inconsistencies:
+
+            1) the particle getters "track.template mcParticle_as<Part>()" retrieve the daughter particles quering the full particle table in the dataframe.
+               In other words, even if the 3-prong candidate is reconstructed in a completely wrong reco. collision due to the track-to-collision associator,
+               therefore this collision points to a "mcCollision" different from the current one and the daughter particles are associated to this different "mcCollision",
+               the getter "mcParticle_as<Part>" works anyway, because it works with unbound tables ignoring the fact that "particles" is grouped;
+
+            2) when we look for the mother index from the daughter particles of the previous point, but the daughter particles belong to a "mcCollision" different from the current one,
+               then also the mother particle belongs to this different "mcCollision". This means that the mother index ( - "particles.offset()") is outside the "particles.size()",
+               because the table "particles" is grouped w.r.t. the current "mcCollision".
+          *******************************************************************************************/
+
+          /// check if the tracks are associated to a pion + a kaon + a proton
+          int8_t isRealPKPi = 0; /// true only if the triplet is formed by a MC pion + a MC kaon + a MC proton
+          bool isGenPKPi = false;
+          bool isGenPiKP = false;
+          auto trackProng0 = candidate.template prong0_as<Trk>();
+          auto trackProng1 = candidate.template prong1_as<Trk>();
+          auto trackProng2 = candidate.template prong2_as<Trk>();
+          int pdgProng0 = 0;
+          int pdgProng1 = 0;
+          int pdgProng2 = 0;
+          if (trackProng0.has_mcParticle()) {
+            /// BEWARE: even when grouping by mcCollision, mcParticle_as<> gets the mcParticle even if it belongs to a different mcCollision
+            /// because _as<> works with unbound tables. (*)
+            auto particleProng0 = trackProng0.template mcParticle_as<Part>();
+            pdgProng0 = particleProng0.pdgCode();
+          }
+          if (trackProng1.has_mcParticle()) {
+            /// BEWARE: even when grouping by mcCollision, mcParticle_as<> gets the mcParticle even if it belongs to a different mcCollision
+            /// because _as<> works with unbound tables. (*)
+            auto particleProng1 = trackProng1.template mcParticle_as<Part>();
+            pdgProng1 = particleProng1.pdgCode();
+          }
+          if (trackProng2.has_mcParticle()) {
+            /// BEWARE: even when grouping by mcCollision, mcParticle_as<> gets the mcParticle even if it belongs to a different mcCollision
+            /// because _as<> works with unbound tables. (*)
+            auto particleProng2 = trackProng2.template mcParticle_as<Part>();
+            pdgProng2 = particleProng2.pdgCode();
+          }
+          isGenPKPi = std::abs(pdgProng0) == kProton && std::abs(pdgProng1) == kKPlus && std::abs(pdgProng2) == kPiPlus;
+          isGenPiKP = std::abs(pdgProng0) == kPiPlus && std::abs(pdgProng1) == kKPlus && std::abs(pdgProng2) == kProton;
+          if (isGenPKPi || isGenPiKP) {
+            isRealPKPi = 1;
+          }
+
+          /// check if the triplet is reflected or not
+          /// i.e. generated as pKpi but reconstructed as piKp, or viceversa
+          int8_t isReflected = 0;
+          if (isRealPKPi && ((iMass == charm_polarisation::MassHyposLcToPKPi::PKPi && candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi && isGenPiKP) || (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi && isGenPKPi))) {
+            isReflected = 1;
+          }
+
+          /// check if the pKpi triplet is a Lc->pKpi
+          int8_t isRealLcPKPi = 0;
+          if (isRealPKPi && TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+            isRealLcPKPi = 1;
+          }
+
+          /// look for daughters' mothers (1st level only)
+          std::vector<int> idMothersProng0 = {};
+          std::vector<int> idMothersProng1 = {};
+          std::vector<int> idMothersProng2 = {};
+          searchFirstLevelMother(trackProng0, idMothersProng0, particles);
+          searchFirstLevelMother(trackProng1, idMothersProng1, particles);
+          searchFirstLevelMother(trackProng2, idMothersProng2, particles);
+
+          /// check if daughter pairs have the same mother
+          /// it should be enough to check the 1st one only (only particles from partonic events, or interactions with material, can have more than 1 mother)
+          int pdgMotherProng0 = -1;
+          int pdgMotherProng1 = -1;
+          int pdgMotherProng2 = -1;
+          if (idMothersProng0.size() > 0 && idMothersProng1.size() > 0 && idMothersProng0.at(0) == idMothersProng1.at(0)) {
+            /// BEWARE: in case of mcCollision grouping, the idMother can anyway point to a particle in another collision (*)
+            /// therefore the rawIteratorAt call might crash the code because one goes above the (grouped) particles table size
+            auto mother = particles.rawIteratorAt(idMothersProng0.at(0) - particles.offset());
+            pdgMotherProng0 = std::abs(mother.pdgCode()); // PDG code of the mother
+            pdgMotherProng1 = pdgMotherProng0;
+          }
+          if (idMothersProng1.size() > 0 && idMothersProng2.size() > 0 && idMothersProng1.at(0) == idMothersProng2.at(0)) {
+            /// BEWARE: in case of mcCollision grouping, the idMother can anyway point to a particle in another collision (*)
+            /// therefore the rawIteratorAt call might crash the code because one goes above the (grouped) particles table size
+            auto mother = particles.rawIteratorAt(idMothersProng1.at(0) - particles.offset());
+            pdgMotherProng1 = std::abs(mother.pdgCode()); // PDG code of the mother
+            pdgMotherProng2 = pdgMotherProng1;
+          }
+          if (idMothersProng0.size() > 0 && idMothersProng2.size() > 0 && idMothersProng0.at(0) == idMothersProng2.at(0)) {
+            /// BEWARE: in case of mcCollision grouping, the idMother can anyway point to a particle in another collision (*)
+            /// therefore the rawIteratorAt call might crash the code because one goes above the (grouped) particles table size
+            auto mother = particles.rawIteratorAt(idMothersProng0.at(0) - particles.offset());
+            pdgMotherProng0 = std::abs(mother.pdgCode()); // PDG code of the mother
+            pdgMotherProng2 = pdgMotherProng0;
+          }
+
+          /// calculate inv. masses for pairs, depending on mass hypothesis
+          std::array<float, 3> pVecPion = {};
+          std::array<float, 3> pVecKaon = candidate.pVectorProng1();
+          std::array<float, 3> pVecProton = {};
+          if (iMass == charm_polarisation::MassHyposLcToPKPi::PKPi && candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
+            pVecProton = candidate.pVectorProng0();
+            pVecPion = candidate.pVectorProng2();
+          } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
+            pVecProton = candidate.pVectorProng2();
+            pVecPion = candidate.pVectorProng0();
+          }
+          const float massKPi = RecoDecay::m(std::array{pVecKaon, pVecPion}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+          const float massKProton = RecoDecay::m(std::array{pVecKaon, pVecProton}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
+          const float massPiProton = RecoDecay::m(std::array{pVecPion, pVecProton}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassProton});
+
+          /// Fill the table for selected candidates
+          /// No need to check explicitly if candidates are selected, since the Filter is applied
+          float cosThetaStarForTable = -10.f;
+          switch (cosThStarAxisLcPKPiBkgMc) {
+            case 1:
+              cosThetaStarForTable = cosThetaStarHelicity;
+              break;
+            case 2:
+              cosThetaStarForTable = cosThetaStarProduction;
+              break;
+            case 3:
+              cosThetaStarForTable = cosThetaStarBeam;
+              break;
+            case 4:
+              cosThetaStarForTable = cosThetaStarRandom;
+              break;
+            default:
+              LOG(fatal) << "cosThStarAxisLcPKPiBkgMc must be between 1 and 4 (1: helicity; 2: production; 3: beam; 4: random), but cosThStarAxisLcPKPiBkgMc = " << cosThStarAxisLcPKPiBkgMc << ". Fix it!";
+              break;
+          }
+          rowCandLcBkg(invMassCharmHadForSparse, ptCharmHad, rapidity,
+                       cosThetaStarForTable,
+                       pdgMotherProng0, pdgMotherProng1, pdgMotherProng2,
+                       massKPi, massKProton, massPiProton,
+                       outputMl.at(0),
+                       isRealPKPi, isRealLcPKPi, isReflected);
+        } // end studyLcPKPiBkgMc
+      }   // end table for Lc->pKpi background studies
+
     } /// end loop over mass hypotheses
 
     return isCandidateInSignalRegion;
@@ -1032,12 +1247,12 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
 
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate, iRotation, numPvContributors);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate, iRotation, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1057,12 +1272,12 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
 
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, iRotation, numPvContributors);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, iRotation, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1089,7 +1304,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(dstarCandidate, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
       }
@@ -1121,7 +1336,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
       }
@@ -1150,13 +1365,13 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
 
         /// rotational background
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, iRotation, numPvContributors);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, iRotation, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1176,13 +1391,13 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
 
         /// rotational background
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, iRotation, numPvContributors);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, iRotation, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1209,7 +1424,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, true>(lcCandidate, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, true>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
       }
@@ -1241,7 +1456,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true>(lcCandidate, 0, numPvContributors)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
           nCandsInSignalRegion++;
         }
       }
@@ -1253,6 +1468,21 @@ struct TaskPolarisationCharmHadrons {
     }
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiMcWithMl, "Process Lc candidates in MC with ML", false);
+
+  // Lc->pKpi in MC with ML cuts w/o mcCollision grouping (to study Lc background)
+  void processLcToPKPiBackgroundMcWithMl(McParticles3ProngMatched const& mcParticles,
+                                         FilteredCandLcToPKPiWSelFlagAndMcAndMl const& lcCandidates,
+                                         TracksWithMcLabels const& tracks)
+  {
+    for (const auto& lcCandidate : lcCandidates) {
+      runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true, true>(lcCandidate, 0, /*numPvContributors*/ -1, mcParticles, tracks);
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles, /*numPvContributorsGen*/ -1);
+    }
+  }
+  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiBackgroundMcWithMl, "Process Lc candidates in MC with ML w/o mcCollision grouping", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

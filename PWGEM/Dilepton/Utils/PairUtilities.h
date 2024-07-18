@@ -18,15 +18,68 @@
 #include <array>
 #include <vector>
 #include "Math/SMatrix.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/GenVector/Boost.h"
 #include "Common/Core/RecoDecay.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::pairutil
 {
+enum class DileptonPairType : int {
+  kDielectron = 0,
+  kDimuon = 1,
+};
+enum class DileptonAnalysisType : int {
+  kQC = 0,
+  kUPC = 1,
+  kFlowV2 = 2,
+  kFlowV3 = 3,
+  kFlowV4 = 4,
+  kPolarization = 5,
+  kHFll = 6,
+};
+
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
+//_______________________________________________________________________
+template <bool isMC = false, typename TTrack1, typename TTrack2>
+void getAngleCS(TTrack1 const& t1, TTrack2 const& t2, const float m1, const float m2, const float beamE1, const float beamE2, const float beamP1, const float beamP2, float& cos_thetaCS, float& phiCS)
+{
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+  ROOT::Math::PxPyPzEVector Beam1(0., 0., -beamP1, beamE1);
+  ROOT::Math::PxPyPzEVector Beam2(0., 0., beamP2, beamE2);
+
+  // Boost to center of mass frame
+  ROOT::Math::Boost boostv12{v12.BoostToCM()};
+  ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+  ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+  ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
+  ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
+
+  // Collins-Soper frame
+  ROOT::Math::XYZVectorF zaxis_CS{((Beam1_CM.Unit() - Beam2_CM.Unit()).Unit())};
+  ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+  ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+
+  // pdgCode : 11 for electron, -11 for positron
+  // pdgCode : 13 for negative muon, -13 for positive muon
+
+  if constexpr (isMC) {
+    cos_thetaCS = t1.pdgCode() < 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM);
+    phiCS = t1.pdgCode() < 0 ? std::atan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : std::atan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM));
+  } else {
+    cos_thetaCS = t1.sign() > 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM);
+    phiCS = t1.sign() > 0 ? std::atan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : std::atan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM));
+  }
+}
+
+//_______________________________________________________________________
 template <typename TDCAFitter, typename TCollision, typename TTrack>
 bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1, TTrack const& t2, float& pca, float& lxy, float& cosPA)
 {
@@ -61,6 +114,7 @@ bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1,
   }
 }
 
+//_______________________________________________________________________
 // function call without cosPA
 template <typename TDCAFitter, typename TCollision, typename TTrack>
 bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1, TTrack const& t2, float& pca, float& lxy)
@@ -120,6 +174,106 @@ bool isSVFoundFwd(TFwdDCAFitter fitter, TCollision const& collision, TTrack cons
   }
 }
 //_______________________________________________________________________
+inline float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, int cpos, int cneg, float bz)
+{
+  // cos(phiv) = w*a /|w||a|
+  // with w = u x v
+  // and  a = u x z / |u x z|   , unit vector perpendicular to v12 and z-direction (magnetic field)
+  // u = v12 / |v12|            , the unit vector of v12
+  // v = v1 x v2 / |v1 x v2|    , unit vector perpendicular to v1 and v2
+
+  // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
+  // vector product of pep X pem
+  // std::array<float, 3> arr_pos{t1.GetPx(), t1.GetPy(), t1.GetPz()};
+  // std::array<float, 3> arr_ele{t2.GetPx(), t2.GetPy(), t2.GetPz()};
+  std::array<float, 3> arr_pos{pxpos, pypos, pzpos};
+  std::array<float, 3> arr_ele{pxneg, pyneg, pzneg};
+  std::array<double, 3> pos_x_ele{0, 0, 0};
+  // LOGF(info, "Q1 = %d , Q2 = %d", cpos, cneg);
+
+  if (cpos * cneg > 0) { // Like Sign
+    if (bz < 0) {
+      if (cpos > 0) {
+        pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
+      } else {
+        pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
+      }
+    } else {
+      if (cpos > 0) {
+        pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
+      } else {
+        pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
+      }
+    }
+  } else { // Unlike Sign
+    if (bz > 0) {
+      if (cpos > 0) {
+        pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
+      } else {
+        pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
+      }
+    } else {
+      if (cpos > 0) {
+        pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
+      } else {
+        pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
+      }
+    }
+  }
+
+  // unit vector of pep X pem
+  float vx = pos_x_ele[0] / RecoDecay::sqrtSumOfSquares(pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
+  float vy = pos_x_ele[1] / RecoDecay::sqrtSumOfSquares(pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
+  float vz = pos_x_ele[2] / RecoDecay::sqrtSumOfSquares(pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
+
+  // unit vector of (pep+pem)
+  float ux = (pxpos + pxneg) / RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+  float uy = (pypos + pyneg) / RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+  float uz = (pzpos + pzneg) / RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+
+  float ax = uy / std::sqrt(ux * ux + uy * uy);
+  float ay = -ux / std::sqrt(ux * ux + uy * uy);
+
+  // The third axis defined by vector product (ux,uy,uz)X(vx,vy,vz)
+  float wx = uy * vz - uz * vy;
+  float wy = uz * vx - ux * vz;
+  // by construction, (wx,wy,wz) must be a unit vector. Measure angle between (wx,wy,wz) and (ax,ay,0).
+  // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
+  auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
+
+  // if (!std::isfinite(std::acos(wx * ax + wy * ay))) {
+  //   LOGF(info, "pxpos = %f, pypos = %f, pzpos = %f", pxpos, pypos, pzpos);
+  //   LOGF(info, "pxneg = %f, pyneg = %f, pzneg = %f", pxneg, pyneg, pzneg);
+  //   LOGF(info, "pos_x_ele[0] = %f, pos_x_ele[1] = %f, pos_x_ele[2] = %f", pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
+  //   LOGF(info, "ux = %f, uy = %f, uz = %f", ux, uy, uz);
+  //   LOGF(info, "ax = %f, ay = %f", ax, ay);
+  //   LOGF(info, "wx = %f, wy = %f", wx, wy);
+  //   LOGF(info, "wx * ax + wy * ay = %f", wx * ax + wy * ay);
+  //   LOGF(info, "std::acos(wx * ax + wy * ay) = %f", std::acos(wx * ax + wy * ay));
+  //   LOGF(info, "std::acos(clipToPM1(wx * ax + wy * ay)) = %f", std::acos(clipToPM1(wx * ax + wy * ay)));
+  // }
+
+  return std::acos(clipToPM1(wx * ax + wy * ay)); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
+}
+//_______________________________________________________________________
+inline float getPsiPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+{
+  auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
+  float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);
+  float argcos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
+  float thetaPos = std::atan2(RecoDecay::sqrtSumOfSquares(pxpos, pypos), pzpos);
+  float thetaNeg = std::atan2(RecoDecay::sqrtSumOfSquares(pxneg, pyneg), pzneg);
+  float argsin = (thetaNeg - thetaPos) / std::acos(clipToPM1(argcos));
+  return std::asin(clipToPM1(argsin));
+}
+//_______________________________________________________________________
+inline float getOpeningAngle(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+{
+  auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
+  float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);
+  float argcos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
+  return std::acos(clipToPM1(argcos));
+}
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::pairutil
 #endif // PWGEM_DILEPTON_UTILS_PAIRUTILITIES_H_

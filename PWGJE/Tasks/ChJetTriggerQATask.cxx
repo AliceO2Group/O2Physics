@@ -78,6 +78,8 @@ struct ChJetTriggerQATask {
 
   Configurable<bool> bAddSupplementHistosToOutput{"bAddAdditionalHistosToOutput", false, "add supplementary histos to the output"};
 
+  Configurable<float> phiAngleRestriction{"phiAngleRestriction", 0.3, "angle to restrict track phi for plotting tpc momentum"};
+
   float fiducialVolume; // 0.9 - jetR
 
   HistogramRegistry spectra;
@@ -102,6 +104,11 @@ struct ChJetTriggerQATask {
     spectra.add("ptetaJetChInclFullVol", "inclusive charged jet pT vs eta in full TPC volume", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
     spectra.add("ptetaLeadingJetFullVol", "pT vs eta leading jet", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
     spectra.add("ptphiLeadingJetFullVol", "pT vs phi leading jet", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+
+    spectra.add("globalP_tpcglobalPDiff_withoutcuts", "difference of global and TPC inner momentum vs global momentum without any selection applied", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("globalP_tpcglobalPDiff", "difference of global and TPC inner momentum vs global momentum with selection applied", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("globalP_tpcglobalPDiff_withoutcuts_phirestrict", "difference of global and TPC inner momentum vs global momentum without any selection applied in a restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("globalP_tpcglobalPDiff_phirestrict", "difference of global and TPC inner momentum vs global momentum with selection applied restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
 
     // Supplementary plots
     if (bAddSupplementHistosToOutput) {
@@ -134,7 +141,7 @@ struct ChJetTriggerQATask {
   void
     process(soa::Filtered<soa::Join<JetCollisions,
                                     aod::JChTrigSels, aod::EvSels>>::iterator const& collision,
-            soa::Filtered<JetTracks> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
+            soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets, soa::Join<aod::Tracks, aod::TracksExtra> const&)
   {
 
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -171,8 +178,20 @@ struct ChJetTriggerQATask {
 
       for (auto& trk : tracks) { // loop over filtered tracks in full TPC volume having pT > 100 MeV
 
+        auto const& originalTrack = trk.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
+        spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts"), trk.p() - originalTrack.tpcInnerParam(), trk.p());
+
+        if (TMath::Abs(trk.phi() - TMath::Pi()) < phiAngleRestriction) {
+          spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts_phirestrict"), trk.p() - originalTrack.tpcInnerParam(), trk.p());
+        }
+
         if (!jetderiveddatautilities::selectTrack(trk, trackSelection)) {
           continue;
+        }
+
+        spectra.fill(HIST("globalP_tpcglobalPDiff"), trk.p() - originalTrack.tpcInnerParam(), trk.p());
+        if (TMath::Abs(trk.phi() - TMath::Pi()) < phiAngleRestriction) {
+          spectra.fill(HIST("globalP_tpcglobalPDiff_phirestrict"), trk.p() - originalTrack.tpcInnerParam(), trk.p());
         }
 
         spectra.fill(

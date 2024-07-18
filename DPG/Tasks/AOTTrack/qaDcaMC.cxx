@@ -68,38 +68,20 @@ static constexpr const char* chargeNames[nSpecies] = {"pos_pdg", "neg_pdg"};
 static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040};
 
 // Histograms
-static constexpr int nHistograms = nSpecies * 2;
-
 // Pt
-static constexpr std::string_view hPtStr[nHistograms] = {"MC/el/pos_pdg/dcaxy/pt/str", "MC/mu/pos_pdg/dcaxy/pt/str", "MC/pi/pos_pdg/dcaxy/pt/str",
-                                                         "MC/ka/pos_pdg/dcaxy/pt/str", "MC/pr/pos_pdg/dcaxy/pt/str", "MC/de/pos_pdg/dcaxy/pt/str",
-                                                         "MC/tr/pos_pdg/dcaxy/pt/str", "MC/he/pos_pdg/dcaxy/pt/str", "MC/al/pos_pdg/dcaxy/pt/str",
-                                                         "MC/el/neg_pdg/dcaxy/pt/str", "MC/mu/neg_pdg/dcaxy/pt/str", "MC/pi/neg_pdg/dcaxy/pt/str",
-                                                         "MC/ka/neg_pdg/dcaxy/pt/str", "MC/pr/neg_pdg/dcaxy/pt/str", "MC/de/neg_pdg/dcaxy/pt/str",
-                                                         "MC/tr/neg_pdg/dcaxy/pt/str", "MC/he/neg_pdg/dcaxy/pt/str", "MC/al/neg_pdg/dcaxy/pt/str"};
-static constexpr std::string_view hPtMat[nHistograms] = {"MC/el/pos_pdg/dcaxy/pt/mat", "MC/mu/pos_pdg/dcaxy/pt/mat", "MC/pi/pos_pdg/dcaxy/pt/mat",
-                                                         "MC/ka/pos_pdg/dcaxy/pt/mat", "MC/pr/pos_pdg/dcaxy/pt/mat", "MC/de/pos_pdg/dcaxy/pt/mat",
-                                                         "MC/tr/pos_pdg/dcaxy/pt/mat", "MC/he/pos_pdg/dcaxy/pt/mat", "MC/al/pos_pdg/dcaxy/pt/mat",
-                                                         "MC/el/neg_pdg/dcaxy/pt/mat", "MC/mu/neg_pdg/dcaxy/pt/mat", "MC/pi/neg_pdg/dcaxy/pt/mat",
-                                                         "MC/ka/neg_pdg/dcaxy/pt/mat", "MC/pr/neg_pdg/dcaxy/pt/mat", "MC/de/neg_pdg/dcaxy/pt/mat",
-                                                         "MC/tr/neg_pdg/dcaxy/pt/mat", "MC/he/neg_pdg/dcaxy/pt/mat", "MC/al/neg_pdg/dcaxy/pt/mat"};
-static constexpr std::string_view hPtMatSM[nHistograms] = {"MC/el/pos_pdg/dcaxy/pt/sm", "MC/mu/pos_pdg/dcaxy/pt/sm", "MC/pi/pos_pdg/dcaxy/pt/sm",
-                                                           "MC/ka/pos_pdg/dcaxy/pt/sm", "MC/pr/pos_pdg/dcaxy/pt/sm", "MC/de/pos_pdg/dcaxy/pt/sm",
-                                                           "MC/tr/pos_pdg/dcaxy/pt/sm", "MC/he/pos_pdg/dcaxy/pt/sm", "MC/al/pos_pdg/dcaxy/pt/sm",
-                                                           "MC/el/neg_pdg/dcaxy/pt/sm", "MC/mu/neg_pdg/dcaxy/pt/sm", "MC/pi/neg_pdg/dcaxy/pt/sm",
-                                                           "MC/ka/neg_pdg/dcaxy/pt/sm", "MC/pr/neg_pdg/dcaxy/pt/sm", "MC/de/neg_pdg/dcaxy/pt/sm",
-                                                           "MC/tr/neg_pdg/dcaxy/pt/sm", "MC/he/neg_pdg/dcaxy/pt/sm", "MC/al/neg_pdg/dcaxy/pt/sm"};
-static constexpr std::string_view hPtMatSM1Dau[nHistograms] = {"MC/el/pos_pdg/dcaxy/pt/sm1dau", "MC/mu/pos_pdg/dcaxy/pt/sm1dau", "MC/pi/pos_pdg/dcaxy/pt/sm1dau",
-                                                               "MC/ka/pos_pdg/dcaxy/pt/sm1dau", "MC/pr/pos_pdg/dcaxy/pt/sm1dau", "MC/de/pos_pdg/dcaxy/pt/sm1dau",
-                                                               "MC/tr/pos_pdg/dcaxy/pt/sm1dau", "MC/he/pos_pdg/dcaxy/pt/sm1dau", "MC/al/pos_pdg/dcaxy/pt/sm1dau",
-                                                               "MC/el/neg_pdg/dcaxy/pt/sm1dau", "MC/mu/neg_pdg/dcaxy/pt/sm1dau", "MC/pi/neg_pdg/dcaxy/pt/sm1dau",
-                                                               "MC/ka/neg_pdg/dcaxy/pt/sm1dau", "MC/pr/neg_pdg/dcaxy/pt/sm1dau", "MC/de/neg_pdg/dcaxy/pt/sm1dau",
-                                                               "MC/tr/neg_pdg/dcaxy/pt/sm1dau", "MC/he/neg_pdg/dcaxy/pt/sm1dau", "MC/al/neg_pdg/dcaxy/pt/sm1dau"};
 std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtPrm;
+std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtStr;
+std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtMat;
+std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtMatSM;
+std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtMatSM1Dau;
+std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtMotherOfPDG1;
+std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtMotherOfPDG2;
+std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtMotherOfPDG3;
 
 struct QaDcaMc {
   // Track/particle selection
   Configurable<float> maxProdRadius{"maxProdRadius", 9999.f, "Maximum production radius of the particle under study"};
+  Configurable<int> motherPDG{"motherPDG", 0, "PDG code of the mother particle"};
   // Charge selection
   Configurable<bool> doPositivePDG{"doPositivePDG", false, "Flag to fill histograms for positive PDG codes."};
   Configurable<bool> doNegativePDG{"doNegativePDG", false, "Flag to fill histograms for negative PDG codes."};
@@ -115,8 +97,10 @@ struct QaDcaMc {
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
   // Track only selection, options to select only specific tracks
   Configurable<int> minNClustersITS{"minNClustersITS", -1, "Minimum required number of ITS clusters"};
+  Configurable<bool> enableTrackSelection{"enableTrackSelection", true, "Enable the track selection"};
 
   // Event selection
+  Configurable<bool> enableEventSelection{"enableEventSelection", true, "Enable the event selection"};
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
   Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
   Configurable<float> vertexZMax{"vertex-z-max", 10.f, "Maximum position of the generated vertez in Z (cm)"};
@@ -131,8 +115,6 @@ struct QaDcaMc {
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histosPosPdg{"HistosPosPdg", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histosNegPdg{"HistosNegPdg", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   static const char* particleName(int pdgSign, o2::track::PID::ID id)
   {
@@ -179,17 +161,16 @@ struct QaDcaMc {
                                yMin, yMax,
                                phiMin, phiMax);
 
-    const int histogramIndex = id + pdgSign * nSpecies;
-    HistogramRegistry* registry = &histosPosPdg;
-    if (pdgSign == 1) {
-      registry = &histosNegPdg;
+    hPtPrm[id][pdgSign] = histos.add<TH3>(Form("MC/%s/%s/dcaxyz/pt/prm", particleNames[id], chargeNames[pdgSign]), "DCA Prm. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
+    hPtStr[id][pdgSign] = histos.add<TH3>(Form("MC/%s/%s/dcaxyz/pt/str", particleNames[id], chargeNames[pdgSign]), "DCA Str. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
+    hPtMat[id][pdgSign] = histos.add<TH3>(Form("MC/%s/%s/dcaxyz/pt/mat", particleNames[id], chargeNames[pdgSign]), "DCA Mat. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
+    hPtMatSM[id][pdgSign] = histos.add<TH3>(Form("MC/%s/%s/dcaxyz/pt/sm", particleNames[id], chargeNames[pdgSign]), "DCA Mat. SM " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
+    hPtMatSM1Dau[id][pdgSign] = histos.add<TH3>(Form("MC/%s/%s/dcaxyz/pt/sm1dau", particleNames[id], chargeNames[pdgSign]), "DCA Mat. SM 1 Dau " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
+    if (motherPDG.value != 0) {
+      hPtMotherOfPDG1[id][pdgSign] = histos.add<TH3>(Form("MC/%s/%s/dcaxyz/pt/motherpdg1", particleNames[id], chargeNames[pdgSign]), "DCA mother pdg " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
+      hPtMotherOfPDG2[id][pdgSign] = histos.add<TH3>(Form("MC/%s/%s/dcaxyz/pt/motherpdg2", particleNames[id], chargeNames[pdgSign]), "DCA mother pdg " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
+      hPtMotherOfPDG3[id][pdgSign] = histos.add<TH3>(Form("MC/%s/%s/dcaxyz/pt/motherpdg3", particleNames[id], chargeNames[pdgSign]), "DCA mother pdg " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
     }
-
-    hPtPrm[id][pdgSign] = registry->add<TH3>(Form("MC/%s/%s/dcaxy/pt/prm", particleNames[id], chargeNames[pdgSign]), "DCA Prm. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
-    registry->add(hPtStr[histogramIndex].data(), "DCA Str. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
-    registry->add(hPtMat[histogramIndex].data(), "DCA Mat. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
-    registry->add(hPtMatSM[histogramIndex].data(), "DCA Mat. SM " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
-    registry->add(hPtMatSM1Dau[histogramIndex].data(), "DCA Mat. SM " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
 
     LOG(info) << "Done with making histograms for particle: " << partName;
   }
@@ -235,6 +216,8 @@ struct QaDcaMc {
       makeMCHistograms<pdgSign, o2::track::PID::Helium3>(doHe);
       makeMCHistograms<pdgSign, o2::track::PID::Alpha>(doAl);
     });
+
+    histos.print();
   }
 
   // Selection cuts defined from the binning
@@ -324,13 +307,6 @@ struct QaDcaMc {
       }
     }
 
-    HistogramRegistry* h = &histosPosPdg;
-    if constexpr (pdgSign == 1) {
-      h = &histosNegPdg;
-    }
-
-    constexpr int histogramIndex = id + pdgSign * nSpecies;
-    LOG(debug) << "fillMCTrackHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
     const o2::aod::McParticles::iterator& mcParticle = track.mcParticle();
 
     if (!isPdgSelected<pdgSign, id>(mcParticle)) { // Selecting PDG code
@@ -339,17 +315,42 @@ struct QaDcaMc {
 
     histos.fill(HIST("MC/trackSelection"), trkCutIdxN + id);
 
+    if (motherPDG.value != 0) {
+      int motherPdgCounter = 0;
+      if (mcParticle.has_mothers()) {
+        const auto& mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+        for (const auto& mother : mothers) {
+          if (!mother.has_mothers()) {
+            continue;
+          }
+          const auto& mothers2 = mother.mothers_as<o2::aod::McParticles>();
+          for (const auto& mother2 : mothers2) {
+            if (abs(mother2.pdgCode()) == motherPDG.value) {
+              motherPdgCounter++;
+            }
+          }
+        }
+      }
+      if (motherPdgCounter == 1) {
+        hPtMotherOfPDG1[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
+      } else if (motherPdgCounter == 2) {
+        hPtMotherOfPDG2[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
+      } else if (motherPdgCounter > 0) {
+        hPtMotherOfPDG3[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
+      }
+    }
+
     if (isPhysicalPrimary(mcParticle)) {
       hPtPrm[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
     } else if (mcParticle.getProcess() == 4) { // Particle decay
-      h->fill(HIST(hPtStr[histogramIndex]), mcParticle.pt(), track.dcaXY(), track.dcaZ());
+      hPtStr[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
     } else { // Material
-      h->fill(HIST(hPtMat[histogramIndex]), mcParticle.pt(), track.dcaXY(), track.dcaZ());
+      hPtMat[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
       if (mcParticle.has_mothers()) {
         if (mcParticle.mothers_as<o2::aod::McParticles>()[0].pdgCode() == mcParticle.pdgCode()) {
-          h->fill(HIST(hPtMatSM[histogramIndex]), mcParticle.pt(), track.dcaXY(), track.dcaZ());
+          hPtMatSM[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
           if (mcParticle.mothers_as<o2::aod::McParticles>().size() == 1) {
-            h->fill(HIST(hPtMatSM[histogramIndex]), mcParticle.pt(), track.dcaXY(), track.dcaZ());
+            hPtMatSM1Dau[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
           }
         }
       }
@@ -361,6 +362,9 @@ struct QaDcaMc {
   {
     if constexpr (doFillHistograms) {
       histos.fill(HIST("eventSelection"), 1);
+    }
+    if (!enableEventSelection.value) {
+      return true;
     }
     if (!collision.sel8()) {
       return false;
@@ -470,6 +474,10 @@ struct QaDcaMc {
         histos.fill(HIST("MC/fakeTrackNoiseHits"), 0.5);
         return false;
       }
+      if (!enableTrackSelection.value) {
+        return true;
+      }
+
       if constexpr (doFillHisto) {
         histos.fill(countingHisto, trkCutIdxHasMcPart); // Tracks with particles (i.e. no fakes)
       }
