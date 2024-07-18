@@ -1069,23 +1069,6 @@ struct femtoUniverseProducerTask {
     }
   }
 
-  template <bool isMC, typename V0Type, typename TrackType,
-            typename CollisionType>
-  void fillCollisionsAndTracksAndV0AndPhiCentRun3(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
-  {
-    if (ConfIsRun3)
-      fillCollisionsCentRun3<isMC>(col, tracks);
-
-    fillTracks<isMC>(tracks);
-
-    if (ConfIsActivateV0) {
-      fillV0<isMC>(col, fullV0s, tracks);
-    }
-    if (ConfIsActivatePhi) {
-      fillPhi<isMC>(col, tracks);
-    }
-  }
-
   void processFullData(aod::FemtoFullCollision const& col,
                        aod::BCsWithTimestamps const&,
                        aod::FemtoFullTracks const& tracks,
@@ -1118,7 +1101,9 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0AndPhiCentRun3<false>(col, tracks, fullV0s);
+    fillCollisionsCentRun3<false>(col, tracks);
+    fillTracks<false>(tracks);
+    fillV0<false>(col, fullV0s, tracks);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0CentRun3, "Provide experimental data for track v0", false);
 
