@@ -177,3 +177,8 @@ o2physics_add_dpl_workflow(upc-rho-analysis
                            SOURCES upcRhoAnalysis.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-mc-rho-analysis
+                           SOURCES upcMcRhoAnalysis.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
