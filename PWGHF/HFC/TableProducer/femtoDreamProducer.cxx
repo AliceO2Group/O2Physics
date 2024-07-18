@@ -424,9 +424,9 @@ struct HfFemtoDreamProducer {
 
                 // Row for MC candidate charm hadron (if constexpr isMc)
                 if constexpr (isMc) {
-                    rowCandMcCharmHad(
-                        candidate.flagMcMatchRec(),
-                        candidate.originMcRec());
+                  rowCandMcCharmHad(
+                    candidate.flagMcMatchRec(),
+                    candidate.originMcRec());
                 }
             }
       } };
