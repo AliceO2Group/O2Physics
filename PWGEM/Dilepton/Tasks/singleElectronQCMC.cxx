@@ -141,7 +141,7 @@ struct singleElectronQCMC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
+    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
 
     const AxisSpec axis_pt{ConfPteBins, "p_{T,e} (GeV/c)"};
     const AxisSpec axis_eta{20, -1.0, +1.0, "#eta_{e}"};
@@ -389,11 +389,11 @@ struct singleElectronQCMC {
         continue;
       }
 
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision, cfgDoFlow);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision, cfgDoFlow);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
@@ -481,6 +481,9 @@ struct singleElectronQCMC {
       }
 
       auto mccollision = collision.emmcevent_as<aod::EMMCEvents>();
+      // LOGF(info, "mccollision.getGeneratorId() = %d", mccollision.getGeneratorId());
+      // LOGF(info, "mccollision.getSubGeneratorId() = %d", mccollision.getSubGeneratorId());
+      // LOGF(info, "mccollision.getSourceId() = %d", mccollision.getSourceId());
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }

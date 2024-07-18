@@ -18,7 +18,8 @@ using namespace o2::framework;
 
 namespace o2::aod::pwgem::dilepton::utils::eventhistogram
 {
-void addEventHistograms(HistogramRegistry* fRegistry, bool doFlow)
+template <const int nmod = -1>
+void addEventHistograms(HistogramRegistry* fRegistry)
 {
   // event info
   auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{10, 0.5, 10.5}}, false);
@@ -44,8 +45,7 @@ void addEventHistograms(HistogramRegistry* fRegistry, bool doFlow)
   fRegistry->add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", kTH2F, {{60, 0, 60000}, {500, 0, 5000}}, false);
   fRegistry->add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", kTH2F, {{60, 0, 60000}, {2000, 0, 20000}}, false);
 
-  if (doFlow) {
-    // Q2
+  if constexpr (nmod == 2) { // Q2
     fRegistry->add("Event/before/hQ2xFT0M_CentFT0C", "hQ2xFT0M_CentFT0C;centrality FT0C (%);Q_{2,x}^{FT0M}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ2yFT0M_CentFT0C", "hQ2yFT0M_CentFT0C;centrality FT0C (%);Q_{2,y}^{FT0M}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ2xFT0A_CentFT0C", "hQ2xFT0A_CentFT0C;centrality FT0C (%);Q_{2,x}^{FT0A}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
@@ -76,8 +76,7 @@ void addEventHistograms(HistogramRegistry* fRegistry, bool doFlow)
     fRegistry->add("Event/before/hQ2FT0AQ2BNeg_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ2FT0AQ2BTot_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{BTot};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ2FT0AQ2FT0C_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false); // this is necessary for dimuons
-
-    // Q3
+  } else if constexpr (nmod == 3) {                                                                                                                                                                   // Q3
     fRegistry->add("Event/before/hQ3xFT0M_CentFT0C", "hQ3xFT0M_CentFT0C;centrality FT0C (%);Q_{3,x}^{FT0M}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ3yFT0M_CentFT0C", "hQ3yFT0M_CentFT0C;centrality FT0C (%);Q_{3,y}^{FT0M}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ3xFT0A_CentFT0C", "hQ3xFT0A_CentFT0C;centrality FT0C (%);Q_{3,x}^{FT0A}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
@@ -108,12 +107,43 @@ void addEventHistograms(HistogramRegistry* fRegistry, bool doFlow)
     fRegistry->add("Event/before/hQ3FT0AQ3BNeg_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{BNeg};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ3FT0AQ3BTot_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{BTot};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ3FT0AQ3FT0C_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{FT0C};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false); // this is necessary for dimuons
+  } else if constexpr (nmod == 4) {                                                                                                                                                                   // Q4
+    fRegistry->add("Event/before/hQ4xFT0M_CentFT0C", "hQ4xFT0M_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0M}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yFT0M_CentFT0C", "hQ4yFT0M_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0M}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4xFT0A_CentFT0C", "hQ4xFT0A_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0A}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yFT0A_CentFT0C", "hQ4yFT0A_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0A}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4xFT0C_CentFT0C", "hQ4xFT0C_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yFT0C_CentFT0C", "hQ4yFT0C_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4xBPos_CentFT0C", "hQ4xBPos_CentFT0C;centrality FT0C (%);Q_{4,x}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yBPos_CentFT0C", "hQ4yBPos_CentFT0C;centrality FT0C (%);Q_{4,y}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4xBNeg_CentFT0C", "hQ4xBNeg_CentFT0C;centrality FT0C (%);Q_{4,x}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yBNeg_CentFT0C", "hQ4yBNeg_CentFT0C;centrality FT0C (%);Q_{4,y}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4xBTot_CentFT0C", "hQ4xBTot_CentFT0C;centrality FT0C (%);Q_{4,x}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yBTot_CentFT0C", "hQ4yBTot_CentFT0C;centrality FT0C (%);Q_{4,y}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+
+    fRegistry->add("Event/before/hEP4FT0M_CentFT0C", "4rd harmonics event plane FT0M;centrality FT0C (%);#Psi_{4}^{FT0M} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP4FT0A_CentFT0C", "4rd harmonics event plane FT0A;centrality FT0C (%);#Psi_{4}^{FT0A} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP4FT0C_CentFT0C", "4rd harmonics event plane FT0C;centrality FT0C (%);#Psi_{4}^{FT0C} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP4BPos_CentFT0C", "4rd harmonics event plane BPos;centrality FT0C (%);#Psi_{4}^{BPos} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP4BNeg_CentFT0C", "4rd harmonics event plane BNeg;centrality FT0C (%);#Psi_{4}^{BNeg} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP4BTot_CentFT0C", "4rd harmonics event plane BTot;centrality FT0C (%);#Psi_{4}^{BTot} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+
+    fRegistry->add("Event/before/hQ4FT0MQ4BPos_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4FT0MQ4BNeg_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4BPosQ4BNeg_CentFT0C", "Q_{4}^{BPos} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{BPos} #upoint Q_{4}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
+    fRegistry->add("Event/before/hQ4FT0CQ4BPos_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4FT0CQ4BNeg_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4FT0CQ4BTot_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BTot};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4FT0AQ4BPos_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4FT0AQ4BNeg_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4FT0AQ4BTot_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BTot};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4FT0AQ4FT0C_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{FT0C};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false); // this is necessary for dimuons
   }
   fRegistry->addClone("Event/before/", "Event/after/");
 }
 
-template <const int ev_id, typename TCollision>
-void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, const bool doFlow, const float /*weight*/ = 1.f)
+template <const int ev_id, const int nmod = -1, typename TCollision>
+void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, const float /*weight*/ = 1.f)
 {
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 1.0);
@@ -153,8 +183,7 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsMultNTracksPV"), collision.multFT0C(), collision.multNTracksPV());
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsOccupancy"), collision.multFT0C(), collision.trackOccupancyInTimeRange());
 
-  if (doFlow) {
-    // Q2
+  if constexpr (nmod == 2) { // Q2
     std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
     std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
     std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
@@ -192,8 +221,7 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FT0CQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bneg));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FT0CQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2btot));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2FT0AQ2FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2ft0c));
-
-    // Q3
+  } else if constexpr (nmod == 3) { // Q3
     std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
     std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
     std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
