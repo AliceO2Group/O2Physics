@@ -276,8 +276,8 @@ struct AssociateMCInfoPhoton {
               motherid = -999;
             }
           } // end of mother chain loop
-        }   // end of leg loop
-      }     // end of v0 loop
+        } // end of leg loop
+      } // end of v0 loop
     }
 
     if constexpr (static_cast<bool>(system & kElectron)) {
