@@ -94,13 +94,14 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   // histogram names
   static constexpr char nameHistCollisions[] = "hCollisions";
+  static constexpr char nameHistCollisionsCent[] = "hCollisionsCent";
   static constexpr char nameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
   static constexpr char nameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
   static constexpr char nameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
   static constexpr char nameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
   static constexpr char nameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
 
-  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  std::shared_ptr<TH1> hCollisions, hCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
 
   // util to retrieve trigger mask in case of software triggers
   Zorro zorro;
@@ -111,6 +112,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
     hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hCollisionsCent = registry.add<TH1>(nameHistCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
     hPosZBeforeEvSel = registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosZAfterEvSel = registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
@@ -220,7 +222,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
   template <typename Coll>
-  void fillHistograms(Coll const& collision, const uint16_t rejectionMask)
+  void fillHistograms(Coll const& collision, const uint16_t rejectionMask, float& centrality)
   {
     hCollisions->Fill(EventRejection::None);
     const float posZ = collision.posZ();
@@ -237,6 +239,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosYAfterEvSel->Fill(collision.posY());
     hPosZAfterEvSel->Fill(posZ);
     hNumPvContributorsAfterSel->Fill(collision.numContrib());
+    hCollisionsCent->Fill(centrality);
   }
 };
 
