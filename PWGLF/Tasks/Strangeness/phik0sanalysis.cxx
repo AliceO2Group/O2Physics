@@ -202,30 +202,30 @@ struct phik0shortanalysis {
 
     // Histograms
     // Number of events per selection
-    eventHist.add("hEventSelection", "hEVentSelection", kTH1F, {{5, -0.5f, 4.5f}});
+    eventHist.add("hEventSelection", "hEventSelection", kTH1F, {{5, -0.5f, 4.5f}});
     eventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     eventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     eventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
     eventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "INEL>0 cut");
     eventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi cand");
 
-    // Number of MC events per selection
-    MCeventHist.add("hMCEventSelection", "hMCEVentSelection", kTH1F, {{6, -0.5f, 5.5f}});
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(4, "INEL>0 cut");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi cand");
-
     // Event information
     eventHist.add("hVertexZRec", "hVertexZRec", kTH1F, {vertexZAxis});
     eventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
 
-    // K0S topological/PID cuts
-    K0SHist.add("hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {{55, 0.0f, 2.2f}});
-    K0SHist.add("hV0CosPA", "hV0CosPA", kTH1F, {{100, 0.95f, 1.f}});
-    K0SHist.add("hNSigmaPosPionFromK0S", "hNSigmaPosPionFromK0Short", kTH2F, {ptAxis, {100, -5.f, 5.f}});
-    K0SHist.add("hNSigmaNegPionFromK0S", "hNSigmaNegPionFromK0Short", kTH2F, {ptAxis, {100, -5.f, 5.f}});
+    // Number of MC events per selection
+    MCeventHist.add("hMCEventSelection", "hMCEventSelection", kTH1F, {{7, -0.5f, 6.5f}});
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(4, "sel8 cut");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(5, "posZ cut");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(6, "INEL>0 cut");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(7, "With at least a #phi cand");
+
+    // MC Event information
+    MCeventHist.add("hMCVertexZRec", "hMCVertexZRec", kTH1F, {vertexZAxis});
+    MCeventHist.add("hMCMultiplicityPercent", "MC Multiplicity Percentile", kTH1F, {multAxis});
 
     // Phi tpological/PID cuts
     PhicandHist.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
@@ -233,6 +233,12 @@ struct phik0shortanalysis {
     PhicandHist.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     PhicandHist.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH2F, {ptAxis, {100, -10.0f, 10.0f}});
     PhicandHist.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH2F, {ptAxis, {100, -10.0f, 10.0f}});
+
+    // K0S topological/PID cuts
+    K0SHist.add("hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {{55, 0.0f, 2.2f}});
+    K0SHist.add("hV0CosPA", "hV0CosPA", kTH1F, {{100, 0.95f, 1.f}});
+    K0SHist.add("hNSigmaPosPionFromK0S", "hNSigmaPosPionFromK0Short", kTH2F, {ptAxis, {100, -5.f, 5.f}});
+    K0SHist.add("hNSigmaNegPionFromK0S", "hNSigmaNegPionFromK0Short", kTH2F, {ptAxis, {100, -5.f, 5.f}});
 
     // Phi invariant mass for computing purities and normalisation
     PhipurHist.add("h2PhipurInvMass", "Invariant mass of Phi for Purity (no K0S/Pi)", kTH2F, {multAxis, PhimassAxis});
@@ -288,20 +294,22 @@ struct phik0shortanalysis {
   template <typename T>
   bool acceptMCEventQA(const T& collision)
   {
-    eventHist.fill(HIST("hEventSelection"), 0); // all collisions
+    MCeventHist.fill(HIST("hMCEventSelection"), 0); // all collisions
     if (!collision.selection_bit(aod::evsel::kIsTriggerTVX))
       return false;
-    eventHist.fill(HIST("hEventSelection"), 1); // kIsTriggerTVX collisions
+    MCeventHist.fill(HIST("hMCEventSelection"), 1); // kIsTriggerTVX collisions
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
-    eventHist.fill(HIST("hEventSelection"), 2); // kNoTimeFrameBorder collisions
+    MCeventHist.fill(HIST("hMCEventSelection"), 2); // kNoTimeFrameBorder collisions
+    if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      MCeventHist.fill(HIST("hMCEventSelection"), 3); // kNoITSROFrameBorder collisions (not requested in the selection, but useful for QA)
     if (std::abs(collision.posZ()) > cutzvertex)
       return false;
-    eventHist.fill(HIST("hEventSelection"), 3); // vertex-Z selected
-    eventHist.fill(HIST("hVertexZRec"), collision.posZ());
+    MCeventHist.fill(HIST("hMCEventSelection"), 4); // vertex-Z selected
+    MCeventHist.fill(HIST("hMCVertexZRec"), collision.posZ());
     if (!collision.isInelGt0())
       return false;
-    eventHist.fill(HIST("hEventSelection"), 4); // INEL>0 collisions
+    MCeventHist.fill(HIST("hMCEventSelection"), 5); // INEL>0 collisions
     return true;
   }
 
