@@ -72,6 +72,7 @@ struct strangederivedbuilder {
   Produces<aod::StraCollLabels> strangeCollLabels; // characterises collisions
   Produces<aod::StraMCCollisions> strangeMCColl;   // characterises collisions / MC
   Produces<aod::StraMCCollMults> strangeMCMults;   // characterises collisions / MC mults
+  Produces<aod::StraMCCollCents> strangeMCCents;   // characterises collisions / MC centrality
   Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality
   Produces<aod::StraRawCents> strangeRawCents;     // characterises collisions / centrality
   Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / sel8 selection
@@ -211,8 +212,8 @@ struct strangederivedbuilder {
 
     // Creation of histograms: MC generated
     for (Int_t i = 0; i < nSpecies; i++) {
-      histos.add(Form("hGen%s", particleNames[i].data()), Form("hGen%s", particleNames[i].data()), kTH1D, {axisPt});
-      histos.add(Form("h2dGen%s", particleNames[i].data()), Form("h2dGen%s", particleNames[i].data()), kTH2D, {axisCentrality, axisPt});
+      histos.add(Form("hGenerated%s", particleNames[i].data()), Form("hGenerated%s", particleNames[i].data()), kTH1D, {axisPt});
+      histos.add(Form("h2dGenerated%s", particleNames[i].data()), Form("h2dGenerated%s", particleNames[i].data()), kTH2D, {axisCentrality, axisPt});
     }
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
@@ -237,7 +238,7 @@ struct strangederivedbuilder {
 
     if (doprocessBinnedGenerated) {
       // reserve space for generated vectors if that process enabled
-      auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
+      auto hBinFinder = histos.get<TH2>(HIST("h2dGeneratedK0Short"));
       LOGF(info, "Binned generated processing enabled. Initialising with %i elements...", hBinFinder->GetNcells());
       genK0Short.resize(hBinFinder->GetNcells(), 0);
       genLambda.resize(hBinFinder->GetNcells(), 0);
@@ -364,7 +365,7 @@ struct strangederivedbuilder {
       tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
-  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::McV0Labels> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
     // create collision indices beforehand
     std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
@@ -382,6 +383,7 @@ struct strangederivedbuilder {
                      mccollision.multMCNParticlesEta05(),
                      mccollision.multMCNParticlesEta08(),
                      mccollision.multMCNParticlesEta10());
+      strangeMCCents(mccollision.bestCollisionCentFT0C());
     }
 
     // ______________________________________________
@@ -710,7 +712,7 @@ struct strangederivedbuilder {
         static_for<0, nSpecies - 1>([&](auto i) {
           constexpr int index = i.value;
           if (mcp.pdgCode() == particlePDGCodes[index] && bitcheck(enabledBits, index)) {
-            histos.fill(HIST("hGen") + HIST(particleNamesConstExpr[index]), mcp.pt());
+            histos.fill(HIST("hGenerated") + HIST(particleNamesConstExpr[index]), mcp.pt());
           }
         });
       }
@@ -740,7 +742,7 @@ struct strangederivedbuilder {
         static_for<0, nSpecies - 1>([&](auto i) {
           constexpr int index = i.value;
           if (mcp.pdgCode() == particlePDGCodes[index] && bitcheck(enabledBits, index)) {
-            histos.fill(HIST("h2dGen") + HIST(particleNamesConstExpr[index]), bestCentrality, mcp.pt());
+            histos.fill(HIST("h2dGenerated") + HIST(particleNamesConstExpr[index]), bestCentrality, mcp.pt());
           }
         });
       }
@@ -763,7 +765,7 @@ struct strangederivedbuilder {
       const uint64_t mcCollIndex = mcCollision.globalIndex();
 
       // use one of the generated histograms as the bin finder
-      auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
+      auto hBinFinder = histos.get<TH2>(HIST("h2dGeneratedK0Short"));
 
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
       for (auto& mcp : mcParticles) {

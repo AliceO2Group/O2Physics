@@ -58,7 +58,8 @@ using std::array;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using dauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
 using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
-using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs>;
+// using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs>;
+using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels>;
 
 // simple checkers, but ensure 64 bit integers
 #define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
@@ -542,7 +543,7 @@ struct derivedlambdakzeroanalysis {
     histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
 
     // Creation of histograms: MC generated
-    if (doprocessBinnedGenerated) {
+    if (doprocessGenerated) {
       histos.add("h2dGenK0Short", "h2dGenK0Short", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenLambda", "h2dGenLambda", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisCentrality, axisPt});
@@ -550,6 +551,15 @@ struct derivedlambdakzeroanalysis {
       histos.add("h2dGenXiPlus", "h2dGenXiPlus", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", kTH2D, {axisCentrality, axisPt});
+    }
+    if (doprocessBinnedGenerated) {
+      histos.add("h2dGeneratedK0Short", "h2dGeneratedK0Short", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGeneratedLambda", "h2dGeneratedLambda", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGeneratedAntiLambda", "h2dGeneratedAntiLambda", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGeneratedXiMinus", "h2dGeneratedXiMinus", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGeneratedXiPlus", "h2dGeneratedXiPlus", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGeneratedOmegaMinus", "h2dGeneratedOmegaMinus", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGeneratedOmegaPlus", "h2dGeneratedOmegaPlus", kTH2D, {axisCentrality, axisPt});
     }
 
     // inspect histogram sizes, please
@@ -1184,7 +1194,7 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
     if (!collision.sel8()) {
@@ -1295,18 +1305,23 @@ struct derivedlambdakzeroanalysis {
       if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
+      if (!v0.has_v0MCCore())
+        continue;
+        
+      auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      float ptmc = RecoDecay::sqrtSumOfSquares(v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC());
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
       float ymc = 1e-3;
-      if (v0.pdgCode() == 310)
-        ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-      else if (TMath::Abs(v0.pdgCode()) == 3122)
-        ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassLambda);
+      if (v0MC.pdgCode() == 310)
+        ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
+      else if (TMath::Abs(v0MC.pdgCode()) == 3122)
+        ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
 
       uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
-      selMap = selMap | computeMCAssociation(v0);
+      selMap = selMap | computeMCAssociation(v0MC);
 
       // feeddown matrix always with association
       if (calculateFeeddownMatrix)
@@ -1327,7 +1342,7 @@ struct derivedlambdakzeroanalysis {
         if (collision.has_straMCCollision()) {
           auto mcCollision = collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
           mcNch = mcCollision.multMCNParticlesEta05();
-          correctCollision = (v0.straMCCollisionId() == mcCollision.globalIndex());
+          correctCollision = (v0MC.straMCCollisionId() == mcCollision.globalIndex());
         }
         analyseCollisionAssociation(v0, ptmc, mcNch, correctCollision, selMap);
       }
@@ -1337,18 +1352,134 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
+  void processGenerated(soa::Join<aod::StraMCCollisions, aod::StraMCCollCents>::iterator const& mcCollisions, aod::V0MCCores const& V0MCCores, aod::CascMCCores const& CascMCCores, soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>> const& collisions)
+  {
+    // Check if there is at least one of the reconstructed collisions associated to this MC collision 
+    // If so, we consider it
+    // bool atLeastOne = true;
+    float centrality = mcCollisions.bestCollisionCentFT0C();
+    // for (auto& collision : collisions) {
+      // if (!collision.sel8()) {
+      //   continue;
+      // }
+      // if (std::abs(collision.posZ()) > 10.f) {
+      //   continue;
+      // }
+      // if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      //   continue;
+      // }
+      // if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      //   continue;
+      // }
+      // if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      //   continue;
+      // }
+      // if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      //   continue;
+      // }
+      // if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      //   continue;
+      // }
+      // if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      //   continue;
+      // }
+      // if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      //   continue;
+      // }
+      // if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
+      //   continue;
+      // }
+      // if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
+      //   continue;
+      // }
+      // if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
+      //   continue;
+      // }
+      // if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
+      //   continue;
+      // }
+      // if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
+      //   continue;
+      // }
+      // if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      //   continue;
+      // }
+      // if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      //   continue;
+      // }
+
+      // if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+      //   continue;
+      // }
+      // if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+      //   continue;
+      // }
+
+      // if (collision.has_straMCCollision())
+      //   continue;
+
+      // atLeastOne = true;
+    // }
+
+    // if (!atLeastOne)
+      // return;
+
+    for (auto const& v0MC : V0MCCores) {
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
+      float ymc = 1e-3;
+      if (v0MC.pdgCode() == 310)
+        ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
+      else if (TMath::Abs(v0MC.pdgCode()) == 3122)
+        ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
+
+      if (v0MC.pdgCode() == 310 && TMath::Abs(ymc) < rapidityCut && v0MC.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dGenK0Short"), centrality, ptmc);
+      }
+      if (v0MC.pdgCode() == 3122 && TMath::Abs(ymc) < rapidityCut && v0MC.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dGenLambda"), centrality, ptmc);
+      }
+      if (v0MC.pdgCode() == -3122 && TMath::Abs(ymc) < rapidityCut && v0MC.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dGenAntiLambda"), centrality, ptmc);
+      }
+    }
+
+    for (auto const& cascMC : CascMCCores) {
+      float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxPosMC() + cascMC.pxNegMC(), cascMC.pyPosMC() + cascMC.pyNegMC());
+      float ymc = 1e-3;
+      if (TMath::Abs(cascMC.pdgCode()) == 3312)
+        ymc = RecoDecay::y(std::array{cascMC.pxPosMC() + cascMC.pxNegMC(), cascMC.pyPosMC() + cascMC.pyNegMC(), cascMC.pzPosMC() + cascMC.pzNegMC()}, o2::constants::physics::MassXiMinus);
+      else if (TMath::Abs(cascMC.pdgCode()) == 3334)
+        ymc = RecoDecay::y(std::array{cascMC.pxPosMC() + cascMC.pxNegMC(), cascMC.pyPosMC() + cascMC.pyNegMC(), cascMC.pzPosMC() + cascMC.pzNegMC()}, o2::constants::physics::MassOmegaMinus);
+
+      if (cascMC.pdgCode() == 3312 && TMath::Abs(ymc) < rapidityCut && cascMC.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
+      }
+      if (cascMC.pdgCode() == -3312 && TMath::Abs(ymc) < rapidityCut && cascMC.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
+      }
+      if (cascMC.pdgCode() == 3334 && TMath::Abs(ymc) < rapidityCut && cascMC.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
+      }
+      if (cascMC.pdgCode() == -3334 && TMath::Abs(ymc) < rapidityCut && cascMC.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
+      }
+    }
+  }
+
+  // ______________________________________________________
+  // Simulated processing (subscribes to MC information too)
   void processBinnedGenerated(
     aod::GeK0Short const& geK0Short, aod::GeLambda const& geLambda, aod::GeAntiLambda const& geAntiLambda,
     aod::GeXiMinus const& geXiMinus, aod::GeXiPlus const& geXiPlus,
     aod::GeOmegaMinus const& geOmegaMinus, aod::GeOmegaPlus const& geOmegaPlus)
   {
-    auto hK0Short = histos.get<TH2>(HIST("h2dGenK0Short"));
-    auto hLambda = histos.get<TH2>(HIST("h2dGenLambda"));
-    auto hAntiLambda = histos.get<TH2>(HIST("h2dGenAntiLambda"));
-    auto hXiMinus = histos.get<TH2>(HIST("h2dGenXiMinus"));
-    auto hXiPlus = histos.get<TH2>(HIST("h2dGenXiPlus"));
-    auto hOmegaMinus = histos.get<TH2>(HIST("h2dGenOmegaMinus"));
-    auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
+    auto hK0Short = histos.get<TH2>(HIST("h2dGeneratedK0Short"));
+    auto hLambda = histos.get<TH2>(HIST("h2dGeneratedLambda"));
+    auto hAntiLambda = histos.get<TH2>(HIST("h2dGeneratedAntiLambda"));
+    auto hXiMinus = histos.get<TH2>(HIST("h2dGeneratedXiMinus"));
+    auto hXiPlus = histos.get<TH2>(HIST("h2dGeneratedXiPlus"));
+    auto hOmegaMinus = histos.get<TH2>(HIST("h2dGeneratedOmegaMinus"));
+    auto hOmegaPlus = histos.get<TH2>(HIST("h2dGeneratedOmegaPlus"));
     for (auto& gVec : geK0Short) {
       if (gVec.generatedK0Short().size() != hK0Short->GetNcells())
         LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedK0Short().size(), hK0Short->GetNcells());
@@ -1403,6 +1534,7 @@ struct derivedlambdakzeroanalysis {
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealData, "process as if real data", true);
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarlo, "process as if MC", false);
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processBinnedGenerated, "process MC generated", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processGenerated, "process MC generated", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

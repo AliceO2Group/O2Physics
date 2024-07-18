@@ -20,6 +20,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 
 namespace o2::aod
@@ -99,6 +100,8 @@ DECLARE_SOA_TABLE(StraMCCollisions, "AOD", "STRAMCCOLLISION", //! MC collision p
                   mccollision::ImpactParameter);
 DECLARE_SOA_TABLE(StraMCCollMults, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
                   mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
+DECLARE_SOA_TABLE(StraMCCollCents, "AOD", "STRAMCCOLLCENTS", //! MC collision centrality
+                  mccollisionprop::BestCollisionCentFT0C);
 
 using StraMCCollision = StraMCCollisions::iterator;
 
