@@ -510,32 +510,31 @@ struct LFStrangeTreeCreator {
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
           for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
             for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
-              if (posMother.globalIndex() != negMother.globalIndex()){
-                pdgCodeMotherDauPos=posMother.pdgCode();
-                pdgCodeMotherDauNeg=negMother.pdgCode();
-                if (negMother.pdgCode()== -211){
-                  if (negMother.has_mothers()){
-                    for(auto& negSecondMother : negMother.template mothers_as<aod::McParticles>()){
-                      if(negSecondMother.globalIndex()==posMother.globalIndex()){
-                        pdgMatchMotherSecondMother=negSecondMother.pdgCode();
+              if (posMother.globalIndex() != negMother.globalIndex()) {
+                pdgCodeMotherDauPos = posMother.pdgCode();
+                pdgCodeMotherDauNeg = negMother.pdgCode();
+                if (negMother.pdgCode() == -211) {
+                  if (negMother.has_mothers()) {
+                    for (auto& negSecondMother : negMother.template mothers_as<aod::McParticles>()) {
+                      if (negSecondMother.globalIndex() == posMother.globalIndex()) {
+                        pdgMatchMotherSecondMother = negSecondMother.pdgCode();
                       }
                     }
                   }
                 }
-                if (posMother.pdgCode()== 211){
-                  if (posMother.has_mothers()){
-                    for(auto& posSecondMother : posMother.template mothers_as<aod::McParticles>()){
-                      if(posSecondMother.globalIndex()==negMother.globalIndex()){
-                        pdgMatchMotherSecondMother=posSecondMother.pdgCode();
+                if (posMother.pdgCode() == 211) {
+                  if (posMother.has_mothers()) {
+                    for (auto& posSecondMother : posMother.template mothers_as<aod::McParticles>()) {
+                      if (posSecondMother.globalIndex() == negMother.globalIndex()) {
+                        pdgMatchMotherSecondMother = posSecondMother.pdgCode();
                       }
                     }
                   }
                 }
-              }
-              else{
+              } else {
                 candidateV0.pdgcode = posMother.pdgCode();
-                pdgCodeMotherDauPos= posMother.pdgCode();
-                pdgCodeMotherDauNeg= negMother.pdgCode();
+                pdgCodeMotherDauPos = posMother.pdgCode();
+                pdgCodeMotherDauNeg = negMother.pdgCode();
                 if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
                   continue;
                 if (std::abs(posMother.pdgCode()) != 3122) {
@@ -571,24 +570,24 @@ struct LFStrangeTreeCreator {
           }
         }
         if ((!mcTrackPos.has_mothers()) && mcTrackNeg.has_mothers()) {
-          pdgCodeMotherDauPos=-999;
+          pdgCodeMotherDauPos = -999;
           for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
-            pdgCodeMotherDauNeg=negMother.pdgCode();      
+            pdgCodeMotherDauNeg = negMother.pdgCode();
           }
         }
         if ((!mcTrackNeg.has_mothers()) && mcTrackPos.has_mothers()) {
-          pdgCodeMotherDauNeg=-999;
+          pdgCodeMotherDauNeg = -999;
           for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
-            pdgCodeMotherDauPos=posMother.pdgCode();       
+            pdgCodeMotherDauPos = posMother.pdgCode();
           }
         }
         if ((!mcTrackNeg.has_mothers()) && (!mcTrackPos.has_mothers())) {
-          pdgCodeMotherDauNeg=-999;
-          pdgCodeMotherDauPos=-999;
+          pdgCodeMotherDauNeg = -999;
+          pdgCodeMotherDauPos = -999;
         }
-        candidateV0.pdgcodemotherdauneg=pdgCodeMotherDauNeg;
-        candidateV0.pdgcodemotherdaupos=pdgCodeMotherDauPos;     
-        candidateV0.pdgmatchmothersecondmother=pdgMatchMotherSecondMother;                 
+        candidateV0.pdgcodemotherdauneg = pdgCodeMotherDauNeg;
+        candidateV0.pdgcodemotherdaupos = pdgCodeMotherDauPos;
+        candidateV0.pdgmatchmothersecondmother = pdgMatchMotherSecondMother;
       }
     }
   }
