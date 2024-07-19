@@ -234,6 +234,54 @@ class TestConstRefInForLoop(TestSpec):
         return True if re.search("\([\w]* ?const ?[\w]*&", line) else False
 
 
+class TestConstRefInSubscription(TestSpec):
+    """Test const refs in process function subscriptions."""
+    name = "const ref in process"
+    message = "Use constant references for table subscriptions in process functions."
+    suffixes = [".cxx"]
+    # suffixes = [".h"]
+    per_line = False
+
+    def test_file(self, path : str, content) -> bool:
+        passed = True
+        n_parens_opened = 0 # number of opened parentheses
+        arguments = "" # process function arguments
+        line_process = 0
+        for i, line in enumerate(content):
+            line = line.strip()
+            if line.startswith("//"):
+                continue
+            if re.search("^void process[\w]*\(", line):
+                line_process = (i + 1)
+                i_closing = line.rfind(")")
+                i_start = line.find("(") + 1
+                i_end = i_closing if i_closing != -1 else len(line)
+                arguments = line[i_start:i_end] # get arguments between parentheses
+                n_parens_opened = line.count("(") - line.count(")")
+            elif n_parens_opened > 0:
+                i_closing = line.rfind(")")
+                i_start = 0
+                i_end = i_closing if i_closing != -1 else len(line)
+                arguments += " " + line[i_start:i_end] # get arguments between parentheses
+                n_parens_opened += line.count("(") - line.count(")")
+            if line_process > 0 and n_parens_opened == 0:
+                # process arguments
+                # sanitise template arguments
+                template_args = re.findall("<[\w:, ]*>", arguments)
+                if template_args:
+                    for arg in template_args:
+                        if ", " in arg:
+                            arguments = arguments.replace(arg, arg.replace(", ", ":"))
+                words = arguments.split(", ")
+                # test
+                for arg in words:
+                    if not re.search("[\w<>:]* ?const ?[\w<>:]*&", arg):
+                        passed = False
+                        print(f"{path}:{i + 1}: Argument {arg} is not const&.")
+                line_process = 0
+        return passed
+
+
 # Naming conventions
 # Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/naming_formatting.html
 
@@ -625,6 +673,7 @@ def main():
         tests.append(TestPI())
         tests.append(TestLogging())
         tests.append(TestConstRefInForLoop())
+        tests.append(TestConstRefInSubscription())
 
     # Naming conventions
     enable_naming = True
