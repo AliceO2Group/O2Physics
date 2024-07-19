@@ -329,6 +329,43 @@ class TestNameFilePython(TestSpec):
         return file_name.islower() and not "-" in file_name
 
 
+class TestNameWorkflow(TestSpec):
+    """Test names of O2 workflows."""
+    name = "O2 workflow names"
+    message = "Name of a workflow must consist of hyphenated lowercase words and must match the name of the workflow file."
+    suffixes = ["CMakeLists.txt"]
+    per_line = False
+
+    def test_file(self, path : str, content) -> bool:
+        passed = True
+        workflow_name = ""
+        for i, line in enumerate(content):
+            if not line.startswith("o2physics_add_dpl_workflow("):
+                continue
+            # Extract workflow name.
+            workflow_name = line.strip().split("(")[1]
+            if not workflow_name.islower() or "_" in workflow_name:
+                passed = False
+                print(f"{path}:{i + 1}: Invalid workflow name: {workflow_name}.")
+                # if github:
+                #     print(f"::error file={path},line={i + 1},title=[{self.name}]::{self.message}")
+                continue
+            # Extract workflow file name.
+            next_line = content[i + 1].strip()
+            words = next_line.split()
+            if words[0] != "SOURCES":
+                passed = False
+                print(f"{path}:{i + 2}: Did not find sources for workflow: {workflow_name}.")
+                continue
+            workflow_file_name = os.path.basename(words[1])
+            expected_workflow_file_name = "".join([w.title() if w[0].isnumeric() else w.capitalize() for w in workflow_name.split("-")]) + ".cxx"
+            expected_workflow_file_name = f"{expected_workflow_file_name[0].lower()}{expected_workflow_file_name[1:]}"
+            if expected_workflow_file_name != workflow_file_name:
+                passed = False
+                print(f"{path}:{i + 1}: Workflow name {workflow_name} does not match the workflow file name {workflow_file_name} (expected {expected_workflow_file_name}).")
+        return passed
+
+
 # PWG-specific
 
 
@@ -459,6 +496,7 @@ def main():
         tests.append(TestNameStruct())
         tests.append(TestNameFileCpp())
         tests.append(TestNameFilePython())
+        tests.append(TestNameWorkflow())
 
     # PWGHF
     enable_pwghf = True
