@@ -410,14 +410,47 @@ class TestHfStructMembers(TestSpec):
     """Test order of struct members."""
     name = "PWGHF: struct members"
     message = "Order struct members."
-    suffixes = [".h", ".cxx"]
+    suffixes = [".cxx"]
     per_line = False
+    member_order = ["Spawns<", "Builds<", "Produces<", "Configurable<", "HfHelper hfHelper", "Service<", "using ", "Filter ", "Preslice<", "Partition<", "ConfigurableAxis ", "AxisSpec ", "HistogramRegistry ", "OutputObj<", "void init(", "void process"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and "PWGHF/" in path
 
     def test_file(self, path : str, content) -> bool:
-        return True
+        passed = True
+        dic_struct = {}
+        struct_name = ""
+        for i, line in enumerate(content):
+            if line.startswith("//"):
+                continue
+            if line.startswith("struct "):
+                struct_name = line.strip().split()[1]
+                dic_struct[struct_name] = {}
+                continue
+            if not struct_name:
+                continue
+            for member in self.member_order:
+                if line.startswith(f"  {member}"):
+                    if member not in dic_struct[struct_name]:
+                        dic_struct[struct_name][member] = []
+                    dic_struct[struct_name][member].append(i + 1)
+                    break
+        # print(dic_struct)
+        last_line_last_member = 0 # number of the last line of the previous member category
+        index_last_member = 0 # index of the previous member category in member_order
+        for struct_name in dic_struct:
+            for i_m, member in enumerate(self.member_order):
+                if member not in dic_struct[struct_name]:
+                    continue
+                first_line = min(dic_struct[struct_name][member])
+                last_line = max(dic_struct[struct_name][member])
+                if first_line < last_line_last_member:
+                    passed = False
+                    print(f"{path}:{first_line}: {struct_name}: {member.strip()} appears too early (before end of {self.member_order[index_last_member].strip()}).")
+                last_line_last_member = last_line
+                index_last_member = i_m
+        return passed
 
 
 class TestHfNameFileWorkflow(TestSpec):
