@@ -565,9 +565,14 @@ class TestHfNameConfigurable(TestSpec):
         if not line.startswith("Configurable"):
             return True
         # Extract Configurable name.
-        names = line.split()[1].split("{") # expecting nameCpp{"nameJson",
-        name_cpp = names[0] # nameCpp
-        name_json = names[1] # expecting "nameJson",
+        words = line.split()
+        if words[2] == "=": # expecting Configurable... nameCpp = {"nameJson",
+            name_cpp = words[1] # nameCpp
+            name_json = words[3][1:] # expecting "nameJson",
+        else:
+            names = words[1].split("{") # expecting Configurable... nameCpp{"nameJson",
+            name_cpp = names[0] # nameCpp
+            name_json = names[1] # expecting "nameJson",
         if name_json[0] != "\"": # JSON name is not a literal string.
             return True
         name_json = name_json.strip("\",") # expecting nameJson
