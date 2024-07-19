@@ -23,6 +23,36 @@ import os
 import sys
 
 
+def is_camel_case(name: str) -> bool:
+    """forExample or ForExample"""
+    return not "_" in name and not "-" in name
+
+
+def is_upper_camel_case(name: str) -> bool:
+    """ForExample"""
+    return name[0].isupper() and is_camel_case(name)
+
+
+def is_lower_camel_case(name: str) -> bool:
+    """forExample"""
+    return name[0].islower() and is_camel_case(name)
+
+
+def is_kebab_case(name: str) -> bool:
+    """for-example"""
+    return name.islower() and not "_" in name
+
+
+def is_snake_case(name: str) -> bool:
+    """for_example"""
+    return name.islower() and not "-" in name
+
+
+def is_screaming_snake_case(name: str) -> bool:
+    """FOR_EXAMPLE"""
+    return name.isupper() and not "-" in name
+
+
 class TestSpec(ABC):
     """Prototype of the test class"""
     name = "Test template" # name of the test
@@ -178,7 +208,7 @@ class TestNameFunction(TestSpec):
     Can accidentally spot names of variable too but it is fine because same conventions apply.
     """
     name = "function names"
-    message = "Use camelCase for names of functions and variables."
+    message = "Use lowerCamelCase for names of functions and variables."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -206,17 +236,13 @@ class TestNameFunction(TestSpec):
         if "::" in function_name:
             function_name = function_name.split("::")[1]
         # The actual test comes here.
-        # if not (function_name[0].islower() and not "_" in function_name and not "-" in function_name):
-        #     print(line, words)
-        #     return False
-        # return True
-        return function_name[0].islower() and not "_" in function_name and not "-" in function_name
+        return is_lower_camel_case(function_name)
 
 
 class TestNameMacro(TestSpec):
     """Test macro names"""
     name = "macro names"
-    message = "Use capital letters and underscores in macro names."
+    message = "Use SCREAMING_SNAKE_CASE for macro names."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -230,13 +256,13 @@ class TestNameMacro(TestSpec):
         if "(" in macro_name:
             macro_name = macro_name.split("(")[0]
         # The actual test comes here.
-        return macro_name.isupper() and not "-" in macro_name
+        return is_screaming_snake_case(macro_name)
 
 
 class TestNameNamespace(TestSpec):
     """Test names of namespaces."""
     name = "namespace names"
-    message = "Use lowercase letters and underscores in names of namespaces."
+    message = "Use snake_case for names of namespaces."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -247,19 +273,15 @@ class TestNameNamespace(TestSpec):
             return True
         # Extract namespace name.
         namespace_name = line.split()[1]
-        # if not namespace_name.islower():
-        #     print(namespace_name)
-        #     return False
-        # return True
         # The actual test comes here.
-        return namespace_name.islower() and not "-" in namespace_name
+        return is_snake_case(namespace_name)
 
 
 class TestNameUpperCamelCase(TestSpec):
-    """Test CamelCase of a name."""
+    """Test UpperCamelCase of a name."""
     keyword = "key"
-    name = f"{keyword} CamelCase"
-    message = f"Use CamelCase for names of {keyword}."
+    name = f"{keyword} UpperCamelCase"
+    message = f"Use UpperCamelCase for names of {keyword}."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -275,12 +297,8 @@ class TestNameUpperCamelCase(TestSpec):
         object_name = words[1]
         if words[1] == "class" and len(words) > 2: # enum class
             object_name = words[2]
-        # if not object_name[0].isupper():
-        #     print(object_name)
-        #     return False
-        # return True
         # The actual test comes here.
-        return object_name[0].isupper() and not "_" in object_name and not "-" in object_name
+        return is_upper_camel_case(object_name)
 
 
 class TestNameEnum(TestNameUpperCamelCase):
@@ -288,51 +306,51 @@ class TestNameEnum(TestNameUpperCamelCase):
     Issue with 'enum class'"""
     keyword = "enum"
     name = f"{keyword} names"
-    message = f"Use CamelCase for names of enumerators and their values."
+    message = f"Use UpperCamelCase for names of enumerators and their values."
 
 
 class TestNameClass(TestNameUpperCamelCase):
     """Test names of classes."""
     keyword = "class"
     name = f"{keyword} names"
-    message = f"Use CamelCase for names of classes."
+    message = f"Use UpperCamelCase for names of classes."
 
 
 class TestNameStruct(TestNameUpperCamelCase):
     """Test names of structs."""
     keyword = "struct"
     name = f"{keyword} names"
-    message = f"Use CamelCase for names of structs."
+    message = f"Use UpperCamelCase for names of structs."
 
 
 class TestNameFileCpp(TestSpec):
     """Test names of C++ files."""
     name = "C++ file names"
-    message = "Use camelCase or CamelCase for names of C++ files. See the O2 naming conventions for details."
+    message = "Use lowerCamelCase or UpperCamelCase for names of C++ files. See the O2 naming conventions for details."
     suffixes = [".h", ".cxx", ".C"]
     per_line = False
 
     def test_file(self, path : str, content) -> bool:
         file_name = os.path.basename(path)
-        return not "_" in file_name and not "-" in file_name
+        return is_camel_case(file_name)
 
 
 class TestNameFilePython(TestSpec):
     """Test names of Python files."""
     name = "Python file names"
-    message = "Use lowercase letters and underscores in names of Python files."
+    message = "Use snake_case for names of Python files."
     suffixes = [".py", ".ipynb"]
     per_line = False
 
     def test_file(self, path : str, content) -> bool:
         file_name = os.path.basename(path)
-        return file_name.islower() and not "-" in file_name
+        return is_snake_case(file_name)
 
 
 class TestNameWorkflow(TestSpec):
     """Test names of O2 workflows."""
     name = "O2 workflow names"
-    message = "Name of a workflow must consist of hyphenated lowercase words and must match the name of the workflow file."
+    message = "Use kebab-case for names of workflows and match the name of the workflow file."
     suffixes = ["CMakeLists.txt"]
     per_line = False
 
@@ -344,7 +362,7 @@ class TestNameWorkflow(TestSpec):
                 continue
             # Extract workflow name.
             workflow_name = line.strip().split("(")[1]
-            if not workflow_name.islower() or "_" in workflow_name:
+            if not is_kebab_case(workflow_name):
                 passed = False
                 print(f"{path}:{i + 1}: Invalid workflow name: {workflow_name}.")
                 # if github:
@@ -412,7 +430,7 @@ class TestHfStructMembers(TestSpec):
     message = "Order struct members."
     suffixes = [".cxx"]
     per_line = False
-    member_order = ["Spawns<", "Builds<", "Produces<", "Configurable<", "HfHelper hfHelper", "Service<", "using ", "Filter ", "Preslice<", "Partition<", "ConfigurableAxis ", "AxisSpec ", "HistogramRegistry ", "OutputObj<", "void init(", "void process"]
+    member_order = ["Spawns<", "Builds<", "Produces<", "Configurable<", "HfHelper ", "SliceCache ", "Service<", "using ", "Filter ", "Preslice<", "Partition<", "ConfigurableAxis ", "AxisSpec ", "HistogramRegistry ", "OutputObj<", "void init(", "void process"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and "PWGHF/" in path
@@ -486,6 +504,31 @@ class TestHfNameFileWorkflow(TestSpec):
         return False
 
 
+class TestHfNameConfigurable(TestSpec):
+    """PWGHF: Test names of configurables."""
+    name = "PWGHF: Configurable names"
+    message = "Use camelCase for Configurable names and use the same name for the struct member as for the JSON string."
+    suffixes = [".h", ".cxx"]
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and "PWGHF/" in path and not "Macros/" in path
+
+    def test_line(self, line: str) -> bool:
+        line = line.strip()
+        if line.startswith("//"):
+            return True
+        if not line.startswith("Configurable"):
+            return True
+        # Extract Configurable name.
+        names = line.split()[1].split("{") # nameCpp{"nameJson",
+        name_cpp = names[0]
+        name_json = names[1]
+        if name_json[0] != "\"": # JSON name is not a literal string.
+            return True
+        name_json = name_json.strip("\",")
+        return is_lower_camel_case(name_cpp) and name_cpp == name_json
+
+
 # End of test implementations
 
 
@@ -539,6 +582,7 @@ def main():
         tests.append(TestHfStructMembers())
         tests.append(TestHfNameStruct())
         tests.append(TestHfNameFileWorkflow())
+        tests.append(TestHfNameConfigurable())
 
     test_names = [t.name for t in tests]
     suffixes = tuple(set([s for test in tests for s in test.suffixes])) # all suffixes from all enabled tests
