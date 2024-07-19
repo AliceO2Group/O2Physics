@@ -331,6 +331,7 @@ class TestNameFilePython(TestSpec):
 
 # PWG-specific
 
+
 class TestHfConstAuto(TestSpec):
     name = "PWGHF: const auto"
     message = "Use \"const auto\" instead of \"auto const\""
@@ -382,6 +383,39 @@ class TestHfStructMembers(TestSpec):
         return True
 
 
+class TestHfNameFileWorkflow(TestSpec):
+    """PWGHF: Test names of workflow files."""
+    name = "PWGHF: workflow file names"
+    message = "Name of a workflow file must match the name of the main task in it. See the PWGHF O2 naming conventions for details."
+    suffixes = [".cxx"]
+    per_line = False
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and "PWGHF/" in path and not "Macros/" in path
+
+    def test_file(self, path : str, content) -> bool:
+        file_name = os.path.basename(path).rstrip(".cxx")
+        if file_name[0].isupper():
+            return False
+        base_struct_name = f"Hf{file_name[0].upper()}{file_name[1:]}" # expected base of struct names
+        # print(f"For file {file_name} expecting to find {base_struct_name}.")
+        struct_names = []
+        for line in content:
+            if not line.startswith("struct "):
+                continue
+            # Extract struct name.
+            words = line.split()
+            if not words[1].isalnum(): # "struct : ..."
+                continue
+            struct_name = words[1]
+            struct_names.append(struct_name)
+        # print(f"Found structs: {struct_names}.")
+        for struct in struct_names:
+            if struct.startswith(base_struct_name):
+                return True
+        return False
+
+
 # End of test implementations
 
 
@@ -415,7 +449,7 @@ def main():
 
     # Naming conventions
     enable_naming = True
-    # enable_naming = False
+    enable_naming = False
     if enable_naming:
         tests.append(TestNameFunction())
         tests.append(TestNameMacro())
@@ -433,6 +467,7 @@ def main():
         tests.append(TestHfConstAuto())
         tests.append(TestHfStructMembers())
         tests.append(TestHfNameStruct())
+        tests.append(TestHfNameFileWorkflow())
 
     test_names = [t.name for t in tests]
     suffixes = tuple(set([s for test in tests for s in test.suffixes])) # all suffixes from all enabled tests
