@@ -483,13 +483,15 @@ struct femtoUniverseProducerTask {
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
       int particleOrigin = 99;
-      auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
+      auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (motherparticleMC.producedByGenerator()) {
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+        } else if (!motherparticlesMC.empty()) {
+          auto motherparticleMC = motherparticlesMC.front();
+          if (motherparticleMC.producedByGenerator())
+            particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
         } else {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kMaterial;
         }
@@ -503,6 +505,7 @@ struct femtoUniverseProducerTask {
       outputPartsMCLabels(-1);
     }
   }
+
   template <bool isMC, typename CollisionType, typename TrackType>
   void fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
