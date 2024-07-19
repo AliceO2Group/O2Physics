@@ -20,6 +20,7 @@
 from abc import ABC #, abstractmethod
 import argparse
 import os
+import re
 import sys
 
 
@@ -54,14 +55,14 @@ def is_screaming_snake_case(name: str) -> bool:
 
 
 class TestSpec(ABC):
-    """Prototype of the test class"""
-    name = "Test template" # name of the test
+    """Prototype of a test class"""
+    name = "test template" # short name of the test
     message = "Test failed" # error message
     suffixes = [] # suffixes of files to test
-    per_line = True # test lines separately one by one
+    per_line = True # Test lines separately one by one.
 
     def file_matches(self, path: str) -> bool:
-        """Test whether the path matches the pattern for files to test"""
+        """Test whether the path matches the pattern for files to test."""
         return path.endswith(tuple(self.suffixes)) if self.suffixes else True
 
     # @abstractmethod
@@ -75,7 +76,7 @@ class TestSpec(ABC):
         raise NotImplementedError()
 
     def run(self, path : str, content, github: bool = False) -> bool:
-        """Test file content."""
+        """Run the test."""
         # print(content)
         passed = True
         if not self.file_matches(path):
@@ -106,7 +107,8 @@ class TestSpec(ABC):
 # Bad code
 
 class TestIOStream(TestSpec):
-    name = "Include iostream"
+    """Detect included iostream."""
+    name = "include iostream"
     message = "Including iostream is not allowed. Use O2 logging instead."
     suffixes = [".h", ".cxx"]
 
@@ -117,8 +119,9 @@ class TestIOStream(TestSpec):
 
 
 class TestUsingStd(TestSpec):
-    name = "Importing std names"
-    message = "Importing std names is not allowed."
+    """Detect importing names from the std namespace."""
+    name = "import std names"
+    message = "Importing names from the std namespace is not allowed."
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -128,7 +131,8 @@ class TestUsingStd(TestSpec):
 
 
 class TestUsingDirectives(TestSpec):
-    name = "Using directives"
+    """Detect using directives in headers."""
+    name = "using directives"
     message = "Using directives are not allowed in headers."
     suffixes = [".h"]
 
@@ -139,18 +143,27 @@ class TestUsingDirectives(TestSpec):
 
 
 class TestStdPrefix(TestSpec):
+    """Detect missing std:: prefix for common names from the std namespace."""
     name = "std prefix"
-    message = "Use std:: prefix for STD methods."
+    message = "Use std:: prefix for names from the std namespace."
     suffixes = [".h", ".cxx", ".C"]
+    patterns = ["[^\w:.]vector<", "[^\w:.]array[<\{\()]", "[^\w:.]f?abs\(", "[^\w:.]min\(", "[^\w:.]max\(", "[^\w:.]log\(", "[^\w:.]exp\(", "[^\w:.]sin\(", "[^\w:.]cos\(", "[^\w:.]tan\(", "[^\w:.]atan\(", "[^\w:.]atan2\("]
 
     def test_line(self, line: str) -> bool:
         if line.startswith("//"):
             return True
-        return not " abs(" in line
+        for pattern in self.patterns:
+            if re.search(pattern, line):
+                return False
+            # occurrences = re.findall(pattern, line)
+            # if occurrences:
+            #     print(occurrences)
+            #     return False
+        return True
 
 
 class TestROOT(TestSpec):
-    """Test use of ROOT entities"""
+    """Detect use of unnecessary ROOT entities."""
     name = "ROOT entities"
     message = "Consider replacing ROOT entities with STD C++ or O2 entities."
     suffixes = [".h", ".cxx"]
@@ -169,21 +182,28 @@ class TestROOT(TestSpec):
 
 
 class TestPI(TestSpec):
-    """Test use of PI"""
-    name = "Use of PI"
+    """Detect use of external PI."""
+    name = "external PI"
     message = "Consider using the PI constant (and its multiples) defined in o2::constants::math."
-    suffixes = [".h", ".cxx", ".C"]
+    suffixes = [".h", ".cxx"]
+    keywords = ["M_PI", "TMath::Pi", "TMath::TwoPi"]
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
         if line.startswith("//"):
             return True
-        return not "M_PI" in line
+        for k in self.keywords:
+            if k in line:
+                return False
+        return True
 
 
 class TestLogging(TestSpec):
-    """Test logging"""
-    name = "Use of logging"
-    message = "Consider using O2 logging with LOG, LOGF, LOGP."
+    """Detect non-O2 logging."""
+    name = "logging"
+    message = "Consider using O2 logging (LOG, LOGF, LOGP)."
     suffixes = [".h", ".cxx"]
     keywords = ["Printf(", "printf(", "cout <", "cin >"]
 
@@ -205,15 +225,14 @@ class TestLogging(TestSpec):
 
 class TestNameFunction(TestSpec):
     """Test function names.
-    Likely to report false positives.
-    Can accidentally spot names of variable too but it is fine because same conventions apply.
+    Might report false positives.
+    Can accidentally spot names of variables too but it is fine because same conventions apply.
     """
     name = "function names"
     message = "Use lowerCamelCase for names of functions and variables."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        line = line.strip()
         if line.startswith("//"):
             return True
         # Look for "Type Name(..."
@@ -247,7 +266,6 @@ class TestNameMacro(TestSpec):
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        line = line.strip()
         if line.startswith("//"):
             return True
         if not line.startswith("#define "):
@@ -267,7 +285,6 @@ class TestNameConstant(TestSpec):
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        line = line.strip()
         if line.startswith("//"):
             return True
         words = line.split()
@@ -281,7 +298,7 @@ class TestNameConstant(TestSpec):
             constant_name = words[opens_brackets.index(True)] # the name is in the first element with "["
         # The actual test comes here.
         if constant_name.startswith("k"): # exception for special constants
-            constant_name = constant_name[1:]
+            constant_name = constant_name[1:] # test the name without "k"
         return is_upper_camel_case(constant_name)
 
 
@@ -292,7 +309,6 @@ class TestNameNamespace(TestSpec):
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        line = line.strip()
         if line.startswith("//"):
             return True
         if not line.startswith("namespace "):
@@ -304,14 +320,13 @@ class TestNameNamespace(TestSpec):
 
 
 class TestNameUpperCamelCase(TestSpec):
-    """Test UpperCamelCase of a name."""
+    """Base class for a test of UpperCamelCase names."""
     keyword = "key"
     name = f"{keyword} UpperCamelCase"
     message = f"Use UpperCamelCase for names of {keyword}."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        line = line.strip()
         if line.startswith("//"):
             return True
         if not line.startswith(f"{self.keyword} "):
@@ -321,15 +336,14 @@ class TestNameUpperCamelCase(TestSpec):
         if not words[1].isalnum(): # "struct : ...", "enum { ..."
             return True
         object_name = words[1]
-        if words[1] == "class" and len(words) > 2: # enum class
+        if object_name == "class" and len(words) > 2: # enum class ...
             object_name = words[2]
         # The actual test comes here.
         return is_upper_camel_case(object_name)
 
 
 class TestNameEnum(TestNameUpperCamelCase):
-    """Test names of enumerators.
-    Issue with 'enum class'"""
+    """Test names of enumerators."""
     keyword = "enum"
     name = f"{keyword} names"
     message = f"Use UpperCamelCase for names of enumerators and their values."
@@ -401,9 +415,11 @@ class TestNameWorkflow(TestSpec):
                 passed = False
                 print(f"{path}:{i + 2}: Did not find sources for workflow: {workflow_name}.")
                 continue
-            workflow_file_name = os.path.basename(words[1])
+            workflow_file_name = os.path.basename(words[1]) # the actual file name
+            # Generate the file name matching the workflow name.
             expected_workflow_file_name = "".join([w.title() if w[0].isnumeric() else w.capitalize() for w in workflow_name.split("-")]) + ".cxx"
-            expected_workflow_file_name = f"{expected_workflow_file_name[0].lower()}{expected_workflow_file_name[1:]}"
+            expected_workflow_file_name = f"{expected_workflow_file_name[0].lower()}{expected_workflow_file_name[1:]}" # start with lowercase letter
+            # Compare the actual and expected file names.
             if expected_workflow_file_name != workflow_file_name:
                 passed = False
                 print(f"{path}:{i + 1}: Workflow name {workflow_name} does not match the workflow file name {workflow_file_name} (expected {expected_workflow_file_name}).")
@@ -414,46 +430,48 @@ class TestNameWorkflow(TestSpec):
 
 
 class TestHfConstAuto(TestSpec):
+    """PWGHF: Detect swapped const auto."""
     name = "PWGHF: const auto"
-    message = "Use \"const auto\" instead of \"auto const\""
+    message = "Use \"const auto\" instead of \"auto const\"."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and "PWGHF/" in path
 
     def test_line(self, line: str) -> bool:
+        if line.startswith("//"):
+            return True
         return not "auto const" in line
 
 
-class TestHfNameStruct(TestSpec):
-    name = "PWGHF: struct name"
-    message = "Names of PWGHF structs must start with \"Hf\"."
+class TestHfNameStructClass(TestSpec):
+    """PWGHF: Test names of structs and classes."""
+    name = "PWGHF: struct/class names"
+    message = "Names of PWGHF structs and classes must start with \"Hf\"."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and "PWGHF/" in path
 
     def test_line(self, line: str) -> bool:
-        line = line.strip()
         if line.startswith("//"):
             return True
-        if not line.startswith("struct "):
+        if not line.startswith(("struct ", "class ")):
             return True
-        # Extract struct name.
+        # Extract struct/class name.
         words = line.split()
-        if not words[1].isalnum(): # "struct : ...", "enum { ..."
+        if not words[1].isalnum(): # "struct : ..."
             return True
         struct_name = words[1]
-        if words[1] == "class" and len(words) > 2: # enum class
-            struct_name = words[2]
         # The actual test comes here.
         return struct_name.startswith("Hf")
 
 
 class TestHfStructMembers(TestSpec):
-    """Test order of struct members."""
-    name = "PWGHF: struct members"
-    message = "Order struct members."
+    """PWGHF: Test order of struct members.
+    Caveat: Does not see Configurables in ConfigurableGroup."""
+    name = "PWGHF: struct member order"
+    message = "Declare struct members in the conventional order. See the PWGHF coding guidelines."
     suffixes = [".cxx"]
     per_line = False
     member_order = ["Spawns<", "Builds<", "Produces<", "Configurable<", "HfHelper ", "SliceCache ", "Service<", "using ", "Filter ", "Preslice<", "Partition<", "ConfigurableAxis ", "AxisSpec ", "HistogramRegistry ", "OutputObj<", "void init(", "void process"]
@@ -466,30 +484,32 @@ class TestHfStructMembers(TestSpec):
         dic_struct = {}
         struct_name = ""
         for i, line in enumerate(content):
-            if line.startswith("//"):
+            if line.strip().startswith("//"):
                 continue
-            if line.startswith("struct "):
+            if line.startswith("struct "): # expecting no indentation
                 struct_name = line.strip().split()[1]
                 dic_struct[struct_name] = {}
                 continue
             if not struct_name:
                 continue
+            # Save line numbers of members of the current struct for each category.
             for member in self.member_order:
-                if line.startswith(f"  {member}"):
+                if line.startswith(f"  {member}"): # expecting single-level indentation for direct members
                     if member not in dic_struct[struct_name]:
                         dic_struct[struct_name][member] = []
-                    dic_struct[struct_name][member].append(i + 1)
+                    dic_struct[struct_name][member].append(i + 1) # save line number
                     break
         # print(dic_struct)
-        last_line_last_member = 0 # number of the last line of the previous member category
-        index_last_member = 0 # index of the previous member category in member_order
+        # Detect members declared in a wrong order.
+        last_line_last_member = 0 # line number of the last member of the previous member category
+        index_last_member = 0 # index of the previous member category in the member_order list
         for struct_name in dic_struct:
             for i_m, member in enumerate(self.member_order):
                 if member not in dic_struct[struct_name]:
                     continue
-                first_line = min(dic_struct[struct_name][member])
-                last_line = max(dic_struct[struct_name][member])
-                if first_line < last_line_last_member:
+                first_line = min(dic_struct[struct_name][member]) # line number of the first member of this category
+                last_line = max(dic_struct[struct_name][member]) # line number of the last member of this category
+                if first_line < last_line_last_member: # The current category starts before the end of the previous category.
                     passed = False
                     print(f"{path}:{first_line}: {struct_name}: {member.strip()} appears too early (before end of {self.member_order[index_last_member].strip()}).")
                 last_line_last_member = last_line
@@ -513,7 +533,7 @@ class TestHfNameFileWorkflow(TestSpec):
             return False
         base_struct_name = f"Hf{file_name[0].upper()}{file_name[1:]}" # expected base of struct names
         # print(f"For file {file_name} expecting to find {base_struct_name}.")
-        struct_names = []
+        struct_names = [] # actual struct names in the file
         for line in content:
             if not line.startswith("struct "):
                 continue
@@ -524,8 +544,8 @@ class TestHfNameFileWorkflow(TestSpec):
             struct_name = words[1]
             struct_names.append(struct_name)
         # print(f"Found structs: {struct_names}.")
-        for struct in struct_names:
-            if struct.startswith(base_struct_name):
+        for struct_name in struct_names:
+            if struct_name.startswith(base_struct_name):
                 return True
         return False
 
@@ -540,18 +560,18 @@ class TestHfNameConfigurable(TestSpec):
         return TestSpec.file_matches(self, path) and "PWGHF/" in path and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
-        line = line.strip()
         if line.startswith("//"):
             return True
         if not line.startswith("Configurable"):
             return True
         # Extract Configurable name.
-        names = line.split()[1].split("{") # nameCpp{"nameJson",
-        name_cpp = names[0]
-        name_json = names[1]
+        names = line.split()[1].split("{") # expecting nameCpp{"nameJson",
+        name_cpp = names[0] # nameCpp
+        name_json = names[1] # expecting "nameJson",
         if name_json[0] != "\"": # JSON name is not a literal string.
             return True
-        name_json = name_json.strip("\",")
+        name_json = name_json.strip("\",") # expecting nameJson
+        # The actual test comes here.
         return is_lower_camel_case(name_cpp) and name_cpp == name_json
 
 
@@ -568,11 +588,11 @@ def main():
         "-g",
         dest="github",
         action="store_true",
-        help="Print messages as GitHub annotations",
+        help="Print messages also as GitHub annotations",
     )
     args = parser.parse_args()
 
-    tests = []
+    tests = [] # list of activated tests
 
     # Bad code
     enable_bad_practice = True
@@ -607,13 +627,13 @@ def main():
     if enable_pwghf:
         tests.append(TestHfConstAuto())
         tests.append(TestHfStructMembers())
-        tests.append(TestHfNameStruct())
+        tests.append(TestHfNameStructClass())
         tests.append(TestHfNameFileWorkflow())
         tests.append(TestHfNameConfigurable())
 
-    test_names = [t.name for t in tests]
+    test_names = [t.name for t in tests] # short names of activated tests
     suffixes = tuple(set([s for test in tests for s in test.suffixes])) # all suffixes from all enabled tests
-    passed = True # global status
+    passed = True # global result of all tests
 
     print("Enabled tests:", test_names)
 
@@ -632,7 +652,7 @@ def main():
                     #     print(f"File {path} failed the test {test.name}.")
                     # print(f"Test {'passed' if passed else 'failed'}.")
         except IOError:
-            print(f"Failed to open file {path}")
+            print(f"Failed to open file {path}.")
             sys.exit(1)
 
     if passed:
