@@ -200,6 +200,7 @@ class TestLogging(TestSpec):
 
 
 # Naming conventions
+# Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/naming_formatting.html
 
 
 class TestNameFunction(TestSpec):
@@ -240,7 +241,7 @@ class TestNameFunction(TestSpec):
 
 
 class TestNameMacro(TestSpec):
-    """Test macro names"""
+    """Test macro names."""
     name = "macro names"
     message = "Use SCREAMING_SNAKE_CASE for macro names."
     suffixes = [".h", ".cxx", ".C"]
@@ -257,6 +258,31 @@ class TestNameMacro(TestSpec):
             macro_name = macro_name.split("(")[0]
         # The actual test comes here.
         return is_screaming_snake_case(macro_name)
+
+
+class TestNameConstant(TestSpec):
+    """Test constexpr constant names."""
+    name = "constexpr constant names"
+    message = "Use UpperCamelCase for constexpr constant names. Names of special constants may be prefixed with \"k\"."
+    suffixes = [".h", ".cxx", ".C"]
+
+    def test_line(self, line: str) -> bool:
+        line = line.strip()
+        if line.startswith("//"):
+            return True
+        words = line.split()
+        if not "constexpr" in words or not "=" in words:
+            return True
+        # Extract constant name.
+        words = words[:words.index("=")] # keep only words before "="
+        constant_name = words[-1] # last word before "="
+        if constant_name.endswith("]") and "[" not in constant_name: # it's an array and we do not have the name before "[" here
+            opens_brackets = ["[" in w for w in words]
+            constant_name = words[opens_brackets.index(True)] # the name is in the first element with "["
+        # The actual test comes here.
+        if constant_name.startswith("k"): # exception for special constants
+            constant_name = constant_name[1:]
+        return is_upper_camel_case(constant_name)
 
 
 class TestNameNamespace(TestSpec):
@@ -566,6 +592,7 @@ def main():
     if enable_naming:
         tests.append(TestNameFunction())
         tests.append(TestNameMacro())
+        tests.append(TestNameConstant())
         tests.append(TestNameNamespace())
         tests.append(TestNameEnum())
         tests.append(TestNameClass())
