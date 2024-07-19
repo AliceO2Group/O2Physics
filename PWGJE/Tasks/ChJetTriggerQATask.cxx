@@ -193,15 +193,15 @@ struct ChJetTriggerQATask {
         }
 
         spectra.fill(HIST("globalP_tpcglobalPDiff"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
-	if(trk.p()>0 && originalTrack.tpcInnerParam()>0){
-           spectra.fill(HIST("global1overP_tpcglobalPDiff"), trk.p(), 1./trk.p() - 1./originalTrack.tpcInnerParam());
-	}
+        if (trk.p() > 0 && originalTrack.tpcInnerParam() > 0) {
+          spectra.fill(HIST("global1overP_tpcglobalPDiff"), trk.p(), 1. / trk.p() - 1. / originalTrack.tpcInnerParam());
+        }
         if (TMath::Abs(trk.phi() - TMath::Pi()) < phiAngleRestriction) {
-           spectra.fill(HIST("globalP_tpcglobalPDiff_phirestrict"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
-           
-	   if(trk.p()>0 && originalTrack.tpcInnerParam()>0){
-              spectra.fill(HIST("global1overP_tpcglobalPDiff_phirestrict"), trk.p(), 1./trk.p() - 1./originalTrack.tpcInnerParam());
-	   }
+          spectra.fill(HIST("globalP_tpcglobalPDiff_phirestrict"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
+
+          if (trk.p() > 0 && originalTrack.tpcInnerParam() > 0) {
+            spectra.fill(HIST("global1overP_tpcglobalPDiff_phirestrict"), trk.p(), 1. / trk.p() - 1. / originalTrack.tpcInnerParam());
+          }
         }
 
         spectra.fill(
