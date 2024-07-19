@@ -104,7 +104,7 @@ class TestSpec(ABC):
 # Implementations of tests
 ##########################
 
-# Bad code
+# Bad practice
 
 class TestIOStream(TestSpec):
     """Detect included iostream."""
@@ -594,13 +594,12 @@ def main():
 
     tests = [] # list of activated tests
 
-    # Bad code
+    # Bad practice
     enable_bad_practice = True
-    enable_bad_practice = False
     if enable_bad_practice:
         tests.append(TestIOStream())
-        tests.append(TestUsingDirectives())
         tests.append(TestUsingStd())
+        tests.append(TestUsingDirectives())
         tests.append(TestStdPrefix())
         tests.append(TestROOT())
         tests.append(TestPI())
@@ -608,7 +607,6 @@ def main():
 
     # Naming conventions
     enable_naming = True
-    enable_naming = False
     if enable_naming:
         tests.append(TestNameFunction())
         tests.append(TestNameMacro())
@@ -623,11 +621,10 @@ def main():
 
     # PWGHF
     enable_pwghf = True
-    enable_pwghf = False
     if enable_pwghf:
         tests.append(TestHfConstAuto())
-        tests.append(TestHfStructMembers())
         tests.append(TestHfNameStructClass())
+        tests.append(TestHfStructMembers())
         tests.append(TestHfNameFileWorkflow())
         tests.append(TestHfNameConfigurable())
 
@@ -635,9 +632,12 @@ def main():
     suffixes = tuple(set([s for test in tests for s in test.suffixes])) # all suffixes from all enabled tests
     passed = True # global result of all tests
 
-    print("Enabled tests:", test_names)
-
+    # Report overview before running.
     print(f"Testing {len(args.paths)} files.")
+    print("Enabled tests:", test_names)
+    print("Suffixes of tested files:", suffixes)
+
+    # Test files.
     for path in args.paths:
         # Skip not tested files.
         if not path.endswith(suffixes):
@@ -655,6 +655,7 @@ def main():
             print(f"Failed to open file {path}.")
             sys.exit(1)
 
+    # Report result.
     if passed:
         print("All tests passed.")
     else:
