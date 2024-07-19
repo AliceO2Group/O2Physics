@@ -107,8 +107,11 @@ struct ChJetTriggerQATask {
 
     spectra.add("globalP_tpcglobalPDiff_withoutcuts", "difference of global and TPC inner momentum vs global momentum without any selection applied", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
     spectra.add("globalP_tpcglobalPDiff", "difference of global and TPC inner momentum vs global momentum with selection applied", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("global1overP_tpcglobalPDiff", "difference of global and TPC inner momentum vs global momentum with selection applied", {HistType::kTH2F, {{100, 0., +100.}, {500, -8., +8.}}});
+
     spectra.add("globalP_tpcglobalPDiff_withoutcuts_phirestrict", "difference of global and TPC inner momentum vs global momentum without any selection applied in a restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
     spectra.add("globalP_tpcglobalPDiff_phirestrict", "difference of global and TPC inner momentum vs global momentum with selection applied restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("global1overP_tpcglobalPDiff_phirestrict", "difference of 1/p global and TPC inner momentum vs global momentum with selection applied restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {500, -8., +8.}}});
 
     // Supplementary plots
     if (bAddSupplementHistosToOutput) {
@@ -179,19 +182,26 @@ struct ChJetTriggerQATask {
       for (auto& trk : tracks) { // loop over filtered tracks in full TPC volume having pT > 100 MeV
 
         auto const& originalTrack = trk.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
-        spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts"), trk.p() - originalTrack.tpcInnerParam(), trk.p());
+        spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
 
         if (TMath::Abs(trk.phi() - TMath::Pi()) < phiAngleRestriction) {
-          spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts_phirestrict"), trk.p() - originalTrack.tpcInnerParam(), trk.p());
+          spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts_phirestrict"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
         }
 
         if (!jetderiveddatautilities::selectTrack(trk, trackSelection)) {
           continue;
         }
 
-        spectra.fill(HIST("globalP_tpcglobalPDiff"), trk.p() - originalTrack.tpcInnerParam(), trk.p());
+        spectra.fill(HIST("globalP_tpcglobalPDiff"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
+	if(trk.p()>0 && originalTrack.tpcInnerParam()>0){
+           spectra.fill(HIST("global1overP_tpcglobalPDiff"), trk.p(), 1./trk.p() - 1./originalTrack.tpcInnerParam());
+	}
         if (TMath::Abs(trk.phi() - TMath::Pi()) < phiAngleRestriction) {
-          spectra.fill(HIST("globalP_tpcglobalPDiff_phirestrict"), trk.p() - originalTrack.tpcInnerParam(), trk.p());
+           spectra.fill(HIST("globalP_tpcglobalPDiff_phirestrict"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
+           
+	   if(trk.p()>0 && originalTrack.tpcInnerParam()>0){
+              spectra.fill(HIST("global1overP_tpcglobalPDiff_phirestrict"), trk.p(), 1./trk.p() - 1./originalTrack.tpcInnerParam());
+	   }
         }
 
         spectra.fill(
