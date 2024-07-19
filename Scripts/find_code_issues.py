@@ -219,6 +219,21 @@ class TestLogging(TestSpec):
         return True
 
 
+class TestConstRefInForLoop(TestSpec):
+    """Test const refs in range-based for loops."""
+    name = "const ref in for loop"
+    message = "Use constant references for non-modified iterators in range-based for loops."
+    suffixes = [".h", ".cxx", ".C"]
+
+    def test_line(self, line: str) -> bool:
+        if line.startswith("//"):
+            return True
+        if not line.startswith("for (") or " : " not in line:
+            return True
+        line = line[:line.index(" : ")] # keep only the iterator part
+        return True if re.search("\([\w]* ?const ?[\w]*&", line) else False
+
+
 # Naming conventions
 # Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/naming_formatting.html
 
@@ -609,6 +624,7 @@ def main():
         tests.append(TestROOT())
         tests.append(TestPI())
         tests.append(TestLogging())
+        tests.append(TestConstRefInForLoop())
 
     # Naming conventions
     enable_naming = True
