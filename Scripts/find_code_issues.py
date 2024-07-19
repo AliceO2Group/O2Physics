@@ -343,9 +343,34 @@ class TestHfConstAuto(TestSpec):
         return not "auto const" in line
 
 
+class TestHfNameStruct(TestSpec):
+    name = "PWGHF: struct name"
+    message = "Names of PWGHF structs must start with \"Hf\"."
+    suffixes = [".h", ".cxx"]
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and "PWGHF/" in path
+
+    def test_line(self, line: str) -> bool:
+        line = line.strip()
+        if line.startswith("//"):
+            return True
+        if not line.startswith("struct "):
+            return True
+        # Extract struct name.
+        words = line.split()
+        if not words[1].isalnum(): # "struct : ...", "enum { ..."
+            return True
+        struct_name = words[1]
+        if words[1] == "class" and len(words) > 2: # enum class
+            struct_name = words[2]
+        # The actual test comes here.
+        return struct_name.startswith("Hf")
+
+
 class TestHfStructMembers(TestSpec):
     """Test order of struct members."""
-    name = "PWGHF: struct memners"
+    name = "PWGHF: struct members"
     message = "Order struct members."
     suffixes = [".h", ".cxx"]
     per_line = False
@@ -363,7 +388,7 @@ class TestHfStructMembers(TestSpec):
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(
-        description="Run tests on files to find bad code."
+        description="Run tests on files to find code issues."
     )
     parser.add_argument("paths", type=str, nargs="+", help="File path(s)")
     parser.add_argument(
@@ -377,27 +402,37 @@ def main():
     tests = []
 
     # Bad code
-    # tests.append(TestIOStream())
-    # tests.append(TestUsingDirectives())
-    # tests.append(TestUsingStd())
-    # tests.append(TestStdPrefix())
-    # tests.append(TestROOT())
-    # tests.append(TestPI())
-    # tests.append(TestLogging())
+    enable_bad_practice = True
+    enable_bad_practice = False
+    if enable_bad_practice:
+        tests.append(TestIOStream())
+        tests.append(TestUsingDirectives())
+        tests.append(TestUsingStd())
+        tests.append(TestStdPrefix())
+        tests.append(TestROOT())
+        tests.append(TestPI())
+        tests.append(TestLogging())
 
     # Naming conventions
-    # tests.append(TestNameFunction())
-    # tests.append(TestNameMacro())
-    # tests.append(TestNameNamespace())
-    tests.append(TestNameEnum())
-    # tests.append(TestNameClass())
-    # tests.append(TestNameStruct())
-    tests.append(TestNameFileCpp())
-    # tests.append(TestNameFilePython())
+    enable_naming = True
+    # enable_naming = False
+    if enable_naming:
+        tests.append(TestNameFunction())
+        tests.append(TestNameMacro())
+        tests.append(TestNameNamespace())
+        tests.append(TestNameEnum())
+        tests.append(TestNameClass())
+        tests.append(TestNameStruct())
+        tests.append(TestNameFileCpp())
+        tests.append(TestNameFilePython())
 
-    # PWG
-    # tests.append(TestHfConstAuto())
-    # tests.append(TestHfStructMembers())
+    # PWGHF
+    enable_pwghf = True
+    enable_pwghf = False
+    if enable_pwghf:
+        tests.append(TestHfConstAuto())
+        tests.append(TestHfStructMembers())
+        tests.append(TestHfNameStruct())
 
     test_names = [t.name for t in tests]
     suffixes = tuple(set([s for test in tests for s in test.suffixes])) # all suffixes from all enabled tests
@@ -426,7 +461,7 @@ def main():
     if passed:
         print("All tests passed.")
     else:
-        print("Problems have been found.")
+        print("Issues have been found.")
         sys.exit(1)
 
 
