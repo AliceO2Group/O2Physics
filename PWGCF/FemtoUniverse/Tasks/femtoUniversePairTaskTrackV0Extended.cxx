@@ -225,7 +225,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    const int multCol = ConfUseCent?col.multV0M():col.multNtr();
+    const int multCol = ConfUseCent ? col.multV0M() : col.multNtr();
 
     eventHisto.fillQA(col);
 
@@ -298,7 +298,7 @@ struct femtoUniversePairTaskTrackV0Extended {
     const auto& magFieldTesla = col.magField();
 
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    const int multCol = ConfUseCent?col.multV0M():col.multNtr();
+    const int multCol = ConfUseCent ? col.multV0M() : col.multNtr();
 
     eventHisto.fillQA(col);
 
@@ -365,7 +365,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-    const int multCol = ConfUseCent?collision1.multV0M():collision1.multNtr();
+      const int multCol = ConfUseCent ? collision1.multV0M() : collision1.multNtr();
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -413,7 +413,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-    const int multCol = ConfUseCent?collision1.multV0M():collision1.multNtr();
+      const int multCol = ConfUseCent ? collision1.multV0M() : collision1.multNtr();
 
       auto groupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
