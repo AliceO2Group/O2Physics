@@ -1052,6 +1052,9 @@ struct femtoUniverseProducerTask {
                   childIDs,
                   0,
                   0);
+      if (ConfIsDebug) {
+        fillDebugParticle<false, true>(particle);
+      }
     }
   }
 
