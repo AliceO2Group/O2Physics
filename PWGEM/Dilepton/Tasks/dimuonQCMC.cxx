@@ -148,7 +148,7 @@ struct dimuonQCMC {
     const AxisSpec axis_phi_cs{18, 0.f, M_PI, "|#varphi_{CS}| (rad.)"};                                             // for kPolarization
     const AxisSpec axis_aco{10, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};            // for kUPC
     const AxisSpec axis_asym_pt{10, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"}; // for kUPC
-    const AxisSpec axis_dphi_e_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{e} - #varphi_{#mu#mu} (rad.)"};            // for kUPC
+    const AxisSpec axis_dphi_e_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{#mu} - #varphi_{#mu#mu} (rad.)"};          // for kUPC
 
     // generated info
     fRegistry.add("Generated/sm/Eta/hs", "m_{#mu#mu} vs. p_{T,#mu#mu} ULS", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
@@ -455,7 +455,7 @@ struct dimuonQCMC {
     o2::math_utils::bringToPMPi(dphi_e_ee);
 
     float cos_thetaCS = 999, phiCS = 999.f;
-    o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+    o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
 
     if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);
@@ -777,6 +777,9 @@ struct dimuonQCMC {
                 fRegistry.fill(HIST("Generated/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 if (mcmother.daughtersIds().size() == 2) { // omega->ee
                   fRegistry.fill(HIST("Generated/sm/Omega2mumu/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
+                  // float mt = std::sqrt(std::pow(v12.M(), 2) + std::pow(v12.Pt(),2));
+                  // float cos_thetaCS_byhand =  2.f * (v1.E() * v2.Pz() - v2.E() * v1.Pz()) / (v12.M() * mt);
+                  // LOGF(info, "cos_thetaCS = %f, cos_thetaCS_byhand = %f", cos_thetaCS, cos_thetaCS_byhand);
                 }
                 break;
               case 333:

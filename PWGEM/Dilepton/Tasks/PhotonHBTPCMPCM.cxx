@@ -32,7 +32,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/Dilepton/Core/PhotonHBT.h"
 
 using namespace o2;

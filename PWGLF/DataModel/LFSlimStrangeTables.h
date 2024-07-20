@@ -46,11 +46,14 @@ DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(GenCt, genCt, float);
 DECLARE_SOA_COLUMN(GenLen, genLen, float);
 DECLARE_SOA_COLUMN(PDGCodeDauPos, pdgCodeDauPos, int);
+DECLARE_SOA_COLUMN(PDGCodeMotherDauPos, pdgCodeMotherDauPos, int);
 DECLARE_SOA_COLUMN(PDGCodeDauNeg, pdgCodeDauNeg, int);
+DECLARE_SOA_COLUMN(PDGCodeMotherDauNeg, pdgCodeMotherDauNeg, int);
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);
 DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
 DECLARE_SOA_COLUMN(IsFD, isFD, uint8_t);
+DECLARE_SOA_COLUMN(PDGMatchMotherSecondMother, pdgMatchMotherSecondMother, int);
 } // namespace SlimLambdaTables
 
 DECLARE_SOA_TABLE(LambdaTableML, "AOD", "LAMBDATABLEML",
@@ -89,10 +92,13 @@ DECLARE_SOA_TABLE(McLambdaTableML, "AOD", "MCLAMBDATABLEML",
                   SlimLambdaTables::GenEta,
                   SlimLambdaTables::GenCt,
                   SlimLambdaTables::PDGCodeDauPos,
+                  SlimLambdaTables::PDGCodeMotherDauPos,
                   SlimLambdaTables::PDGCodeDauNeg,
+                  SlimLambdaTables::PDGCodeMotherDauNeg,
                   SlimLambdaTables::PDGCode,
                   SlimLambdaTables::PDGCodeMother,
-                  SlimLambdaTables::IsReco);
+                  SlimLambdaTables::IsReco,
+                  SlimLambdaTables::PDGMatchMotherSecondMother);
 
 DECLARE_SOA_TABLE(V0TableAP, "AOD", "V0TABLEAP",
                   SlimLambdaTables::Eta,

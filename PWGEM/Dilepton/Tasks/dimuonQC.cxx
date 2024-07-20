@@ -286,73 +286,31 @@ struct dimuonQC {
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
       fRegistry.addClone("Pair/same/", "Pair/mix/");
-    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2)) {
-      nmod = 2;
-      const AxisSpec axis_sp2{20, -5.f, 5.f, Form("u_{2}^{#mu#mu} #upoint Q_{2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      fRegistry.add("Pair/same/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp2}, true);
+    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV4)) {
+      if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2)) {
+        nmod = 2;
+      } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
+        nmod = 3;
+      } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV4)) {
+        nmod = 4;
+      }
+
+      fRegistry.add("Pair/same/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/same/uls/hPrfUQ", Form("dimuon v_{%d} %s", nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
-      const AxisSpec axis_sp2_l1{20, -5.f, 5.f, Form("u_{2,#mu1} #upoint Q_{2,1}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_sp2_l2{20, -5.f, 5.f, Form("u_{2,#mu2} #upoint Q_{2,2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_cos_2dphi1{10, -1.f, 1.f, "cos(2 (#varphi_{#mu1} - #varphi_{#mu#mu}))"};
-      const AxisSpec axis_cos_2dphi2{10, -1.f, 1.f, "cos(2 (#varphi_{#mu2} - #varphi_{#mu#mu}))"};
-
-      const AxisSpec axis_ev1_sp2_ft0mbpos{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{FT0A} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp2_ft0mbneg{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{FT0C} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp2_bposbneg{40, -10.f, 10.f, "Q_{2}^{FT0A} #upoint Q_{2}^{FT0C} in event1"};
-      const AxisSpec axis_ev2_sp2_ft0mbpos{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{FT0A} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp2_ft0mbneg{40, -10.f, 10.f, Form("Q_{2}^{%s} #upoint Q_{2}^{FT0C} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp2_bposbneg{40, -10.f, 10.f, "Q_{2}^{FT0A} #upoint Q_{2}^{FT0C} in event2"};
-
-      fRegistry.add("Pair/mix/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp2_l1, axis_cos_2dphi1, axis_sp2_l2, axis_cos_2dphi2}, true);
-      fRegistry.add("Pair/mix/uls/hs_R", "dimuon qvector resolution R_{2}", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_ev1_sp2_ft0mbpos, axis_ev1_sp2_ft0mbneg, axis_ev1_sp2_bposbneg, axis_ev2_sp2_ft0mbpos, axis_ev2_sp2_ft0mbneg, axis_ev2_sp2_bposbneg}, true);
-      fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
-      fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
-    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
-      nmod = 3;
-      const AxisSpec axis_sp3{20, -5.f, 5.f, Form("u_{3}^{#mu#mu} #upoint Q_{3}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      fRegistry.add("Pair/same/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp3}, true);
-      fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
-      fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
-
-      const AxisSpec axis_sp3_l1{20, -5.f, 5.f, Form("u_{3,#mu1} #upoint Q_{3,1}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_sp3_l2{20, -5.f, 5.f, Form("u_{3,#mu2} #upoint Q_{3,2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_cos_3dphi1{10, -1.f, 1.f, "cos(3 (#varphi_{#mu1} - #varphi_{#mu#mu}))"};
-      const AxisSpec axis_cos_3dphi2{10, -1.f, 1.f, "cos(3 (#varphi_{#mu2} - #varphi_{#mu#mu}))"};
-
-      const AxisSpec axis_ev1_sp3_ft0mbpos{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{FT0A} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp3_ft0mbneg{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{FT0C} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp3_bposbneg{40, -10.f, 10.f, "Q_{3}^{FT0A} #upoint Q_{3}^{FT0C} in event1"};
-      const AxisSpec axis_ev2_sp3_ft0mbpos{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{FT0A} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp3_ft0mbneg{40, -10.f, 10.f, Form("Q_{3}^{%s} #upoint Q_{3}^{FT0C} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp3_bposbneg{40, -10.f, 10.f, "Q_{3}^{FT0A} #upoint Q_{3}^{FT0C} in event2"};
-
-      fRegistry.add("Pair/mix/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp3_l1, axis_cos_3dphi1, axis_sp3_l2, axis_cos_3dphi2}, true);
-      fRegistry.add("Pair/mix/uls/hs_R", "dimuon qvector resolution R_{3}", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_ev1_sp3_ft0mbpos, axis_ev1_sp3_ft0mbneg, axis_ev1_sp3_bposbneg, axis_ev2_sp3_ft0mbpos, axis_ev2_sp3_ft0mbneg, axis_ev2_sp3_bposbneg}, true);
-      fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
-      fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
-    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV4)) {
-      nmod = 4;
-      const AxisSpec axis_sp4{20, -5.f, 5.f, Form("u_{4}^{#mu#mu} #upoint Q_{4}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      fRegistry.add("Pair/same/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp4}, true);
-      fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
-      fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
-
-      const AxisSpec axis_sp4_l1{20, -5.f, 5.f, Form("u_{4,#mu1} #upoint Q_{4,1}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_sp4_l2{20, -5.f, 5.f, Form("u_{4,#mu2} #upoint Q_{4,2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_cos_4dphi1{10, -1.f, 1.f, "cos(4 (#varphi_{#mu1} - #varphi_{#mu#mu}))"};
-      const AxisSpec axis_cos_4dphi2{10, -1.f, 1.f, "cos(4 (#varphi_{#mu2} - #varphi_{#mu#mu}))"};
-
-      const AxisSpec axis_ev1_sp4_ft0mbpos{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{FT0A} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp4_ft0mbneg{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{FT0C} in event1", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev1_sp4_bposbneg{40, -10.f, 10.f, "Q_{4}^{FT0A} #upoint Q_{4}^{FT0C} in event1"};
-      const AxisSpec axis_ev2_sp4_ft0mbpos{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{FT0A} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp4_ft0mbneg{40, -10.f, 10.f, Form("Q_{4}^{%s} #upoint Q_{4}^{FT0C} in event2", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_ev2_sp4_bposbneg{40, -10.f, 10.f, "Q_{4}^{FT0A} #upoint Q_{4}^{FT0C} in event2"};
-
-      fRegistry.add("Pair/mix/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp4_l1, axis_cos_4dphi1, axis_sp4_l2, axis_cos_4dphi2}, true);
-      fRegistry.add("Pair/mix/uls/hs_R", "dimuon qvector resolution R_{4}", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_ev1_sp4_ft0mbpos, axis_ev1_sp4_ft0mbneg, axis_ev1_sp4_bposbneg, axis_ev2_sp4_ft0mbpos, axis_ev2_sp4_ft0mbneg, axis_ev2_sp4_bposbneg}, true);
+      fRegistry.add("Pair/mix/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfUQ_leg1", Form("dimuon v_{%d} leg1 %s", nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfCosDPhi_leg1", Form("dimuon v_{%d} leg1", nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP12_leg1", Form("dimuon v_{%d} leg1 %s%s", nmod, qvec_det_names[cfgQvecEstimator].data(), "BPos"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP13_leg1", Form("dimuon v_{%d} leg1 %s%s", nmod, qvec_det_names[cfgQvecEstimator].data(), "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP23_leg1", Form("dimuon v_{%d} leg1 %s%s", nmod, "BPos", "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfUQ_leg2", Form("dimuon v_{%d} leg2 %s", nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfCosDPhi_leg2", Form("dimuon v_{%d} leg2", nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP12_leg2", Form("dimuon v_{%d} leg2 %s%s", nmod, qvec_det_names[cfgQvecEstimator].data(), "BPos"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP13_leg2", Form("dimuon v_{%d} leg2 %s%s", nmod, qvec_det_names[cfgQvecEstimator].data(), "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP23_leg2", Form("dimuon v_{%d} leg2 %s%s", nmod, "BPos", "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) {
@@ -499,7 +457,7 @@ struct dimuonQC {
       o2::math_utils::bringToPMPi(dphi_mu_mumu);
 
       float cos_thetaCS = 999, phiCS = 999.f;
-      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy, aco, asym, abs(dphi_mu_mumu), abs(cos_thetaCS));
@@ -535,11 +493,15 @@ struct dimuonQC {
         sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]);
 
         if (t1.sign() * t2.sign() < 0) { // ULS
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ"), v12.M(), v12.Pt(), dca_mumu_xy, sp);
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_mumu_xy);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfUQ"), v12.M(), v12.Pt(), dca_mumu_xy, sp);
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_mumu_xy);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfUQ"), v12.M(), v12.Pt(), dca_mumu_xy, sp);
+        } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
         }
 
       } else if constexpr (ev_id == 1) {
@@ -557,20 +519,51 @@ struct dimuonQC {
         float sp_bc_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][1], qvectors_mix[nmod][2]);                // FT0A - FT0C
 
         if (t1.sign() * t2.sign() < 0) { // ULS
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp1, cos_dphi1, sp2, cos_dphi2);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs_R"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev1, sp_ac_ev1, sp_bc_ev1, sp_ab_ev2, sp_ac_ev2, sp_bc_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfCosDPhi_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, cos_dphi1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP12_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP13_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ac_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP23_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_bc_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfCosDPhi_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP12_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP13_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ac_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP23_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_bc_ev2);
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp1, cos_dphi1, sp2, cos_dphi2);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs_R"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev1, sp_ac_ev1, sp_bc_ev1, sp_ab_ev2, sp_ac_ev2, sp_bc_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_mumu_xy);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfUQ_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfCosDPhi_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, cos_dphi1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP12_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP13_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ac_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP23_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_bc_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfUQ_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfCosDPhi_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP12_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP13_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ac_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP23_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_bc_ev2);
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_mumu_xy, sp1, cos_dphi1, sp2, cos_dphi2);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs_R"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev1, sp_ac_ev1, sp_bc_ev1, sp_ab_ev2, sp_ac_ev2, sp_bc_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_mumu_xy);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfUQ_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfCosDPhi_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, cos_dphi1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP12_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP13_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ac_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP23_leg1"), v12.M(), v12.Pt(), dca_mumu_xy, sp_bc_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfUQ_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfCosDPhi_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP12_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ab_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP13_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_ac_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP23_leg2"), v12.M(), v12.Pt(), dca_mumu_xy, sp_bc_ev2);
         }
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) {
       float cos_thetaCS = 999, phiCS = 999.f;
-      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
       o2::math_utils::bringToPMPi(phiCS);
+
+      // float mt = std::sqrt(std::pow(v12.M(), 2) + std::pow(v12.Pt(),2));
+      // float cos_thetaCS_byhand =  2.f * (v1.E() * v2.Pz() - v2.E() * v1.Pz()) / (v12.M() * mt);
+      // LOGF(info, "cos_thetaCS = %f, cos_thetaCS_byhand = %f", cos_thetaCS, cos_thetaCS_byhand);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_mumu_xy, abs(cos_thetaCS), abs(phiCS));

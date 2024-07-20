@@ -72,22 +72,31 @@ struct CFFillterPPPhi {
     false,
     "Evt sel: check for offline selection"};
 
-  Configurable<float> InvMassCutWidth{"InvMassCutWidth", 0.024, "Phi Inv Mass Cut Width (GeV)"};
+  Configurable<float> ConfResoInvMassLowLimit{"ConfResoInvMassLowLimit", 1.011461, "Lower limit of the Reso invariant mass"};
+  Configurable<float> ConfResoInvMassUpLimit{"ConfResoInvMassUpLimit", 1.027461, "Upper limit of the Reso invariant mass"};
 
   Configurable<float> Q3Max{"Q3Max", 1.f, "Max Q3"};
 
   /*track selection*/
 
-  Configurable<float> ConfTrkEta{"ConfTrkEta", 0.85, "Eta"};            // 0.8
-  Configurable<float> ConfTrkDCAxy{"ConfTrkDCAxy", 0.15, "DCAxy"};      // 0.1
-  Configurable<float> ConfTrkDCAz{"ConfTrkDCAz", 0.3, "DCAz"};          // 0.2
-  Configurable<float> ConfNClus{"ConfNClus", 70, "NClusters"};          // 0.2
-  Configurable<float> ConfNCrossed{"ConfNCrossed", 65, "NCrossedRows"}; // 0.2
+  Configurable<float> ConfTrkEtaPr{"ConfTrkEtaPr", 0.85, "Et protona"};                                                             // 0.8
+  Configurable<float> ConfTrkDCAxyPr{"ConfTrkDCAxyPr", 0.15, "DCAxy proton"};                                                       // 0.1
+  Configurable<float> ConfTrkDCAzPr{"ConfTrkDCAzPr", 0.3, "DCAz proton"};                                                           // 0.2
+  Configurable<float> ConfNClusPr{"ConfNClusPr", 70, "NClusters proton"};                                                           // 0.2
+  Configurable<float> ConfNCrossedPr{"ConfNCrossedPr", 65, "NCrossedRows proton"};                                                  // 0.2
+  Configurable<float> ConfTrkTPCfClsPr{"ConfTrkTPCfClsPr", 0.83, "Minimum fraction of crossed rows over findable clusters proton"}; // 0.2
 
   Configurable<float> ConfTrkPtPrUp{"ConfTrkPtPrUp", 6.0, "Pt_up proton"};            // 2.0
   Configurable<float> ConfTrkPtPrDown{"ConfTrkPtPrDown", 0.35, "Pt_down proton"};     // 0.5
   Configurable<float> ConfTrkPTPCPrThr{"ConfTrkPTPCPrThr", 0.8, "p_TPC,Thr proton"};  // 0.75
   Configurable<float> ConfTrkPrSigmaPID{"ConfTrkPrSigmaPID", 3.50, "n_sigma proton"}; // 3.0
+
+  Configurable<float> ConfTrkEtaKa{"ConfTrkEtaKa", 0.85, "Eta kaon"};                                                             // 0.8
+  Configurable<float> ConfTrkDCAxyKa{"ConfTrkDCAxyKa", 0.15, "DCAxy kaon"};                                                       // 0.1
+  Configurable<float> ConfTrkDCAzKa{"ConfTrkDCAzKa", 0.3, "DCAz kaon"};                                                           // 0.2
+  Configurable<float> ConfNClusKa{"ConfNClusKa", 70, "NClusters kaon"};                                                           // 0.2
+  Configurable<float> ConfNCrossedKa{"ConfNCrossedKa", 65, "NCrossedRows kaon"};                                                  // 0.2
+  Configurable<float> ConfTrkTPCfClsKa{"ConfTrkTPCfClsKa", 0.80, "Minimum fraction of crossed rows over findable clusters kaon"}; // 0.2
 
   Configurable<float> ConfTrkPtKaUp{"ConfTrkPtKaUp", 6.0, "Pt_up kaon"};            // 2.0
   Configurable<float> ConfTrkPtKaDown{"ConfTrkPtKaDown", 0.05, "Pt_down kaon"};     // 0.15
@@ -236,11 +245,11 @@ struct CFFillterPPPhi {
   bool isSelectedTrackProton(T const& track)
   {
     bool isSelected = false;
-    if (track.pt() < ConfTrkPtPrUp.value && track.pt() > ConfTrkPtPrDown.value && std::abs(track.eta()) < ConfTrkEta.value && std::abs(track.dcaXY()) < ConfTrkDCAxy.value && std::abs(track.dcaZ()) < ConfTrkDCAz.value && track.tpcNClsCrossedRows() >= ConfNCrossed.value && track.tpcNClsFound() >= ConfNClus.value) {
-      if (track.tpcInnerParam() < ConfTrkPTPCPrThr.value && std::abs(track.tpcNSigmaPr()) < ConfTrkPrSigmaPID.value) {
+    if (track.pt() < ConfTrkPtPrUp.value && track.pt() > ConfTrkPtPrDown.value && std::abs(track.eta()) <= ConfTrkEtaPr.value && std::abs(track.dcaXY()) <= ConfTrkDCAxyPr.value && std::abs(track.dcaZ()) <= ConfTrkDCAzPr.value && track.tpcNClsCrossedRows() >= ConfNCrossedPr.value && track.tpcNClsFound() >= ConfNClusPr.value && track.tpcCrossedRowsOverFindableCls() >= ConfTrkTPCfClsPr.value) {
+      if (track.tpcInnerParam() < ConfTrkPTPCPrThr.value && std::abs(track.tpcNSigmaPr()) <= ConfTrkPrSigmaPID.value) {
         isSelected = true;
       }
-      if (track.tpcInnerParam() >= ConfTrkPTPCPrThr.value && std::abs(std::sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr())) < ConfTrkPrSigmaPID.value) {
+      if (track.tpcInnerParam() >= ConfTrkPTPCPrThr.value && std::abs(std::sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr())) <= ConfTrkPrSigmaPID.value) {
         isSelected = true;
       }
     }
@@ -251,11 +260,11 @@ struct CFFillterPPPhi {
   bool isSelectedTrackKaon(T const& track)
   {
     bool isSelected = false;
-    if (track.pt() < ConfTrkPtKaUp.value && track.pt() > ConfTrkPtKaDown.value && std::abs(track.eta()) < ConfTrkEta.value && std::abs(track.dcaXY()) < ConfTrkDCAxy.value && std::abs(track.dcaZ()) < ConfTrkDCAz.value && track.tpcNClsCrossedRows() >= ConfNCrossed.value && track.tpcNClsFound() >= ConfNClus.value) {
-      if (track.tpcInnerParam() < ConfTrkPTPCKaThr.value && std::abs(track.tpcNSigmaKa()) < ConfTrkKaSigmaPID.value) {
+    if (track.pt() < ConfTrkPtKaUp.value && track.pt() > ConfTrkPtKaDown.value && std::abs(track.eta()) <= ConfTrkEtaKa.value && std::abs(track.dcaXY()) <= ConfTrkDCAxyKa.value && std::abs(track.dcaZ()) <= ConfTrkDCAzKa.value && track.tpcNClsCrossedRows() >= ConfNCrossedKa.value && track.tpcNClsFound() >= ConfNClusKa.value && track.tpcCrossedRowsOverFindableCls() >= ConfTrkTPCfClsKa.value) {
+      if (track.tpcInnerParam() < ConfTrkPTPCKaThr.value && std::abs(track.tpcNSigmaKa()) <= ConfTrkKaSigmaPID.value) {
         isSelected = true;
       }
-      if (track.tpcInnerParam() >= ConfTrkPTPCKaThr.value && std::abs(std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa())) < ConfTrkKaSigmaPID.value) {
+      if (track.tpcInnerParam() >= ConfTrkPTPCKaThr.value && std::abs(std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa())) <= ConfTrkKaSigmaPID.value) {
         isSelected = true;
       }
     }
@@ -471,7 +480,7 @@ struct CFFillterPPPhi {
           registry.fill(HIST("TrackCuts/Phi/fEtaPhiBefore"), temp.eta());
           registry.fill(HIST("TrackCuts/Phi/fPhiPhiBefore"), temp.phi());
 
-          if ((CalculateInvMass(postrack, negtrack) > mMassPhi - InvMassCutWidth.value) && CalculateInvMass(postrack, negtrack) < (mMassPhi + InvMassCutWidth.value)) {
+          if ((CalculateInvMass(postrack, negtrack) > ConfResoInvMassLowLimit.value) && (CalculateInvMass(postrack, negtrack) < ConfResoInvMassUpLimit.value)) {
             // ROOT::Math::PtEtaPhiMVector temp = postrack + negtrack;
             phi.push_back(temp);
 
