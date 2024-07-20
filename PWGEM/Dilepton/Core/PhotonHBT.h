@@ -42,7 +42,6 @@
 #include "Tools/ML/model.h"
 
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Utils/EMTrack.h"
@@ -51,15 +50,23 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 
+namespace o2::aod::pwgem::dilepton::core::photonhbt
+{
+enum class ggHBTPairType : int {
+  kPCMPCM = 0,
+  kPCMEE = 1,
+  kEEEE = 2,
+};
+} // namespace o2::aod::pwgem::dilepton::core::photonhbt
+
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::pwgem::photonmeson::photonpair;
-using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils;
+using namespace o2::aod::pwgem::dilepton::core::photonhbt;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
@@ -72,7 +79,7 @@ using MyTrack = MyTracks::iterator;
 using FilteredMyTracks = soa::Filtered<MyTracks>;
 using FilteredMyTrack = FilteredMyTracks::iterator;
 
-template <PairType pairtype, typename... Types>
+template <ggHBTPairType pairtype, typename... Types>
 struct PhotonHBT {
 
   // Configurables
@@ -82,7 +89,6 @@ struct PhotonHBT {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
-  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
@@ -287,7 +293,6 @@ struct PhotonHBT {
     mRunNumber = collision.runNumber();
   }
 
-  static constexpr std::string_view pairnames[9] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
   void addhistograms()
   {
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
@@ -435,7 +440,7 @@ struct PhotonHBT {
   template <int ev_id, typename TCollision>
   void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float dca1, const float dca2)
   {
-    // if constexpr (ev_id == 1 && pairtype == PairType::kEEEE) {
+    // if constexpr (ev_id == 1 && pairtype == ggHBTPairType::kEEEE) {
     //   if (t1.has_ambiguousElectrons() && t2.has_ambiguousElectrons()) {
     //     for (auto& possible_id1 : t1.ambiguousElectronsIds()) {
     //       for (auto& possible_id2 : t2.ambiguousElectronsIds()) {
@@ -536,7 +541,7 @@ struct PhotonHBT {
       std::tuple<int, int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin, occbin);
       std::pair<int, int64_t> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
-      if constexpr (pairtype == PairType::kPCMPCM) {
+      if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
         auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
         for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
@@ -568,7 +573,7 @@ struct PhotonHBT {
             used_photonIds.emplace_back(pair_tmp_id2);
           }
         } // end of pairing loop
-      } else if constexpr (pairtype == PairType::kEEEE) {
+      } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
         auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> used_pairs_per_collision;
@@ -653,7 +658,7 @@ struct PhotonHBT {
         }   // end of g1 loop
         used_pairs_per_collision.clear();
         used_pairs_per_collision.shrink_to_fit();
-      } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
+      } else if constexpr (pairtype == ggHBTPairType::kPCMEE) {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
@@ -724,7 +729,7 @@ struct PhotonHBT {
       auto collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
       auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
-      if constexpr (pairtype == PairType::kPCMPCM) {
+      if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
         for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
@@ -744,7 +749,7 @@ struct PhotonHBT {
             }
           }
         } // end of loop over mixed event pool
-      } else if constexpr (pairtype == PairType::kEEEE) {
+      } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
         for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
@@ -763,8 +768,8 @@ struct PhotonHBT {
               fillPairHistogram<1>(collision, v1, v2, g1.pairDca3DinSigmaOTF(), g2.pairDca3DinSigmaOTF());
             }
           }
-        }                                                        // end of loop over mixed event pool
-      } else if constexpr (pairtype == PairType::kPCMDalitzEE) { // [photon1 from event1, photon2 from event2] and [photon1 from event2, photon2 from event1]
+        }                                                       // end of loop over mixed event pool
+      } else if constexpr (pairtype == ggHBTPairType::kPCMEE) { // [photon1 from event1, photon2 from event2] and [photon1 from event2, photon2 from event1]
         for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
@@ -836,16 +841,16 @@ struct PhotonHBT {
   int ndf = 0;
   void processAnalysis(FilteredMyCollisions const& collisions, Types const&... args)
   {
-    if constexpr (pairtype == PairType::kPCMPCM) {
+    if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
       runPairing(collisions, v0photons, v0photons, v0legs, v0legs, perCollision_pcm, perCollision_pcm, fV0PhotonCut, fV0PhotonCut);
-    } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
+    } else if constexpr (pairtype == ggHBTPairType::kPCMEE) {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
       auto emprimaryelectrons = std::get<2>(std::tie(args...));
       runPairing(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDielectronCut);
-    } else if constexpr (pairtype == PairType::kEEEE) {
+    } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
       auto emprimaryelectrons = std::get<0>(std::tie(args...));
       runPairing(collisions, nullptr, nullptr, emprimaryelectrons, emprimaryelectrons, perCollision_electron, perCollision_electron, fDielectronCut, fDielectronCut);
     }
