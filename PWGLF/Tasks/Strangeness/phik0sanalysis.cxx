@@ -218,10 +218,10 @@ struct phik0shortanalysis {
     MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
     MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(4, "sel8 cut");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
     MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(5, "posZ cut");
     MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(6, "INEL>0 cut");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(7, "With at least a #phi cand");
+    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(7, "With at least a #phi");
 
     // MC Event information
     MCeventHist.add("hMCVertexZRec", "hMCVertexZRec", kTH1F, {vertexZAxis});
