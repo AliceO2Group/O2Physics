@@ -24,6 +24,8 @@ import re
 import sys
 
 
+github_mode = False # GitHub mode
+
 def is_camel_case(name: str) -> bool:
     """forExample or ForExample"""
     return not "_" in name and not "-" in name
@@ -54,6 +56,15 @@ def is_screaming_snake_case(name: str) -> bool:
     return name.isupper() and not "-" in name
 
 
+def print_error(path: str, line: int, title: str, message: str) -> str:
+    """Format and print error message."""
+    str_line = "" if line is None else f"{line}:"
+    print(f"{path}:{str_line} {message} [{title}]") # terminal format
+    if github_mode:
+        str_line = "" if line is None else f",line={line}"
+        print(f"::error file={path}{str_line},title=[{title}]::{message}") # GitHub action format
+
+
 class TestSpec(ABC):
     """Prototype of a test class"""
     name = "test template" # short name of the test
@@ -75,7 +86,7 @@ class TestSpec(ABC):
         """Test a file in a way that cannot be done line by line."""
         raise NotImplementedError()
 
-    def run(self, path : str, content, github: bool = False) -> bool:
+    def run(self, path : str, content) -> bool:
         """Run the test."""
         # print(content)
         passed = True
@@ -88,15 +99,11 @@ class TestSpec(ABC):
                 # print(i + 1, line)
                 if not self.test_line(line):
                     passed = False
-                    print(f"{path}:{i + 1}: {self.message} [{self.name}]")
-                    if github:
-                        print(f"::error file={path},line={i + 1},title=[{self.name}]::{self.message}")
+                    print_error(path, i + 1, self.name, self.message)
         else:
             passed = self.test_file(path, content)
             if not passed:
-                print(f"{path}: {self.message} [{self.name}]")
-                if github:
-                    print(f"::error file={path},title=[{self.name}]::{self.message}")
+                print_error(path, None, self.name, self.message)
         return passed
 
 
@@ -277,7 +284,7 @@ class TestConstRefInSubscription(TestSpec):
                 for arg in words:
                     if not re.search("[\w<>:]* ?const ?[\w<>:]*&", arg):
                         passed = False
-                        print(f"{path}:{i + 1}: Argument {arg} is not const&.")
+                        print_error(path, i + 1, self.name, f"Argument {arg} is not const&.")
                 line_process = 0
         return passed
 
@@ -467,16 +474,14 @@ class TestNameWorkflow(TestSpec):
             workflow_name = line.strip().split("(")[1]
             if not is_kebab_case(workflow_name):
                 passed = False
-                print(f"{path}:{i + 1}: Invalid workflow name: {workflow_name}.")
-                # if github:
-                #     print(f"::error file={path},line={i + 1},title=[{self.name}]::{self.message}")
+                print_error(path, i + 1, self.name, f"Invalid workflow name: {workflow_name}.")
                 continue
             # Extract workflow file name.
             next_line = content[i + 1].strip()
             words = next_line.split()
             if words[0] != "SOURCES":
                 passed = False
-                print(f"{path}:{i + 2}: Did not find sources for workflow: {workflow_name}.")
+                print_error(path, i + 2, self.name, f"Did not find sources for workflow: {workflow_name}.")
                 continue
             workflow_file_name = os.path.basename(words[1]) # the actual file name
             # Generate the file name matching the workflow name.
@@ -485,7 +490,7 @@ class TestNameWorkflow(TestSpec):
             # Compare the actual and expected file names.
             if expected_workflow_file_name != workflow_file_name:
                 passed = False
-                print(f"{path}:{i + 1}: Workflow name {workflow_name} does not match the workflow file name {workflow_file_name} (expected {expected_workflow_file_name}).")
+                print_error(path, i + 1, self.name, f"Workflow name {workflow_name} does not match the workflow file name {workflow_file_name} (expected {expected_workflow_file_name}).")
         return passed
 
 
@@ -574,7 +579,7 @@ class TestHfStructMembers(TestSpec):
                 last_line = max(dic_struct[struct_name][member]) # line number of the last member of this category
                 if first_line < last_line_last_member: # The current category starts before the end of the previous category.
                     passed = False
-                    print(f"{path}:{first_line}: {struct_name}: {member.strip()} appears too early (before end of {self.member_order[index_last_member].strip()}).")
+                    print_error(path, first_line, self.name, f"{struct_name}: {member.strip()} appears too early (before end of {self.member_order[index_last_member].strip()}).")
                 last_line_last_member = last_line
                 index_last_member = i_m
         return passed
@@ -659,6 +664,9 @@ def main():
         help="Print messages also as GitHub annotations",
     )
     args = parser.parse_args()
+    if args.github:
+        global github_mode
+        github_mode = True
 
     tests = [] # list of activated tests
 
@@ -716,7 +724,7 @@ def main():
             with open(path, "r") as file:
                 content = file.readlines()
                 for test in tests:
-                    if not test.run(path, content, args.github):
+                    if not test.run(path, content):
                         passed = False
                     # if not passed:
                     #     print(f"File {path} failed the test {test.name}.")
