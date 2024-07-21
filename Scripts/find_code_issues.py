@@ -303,9 +303,10 @@ class TestConstRefInSubscription(TestSpec):
 
 
 class TestNameFunction(TestSpec):
-    """Test names of functions and of some variables.
+    """Test names of functions and of most variables.
     Detects variable declarations with "(".
     Might report false positives.
+    Cannot detect multiple declarations "type name1, name2;"
     """
     name = "function/variable names"
     message = "Use lowerCamelCase for names of functions and variables."
@@ -315,15 +316,6 @@ class TestNameFunction(TestSpec):
         if is_comment_cpp(line):
             return True
         # Look for declarations of functions and variables.
-
-        # a not enough successful attempt to use regex
-        # if not re.search("^([a-z]+ )?(const[\*\&]? )?([\w][\w:<>\[\]\*\& ]* )(const[\*\&]? )?([\w]+)[\(\{]", line):
-        #     return True
-
-        # Any function declaration has "(".
-        # This does not accept variable declarations without "(", e.g. "type name;" or "type name = value;" or "type name{value};"
-        if not "(" in line:
-            return True
 
         # Strip away irrelevant remainders of the line after the object name.
         # For functions, stripping after "(" is enough but this way we also identify many declarations of variables.
@@ -343,39 +335,24 @@ class TestNameFunction(TestSpec):
             return True
 
         # Reject false positives with same structure.
-        if words[0] in ("return", "if", "else", "new", "case", "typename", "using"):
+        if words[0] in ("return", "if", "else", "new", "delete", "case", "typename", "using", "typedef", "enum", "namespace", "struct", "class"):
             return True
-        if len(words) > 2:
-            if words[1] in ("typename"):
-                return True
-
-        # if words[0].endswith(".template"):
-        #     return True
-
-        # multiple template arguments
-        # if words[0][-1] == ",":
-        #     return True
+        if len(words) > 2 and words[1] in ("typename", "class", "struct"):
+            return True
 
         # All words before the name start with an alphanumeric character (underscores not allowed).
         # Rejects expressions, e.g. * = += << }, but accepts numbers in array declarations.
         if not all(w[0].isalnum() for w in words[:-1]):
-        # if not all(re.search("\w", w[0]) for w in words):
             return True
 
         # Extract function/variable name.
         funval_name = words[-1] # expecting the name in the last word
-        if "[" in funval_name: # remove brackets for arrays
+        if "[" in funval_name: # Remove brackets for arrays.
             funval_name = funval_name[:funval_name.find("[")]
-        if "::" in funval_name: # methods with the class prefix
+        if "::" in funval_name: # Remove the class prefix for methods.
             funval_name = funval_name.split("::")[-1]
 
         # Check the name candidate.
-
-        # names of variables and functions are alphanumeric strings
-        # if not funval_name.isalnum():
-
-        # names of variables and functions are alphanumeric strings (consider arrays)
-        # if not re.search("^[\w]+(\[[\w]+\])*$", funval_name):
 
         # Names of variables and functions are identifiers.
         if not funval_name.isidentifier(): # should be same as ^[\w]+$
