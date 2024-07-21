@@ -306,7 +306,8 @@ class TestNameFunction(TestSpec):
     """Test names of functions and of most variables.
     Detects variable declarations with "(".
     Might report false positives.
-    Cannot detect multiple declarations "type name1, name2;"
+    Does not detect multiple declarations "type name1, name2;"
+    Does not detect function arguments on the same line as the function declaration.
     """
     name = "function/variable names"
     message = "Use lowerCamelCase for names of functions and variables."
@@ -330,12 +331,12 @@ class TestNameFunction(TestSpec):
         if len(words) < 2:
             return True
 
-        # First word starts with a letter. (rejects "} else")
+        # First word starts with a letter.
         if not words[0][0].isalpha():
             return True
 
         # Reject false positives with same structure.
-        if words[0] in ("return", "if", "else", "new", "delete", "case", "typename", "using", "typedef", "enum", "namespace", "struct", "class"):
+        if words[0] in ("return", "if", "else", "new", "delete", "delete[]", "case", "typename", "using", "typedef", "enum", "namespace", "struct", "class"):
             return True
         if len(words) > 2 and words[1] in ("typename", "class", "struct"):
             return True
