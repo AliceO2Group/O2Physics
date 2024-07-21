@@ -26,9 +26,9 @@ struct mcCollisionConverter {
       mcCollisions_001(
         mcCollision.bcId(),
         mcCollision.generatorsID(),
-        mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), 
-        mcCollision.t(), mcCollision.weight(), 
-        mcCollision.impactParameter(), 
+        mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+        mcCollision.t(), mcCollision.weight(),
+        mcCollision.impactParameter(),
         0.0f // dummy event plane, not available in _000
       );
     }
