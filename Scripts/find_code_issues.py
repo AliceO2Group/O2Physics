@@ -221,7 +221,7 @@ class TestLogging(TestSpec):
     name = "logging"
     message = "Consider using O2 logging (LOG, LOGF, LOGP)."
     suffixes = [".h", ".cxx"]
-    keywords = ["Printf(", "printf(", "cout <", "cin >"]
+    keywords = ["Printf(", "printf(", "cout <", "std::cout <"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and not "Macros/" in path
@@ -230,7 +230,7 @@ class TestLogging(TestSpec):
         if is_comment_cpp(line):
             return True
         for k in self.keywords:
-            if k in line:
+            if line.startswith(k):
                 return False
         return True
 
@@ -723,10 +723,10 @@ def main():
         # tests.append(TestIOStream())
         # tests.append(TestUsingStd())
         # tests.append(TestUsingDirectives())
-        tests.append(TestStdPrefix())
+        # tests.append(TestStdPrefix())
         # tests.append(TestROOT())
         # tests.append(TestPI())
-        # tests.append(TestLogging())
+        tests.append(TestLogging())
         # tests.append(TestConstRefInForLoop())
         # tests.append(TestConstRefInSubscription())
 
