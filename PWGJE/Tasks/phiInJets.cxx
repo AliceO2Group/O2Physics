@@ -613,7 +613,7 @@ struct phiInJets {
           JEhistos.fill(HIST("ptJEHistogramPhi"), lResonance.Pt());
 
           bool jetFlag = false;
-          for (int i = 0; i < mcd_pt.size(); i++) {
+          for (std::vector<double>::size_type i = 0; i < mcd_pt.size(); i++) {
             double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
             double etadiff = mcd_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -757,7 +757,7 @@ struct phiInJets {
           TLorentzVector lResonance;
           lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
           bool jetFlag = false;
-          for (int i = 0; i < mcp_pt.size(); i++) {
+          for (std::vector<double>::size_type i = 0; i < mcp_pt.size(); i++) {
             double phidiff = TVector2::Phi_mpi_pi(mcp_phi[i] - lResonance.Phi());
             double etadiff = mcp_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -909,7 +909,7 @@ struct phiInJets {
         TLorentzVector lResonance;
         lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
         bool jetFlag = false;
-        for (int i = 0; i < mcp_pt.size(); i++) {
+        for (std::vector<double>::size_type i = 0; i < mcp_pt.size(); i++) {
           double phidiff = TVector2::Phi_mpi_pi(mcp_phi[i] - lResonance.Phi());
           double etadiff = mcp_eta[i] - lResonance.Eta();
           double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -1074,7 +1074,7 @@ struct phiInJets {
               continue;
 
             bool jetFlag = false;
-            for (int i = 0; i < mcd_pt.size(); i++) {
+            for (std::vector<double>::size_type i = 0; i < mcd_pt.size(); i++) {
               double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
               double etadiff = mcd_eta[i] - lResonance.Eta();
               double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));

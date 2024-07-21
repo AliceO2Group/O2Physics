@@ -180,7 +180,7 @@ struct HfTaskCorrelationDplusHadrons {
       for (int iLim = 0; iLim < regionLimits; iLim++) {
         hSigSidebandLimits->GetXaxis()->SetBinLabel(iLim + 1, labels[iLim].data());
       }
-      for (int iPtD = 0; iPtD < binsPtCorrelations->size() - 1; iPtD++) {
+      for (size_t iPtD = 0; iPtD < binsPtCorrelations->size() - 1; iPtD++) {
         hSigSidebandLimits->SetBinContent(1, iPtD + 1, signalRegionInner->at(iPtD));
         hSigSidebandLimits->SetBinContent(2, iPtD + 1, signalRegionOuter->at(iPtD));
         hSigSidebandLimits->SetBinContent(3, iPtD + 1, sidebandLeftOuter->at(iPtD));

@@ -52,33 +52,35 @@ struct MultiplicityCounter {
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
   ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 100}, ""};
 
-  Configurable<bool> fillResponse{"fillResponse", true, "Fill respons matrix"};
+  Configurable<bool> fillResponse{"fillResponse", true, "Fill response matrix"};
   Configurable<bool> useProcId{"use-process-id", true, "Use process ID from generator"};
   Configurable<bool> addFT0{"addFT0", false, "add FT0 estimators"};
   Configurable<bool> addFDD{"addFDD", false, "add FDD estimators"};
 
-  Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
-  Configurable<bool> checkTF{"checkTF", true, "check TF border"};
-  Configurable<bool> checkITSROF{"checkITSROF", true, "check ITS readout frame border"};
-  Configurable<bool> checkFT0PVcoincidence{"checkFT0PVcoincidence", true, "Check coincidence between FT0 and PV"};
-  Configurable<bool> rejectITSonly{"rejectITSonly", false, "Reject ITS-only vertex"};
+  Configurable<bool> useEvSel{"useEvSel", true, "Use event selection"};
+  Configurable<bool> excludeTFborder{"excludeTFborder", true, "Exclude TF border"};
+  Configurable<bool> excludeITSROFborder{"excludeITSROFborder", true, "Exclude ITS RO frame border"};
+  Configurable<bool> requireFT0PVcoincidence{"requireFT0PVcoincidence", true, "Require coincidence between FT0 and PV"};
+  Configurable<bool> rejectITSonly{"rejectITSonly", true, "Reject ITS-only vertex"};
+  Configurable<bool> requireVtxTOFMatched{"checkTOFMatch", true, "Consider only vertex with TOF match"};
 
   template <typename C>
   inline bool isCollisionSelected(C const& collision)
   {
     return collision.selection_bit(aod::evsel::kIsTriggerTVX) &&
-           (!checkTF || collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
-           (!checkITSROF || collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
-           (!checkFT0PVcoincidence || collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
-           (!rejectITSonly || collision.selection_bit(aod::evsel::kIsVertexITSTPC));
+           (!excludeTFborder || collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!excludeITSROFborder || collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+           (!requireFT0PVcoincidence || collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
+           (!rejectITSonly || collision.selection_bit(aod::evsel::kIsVertexITSTPC)) &&
+           (!requireVtxTOFMatched || collision.selection_bit(aod::evsel::kIsVertexTOFmatched));
   }
 
   template <typename B>
   inline bool isBCSelected(B const& bc)
   {
     return bc.selection_bit(aod::evsel::kIsTriggerTVX) &&
-           (!checkTF || bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
-           (!checkITSROF || bc.selection_bit(aod::evsel::kNoITSROFrameBorder));
+           (!excludeTFborder || bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!excludeITSROFborder || bc.selection_bit(aod::evsel::kNoITSROFrameBorder));
   }
 
   HistogramRegistry commonRegistry{

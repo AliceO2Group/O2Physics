@@ -59,6 +59,9 @@ struct hJetAnalysis {
   Configurable<float> pt_TTsig_max{"pt_TTsig_max", 50, "signal maximum trigger track pt"};
   Configurable<float> frac_sig{"frac_sig", 0.5, "fraction of events to use for signal"};
   Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
+  Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
 
   Preslice<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> PartJetsPerCollision = aod::jet::mcCollisionId;
 
@@ -113,8 +116,8 @@ struct hJetAnalysis {
                               {"hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{160, -1.0, 7.0}, {160, -1.0, 7.0}}}},
                               {"hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {{50, 0.0, 0.15}, {50, 0.0, 0.15}}}},
                               {"hPtResolution", "p_{T} resolution;p_{T,part};Relative Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -5.0, 5.0}}}},
-                              {"hPhiResolution", "#phi resolution;#phi_{part};Resolution", {HistType::kTH2F, {{160, -1.0, 7.0}, {1000, -7.0, 7.0}}}},
-                              {"hDeltaRResolution", "#DeltaR Resolution;#DeltaR_{part};Resolution", {HistType::kTH2F, {{50, 0.0, 0.15}, {1000, -0.15, 0.15}}}},
+                              {"hPhiResolution", "#phi resolution;#p{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -7.0, 7.0}}}},
+                              {"hDeltaRResolution", "#DeltaR Resolution;p_{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -0.15, 0.15}}}},
                               {"hFullMatching", "Full 6D matching;p_{T,det};p_{T,part};#phi_{det};#phi_{part};#DeltaR_{det};#DeltaR_{part}", {HistType::kTHnSparseD, {{200, 0, 200}, {200, 0, 200}, {160, -1.0, 7.0}, {160, -1.0, 7.0}, {50, 0.0, 0.15}, {50, 0.0, 0.15}}}}}};
 
   int eventSelection = -1;
@@ -220,8 +223,10 @@ struct hJetAnalysis {
             double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
-            registry.fill(HIST("hDeltaRReference"), dR);
-            registry.fill(HIST("hDeltaRpTReference"), jet.pt(), dR);
+            if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
+              registry.fill(HIST("hDeltaRpTReference"), jet.pt(), dR);
+              registry.fill(HIST("hDeltaRReference"), dR);
+            }
             registry.fill(HIST("hDeltaRpTDPhiReference"), jet.pt(), dphi, dR);
           }
           registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt());
@@ -325,10 +330,16 @@ struct hJetAnalysis {
   }
 
   template <typename T, typename V, typename W, typename U>
-  void fillMatchedHistograms(T const& jetBase, V const& mcdjetsWTA, W const& mcpjetsWTA, U const&)
+  void fillMatchedHistograms(T const& jetBase, V const& mcdjetsWTA, W const& mcpjetsWTA, U const&, float weight = 1.0)
   {
     double dR = 0;
     double dRp = 0;
+
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jetBase.pt() > pTHatMaxMCD * pTHat) {
+      return;
+    }
+
     for (const auto& mcdjetWTA : mcdjetsWTA) {
       double djet = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jetBase.phi() - mcdjetWTA.phi(), -o2::constants::math::PI), jetBase.eta() - mcdjetWTA.eta());
       if (djet < 0.6 * jetR) {
@@ -336,8 +347,12 @@ struct hJetAnalysis {
         break;
       }
     }
+
     if (jetBase.has_matchedJetGeo()) {
       for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
+        if (jetTag.pt() > pTHatMaxMCP * pTHat) {
+          continue;
+        }
         for (const auto& mcpjetWTA : mcpjetsWTA) {
           double djetp = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jetTag.phi() - mcpjetWTA.phi(), -o2::constants::math::PI), jetTag.eta() - mcpjetWTA.eta());
           if (djetp < 0.6 * jetR) {
@@ -345,14 +360,14 @@ struct hJetAnalysis {
             break;
           }
         }
-        registry.fill(HIST("hPtMatched"), jetBase.pt(), jetTag.pt());
-        registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi());
-        registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - jetBase.pt()) / jetTag.pt());
-        registry.fill(HIST("hPhiResolution"), jetTag.pt(), jetTag.phi() - jetBase.phi());
+        registry.fill(HIST("hPtMatched"), jetBase.pt(), jetTag.pt(), weight);
+        registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
+        registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - jetBase.pt()) / jetTag.pt(), weight);
+        registry.fill(HIST("hPhiResolution"), jetTag.pt(), jetTag.phi() - jetBase.phi(), weight);
         if (jetBase.pt() > 5 || jetTag.pt() > 5) {
-          registry.fill(HIST("hDeltaRMatched"), dR, dRp);
-          registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR);
-          registry.fill(HIST("hFullMatching"), jetBase.pt(), jetTag.pt(), jetBase.phi(), jetTag.phi(), dR, dRp);
+          registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
+          registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
+          registry.fill(HIST("hFullMatching"), jetBase.pt(), jetTag.pt(), jetBase.phi(), jetTag.phi(), dR, dRp, weight);
         }
       }
     }
@@ -382,7 +397,7 @@ struct hJetAnalysis {
   }
   PROCESS_SWITCH(hJetAnalysis, processMCD, "process MC detector level", false);
 
-  void processMCP(JetMcCollision const& collision,
+  void processMCP(JetMcCollision const& /*collision*/,
                   soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
                   JetParticles const& particles)
   {
@@ -408,6 +423,25 @@ struct hJetAnalysis {
     }
   }
   PROCESS_SWITCH(hJetAnalysis, processJetsMCPMCDMatched, "process MC matched", false);
+
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<JetCollisionsMCD>::iterator const& collision,
+                                        soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>> const& mcdjets,
+                                        soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
+                                        soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
+                                        JetTracks const&,
+                                        JetParticles const&,
+                                        JetMcCollisions const&,
+                                        soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights>> const& mcpjets)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
+    for (const auto& mcdjet : mcdjets) {
+      fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets, mcdjet.eventWeight());
+    }
+  }
+  PROCESS_SWITCH(hJetAnalysis, processJetsMCPMCDMatchedWeighted, "process MC matched with event weights", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<hJetAnalysis>(cfgc, TaskName{"hJetAnalysis"})}; }

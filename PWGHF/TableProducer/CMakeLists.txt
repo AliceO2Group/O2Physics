@@ -75,6 +75,11 @@ o2physics_add_dpl_workflow(candidate-creator-sigmac0plusplus
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-creator-sigmac0plusplus-cascade
+                    SOURCES candidateCreatorSigmac0plusplusCascade.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-creator-xic0-omegac0
                     SOURCES candidateCreatorXic0Omegac0.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils

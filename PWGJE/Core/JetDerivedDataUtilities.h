@@ -31,7 +31,8 @@ enum JCollisionSel {
   sel8Full = 1,
   sel7 = 2,
   selMC = 3,
-  selUnanchoredMC = 4
+  selUnanchoredMC = 4,
+  sel7KINT7 = 5
 };
 
 template <typename T>
@@ -60,6 +61,9 @@ int initialiseEventSelection(std::string eventSelection)
   if (eventSelection == "selUnanchoredMC") {
     return JCollisionSel::selUnanchoredMC;
   }
+  if (eventSelection == "sel7KINT7") {
+    return JCollisionSel::sel7KINT7;
+  }
   return -1;
 }
 
@@ -75,6 +79,9 @@ uint8_t setEventSelectionBit(T const& collision)
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
+    if (collision.alias_bit(kINT7)) {
+      SETBIT(bit, JCollisionSel::sel7KINT7);
+    }
   }
   if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
     SETBIT(bit, JCollisionSel::selUnanchoredMC);
@@ -313,7 +320,8 @@ enum JTrackSel {
   globalTrack = 1,
   qualityTrack = 2,
   hybridTrack = 3,
-  uniformTrack = 4
+  uniformTrack = 4,
+  uniformTrackWoDCA = 5
 };
 
 template <typename T>
@@ -344,6 +352,8 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::hybridTrack;
   } else if (trackSelection == "uniformTracks") {
     return JTrackSel::uniformTrack;
+  } else if (trackSelection == "uniformTracksWoDCA") {
+    return JTrackSel::uniformTrackWoDCA;
   }
   return -1;
 }
@@ -371,7 +381,11 @@ uint8_t setTrackSelectionBit(T const& track)
       (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
     SETBIT(bit, JTrackSel::uniformTrack);
   }
-
+  if (track.passedGoldenChi2() &&
+      (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) {
+    SETBIT(bit, JTrackSel::uniformTrackWoDCA);
+  }
   return bit;
 }
 

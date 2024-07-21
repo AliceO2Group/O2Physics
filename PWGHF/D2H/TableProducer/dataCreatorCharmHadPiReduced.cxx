@@ -570,7 +570,7 @@ struct HfDataCreatorCharmHadPiReduced {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
           hCandidatesDPlus->Fill(SVFitting::Fail);
           continue;
         }
@@ -594,7 +594,7 @@ struct HfDataCreatorCharmHadPiReduced {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
           hCandidatesD0->Fill(SVFitting::Fail);
           continue;
         }

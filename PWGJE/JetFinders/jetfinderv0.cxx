@@ -56,7 +56,7 @@ struct JetFinderV0Task {
   Configurable<float> candPtMax{"candPtMax", 100.0, "maximum candidate pT"};
   Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate eta"};
   Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate eta"};
-  Configurable<float> candPDGMass{"candPDGMass", 310, "candidate PDG for mass in clustering"};
+  Configurable<float> candPDG{"candPDG", 310, "candidate PDG for mass in clustering"};
 
   // jet level configurables
   Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
@@ -103,10 +103,10 @@ struct JetFinderV0Task {
     jetFinder.ghostArea = jetGhostArea;
     jetFinder.ghostRepeatN = ghostRepeat;
 
-    if (candPDGMass == 310) {
+    if (candPDG == 310) {
       candIndex = 0;
     }
-    if (candPDGMass == 3122) {
+    if (candPDG == 3122) {
       candIndex = 1;
     }
 

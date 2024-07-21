@@ -38,11 +38,10 @@
 #include "Framework/ASoAHelpers.h"
 
 #include "DetectorsBase/GeometryManager.h"
+#include "EMCALBase/Geometry.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Tools/ML/MlResponse.h"
-#include "Tools/ML/model.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -50,12 +49,10 @@
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/PairCut.h"
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/EMTrack.h"
-#include "PWGEM/PhotonMeson/Utils/EventMixingHandler.h"
+#include "PWGEM/Dilepton/Utils/EMTrack.h"
+#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/NMHistograms.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
@@ -65,10 +62,10 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::photonpair;
+using namespace o2::aod::pwgem::photonmeson::photonpair;
 using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
-using namespace o2::aod::pwgem::photonmeson::utils::emtrack;
+using namespace o2::aod::pwgem::dilepton::utils;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
@@ -76,11 +73,8 @@ using MyCollision = MyCollisions::iterator;
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
-using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds>;
 using MyPrimaryElectron = MyPrimaryElectrons::iterator;
-
-// using MyPrimaryMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMPrimaryMuonsPrefilterBit>;
-// using MyPrimaryMuon = MyPrimaryMuons::iterator;
 
 using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMCEMEventIds>;
 using MyEMCCluster = MyEMCClusters::iterator;
@@ -100,8 +94,6 @@ struct Pi0EtaToGammaGamma {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
-  Configurable<bool> cfgDo_v2{"cfgDo_v2", false, "flag to analyze v2"};
-  Configurable<bool> cfgDo_v3{"cfgDo_v3", false, "flag to analyze v3"};
   Configurable<float> maxY{"maxY", 0.8, "maximum rapidity for reconstructed particles"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
   Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
@@ -110,7 +102,7 @@ struct Pi0EtaToGammaGamma {
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
 
-  EMEventCut fEMEventCut;
+  EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
@@ -121,6 +113,8 @@ struct Pi0EtaToGammaGamma {
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    Configurable<bool> cfgRequireEMCReadoutInMB{"cfgRequireEMCReadoutInMB", false, "require the EMC to be read out in an MB collision (kTVXinEMC)"};
+    Configurable<bool> cfgRequireEMCHardwareTriggered{"cfgRequireEMCHardwareTriggered", false, "require the EMC to be hardware triggered (kEMC7 or kDMC7)"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
   } eventcuts;
@@ -156,8 +150,6 @@ struct Pi0EtaToGammaGamma {
     std::string prefix = "dileptoncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
     Configurable<float> cfg_max_mass{"cfg_max_mass", 0.1, "max mass"};
-    Configurable<float> cfg_min_pair_dca3d{"cfg_min_pair_dca3d", 0.0, "min pair dca3d in sigma"};
-    Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 1e+10, "max pair dca3d in sigma"};
     Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
     Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
@@ -175,33 +167,16 @@ struct Pi0EtaToGammaGamma {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
 
-    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
+    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTPConly), "pid scheme [kTPConly : 0]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
-    Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
-    Configurable<float> cfg_max_TPCNsigmaMu{"cfg_max_TPCNsigmaMu", +0.0, "max. TPC n sigma for muon exclusion"};
     Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -3.0, "min. TPC n sigma for pion exclusion"};
     Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3.0, "max. TPC n sigma for pion exclusion"};
-    Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3.0, "min. TPC n sigma for kaon exclusion"};
-    Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3.0, "max. TPC n sigma for kaon exclusion"};
-    Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3.0, "min. TPC n sigma for proton exclusion"};
-    Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3.0, "max. TPC n sigma for proton exclusion"};
-    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3.0, "min. TOF n sigma for electron inclusion"};
-    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3.0, "max. TOF n sigma for electron inclusion"};
-
-    // CCDB configuration for PID ML
-    Configurable<std::string> BDTLocalPathGamma{"BDTLocalPathGamma", "pid_ml_xgboost.onnx", "Path to the local .onnx file"};
-
-    Configurable<std::string> BDTPathCCDB{"BDTPathCCDB", "Users/d/dsekihat/pwgem/pidml/", "Path on CCDB"};
-    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
-    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-    Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
   } dileptoncuts;
 
   EMCPhotonCut fEMCCut;
   struct : ConfigurableGroup {
     std::string prefix = "emccut_group";
-    Configurable<bool> requireCaloReadout{"requireCaloReadout", true, "Require calorimeters readout when analyzing EMCal/PHOS"};
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
     Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
     Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
@@ -253,13 +228,13 @@ struct Pi0EtaToGammaGamma {
     emh2 = new MyEMH(ndepth);
 
     std::string_view qvec_det_names[3] = {"FT0M", "FT0A", "FT0C"};
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDo_v2 | cfgDo_v3);
+    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     if constexpr (pairtype == PairType::kPCMDalitzEE) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, cfgDo_v2, cfgDo_v3, false, "ee#gamma", qvec_det_names[cfgQvecEstimator].data());
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "ee#gamma", qvec_det_names[cfgQvecEstimator].data());
     } else if constexpr (pairtype == PairType::kPCMDalitzMuMu) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, cfgDo_v2, cfgDo_v3, false, "#mu#mu#gamma", qvec_det_names[cfgQvecEstimator].data());
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "#mu#mu#gamma", qvec_det_names[cfgQvecEstimator].data());
     } else {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, cfgDo_v2, cfgDo_v3, false, "#gamma#gamma", qvec_det_names[cfgQvecEstimator].data());
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "#gamma#gamma", qvec_det_names[cfgQvecEstimator].data());
     }
     DefineEMEventCut();
     DefinePCMCut();
@@ -269,6 +244,7 @@ struct Pi0EtaToGammaGamma {
 
     if constexpr (pairtype == kEMCEMC) {
       fRegistry.addClone("Pair/same/", "Pair/rotation/");
+      o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     }
 
     mRunNumber = 0;
@@ -326,9 +302,6 @@ struct Pi0EtaToGammaGamma {
     delete emh2;
     emh2 = 0x0;
 
-    map_mixed_eventId_to_q2vector.clear();
-    map_mixed_eventId_to_q3vector.clear();
-
     used_photonIds.clear();
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
@@ -337,7 +310,7 @@ struct Pi0EtaToGammaGamma {
 
   void DefineEMEventCut()
   {
-    fEMEventCut = EMEventCut("fEMEventCut", "fEMEventCut");
+    fEMEventCut = EMPhotonEventCut("fEMEventCut", "fEMEventCut");
     fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
     fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
     fEMEventCut.SetZvtxRange(-eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);
@@ -346,6 +319,8 @@ struct Pi0EtaToGammaGamma {
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
+    fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
+    fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
@@ -409,9 +384,7 @@ struct Pi0EtaToGammaGamma {
     // for pair
     fDileptonCut.SetMeeRange(dileptoncuts.cfg_min_mass, dileptoncuts.cfg_max_mass);
     fDileptonCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dileptoncuts.cfg_phiv_intercept) / dileptoncuts.cfg_phiv_slope; });
-    fDileptonCut.SetPairDCARange(dileptoncuts.cfg_min_pair_dca3d, dileptoncuts.cfg_max_pair_dca3d); // in sigma
     fDileptonCut.ApplyPhiV(dileptoncuts.cfg_apply_phiv);
-    fDileptonCut.ApplyPrefilter(dileptoncuts.cfg_apply_pf);
     fDileptonCut.RequireITSibAny(dileptoncuts.cfg_require_itsib_any);
     fDileptonCut.RequireITSib1st(dileptoncuts.cfg_require_itsib_1st);
 
@@ -424,36 +397,13 @@ struct Pi0EtaToGammaGamma {
     fDileptonCut.SetChi2PerClusterTPC(0.0, dileptoncuts.cfg_max_chi2tpc);
     fDileptonCut.SetChi2PerClusterITS(0.0, dileptoncuts.cfg_max_chi2its);
     fDileptonCut.SetNClustersITS(dileptoncuts.cfg_min_ncluster_its, 7);
-    fDileptonCut.SetMeanClusterSizeITSob(0, 16);
     fDileptonCut.SetMaxDcaXY(dileptoncuts.cfg_max_dcaxy);
     fDileptonCut.SetMaxDcaZ(dileptoncuts.cfg_max_dcaz);
 
     // for eID
     fDileptonCut.SetPIDScheme(dileptoncuts.cfg_pid_scheme);
     fDileptonCut.SetTPCNsigmaElRange(dileptoncuts.cfg_min_TPCNsigmaEl, dileptoncuts.cfg_max_TPCNsigmaEl);
-    fDileptonCut.SetTPCNsigmaMuRange(dileptoncuts.cfg_min_TPCNsigmaMu, dileptoncuts.cfg_max_TPCNsigmaMu);
     fDileptonCut.SetTPCNsigmaPiRange(dileptoncuts.cfg_min_TPCNsigmaPi, dileptoncuts.cfg_max_TPCNsigmaPi);
-    fDileptonCut.SetTPCNsigmaKaRange(dileptoncuts.cfg_min_TPCNsigmaKa, dileptoncuts.cfg_max_TPCNsigmaKa);
-    fDileptonCut.SetTPCNsigmaPrRange(dileptoncuts.cfg_min_TPCNsigmaPr, dileptoncuts.cfg_max_TPCNsigmaPr);
-    fDileptonCut.SetTOFNsigmaElRange(dileptoncuts.cfg_min_TOFNsigmaEl, dileptoncuts.cfg_max_TOFNsigmaEl);
-
-    if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
-      o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
-      if (dileptoncuts.loadModelsFromCCDB) {
-        ccdbApi.init(ccdburl);
-        std::map<std::string, std::string> metadata;
-        bool retrieveSuccessGamma = ccdbApi.retrieveBlob(dileptoncuts.BDTPathCCDB.value, ".", metadata, dileptoncuts.timestampCCDB.value, false, dileptoncuts.BDTLocalPathGamma.value);
-        if (retrieveSuccessGamma) {
-          eid_bdt->initModel(dileptoncuts.BDTLocalPathGamma.value, dileptoncuts.enableOptimizations.value);
-        } else {
-          LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
-        }
-      } else {
-        eid_bdt->initModel(dileptoncuts.BDTLocalPathGamma.value, dileptoncuts.enableOptimizations.value);
-      }
-
-      fDileptonCut.SetPIDModel(eid_bdt);
-    } // end of PID ML
   }
 
   void DefineEMCCut()
@@ -514,11 +464,25 @@ struct Pi0EtaToGammaGamma {
       float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
       float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
 
-      if (openingAngle1 > emccuts.minOpenAngle && abs(mother1.Rapidity()) < maxY) {
-        fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt(), 0.0, 0.0);
+      int iCellID_photon1 = 0;
+      int iCellID_photon2 = 0;
+
+      try {
+        iCellID_photon1 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
+      } catch (o2::emcal::InvalidPositionException& e) {
+        iCellID_photon1 = -1;
       }
-      if (openingAngle2 > emccuts.minOpenAngle && abs(mother2.Rapidity()) < maxY) {
-        fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt(), 0.0, 0.0);
+      try {
+        iCellID_photon2 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+      } catch (o2::emcal::InvalidPositionException& e) {
+        iCellID_photon2 = -1;
+      }
+
+      if (openingAngle1 > emccuts.minOpenAngle && abs(mother1.Rapidity()) < maxY && iCellID_photon1 > 0) {
+        fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt());
+      }
+      if (openingAngle2 > emccuts.minOpenAngle && abs(mother2.Rapidity()) < maxY && iCellID_photon2 > 0) {
+        fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt());
       }
     }
   }
@@ -532,18 +496,11 @@ struct Pi0EtaToGammaGamma {
   Partition<MyPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
   Partition<MyPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
 
-  // Preslice<MyPrimaryMuons> perCollision_muon = aod::emprimarymuon::emeventId;
-  // Partition<MyPrimaryMuons> muons_pos = o2::aod::emprimarymuon::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaMu) < o2::aod::pidtpc::tpcNSigmaMu&& o2::aod::pidtpc::tpcNSigmaMu < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaMu);
-  // Partition<MyPrimaryMuons> muons_neg = o2::aod::emprimarymuon::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaMu) < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaMu);
-
-  using MyEMH = o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
+  using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
   MyEMH* emh1 = nullptr;
   MyEMH* emh2 = nullptr;
   std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
-
-  std::map<std::pair<int, int>, std::array<float, 2>> map_mixed_eventId_to_q2vector;
-  std::map<std::pair<int, int>, std::array<float, 2>> map_mixed_eventId_to_q3vector;
 
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TTracksMatchedWithEMC, typename TTracksMatchedWithPHOS>
   void runPairing(TCollisions const& collisions,
@@ -559,31 +516,19 @@ struct Pi0EtaToGammaGamma {
       if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;
       }
-      if ((pairtype == PairType::kEMCEMC || pairtype == PairType::kPCMEMC) && (!collision.alias_bit(triggerAliases::kTVXinEMC) && emccuts.requireCaloReadout)) {
-        continue;
-      }
 
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDo_v2 | cfgDo_v3);
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDo_v2 | cfgDo_v3);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
-      std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
-      std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
-      std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
-      const std::array<float, 2> q2vector[3] = {q2ft0m, q2ft0a, q2ft0c};
-
-      std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
-      std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
-      std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
-      const std::array<float, 2> q3vector[3] = {q3ft0m, q3ft0a, q3ft0c};
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
 
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;
       if (zbin < 0) {
@@ -636,16 +581,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          float sp2 = 0.f, sp3 = 0.f;
-          if (cfgDo_v2) {
-            std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-            sp2 = RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]);
-          }
-          if (cfgDo_v3) {
-            std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
-            sp3 = RecoDecay::dotProd(u3_gg, q2vector[cfgQvecEstimator]);
-          }
-          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), sp2, sp3);
+          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt());
 
           if constexpr (pairtype == PairType::kEMCEMC) {
             RotationBackground<MyEMCClusters>(v12, v1, v2, photons2_per_collision, g1.globalIndex(), g2.globalIndex(), cut1, tracks_emc);
@@ -686,14 +622,8 @@ struct Pi0EtaToGammaGamma {
               continue;
             }
 
-            if (dileptoncuts.cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) {
-              if (!cut2.template IsSelectedTrack<true>(pos2, collision) || !cut2.template IsSelectedTrack<true>(ele2, collision)) {
-                continue;
-              }
-            } else { // cut-based
-              if (!cut2.template IsSelectedTrack<false>(pos2, collision) || !cut2.template IsSelectedTrack<false>(ele2, collision)) {
-                continue;
-              }
+            if (!cut2.template IsSelectedTrack<false>(pos2, collision) || !cut2.template IsSelectedTrack<false>(ele2, collision)) {
+              continue;
             }
 
             if (!cut2.IsSelectedPair(pos2, ele2, d_bz)) {
@@ -708,16 +638,7 @@ struct Pi0EtaToGammaGamma {
               continue;
             }
 
-            float sp2 = 0.f, sp3 = 0.f;
-            if (cfgDo_v2) {
-              std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * veeg.Phi())), static_cast<float>(std::sin(2 * veeg.Phi()))};
-              sp2 = RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]);
-            }
-            if (cfgDo_v3) {
-              std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * veeg.Phi())), static_cast<float>(std::sin(3 * veeg.Phi()))};
-              sp3 = RecoDecay::dotProd(u3_gg, q2vector[cfgQvecEstimator]);
-            }
-            fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt(), sp2, sp3);
+            fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt());
 
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
             std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.trackId(), ele2.trackId());
@@ -747,16 +668,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          float sp2 = 0.f, sp3 = 0.f;
-          if (cfgDo_v2) {
-            std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
-            sp2 = RecoDecay::dotProd(u2_gg, q2vector[cfgQvecEstimator]);
-          }
-          if (cfgDo_v3) {
-            std::array<float, 2> u3_gg = {static_cast<float>(std::cos(3 * v12.Phi())), static_cast<float>(std::sin(3 * v12.Phi()))};
-            sp3 = RecoDecay::dotProd(u3_gg, q2vector[cfgQvecEstimator]);
-          }
-          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), sp2, sp3);
+          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt());
 
           std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
           std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, g2.globalIndex());
@@ -794,11 +706,6 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          float q2x_mixed = map_mixed_eventId_to_q2vector[mix_dfId_collisionId][0];
-          float q2y_mixed = map_mixed_eventId_to_q2vector[mix_dfId_collisionId][1];
-          float q3x_mixed = map_mixed_eventId_to_q3vector[mix_dfId_collisionId][0];
-          float q3y_mixed = map_mixed_eventId_to_q3vector[mix_dfId_collisionId][1];
-
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
@@ -811,19 +718,7 @@ struct Pi0EtaToGammaGamma {
                 continue;
               }
 
-              float sp2 = 0.f, sp3 = 0.f;
-              if (cfgDo_v2) {
-                std::array<float, 2> u2_g1 = {static_cast<float>(std::cos(2 * v1.Phi())), static_cast<float>(std::sin(2 * v1.Phi()))};
-                std::array<float, 2> u2_g2 = {static_cast<float>(std::cos(2 * v2.Phi())), static_cast<float>(std::sin(2 * v2.Phi()))};
-                sp2 = RecoDecay::dotProd(u2_g1, std::array<float, 2>{q2vector[cfgQvecEstimator][0], q2vector[cfgQvecEstimator][1]}) * std::cos(2 * (v1.Phi() - v12.Phi())) + RecoDecay::dotProd(u2_g2, std::array<float, 2>{q2x_mixed, q2y_mixed}) * std::cos(2 * (v2.Phi() - v12.Phi()));
-              }
-              if (cfgDo_v3) {
-                std::array<float, 2> u3_g1 = {static_cast<float>(std::cos(3 * v1.Phi())), static_cast<float>(std::sin(3 * v1.Phi()))};
-                std::array<float, 2> u3_g2 = {static_cast<float>(std::cos(3 * v2.Phi())), static_cast<float>(std::sin(3 * v2.Phi()))};
-                sp3 = RecoDecay::dotProd(u3_g1, std::array<float, 2>{q3vector[cfgQvecEstimator][0], q3vector[cfgQvecEstimator][1]}) * std::cos(3 * (v1.Phi() - v12.Phi())) + RecoDecay::dotProd(u3_g2, std::array<float, 2>{q3x_mixed, q3y_mixed}) * std::cos(3 * (v2.Phi() - v12.Phi()));
-              }
-
-              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), sp2, sp3);
+              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt());
             }
           }
         } // end of loop over mixed event pool
@@ -836,11 +731,6 @@ struct Pi0EtaToGammaGamma {
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
             continue;
           }
-
-          float q2x_mixed = map_mixed_eventId_to_q2vector[mix_dfId_collisionId][0];
-          float q2y_mixed = map_mixed_eventId_to_q2vector[mix_dfId_collisionId][1];
-          float q3x_mixed = map_mixed_eventId_to_q3vector[mix_dfId_collisionId][0];
-          float q3y_mixed = map_mixed_eventId_to_q3vector[mix_dfId_collisionId][1];
 
           auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
@@ -856,18 +746,7 @@ struct Pi0EtaToGammaGamma {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              float sp2 = 0.f, sp3 = 0.f;
-              if (cfgDo_v2) {
-                std::array<float, 2> u2_g1 = {static_cast<float>(std::cos(2 * v1.Phi())), static_cast<float>(std::sin(2 * v1.Phi()))};
-                std::array<float, 2> u2_g2 = {static_cast<float>(std::cos(2 * v2.Phi())), static_cast<float>(std::sin(2 * v2.Phi()))};
-                sp2 = RecoDecay::dotProd(u2_g1, std::array<float, 2>{q2vector[cfgQvecEstimator][0], q2vector[cfgQvecEstimator][1]}) * std::cos(2 * (v1.Phi() - v12.Phi())) + RecoDecay::dotProd(u2_g2, std::array<float, 2>{q2x_mixed, q2y_mixed}) * std::cos(2 * (v2.Phi() - v12.Phi()));
-              }
-              if (cfgDo_v3) {
-                std::array<float, 2> u3_g1 = {static_cast<float>(std::cos(3 * v1.Phi())), static_cast<float>(std::sin(3 * v1.Phi()))};
-                std::array<float, 2> u3_g2 = {static_cast<float>(std::cos(3 * v2.Phi())), static_cast<float>(std::sin(3 * v2.Phi()))};
-                sp3 = RecoDecay::dotProd(u3_g1, std::array<float, 2>{q3vector[cfgQvecEstimator][0], q3vector[cfgQvecEstimator][1]}) * std::cos(3 * (v1.Phi() - v12.Phi())) + RecoDecay::dotProd(u3_g2, std::array<float, 2>{q3x_mixed, q3y_mixed}) * std::cos(3 * (v2.Phi() - v12.Phi()));
-              }
-              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), sp2, sp3);
+              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt());
             }
           }
         } // end of loop over mixed event pool
@@ -878,11 +757,6 @@ struct Pi0EtaToGammaGamma {
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
             continue;
           }
-
-          float q2x_mixed = map_mixed_eventId_to_q2vector[mix_dfId_collisionId][0];
-          float q2y_mixed = map_mixed_eventId_to_q2vector[mix_dfId_collisionId][1];
-          float q3x_mixed = map_mixed_eventId_to_q3vector[mix_dfId_collisionId][0];
-          float q3y_mixed = map_mixed_eventId_to_q3vector[mix_dfId_collisionId][1];
 
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), nll = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons2_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
@@ -898,26 +772,13 @@ struct Pi0EtaToGammaGamma {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              float sp2 = 0.f, sp3 = 0.f;
-              if (cfgDo_v2) {
-                std::array<float, 2> u2_g1 = {static_cast<float>(std::cos(2 * v1.Phi())), static_cast<float>(std::sin(2 * v1.Phi()))};
-                std::array<float, 2> u2_g2 = {static_cast<float>(std::cos(2 * v2.Phi())), static_cast<float>(std::sin(2 * v2.Phi()))};
-                sp2 = RecoDecay::dotProd(u2_g1, std::array<float, 2>{q2vector[cfgQvecEstimator][0], q2vector[cfgQvecEstimator][1]}) * std::cos(2 * (v1.Phi() - v12.Phi())) + RecoDecay::dotProd(u2_g2, std::array<float, 2>{q2x_mixed, q2y_mixed}) * std::cos(2 * (v2.Phi() - v12.Phi()));
-              }
-              if (cfgDo_v3) {
-                std::array<float, 2> u3_g1 = {static_cast<float>(std::cos(3 * v1.Phi())), static_cast<float>(std::sin(3 * v1.Phi()))};
-                std::array<float, 2> u3_g2 = {static_cast<float>(std::cos(3 * v2.Phi())), static_cast<float>(std::sin(3 * v2.Phi()))};
-                sp3 = RecoDecay::dotProd(u3_g1, std::array<float, 2>{q3vector[cfgQvecEstimator][0], q3vector[cfgQvecEstimator][1]}) * std::cos(3 * (v1.Phi() - v12.Phi())) + RecoDecay::dotProd(u3_g2, std::array<float, 2>{q3x_mixed, q3y_mixed}) * std::cos(3 * (v2.Phi() - v12.Phi()));
-              }
-              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), sp2, sp3);
+              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt());
             }
           }
         } // end of loop over mixed event pool
       }
 
       if (ndiphoton > 0) {
-        map_mixed_eventId_to_q2vector[key_df_collision] = q2vector[cfgQvecEstimator];
-        map_mixed_eventId_to_q3vector[key_df_collision] = q3vector[cfgQvecEstimator];
         emh1->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh2->AddCollisionIdAtLast(key_bin, key_df_collision);
       }

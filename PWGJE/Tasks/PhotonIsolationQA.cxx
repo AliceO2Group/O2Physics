@@ -164,7 +164,7 @@ struct PhotonIsolationQA {
     MC_Info.add("hMcParticleProcessCode", "physical process code of mc particle linked to mc cluster", o2HistType::kTH1F, {{200, 0, 200}});
 
     std::vector<std::string> bin_names = {"A", "B", "C", "D", "True Bckgr A"};
-    for (int i = 0; i < bin_names.size(); i++) {
+    for (size_t i = 0; i < bin_names.size(); i++) {
       MC_Info.get<TH2>(HIST("hABCDControlRegion"))->GetXaxis()->SetBinLabel(i + 1, bin_names[i].c_str());
       Data_Info.get<TH2>(HIST("hABCDControlRegion"))->GetXaxis()->SetBinLabel(i + 1, bin_names[i].c_str());
     }
@@ -278,7 +278,7 @@ struct PhotonIsolationQA {
   }
 
   // process monte carlo data
-  void processMC(selectedCollisions::iterator const& theCollision, selectedMCClusters const& mcclusters, aod::StoredMcParticles_001 const&, myGlobTracks const& tracks, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::EMCALMatchedTracks const& matchedtracks)
+  void processMC(selectedCollisions::iterator const& theCollision, selectedMCClusters const& mcclusters, aod::StoredMcParticles_001 const&, myGlobTracks const& tracks, o2::aod::EMCALClusterCells const& /*emccluscells*/, o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
     MC_Info.fill(HIST("hPosZ"), theCollision.posZ());
 
@@ -327,7 +327,7 @@ struct PhotonIsolationQA {
 
   PROCESS_SWITCH(PhotonIsolationQA, processMC, "proces MC data", true);
 
-  void processData(selectedCollisions::iterator const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::EMCALMatchedTracks const& matchedtracks, myGlobTracks const& alltracks)
+  void processData(selectedCollisions::iterator const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& /*emccluscells*/, o2::aod::EMCALMatchedTracks const& matchedtracks, myGlobTracks const& alltracks)
   {
     Data_Info.fill(HIST("hPosZ"), theCollision.posZ());
 

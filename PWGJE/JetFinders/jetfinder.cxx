@@ -59,6 +59,7 @@ struct JetFinderTask {
   Configurable<float> clusterTimeMin{"clusterTimeMin", -25., "minimum Cluster time (ns)"};
   Configurable<float> clusterTimeMax{"clusterTimeMax", 25., "maximum Cluster time (ns)"};
   Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
+  Configurable<bool> doEMCALEventSelection{"doEMCALEventSelection", true, "apply the selection to the event alias_bit"};
 
   // jet level configurables
   Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
@@ -163,7 +164,7 @@ struct JetFinderTask {
   void processNeutralJets(soa::Filtered<JetCollisions>::iterator const& collision,
                           soa::Filtered<JetClusters> const& clusters)
   {
-    if (!jetderiveddatautilities::eventEMCAL(collision)) {
+    if (doEMCALEventSelection && !jetderiveddatautilities::eventEMCAL(collision)) {
       return;
     }
     inputParticles.clear();
@@ -176,7 +177,7 @@ struct JetFinderTask {
                        soa::Filtered<JetTracks> const& tracks,
                        soa::Filtered<JetClusters> const& clusters)
   {
-    if (!jetderiveddatautilities::eventEMCAL(collision)) {
+    if (doEMCALEventSelection && !jetderiveddatautilities::eventEMCAL(collision)) {
       return;
     }
     inputParticles.clear();
