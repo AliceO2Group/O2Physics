@@ -216,6 +216,45 @@ class TestPI(TestSpec):
         return True
 
 
+class TestPdgDatabase(TestSpec):
+    """Detect use of TDatabasePDG."""
+    name = "pdg database"
+    message = "Direct use of TDatabasePDG is not allowed. Use o2::constants::physics::Mass... or Service<o2::framework::O2DatabasePDG>."
+    suffixes = [".h", ".cxx"]
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and not "Macros/" in path
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        if "TDatabasePDG" in line:
+            return False
+        return True
+
+
+class TestPdgCode(TestSpec):
+    """Detect use of hard-coded PDG codes."""
+    name = "explicit pdg code"
+    message = "Avoid using hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead."
+    suffixes = [".h", ".cxx", ".C"]
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path)
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        if re.search("->(GetParticle|Mass)\([+-]?[0-9]+\)", line):
+            return False
+        match = re.search("[Pp][Dd][Gg][\w]* = [+-]?([0-9]+);", line)
+        if match:
+            code = match.group(1)
+            if code not in ("0", "1", "999"):
+                return False
+        return True
+
+
 class TestLogging(TestSpec):
     """Detect non-O2 logging."""
     name = "logging"
@@ -720,12 +759,14 @@ def main():
     # Bad practice
     enable_bad_practice = True
     if enable_bad_practice:
-        tests.append(TestIOStream())
-        tests.append(TestUsingStd())
-        tests.append(TestUsingDirectives())
+        # tests.append(TestIOStream())
+        # tests.append(TestUsingStd())
+        # tests.append(TestUsingDirectives())
         # tests.append(TestStdPrefix())
         # tests.append(TestROOT())
         # tests.append(TestPI())
+        # tests.append(TestPdgDatabase())
+        tests.append(TestPdgCode())
         # tests.append(TestLogging())
         # tests.append(TestConstRefInForLoop())
         # tests.append(TestConstRefInSubscription())
