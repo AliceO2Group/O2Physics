@@ -58,11 +58,17 @@ def is_screaming_snake_case(name: str) -> bool:
 
 def print_error(path: str, line: int, title: str, message: str) -> str:
     """Format and print error message."""
+    # return # Use to suppress error message when counting speed.
     str_line = "" if line is None else f"{line}:"
     print(f"{path}:{str_line} {message} [{title}]") # terminal format
     if github_mode:
         str_line = "" if line is None else f",line={line}"
         print(f"::error file={path}{str_line},title=[{title}]::{message}") # GitHub action format
+
+
+def is_comment_cpp(line: str) -> bool:
+    """Test whether a line is a C++ comment."""
+    return line.startswith(("//", "/*"))
 
 
 class TestSpec(ABC):
@@ -96,6 +102,8 @@ class TestSpec(ABC):
         if self.per_line:
             for i, line in enumerate(content):
                 line = line.strip()
+                if not line:
+                    continue
                 # print(i + 1, line)
                 if not self.test_line(line):
                     passed = False
@@ -120,7 +128,7 @@ class TestIOStream(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         return not line.strip().startswith("#include <iostream>")
 
@@ -132,7 +140,7 @@ class TestUsingStd(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         return not line.strip().startswith("using std::")
 
@@ -144,7 +152,7 @@ class TestUsingDirectives(TestSpec):
     suffixes = [".h"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         return not line.strip().startswith("using namespace")
 
@@ -155,9 +163,10 @@ class TestStdPrefix(TestSpec):
     message = "Use std:: prefix for names from the std namespace."
     suffixes = [".h", ".cxx", ".C"]
     patterns = ["[^\w:.]vector<", "[^\w:.]array[<\{\()]", "[^\w:.]f?abs\(", "[^\w:.]min\(", "[^\w:.]max\(", "[^\w:.]log\(", "[^\w:.]exp\(", "[^\w:.]sin\(", "[^\w:.]cos\(", "[^\w:.]tan\(", "[^\w:.]atan\(", "[^\w:.]atan2\("]
+    # Add sqrt, pow
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         for pattern in self.patterns:
             if re.search(pattern, line):
@@ -180,7 +189,7 @@ class TestROOT(TestSpec):
         return TestSpec.file_matches(self, path) and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         for k in self.keywords:
             if k in line:
@@ -199,7 +208,7 @@ class TestPI(TestSpec):
         return TestSpec.file_matches(self, path) and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         for k in self.keywords:
             if k in line:
@@ -218,7 +227,7 @@ class TestLogging(TestSpec):
         return TestSpec.file_matches(self, path) and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         for k in self.keywords:
             if k in line:
@@ -233,7 +242,7 @@ class TestConstRefInForLoop(TestSpec):
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         if not line.startswith("for (") or " : " not in line:
             return True
@@ -256,7 +265,7 @@ class TestConstRefInSubscription(TestSpec):
         line_process = 0
         for i, line in enumerate(content):
             line = line.strip()
-            if line.startswith("//"):
+            if is_comment_cpp(line):
                 continue
             if re.search("^void process[\w]*\(", line):
                 line_process = (i + 1)
@@ -294,39 +303,83 @@ class TestConstRefInSubscription(TestSpec):
 
 
 class TestNameFunction(TestSpec):
-    """Test function names.
+    """Test names of functions and of some variables.
     Might report false positives.
-    Can accidentally spot names of variables too but it is fine because same conventions apply.
     """
-    name = "function names"
+    name = "function/variable names"
     message = "Use lowerCamelCase for names of functions and variables."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
-        # Look for "Type Name(..."
-        # regexp ?
-        words = line.split("(")
+        # Look for declarations of functions and variables.
+
+        # a not enough successful attempt to use regex
+        # if not re.search("^([a-z]+ )?(const[\*\&]? )?([\w][\w:<>\[\]\*\& ]* )(const[\*\&]? )?([\w]+)[\(\{]", line):
+        #     return True
+
+        # Any function declaration has "(".
+        if not "(" in line: # does not accept simple variable declarations "type name;" or "type name{value};"
+            return True
+
+        # Strip away irrelevant remainders of the line after the object name.
+        # For functions, stripping after "(" is enough but this way we also identify many declarations of variables.
+        for keyword in ("(", "{", ";", " = ", "//", "/*"):
+            if keyword in line:
+                line = line[:line.find(keyword)]
+
+        # Check the words.
+        words = line.split()
+
+        # number of words
         if len(words) < 2:
             return True
-        words = words[0].split()
-        if len(words) != 2:
+
+        # First word starts with a letter. (rejects "} else")
+        if not words[0][0].isalpha():
             return True
-        if not words[1].isalnum():
+
+        # Reject false positives with same structure.
+        if words[0] in ("return", "if", "else", "new", "case"):
             return True
-        if words[0] in ("return", ":", "#define", "#if", "new", "virtual", "case"):
+
+        # if words[0].endswith(".template"):
+        #     return True
+
+        # multiple template arguments
+        # if words[0][-1] == ",":
+        #     return True
+
+        # All words before the name start with an alphanumeric character (underscores not allowed).
+        # Rejects expressions, e.g. * = += << }, but accepts numbers in array declarations.
+        if not all(w[0].isalnum() for w in words[:-1]):
+        # if not all(re.search("\w", w[0]) for w in words):
             return True
-        if words[0].endswith(".template"):
+
+        # Extract function/variable name.
+        funval_name = words[-1] # expecting the name in the last word
+        if "[" in funval_name: # remove brackets for arrays
+            funval_name = funval_name[:funval_name.find("[")]
+        if "::" in funval_name: # methods with the class prefix
+            funval_name = funval_name.split("::")[-1]
+
+        # Check the name candidate.
+
+        # names of variables and functions are alphanumeric strings
+        # if not funval_name.isalnum():
+
+        # names of variables and functions are alphanumeric strings (consider arrays)
+        # if not re.search("^[\w]+(\[[\w]+\])*$", funval_name):
+
+        # Names of variables and functions are identifiers.
+        if not funval_name.isidentifier(): # should be same as ^[\w]+$
             return True
-        if words[0][-1] == ",": # multiple template arguments
-            return True
-        # Extract function name.
-        function_name = words[1]
-        if "::" in function_name:
-            function_name = function_name.split("::")[1]
+
+        print(f"{line} -> {funval_name}")
+        return True
         # The actual test comes here.
-        return is_lower_camel_case(function_name)
+        return is_lower_camel_case(funval_name)
 
 
 class TestNameMacro(TestSpec):
@@ -336,7 +389,7 @@ class TestNameMacro(TestSpec):
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         if not line.startswith("#define "):
             return True
@@ -355,7 +408,7 @@ class TestNameConstant(TestSpec):
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         words = line.split()
         if not "constexpr" in words or not "=" in words:
@@ -379,7 +432,7 @@ class TestNameNamespace(TestSpec):
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         if not line.startswith("namespace "):
             return True
@@ -397,7 +450,7 @@ class TestNameUpperCamelCase(TestSpec):
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         if not line.startswith(f"{self.keyword} "):
             return True
@@ -507,7 +560,7 @@ class TestHfConstAuto(TestSpec):
         return TestSpec.file_matches(self, path) and "PWGHF/" in path
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         return not "auto const" in line
 
@@ -522,7 +575,7 @@ class TestHfNameStructClass(TestSpec):
         return TestSpec.file_matches(self, path) and "PWGHF/" in path
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         if not line.startswith(("struct ", "class ")):
             return True
@@ -628,7 +681,7 @@ class TestHfNameConfigurable(TestSpec):
         return TestSpec.file_matches(self, path) and "PWGHF/" in path and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
-        if line.startswith("//"):
+        if is_comment_cpp(line):
             return True
         if not line.startswith("Configurable"):
             return True
@@ -671,7 +724,7 @@ def main():
     tests = [] # list of activated tests
 
     # Bad practice
-    enable_bad_practice = True
+    enable_bad_practice = False
     if enable_bad_practice:
         tests.append(TestIOStream())
         tests.append(TestUsingStd())
@@ -687,18 +740,18 @@ def main():
     enable_naming = True
     if enable_naming:
         tests.append(TestNameFunction())
-        tests.append(TestNameMacro())
-        tests.append(TestNameConstant())
-        tests.append(TestNameNamespace())
-        tests.append(TestNameEnum())
-        tests.append(TestNameClass())
-        tests.append(TestNameStruct())
-        tests.append(TestNameFileCpp())
-        tests.append(TestNameFilePython())
-        tests.append(TestNameWorkflow())
+        # tests.append(TestNameMacro())
+        # tests.append(TestNameConstant())
+        # tests.append(TestNameNamespace())
+        # tests.append(TestNameEnum())
+        # tests.append(TestNameClass())
+        # tests.append(TestNameStruct())
+        # tests.append(TestNameFileCpp())
+        # tests.append(TestNameFilePython())
+        # tests.append(TestNameWorkflow())
 
     # PWGHF
-    enable_pwghf = True
+    enable_pwghf = False
     if enable_pwghf:
         tests.append(TestHfConstAuto())
         tests.append(TestHfNameStructClass())
