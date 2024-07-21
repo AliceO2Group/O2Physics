@@ -302,12 +302,12 @@ class TestConstRefInSubscription(TestSpec):
 # Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/naming_formatting.html
 
 
-class TestNameFunction(TestSpec):
+class TestNameFunctionVariable(TestSpec):
     """Test names of functions and of most variables.
-    Detects variable declarations with "(".
     Might report false positives.
-    Does not detect multiple declarations "type name1, name2;"
+    Does not detect multiple variable declarations, i.e. "type name1, name2;"
     Does not detect function arguments on the same line as the function declaration.
+    Does not check capitalisation for constexpr because of special rules for constants. See TestNameConstant.
     """
     name = "function/variable names"
     message = "Use lowerCamelCase for names of functions and variables."
@@ -733,7 +733,7 @@ def main():
     # Naming conventions
     enable_naming = False
     if enable_naming:
-        tests.append(TestNameFunction())
+        tests.append(TestNameFunctionVariable())
         tests.append(TestNameMacro())
         tests.append(TestNameConstant())
         tests.append(TestNameNamespace())
