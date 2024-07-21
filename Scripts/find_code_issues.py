@@ -162,14 +162,14 @@ class TestStdPrefix(TestSpec):
     name = "std prefix"
     message = "Use std:: prefix for names from the std namespace."
     suffixes = [".h", ".cxx", ".C"]
-    patterns = ["[^\w:.]vector<", "[^\w:.]array[<\{\()]", "[^\w:.]f?abs\(", "[^\w:.]min\(", "[^\w:.]max\(", "[^\w:.]log\(", "[^\w:.]exp\(", "[^\w:.]sin\(", "[^\w:.]cos\(", "[^\w:.]tan\(", "[^\w:.]atan\(", "[^\w:.]atan2\("]
-    # Add sqrt, pow
+    prefix_bad = "[^\w:.]"
+    patterns = ["vector<", "array[<\{\(]", "f?abs\(", "sqrt\(", "pow\(", "min\(", "max\(", "log\(", "exp\(", "sin\(", "cos\(", "tan\(", "atan\(", "atan2\("]
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
         for pattern in self.patterns:
-            if re.search(pattern, line):
+            if re.search(f"{self.prefix_bad}{pattern}", line):
                 return False
             # occurrences = re.findall(pattern, line)
             # if occurrences:
@@ -368,8 +368,8 @@ class TestNameFunction(TestSpec):
         if not funval_name.isidentifier(): # should be same as ^[\w]+$
             return True
 
-        print(f"{line} -> {funval_name}")
-        return True
+        # print(f"{line} -> {funval_name}")
+        # return True
         # The actual test comes here.
         if "constexpr" in words[:-1]:
             return is_camel_case(funval_name)
@@ -718,31 +718,31 @@ def main():
     tests = [] # list of activated tests
 
     # Bad practice
-    enable_bad_practice = False
+    enable_bad_practice = True
     if enable_bad_practice:
-        tests.append(TestIOStream())
-        tests.append(TestUsingStd())
-        tests.append(TestUsingDirectives())
+        # tests.append(TestIOStream())
+        # tests.append(TestUsingStd())
+        # tests.append(TestUsingDirectives())
         tests.append(TestStdPrefix())
-        tests.append(TestROOT())
-        tests.append(TestPI())
-        tests.append(TestLogging())
-        tests.append(TestConstRefInForLoop())
-        tests.append(TestConstRefInSubscription())
+        # tests.append(TestROOT())
+        # tests.append(TestPI())
+        # tests.append(TestLogging())
+        # tests.append(TestConstRefInForLoop())
+        # tests.append(TestConstRefInSubscription())
 
     # Naming conventions
-    enable_naming = True
+    enable_naming = False
     if enable_naming:
         tests.append(TestNameFunction())
-        # tests.append(TestNameMacro())
-        # tests.append(TestNameConstant())
-        # tests.append(TestNameNamespace())
-        # tests.append(TestNameEnum())
-        # tests.append(TestNameClass())
-        # tests.append(TestNameStruct())
-        # tests.append(TestNameFileCpp())
-        # tests.append(TestNameFilePython())
-        # tests.append(TestNameWorkflow())
+        tests.append(TestNameMacro())
+        tests.append(TestNameConstant())
+        tests.append(TestNameNamespace())
+        tests.append(TestNameEnum())
+        tests.append(TestNameClass())
+        tests.append(TestNameStruct())
+        tests.append(TestNameFileCpp())
+        tests.append(TestNameFilePython())
+        tests.append(TestNameWorkflow())
 
     # PWGHF
     enable_pwghf = False
