@@ -149,7 +149,7 @@ struct PhotonHBT {
 
   DielectronCut fDielectronCut;
   struct : ConfigurableGroup {
-    std::string prefix = "dileptoncut_group";
+    std::string prefix = "dielectroncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
     Configurable<float> cfg_max_mass{"cfg_max_mass", 2.5, "max mass"}; // this is valid, because only ULS is used.
     Configurable<float> cfg_min_pair_pt{"cfg_min_pair_pt", 0.0, "min mass"};
