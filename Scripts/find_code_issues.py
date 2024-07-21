@@ -304,6 +304,7 @@ class TestConstRefInSubscription(TestSpec):
 
 class TestNameFunction(TestSpec):
     """Test names of functions and of some variables.
+    Detects variable declarations with "(".
     Might report false positives.
     """
     name = "function/variable names"
@@ -320,7 +321,8 @@ class TestNameFunction(TestSpec):
         #     return True
 
         # Any function declaration has "(".
-        if not "(" in line: # does not accept simple variable declarations "type name;" or "type name{value};"
+        # This does not accept variable declarations without "(", e.g. "type name;" or "type name = value;" or "type name{value};"
+        if not "(" in line:
             return True
 
         # Strip away irrelevant remainders of the line after the object name.
@@ -341,8 +343,11 @@ class TestNameFunction(TestSpec):
             return True
 
         # Reject false positives with same structure.
-        if words[0] in ("return", "if", "else", "new", "case"):
+        if words[0] in ("return", "if", "else", "new", "case", "typename", "using"):
             return True
+        if len(words) > 2:
+            if words[1] in ("typename"):
+                return True
 
         # if words[0].endswith(".template"):
         #     return True
