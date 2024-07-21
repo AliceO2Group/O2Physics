@@ -124,25 +124,25 @@ class TestSpec(ABC):
 class TestIOStream(TestSpec):
     """Detect included iostream."""
     name = "include iostream"
-    message = "Including iostream is not allowed. Use O2 logging instead."
+    message = "Including iostream is discouraged. Use O2 logging instead."
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        return not line.strip().startswith("#include <iostream>")
+        return not line.startswith("#include <iostream>")
 
 
 class TestUsingStd(TestSpec):
     """Detect importing names from the std namespace."""
     name = "import std names"
-    message = "Importing names from the std namespace is not allowed."
-    suffixes = [".h", ".cxx"]
+    message = "Importing names from the std namespace is not allowed in headers."
+    suffixes = [".h"]
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        return not line.strip().startswith("using std::")
+        return not line.startswith("using std::")
 
 
 class TestUsingDirectives(TestSpec):
@@ -154,7 +154,7 @@ class TestUsingDirectives(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        return not line.strip().startswith("using namespace")
+        return not line.startswith("using namespace")
 
 
 class TestStdPrefix(TestSpec):
@@ -720,13 +720,13 @@ def main():
     # Bad practice
     enable_bad_practice = True
     if enable_bad_practice:
-        # tests.append(TestIOStream())
-        # tests.append(TestUsingStd())
-        # tests.append(TestUsingDirectives())
+        tests.append(TestIOStream())
+        tests.append(TestUsingStd())
+        tests.append(TestUsingDirectives())
         # tests.append(TestStdPrefix())
         # tests.append(TestROOT())
         # tests.append(TestPI())
-        tests.append(TestLogging())
+        # tests.append(TestLogging())
         # tests.append(TestConstRefInForLoop())
         # tests.append(TestConstRefInSubscription())
 
