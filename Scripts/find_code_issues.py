@@ -341,13 +341,22 @@ class TestNameFunction(TestSpec):
         if len(words) > 2 and words[1] in ("typename", "class", "struct"):
             return True
 
+        # Identify the position of the name for cases "name[n + m]".
+        funval_name = words[-1] # expecting the name in the last word
+        if funval_name.endswith("]") and "[" not in funval_name: # it's an array and we do not have the name before "[" here
+            opens_brackets = ["[" in w for w in words]
+            index_name = opens_brackets.index(True) # the name is in the first element with "["
+            funval_name = words[index_name]
+            words = words[:(index_name + 1)] # Strip away words after the name.
+            if len(words) < 2: # Check the adjusted number of words.
+                return True
+
         # All words before the name start with an alphanumeric character (underscores not allowed).
         # Rejects expressions, e.g. * = += << }, but accepts numbers in array declarations.
         if not all(w[0].isalnum() for w in words[:-1]):
             return True
 
         # Extract function/variable name.
-        funval_name = words[-1] # expecting the name in the last word
         if "[" in funval_name: # Remove brackets for arrays.
             funval_name = funval_name[:funval_name.find("[")]
         if "::" in funval_name: # Remove the class prefix for methods.
@@ -362,6 +371,8 @@ class TestNameFunction(TestSpec):
         print(f"{line} -> {funval_name}")
         return True
         # The actual test comes here.
+        if "constexpr" in words[:-1]:
+            return is_camel_case(funval_name)
         return is_lower_camel_case(funval_name)
 
 
