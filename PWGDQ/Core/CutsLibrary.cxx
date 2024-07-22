@@ -3986,7 +3986,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 999, false, VarManager::kPin, 0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 999, false, VarManager::kPin, 0, 3.0);
-   
     return cut;
   }
   
