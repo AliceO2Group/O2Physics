@@ -123,7 +123,7 @@ class TestSpec(ABC):
 
 class TestIOStream(TestSpec):
     """Detect included iostream."""
-    name = "include iostream"
+    name = "include-iostream"
     message = "Including iostream is discouraged. Use O2 logging instead."
     suffixes = [".h", ".cxx"]
 
@@ -135,7 +135,7 @@ class TestIOStream(TestSpec):
 
 class TestUsingStd(TestSpec):
     """Detect importing names from the std namespace."""
-    name = "import std names"
+    name = "import-std-name"
     message = "Importing names from the std namespace is not allowed in headers."
     suffixes = [".h"]
 
@@ -147,7 +147,7 @@ class TestUsingStd(TestSpec):
 
 class TestUsingDirectives(TestSpec):
     """Detect using directives in headers."""
-    name = "using directives"
+    name = "using-directive"
     message = "Using directives are not allowed in headers."
     suffixes = [".h"]
 
@@ -159,7 +159,7 @@ class TestUsingDirectives(TestSpec):
 
 class TestStdPrefix(TestSpec):
     """Detect missing std:: prefix for common names from the std namespace."""
-    name = "std prefix"
+    name = "std-prefix"
     message = "Use std:: prefix for names from the std namespace."
     suffixes = [".h", ".cxx", ".C"]
     prefix_bad = "[^\w:.]"
@@ -180,7 +180,7 @@ class TestStdPrefix(TestSpec):
 
 class TestROOT(TestSpec):
     """Detect use of unnecessary ROOT entities."""
-    name = "ROOT entities"
+    name = "root-entity"
     message = "Consider replacing ROOT entities with STD C++ or O2 entities."
     suffixes = [".h", ".cxx"]
     keywords = ["TMath", "Double_t", "Float_t", "Int_t", "Bool_t"]
@@ -199,7 +199,7 @@ class TestROOT(TestSpec):
 
 class TestPI(TestSpec):
     """Detect use of external PI."""
-    name = "external PI"
+    name = "external-pi"
     message = "Consider using the PI constant (and its multiples) defined in o2::constants::math."
     suffixes = [".h", ".cxx"]
     keywords = ["M_PI", "TMath::Pi", "TMath::TwoPi"]
@@ -218,7 +218,7 @@ class TestPI(TestSpec):
 
 class TestPdgDatabase(TestSpec):
     """Detect use of TDatabasePDG."""
-    name = "pdg database"
+    name = "pdg/database"
     message = "Direct use of TDatabasePDG is not allowed. Use o2::constants::physics::Mass... or Service<o2::framework::O2DatabasePDG>."
     suffixes = [".h", ".cxx"]
 
@@ -235,7 +235,7 @@ class TestPdgDatabase(TestSpec):
 
 class TestPdgCode(TestSpec):
     """Detect use of hard-coded PDG codes."""
-    name = "explicit pdg code"
+    name = "pdg/explicit-code"
     message = "Avoid using hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead."
     suffixes = [".h", ".cxx", ".C"]
 
@@ -254,7 +254,7 @@ class TestPdgCode(TestSpec):
 
 class TestPdgMass(TestSpec):
     """Detect unnecessary call of Mass() for a known PDG code."""
-    name = "known pdg mass"
+    name = "pdg/known-mass"
     message = "Consider using o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
     suffixes = [".h", ".cxx", ".C"]
 
@@ -290,7 +290,7 @@ class TestLogging(TestSpec):
 
 class TestConstRefInForLoop(TestSpec):
     """Test const refs in range-based for loops."""
-    name = "const ref in for loop"
+    name = "const-ref-in-for-loop"
     message = "Use constant references for non-modified iterators in range-based for loops."
     suffixes = [".h", ".cxx", ".C"]
 
@@ -305,7 +305,7 @@ class TestConstRefInForLoop(TestSpec):
 
 class TestConstRefInSubscription(TestSpec):
     """Test const refs in process function subscriptions."""
-    name = "const ref in process"
+    name = "const-ref-in-process"
     message = "Use constant references for table subscriptions in process functions."
     suffixes = [".cxx"]
     # suffixes = [".h"]
@@ -357,7 +357,7 @@ class TestConstRefInSubscription(TestSpec):
 
 class TestDocumentationFile(TestSpec):
     """Test mandatory documentation of C++ files."""
-    name = "file documentation"
+    name = "doc/file"
     message = "Provide mandatory file documentation."
     suffixes = [".h", ".cxx", ".C"]
     per_line = False
@@ -405,7 +405,7 @@ class TestNameFunctionVariable(TestSpec):
     Does not detect function arguments on the same line as the function declaration.
     Does not check capitalisation for constexpr because of special rules for constants. See TestNameConstant.
     """
-    name = "function/variable names"
+    name = "name/function-variable"
     message = "Use lowerCamelCase for names of functions and variables."
     suffixes = [".h", ".cxx", ".C"]
 
@@ -474,7 +474,7 @@ class TestNameFunctionVariable(TestSpec):
 
 class TestNameMacro(TestSpec):
     """Test macro names."""
-    name = "macro names"
+    name = "name/macro"
     message = "Use SCREAMING_SNAKE_CASE for macro names."
     suffixes = [".h", ".cxx", ".C"]
 
@@ -493,7 +493,7 @@ class TestNameMacro(TestSpec):
 
 class TestNameConstant(TestSpec):
     """Test constexpr constant names."""
-    name = "constexpr constant names"
+    name = "name/constexpr-constant"
     message = "Use UpperCamelCase for constexpr constant names. Names of special constants may be prefixed with \"k\"."
     suffixes = [".h", ".cxx", ".C"]
 
@@ -517,7 +517,7 @@ class TestNameConstant(TestSpec):
 
 class TestNameNamespace(TestSpec):
     """Test names of namespaces."""
-    name = "namespace names"
+    name = "name/namespace"
     message = "Use snake_case for names of namespaces."
     suffixes = [".h", ".cxx", ".C"]
 
@@ -535,7 +535,7 @@ class TestNameNamespace(TestSpec):
 class TestNameUpperCamelCase(TestSpec):
     """Base class for a test of UpperCamelCase names."""
     keyword = "key"
-    name = f"{keyword} UpperCamelCase"
+    name = f"name/{keyword}"
     message = f"Use UpperCamelCase for names of {keyword}."
     suffixes = [".h", ".cxx", ".C"]
 
@@ -558,27 +558,27 @@ class TestNameUpperCamelCase(TestSpec):
 class TestNameEnum(TestNameUpperCamelCase):
     """Test names of enumerators."""
     keyword = "enum"
-    name = f"{keyword} names"
+    name = f"name/enum"
     message = f"Use UpperCamelCase for names of enumerators and their values."
 
 
 class TestNameClass(TestNameUpperCamelCase):
     """Test names of classes."""
     keyword = "class"
-    name = f"{keyword} names"
+    name = f"name/class"
     message = f"Use UpperCamelCase for names of classes."
 
 
 class TestNameStruct(TestNameUpperCamelCase):
     """Test names of structs."""
     keyword = "struct"
-    name = f"{keyword} names"
+    name = f"name/struct"
     message = f"Use UpperCamelCase for names of structs."
 
 
 class TestNameFileCpp(TestSpec):
     """Test names of C++ files."""
-    name = "C++ file names"
+    name = "name/file-cpp"
     message = "Use lowerCamelCase or UpperCamelCase for names of C++ files. See the O2 naming conventions for details."
     suffixes = [".h", ".cxx", ".C"]
     per_line = False
@@ -590,7 +590,7 @@ class TestNameFileCpp(TestSpec):
 
 class TestNameFilePython(TestSpec):
     """Test names of Python files."""
-    name = "Python file names"
+    name = "name/file-python"
     message = "Use snake_case for names of Python files."
     suffixes = [".py", ".ipynb"]
     per_line = False
@@ -602,7 +602,7 @@ class TestNameFilePython(TestSpec):
 
 class TestNameWorkflow(TestSpec):
     """Test names of O2 workflows."""
-    name = "O2 workflow names"
+    name = "name/o2-workflow"
     message = "Use kebab-case for names of workflows and match the name of the workflow file."
     suffixes = ["CMakeLists.txt"]
     per_line = False
@@ -637,12 +637,12 @@ class TestNameWorkflow(TestSpec):
         return passed
 
 
-# PWG-specific
+# PWG-HF
 
 
 class TestHfConstAuto(TestSpec):
     """PWGHF: Detect swapped const auto."""
-    name = "PWGHF: const auto"
+    name = "pwghf/const-auto"
     message = "Use \"const auto\" instead of \"auto const\"."
     suffixes = [".h", ".cxx"]
 
@@ -657,7 +657,7 @@ class TestHfConstAuto(TestSpec):
 
 class TestHfNameStructClass(TestSpec):
     """PWGHF: Test names of structs and classes."""
-    name = "PWGHF: struct/class names"
+    name = "pwghf/name/struct-class"
     message = "Names of PWGHF structs and classes must start with \"Hf\"."
     suffixes = [".h", ".cxx"]
 
@@ -681,7 +681,7 @@ class TestHfNameStructClass(TestSpec):
 class TestHfStructMembers(TestSpec):
     """PWGHF: Test order of struct members.
     Caveat: Does not see Configurables in ConfigurableGroup."""
-    name = "PWGHF: struct member order"
+    name = "pwghf/struct member order"
     message = "Declare struct members in the conventional order. See the PWGHF coding guidelines."
     suffixes = [".cxx"]
     per_line = False
@@ -730,7 +730,7 @@ class TestHfStructMembers(TestSpec):
 
 class TestHfNameFileWorkflow(TestSpec):
     """PWGHF: Test names of workflow files."""
-    name = "PWGHF: workflow file names"
+    name = "pwghf/name/workflow-file"
     message = "Name of a workflow file must match the name of the main task in it. See the PWGHF O2 naming conventions for details."
     suffixes = [".cxx"]
     per_line = False
@@ -763,7 +763,7 @@ class TestHfNameFileWorkflow(TestSpec):
 
 class TestHfNameConfigurable(TestSpec):
     """PWGHF: Test names of configurables."""
-    name = "PWGHF: Configurable names"
+    name = "pwghf/name/configurable"
     message = "Use lowerCamelCase for Configurable names and use the same name for the struct member as for the JSON string."
     suffixes = [".h", ".cxx"]
 
