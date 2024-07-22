@@ -100,10 +100,6 @@ struct PhotonHBT {
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
 
-  ConfigurableAxis ConfM1Bins{"ConfM1Bins", {VARIABLE_WIDTH, 0.0, 0.14, 0.5, 1.1, 2.0, 2.5}, "mass1 bins for output histograms"};
-  ConfigurableAxis ConfM2Bins{"ConfM2Bins", {VARIABLE_WIDTH, 0.0, 0.14, 0.5, 1.1, 2.0, 2.5}, "mass2 bins for output histograms"};
-  ConfigurableAxis ConfDCA1Bins{"ConfDCA1Bins", {VARIABLE_WIDTH, 0.0, 0.5, 1.0, 1.5, 2.0, 10.0}, "DCA1 bins for output histograms"};
-  ConfigurableAxis ConfDCA2Bins{"ConfDCA2Bins", {VARIABLE_WIDTH, 0.0, 0.5, 1.0, 1.5, 2.0, 10.0}, "DCA2 bins for output histograms"};
   ConfigurableAxis ConfKtBins{"ConfKtBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}, "kT bins for output histograms"};
 
   EMEventCut fEMEventCut;
@@ -152,12 +148,12 @@ struct PhotonHBT {
     std::string prefix = "dielectroncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
     Configurable<float> cfg_max_mass{"cfg_max_mass", 2.5, "max mass"}; // this is valid, because only ULS is used.
-    Configurable<float> cfg_min_pair_pt{"cfg_min_pair_pt", 0.0, "min mass"};
-    Configurable<float> cfg_max_pair_pt{"cfg_max_pair_pt", 1e+10, "max mass"};
-    Configurable<float> cfg_min_pair_y{"cfg_min_pair_y", -0.8, "min mass"};
-    Configurable<float> cfg_max_pair_y{"cfg_max_pair_y", +0.8, "max mass"};
+    Configurable<float> cfg_min_pair_pt{"cfg_min_pair_pt", 0.0, "min pair pT"};
+    Configurable<float> cfg_max_pair_pt{"cfg_max_pair_pt", 1e+10, "max pair pT"};
+    Configurable<float> cfg_min_pair_y{"cfg_min_pair_y", -0.8, "min pair rapidity"};
+    Configurable<float> cfg_max_pair_y{"cfg_max_pair_y", +0.8, "max pair rapidity"};
     Configurable<float> cfg_min_pair_dca3d{"cfg_min_pair_dca3d", 0.0, "min pair dca3d in sigma"};
-    Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 1e+10, "max pair dca3d in sigma"};
+    Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 2.0, "max pair dca3d in sigma"};
     Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
     Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
@@ -298,10 +294,6 @@ struct PhotonHBT {
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
 
     // pair info
-    const AxisSpec axis_mass1{ConfM1Bins, "m1 (GeV/c^{2})"};
-    const AxisSpec axis_mass2{ConfM2Bins, "m2 (GeV/c^{2})"};
-    const AxisSpec axis_dca1{ConfDCA1Bins, "DCA1 (#sigma)"};
-    const AxisSpec axis_dca2{ConfDCA2Bins, "DCA2 (#sigma)"};
     const AxisSpec axis_kt{ConfKtBins, "k_{T} (GeV/c)"};
 
     const AxisSpec axis_qinv{30, 0.0, +0.3, "q_{inv} (GeV/c)"};
@@ -310,7 +302,7 @@ struct PhotonHBT {
     const AxisSpec axis_qlong_cms{60, -0.3, +0.3, "q_{long}^{CMS} (GeV/c)"};
     const AxisSpec axis_qlong_lcms{60, -0.3, +0.3, "q_{long}^{LCMS} (GeV/c)"};
 
-    fRegistry.add("Pair/same/hs", "diphoton correlation", kTHnSparseD, {axis_mass1, axis_mass2, axis_dca1, axis_dca2, axis_kt, axis_qinv, axis_qout_cms, axis_qside_cms, axis_qlong_cms, axis_qlong_lcms}, true);
+    fRegistry.add("Pair/same/hs", "diphoton correlation", kTHnSparseD, {axis_kt, axis_qinv, axis_qout_cms, axis_qside_cms, axis_qlong_cms, axis_qlong_lcms}, true);
     fRegistry.addClone("Pair/same/", "Pair/mix/");
   }
 
@@ -438,7 +430,7 @@ struct PhotonHBT {
   }
 
   template <int ev_id, typename TCollision>
-  void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float dca1, const float dca2)
+  void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2)
   {
     // if constexpr (ev_id == 1 && pairtype == ggHBTPairType::kEEEE) {
     //   if (t1.has_ambiguousElectrons() && t2.has_ambiguousElectrons()) {
@@ -484,7 +476,7 @@ struct PhotonHBT {
     // LOGF(info, "v1_lcms_cartesian.Pz() = %f, v2_lcms_cartesian.Pz() = %f",v1_lcms_cartesian.Pz(), v2_lcms_cartesian.Pz());
     // LOGF(info, "q12_lcms_cartesian.Pz() = %f", q12_lcms_cartesian.Pz());
 
-    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs"), v1.M(), v2.M(), dca1, dca2, kt, qinv, qout_cms, qside_cms, qlong_cms, qlong_lcms);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs"), kt, qinv, qout_cms, qside_cms, qlong_cms, qlong_lcms);
   }
 
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
@@ -559,7 +551,7 @@ struct PhotonHBT {
 
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-          fillPairHistogram<0>(collision, v1, v2, 0.0, 0.0);
+          fillPairHistogram<0>(collision, v1, v2);
           ndiphoton++;
 
           std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
@@ -634,7 +626,7 @@ struct PhotonHBT {
 
             std::pair pair_tmp = std::make_pair(std::make_pair(pos1.trackId(), ele1.trackId()), std::make_pair(pos2.trackId(), ele2.trackId()));
             if (std::find(used_pairs_per_collision.begin(), used_pairs_per_collision.end(), pair_tmp) == used_pairs_per_collision.end()) {
-              fillPairHistogram<0>(collision, v1_ee, v2_ee, dca1_3d, dca2_3d);
+              fillPairHistogram<0>(collision, v1_ee, v2_ee);
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.first, pair_tmp.second));
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.second, pair_tmp.first));
               ndiphoton++;
@@ -699,7 +691,7 @@ struct PhotonHBT {
             ROOT::Math::PtEtaPhiMVector v_pos2(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v2_ee = v_pos2 + v_ele2;
-            fillPairHistogram<0>(collision, v1_gamma, v2_ee, 0.0, dca2_3d);
+            fillPairHistogram<0>(collision, v1_gamma, v2_ee);
             ndiphoton++;
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
             std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
@@ -745,7 +737,7 @@ struct PhotonHBT {
             for (auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-              fillPairHistogram<1>(collision, v1, v2, 0.0, 0.0);
+              fillPairHistogram<1>(collision, v1, v2);
             }
           }
         } // end of loop over mixed event pool
@@ -765,7 +757,7 @@ struct PhotonHBT {
             for (auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), g1.mass());
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-              fillPairHistogram<1>(collision, v1, v2, g1.pairDca3DinSigmaOTF(), g2.pairDca3DinSigmaOTF());
+              fillPairHistogram<1>(collision, v1, v2);
             }
           }
         }                                                       // end of loop over mixed event pool
@@ -785,7 +777,7 @@ struct PhotonHBT {
             for (auto& g2 : photons2_from_event_pool) {                         // dielectron
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.0); // keep v1 for PCM
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-              fillPairHistogram<1>(collision, v1, v2, 0.0, g2.pairDca3DinSigmaOTF());
+              fillPairHistogram<1>(collision, v1, v2);
             }
           }
         } // end of loop over mixed event pool2
@@ -805,7 +797,7 @@ struct PhotonHBT {
             for (auto& g2 : photons1_from_event_pool) {                         // PCM
               ROOT::Math::PtEtaPhiMVector v1(g2.pt(), g2.eta(), g2.phi(), 0.0); // keep v1 for PCM
               ROOT::Math::PtEtaPhiMVector v2(g1.pt(), g1.eta(), g1.phi(), g1.mass());
-              fillPairHistogram<1>(collision, v1, v2, 0.0, g1.pairDca3DinSigmaOTF());
+              fillPairHistogram<1>(collision, v1, v2);
             }
           }
         } // end of loop over mixed event pool1
