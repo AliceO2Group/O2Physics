@@ -42,6 +42,8 @@ struct HfTaskDstarToD0Pi {
   using CandDstarWSelFlagMcRec = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>;
   using CandDstarMcGen = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
 
+  using CollisionsWMclebels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Ms>;
+
   Partition<CandDstarWSelFlag> rowsSelectedCandDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Partition<CandDstarWSelFlagMcRec> rowsSelectedCandDstarMcRec = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
 
@@ -183,7 +185,12 @@ struct HfTaskDstarToD0Pi {
     }
   }
 
-  void processMC(CandDstarWSelFlagMcRec const&,
+  PresliceUnsorted<CollisionsWMclebels> colsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+
+  SliceCache cache;
+  
+
+  void processMC(aod::McCollisions const &, CollisionsWMclebels const & collisions,  CandDstarWSelFlagMcRec const&,
                  CandDstarMcGen const& rowsMcPartilces,
                  aod::TracksWMc const&)
   {
@@ -201,6 +208,10 @@ struct HfTaskDstarToD0Pi {
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, candDstarMcRec.prong0_as<aod::TracksWMc>().mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
         auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother);  // What is difference between rawIterator() or iteratorAt() methods?
         registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
+
+        auto recCollision = candDstarMcRec.collision_as<CollisionsWMclebels>();
+        float centFT0M = recCollision.centFT0M();
+        LOGF(info,"centFT0M: %f",centFT0M);
 
         registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
         if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
@@ -262,6 +273,18 @@ struct HfTaskDstarToD0Pi {
         registry.fill(HIST("QA/hEtaDstarGen"), mcParticle.eta());
         registry.fill(HIST("QA/hPtDstarGen"), ptGen);
         registry.fill(HIST("QA/hPtVsYDstarGen"), ptGen, yGen);
+
+        auto mcCollision = mcParticle.mcCollision_as<aod::McCollisions>();
+        auto recCollisions = collisions.sliceBy(colsPerMcCollision,mcCollision.globalIndex());
+        // auto recCollisions = collisions.sliceByCached(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex(), cache);
+        // auto recCollisions = collisions.sliceByCachedUnsorted(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex(), cache);
+        
+        if(recCollisions.size()>0){
+          LOGF(info, "Number of rec collisions: %d", recCollisions.size());
+          for(const auto & recCol : recCollisions){
+            LOGF(info,"centrality of rec collision: %f",recCol.centFT0M());
+          }
+        }
         // only promt Dstar candidate at Generator level
         if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("QA/hPtPromptDstarGen"), ptGen);
