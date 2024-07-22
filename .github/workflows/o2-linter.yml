@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   o2-linter:
-    name: Lint O2 code
+    name: O2 linter
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

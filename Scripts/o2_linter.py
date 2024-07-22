@@ -68,7 +68,7 @@ def print_error(path: str, line: int, title: str, message: str) -> str:
 
 def is_comment_cpp(line: str) -> bool:
     """Test whether a line is a C++ comment."""
-    return line.startswith(("//", "/*"))
+    return line.strip().startswith(("//", "/*"))
 
 
 class TestSpec(ABC):
