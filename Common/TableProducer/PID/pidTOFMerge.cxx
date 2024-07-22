@@ -716,6 +716,8 @@ struct tofPidMerge {
       LOG(info) << "No PID tables are required, disabling the task";
       doprocessData.value = false;
       return;
+    } else if (doprocessData.value == false) {
+      LOG(fatal) << "PID tables are required but process data is disabled. Please enable it";
     }
     mTOFCalibConfig.setUp(mRespParamsV3, ccdb); // Getting the parametrization parameters
 
@@ -1080,7 +1082,7 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processData, "Process data i.e. input is TrackIU", false);
+  PROCESS_SWITCH(tofPidMerge, processData, "Produce tables. Set to off if the tables are not required", true);
 };
 
 // Part 4 Beta and TOF mass computation

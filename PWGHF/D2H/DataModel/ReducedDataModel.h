@@ -457,7 +457,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(InvMassAntiDstar, invMassAntiDstar,
                              -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus, constants::physics::MassPiPlus}) - RecoDecay::m(std::array{std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassKPlus, constants::physics::MassPiPlus}); });
 } // namespace hf_reso_3_prong
 
-namespace hf_reso_2_prong
+namespace hf_reso_v0
 {
 DECLARE_SOA_COLUMN(Cpa, cpa, float);         //! Cosine of Pointing Angle of V0 candidate
 DECLARE_SOA_COLUMN(Dca, dca, float);         //! DCA of V0 candidate
@@ -479,7 +479,29 @@ DECLARE_SOA_DYNAMIC_COLUMN(InvMassAntiLambda, invMassAntiLambda, //! mass under 
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton}); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassK0s, invMassK0s, //! mass under K0short hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged}); });
-} // namespace hf_reso_2_prong
+} // namespace hf_reso_v0
+
+namespace hf_reso_track
+{
+DECLARE_SOA_COLUMN(Px, px, float);                   //! x-component of momentum
+DECLARE_SOA_COLUMN(Py, py, float);                   //! y-component of momentum
+DECLARE_SOA_COLUMN(Pz, pz, float);                   //! z-component of momentum
+DECLARE_SOA_COLUMN(Sign, sign, uint8_t);             //! charge sign
+DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float); //! TPC Nsigma for pion hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcKa, nSigmaTpcKa, float); //! TPC Nsigma for kaon hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcPr, nSigmaTpcPr, float); //! TPC Nsigma for proton hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float); //! TOF Nsigma for pion hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofKa, nSigmaTofKa, float); //! TOF Nsigma for kaon hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofPr, nSigmaTofPr, float); //! TOF Nsigma for proton hypothesis
+DECLARE_SOA_COLUMN(HasTof, hasTof, bool);            //! flag for presence of TOF
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                   //!
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //!
+                           [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
+                           [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array<float, 3>{px, py, pz}); });
+
+} // namespace hf_reso_track
 
 DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate information for resonances reduced workflow
                   o2::soa::Index<>,
@@ -490,18 +512,39 @@ DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate 
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
-                  hf_reso_2_prong::Cpa,
-                  hf_reso_2_prong::Dca,
-                  hf_reso_2_prong::V0Type,
+                  hf_reso_v0::Cpa,
+                  hf_reso_v0::Dca,
+                  hf_reso_v0::V0Type,
                   // Dynamic
-                  hf_reso_2_prong::Px<hf_cand::PxProng0, hf_cand::PxProng1>,
-                  hf_reso_2_prong::Py<hf_cand::PyProng0, hf_cand::PyProng1>,
-                  hf_reso_2_prong::Pz<hf_cand::PzProng0, hf_cand::PzProng1>,
-                  hf_reso_2_prong::InvMassK0s<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_reso_2_prong::InvMassLambda<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_reso_2_prong::InvMassAntiLambda<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_reso_2_prong::V0Radius<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
-                  hf_reso_2_prong::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PyProng0, hf_cand::PyProng1>);
+                  hf_reso_v0::Px<hf_cand::PxProng0, hf_cand::PxProng1>,
+                  hf_reso_v0::Py<hf_cand::PyProng0, hf_cand::PyProng1>,
+                  hf_reso_v0::Pz<hf_cand::PzProng0, hf_cand::PzProng1>,
+                  hf_reso_v0::InvMassK0s<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_reso_v0::InvMassLambda<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_reso_v0::InvMassAntiLambda<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_reso_v0::V0Radius<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
+                  hf_reso_v0::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PyProng0, hf_cand::PyProng1>);
+
+DECLARE_SOA_TABLE(HfRedTrkNoParams, "AOD", "HFREDTRKNOPARAM", //! Table with tracks without track parameters for resonances reduced workflow
+                  o2::soa::Index<>,
+                  // Indices
+                  hf_track_index_reduced::HfRedCollisionId,
+                  // Static
+                  hf_reso_track::Px,
+                  hf_reso_track::Py,
+                  hf_reso_track::Pz,
+                  hf_reso_track::Sign,
+                  hf_reso_track::NSigmaTpcPi,
+                  hf_reso_track::NSigmaTpcKa,
+                  hf_reso_track::NSigmaTpcPr,
+                  hf_reso_track::NSigmaTofPi,
+                  hf_reso_track::NSigmaTofKa,
+                  hf_reso_track::NSigmaTofPr,
+                  hf_reso_track::HasTof,
+                  // Dynamic
+                  hf_reso_track::Pt<hf_reso_track::Px, hf_reso_track::Py>,
+                  hf_reso_track::Eta<hf_reso_track::Px, hf_reso_track::Py, hf_reso_track::Pz>,
+                  hf_reso_track::Phi<hf_reso_track::Px, hf_reso_track::Py>);
 
 DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong candidate information for resonances reduced workflow
                   o2::soa::Index<>,
@@ -532,9 +575,9 @@ DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Reso
                   hf_reso_cand_reduced::PtProng0,
                   hf_reso_cand_reduced::InvMassProng1,
                   hf_reso_cand_reduced::PtProng1,
-                  hf_reso_2_prong::Cpa,
-                  hf_reso_2_prong::Dca,
-                  hf_reso_2_prong::Radius);
+                  hf_reso_v0::Cpa,
+                  hf_reso_v0::Dca,
+                  hf_reso_v0::Radius);
 
 DECLARE_SOA_TABLE(HfCharmResoMLs, "AOD", "HFCHARMRESOML", //! Table with ML scores for the D daughter
                   hf_reso_cand_reduced::MlScoreBkgProng0,

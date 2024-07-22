@@ -124,8 +124,10 @@ class TrackSelectionPIDCfg
   std::vector<float> mMaxNSigmasTOF = {0.0f, 0.0f, 3.0f, 3.0f, 3.0f};    ///< nsigmas TOF upper limit for e, mu, pi, Ka, and p
   bool m2Dcut = true;                                                    ///< use an elliptic cut using TPC and TOF nsigmas
   bool mExclude = false;                                                 ///< should the identified track be excluded for analysis?
+  float mPtMin = 0.2;                                                    ///< increase the lower pT limit for this species
+  float mPtMax = 2.0;                                                    ///< decrease the upper pT limit for this species
  private:
-  ClassDefNV(TrackSelectionPIDCfg, 1);
+  ClassDefNV(TrackSelectionPIDCfg, 2);
 };
 
 class SimpleInclusiveCut : public TNamed

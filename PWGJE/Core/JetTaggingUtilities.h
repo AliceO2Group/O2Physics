@@ -367,13 +367,14 @@ void orderForIPJetTracks(T const& collision, U const& jet, V const& /*jtracks*/,
 template <typename T, typename U, typename V, typename W, typename X, typename Y>
 bool isGreaterThanTaggingPoint(T const& collision, U const& jet, V const& jtracks, W const& tracks, X const& taggingPoint = 1.0, Y const& cnt = 1)
 {
-  if (cnt == 0)
+  if (cnt == 0) {
     return true; // untagged
+  }
   std::vector<float> vecSignImpSig;
   orderForIPJetTracks(collision, jet, jtracks, tracks, vecSignImpSig);
-  if (vecSignImpSig.size() > cnt - 1) {
+  if (vecSignImpSig.size() > static_cast<std::vector<float>::size_type>(cnt) - 1) {
     for (int i = 0; i < cnt; i++) {
-      if (0 < vecSignImpSig[i] && vecSignImpSig[i] < taggingPoint) { // tagger point set
+      if (vecSignImpSig[i] < taggingPoint) { // tagger point set
         return false;
       }
     }
@@ -394,7 +395,7 @@ template <typename T>
 std::unique_ptr<TF1> setResolutionFunction(T const& vecParams)
 {
   std::unique_ptr<TF1> fResoFunc(new TF1("fResoFunc", "gaus(0)+expo(3)+expo(5)+expo(7)", -40, 0));
-  for (int i = 0; i < vecParams.size(); i++) {
+  for (typename T::size_type i = 0; i < vecParams.size(); i++) {
     fResoFunc->SetParameter(i, vecParams[i]);
   }
 
@@ -472,8 +473,8 @@ float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet,
     return -1;
 
   float sumjetProb = 0.;
-  for (int i = 0; i < jetTracksPt.size(); i++) {
-    sumjetProb += (TMath::Power(-1 * TMath::Log(trackjetProb), i) / TMath::Factorial(i));
+  for (std::vector<float>::size_type i = 0; i < jetTracksPt.size(); i++) {
+    sumjetProb += (TMath::Power(-1 * TMath::Log(trackjetProb), static_cast<int>(i)) / TMath::Factorial(i));
   }
 
   JP = trackjetProb * sumjetProb;

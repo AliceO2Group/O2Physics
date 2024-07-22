@@ -25,6 +25,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -36,7 +37,8 @@ using namespace o2::aod::evsel;
 
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+// using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelection>;
 
 struct DetectorOccupancyQaTask {
@@ -47,7 +49,8 @@ struct DetectorOccupancyQaTask {
   Configurable<float> confOccupancyHistCoeffNbins2D{"HistCoeffNbins2D", 1., "Coefficient for nBins in occupancy 2D histos"};
   Configurable<float> confOccupancyHistCoeffNbins3D{"HistCoeffNbins3D", 1., "Coefficient for nBins in occupancy 3D histos"};
   Configurable<float> confCoeffMaxNtracksThisEvent{"CoeffMaxNtracksThisEvent", 1., "Coefficient for max nTracks or FT0 ampl in histos in a given event"};
-  Configurable<bool> confFlagApplyROFborderCut{"UseROFborderCut", true, "Use ROF border cut for a current event"};
+  Configurable<bool> confFlagApplyROFborderCut{"ApplyROFborderCut", true, "Use ROF border cut for a current event"};
+  Configurable<bool> confFlagApplyTFborderCut{"ApplyTFborderCut", true, "Use TF border cut for a current event"};
   Configurable<int> confFlagWhichTimeRange{"FlagWhichTimeRange", 0, "Whicn time range for occupancy calculation: 0 - symmetric, 1 - only past, 2 - only future"};
   Configurable<int> confFlagUseGlobalTracks{"FlagUseGlobalTracks", 0, "For small time bins, use global tracks counter instead of ITSTPC tracks"};
 
@@ -68,9 +71,12 @@ struct DetectorOccupancyQaTask {
   Configurable<bool> confAddTracksVsFwdHistos{"AddTracksVsFwdHistos", true, "0 - add histograms, 1 - skip"};
   Configurable<int> nBinsTracks{"nBinsTracks", 400, "N bins in n tracks histo"};
   Configurable<int> nMaxTracks{"nMaxTracks", 8000, "N max in n tracks histo"};
-  Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 4000, "N max in n tracks histo"};
+  Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 3000, "N max in n tracks histo"};
   Configurable<int> nBinsMultFwd{"nBinsMultFwd", 400, "N bins in mult fwd histo"};
   Configurable<float> nMaxMultFwd{"nMaxMultFwd", 200000, "N max in mult fwd histo"};
+
+  Configurable<int> nBinsOccupancy{"nBinsOccupancy", 150, "N bins for occupancy axis"};
+  Configurable<float> nMaxOccupancy{"nMaxOccupancy", 15000, "N for max of the occupancy axis"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -98,6 +104,17 @@ struct DetectorOccupancyQaTask {
     // histograms for occupancy-in-time-window study
     double kMaxOccup = confOccupancyHistCoeffNtracksForOccupancy;
     double kMaxThisEv = confCoeffMaxNtracksThisEvent;
+
+    AxisSpec axisBC{3601, -0.5, 3600.5, "bc"};
+    histos.add("h2D_diff_FoundBC_vs_BC", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_multAbove10", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_multAbove20", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_multAbove50", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_multAbove100", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_hasTOF", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_hasTRD", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_hasTOF_multAbove10", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
+    histos.add("h2D_diff_FoundBC_vs_BC_hasTRD_multAbove10", "", kTH2D, {axisBC, {201, -100.5, 100.5, "foundBC-BC"}});
 
     if (confAddBasicQAhistos) {
       int nMax1D = kMaxThisEv * 8000;
@@ -158,9 +175,13 @@ struct DetectorOccupancyQaTask {
     // QA of occupancy-based event selection
     histos.add("hOccupancy", "", kTH1D, {{15002, -1.5, 15000.5}});
 
+    AxisSpec axisOccupancy{nBinsOccupancy, 0., nMaxOccupancy, "occupancy (n ITS tracks weighted)"};
+    AxisSpec axisCentrality{100, 0, 100, "centrality, %"};
+    histos.add("hCentrVsOccupancy", "hCentrVsOccupancy", kTH2F, {axisCentrality, axisOccupancy});
+
     if (confAddTracksVsFwdHistos) {
       AxisSpec axisNtracks{nBinsTracks, -0.5, nMaxTracks - 0.5, "n tracks"};
-      AxisSpec axisNtracksGlobal{nMaxGlobalTracks, -0.5, nMaxGlobalTracks - 0.5, "n tracks"};
+      AxisSpec axisNtracksGlobal{nBinsTracks, -0.5, nMaxGlobalTracks - 0.5, "n tracks"};
       AxisSpec axisMultFw{nBinsMultFwd, 0., static_cast<float>(nMaxMultFwd), "mult Fwd"};
 
       histos.add("nTracksPV_vs_V0A_kNoHighOccupancyAgressive", "nTracksPV_vs_V0A_kNoHighOccupancyAgressive", kTH2F, {axisMultFw, axisNtracks});
@@ -200,6 +221,35 @@ struct DetectorOccupancyQaTask {
       histos.add("nTracksGlobal_vs_V0A_occup_Minus1", "nTracksGlobal_vs_V0A_occup_Minus1", kTH2F, {axisMultFw, axisNtracksGlobal});
       histos.add("nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeStandard", "nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeStandard", kTH2F, {axisMultFw, axisNtracksGlobal});
       histos.add("nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeNarrow", "nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeNarrow", kTH2F, {axisMultFw, axisNtracksGlobal});
+
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyAgressive", "nTracksGlobal_vs_nPV_kNoHighOccupancyAgressive", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyStrict", "nTracksGlobal_vs_nPV_kNoHighOccupancyStrict", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyMedium", "nTracksGlobal_vs_nPV_kNoHighOccupancyMedium", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyRelaxed", "nTracksGlobal_vs_nPV_kNoHighOccupancyRelaxed", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoHighOccupancyGentle", "nTracksGlobal_vs_nPV_kNoHighOccupancyGentle", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoCollInTimeRangeStandard", "nTracksGlobal_vs_nPV_kNoCollInTimeRangeStandard", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_kNoCollInTimeRangeNarrow", "nTracksGlobal_vs_nPV_kNoCollInTimeRangeNarrow", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_250", "nTracksGlobal_vs_nPV_occup_0_250", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_500", "nTracksGlobal_vs_nPV_occup_0_500", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_750", "nTracksGlobal_vs_nPV_occup_0_750", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_2000", "nTracksGlobal_vs_nPV_occup_0_2000", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard", "nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeNarrow", "nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeNarrow", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_noOccupSel", "nTracksGlobal_vs_nPV_noOccupSel", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard_extraCuts", "nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard_extraCuts", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_0_2000_kNoCollInTimeRangeStandard_extraCuts", "nTracksGlobal_vs_nPV_occup_0_2000_kNoCollInTimeRangeStandard_extraCuts", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_ABOVE_750", "nTracksGlobal_vs_nPV_occup_ABOVE_750", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_occup_Minus1", "nTracksGlobal_vs_nPV_occup_Minus1", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeStandard", "nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeStandard", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeNarrow", "nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeNarrow", kTH2F, {axisNtracks, axisNtracksGlobal});
+
+      histos.add("nTracksGlobal_vs_nPV_QA_onlyVzCut_noTFROFborderCuts", "nTracksGlobal_vs_nPV_QA_onlyVzCut_noTFROFborderCuts", kTH2F, {axisNtracks, axisNtracksGlobal});
+      histos.add("nTracksGlobal_vs_nPV_QA_after_TFborderCut", "nTracksGlobal_vs_nPV_QA_after_TFborderCut", kTH2F, {axisNtracks, axisNtracksGlobal});
+
+      // 3D histograms with occupancy axis
+      histos.add("nTracksGlobal_vs_nPV_vs_occup_pure", "nTracksGlobal_vs_nPV_vs_occup_pure", kTH3F, {axisNtracks, axisNtracksGlobal, axisOccupancy});
+      histos.add("nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeStandard", "nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeStandard", kTH3F, {axisNtracks, axisNtracksGlobal, axisOccupancy});
+      histos.add("nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeNarrow", "nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeNarrow", kTH3F, {axisNtracks, axisNtracksGlobal, axisOccupancy});
     }
   }
 
@@ -274,6 +324,7 @@ struct DetectorOccupancyQaTask {
       int nITSTPCtracks = 0;
       int nITSTPCtracksPtEtaCuts = 0;
       int nTOFtracks = 0;
+      int nTRDtracks = 0;
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       for (auto& track : tracksGrouped) {
         if (!track.isPVContributor()) {
@@ -283,6 +334,7 @@ struct DetectorOccupancyQaTask {
           nITS567cls++;
         nITSTPCtracks += track.hasITS() && track.hasTPC();
         nTOFtracks += track.hasTOF();
+        nTRDtracks += track.hasTRD();
 
         if (track.pt() < confCutPtMinThisEvent || track.pt() > confCutPtMaxThisEvent)
           continue;
@@ -324,6 +376,33 @@ struct DetectorOccupancyQaTask {
       vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 300) * bcNS > timeWinOccupancyCalcNS) && ((nBCsPerTF - 4000 - bcInTF) * bcNS > timeWinOccupancyCalcNS) ? true : false;
 
       LOGP(debug, "###  check bcInTF cut: colIndex={} bcInTF={} vIsFullInfoForOccupancy={}", colIndex, bcInTF, static_cast<int>(vIsFullInfoForOccupancy[colIndex]));
+
+      // additional QA:
+      if (col.selection_bit(kNoTimeFrameBorder) && col.selection_bit(kNoITSROFrameBorder)) {
+        auto bcFoundId = bc.globalBC() % 3564;
+        auto bcNonFound = col.bc_as<BCsRun3>();
+        auto bcNonFoundId = bcNonFound.globalBC() % 3564;
+        int64_t diffFoundBC_vs_BC = (int64_t)bcFoundId - (int64_t)bcNonFoundId;
+        histos.fill(HIST("h2D_diff_FoundBC_vs_BC"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 10)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_multAbove10"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 20)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_multAbove20"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 50)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_multAbove50"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 100)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_multAbove100"), bcNonFoundId, diffFoundBC_vs_BC);
+
+        if (nTOFtracks > 0)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_hasTOF"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nTRDtracks > 0)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_hasTRD"), bcNonFoundId, diffFoundBC_vs_BC);
+
+        if (nITS567cls > 10 && nTOFtracks > 0)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_hasTOF_multAbove10"), bcNonFoundId, diffFoundBC_vs_BC);
+        if (nITS567cls > 10 && nTRDtracks > 0)
+          histos.fill(HIST("h2D_diff_FoundBC_vs_BC_hasTRD_multAbove10"), bcNonFoundId, diffFoundBC_vs_BC);
+      }
     }
 
     // find for each collision all collisions within the defined time window
@@ -399,6 +478,10 @@ struct DetectorOccupancyQaTask {
 
       // cut on vZ for a given collision
       if (col.posZ() < confCutVertZMinThisEvent || col.posZ() > confCutVertZMaxThisEvent)
+        continue;
+
+      // skip if collision is close to TF border
+      if (confFlagApplyTFborderCut && !col.selection_bit(kNoTimeFrameBorder))
         continue;
 
       // skip if collision is close to ROF border
@@ -535,16 +618,15 @@ struct DetectorOccupancyQaTask {
 
     // ### occupancy event selection QA
     for (auto& col : cols) {
-      if (!col.sel8()) {
+      // if (!col.sel8()) {
+      //   continue;
+      // }
+      if (!col.selection_bit(kIsTriggerTVX))
         continue;
-      }
 
-      int occupancy = col.trackOccupancyInTimeRange();
-      histos.fill(HIST("hOccupancy"), occupancy);
-
-      if (!confAddTracksVsFwdHistos) {
+      // cut on vZ for a given collision
+      if (col.posZ() < confCutVertZMinThisEvent || col.posZ() > confCutVertZMaxThisEvent)
         continue;
-      }
 
       auto multV0A = col.multFV0A();
       // auto multT0A = col.multFT0A();
@@ -554,87 +636,148 @@ struct DetectorOccupancyQaTask {
 
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       for (auto& track : tracksGrouped) {
-        if (!track.isPVContributor()) {
+        if (!track.isPVContributor())
           continue;
-        }
+        if (track.pt() < confCutPtMinThisEvent || track.pt() > confCutPtMaxThisEvent)
+          continue;
+        if (track.eta() < confCutEtaMinTracksThisEvent || track.eta() > confCutEtaMaxTracksThisEvent)
+          continue;
+        if (track.itsNCls() < 5)
+          continue;
         nPV++;
-        if (track.isGlobalTrack())
+
+        if (track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls)
           nGlobalTracks++;
+      }
+
+      if (confAddTracksVsFwdHistos)
+        histos.fill(HIST("nTracksGlobal_vs_nPV_QA_onlyVzCut_noTFROFborderCuts"), nPV, nGlobalTracks);
+
+      // skip if collision is close to TF border
+      if (confFlagApplyTFborderCut && !col.selection_bit(kNoTimeFrameBorder))
+        continue;
+
+      if (confAddTracksVsFwdHistos)
+        histos.fill(HIST("nTracksGlobal_vs_nPV_QA_after_TFborderCut"), nPV, nGlobalTracks);
+
+      // skip if collision is close to ROF border
+      if (confFlagApplyROFborderCut && !col.selection_bit(kNoITSROFrameBorder))
+        continue;
+
+      int occupancy = col.trackOccupancyInTimeRange();
+      histos.fill(HIST("hOccupancy"), occupancy);
+
+      auto t0cCentr = col.centFT0C();
+      histos.fill(HIST("hCentrVsOccupancy"), t0cCentr, occupancy);
+
+      if (!confAddTracksVsFwdHistos) {
+        continue;
       }
 
       // nPV tracks vs fwd amplitude
       histos.fill(HIST("nTracksPV_vs_V0A_noOccupSel"), multV0A, nPV);
       histos.fill(HIST("nTracksGlobal_vs_V0A_noOccupSel"), multV0A, nGlobalTracks);
+      histos.fill(HIST("nTracksGlobal_vs_nPV_noOccupSel"), nPV, nGlobalTracks);
+
+      if (occupancy >= 0)
+        histos.fill(HIST("nTracksGlobal_vs_nPV_vs_occup_pure"), nPV, nGlobalTracks, occupancy);
 
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyAgressive"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyAgressive"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyAgressive"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyStrict"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyStrict"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyStrict"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyMedium"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyMedium"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyMedium"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyRelaxed"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyRelaxed"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyRelaxed"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoHighOccupancyGentle"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoHighOccupancyGentle"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoHighOccupancyGentle"), nPV, nGlobalTracks);
       }
       if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoCollInTimeRangeStandard"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoCollInTimeRangeStandard"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoCollInTimeRangeStandard"), nPV, nGlobalTracks);
+        if (occupancy >= 0)
+          histos.fill(HIST("nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeStandard"), nPV, nGlobalTracks, occupancy);
       }
       if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         histos.fill(HIST("nTracksPV_vs_V0A_kNoCollInTimeRangeNarrow"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_kNoCollInTimeRangeNarrow"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_kNoCollInTimeRangeNarrow"), nPV, nGlobalTracks);
+        if (occupancy >= 0)
+          histos.fill(HIST("nTracksGlobal_vs_nPV_vs_occup_kNoCollInTimeRangeNarrow"), nPV, nGlobalTracks, occupancy);
       }
       if (occupancy >= 0 && occupancy < 250) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_250"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_250"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_250"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 500) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_500"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_500"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_500"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 750) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_750"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_750"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_750"), nPV, nGlobalTracks);
+      }
+      if (occupancy >= 0 && occupancy < 2000) {
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_2000"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 500 && col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_500_kNoCollInTimeRangeStandard"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_500_kNoCollInTimeRangeStandard"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 500 && col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_500_kNoCollInTimeRangeNarrow"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_500_kNoCollInTimeRangeNarrow"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeNarrow"), nPV, nGlobalTracks);
       }
       if (occupancy >= 0 && occupancy < 500 && col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && col.selection_bit(kNoSameBunchPileup) && col.selection_bit(kIsGoodZvtxFT0vsPV)) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_0_500_kNoCollInTimeRangeStandard_extraCuts"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_0_500_kNoCollInTimeRangeStandard_extraCuts"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_500_kNoCollInTimeRangeStandard_extraCuts"), nPV, nGlobalTracks);
+      }
+      if (occupancy >= 0 && occupancy < 2000 && col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && col.selection_bit(kNoSameBunchPileup) && col.selection_bit(kIsGoodZvtxFT0vsPV)) {
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_0_2000_kNoCollInTimeRangeStandard_extraCuts"), nPV, nGlobalTracks);
       }
 
       // more checks
       if (occupancy >= 750) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_ABOVE_750"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_ABOVE_750"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_ABOVE_750"), nPV, nGlobalTracks);
       }
       if (occupancy == -1) {
         histos.fill(HIST("nTracksPV_vs_V0A_occup_Minus1"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_occup_Minus1"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_occup_Minus1"), nPV, nGlobalTracks);
       }
       if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         histos.fill(HIST("nTracksPV_vs_V0A_AntiNoCollInTimeRangeStandard"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeStandard"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeStandard"), nPV, nGlobalTracks);
       }
       if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         histos.fill(HIST("nTracksPV_vs_V0A_AntiNoCollInTimeRangeNarrow"), multV0A, nPV);
         histos.fill(HIST("nTracksGlobal_vs_V0A_AntiNoCollInTimeRangeNarrow"), multV0A, nGlobalTracks);
+        histos.fill(HIST("nTracksGlobal_vs_nPV_AntiNoCollInTimeRangeNarrow"), nPV, nGlobalTracks);
       }
     }
   }

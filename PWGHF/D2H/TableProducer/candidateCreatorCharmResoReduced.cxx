@@ -68,6 +68,7 @@ struct HfCandidateCreatorCharmResoReduced {
   // Configurables
   Configurable<double> invMassWindowD{"invMassWindowD", 0.5, "invariant-mass window for D candidates (GeV/c2)"};
   Configurable<double> invMassWindowV0{"invMassWindowV0", 0.5, "invariant-mass window for V0 candidates (GeV/c2)"};
+  Configurable<bool> rejectDV0PairsWithCommonDaughter{"rejectDV0PairsWithCommonDaughter", true, "flag to reject the pairs that share a daughter track if not done in the derived data creation"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // Hist Axis
@@ -76,8 +77,8 @@ struct HfCandidateCreatorCharmResoReduced {
   using reducedDWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
 
   // Partition of V0 candidates based on v0Type
-  Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_2_prong::v0Type == (uint8_t)1 || aod::hf_reso_2_prong::v0Type == (uint8_t)3 || aod::hf_reso_2_prong::v0Type == (uint8_t)5;
-  Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_2_prong::v0Type == (uint8_t)2 || aod::hf_reso_2_prong::v0Type == (uint8_t)4;
+  Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_v0::v0Type == (uint8_t)1 || aod::hf_reso_v0::v0Type == (uint8_t)3 || aod::hf_reso_v0::v0Type == (uint8_t)5;
+  Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_v0::v0Type == (uint8_t)2 || aod::hf_reso_v0::v0Type == (uint8_t)4;
 
   Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
   Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
@@ -215,6 +216,13 @@ struct HfCandidateCreatorCharmResoReduced {
       // loop on V0 candidates
       bool alreadyCounted{false};
       for (const auto& candV0 : candsV0) {
+        if (rejectDV0PairsWithCommonDaughter) {
+          const std::array<int, 3> dDaughtersIDs = {candD.prong0Id(), candD.prong1Id(), candD.prong2Id()};
+          if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0.prong1Id()) != dDaughtersIDs.end()) {
+            continue;
+          }
+        }
+
         if (!isV0Selected<channel>(candV0, candD)) {
           continue;
         }

@@ -65,6 +65,8 @@ struct FlowPbPbTask {
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
 
   ConfigurableAxis axisVertex{"axisVertex", {40, -20, 20}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -465,6 +467,10 @@ struct FlowPbPbTask {
       // use this cut at low multiplicities with caution
       return 0;
     }
+    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      // no collisions in specified time range
+      return 0;
+    }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
@@ -473,6 +479,7 @@ struct FlowPbPbTask {
         vtxz = -999;
     }
     auto multNTracksPV = collision.multNTracksPV();
+    auto occupancy = collision.trackOccupancyInTimeRange();
 
     if (abs(vtxz) > cfgCutVertex)
       return 0;
@@ -483,6 +490,8 @@ struct FlowPbPbTask {
     if (multTrk < fMultCutLow->Eval(centrality))
       return 0;
     if (multTrk > fMultCutHigh->Eval(centrality))
+      return 0;
+    if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)
       return 0;
 
     // V0A T0A 5 sigma cut

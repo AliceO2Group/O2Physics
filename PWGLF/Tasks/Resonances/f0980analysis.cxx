@@ -11,6 +11,7 @@
 
 /// \author Junlee Kim (jikim1290@gmail.com)
 
+#include <Framework/Configurable.h>
 #include <TLorentzVector.h>
 #include "TVector2.h"
 
@@ -43,22 +44,16 @@ struct f0980analysis {
                                "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8,
                                 "Maximum pseudorapidiy for charged track"};
-  Configurable<float> cfgMinDCArToPVcut{"cfgMinDCArToPVcut", -0.5,
-                                        "Minimum transverse DCA"};
   Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5,
                                         "Maximum transverse DCA"};
-  Configurable<float> cfgMinDCAzToPVcut{"cfgMinDCAzToPVcut", -2.0,
-                                        "Minimum longitudinal DCA"};
   Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0,
                                         "Maximum longitudinal DCA"};
-  Configurable<float> cfgMaxTPCStandalone{"cfgMaxTPCStandalone", 2.0,
-                                          "Maximum TPC PID as standalone"};
   Configurable<float> cfgMaxTPC{"cfgMaxTPC", 5.0, "Maximum TPC PID with TOF"};
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
-  Configurable<int> cfgMinTPCncr{"cfgMinTPCncr", 70, "minimum TPC cluster"};
 
+  // Track selection
   Configurable<bool> cfgPrimaryTrack{
     "cfgPrimaryTrack", true,
     "Primary track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
@@ -75,20 +70,36 @@ struct f0980analysis {
   Configurable<bool> cfgPVContributor{
     "cfgPVContributor", true,
     "PV contributor track selection"}; // PV Contriuibutor
-  Configurable<bool> cfgUseTOF{
-    "cfgUseTOF", false,
-    "Flag for the usage of TOF for PID"};
+  Configurable<bool> cfgGlobalTrack{
+    "cfgGlobalTrack", false,
+    "Global track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
+  Configurable<float> cfgRatioTPCRowsOverFindableCls{
+    "cfgRatioTPCRowsOverFindableCls", 0.0f,
+    "TPC Crossed Rows to Findable Clusters"};
+  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 999.0, "ITS Chi2/NCl"};
+  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
+  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
+  Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
+  Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
+  Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
+  Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
+  // PID
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
+  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"}; // TPC
+  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};
+  Configurable<int> SelectType{"SelectType", 0, "PID selection type"};
+
+  // Axis
+  ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
+  ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
+  ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 95.0, 100.0, 105.0, 110.0}, "Centrality  Binning"};
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> ptBinning = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8,
-                                     1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5,
-                                     5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0};
     std::vector<double> lptBinning = {0, 5.0, 13.0, 20.0, 50.0, 1000.0};
 
-    AxisSpec centAxis = {22, 0, 110};
-    AxisSpec ptAxis = {ptBinning};
-    AxisSpec massAxis = {400, 0.2, 2.2};
     AxisSpec RTAxis = {3, 0, 3};
     AxisSpec LptAxis = {lptBinning}; // Minimum leading hadron pT selection
 
@@ -152,19 +163,41 @@ struct f0980analysis {
   template <typename TrackType>
   bool SelTrack(const TrackType track)
   {
-    if (track.pt() < cfgMinPt)
+    if (std::abs(track.pt()) < cfgMinPt)
       return false;
     if (std::fabs(track.eta()) > cfgMaxEta)
       return false;
-    if (track.dcaXY() < cfgMinDCArToPVcut || track.dcaXY() > cfgMaxDCArToPVcut)
+    if (std::abs(track.dcaXY()) > cfgMaxDCArToPVcut)
       return false;
-    if (track.dcaZ() < cfgMinDCAzToPVcut || track.dcaZ() > cfgMaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > cfgMaxDCAzToPVcut)
+      return false;
+    if (track.itsNCls() < cfgITScluster)
+      return false;
+    if (track.tpcNClsFound() < cfgTPCcluster)
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
+      return false;
+    if (track.itsChi2NCl() >= cfgITSChi2NCl)
+      return false;
+    if (track.tpcChi2NCl() >= cfgTPCChi2NCl)
+      return false;
+    if (cfgHasITS && !track.hasITS())
+      return false;
+    if (cfgHasTPC && !track.hasTPC())
+      return false;
+    if (cfgHasTOF && !track.hasTOF())
+      return false;
+    if (cfgUseITSRefit && !track.passedITSRefit())
+      return false;
+    if (cfgUseTPCRefit && !track.passedTPCRefit())
+      return false;
+    if (cfgPVContributor && !track.isPVContributor())
       return false;
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
     if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
-    if (cfgPVContributor && !track.isPVContributor())
+    if (cfgGlobalTrack && !track.isGlobalTrack())
       return false;
 
     return true;
@@ -173,15 +206,17 @@ struct f0980analysis {
   template <typename TrackType>
   bool SelPion(const TrackType track)
   {
-    if (track.hasTOF() || !cfgUseTOF) {
-      if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPCStandalone) {
+    if (SelectType == 0) {
+      if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
         return false;
-      }
-    } else {
-      if (std::fabs(track.tpcNSigmaPi()) > cfgMaxTPC ||
-          std::fabs(track.tofNSigmaPi()) > cfgMaxTOF) {
+    }
+    if (SelectType == 1) {
+      if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion)
         return false;
-      }
+    }
+    if (SelectType == 2) {
+      if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
+        return false;
     }
     return true;
   }

@@ -137,7 +137,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(collision, centrality, ccdb);
 
     if (fillHistograms) {
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
       // additional centrality histos
       if constexpr (centEstimator != o2::hf_centrality::None) {
         if (rejectionMask == 0) {
@@ -2959,7 +2959,7 @@ struct HfTrackIndexSkimCreator {
 struct HfTrackIndexSkimCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;
 
-  struct ConfigurableGroup {
+  struct : ConfigurableGroup {
     Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
     // event selection

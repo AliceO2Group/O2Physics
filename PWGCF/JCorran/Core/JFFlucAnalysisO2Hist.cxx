@@ -34,12 +34,12 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
   pht[HIST_THN_PHIETA] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_phieta", folder.Data()), "(corrected) multiplicity/centrality, phi, eta", {HistType::kTHnF, {axisMultiplicity, phiAxis, etaAxis}})).get();
   AxisSpec hAxis = {kNH, -0.5, static_cast<double>(kNH - 1) + 0.5, "#it{n}"};
   AxisSpec kAxis = {nKL, -0.5, static_cast<double>(nKL - 1) + 0.5, "#it{k}"};
-  AxisSpec vnAxis = {1024, -1.0, 1.0, "#it{V}_#it{n}"};
-  pht[HIST_THN_SC_with_QC_4corr] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_SC_with_QC_4corr", folder.Data()), "SC_with_QC_4corr", {HistType::kTHnF, {axisMultiplicity, hAxis, hAxis, {1024, -1.5, 1.5, "correlation"}}})).get();
-  pht[HIST_THN_SC_with_QC_2corr] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_SC_with_QC_2corr", folder.Data()), "SC_with_QC_2corr", {HistType::kTHnF, {axisMultiplicity, hAxis, {1024, -1.5, 1.5, "correlation"}}})).get();
-  pht[HIST_THN_SC_with_QC_2corr_gap] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_SC_with_QC_2corr_gap", folder.Data()), "SC_with_QC_2corr_gap", {HistType::kTHnF, {axisMultiplicity, hAxis, {1024, -1.5, 1.5, "correlation"}}})).get();
+  AxisSpec vnAxis = {2048, -0.1, 0.1, "#it{V}_#it{n}"};
+  pht[HIST_THN_SC_with_QC_4corr] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_SC_with_QC_4corr", folder.Data()), "SC_with_QC_4corr", {HistType::kTHnF, {axisMultiplicity, hAxis, hAxis, {2048, -0.001, 0.001, "correlation"}}})).get();
+  pht[HIST_THN_SC_with_QC_2corr] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_SC_with_QC_2corr", folder.Data()), "SC_with_QC_2corr", {HistType::kTHnF, {axisMultiplicity, hAxis, {2048, -0.1, 0.1, "correlation"}}})).get();
+  pht[HIST_THN_SC_with_QC_2corr_gap] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_SC_with_QC_2corr_gap", folder.Data()), "SC_with_QC_2corr_gap", {HistType::kTHnF, {axisMultiplicity, hAxis, {2048, -0.1, 0.1, "correlation"}}})).get();
   for (UInt_t i = HIST_THN_V4V2star_2; i < HIST_THN_COUNT; ++i)
-    pht[i] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_corrC%02u", folder.Data(), i - HIST_THN_V4V2star_2), "correlator", {HistType::kTHnF, {axisMultiplicity, {1024, -3.0, 3.0, "correlation"}}})).get();
+    pht[i] = std::get<std::shared_ptr<THn>>(registry.add(Form("%s/h_corrC%02u", folder.Data(), i - HIST_THN_V4V2star_2), "correlator", {HistType::kTHnF, {axisMultiplicity, {2048, -3.0, 3.0, "correlation"}}})).get();
   for (UInt_t i = 0; i < HIST_THN_COUNT; ++i)
     pht[i]->Sumw2();
 

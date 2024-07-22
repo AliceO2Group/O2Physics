@@ -66,7 +66,7 @@ struct v0postprocessing {
 
     if (isMC) {
       registry.add("hMassK0Short_MC", ";M_{#pi^{+}#pi^{-}} [GeV/c^{2}]", {HistType::kTH1F, {{200, 0.4f, 0.6f}}});
-      registry.add("hMassVsPtK0Short_MC", ";p_{T} [GeV/c];M_{#pi^{+}#pi^{-}} [GeV/c^{2}]", {HistType::kTH2F, {{250, 0.0f, 25.0f}, {200, 0.4f, 0.6f}}});
+      registry.add("hMassVsPtK0Short_MC", ";p_{T} [GeV/c];M_{#pi^{+}#pi^{-}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {200, 0.4f, 0.6f}, {100, 0.f, 100.f}}});
       registry.add("hMassLambda_MC", "hMassLambda", {HistType::kTH1F, {{200, 1.016f, 1.216f}}});
       registry.add("hMassVsPtLambda_MC", "hMassVsPtLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
       registry.add("hMassAntiLambda_MC", "hMassAntiLambda", {HistType::kTH1F, {{200, 1.016f, 1.216f}}});
@@ -217,7 +217,7 @@ struct v0postprocessing {
             (candidate.pdgcode() == 310)) {
 
           registry.fill(HIST("hMassK0Short_MC"), candidate.massk0short());
-          registry.fill(HIST("hMassVsPtK0Short_MC"), candidate.v0pt(), candidate.massk0short());
+          registry.fill(HIST("hMassVsPtK0Short_MC"), candidate.v0pt(), candidate.multft0m(), candidate.massk0short());
 
           registry.fill(HIST("hK0sV0Radius"), candidate.v0radius());
           registry.fill(HIST("hK0sCosPA"), candidate.v0cospa());

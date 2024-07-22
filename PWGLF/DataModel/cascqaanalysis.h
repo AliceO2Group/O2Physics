@@ -26,10 +26,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "TRandom.h"
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 namespace o2::aod
 {
 

@@ -42,6 +42,10 @@ struct femtoUniversePairTaskTrackV0Extended {
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
+  /// To apply narrow cut
+  Configurable<float> ConfZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
+  Configurable<float> ConfEta{"ConfEta", 0.8, "Eta cut for the global track"};
+
   /// Particle 1 (track)
   Configurable<int> ConfTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 211, "Particle 1 (Track) - PDG code"};
   Configurable<int> ConfTrackChoicePartOne{"ConfTrackChoicePartOne", 1, "0:Proton, 1:Pion, 2:Kaon"};
@@ -54,8 +58,12 @@ struct femtoUniversePairTaskTrackV0Extended {
   Configurable<float> ConfNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < Confmom"};
   Configurable<float> ConfNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};
 
+  Filter collisionFilter = (nabs(aod::collision::posZ) < ConfZVertexCut);
+  using FilteredFDCollisions = soa::Filtered<o2::aod::FDCollisions>;
+  using FilteredFDCollision = FilteredFDCollisions::iterator;
+
   /// Partition for particle 1
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == ConfChargePart1 && aod::femtouniverseparticle::pt < ConfHPtPart1 && aod::femtouniverseparticle::pt > ConfLPtPart1;
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == ConfChargePart1) && (nabs(aod::femtouniverseparticle::eta) < ConfEta) && (aod::femtouniverseparticle::pt < ConfHPtPart1) && (aod::femtouniverseparticle::pt > ConfLPtPart1);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
@@ -75,7 +83,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   Configurable<float> ConfLPtPart2{"ConfLPtPart2", 0.3f, "lower limit for pt of particle 2"};
 
   /// Partition for particle 2
-  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && aod::femtouniverseparticle::pt < ConfHPtPart2 && aod::femtouniverseparticle::pt > ConfLPtPart2;
+  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfHPtPart2) && (aod::femtouniverseparticle::pt > ConfLPtPart2);
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0, 2> trackHistoPartTwo;
@@ -96,6 +104,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   // Configurable<int> ConfTrackChoicePartTwo{"ConfTrackChoicePartTwo", 1, "0:Proton, 1:Pion, 2:Kaon"}; //not used
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
+  Configurable<bool> ConfUseCent{"ConfUseCent", false, "Use centrality in place of multiplicity"};
   ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
@@ -210,13 +219,13 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
   /// This function processes the same event for track - V0
-  void processSameEvent(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processSameEvent(FilteredFDCollision& col, FemtoFullParticles& parts)
   {
     const auto& magFieldTesla = col.magField();
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    const int multCol = col.multNtr();
+    const int multCol = ConfUseCent ? col.multV0M() : col.multNtr();
 
     eventHisto.fillQA(col);
 
@@ -284,12 +293,12 @@ struct femtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event for track - V0", false);
 
   /// This function processes the same event for V0 - V0
-  void processSameEventV0(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processSameEventV0(FilteredFDCollision& col, FemtoFullParticles& parts)
   {
     const auto& magFieldTesla = col.magField();
 
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    const int multCol = col.multNtr();
+    const int multCol = ConfUseCent ? col.multV0M() : col.multNtr();
 
     eventHisto.fillQA(col);
 
@@ -350,13 +359,13 @@ struct femtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventV0, "Enable processing same event for V0 - V0", false);
 
   /// This function processes the mixed event for track - V0
-  void processMixedEvent(o2::aod::FDCollisions& cols, FemtoFullParticles& parts)
+  void processMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      const int multCol = collision1.multNtr();
+      const int multCol = ConfUseCent ? collision1.multV0M() : collision1.multNtr();
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -398,13 +407,13 @@ struct femtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed events for track - V0", false);
 
   /// This function processes the mixed event for V0 - V0
-  void processMixedEventV0(o2::aod::FDCollisions& cols, FemtoFullParticles& parts)
+  void processMixedEventV0(FilteredFDCollisions& cols, FemtoFullParticles& parts)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      const int multCol = collision1.multNtr();
+      const int multCol = ConfUseCent ? collision1.multV0M() : collision1.multNtr();
 
       auto groupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);

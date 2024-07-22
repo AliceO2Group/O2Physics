@@ -843,7 +843,7 @@ struct antidLambdaEbye {
 
     // reject events having multiple v0s from same tracks (TODO: also across collisions?)
     std::sort(trkId.begin(), trkId.end());
-    if (std::adjacent_find(trkId.begin(), trkId.end()) != trkId.end()) {
+    if ((std::adjacent_find(trkId.begin(), trkId.end()) != trkId.end()) && config.fillOnlySignal) {
       candidateV0s.clear();
 
       CandidateV0 candV0;

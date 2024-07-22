@@ -38,11 +38,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/Core/JetCandidateUtilities.h"
 
 namespace jetmatchingutilities
 {
@@ -367,15 +364,15 @@ template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename 
 void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& /*candidatesBase*/, M const& /*candidatesTag*/, N const& tracksBase, O const& tracksTag)
 {
   for (const auto& jetBase : jetsBasePerCollision) {
-    const auto candidateBase = jetBase.template hfcandidates_first_as<V>();
+    const auto candidateBase = jetBase.template candidates_first_as<V>();
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetBase.r()) != std::round(jetTag.r())) {
         continue;
       }
       if constexpr (jetsBaseIsMc || jetsTagIsMc) {
-        if (jethfutilities::isMatchedHFCandidate(candidateBase)) {
-          const auto candidateBaseMcId = jethfutilities::matchedParticleId(candidateBase, tracksBase, tracksTag);
-          const auto candidateTag = jetTag.template hfcandidates_first_as<M>();
+        if (jetcandidateutilities::isMatchedCandidate(candidateBase)) {
+          const auto candidateBaseMcId = jetcandidateutilities::matchedParticleId(candidateBase, tracksBase, tracksTag);
+          const auto candidateTag = jetTag.template candidates_first_as<M>();
           const auto candidateTagId = candidateTag.mcParticleId();
           if (candidateBaseMcId == candidateTagId) {
             baseToTagMatchingHF[jetBase.globalIndex()].push_back(jetTag.globalIndex());
@@ -383,7 +380,7 @@ void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
           }
         }
       } else {
-        const auto candidateTag = jetTag.template hfcandidates_first_as<M>();
+        const auto candidateTag = jetTag.template candidates_first_as<M>();
         if (candidateBase.globalIndex() == candidateTag.globalIndex()) {
           baseToTagMatchingHF[jetBase.globalIndex()].push_back(jetTag.globalIndex());
           tagToBaseMatchingHF[jetTag.globalIndex()].push_back(jetBase.globalIndex());
@@ -520,7 +517,7 @@ void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, 
     MatchPt<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingPt, tagToBaseMatchingPt, tracksBase, clustersBase, tracksTag, clustersTag, minPtFraction);
   }
   // HF matching
-  if constexpr (jethfutilities::isHFTable<V>()) {
+  if constexpr (jetcandidateutilities::isCandidateTable<V>()) {
     if (doMatchingHf) {
       MatchHF<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingHF, tagToBaseMatchingHF, candidatesBase, candidatesTag, tracksBase, tracksTag);
     }

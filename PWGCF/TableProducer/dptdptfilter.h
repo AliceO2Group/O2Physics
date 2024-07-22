@@ -990,6 +990,7 @@ struct PIDSpeciesSelection {
     LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
     LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
     LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
+    LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
   void AddExclude(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
   {
@@ -1004,6 +1005,7 @@ struct PIDSpeciesSelection {
     LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
     LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
     LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
+    LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
   template <StrongDebugging outdebug, typename TrackObject>
   int8_t whichSpecies(TrackObject const& track)
@@ -1178,6 +1180,15 @@ struct PIDSpeciesSelection {
           }
         }
       }
+      /* check a species transverse momentum cut */
+      if (!(id < 0)) {
+        /* identified */
+        if ((track.pt() < config[id]->mPtMin) || config[id]->mPtMax < track.pt()) {
+          /* rejected */
+          outpiddebug(4, species[id], -1);
+          return -127;
+        }
+      }
       /* out debug info if needed */
       if (id < 0) {
         /* not identified */
@@ -1207,6 +1218,11 @@ struct PIDSpeciesSelection {
     if (config.size() > 0) {
       for (uint8_t ix = 0; ix < config.size(); ++ix) {
         if (pdgcode == pdgcodes[species[ix]]) {
+          /* check a species transverse momentum cut */
+          if ((part.pt() < config[ix]->mPtMin) || config[ix]->mPtMax < part.pt()) {
+            /* rejected */
+            return -127;
+          }
           return ix;
         }
       }

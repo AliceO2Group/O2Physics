@@ -476,7 +476,7 @@ struct hyperRecoTask {
     hypCand.collisionID = collision.globalIndex();
 
     hDeDx3HeSel->Fill(heTrack.sign() * hypCand.momHe3TPC, heTrack.tpcSignal());
-    hNsigma3HeSel->Fill(hypCand.momPiTPC * hypCand.momHe3TPC, hypCand.nSigmaHe3);
+    hNsigma3HeSel->Fill(heTrack.sign() * hypCand.momHe3TPC, hypCand.nSigmaHe3);
     hyperCandidates.push_back(hypCand);
   }
 

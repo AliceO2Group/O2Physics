@@ -71,6 +71,7 @@ struct derivedCascadeAnalysis {
   Configurable<bool> doITSFrameBorderCut{"doITSFrameBorderCut", false, "Enable ITSFrame event cut"};
   Configurable<bool> doMultiplicityCorrCut{"doMultiplicityCorrCut", false, "Enable multiplicity vs centrality correlation cut"};
   Configurable<bool> doOccupancyCheck{"doOccupancyCheck", true, ""};
+  Configurable<bool> doTimeRangeStandardCut{"doTimeRangeStandardCut", true, "It rejects a given collision if there are other events nearby in |dt|< 10 μs"};
 
   Configurable<int> centMin{"centMin", 0, "Minimal accepted centrality"};
   Configurable<int> centMax{"centMax", 100, "Maximal accepted centrality"};
@@ -154,7 +155,7 @@ struct derivedCascadeAnalysis {
   {
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{12, 0, 12}});
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{13, 0, 13}});
     histos.add("hOccupancyVsCentrality", "", kTH2F, {axisOccupancy, {100, 0, 100}});
 
     histos.add("hEventNchCorrelationAfCuts", "hEventNchCorrelationAfCuts", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
@@ -460,6 +461,13 @@ struct derivedCascadeAnalysis {
       }
       histos.fill(HIST("hEventSelection"), 11.5 /* Remove outlyers */);
     }
+
+    if (doTimeRangeStandardCut && !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+
+    histos.fill(HIST("hEventSelection"), 12.5 /* Rejection of events too close in time */);
+
     int occupancy = coll.trackOccupancyInTimeRange();
     histos.fill(HIST("hOccupancyVsCentrality"), occupancy, coll.centFT0C());
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
@@ -1101,6 +1109,14 @@ struct derivedCascadeAnalysis {
 
       if (casc.sign() < 0) {
         histos.fill(HIST("InvMassAfterSel/hNegativeCascade"), casc.pt(), invmass, coll.centFT0C());
+        if (doOccupancyCheck) {
+          static_for<0, 9>([&](auto i) {
+            constexpr int index = i.value;
+            if (coll.centFT0C() < centralityIntervals[index + 1] && coll.centFT0C() > centralityIntervals[index]) {
+              histos.fill(HIST("InvMassAfterSelCent") + HIST(Index[index]) + HIST("/hNegativeCascade"), casc.pt(), invmass, coll.trackOccupancyInTimeRange());
+            }
+          });
+        }
         if (!doBachelorBaryonCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hNegativeBachelorBaryonDCA"), casc.pt(), invmass, casc.bachBaryonDCAxyToPV());
         if (!doDCAV0ToPVCut && doPtDepCutStudy)
@@ -1156,6 +1172,14 @@ struct derivedCascadeAnalysis {
         }
       } else {
         histos.fill(HIST("InvMassAfterSel/hPositiveCascade"), casc.pt(), invmass, coll.centFT0C());
+        if (doOccupancyCheck) {
+          static_for<0, 9>([&](auto i) {
+            constexpr int index = i.value;
+            if (coll.centFT0C() < centralityIntervals[index + 1] && coll.centFT0C() > centralityIntervals[index]) {
+              histos.fill(HIST("InvMassAfterSelCent") + HIST(Index[index]) + HIST("/hPositiveCascade"), casc.pt(), invmass, coll.trackOccupancyInTimeRange());
+            }
+          });
+        }
         if (!doBachelorBaryonCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hPositiveBachelorBaryonDCA"), casc.pt(), invmass, casc.bachBaryonDCAxyToPV());
         if (!doDCAV0ToPVCut && doPtDepCutStudy)

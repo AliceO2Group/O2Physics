@@ -22,9 +22,6 @@
 #ifndef PWGLF_DATAMODEL_LFSIGMATABLES_H_
 #define PWGLF_DATAMODEL_LFSIGMATABLES_H_
 
-using namespace o2;
-using namespace o2::framework;
-
 // Creating output TTree for sigma analysis
 namespace o2::aod
 {

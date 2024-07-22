@@ -40,7 +40,7 @@ multCalibrator::multCalibrator() : TNamed(),
                                    fInputFileName("AnalysisResults.root"),
                                    fOutputFileName("CCDB-objects.root"),
                                    fAnchorPointValue(-1),
-                                   fAnchorPointPercentage(90),
+                                   fAnchorPointPercentage(100),
                                    fCalibHists(0x0),
                                    fPrecisionHistogram(0x0)
 {
