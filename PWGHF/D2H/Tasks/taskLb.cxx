@@ -297,7 +297,7 @@ struct HfTaskLb {
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi, aod::HfCandLbMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandLbMcGen> const& mcParticles,
-                 TracksWExtMc const& reconstructedTracks,
+                 TracksWExtMc const&,
                  aod::HfCand3Prong const&)
   {
     // MC rec
