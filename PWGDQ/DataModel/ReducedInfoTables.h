@@ -96,10 +96,10 @@ DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
 DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2>> for reference flow
 DECLARE_SOA_COLUMN(M1111REF, m1111ref, float); //!  Weighted multiplicity of <<4>> for reference flow
 
-DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float); //! 
-DECLARE_SOA_COLUMN(QvecBPosIm, qvecBPosIm, float); //!  
-DECLARE_SOA_COLUMN(QvecBNegRe, qvecBNegRe, float); //!  
-DECLARE_SOA_COLUMN(QvecBNegIm, qvecBNegIm, float); //!  
+DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float); //!
+DECLARE_SOA_COLUMN(QvecBPosIm, qvecBPosIm, float); //!
+DECLARE_SOA_COLUMN(QvecBNegRe, qvecBNegRe, float); //!
+DECLARE_SOA_COLUMN(QvecBNegIm, qvecBNegIm, float); //!
 DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int); //!
 DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int); //!
 } // namespace reducedevent
