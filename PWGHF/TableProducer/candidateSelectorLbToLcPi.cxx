@@ -191,16 +191,18 @@ struct HfCandidateSelectorLbToLcPi {
       }
 
       // PID selection for pion
-      if (trackPi.pt() > ptPidTpcMin && trackPi.pt() < ptPidTpcMax)
+      if (trackPi.pt() > ptPidTpcMin && trackPi.pt() < ptPidTpcMax) {
         if (std::abs(trackPi.tpcNSigmaPi()) > nSigmaTpcMax) {
           hfSelLbToLcPiCandidate(statusLb);
           continue;
         }
-      if (trackPi.pt() > ptPidTofMin && trackPi.pt() < ptPidTofMax)
+      }
+      if (trackPi.pt() > ptPidTofMin && trackPi.pt() < ptPidTofMax) {
         if (std::abs(trackPi.tofNSigmaPi()) > nSigmaTofMax) {
           hfSelLbToLcPiCandidate(statusLb);
           continue;
         }
+      }
 
       hfSelLbToLcPiCandidate(1);
       // LOGF(debug, "Lb candidate selection successful, candidate should be selected");
