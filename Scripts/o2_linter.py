@@ -173,14 +173,14 @@ class TestStdPrefix(TestSpec):
     name = "std-prefix"
     message = "Use std:: prefix for names from the std namespace."
     suffixes = [".h", ".cxx", ".C"]
-    prefix_bad = "[^\w:.]"
-    patterns = ["vector<", "array[<\{\(]", "f?abs\(", "sqrt\(", "pow\(", "min\(", "max\(", "log\(", "exp\(", "sin\(", "cos\(", "tan\(", "atan\(", "atan2\("]
+    prefix_bad = r"[^\w:\.]"
+    patterns = [r"vector<", r"array[<\{\(]", r"f?abs\(", r"sqrt\(", r"pow\(", r"min\(", r"max\(", r"log\(", r"exp\(", r"sin\(", r"cos\(", r"tan\(", r"atan\(", r"atan2\("]
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
         for pattern in self.patterns:
-            if re.search(f"{self.prefix_bad}{pattern}", line):
+            if re.search(fr"{self.prefix_bad}{pattern}", line):
                 return False
             # occurrences = re.findall(pattern, line)
             # if occurrences:
@@ -194,18 +194,15 @@ class TestROOT(TestSpec):
     name = "root-entity"
     message = "Consider replacing ROOT entities with STD C++ or O2 entities."
     suffixes = [".h", ".cxx"]
-    keywords = ["TMath", "Double_t", "Float_t", "Int_t", "Bool_t"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
+        pattern = r"TMath|(U?(Int|Char|Short)|Double(32)?|Float(16)?|U?Long(64)?|Bool)_t"
         if is_comment_cpp(line):
             return True
-        for k in self.keywords:
-            if k in line:
-                return False
-        return True
+        return re.search(pattern, line) is None
 
 
 class TestPI(TestSpec):
@@ -213,18 +210,15 @@ class TestPI(TestSpec):
     name = "external-pi"
     message = "Consider using the PI constant (and its multiples) defined in o2::constants::math."
     suffixes = [".h", ".cxx"]
-    keywords = ["M_PI", "TMath::Pi", "TMath::TwoPi"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
+        pattern = r"M_PI|TMath::(Two)?Pi"
         if is_comment_cpp(line):
             return True
-        for k in self.keywords:
-            if k in line:
-                return False
-        return True
+        return re.search(pattern, line) is None
 
 
 class TestPdgDatabase(TestSpec):
@@ -239,9 +233,7 @@ class TestPdgDatabase(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        if "TDatabasePDG" in line:
-            return False
-        return True
+        return not "TDatabasePDG" in line
 
 
 class TestPdgCode(TestSpec):
@@ -253,9 +245,9 @@ class TestPdgCode(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        if re.search("->(GetParticle|Mass)\([+-]?[0-9]+\)", line):
+        if re.search(r"->(GetParticle|Mass)\([+-]?[0-9]+\)", line):
             return False
-        match = re.search("[Pp][Dd][Gg][\w]* = [+-]?([0-9]+);", line)
+        match = re.search(r"[Pp][Dd][Gg][\w]* = [+-]?([0-9]+);", line)
         if match:
             code = match.group(1)
             if code not in ("0", "1", "999"):
@@ -272,10 +264,10 @@ class TestPdgMass(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        pattern_pdg_code = "[+-]?(k[A-Z][a-zA-Z0-9]*|[0-9]+)"
-        if re.search(f"->GetParticle\({pattern_pdg_code}\)->Mass\(\)", line):
+        pattern_pdg_code = r"[+-]?(k[A-Z][a-zA-Z0-9]*|[0-9]+)"
+        if re.search(fr"->GetParticle\({pattern_pdg_code}\)->Mass\(\)", line):
             return False
-        if re.search(f"->Mass\({pattern_pdg_code}\)", line):
+        if re.search(fr"->Mass\({pattern_pdg_code}\)", line):
             return False
         return True
 
@@ -285,18 +277,15 @@ class TestLogging(TestSpec):
     name = "logging"
     message = "Consider using O2 logging (LOG, LOGF, LOGP)."
     suffixes = [".h", ".cxx"]
-    keywords = ["Printf(", "printf(", "cout <", "std::cout <"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and not "Macros/" in path
 
     def test_line(self, line: str) -> bool:
+        pattern = r"^([Pp]rintf\(|(std::)?cout <)"
         if is_comment_cpp(line):
             return True
-        for k in self.keywords:
-            if line.startswith(k):
-                return False
-        return True
+        return re.search(pattern, line) is None
 
 
 class TestConstRefInForLoop(TestSpec):
@@ -311,7 +300,7 @@ class TestConstRefInForLoop(TestSpec):
         if not line.startswith("for (") or " : " not in line:
             return True
         line = line[:line.index(" : ")] # keep only the iterator part
-        return True if re.search("\([\w]* ?const ?[\w]*&", line) else False
+        return True if re.search(r"\([\w]* ?const ?[\w]*&", line) else False
 
 
 class TestConstRefInSubscription(TestSpec):
@@ -332,7 +321,7 @@ class TestConstRefInSubscription(TestSpec):
                 continue
             if self.is_disabled(line):
                 continue
-            if re.search("^void process[\w]*\(", line):
+            if re.search(r"^void process[\w]*\(", line):
                 line_process = (i + 1)
                 i_closing = line.rfind(")")
                 i_start = line.find("(") + 1
@@ -348,7 +337,7 @@ class TestConstRefInSubscription(TestSpec):
             if line_process > 0 and n_parens_opened == 0:
                 # process arguments
                 # sanitise template arguments
-                template_args = re.findall("<[\w:, ]*>", arguments)
+                template_args = re.findall(r"<[\w:, ]*>", arguments)
                 if template_args:
                     for arg in template_args:
                         if ", " in arg:
@@ -356,7 +345,7 @@ class TestConstRefInSubscription(TestSpec):
                 words = arguments.split(", ")
                 # test
                 for arg in words:
-                    if not re.search("[\w<>:]* ?const ?[\w<>:]*&", arg):
+                    if not re.search(r"[\w<>:]* ?const ?[\w<>:]*&", arg):
                         passed = False
                         print_error(path, i + 1, self.name, f"Argument {arg} is not const&.")
                 line_process = 0
@@ -392,7 +381,7 @@ class TestDocumentationFile(TestSpec):
             if line.startswith(doc_prefix):
                 last_doc_line = (i + 1)
             for item in doc_items:
-                if re.search(f"^{doc_prefix} [\\\\@]{item['keyword']} +{item['pattern']}", line):
+                if re.search(fr"^{doc_prefix} [\\@]{item['keyword']} +{item['pattern']}", line):
                     item["found"] = True
                     # print_error(path, i + 1, self.name, f"Found \{item['keyword']}.")
                     break
