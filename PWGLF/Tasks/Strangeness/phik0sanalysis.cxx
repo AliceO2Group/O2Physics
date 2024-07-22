@@ -171,9 +171,10 @@ struct phik0shortanalysis {
   // Defining the type of the V0s
   using FullV0s = soa::Filtered<aod::V0Datas>;
 
-  // Defining the type of the tracks
+  // Defining the type of the tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
   using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
+  using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
 
   // Defining the binning policy for mixed event
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
