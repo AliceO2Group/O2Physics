@@ -32,6 +32,8 @@ public:
   void SetHistRegistry(HistogramRegistry* histReg) { mHistRegistry = histReg; }
 
   void FillHistograms(const Int_t fCentBin, Float_t det, Float_t v2, Float_t v3, Float_t v4);
+  void FillVnHistograms(const Int_t harmN, Float_t fCent, Float_t det, Float_t pT, Float_t vn);
+  void FillResolutionHistograms(Float_t fCent, Float_t det, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom);
   TComplex Q(const Int_t harmN, const Int_t p);
 
   void CreateHistograms() {
@@ -41,14 +43,17 @@ public:
     }
     
     mHistRegistry->add("FullCentrality", "FullCentrality", HistType::kTH1D, {{100, 0., 100.}}, true);
-    mHistRegistry->add("Centrality_0/fV2EP", "", {HistType::kTH2D, {{100, -0.15, 0.15},{3,0.5,3.5}}}, true);
-    mHistRegistry->add("Centrality_0/fV3EP", "", {HistType::kTH2D, {{100, -0.15, 0.15},{3,0.5,3.5}}}, true);
-    mHistRegistry->add("Centrality_0/fV4EP", "", {HistType::kTH2D, {{100, -0.15, 0.15},{3,0.5,3.5}}}, true);
-    mHistRegistry->add("Centrality_0/phi", "Phi", {HistType::kTH1D, {{100, 0., TMath::TwoPi()}}}, true);
+    mHistRegistry->add("fV2EP", "", {HistType::kTHnD, {{100, -0.15, 0.15}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true);
+    mHistRegistry->add("fV3EP", "", {HistType::kTHnD, {{100, -0.15, 0.15}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true);
+    mHistRegistry->add("fV4EP", "", {HistType::kTHnD, {{100, -0.15, 0.15}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true);
+    mHistRegistry->add("fResNumA", "", {HistType::kTHnD, {{100, -1.05, 1.05}, {3,1.5,4.5}, {3,0.5,3.5}, {100, 0., 100.}}}, true);
+    mHistRegistry->add("fResNumB", "", {HistType::kTHnD, {{100, -1.05, 1.05}, {3,1.5,4.5}, {3,0.5,3.5}, {100, 0., 100.}}}, true);
+    mHistRegistry->add("fResDenom", "", {HistType::kTHnD, {{100, -1.05, 1.05}, {3,1.5,4.5}, {3,0.5,3.5}, {100, 0., 100.}}}, true);
+    mHistRegistry->add("phi", "Phi", {HistType::kTH1D, {{100, 0., TMath::TwoPi()}}}, true);
 
-    for (UInt_t i = 1; i < 8; i++) {
-      mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
-    }
+    // for (UInt_t i = 1; i < 8; i++) {
+    //   mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
+    // }
   }
 
   EventPlaneHelper *epHelp;

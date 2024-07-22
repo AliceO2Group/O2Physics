@@ -61,3 +61,16 @@ void JEPFlowAnalysis::FillHistograms(const Int_t cBin, Float_t det, Float_t v2, 
       return;
   }
 }
+
+
+void JEPFlowAnalysis::FillVnHistograms(Float_t cent, Float_t det, Float_t pT, Float_t v2, Float_t v3, Float_t v4) {
+  mHistRegistry->fill(HIST("fV2EP"), v2, det, pT, cent, 1.);
+  mHistRegistry->fill(HIST("fV3EP"), v3, det, pT, cent, 1.);
+  mHistRegistry->fill(HIST("fV4EP"), v4, det, pT, cent, 1.);
+}
+
+void JEPFlowAnalysis::FillResolutionHistograms(Float_t cent, Float_t det, Float_t harmN, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom) {
+  mHistRegistry->fill(HIST("fResNumA"), ResNumA, det, harmN, cent, 1.);
+  mHistRegistry->fill(HIST("fResNumB"), ResNumB, det, harmN, cent, 1.);
+  mHistRegistry->fill(HIST("fResDenom"), ResDenom, det, harmN, cent, 1.);
+}

@@ -104,7 +104,7 @@ struct jEPFlowAnalysis {
     Float_t resNumA = helperEP.GetResolution(EP_A, EP_B, ind);
     Float_t resNumB = helperEP.GetResolution(EP_A, EP_C, ind);
     Float_t resDen = helperEP.GetResolution(EP_B, EP_C, ind);
-    if (debug )printf("EP_A: %.5f, EP_B: %.5f, ResAB: %.5f, Ind: %d\n", EP_A, EP_B, resNumA, ind);
+    if (debug) printf("EP_A: %.5f, EP_B: %.5f, ResAB: %.5f, Ind: %d\n", EP_A, EP_B, resNumA, ind);
     Float_t resolution = TMath::Sqrt(resNumA*resNumB/resDen);
     return resolution;
   }
@@ -114,7 +114,7 @@ struct jEPFlowAnalysis {
     if (cfgAddEvtSel && (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)
         || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))) return;
     
-    Int_t cBin = histManager.GetCentBin(coll.cent());
+    Float_t cent = coll.cent();
     Float_t EPs[3] = {0.};
     Float_t vn[3][3] = {{0.}};
     for (uint i = 0; i<3; i++) {
@@ -123,19 +123,24 @@ struct jEPFlowAnalysis {
       EPs[2] = helperEP.GetEventPlane(coll.qvecRe()[RefBId+3], coll.qvecRe()[RefBId+3], i+2);
 
       for (uint j=0; j<3; j++) {
-        Float_t resolution = ResolutionByEP(EPs[j%3],EPs[(j+1)%3],EPs[(j+2)%3], i+2);
+        Float_t resNumA = helperEP.GetResolution(EPs[j%3], EPs[(j+1)%3], i+1);
+        Float_t resNumB = helperEP.GetResolution(EPs[j%3], EPs[(j+2)%3], i+2);
+        Float_t resDenom = helperEP.GetResolution(EPs[(j+1)%3], EPs[(j+2)%3], i+1);
+        epAnalysis.FillResolutionHistograms(cent, float(j+1), float(i+2), resNumA, resNumB,resDenom)
+        // Float_t resolution = ResolutionByEP(EPs[j%3],EPs[(j+1)%3],EPs[(j+2)%3], i+2);
       
         if (debug) printf("Ind: %u, Res: %.5f\n", j, resolution);
         Float_t sumCos=0;
         for (auto& track: tracks) {
-          sumCos += TMath::Cos((i+2)*(track.phi()-EPs[j]));
+          Float_t vn = TMath::Cos((i+2)*(track.phi()-EPs[j]));
+          epAnalysis.FillHistograms(i+2, cent, float(j+1), track.pT(), vn );
         }
 
-        vn[i][j] = sumCos/(float(tracks.size())*resolution);
+        // vn[i][j] = sumCos/(float(tracks.size())*resolution);
       }
 
     }
-    for (uint j=0; j<3; j++) epAnalysis.FillHistograms(cBin, float(j+1), vn[0][j], vn[1][j], vn[2][j]);
+    // for (uint j=0; j<3; j++) epAnalysis.FillHistograms(cBin, float(j+1), vn[0][j], vn[1][j], vn[2][j]);
   }
 };
 
