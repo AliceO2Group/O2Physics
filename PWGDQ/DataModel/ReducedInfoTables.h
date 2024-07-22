@@ -95,6 +95,13 @@ DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
 DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
 DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2>> for reference flow
 DECLARE_SOA_COLUMN(M1111REF, m1111ref, float); //!  Weighted multiplicity of <<4>> for reference flow
+
+DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float); //! 
+DECLARE_SOA_COLUMN(QvecBPosIm, qvecBPosIm, float); //!  
+DECLARE_SOA_COLUMN(QvecBNegRe, qvecBNegRe, float); //!  
+DECLARE_SOA_COLUMN(QvecBNegIm, qvecBNegIm, float); //!  
+DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int); //!
+DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int); //!
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event information table
@@ -142,8 +149,8 @@ DECLARE_SOA_TABLE(ReducedEventsQvectorExtra, "AOD", "REQVECTOREXTRA", //!    Eve
                   reducedevent::S11A, reducedevent::S12A, reducedevent::S13A, reducedevent::S31A);
 
 DECLARE_SOA_TABLE(ReducedEventsQvectorCentr, "AOD", "REQVECTORCTR", //!    Event Q-vector information from central framework
-                  qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::QvecTPCposRe, qvec::QvecTPCposIm, qvec::QvecTPCnegRe, qvec::QvecTPCnegIm,
-                  qvec::SumAmplFT0A, qvec::SumAmplFT0C, qvec::SumAmplFT0M, qvec::SumAmplFV0A, qvec::NTrkTPCpos, qvec::NTrkTPCneg);
+                  qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::QvecFV0ARe, qvec::QvecFV0AIm, reducedevent::QvecBPosRe, reducedevent::QvecBPosIm, reducedevent::QvecBNegRe, reducedevent::QvecBNegIm,
+                  qvec::SumAmplFT0A, qvec::SumAmplFT0C, qvec::SumAmplFT0M, qvec::SumAmplFV0A, reducedevent::NTrkBPos, reducedevent::NTrkBNeg);
 
 DECLARE_SOA_TABLE(ReducedEventsRefFlow, "AOD", "REREFFLOW", //!    Event Ref Flow information
                   reducedevent::M11REF, reducedevent::M1111REF, reducedevent::CORR2REF, reducedevent::CORR4REF, cent::CentFT0C);
