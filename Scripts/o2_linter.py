@@ -17,7 +17,7 @@
 @date   2024-07-14
 """
 
-from abc import ABC #, abstractmethod
+from abc import ABC
 import argparse
 import os
 import re
@@ -73,7 +73,7 @@ def is_comment_cpp(line: str) -> bool:
 
 class TestSpec(ABC):
     """Prototype of a test class"""
-    name = "test template" # short name of the test
+    name = "test-template" # short name of the test
     message = "Test failed" # error message
     suffixes = [] # suffixes of files to test
     per_line = True # Test lines separately one by one.
@@ -82,12 +82,21 @@ class TestSpec(ABC):
         """Test whether the path matches the pattern for files to test."""
         return path.endswith(tuple(self.suffixes)) if self.suffixes else True
 
-    # @abstractmethod
+    def is_disabled(self, line: str, prefix_comment="//") -> bool:
+        """Detect whether the test is explicitly disabled."""
+        prefix_disable = "o2-linter: disable="
+        for prefix in [prefix_comment, prefix_disable]:
+            if not prefix in line:
+                return False
+            line = line[(line.find(prefix) + len(prefix)):] # Strip away part before prefix.
+        if self.name in line:
+            return True
+        return False
+
     def test_line(self, line: str) -> bool:
         """Test a line."""
         raise NotImplementedError()
 
-    # @abstractmethod
     def test_file(self, path : str, content) -> bool:
         """Test a file in a way that cannot be done line by line."""
         raise NotImplementedError()
@@ -105,6 +114,8 @@ class TestSpec(ABC):
                 if not line:
                     continue
                 # print(i + 1, line)
+                if self.is_disabled(line):
+                    continue
                 if not self.test_line(line):
                     passed = False
                     print_error(path, i + 1, self.name, self.message)
@@ -308,7 +319,6 @@ class TestConstRefInSubscription(TestSpec):
     name = "const-ref-in-process"
     message = "Use constant references for table subscriptions in process functions."
     suffixes = [".cxx"]
-    # suffixes = [".h"]
     per_line = False
 
     def test_file(self, path : str, content) -> bool:
@@ -319,6 +329,8 @@ class TestConstRefInSubscription(TestSpec):
         for i, line in enumerate(content):
             line = line.strip()
             if is_comment_cpp(line):
+                continue
+            if self.is_disabled(line):
                 continue
             if re.search("^void process[\w]*\(", line):
                 line_process = (i + 1)
@@ -612,6 +624,8 @@ class TestNameWorkflow(TestSpec):
         workflow_name = ""
         for i, line in enumerate(content):
             if not line.startswith("o2physics_add_dpl_workflow("):
+                continue
+            if self.is_disabled(line, "#"):
                 continue
             # Extract workflow name.
             workflow_name = line.strip().split("(")[1]
