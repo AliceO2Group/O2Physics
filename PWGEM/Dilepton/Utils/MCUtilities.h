@@ -32,6 +32,63 @@ enum class EM_HFeeType : int {
 };
 
 //_______________________________________________________________________
+template <typename TMCParticle1, typename TMCParticle2>
+int FindCommonMotherFrom2ProngsWithoutPDG(TMCParticle1 const& p1, TMCParticle2 const& p2)
+{
+  if (p1.globalIndex() == p2.globalIndex())
+    return -1; // mc particle p1 and p2 is identical. reject.
+
+  if (!p1.has_mothers())
+    return -1;
+  if (!p2.has_mothers())
+    return -1;
+
+  // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
+
+  int motherid1 = p1.mothersIds()[0];
+  int motherid2 = p2.mothersIds()[0];
+
+  // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
+
+  if (motherid1 != motherid2)
+    return -1;
+  return motherid1;
+}
+//_______________________________________________________________________
+template <typename TMCParticle1, typename TMCParticle2, typename TMCParticle3>
+int FindCommonMotherFrom3ProngsWithoutPDG(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticle3 const& p3)
+{
+  if (p1.globalIndex() == p2.globalIndex())
+    return -1; // mc particle p1 and p2 are identical. reject.
+  if (p2.globalIndex() == p3.globalIndex())
+    return -1; // mc particle p2 and p3 are identical. reject.
+  if (p3.globalIndex() == p1.globalIndex())
+    return -1; // mc particle p3 and p1 are identical. reject.
+
+  if (!p1.has_mothers())
+    return -1;
+  if (!p2.has_mothers())
+    return -1;
+  if (!p3.has_mothers())
+    return -1;
+
+  // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
+
+  int motherid1 = p1.mothersIds()[0];
+  int motherid2 = p2.mothersIds()[0];
+  int motherid3 = p3.mothersIds()[0];
+
+  // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
+
+  if (motherid1 != motherid2)
+    return -1;
+  if (motherid2 != motherid3)
+    return -1;
+  if (motherid3 != motherid1)
+    return -1;
+  return motherid1;
+}
+//_______________________________________________________________________
 template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
 int FindCommonMotherFrom2Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, const int expected_pdg1, const int expected_pdg2, const int expected_mother_pdg, TMCParticles const& mcparticles)
 {
