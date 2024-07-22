@@ -188,10 +188,10 @@ struct lmeehfcocktailbeauty {
 
   HistogramRegistry registry{"registry", {}};
 
-  std::vector<std::vector<std::shared_ptr<TH1>>> hEta, hPt, hULS_Mee;
-  std::vector<std::vector<std::shared_ptr<TH2>>> hPtEta, hULS_MeePtee;
-  std::vector<std::shared_ptr<TH1>> hLSpp_Mee, hLSmm_Mee;
-  std::vector<std::shared_ptr<TH2>> hLSpp_MeePtee, hLSmm_MeePtee;
+  std::vector<std::vector<std::shared_ptr<TH1>>> hEta, hPt, hULS_Mee_type;
+  std::vector<std::vector<std::shared_ptr<TH2>>> hPtEta, hULS_MeePtee_type;
+  std::vector<std::shared_ptr<TH1>> hLSpp_Mee, hLSmm_Mee, hLSpp_Mee_type, hLSmm_Mee_type, hULS_Mee;
+  std::vector<std::shared_ptr<TH2>> hLSpp_MeePtee, hLSmm_MeePtee, hLSpp_MeePtee_type, hLSmm_MeePtee_type, hULS_MeePtee;
 
   MyConfigs myConfigs;
 
@@ -207,7 +207,7 @@ struct lmeehfcocktailbeauty {
   {
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
 
-    const char* typeNamesPairULS[4] = {"Be_Be", "BCe_BCe", "BCe_Be_SameB", "allB"};
+    const char* typeNamesPairULS[3] = {"Be_Be", "BCe_BCe", "BCe_Be_SameB"};
     const char* typeNamesPairLS = "BCe_Be_DiffB";
     const char* typeNamesSingle[2] = {"be", "bce"};
     const char* typeTitlesSingle[2] = {"b->e", "b->c->e"};
@@ -233,22 +233,30 @@ struct lmeehfcocktailbeauty {
 
     // pair histograms
     // ULS
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
       std::vector<std::shared_ptr<TH1>> hMee_temp;
       std::vector<std::shared_ptr<TH2>> hMeePtee_temp;
       for (int j = 0; j < 3; j++) {
         hMee_temp.push_back(registry.add<TH1>(Form("ULS_Mee_%s_%s", typeNamesPairULS[i], stageNames[j]), Form("ULS Mee %s %s", typeNamesPairULS[i], stageNames[j]), HistType::kTH1F, {mass_axis}, true));
         hMeePtee_temp.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s_%s", typeNamesPairULS[i], stageNames[j]), Form("ULS Mee vs. Ptee %s %s", typeNamesPairULS[i], stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
       }
-      hULS_Mee.push_back(hMee_temp);
-      hULS_MeePtee.push_back(hMeePtee_temp);
+      hULS_Mee_type.push_back(hMee_temp);
+      hULS_MeePtee_type.push_back(hMeePtee_temp);
+    }
+    for (int j = 0; j < 3; j++) {
+      hULS_Mee.push_back(registry.add<TH1>(Form("ULS_Mee_%s", stageNames[j]), Form("ULS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s", stageNames[j]), Form("ULS Mee vs. Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
     // LS
     for (int j = 0; j < 3; j++) {
-      hLSpp_Mee.push_back(registry.add<TH1>(Form("LSpp_Mee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS++ Mee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-      hLSmm_Mee.push_back(registry.add<TH1>(Form("LSmm_Mee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS-- Mee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-      hLSpp_MeePtee.push_back(registry.add<TH2>(Form("LSpp_MeePtee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS++ Mee vs. Ptee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
-      hLSmm_MeePtee.push_back(registry.add<TH2>(Form("LSmm_MeePtee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS-- Mee vs. Ptee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLSpp_Mee_type.push_back(registry.add<TH1>(Form("LSpp_Mee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS++ Mee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLSmm_Mee_type.push_back(registry.add<TH1>(Form("LSmm_Mee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS-- Mee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLSpp_MeePtee_type.push_back(registry.add<TH2>(Form("LSpp_MeePtee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS++ Mee vs. Ptee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLSmm_MeePtee_type.push_back(registry.add<TH2>(Form("LSmm_MeePtee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS-- Mee vs. Ptee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLSpp_Mee.push_back(registry.add<TH1>(Form("LSpp_Mee_%s", stageNames[j]), Form("LS++ Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLSmm_Mee.push_back(registry.add<TH1>(Form("LSmm_Mee_%s", stageNames[j]), Form("LS-- Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLSpp_MeePtee.push_back(registry.add<TH2>(Form("LSpp_MeePtee_%s", stageNames[j]), Form("LS++ Mee vs. Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLSmm_MeePtee.push_back(registry.add<TH2>(Form("LSmm_MeePtee_%s", stageNames[j]), Form("LS-- Mee vs. Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
   }
 
@@ -270,49 +278,70 @@ struct lmeehfcocktailbeauty {
       auto const positronsGrouped = Positrons->sliceBy(perCollision, collision.globalIndex());
       // ULS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
+
+
+        if ( (particle1.cHadronId() == particle2.cHadronId()) || (particle1.bHadronId() == particle2.bHadronId())){
+          LOG(info) << "XXXXXXXXXXXXX ths should not be here anymore";
+        }
+
         if (myConfigs.fConfigCheckPartonic) {
           if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
             continue;
         }
         int type = IsHF(particle1, particle2, mcParticlesAll);
-        if (type == static_cast<int>(EM_HFeeType::kUndef))
-          continue;
-        if ((type < static_cast<int>(EM_HFeeType::kBe_Be)) || (type > static_cast<int>(EM_HFeeType::kBCe_Be_SameB))) {
-          LOG(error) << "Something is wrong here. There should only be pairs of type kBe_Be = 1, kBCe_BCe = 2 and kBCe_Be_SameB = 3 left at this point.";
+        if (myConfigs.fConfigCheckPartonic){
+          if ((type < static_cast<int>(EM_HFeeType::kBe_Be)) || (type > static_cast<int>(EM_HFeeType::kBCe_Be_SameB))) {
+            LOG(error) << "Something is wrong here. There should only be pairs of type kBe_Be = 1, kBCe_BCe = 2 and kBCe_Be_SameB = 3 left at this point.";
+          }
         }
-        doPair(particle1, particle2, hULS_Mee[type - 1], hULS_MeePtee[type - 1], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
-        doPair(particle1, particle2, hULS_Mee[3], hULS_MeePtee[3], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax); // fill the 'allB' histograms that holds the sum of the others
+        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        if (type == static_cast<int>(EM_HFeeType::kBe_Be) || type == static_cast<int>(EM_HFeeType::kBCe_BCe) || type == static_cast<int>(EM_HFeeType::kBCe_Be_SameB)){
+          doPair(particle1, particle2, hULS_Mee_type[type - 1], hULS_MeePtee_type[type - 1], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        }
+        
       }
       // LS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
+
+        if ( (particle1.cHadronId() == particle2.cHadronId()) || (particle1.bHadronId() == particle2.bHadronId())){
+          LOG(info) << "XXXXXXXXXXXXX ths should not be here anymore";
+        }
+
         if (myConfigs.fConfigCheckPartonic) {
           if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
             continue;
         }
         int type = IsHF(particle1, particle2, mcParticlesAll);
-        if (type == static_cast<int>(EM_HFeeType::kUndef))
-          continue;
         if (myConfigs.fConfigCheckPartonic) {
           if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
             LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
           }
         }
         doPair(particle1, particle2, hLSmm_Mee, hLSmm_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        if (type==static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)){
+          doPair(particle1, particle2, hLSmm_Mee_type, hLSmm_MeePtee_type, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        }
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
+
+        if ( (particle1.cHadronId() == particle2.cHadronId()) || (particle1.bHadronId() == particle2.bHadronId())){
+          LOG(info) << "XXXXXXXXXXXXX ths should not be here anymore";
+        }
+
         if (myConfigs.fConfigCheckPartonic) {
           if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
             continue;
         }
         int type = IsHF(particle1, particle2, mcParticlesAll);
-        if (type == static_cast<int>(EM_HFeeType::kUndef))
-          continue;
         if (myConfigs.fConfigCheckPartonic) {
           if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
             LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
           }
         }
         doPair(particle1, particle2, hLSpp_Mee, hLSpp_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        if (type==static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)){
+          doPair(particle1, particle2, hLSpp_Mee_type, hLSpp_MeePtee_type, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        }
       }
     }
   }
@@ -330,8 +359,10 @@ struct lmeehfcocktailcharm {
 
   HistogramRegistry registry{"registry", {}};
 
-  std::vector<std::shared_ptr<TH1>> hEta, hPt, hULS_Mee, hLS_Mee;
-  std::vector<std::shared_ptr<TH2>> hPtEta, hULS_MeePtee, hLS_MeePtee;
+  std::vector<std::shared_ptr<TH1>> hEta, hPt, hULS_Mee, hULS_Mee_type, hLSpp_Mee, hLSmm_Mee;
+  std::vector<std::shared_ptr<TH2>> hPtEta, hULS_MeePtee, hULS_MeePtee_type, hLSpp_MeePtee, hLSmm_MeePtee;
+  std::vector<std::shared_ptr<TH1>> hULS_Mee_wPartonicCheck, hULS_Mee_type_wPartonicCheck, hLSpp_Mee_wPartonicCheck, hLSmm_Mee_wPartonicCheck;
+  std::vector<std::shared_ptr<TH2>> hULS_MeePtee_wPartonicCheck, hULS_MeePtee_type_wPartonicCheck, hLSpp_MeePtee_wPartonicCheck, hLSmm_MeePtee_wPartonicCheck;
 
   MyConfigs myConfigs;
 
@@ -366,12 +397,27 @@ struct lmeehfcocktailcharm {
     // pair histograms
     // ULS
     for (int j = 0; j < 3; j++) {
-      hULS_Mee.push_back(registry.add<TH1>(Form("ULS_Mee_%s_%s", typeNamesPairULS, stageNames[j]), Form("ULS Mee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-      hULS_MeePtee.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s_%s", typeNamesPairULS, stageNames[j]), Form("ULS MeePtee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hULS_Mee.push_back(registry.add<TH1>(Form("ULS_Mee_%s", stageNames[j]), Form("ULS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s", stageNames[j]), Form("ULS Mee vs Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hULS_Mee_type.push_back(registry.add<TH1>(Form("ULS_Mee_%s_%s", typeNamesPairULS, stageNames[j]), Form("ULS Mee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee_type.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s_%s", typeNamesPairULS, stageNames[j]), Form("ULS Mee vs Ptee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+
+      hULS_Mee_wPartonicCheck.push_back(registry.add<TH1>(Form("ULS_Mee_%s", stageNames[j]), Form("ULS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s", stageNames[j]), Form("ULS Mee vs Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hULS_Mee_type_wPartonicCheck.push_back(registry.add<TH1>(Form("ULS_Mee_%s_%s", typeNamesPairULS, stageNames[j]), Form("ULS Mee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee_type_wPartonicCheck.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s_%s", typeNamesPairULS, stageNames[j]), Form("ULS Mee vs Ptee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
+    // LS
     for (int j = 0; j < 3; j++) {
-      hLS_Mee.push_back(registry.add<TH1>(Form("LS_Mee_%s_%s", typeNamesPairULS, stageNames[j]), Form("LS Mee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-      hLS_MeePtee.push_back(registry.add<TH2>(Form("LS_MeePtee_%s_%s", typeNamesPairULS, stageNames[j]), Form("LS MeePtee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLSpp_Mee.push_back(registry.add<TH1>(Form("LSpp_Mee_%s", stageNames[j]), Form("LS++ Mee %s",  stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLSpp_MeePtee.push_back(registry.add<TH2>(Form("LSpp_MeePtee_%s", stageNames[j]), Form("LS++ Mee vs Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLSmm_Mee.push_back(registry.add<TH1>(Form("LSmm_Mee_%s", stageNames[j]), Form("LS-- Mee %s",  stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLSmm_MeePtee.push_back(registry.add<TH2>(Form("LSmm_MeePtee_%s", stageNames[j]), Form("LS-- Mee vs Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+
+      hLSpp_Mee_wPartonicCheck.push_back(registry.add<TH1>(Form("LSpp_Mee_wPartonicCheck_%s", stageNames[j]), Form("LS++ Mee wPartonicCheck%s",  stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLSpp_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("LSpp_MeePtee_wPartonicCheck_%s", stageNames[j]), Form("LS++ Mee vs Ptee wPartonicCheck%s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLSmm_Mee_wPartonicCheck.push_back(registry.add<TH1>(Form("LSmm_Mee_wPartonicCheck_%s", stageNames[j]), Form("LS-- Mee wPartonicCheck %s",  stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLSmm_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("LSmm_MeePtee_wPartonicCheck_%s", stageNames[j]), Form("LS-- Mee vs Ptee wPartonicCheck %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
   }
 
@@ -392,29 +438,52 @@ struct lmeehfcocktailcharm {
       auto const positronsGrouped = Positrons->sliceBy(perCollision, collision.globalIndex());
       // ULS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
-            continue;
+
+        if ( (particle1.cHadronId() == particle2.cHadronId()) || (particle1.bHadronId() == particle2.bHadronId())){
+          LOG(info) << "XXXXXXXXXXXXX ths should not be here anymore";
         }
-        if (IsHF(particle1, particle2, mcParticlesAll) != static_cast<int>(EM_HFeeType::kCe_Ce)) {
-          LOG(error) << "Something is wrong here. There should only be pairs of type kCe_Ce = 0 left at this point.";
-        }
+
+        int type = IsHF(particle1, particle2, mcParticlesAll);
         doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        if (type == static_cast<int>(EM_HFeeType::kCe_Ce)){
+          doPair(particle1, particle2, hULS_Mee_type, hULS_MeePtee_type, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        }
+
+        if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
+          continue;
+        if (type != static_cast<int>(EM_HFeeType::kCe_Ce)) {
+          LOG(error) << "Something is wrong here. There should only be pairs of type kCe_Ce = 0 left at this point.";
+          LOG(info) << "============================== type = " << type;
+        }
+        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        if (type == static_cast<int>(EM_HFeeType::kCe_Ce)){
+          doPair(particle1, particle2, hULS_Mee_type_wPartonicCheck, hULS_MeePtee_type_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        }
       }
       // LS
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
-            continue;
+
+        if ( (particle1.cHadronId() == particle2.cHadronId()) || (particle1.bHadronId() == particle2.bHadronId())){
+          LOG(info) << "XXXXXXXXXXXXX ths should not be here anymore";
         }
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        doPair(particle1, particle2, hLSmm_Mee, hLSmm_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
+          continue;
+        doPair(particle1, particle2, hLSmm_Mee_wPartonicCheck, hLSmm_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
-            continue;
+
+        if ( (particle1.cHadronId() == particle2.cHadronId()) || (particle1.bHadronId() == particle2.bHadronId())){
+          LOG(info) << "XXXXXXXXXXXXX ths should not be here anymore";
         }
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        doPair(particle1, particle2, hLSpp_Mee, hLSpp_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
+          continue;
+        doPair(particle1, particle2, hLSpp_Mee_wPartonicCheck, hLSpp_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
     }
   }
