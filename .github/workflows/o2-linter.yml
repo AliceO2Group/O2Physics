@@ -31,5 +31,6 @@ jobs:
         run: |
           # Diff against the common ancestor of the source branch and the target branch.
           files=$(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
-          python Scripts/o2_linter.py -g $files
+          [ ${{ github.event_name }} == 'pull_request' ] && options="-g"
+          python Scripts/o2_linter.py $options $files
           done
