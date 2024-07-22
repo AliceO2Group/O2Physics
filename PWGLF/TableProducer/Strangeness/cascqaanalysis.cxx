@@ -139,18 +139,18 @@ struct cascqaanalysis {
       registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
       registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2F, {nChargedFT0MGenAxis, eventTypeAxis}});
       registry.add("hNchFV0AGenEvType", "hNchFV0AGenEvType", {HistType::kTH2F, {nChargedFV0AGenAxis, eventTypeAxis}});
-
       registry.add("hCentFT0M_genMC", "hCentFT0M_genMC", {HistType::kTH2F, {centFT0MAxis, eventTypeAxis}});
     }
 
-    registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
-    registry.add("hFV0ApvContr", "hFV0ApvContr", {HistType::kTH3F, {centFV0AAxis, multNTracksAxis, eventTypeAxis}});
+    registry.add("hCentFT0M_rec", "hCentFT0M_rec", {HistType::kTH2F, {centFT0MAxis, eventTypeAxis}});
 
     if (multQA) {
       if (isMC) {
         // Rec. lvl
         registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
       }
+      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFV0ApvContr", "hFV0ApvContr", {HistType::kTH3F, {centFV0AAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3F, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
       registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2F, {signalFT0MAxis, signalFV0AAxis}});
@@ -342,10 +342,11 @@ struct cascqaanalysis {
     auto tracksGroupedGlobal = globalTracksIUEta05->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int nTracksGlobal = tracksGroupedGlobal.size();
 
-    registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), nTracksPVcontr, evType);
-    registry.fill(HIST("hFV0ApvContr"), collision.centFV0A(), nTracksPVcontr, evType);
+    registry.fill(HIST("hCentFT0M_rec"), collision.centFT0M(), evType);
 
     if (multQA) {
+      registry.fill(HIST("hFT0MpvContr"), collision.centFT0M(), nTracksPVcontr, evType);
+      registry.fill(HIST("hFV0ApvContr"), collision.centFV0A(), nTracksPVcontr, evType);
       registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evType);
       registry.fill(HIST("hFV0AFT0M"), collision.centFV0A(), collision.centFT0M(), evType);
       registry.fill(HIST("hFT0MFV0Asignal"), collision.multFT0A() + collision.multFT0C(), collision.multFV0A());
@@ -459,13 +460,13 @@ struct cascqaanalysis {
       evType++;
     }
 
-    registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
-    registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
-
-    registry.fill(HIST("hFT0MpvContr"), mcCollision.centFT0M(), nTracksPVcontr, evType);
-    registry.fill(HIST("hFV0ApvContr"), 0, nTracksPVcontr, evType); // mcCollision.centFV0A() to be added
+    registry.fill(HIST("hCentFT0M_rec"), mcCollision.centFT0M(), evType);
 
     if (multQA) {
+      registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
+      registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
+      registry.fill(HIST("hFT0MpvContr"), mcCollision.centFT0M(), nTracksPVcontr, evType);
+      registry.fill(HIST("hFV0ApvContr"), 0, nTracksPVcontr, evType); // mcCollision.centFV0A() to be added
       registry.fill(HIST("hFT0Mglobal"), mcCollision.centFT0M(), nTracksGlobal, evType);
       registry.fill(HIST("hFV0AFT0M"), 0, mcCollision.centFT0M(), evType); // mcCollision.centFV0A() to be added
       registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
