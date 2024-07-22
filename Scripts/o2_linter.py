@@ -380,7 +380,7 @@ class TestDocumentationFile(TestSpec):
             if line.startswith(doc_prefix):
                 last_doc_line = (i + 1)
             for item in doc_items:
-                if re.search(f"^{doc_prefix} [\\\\@]{item['keyword']} {item['pattern']}", line):
+                if re.search(f"^{doc_prefix} [\\\\@]{item['keyword']} +{item['pattern']}", line):
                     item["found"] = True
                     # print_error(path, i + 1, self.name, f"Found \{item['keyword']}.")
                     break
@@ -390,7 +390,7 @@ class TestDocumentationFile(TestSpec):
         if not passed:
             for item in doc_items:
                 if not item["found"]:
-                    print_error(path, last_doc_line, self.name, f"Documentation for \{item['keyword']} is missing or incorrect.")
+                    print_error(path, last_doc_line, self.name, f"Documentation for \{item['keyword']} is missing, incorrect or misplaced.")
         return passed
 
 
@@ -764,7 +764,7 @@ class TestHfNameFileWorkflow(TestSpec):
 class TestHfNameConfigurable(TestSpec):
     """PWGHF: Test names of configurables."""
     name = "PWGHF: Configurable names"
-    message = "Use camelCase for Configurable names and use the same name for the struct member as for the JSON string."
+    message = "Use lowerCamelCase for Configurable names and use the same name for the struct member as for the JSON string."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
