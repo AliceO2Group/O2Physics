@@ -26,10 +26,10 @@ jobs:
           # git config --global user.name "Nemo" # required on some servers
           # git remote add upstream https://github.com/AliceO2Group/Run3Analysisvalidation.git || exit 1
           # git fetch upstream ${{ env.MAIN_BRANCH }} || exit 1
-          git fetch origin ${{ env.MAIN_BRANCH }} || exit 1
+          # git fetch origin ${{ env.MAIN_BRANCH }} || exit 1
       - name: Run tests
         run: |
           # Diff against the common ancestor of the source branch and the target branch.
-          files=$(git diff --diff-filter d --name-only ${{ env.MAIN_BRANCH }}...)
+          files=$(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
           python Scripts/o2_linter.py -g $files
           done
