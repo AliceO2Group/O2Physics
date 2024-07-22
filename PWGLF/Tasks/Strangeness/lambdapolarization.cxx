@@ -368,7 +368,7 @@ struct lambdapolarization {
     QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
 
-    if (collision.qvecAmp[DetId] < 1e-5 || collision.qvecAmp[RefAId] < 1e-5 || collision.qvecAmp[RefBId] < 1e-5)
+    if (collision.qvecAmp()[DetId] < 1e-5 || collision.qvecAmp()[RefAId] < 1e-5 || collision.qvecAmp()[RefBId] < 1e-5)
       return;
 
     if (nmode == 2) {
