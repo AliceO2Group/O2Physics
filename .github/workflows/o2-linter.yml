@@ -28,6 +28,7 @@ jobs:
       #     git fetch upstream ${{ env.MAIN_BRANCH }} || exit 1
       - name: Run tests
         run: |
+          git remote -v
           # Diff against the common ancestor of the source branch and the target branch.
           files=$(git diff --diff-filter d --name-only ${{ env.MAIN_BRANCH }}...)
           python Scripts/o2_linter.py -g $files
