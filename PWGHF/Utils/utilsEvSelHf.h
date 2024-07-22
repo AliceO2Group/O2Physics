@@ -288,11 +288,15 @@ struct HfEventSelectionMc {
   /// \param mcCollision MC collision to test against the selection criteria
   /// \return a bitmask with the event selections not satisfied by the analysed collision
   template <typename TBc, typename TMcColl>
-  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
+  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, float& centrality, float centralityMin, float centralityMax)
   {
     uint16_t rejectionMask{0};
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
+
+    if (centrality < centralityMin || centrality > centralityMax) {
+      SETBIT(rejectionMask, EventRejection::Centrality);
+    }
 
     /// Sel8 trigger selection
     if (useSel8Trigger && (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {

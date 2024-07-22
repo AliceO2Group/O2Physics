@@ -453,6 +453,12 @@ struct HfCandidateCreator3ProngExpressions {
   Produces<aod::HfCand3ProngMcRec> rowMcMatchRec;
   Produces<aod::HfCand3ProngMcGen> rowMcMatchGen;
 
+// Configuration
+  o2::framework::Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
+  o2::framework::Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
+  o2::framework::Configurable<int> centralityEstimator{"centralityEstimator", 0, "Centrality estimator: 0 - FT0C, 1 - FT0M"};
+
   bool createDplus{false};
   bool createDs{false};
   bool createLc{false};
@@ -461,6 +467,9 @@ struct HfCandidateCreator3ProngExpressions {
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   HistogramRegistry registry{"registry"};
+
+  using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::Mults>;
+  PresliceUnsorted<CCs> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   void init(InitContext& initContext)
   {
@@ -497,6 +506,7 @@ struct HfCandidateCreator3ProngExpressions {
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
+                 CCs const& collInfos,
                  aod::McCollisions const&,
                  BCsInfo const&)
   {
@@ -615,15 +625,46 @@ struct HfCandidateCreator3ProngExpressions {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
+      // Reject particles from background events
+      if (particle.fromBackgroundEvent() && rejectBackground) {
+        continue;
+      }
       flag = 0;
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
       std::vector<int> idxBhadMothers{};
 
+      // Slice the collisions table to get the collision info for the current MC collision
       auto mcCollision = particle.mcCollision();
-
-      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+      float centrality{-1.f};
+      float mult{-1.f};
+      // Loop over the collisions in the current MC collision, and select the one with the highest FT0C multiplicity
+      for (const auto& collision : collSlice) {
+        float multColl{-1.f};
+        float centColl{-1.f};
+        switch (centralityEstimator) {
+          case 0: // FT0C
+            multColl = collision.multFT0C();
+            centColl = collision.centFT0C();
+            break;
+          case 1: // FT0M
+            multColl = collision.multFT0M();
+            centColl = collision.centFT0M();
+            break;
+          default:
+            LOG(info) << "Unknown centrality estimator, fallback to FT0C";
+            multColl = collision.multFT0C();
+            centColl = collision.centFT0C();
+            break;
+        }
+        if (mult < multColl) {
+          mult = multColl;
+          centrality = centColl;
+        }
+      } // end loop over collisions
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision, centrality, centralityMin, centralityMax);
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
