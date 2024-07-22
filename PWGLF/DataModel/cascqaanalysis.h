@@ -130,7 +130,7 @@ DECLARE_SOA_COLUMN(BDTResponseOmega, bdtResponseOmega, float);
 DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::CollisionZ,
                   mycascades::CentFT0M, mycascades::CentFV0A,
-                  mycascades::MultFT0M, mycascades::MultFV0A, 
+                  mycascades::MultFT0M, mycascades::MultFV0A,
                   mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
                   mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
@@ -177,8 +177,8 @@ DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);
 DECLARE_SOA_COLUMN(NAssocColl, nAssocColl, int); // Number of reconstructed collisions assoceated to the generated one of this cascade
 DECLARE_SOA_COLUMN(NChInFT0M, nChInFT0M, float); // Number of charged particles in FT0M acceptance
 DECLARE_SOA_COLUMN(NChInFV0A, nChInFV0A, float); // Number of charged particles in FV0A acceptance
-DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float); // centr. (mult.) % FT0M
-DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float); // centr. (mult.) % FV0A
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);   // centr. (mult.) % FT0M
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);   // centr. (mult.) % FV0A
 DECLARE_SOA_COLUMN(AssCollisionTypeFilterBitMask, assCollisionTypeFilterBitMask, uint8_t);
 DECLARE_SOA_COLUMN(McCollisionTypeFilterBitMask, mcCollisionTypeFilterBitMask, uint8_t);
 
@@ -200,7 +200,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1, isINELgt1, //! True if the Event belongs t
 DECLARE_SOA_TABLE(MyMCCascades, "AOD", "MYMCCASCADES", o2::soa::Index<>,
                   myMCcascades::CollisionZ, myMCcascades::Sign, myMCcascades::PdgCode,
                   myMCcascades::Y, myMCcascades::Eta, myMCcascades::Phi, myMCcascades::Pt,
-                  myMCcascades::IsPrimary, myMCcascades::NAssocColl, 
+                  myMCcascades::IsPrimary, myMCcascades::NAssocColl,
                   myMCcascades::NChInFT0M, myMCcascades::NChInFV0A,
                   myMCcascades::CentFT0M, myMCcascades::CentFV0A,
                   myMCcascades::AssCollisionTypeFilterBitMask,

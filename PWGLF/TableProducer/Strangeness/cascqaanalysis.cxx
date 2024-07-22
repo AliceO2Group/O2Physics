@@ -394,7 +394,7 @@ struct cascqaanalysis {
           float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
           float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
 
-          mycascades(collision.posZ(), 
+          mycascades(collision.posZ(),
                      collision.centFT0M(), collision.centFV0A(),
                      collision.multFT0M(), collision.multFV0A(),
                      casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
@@ -416,8 +416,8 @@ struct cascqaanalysis {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   void processMCrec(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels,
-                    aod::PVMults, aod::FT0Mults, aod::FV0Mults,
-                    aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
+                              aod::PVMults, aod::FT0Mults, aod::FV0Mults,
+                              aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                     aod::V0Datas const&,
                     soa::Filtered<LabeledCascades> const& Cascades,
                     DauTracks const&,
@@ -672,7 +672,7 @@ struct cascqaanalysis {
       }
       myMCcascades(mcCollision.posZ(), sign, mcParticle.pdgCode(),
                    mcParticle.y(), mcParticle.eta(), mcParticle.phi(), mcParticle.pt(),
-                   mcParticle.isPhysicalPrimary(), nAssocColl, 
+                   mcParticle.isPhysicalPrimary(), nAssocColl,
                    nchFT0, nchFV0,
                    mcCollision.centFT0M(), 0, // mcCollision.centFV0A() to be added
                    flagsAssoc,
