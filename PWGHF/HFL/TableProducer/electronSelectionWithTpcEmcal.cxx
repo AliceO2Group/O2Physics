@@ -1,686 +1,338 @@
-#include "Pythia8/HeavyIons.h"
-#include "Pythia8/Pythia.h"
-#include "Pythia8Plugins/ColourReconnectionHooks.h"
-#include "TApplication.h"
-#include "TFile.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TMath.h"
-#include <THnSparse.h>
-#include <iostream>
-#include <new>
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
 
-using namespace std;
-Double_t pi = M_PI;
+/// \file electronSelectionWithTpcEmcal.cxx
+/// \brief Task used to electron selection with tpc and emcal.
+/// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
+/// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
 
-int main(int argc, char *argv[]) {
+#include <boost/move/detail/meta_utils_core.hpp>
+#include "THnSparse.h"
 
-  Pythia8::Pythia pythia;
-  int multBins = 500;
-  int fNDelPhiBins = 32;
+#include "DataFormatsEMCAL/AnalysisCluster.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
-  int seed = 0;
-  int nevents = 1000;
-  for (int ig = 0; ig < argc; ++ig) {
-    TString str = argv[ig];
-    Printf("str %d %s", ig, argv[ig]);
-    if (str.Contains("--events")) {
-      sscanf(argv[ig + 1], "%d", &nevents);
-    }
-    if (str.Contains("--seed")) {
-      sscanf(argv[ig + 1], "%d", &seed);
-    }
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "PWGJE/DataModel/EMCALClusters.h"
+
+#include "PWGHF/HFL/DataModel/ElectronSelectionTable.h"
+
+using namespace o2;
+using namespace o2::constants::physics;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::soa;
+
+struct HfElectronSelectionWithTpcEmcal {
+
+  Produces<aod::HfSelEl> electronSel;
+  // Configurables
+  // EMCal Cluster information
+  Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
+
+  // Event Selection
+  Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
+  Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
+
+  // Track selection
+  Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 0.5f, "DCA XY cut"};
+  Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1.0f, "DCA Z cut"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.6f, "Eta range for electron tracks"};
+  Configurable<float> etaTrackMin{"etaTrackMin", -0.6f, "Eta range for electron tracks"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 3.0f, "Transverse MOmentum range for electron tracks"};
+
+  // EMcal and Dcal selection cut
+  Configurable<float> etaTrackDCalNegativeMax{"etaTrackDCalNegativeMax", -0.22f, "Eta range for electron Dcal tracks"};
+  Configurable<float> etaTrackDCalNegativeMin{"etaTrackDCalNegativeMin", -0.6f, "Eta range for electron tracks"};
+  Configurable<float> etaTrackDCalPositiveMax{"etaTrackDCalPositiveMax", 0.6f, "Eta range for electron Dcal tracks"};
+  Configurable<float> etaTrackDCalPositiveMin{"etaTrackDCalPositiveMin", 0.22f, "Eta range for electron tracks"};
+  Configurable<float> phiTrackDCalMax{"phiTrackDCalMax", 3.3621f, "phi range for electron tracks associated Dcal"};
+  Configurable<float> phiTrackDCalMin{"phiTrackDCalMin", 1.3955f, "phi range for electron tracks associated Dcal"};
+  Configurable<float> phiTrackEMCalMax{"phiTrackEMCalMax", 5.708f, "phi range for electron tracks associated Emcal"};
+  Configurable<float> phiTrackEMCalMin{"phiTrackEMCalMin", 4.5355f, "phi range for electron tracks associated Emcal"};
+
+  // Track and  EMCal Cluster matching cut
+  Configurable<float> deltaEtaMatchMin{"deltaEtaMatchMin", -0.013f, "Min Eta distance of EMCAL cluster to its closest track"};
+  Configurable<float> deltaEtaMatchMax{"deltaEtaMatchMax", 0.0171f, "Max Eta distance of EMCAL cluster to its closest track"};
+  Configurable<float> deltaPhiMatchMin{"deltaPhiMatchMin", -0.022f, "Min Phi distance of EMCAL cluster to its closest track"};
+  Configurable<float> deltaPhiMatchMax{"deltaPhiMatchMax", 0.028f, "Max Phi distance of EMCAL cluster to its closest track"};
+  Configurable<float> timeEmcClusterMax{"timeEmcClusterMax", 50.f, "EMCal Cluster time"};
+
+  // Inclusive electron selection cut
+  Configurable<float> eopElectronMin{"eopElectronMin", 0.8f, "Minimum E/p for electron tracks"};
+  Configurable<float> eopElectronMax{"eopElectronMax", 1.2f, "Maximum E/p for electron tracks"};
+  Configurable<float> m02EmcClusterElectronMax{"m02EmcClusterElectronMax", 0.9f, "max Electron  EMCal Cluster M02"};
+  Configurable<float> m02EmcClusterElectronMin{"m02EmcClusterElectronMin", 0.02f, "min Electron  EMCal Cluster M02"};
+  Configurable<float> m20EmcClusterElectronMax{"m20EmcClusterElectronMax", 1000.f, "max Electron  EMCal Cluster M20"};
+  Configurable<float> m20EmcClusterElectronMin{"m20EmcClusterElectronMin", 0.0f, "min Electron  EMCal Cluster M20"};
+  Configurable<float> tpcNsigmaElectronMin{"tpcNsigmaElectronMin", -0.5f, "min Electron TPCnsigma"};
+  Configurable<float> tpcNsigmaElectronMax{"tpcNsigmaElectronMax", 3.0f, "max Electron TPCnsigma"};
+
+  // Track and EMCal Cluster matching cut for Mc Reco
+  Configurable<float> mcRecDeltaEtaMatchMin{"mcRecDeltaEtaMatchMin", -0.013f, "McReco Min Eta distance of EMCAL cluster to its closest track"};
+  Configurable<float> mcRecDeltaEtaMatchMax{"mcRecDeltaEtaMatchMax", 0.0171f, "McReco Max Eta distance of EMCAL cluster to its closest track"};
+  Configurable<float> mcRecDeltaPhiMatchMin{"mcRecDeltaPhiMatchMin", -0.022f, "McReco Min Phi distance of EMCAL cluster to its closest track"};
+  Configurable<float> mcRecDeltaPhiMatchMax{"mcRecDeltaPhiMatchMax", 0.028f, "McReco Max Phi distance of EMCAL cluster to its closest track"};
+  Configurable<float> mcRecTimeEmcClusterMax{"mcRecTimeEmcClusterMax", 50.f, "McReco EMCal Cluster time"};
+
+  // Inclusive electron selection cut for Mc Reco
+  Configurable<float> mcRecM02EmcClusterElectronMax{"mcRecM02EmcClusterElectronMax", 0.9f, "MC Reco max Electron EMCal Cluster M02"};
+  Configurable<float> mcRecM02EmcClusterElectronMin{"mcRecM02EmcClusterElectronMin", 0.02f, "MC Reco min Electron  EMCal Cluster M02"};
+  Configurable<float> mcRecM20EmcClusterElectronMax{"mcRecM20EmcClusterElectronMax", 1000.f, "MC Reco max Electron  EMCal Cluster M20"};
+  Configurable<float> mcRecM20EmcClusterElectronMin{"mcRecM20EmcClusterElectronMin", 0.0f, "MC Reco min Electron   EMCal Cluster M20"};
+  Configurable<float> mcRecTpcNsigmaElectronMin{"mcRecTpcNsigmaElectronMin", -0.5f, "MC Reco min Electron TPCnsigma"};
+  Configurable<float> mcRecTpcNsigmaElectronMax{"mcRecTpcNsigmaElectronMax", 3.0f, "MC Reco max Electron TPCnsigma"};
+
+  using TableCollisions = o2::soa::Filtered<o2::soa::Join<aod::Collisions, aod::Mults, aod::EvSels>>;
+  using TableCollision = TableCollisions::iterator;
+  using TableTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::pidTPCFullEl, o2::aod::pidTOFFullEl, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>;
+
+  using McTableCollisions = o2::soa::Filtered<o2::soa::Join<TableCollisions, aod::McCollisionLabels>>;
+  using McTableCollision = McTableCollisions::iterator;
+  using McTableTracks = soa::Join<TableTracks, aod::McTrackLabels>;
+  using McTableEmcals = soa::Join<o2::aod::EMCALClusters, aod::EMCALMCClusters>;
+
+  Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > (uint16_t)1;
+  PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
+
+  HistogramConfigSpec hEmcClusterInfoSpec{HistType::kTHnSparseD, {{300, 0.0, 30.0}, {100, -0.9, 0.9}, {200, 0, 6.3}, {50, 0, 50}, {1800, -900, 900}}};
+  HistogramConfigSpec hDeltaPhiDeltaEtaEmcClusterTrackSpecEnergy{HistType::kTHnSparseD, {{400, -0.2, 0.2}, {400, -0.2, 0.2}, {600, -300, 300}, {300, 0.0, 30.0}}};
+  HistogramConfigSpec hPIDSpec{HistType::kTHnSparseD, {{60, 0, 3}, {500, 0.0, 50.0}, {500, 0., 50.}, {300, -15, 15}, {300, 0.0, 30.0}, {400, 0, 2}, {400, 0, 2}}};
+  HistogramConfigSpec hTrackAllInfoSpec{HistType::kTHnSparseD, {{480, 0, 160}, {300, -15, 15}, {500, 0., 50.}, {500, 0., 50.}, {100, -1.5, 1.5}, {100, 0, 7}, {3, 0, 3}}};
+  HistogramConfigSpec hTrackInfoSpec{HistType::kTHnSparseD, {{60, 0, 3}, {480, 0, 160}, {300, -15, 15}, {500, 0., 50.}, {500, 0., 50.}, {100, -1.5, 1.5}, {100, 0, 7}}};
+
+  HistogramRegistry registry{
+    "registry",
+    {{"hNevents", "No of events", {HistType::kTH1F, {{3, 1, 4}}}},
+     {"hZvertex", "z vertex", {HistType::kTH1F, {{100, -100, 100}}}},
+     {"hTrackInformation", "Sparse TPC info; dE/dx;n#sigma;#it{p} (GeV#it{/c});#it{p}_{T} (GeV#it{/c});#eta;#varphi;passEMcal;", hTrackAllInfoSpec},
+     {"hEmcClusterInformationBefore", "EMCal Cluster Info before match; Energy (GeV);#eta;#varphi", hEmcClusterInfoSpec},
+     {"hEmcClusterInformationAfter", "EMCal Cluster Info after match; Energy (GeV);#eta;#varphi", hEmcClusterInfoSpec},
+     {"hPIDafterMatch", "PID Info after match; E/P; dE/dx;n#sigma;#it{p} (GeV#it{/c});#it{p}_{T} (GeV#it{/c});#eta;#varphi;", hTrackInfoSpec},
+     {"hEPRatioafterPID", "E/P Ratio after PID Cuts apply only trackwodca filter", {HistType::kTH2F, {{60, 0, 3}, {100, 0, 10}}}},
+     {"hPIDafterPIDcuts", "PID Info after PID cuts; E/P; #it{p} (GeV#it{/c});#it{p}_{T} (GeV#it{/c});n_{#sigma}^{e};GeV;M02;M20", hPIDSpec},
+     {"hEmcClsTrkEtaPhiDiffTimeEnergy", "EmcClsTrkEtaPhiDiffTimeEnergy;#Delta#eta;#Delta#varphi;Sec; Energy (GeV)", hDeltaPhiDeltaEtaEmcClusterTrackSpecEnergy}}};
+
+  void init(InitContext&)
+  {
+    registry.get<THnSparse>(HIST("hTrackInformation"))->Sumw2();
+    registry.get<THnSparse>(HIST("hEmcClusterInformationBefore"))->Sumw2();
+    registry.get<THnSparse>(HIST("hEmcClusterInformationAfter"))->Sumw2();
+    registry.get<THnSparse>(HIST("hPIDafterMatch"))->Sumw2();
+    registry.get<THnSparse>(HIST("hPIDafterPIDcuts"))->Sumw2();
+    registry.get<THnSparse>(HIST("hEmcClsTrkEtaPhiDiffTimeEnergy"))->Sumw2();
   }
 
-  TFile *outFile =
-      new TFile(Form("ex_PbPb_2760_Ev%i_Sd%i.root", nevents, seed), "RECREATE");
+  // Track Selection Cut
+  template <typename T>
+  bool selTracks(T const& track)
+  {
+    if (!track.isGlobalTrackWoDCA()) {
+      return false;
+    }
+    if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
+      return false;
+    }
+    if (track.eta() < etaTrackMin || track.eta() > etaTrackMax) {
+      return false;
+    }
+    if ((track.phi() < phiTrackEMCalMin || track.phi() > phiTrackEMCalMax) && (track.phi() < phiTrackDCalMin || track.phi() > phiTrackDCalMax)) {
+      return false;
+    }
+    if (track.pt() < ptTrackMin) {
+      return false;
+    }
+    return true;
+  }
 
-  pythia.readString("Random:setSeed = on");
-  pythia.readString(Form("Random:seed %d", seed));
-  pythia.readString("Beams:idA = 1000822080");
-  pythia.readString("Beams:idB = 1000822080");
-  pythia.readString("Beams:eCM = 2760.");
-  pythia.readString("Beams:frameType = 1"); // the beams are colliding in their
+  // Electron Identification
+  template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
+  void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, EmcClusterType const& emcClusters, MatchType const& matchedTracks, ParticleType const& particlemc)
+  {
+    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
+      return;
 
-  pythia.readString("Next:numberShowEvent = 0");
-  pythia.readString("ParticleDecays:limitTau0 = on");
-  pythia.readString("ParticleDecays:tau0Max = 10");
+    registry.fill(HIST("hNevents"), 1);
+    registry.fill(HIST("hZvertex"), collision.posZ());
 
-  pythia.readString("PartonVertex:setVertex = on");
+    /////////////////////////////////
+    // EMCal cluster info before match ///
+    ///////////////////////////////
+    if (fillEmcClusterInfo) {
+      for (const auto& emcClusterBefore : emcClusters) {
+        registry.fill(HIST("hEmcClusterInformationBefore"), emcClusterBefore.energy(), emcClusterBefore.eta(), emcClusterBefore.phi(), emcClusterBefore.nCells(), emcClusterBefore.time());
+      }
+    }
+    int passEMCal;
+    float phiTrack = -999;
+    float etaTrack = -999;
+    float pTrack = -999;
+    float ptTrack = -999;
+    float dcaxyTrack = -999;
+    float dcazTrack = -999;
+    float tpcNsigmaTrack = -999;
 
-  pythia.readString("SoftQCD:all = on");
+    for (const auto& track : tracks) {
 
-  pythia.readString("ColourReconnection:reconnect = on");
+      phiTrack = track.phi();
+      etaTrack = track.eta();
+      pTrack = track.p();
+      ptTrack = track.pt();
+      dcaxyTrack = track.dcaXY();
+      dcazTrack = track.dcaZ();
+      tpcNsigmaTrack = track.tpcNSigmaEl();
 
-  pythia.readString("ColourReconnection:mode = 0");
+      // Apply Track Selection
+      if (!selTracks(track)) {
+        continue;
+      }
+      passEMCal = 0;
 
-  pythia.readString("113:addChannel = 1 0.9988447 2 211 -211");
-  pythia.readString("113:addChannel = 1 0.0000180 0 211 -211 211 -211 ");
-  pythia.readString("113:addchannel =1 0.0001009 1 211 -211 111");
-  pythia.readString(
-      "223:addChannel = 1 0.0154283 2 211 -211"); // omega add channel
-  pythia.readString(
-      "223:addChannel = 1 0.8994773 1 211 -211 111"); // omegA channel add
-  pythia.readString(
-      "221: addchannel = 1  0.2274105 211 -211 111"); // eta  channel add
-  pythia.readString(
-      "221:addChannel =  1  0.0460021 211 -211 22"); //  eta channel add
-  pythia.readString(
-      "221:addchannel: = 1 0.0002680 12 211 -211 11 -11"); // eta channel add
+      if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
+        passEMCal = 1; // EMcal acceptance passed
+      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax)))
+        passEMCal = 2; // Dcal acceptance passed
 
-  // for Heavy ion collision
-  pythia.readString(
-      "HeavyIon:SigFitDefPar =  12.32,1.63,0.19,0.0,0.0,0.0,0.0,0.0");
-  pythia.readString("HeavyIon:SigFitNGen = 20");
-  pythia.readString("HeavyIon:SigFitErr = "
-                    "0.02,0.02,0.1,0.05,0.05,0.0,0.1,0.0");
-  pythia.init();
+      registry.fill(HIST("hTrackInformation"), track.tpcSignal(), tpcNsigmaTrack, pTrack, ptTrack, etaTrack, phiTrack, passEMCal); // track infor after filter bit
 
-  Int_t nbins[5] = {32., 30., 40., 40., 150.};
-  Double_t xmin[5] = {-TMath::Pi(), -1.6, 0., 0., -0.5};
-  Double_t xmax[5] = {TMath::Pi(), 1.6, 20., 20., 149.5};
+      auto tracksofcluster = matchedTracks.sliceBy(perClusterMatchedTracks, track.globalIndex());
+      float phiMatchTrack = -999;
+      float etaMatchTrack = -999;
+      float pMatchTrack = -999;
+      float ptMatchTrack = -999;
+      float tpcNsigmaMatchTrack = -999;
+      float phiMatchEmcCluster = -999;
+      float etaMatchEmcCluster = -999;
+      float eMatchEmcCluster = -999;
+      float m02MatchEmcCluster = -999;
+      float m20MatchEmcCluster = -999;
+      float timeEmcCluster = -999;
+      float cellEmcCluster = -999;
+      float deltaPhiMatch = -999.;
+      float deltaEtaMatch = -999.;
+      float eop = -999;
+      bool isEMcal = false;
 
-  THnSparseD *sparseULpipi =
-      new THnSparseD("sparseULpipi", "sparse1", 5, nbins, xmin, xmax);
-  THnSparseD *sparseLpipiplus = new THnSparseD(
-      "sparseLpipiplus ", "sparseLpipiplus", 5, nbins, xmin, xmax);
-  THnSparseD *sparseULpipioppo = new THnSparseD(
-      "sparseULpipioppo", "sparseULpipioppo", 5, nbins, xmin, xmax);
-  THnSparseD *sparseLpipineg =
-      new THnSparseD("sparseLpipineg", "sparseLpipineg", 5, nbins, xmin, xmax);
-  TH2D *pipluspinegcorr =
-      new TH2D("pipluspinegcorr", "pipluspinegcorr", 32, -0.5 * TMath::Pi(),
-               1.5 * TMath::Pi(), 30, -1.6, 1.6);
+      float trackRapidity = track.rapidity(MassElectron);
 
-  THnSparseD *sparseULkk =
-      new THnSparseD("sparseULkk", "sparse1", 5, nbins, xmin, xmax);
-  THnSparseD *sparseLkkplus =
-      new THnSparseD("sparseLkkplus ", "sparseLkkplus", 5, nbins, xmin, xmax);
-  THnSparseD *sparseULkkoppo =
-      new THnSparseD("sparseULkkoppo", "sparseULkkoppo", 5, nbins, xmin, xmax);
-  THnSparseD *sparseLkkneg =
-      new THnSparseD("sparseLkkneg", "sparseLkkneg", 5, nbins, xmin, xmax);
+      for (const auto& ematchTrack : tracksofcluster) {
 
-  THnSparseD *sparseULpp =
-      new THnSparseD("sparseULpp", "sparse1", 5, nbins, xmin, xmax);
-  THnSparseD *sparseLppplus =
-      new THnSparseD("sparseLppplus ", "sparseLppplus", 5, nbins, xmin, xmax);
-  THnSparseD *sparseULppoppo =
-      new THnSparseD("sparseULppoppo", "sparseULppoppo", 5, nbins, xmin, xmax);
-  THnSparseD *sparseLppneg =
-      new THnSparseD("sparseLppneg", "sparseLppneg", 5, nbins, xmin, xmax);
+        auto matchTrack = ematchTrack.template track_as<TracksType>();
 
-  double *asparseULpipi = new double[5];
-  double *asparseLpipiplus = new double[5];
-  double *asparseULpipioppo = new double[5];
-  double *asparseLpipineg = new double[5];
-  double *asparseULkk = new double[5];
-  double *asparseLkkplus = new double[5];
-  double *asparseULkkoppo = new double[5];
-  double *asparseLkkneg = new double[5];
-  double *asparseULpp = new double[5];
-  double *asparseLppplus = new double[5];
-  double *asparseULppoppo = new double[5];
-  double *asparseLppneg = new double[5];
-  TH1D *multiplicity =
-      new TH1D("multiplicity", "multiplicity", 150, -0.5, 149.5);
-  TH1D *multiplicityV0 =
-      new TH1D("multiplicityV0", "multiplicityV0", 150, -0.5, 149.5);
-  TH1D *multiplicitytrk =
-      new TH1D("multiplicitytrk", "multiplicitytrk", 150, -0.5, 149.5);
+        auto emcCluster = ematchTrack.template emcalcluster_as<EmcClusterType>();
 
-  TH1D *piptplustri = new TH1D("piptplustri", "piptplustri", 100, 0., 20.0);
-  TH1D *piptnegtri = new TH1D("piptnegtri", "piptnegtri", 100, 0., 20.0);
-  TH1D *kptplustri = new TH1D("kiptplustri", "kptplustri", 100, 0., 20.0);
-  TH1D *kptnegtri = new TH1D("kptnegtri", "kptnegtri", 100, 0., 20.0);
-  TH1D *proptplustri = new TH1D("proptplustri", "proptplustri", 100, 0., 20.0);
-  TH1D *proptnegtri = new TH1D("proptnegtri", "proptnegtri", 100, 0., 20.0);
+        phiMatchTrack = matchTrack.phi();
+        etaMatchTrack = matchTrack.eta();
+        pMatchTrack = matchTrack.p();
+        ptMatchTrack = matchTrack.pt();
+        tpcNsigmaMatchTrack = matchTrack.tpcNSigmaEl();
+        phiMatchEmcCluster = emcCluster.phi();
+        etaMatchEmcCluster = emcCluster.eta();
+        eMatchEmcCluster = emcCluster.energy();
+        m02MatchEmcCluster = emcCluster.m02();
+        m20MatchEmcCluster = emcCluster.m20();
+        timeEmcCluster = emcCluster.time();
+        cellEmcCluster = emcCluster.nCells();
 
-  for (int iEvent = 0; iEvent < nevents; ++iEvent) {
+        deltaPhiMatch = matchTrack.trackPhiEmcal() - phiMatchEmcCluster;
+        deltaEtaMatch = matchTrack.trackEtaEmcal() - etaMatchEmcCluster;
 
-    int nCharged = 0;
-    int nChargedV0 = 0;
-    int nChargedntrk = 0;
-    if (!pythia.next())
-      continue;
-    int enteries = pythia.event.size();
+        // Track and EMCal cluster Matching
 
-    Printf("Event -- %d", iEvent);
-    for (int k = 0; k < pythia.event.size(); ++k) {
-
-      if (pythia.event[k].isFinal() && pythia.event[k].isCharged() &&
-          (pythia.event[k].tau() > 10 || (!pythia.event[k].canDecay()))) {
-        if (TMath::Abs(pythia.event[k].eta()) < 0.8)
-          ++nCharged;
-        if (pythia.event[k].status() / 10 == 8) {
-
-          if (-3.7 < pythia.event[k].eta() && pythia.event[k].eta() < -1.7)
-            ++nChargedV0;
-          if (pythia.event[k].eta() > 2.8 && pythia.event[k].eta() < 5.1)
-            ++nChargedV0;
-          if (TMath::Abs(pythia.event[k].eta()) < 0.8)
-            ++nChargedntrk;
-          else
+        if constexpr (!isMc) {
+          if (std::abs(timeEmcCluster) > timeEmcClusterMax) {
             continue;
+          }
+          if (deltaPhiMatch < deltaPhiMatchMin || deltaPhiMatch > deltaPhiMatchMax || deltaEtaMatch < deltaEtaMatchMin || deltaEtaMatch > deltaEtaMatchMax) {
+            continue;
+          }
+        } else {
+          if (std::abs(timeEmcCluster) > mcRecTimeEmcClusterMax) {
+            continue;
+          }
+          if (deltaPhiMatch < mcRecDeltaPhiMatchMin || deltaPhiMatch > mcRecDeltaPhiMatchMax || deltaEtaMatch < mcRecDeltaEtaMatchMin || deltaEtaMatch > mcRecDeltaEtaMatchMax) {
+            continue;
+          }
         }
+
+        registry.fill(HIST("hEmcClsTrkEtaPhiDiffTimeEnergy"), deltaEtaMatch, deltaPhiMatch, timeEmcCluster, eMatchEmcCluster);
+
+        if (fillEmcClusterInfo)
+          registry.fill(HIST("hEmcClusterInformationAfter"), eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, cellEmcCluster, timeEmcCluster);
+        eop = eMatchEmcCluster / pMatchTrack;
+        registry.fill(HIST("hPIDafterMatch"), eop, matchTrack.tpcSignal(), tpcNsigmaMatchTrack, pMatchTrack, ptMatchTrack, etaMatchTrack, phiMatchTrack);
+
+        // Apply Electron Identification cuts
+        if constexpr (!isMc) {
+          if ((tpcNsigmaMatchTrack < tpcNsigmaElectronMin || tpcNsigmaMatchTrack > tpcNsigmaElectronMax) || (m02MatchEmcCluster < m02EmcClusterElectronMin || m02MatchEmcCluster > m02EmcClusterElectronMax) || (m20MatchEmcCluster < m20EmcClusterElectronMin || m20MatchEmcCluster > m20EmcClusterElectronMax)) {
+            continue;
+          }
+        } else {
+          if ((tpcNsigmaMatchTrack < mcRecTpcNsigmaElectronMin || tpcNsigmaMatchTrack > mcRecTpcNsigmaElectronMax) || (m02MatchEmcCluster < mcRecM02EmcClusterElectronMin || m02MatchEmcCluster > mcRecM02EmcClusterElectronMax) || (m20MatchEmcCluster < mcRecM20EmcClusterElectronMin || m20MatchEmcCluster > mcRecM20EmcClusterElectronMax)) {
+            continue;
+          }
+        }
+
+        registry.fill(HIST("hEPRatioafterPID"), eop, ptMatchTrack);
+        if (eop < eopElectronMin || eop > eopElectronMax) {
+          continue;
+        }
+        registry.fill(HIST("hPIDafterPIDcuts"), eop, pMatchTrack, ptMatchTrack, tpcNsigmaMatchTrack, eMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster);
+
+        isEMcal = true;
+        electronSel(matchTrack.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
+                    eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
-    }
-    if (nCharged != 0 || nChargedV0 != 0 || nChargedntrk != 0) {
-      multiplicity->Fill(nCharged);
-      multiplicityV0->Fill(nChargedV0);
-      multiplicitytrk->Fill(nChargedntrk);
-    }
-    int inel = 0;
-    for (int j = 0; j < enteries; j++) {
-      if (pythia.event[j].isCharged() && pythia.event[j].isFinal()) {
-        if (pythia.event[j].pT() > 0 && pythia.event[j].pT() < 40) {
-          if (abs(pythia.event[j].y()) < 0.8) {
-            inel = 1;
-          }
-        }
+
+      /// Electron information without Emcal and use TPC and TOF
+      if (isEMcal) {
+        continue;
       }
-    }
-
-    Double_t Pttrig = 0;
-    Double_t Phitrig = 0;
-    Double_t ytrig = 0;
-    for (int i = 0; i < enteries; i++) {
-
-      Pythia8::Particle &particle = pythia.event[i];
-
-      if (inel == 1 && pythia.event[i].isCharged() &&
-          pythia.event[i].isFinal()) {
-
-        int idAbs = pythia.event[i].id();
-        Pttrig = pythia.event[i].pT();
-        Phitrig = pythia.event[i].phi();
-        ytrig = pythia.event[i].y();
-        // for pion like and unlike sign
-        /////////////////// ____________correlation for charge anticharged
-        /// particle
-        ///__________________//////////////////////////
-
-        if (abs(pythia.event[i].y()) <= 0.8) {
-          // pion plus correlate with plus and negetive
-          if (pythia.event[i].id() == 211) {
-
-            if (pythia.event[i].pT() < 0.2 || pythia.event[i].pT() > 2.0)
-              continue;
-
-            piptplustri->Fill(Pttrig);
-            Double_t diffy = -999;
-            Double_t diffphi = -999;
-            Double_t Ptassoc = 0;
-            for (int k = 0; k < enteries; k++) {
-
-              if (pythia.event[k].index() == pythia.event[i].index())
-                continue;
-
-              if (inel == 1 && pythia.event[k].isCharged() &&
-                  pythia.event[k].isFinal()) {
-                int idAbsanti = pythia.event[k].id();
-                if (abs(pythia.event[k].y()) > 0.8)
-                  continue;
-                if (pythia.event[k].id() ==
-                    -211) /// plus charge  negetive charge correlation
-                {
-                  if (pythia.event[k].pT() < 0.2 || pythia.event[k].pT() > 2.0)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseULpipi[0] = diffphi;
-                    asparseULpipi[1] = diffy;
-                    asparseULpipi[2] = Pttrig;
-                    asparseULpipi[3] = Ptassoc;
-                    asparseULpipi[4] = nCharged;
-
-                    sparseULpipi->Fill(asparseULpipi);
-
-                    pipluspinegcorr->Fill(diffphi, diffy);
-                  }
-                }
-                if (pythia.event[k].id() == 211) /// plus plus correlation
-                {
-                  if (pythia.event[k].pT() < 0.2 || pythia.event[k].pT() > 2.0)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseLpipiplus[0] = diffphi;
-                    asparseLpipiplus[1] = diffy;
-                    asparseLpipiplus[2] = Pttrig;
-                    asparseLpipiplus[3] = pythia.event[k].pT();
-                    asparseLpipiplus[4] = nCharged;
-
-                    sparseLpipiplus->Fill(asparseLpipiplus);
-                  }
-                }
-              }
-            }
-          }
-
-          if (pythia.event[i].id() ==
-              -211) { // charge negetive correlate with charge positive
-
-            if (pythia.event[i].pT() < 0.2 || pythia.event[i].pT() > 2.0)
-              continue;
-            piptnegtri->Fill(Pttrig);
-            Double_t diffy = -999;
-            Double_t diffphi = -999;
-            Double_t Ptassoc = 0;
-            for (int k = 0; k < enteries; k++) {
-
-              if (pythia.event[k].index() == pythia.event[i].index())
-                continue;
-
-              if (inel == 1 && pythia.event[k].isCharged() &&
-                  pythia.event[k].isFinal()) {
-                int idAbsanti = pythia.event[k].id();
-                if (abs(pythia.event[k].y()) > 0.8)
-                  continue;
-                if (pythia.event[k].id() == -211) /// neeg neg correlation
-                {
-
-                  if (pythia.event[k].pT() < 0.2 || pythia.event[k].pT() > 2.0)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseLpipineg[0] = diffphi;
-                    asparseLpipineg[1] = diffy;
-                    asparseLpipineg[2] = Pttrig;
-                    asparseLpipineg[3] = Ptassoc;
-                    asparseLpipineg[4] = nCharged;
-
-                    sparseLpipineg->Fill(asparseLpipineg);
-                  }
-                }
-
-                if (pythia.event[k].id() == 211) /// neg plus correlation
-                {
-                  if (pythia.event[k].pT() < 0.2 || pythia.event[k].pT() > 2.0)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseULpipioppo[0] = diffphi;
-                    asparseULpipioppo[1] = diffy;
-                    asparseULpipioppo[2] = Pttrig;
-                    asparseULpipioppo[3] = Ptassoc;
-                    asparseULpipioppo[4] = nCharged;
-                    sparseULpipioppo->Fill(asparseULpipioppo);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        /// correlation for kaon kaon
-
-        if (abs(pythia.event[i].y()) <= 0.7) {
-          // kaon plus correlate with plus and negetive
-          if (pythia.event[i].id() == 321) {
-
-            if (pythia.event[i].pT() < 0.2 || pythia.event[i].pT() > 2.0)
-              continue;
-
-            kptplustri->Fill(Pttrig);
-            Double_t diffy = -999;
-            Double_t diffphi = -999;
-            Double_t Ptassoc = 0;
-            for (int k = 0; k < enteries; k++) {
-
-              if (pythia.event[k].index() == pythia.event[i].index())
-                continue;
-
-              if (inel == 1 && pythia.event[k].isCharged() &&
-                  pythia.event[k].isFinal()) {
-                int idAbsanti = pythia.event[k].id();
-                if (abs(pythia.event[k].y()) > 0.7)
-                  continue;
-                if (pythia.event[k].id() ==
-                    -321) /// Kaon plus charge  negetive charge correlation
-                {
-                  if (pythia.event[k].pT() < 0.2 || pythia.event[k].pT() > 2.0)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseULkk[0] = diffphi;
-                    asparseULkk[1] = diffy;
-                    asparseULkk[2] = Pttrig;
-                    asparseULkk[3] = Ptassoc;
-                    asparseULkk[4] = nCharged;
-
-                    sparseULkk->Fill(asparseULkk);
-                  }
-                }
-                if (pythia.event[k].id() ==
-                    321) /// kaon plus kaon plus correlation
-                {
-                  if (pythia.event[k].pT() < 0.2 || pythia.event[k].pT() > 2.0)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseLkkplus[0] = diffphi;
-                    asparseLkkplus[1] = diffy;
-                    asparseLkkplus[2] = Pttrig;
-                    asparseLkkplus[3] = pythia.event[k].pT();
-                    asparseLkkplus[4] = nCharged;
-
-                    sparseLkkplus->Fill(asparseLkkplus);
-                  }
-                }
-              }
-            }
-          }
-
-          if (pythia.event[i].id() == -321) { // kaon charge negetive correlate
-                                              // with kaon charge positive
-
-            if (pythia.event[i].pT() < 0.2 || pythia.event[i].pT() > 2.0)
-              continue;
-            kptnegtri->Fill(Pttrig);
-            Double_t diffy = -999;
-            Double_t diffphi = -999;
-            Double_t Ptassoc = 0;
-            for (int k = 0; k < enteries; k++) {
-
-              if (pythia.event[k].index() == pythia.event[i].index())
-                continue;
-
-              if (inel == 1 && pythia.event[k].isCharged() &&
-                  pythia.event[k].isFinal()) {
-                int idAbsanti = pythia.event[k].id();
-                if (abs(pythia.event[k].y()) > 0.7)
-                  continue;
-                if (pythia.event[k].id() ==
-                    -321) /// kaon neg  kaon neg correlation
-                {
-
-                  if (pythia.event[k].pT() < 0.2 || pythia.event[k].pT() > 2.0)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseLkkneg[0] = diffphi;
-                    asparseLkkneg[1] = diffy;
-                    asparseLkkneg[2] = Pttrig;
-                    asparseLkkneg[3] = Ptassoc;
-                    asparseLkkneg[4] = nCharged;
-
-                    sparseLkkneg->Fill(asparseLkkneg);
-                  }
-                }
-
-                if (pythia.event[k].id() == 321) /// neg plus correlation
-                {
-                  if (pythia.event[k].pT() < 0.2 || pythia.event[k].pT() > 2.0)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseULkkoppo[0] = diffphi;
-                    asparseULkkoppo[1] = diffy;
-                    asparseULkkoppo[2] = Pttrig;
-                    asparseULkkoppo[3] = Ptassoc;
-                    asparseULkkoppo[4] = nCharged;
-                    sparseULkkoppo->Fill(asparseULkkoppo);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        if (abs(pythia.event[i].y()) <= 0.6) {
-          // proton plus correlate with plus and negetive
-          if (pythia.event[i].id() == 2212) {
-
-            if (pythia.event[i].pT() < 0.5 || pythia.event[i].pT() > 2.5)
-              continue;
-
-            proptplustri->Fill(Pttrig);
-            Double_t diffy = -999;
-            Double_t diffphi = -999;
-            Double_t Ptassoc = 0;
-            for (int k = 0; k < enteries; k++) {
-
-              if (pythia.event[k].index() == pythia.event[i].index())
-                continue;
-
-              if (inel == 1 && pythia.event[k].isCharged() &&
-                  pythia.event[k].isFinal()) {
-                int idAbsanti = pythia.event[k].id();
-                if (abs(pythia.event[k].y()) > 0.6)
-                  continue;
-                if (pythia.event[k].id() ==
-                    -2212) /// proton plus charge  negetive charge correlation
-                {
-                  if (pythia.event[k].pT() < 0.5 || pythia.event[k].pT() > 2.5)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseULpp[0] = diffphi;
-                    asparseULpp[1] = diffy;
-                    asparseULpp[2] = Pttrig;
-                    asparseULpp[3] = Ptassoc;
-                    asparseULpp[4] = nCharged;
-
-                    sparseULpp->Fill(asparseULpp);
-
-                    pipluspinegcorr->Fill(diffphi, diffy);
-                  }
-                }
-                if (pythia.event[k].id() == 2212) /// plus plus correlation
-                {
-                  if (pythia.event[k].pT() < 0.5 || pythia.event[k].pT() > 2.5)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseLppplus[0] = diffphi;
-                    asparseLppplus[1] = diffy;
-                    asparseLppplus[2] = Pttrig;
-                    asparseLppplus[3] = pythia.event[k].pT();
-                    asparseLppplus[4] = nCharged;
-
-                    sparseLppplus->Fill(asparseLppplus);
-                  }
-                }
-              }
-            }
-          }
-
-          if (pythia.event[i].id() ==
-              -2212) { // proton charge negetive correlate with charge positive
-
-            if (pythia.event[i].pT() < 0.5 || pythia.event[i].pT() > 2.5)
-              continue;
-            proptnegtri->Fill(Pttrig);
-            Double_t diffy = -999;
-            Double_t diffphi = -999;
-            Double_t Ptassoc = 0;
-            for (int k = 0; k < enteries; k++) {
-
-              if (pythia.event[k].index() == pythia.event[i].index())
-                continue;
-
-              if (inel == 1 && pythia.event[k].isCharged() &&
-                  pythia.event[k].isFinal()) {
-                int idAbsanti = pythia.event[k].id();
-                if (abs(pythia.event[k].y()) > 0.6)
-                  continue;
-                if (pythia.event[k].id() ==
-                    -2212) /// proton neg  proton neg correlation
-                {
-
-                  if (pythia.event[k].pT() < 0.5 || pythia.event[k].pT() > 2.5)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseLppneg[0] = diffphi;
-                    asparseLppneg[1] = diffy;
-                    asparseLppneg[2] = Pttrig;
-                    asparseLppneg[3] = Ptassoc;
-                    asparseLppneg[4] = nCharged;
-
-                    sparseLppneg->Fill(asparseLppneg);
-                  }
-                }
-
-                if (pythia.event[k].id() == 2212) /// neg plus correlation
-                {
-                  if (pythia.event[k].pT() < 0.5 || pythia.event[k].pT() > 2.5)
-                    continue;
-
-                  if (pythia.event[i].pT() > pythia.event[k].pT()) {
-                    diffy = pythia.event[i].y() - pythia.event[k].y();
-                    diffphi = pythia.event[i].phi() - pythia.event[k].phi();
-                    Ptassoc = pythia.event[k].pT();
-                    if (diffphi < -TMath::Pi()) {
-                      diffphi = diffphi + 2 * pi;
-                    }
-                    if (diffphi > TMath::Pi()) {
-                      diffphi = diffphi - 2 * pi;
-                    }
-
-                    asparseULppoppo[0] = diffphi;
-                    asparseULppoppo[1] = diffy;
-                    asparseULppoppo[2] = Pttrig;
-                    asparseULppoppo[3] = Ptassoc;
-                    asparseULppoppo[4] = nCharged;
-                    sparseULppoppo->Fill(asparseULppoppo);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+      electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
+                  eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
     }
   }
-  pythia.stat();
 
-  sparseULpipi->Write();
-  sparseLpipineg->Write();
-  sparseLpipiplus->Write();
-  sparseULpipioppo->Write();
-  sparseULkk->Write();
-  sparseLkkneg->Write();
-  sparseLkkplus->Write();
-  sparseULkkoppo->Write();
-  sparseULpp->Write();
-  sparseLppneg->Write();
-  sparseLppplus->Write();
-  sparseULppoppo->Write();
+  ///  Electron selection - for real data and data-like analysis
+  void processData(TableCollision const& collision,
+                   TableTracks const& tracks,
+                   aod::EMCALClusters const& emcClusters,
+                   o2::aod::EMCALMatchedTracks const& matchedTracks)
+  {
+    fillElectronTrack<false>(collision, tracks, emcClusters, matchedTracks, 0);
+  }
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", true);
 
-  outFile->Write();
-  delete outFile;
+  ///  Electron selection - for MC reco-level analysis
+  void processMcRec(McTableCollision const& mcCollision,
+                    McTableTracks const& mcTracks,
+                    McTableEmcals const& mcEmcClusters,
+                    o2::aod::EMCALMatchedTracks const& matchedTracks,
+                    aod::McParticles const& mcParticles)
+  {
+    fillElectronTrack<true>(mcCollision, mcTracks, mcEmcClusters, matchedTracks, mcParticles);
+  }
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcRec, "Process MC Reco mode", false);
+};
 
-  return 0;
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<HfElectronSelectionWithTpcEmcal>(cfgc)};
 }
