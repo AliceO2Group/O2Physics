@@ -75,16 +75,14 @@ struct dielectronQC {
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  // Configurable<bool> cfgDo_v2{"cfgDo_v2", false, "flag to analyze v2"};
-  // Configurable<bool> cfgDo_v3{"cfgDo_v3", false, "flag to analyze v3"};
+  Configurable<float> maxY{"maxY", 0.8, "maximum rapidity for reconstructed particles"};
   Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
 
-  ConfigurableAxis ConfMeeBins{"ConfMeeBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00}, "mee bins for output histograms"};
+  ConfigurableAxis ConfMeeBins{"ConfMeeBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00}, "mee bins for output histograms"};
   ConfigurableAxis ConfPteeBins{"ConfPteeBins", {VARIABLE_WIDTH, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00}, "pTee bins for output histograms"};
   ConfigurableAxis ConfDCAeeBins{"ConfDCAeeBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCAee bins for output histograms"};
 
@@ -305,51 +303,31 @@ struct dielectronQC {
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
       fRegistry.addClone("Pair/same/", "Pair/mix/");
-    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2)) {
-      nmod = 2;
-      const AxisSpec axis_sp2{20, -5.f, 5.f, Form("u_{2}^{ee} #upoint Q_{2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      fRegistry.add("Pair/same/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp2}, true);
+    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV4)) {
+      if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2)) {
+        nmod = 2;
+      } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
+        nmod = 3;
+      } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV4)) {
+        nmod = 4;
+      }
+      fRegistry.add("Pair/same/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/same/uls/hPrfUQ", Form("dielectron <u_{ee,%d} #upoint Q_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
-      const AxisSpec axis_sp2_l1{20, -5.f, 5.f, Form("u_{2,e1} #upoint Q_{2,1}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_sp2_l2{20, -5.f, 5.f, Form("u_{2,e2} #upoint Q_{2,2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_cos_2dphi1{10, -1.f, 1.f, "cos(2 (#varphi_{e1} - #varphi_{ee}))"};
-      const AxisSpec axis_cos_2dphi2{10, -1.f, 1.f, "cos(2 (#varphi_{e2} - #varphi_{ee}))"};
-      fRegistry.add("Pair/mix/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp2_l1, axis_cos_2dphi1, axis_sp2_l2, axis_cos_2dphi2}, true);
-      fRegistry.add("Pair/mix/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
-      fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
-      fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
-    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
-      nmod = 3;
-      const AxisSpec axis_sp3{20, -5.f, 5.f, Form("u_{3}^{ee} #upoint Q_{3}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      fRegistry.add("Pair/same/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp3}, true);
-      fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
-      fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
-      fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
-
-      const AxisSpec axis_sp3_l1{20, -5.f, 5.f, Form("u_{3,e1} #upoint Q_{3,1}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_sp3_l2{20, -5.f, 5.f, Form("u_{3,e2} #upoint Q_{3,2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_cos_3dphi1{10, -1.f, 1.f, "cos(3 (#varphi_{e1} - #varphi_{ee}))"};
-      const AxisSpec axis_cos_3dphi2{10, -1.f, 1.f, "cos(3 (#varphi_{e2} - #varphi_{ee}))"};
-      fRegistry.add("Pair/mix/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp3_l1, axis_cos_3dphi1, axis_sp3_l2, axis_cos_3dphi2}, true);
-      fRegistry.add("Pair/mix/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
-      fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
-      fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
-    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV4)) {
-      nmod = 4;
-      const AxisSpec axis_sp4{20, -5.f, 5.f, Form("u_{4}^{ee} #upoint Q_{4}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      fRegistry.add("Pair/same/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp4}, true);
-      fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
-      fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
-      fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
-
-      const AxisSpec axis_sp4_l1{20, -5.f, 5.f, Form("u_{4,e1} #upoint Q_{4,1}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_sp4_l2{20, -5.f, 5.f, Form("u_{4,e2} #upoint Q_{4,2}^{%s}", qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_cos_4dphi1{10, -1.f, 1.f, "cos(4 (#varphi_{e1} - #varphi_{ee}))"};
-      const AxisSpec axis_cos_4dphi2{10, -1.f, 1.f, "cos(4 (#varphi_{e2} - #varphi_{ee}))"};
-      fRegistry.add("Pair/mix/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp4_l1, axis_cos_4dphi1, axis_sp4_l2, axis_cos_4dphi2}, true);
+      fRegistry.add("Pair/mix/uls/hs", "dielectron", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfUQ_leg1", Form("dielectron leg1 <u_{e1,%d} #upoint Q_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfCosDPhi_leg1", Form("dielectron leg1 <cos(%d(#varphi_{e1} - #varphi_{ee}))>", nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP12_leg1", Form("dielectron leg1 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, "BPos"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP13_leg1", Form("dielectron leg1 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP23_leg1", Form("dielectron leg1 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, "BPos", nmod, "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfUQ_leg2", Form("dielectron leg2 <u_{e2,%d} #upoint Q_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfCosDPhi_leg2", Form("dielectron leg2 <cos(%d(#varphi_{e2} - #varphi_{ee}))>", nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP12_leg2", Form("dielectron leg2 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, "BPos"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP13_leg2", Form("dielectron leg2 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP23_leg2", Form("dielectron leg2 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, "BPos", nmod, "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.add("Pair/mix/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
@@ -409,7 +387,15 @@ struct dielectronQC {
     fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
 
     // event info
-    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry, nmod > 0);
+    if (nmod == 2) {
+      o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<2>(&fRegistry);
+    } else if (nmod == 3) {
+      o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<3>(&fRegistry);
+    } else if (nmod == 4) {
+      o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<4>(&fRegistry);
+    } else {
+      o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
+    }
   }
 
   void DefineEMEventCut()
@@ -480,9 +466,21 @@ struct dielectronQC {
     } // end of PID ML
   }
 
-  template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2>
-  // bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, std::array<float ,2> q2bpos_mix, etc is better)
-  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, const std::array<float, 2> qvector_mix = {999.f, 999.f})
+  template <typename TQvectors>
+  bool isGoodQvector(TQvectors const& qvectors)
+  {
+    bool is_good = true;
+    for (auto& qn : qvectors[nmod]) {
+      if (abs(qn[0]) > 100.f || abs(qn[1]) > 100.f) {
+        is_good = false;
+        break;
+      }
+    }
+    return is_good;
+  }
+
+  template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2, typename TMixedQvectors>
+  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TMixedQvectors const& qvectors_mix)
   {
     if constexpr (ev_id == 1) {
       if (t1.has_ambiguousElectrons() && t2.has_ambiguousElectrons()) {
@@ -528,17 +526,6 @@ struct dielectronQC {
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
-    //    if (t1.sign() * t2.sign() < 0) { // ULS
-    //      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d);
-    //      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsPhiV"), phiv, v12.M());
-    //    } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-    //      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d);
-    //      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsPhiV"), phiv, v12.M());
-    //    } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-    //      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d);
-    //      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsPhiV"), phiv, v12.M());
-    //    }
-
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC)) {
       if (t1.sign() * t2.sign() < 0) { // ULS
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d);
@@ -578,13 +565,11 @@ struct dielectronQC {
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
       std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
-      // const std::array<float, 2> q2vector[5] = {q2ft0m, q2ft0a, q2ft0c, q2bpos, q2bneg};
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
       std::array<float, 2> q3bpos = {collision.q3xbpos(), collision.q3ybpos()};
       std::array<float, 2> q3bneg = {collision.q3xbneg(), collision.q3ybneg()};
-      // const std::array<float, 2> q3vector[5] = {q3ft0m, q3ft0a, q3ft0c, q3bpos, q3bneg};
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
@@ -601,37 +586,77 @@ struct dielectronQC {
         sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]);
 
         if (t1.sign() * t2.sign() < 0) { // ULS
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ"), v12.M(), v12.Pt(), dca_ee_3d, sp);
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfUQ"), v12.M(), v12.Pt(), dca_ee_3d, sp);
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfUQ"), v12.M(), v12.Pt(), dca_ee_3d, sp);
         }
 
       } else if constexpr (ev_id == 1) {
         sp1 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v1.Phi())), static_cast<float>(std::sin(nmod * v1.Phi()))}, qvectors[nmod][cfgQvecEstimator]);
-        sp2 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v2.Phi())), static_cast<float>(std::sin(nmod * v2.Phi()))}, qvector_mix);
+        sp2 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v2.Phi())), static_cast<float>(std::sin(nmod * v2.Phi()))}, qvectors_mix[nmod][cfgQvecEstimator]);
         cos_dphi1 = std::cos(nmod * (v1.Phi() - v12.Phi()));
         cos_dphi2 = std::cos(nmod * (v2.Phi() - v12.Phi()));
 
+        float sp_ab_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][3]); // FT0 - BPos
+        float sp_ac_ev1 = RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][4]); // FT0 - BNeg
+        float sp_bc_ev1 = RecoDecay::dotProd(qvectors[nmod][3], qvectors[nmod][4]);                // BPos - BNeg
+
+        float sp_ab_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][3]); // FT0 - BPos
+        float sp_ac_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][4]); // FT0 - BNeg
+        float sp_bc_ev2 = RecoDecay::dotProd(qvectors_mix[nmod][3], qvectors_mix[nmod][4]);                // BPos - BNeg
+
         if (t1.sign() * t2.sign() < 0) { // ULS
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp1, cos_dphi1, sp2, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfCosDPhi_leg1"), v12.M(), v12.Pt(), dca_ee_3d, cos_dphi1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP12_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_ab_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP13_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_ac_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP23_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_bc_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfCosDPhi_leg2"), v12.M(), v12.Pt(), dca_ee_3d, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP12_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_ab_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP13_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_ac_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfSP23_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_bc_ev2);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsPhiV"), phiv, v12.M());
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp1, cos_dphi1, sp2, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfUQ_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfCosDPhi_leg1"), v12.M(), v12.Pt(), dca_ee_3d, cos_dphi1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP12_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_ab_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP13_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_ac_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP23_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_bc_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfUQ_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfCosDPhi_leg2"), v12.M(), v12.Pt(), dca_ee_3d, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP12_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_ab_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP13_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_ac_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfSP23_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_bc_ev2);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsPhiV"), phiv, v12.M());
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d, sp1, cos_dphi1, sp2, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfUQ_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfCosDPhi_leg1"), v12.M(), v12.Pt(), dca_ee_3d, cos_dphi1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP12_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_ab_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP13_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_ac_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP23_leg1"), v12.M(), v12.Pt(), dca_ee_3d, sp_bc_ev1);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfUQ_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfCosDPhi_leg2"), v12.M(), v12.Pt(), dca_ee_3d, cos_dphi2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP12_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_ab_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP13_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_ac_ev2);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfSP23_leg2"), v12.M(), v12.Pt(), dca_ee_3d, sp_bc_ev2);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsPhiV"), phiv, v12.M());
         }
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) {
       float cos_thetaCS = 999, phiCS = 999.f;
       o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
-      // LOGF(info, "cos_thetaCS = %f, phiCS = %f", cos_thetaCS, phiCS);
       o2::math_utils::bringToPMPi(phiCS);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
@@ -771,7 +796,7 @@ struct dielectronQC {
   Partition<FilteredMyTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0);
   Partition<FilteredMyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
 
-  std::map<std::pair<int, int>, std::array<float, 2>> map_mixed_eventId_to_qvector;
+  std::map<std::pair<int, int>, std::vector<std::vector<std::array<float, 2>>>> map_mixed_eventId_to_qvector;
 
   std::vector<std::pair<int, int>> used_trackIds;
   int ndf = 0;
@@ -784,25 +809,16 @@ struct dielectronQC {
         continue;
       }
 
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, nmod > 0);
-      if (!fEMEventCut.IsSelected(collision)) {
-        continue;
-      }
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, nmod > 0);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
       std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
-      // const std::array<float, 2> q2vector[5] = {q2ft0m, q2ft0a, q2ft0c, q2bpos, q2bneg};
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
       std::array<float, 2> q3bpos = {collision.q3xbpos(), collision.q3ybpos()};
       std::array<float, 2> q3bneg = {collision.q3xbneg(), collision.q3ybneg()};
-      // const std::array<float, 2> q3vector[5] = {q3ft0m, q3ft0a, q3ft0c, q3bpos, q3bneg};
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
@@ -812,25 +828,56 @@ struct dielectronQC {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 4th harmonics
       };
 
+      if (nmod == 2) {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, 2>(&fRegistry, collision);
+      } else if (nmod == 3) {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, 3>(&fRegistry, collision);
+      } else {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
+      }
+      if (nmod < 0 || isGoodQvector(qvectors)) {
+        fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev - 1); // is qvector calibarated
+      }
+
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+
+      if (nmod > 0 && !isGoodQvector(qvectors)) {
+        continue;
+      }
+
+      if (nmod == 2) {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, 2>(&fRegistry, collision);
+      } else if (nmod == 3) {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, 3>(&fRegistry, collision);
+      } else {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
+      }
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev - 1); // is qvector calibarated
+
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
+
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       // LOGF(info, "collision.globalIndex() = %d , collision.posZ() = %f , collision.numContrib() = %d, centrality = %f , posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", collision.globalIndex(), collision.posZ(), collision.numContrib(), centralities[cfgCentEstimator], posTracks_per_coll.size(), negTracks_per_coll.size());
 
       int nuls = 0, nlspp = 0, nlsmm = 0;
       for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
-        bool is_pair_ok = fillPairInfo<0>(collision, pos, ele);
+        bool is_pair_ok = fillPairInfo<0>(collision, pos, ele, nullptr);
         if (is_pair_ok) {
           nuls++;
         }
       }
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-        bool is_pair_ok = fillPairInfo<0>(collision, pos1, pos2);
+        bool is_pair_ok = fillPairInfo<0>(collision, pos1, pos2, nullptr);
         if (is_pair_ok) {
           nlspp++;
         }
       }
       for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-        bool is_pair_ok = fillPairInfo<0>(collision, ele1, ele2);
+        bool is_pair_ok = fillPairInfo<0>(collision, ele1, ele2, nullptr);
         if (is_pair_ok) {
           nlsmm++;
         }
@@ -891,12 +938,7 @@ struct dielectronQC {
           continue;
         }
 
-        // float q2x_mixed = map_mixed_eventId_to_qvector[mix_dfId_collisionId][0];
-        // float q2y_mixed = map_mixed_eventId_to_qvector[mix_dfId_collisionId][1];
-
-        std::array<float, 2> qvector_mix = map_mixed_eventId_to_qvector[mix_dfId_collisionId];
-
-        // LOGF(info, "mix_df = %d, mix_collisionId = %d, q2x_mixed = %f, q2y_mixed = %f", mix_dfId, mix_collisionId, q2x_mixed, q2y_mixed);
+        auto qvectors_mix = map_mixed_eventId_to_qvector[mix_dfId_collisionId];
 
         auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
         auto negTracks_from_event_pool = emh_ele->GetTracksPerCollision(mix_dfId_collisionId);
@@ -904,32 +946,33 @@ struct dielectronQC {
 
         for (auto& pos : selected_posTracks_in_this_event) { // ULS mix
           for (auto& ele : negTracks_from_event_pool) {
-            fillPairInfo<1>(collision, pos, ele, qvector_mix);
+            fillPairInfo<1>(collision, pos, ele, qvectors_mix);
           }
         }
 
         for (auto& ele : selected_negTracks_in_this_event) { // ULS mix
           for (auto& pos : posTracks_from_event_pool) {
-            fillPairInfo<1>(collision, ele, pos, qvector_mix);
+            fillPairInfo<1>(collision, ele, pos, qvectors_mix);
           }
         }
 
         for (auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
           for (auto& pos2 : posTracks_from_event_pool) {
-            fillPairInfo<1>(collision, pos1, pos2, qvector_mix);
+            fillPairInfo<1>(collision, pos1, pos2, qvectors_mix);
           }
         }
 
         for (auto& ele1 : selected_negTracks_in_this_event) { // LS-- mix
           for (auto& ele2 : negTracks_from_event_pool) {
-            fillPairInfo<1>(collision, ele1, ele2, qvector_mix);
+            fillPairInfo<1>(collision, ele1, ele2, qvectors_mix);
           }
         }
       } // end of loop over mixed event pool
 
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) {
-        // LOGF(info, "adding : ndf = %d, collision.globalIndex() = %d, q2x = %f, q2y  = %f", ndf, collision.globalIndex(), q2vector[cfgQvecEstimator][0], q2vector[cfgQvecEstimator][1]);
-        map_mixed_eventId_to_qvector[key_df_collision] = qvectors[nmod][cfgQvecEstimator];
+        if (nmod > 0) {
+          map_mixed_eventId_to_qvector[key_df_collision] = qvectors;
+        }
         emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh_ele->AddCollisionIdAtLast(key_bin, key_df_collision);
       }

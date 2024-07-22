@@ -130,7 +130,7 @@ struct JetFinderHFQATask {
       registry.add("h_jet_phat_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0, 350}}});
     }
 
-    if (doprocessJetsRhoAreaSubData) {
+    if (doprocessJetsRhoAreaSubData || doprocessJetsRhoAreaSubMCD) {
 
       registry.add("h_jet_pt_rhoareasubtracted", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{400, -200., 200.}}});
       registry.add("h_jet_eta_rhoareasubtracted", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
@@ -188,7 +188,7 @@ struct JetFinderHFQATask {
       registry.add("h2_centrality_rhom", ";centrality; #it{rho}_{m} (GeV/area)", {HistType::kTH2F, {{1100, 0., 110.}, {100, 0., 100.0}}});
     }
 
-    if (doprocessRandomCone) {
+    if (doprocessRandomConeData || doprocessRandomConeMCD) {
       registry.add("h2_centrality_rhorandomcone", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
       registry.add("h2_centrality_rhorandomconewithoutleadingjet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
     }
@@ -918,6 +918,61 @@ struct JetFinderHFQATask {
     }
   }
 
+  template <typename T, typename U, typename V, typename M, typename N>
+  void randomCone(T const& collision, U const& jets, V const& candidates, M const& bkgRhos, N const& tracks)
+  {
+
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    for (auto const& candidate : candidates) {
+      auto bkgRho = jetcandidateutilities::slicedPerCandidate(bkgRhos, candidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos, perDielectronCandidateRhos).iteratorAt(0);
+      TRandom3 randomNumber(0);
+      float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
+      float randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
+      float randomConePt = 0;
+      for (auto const& track : tracks) {
+        if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+          float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-M_PI));
+          float dEta = track.eta() - randomConeEta;
+          if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+            randomConePt += track.pt();
+          }
+        }
+      }
+      registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * bkgRho.rho());
+
+      // removing the leading jet from the random cone
+      if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
+        float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-M_PI));
+        float dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
+
+        bool jetWasInCone = false;
+        while (TMath::Sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < jets.iteratorAt(0).r() / 100.0 + randomConeR) {
+          jetWasInCone = true;
+          randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
+          randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
+          dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-M_PI));
+          dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
+        }
+        if (jetWasInCone) {
+          randomConePt = 0.0;
+          for (auto const& track : tracks) {
+            if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+              float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-M_PI));
+              float dEta = track.eta() - randomConeEta;
+              if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+                randomConePt += track.pt();
+              }
+            }
+          }
+        }
+      }
+      registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * bkgRho.rho());
+      break; // currently only fills it for the first candidate in the event (not pT ordered). Jet is pT ordered so results for excluding leading jet might not be as expected
+    }
+  }
+
   void processDummy(JetCollisions const&)
   {
   }
@@ -956,6 +1011,26 @@ struct JetFinderHFQATask {
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsRhoAreaSubData, "jet finder HF QA for rho-area subtracted jets", false);
+
+  void processJetsRhoAreaSubMCD(soa::Filtered<JetCollisions>::iterator const& collision,
+                                BkgRhoTable const& bkgRhos,
+                                JetTableMCDJoined const& jets,
+                                CandidateTableMCD const&,
+                                JetTracks const&)
+  {
+    for (auto const& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<JetTracks, CandidateTableMCD>(jet)) {
+        continue;
+      }
+      auto const jetCandidate = jet.template candidates_first_as<CandidateTableMCD>();
+      auto bkgRho = jetcandidateutilities::slicedPerCandidate(bkgRhos, jetCandidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos, perDielectronCandidateRhos).iteratorAt(0);
+      fillRhoAreaSubtractedHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centrality(), bkgRho.rho());
+    }
+  }
+  PROCESS_SWITCH(JetFinderHFQATask, processJetsRhoAreaSubMCD, "jet finder HF QA for rho-area subtracted mcd jets", false);
 
   void processEvtWiseConstSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataSubJoined const& jets, CandidateTableData const&, JetTracksDataSub const&)
   {
@@ -1442,59 +1517,17 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processRho, "QA for rho-area subtracted jets", false);
 
-  void processRandomCone(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataSubJoined const& jets, CandidateTableData const& candidates, BkgRhoTable const& bkgRhos, soa::Filtered<JetTracks> const& tracks)
+  void processRandomConeData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataJoined const& jets, CandidateTableData const& candidates, BkgRhoTable const& bkgRhos, soa::Filtered<JetTracks> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
-      return;
-    }
-    for (auto const& candidate : candidates) {
-      auto bkgRho = jetcandidateutilities::slicedPerCandidate(bkgRhos, candidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos, perDielectronCandidateRhos).iteratorAt(0);
-      TRandom3 randomNumber(0);
-      float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
-      float randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
-      float randomConePt = 0;
-      for (auto const& track : tracks) {
-        if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
-          float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-M_PI));
-          float dEta = track.eta() - randomConeEta;
-          if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-            randomConePt += track.pt();
-          }
-        }
-      }
-      registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * bkgRho.rho());
-
-      // removing the leading jet from the random cone
-      if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
-        float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-M_PI));
-        float dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
-
-        bool jetWasInCone = false;
-        while (TMath::Sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < jets.iteratorAt(0).r() / 100.0 + randomConeR) {
-          jetWasInCone = true;
-          randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
-          randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
-          dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-M_PI));
-          dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
-        }
-        if (jetWasInCone) {
-          randomConePt = 0.0;
-          for (auto const& track : tracks) {
-            if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
-              float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-M_PI));
-              float dEta = track.eta() - randomConeEta;
-              if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-                randomConePt += track.pt();
-              }
-            }
-          }
-        }
-      }
-      registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * bkgRho.rho());
-      break; // currently only fills it for the first candidate in the event (not pT ordered). Jet is pT ordered so results for excluding leading jet might not be as expected
-    }
+    randomCone(collision, jets, candidates, bkgRhos, tracks);
   }
-  PROCESS_SWITCH(JetFinderHFQATask, processRandomCone, "QA for random cone estimation of background fluctuations", false);
+  PROCESS_SWITCH(JetFinderHFQATask, processRandomConeData, "QA for random cone estimation of background fluctuations in data", false);
+
+  void processRandomConeMCD(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDJoined const& jets, CandidateTableMCD const& candidates, BkgRhoTable const& bkgRhos, soa::Filtered<JetTracks> const& tracks)
+  {
+    randomCone(collision, jets, candidates, bkgRhos, tracks);
+  }
+  PROCESS_SWITCH(JetFinderHFQATask, processRandomConeMCD, "QA for random cone estimation of background fluctuations in mcd", false);
 
   void processCandidates(soa::Filtered<JetCollisions>::iterator const& collision, CandidateTableData const& candidates)
   {

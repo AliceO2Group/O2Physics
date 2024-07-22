@@ -57,22 +57,12 @@ o2physics_add_dpl_workflow(dielectron-qc-mc
 
 o2physics_add_dpl_workflow(dimuon-qc
                     SOURCES dimuonQC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2::DCAFitter O2::GlobalTracking O2Physics::PWGEMDileptonCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DCAFitter O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dimuon-qc-mc
                     SOURCES dimuonQCMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2::DCAFitter O2::GlobalTracking O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(emu-correlation
-                    SOURCES emuCorrelation.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2::GlobalTracking O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(emu-correlation-mc
-                    SOURCES emuCorrelationMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2::GlobalTracking O2Physics::PWGEMDileptonCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DCAFitter O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(photon-hbt-pcmpcm

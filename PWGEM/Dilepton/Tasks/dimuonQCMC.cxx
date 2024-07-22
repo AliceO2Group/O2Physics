@@ -11,7 +11,7 @@
 //
 // ========================
 //
-// This code runs loop over dalitz ee table for dalitz QC.
+// Analysis task for dimuon in MC.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "TString.h"
@@ -27,11 +27,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Tools/ML/MlResponse.h"
-#include "Tools/ML/model.h"
-
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
 #include "DCAFitter/FwdDCAFitterN.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
@@ -119,7 +115,7 @@ struct dimuonQCMC {
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   // o2::vertexing::FwdDCAFitterN<2> fitter;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int mRunNumber;
   float d_bz;
 
@@ -140,7 +136,7 @@ struct dimuonQCMC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
+    o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry);
 
     const AxisSpec axis_mass{ConfMmumuBins, "m_{#mu#mu} (GeV/c^{2})"};
     const AxisSpec axis_pt{ConfPtmumuBins, "p_{T,#mu#mu} (GeV/c)"};
@@ -152,7 +148,7 @@ struct dimuonQCMC {
     const AxisSpec axis_phi_cs{18, 0.f, M_PI, "|#varphi_{CS}| (rad.)"};                                             // for kPolarization
     const AxisSpec axis_aco{10, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};            // for kUPC
     const AxisSpec axis_asym_pt{10, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"}; // for kUPC
-    const AxisSpec axis_dphi_e_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{e} - #varphi_{#mu#mu} (rad.)"};            // for kUPC
+    const AxisSpec axis_dphi_e_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{#mu} - #varphi_{#mu#mu} (rad.)"};          // for kUPC
 
     // generated info
     fRegistry.add("Generated/sm/Eta/hs", "m_{#mu#mu} vs. p_{T,#mu#mu} ULS", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
@@ -181,7 +177,9 @@ struct dimuonQCMC {
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/EtaPrime/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Rho/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Omega/");
+    fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Omega2mumu/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Phi/");
+    fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/Phi2mumu/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/PromptJPsi/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/NonPromptJPsi/");
     fRegistry.addClone("Pair/sm/Eta/", "Pair/sm/PromptPsi2S/");
@@ -457,7 +455,7 @@ struct dimuonQCMC {
     o2::math_utils::bringToPMPi(dphi_e_ee);
 
     float cos_thetaCS = 999, phiCS = 999.f;
-    o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+    o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
 
     if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);
@@ -483,11 +481,17 @@ struct dimuonQCMC {
               fRegistry.fill(HIST("Pair/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_mumu_xy);
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
+              if (mcmother.daughtersIds().size() == 2) { // omeag->mumu
+                fRegistry.fill(HIST("Pair/sm/Omega2mumu/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_mumu_xy);
+              }
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_mumu_xy);
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
+              if (mcmother.daughtersIds().size() == 2) { // omeag->mumu
+                fRegistry.fill(HIST("Pair/sm/Phi2mumu/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_mumu_xy);
+              }
               break;
             case 443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
@@ -773,6 +777,9 @@ struct dimuonQCMC {
                 fRegistry.fill(HIST("Generated/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 if (mcmother.daughtersIds().size() == 2) { // omega->ee
                   fRegistry.fill(HIST("Generated/sm/Omega2mumu/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
+                  // float mt = std::sqrt(std::pow(v12.M(), 2) + std::pow(v12.Pt(),2));
+                  // float cos_thetaCS_byhand =  2.f * (v1.E() * v2.Pz() - v2.E() * v1.Pz()) / (v12.M() * mt);
+                  // LOGF(info, "cos_thetaCS = %f, cos_thetaCS_byhand = %f", cos_thetaCS, cos_thetaCS_byhand);
                 }
                 break;
               case 333:

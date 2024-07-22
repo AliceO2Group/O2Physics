@@ -188,6 +188,7 @@ struct TableMaker {
   Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+  Configurable<string> fConfigCcdbPathZorro{"ccdb-path-zorro", "Users/r/rlietava/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
@@ -423,6 +424,7 @@ struct TableMaker {
 
     if (fConfigRunZorro) {
       for (int i = 0; i < kNTriggersDQ; ++i) {
+        zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), zorroTriggerMask[i]);
         if (!zorro.isSelected(bc.globalBC())) {
           tag |= static_cast<uint64_t>(1 << i);
@@ -871,6 +873,7 @@ struct TableMaker {
 
     if (fConfigRunZorro) {
       for (int i = 0; i < kNTriggersDQ; ++i) {
+        zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), zorroTriggerMask[i]);
         if (!zorro.isSelected(bc.globalBC())) {
           tag |= static_cast<uint64_t>(1 << i);
