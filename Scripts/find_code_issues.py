@@ -351,6 +351,49 @@ class TestConstRefInSubscription(TestSpec):
         return passed
 
 
+# Documentation
+# Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/comments_guidelines.html
+
+
+class TestDocumentationFile(TestSpec):
+    """Test mandatory documentation of C++ files."""
+    name = "file documentation"
+    message = "Provide mandatory file documentation."
+    suffixes = [".h", ".cxx", ".C"]
+    per_line = False
+
+    def test_file(self, path : str, content) -> bool:
+        passed = False
+        doc_items = []
+        doc_items.append({"keyword": "file", "pattern": f"{os.path.basename(path)}$", "found": False})
+        doc_items.append({"keyword": "brief", "pattern": "[\w]+", "found": False})
+        doc_items.append({"keyword": "author", "pattern": "[\w]+", "found": False})
+        doc_prefix = "///"
+        n_lines_copyright = 11
+        last_doc_line = n_lines_copyright
+
+        for i, line in enumerate(content):
+            if i < n_lines_copyright: # Skip copyright lines.
+                continue
+            if line.strip() and not line.startswith(doc_prefix): # Stop at the first non-empty non-doc line.
+                break
+            if line.startswith(doc_prefix):
+                last_doc_line = (i + 1)
+            for item in doc_items:
+                if re.search(f"^{doc_prefix} [\\\\@]{item['keyword']} {item['pattern']}", line):
+                    item["found"] = True
+                    # print_error(path, i + 1, self.name, f"Found \{item['keyword']}.")
+                    break
+            if all(item["found"] for item in doc_items): # All items have been found.
+                passed = True
+                break
+        if not passed:
+            for item in doc_items:
+                if not item["found"]:
+                    print_error(path, last_doc_line, self.name, f"Documentation for \{item['keyword']} is missing or incorrect.")
+        return passed
+
+
 # Naming conventions
 # Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/naming_formatting.html
 
@@ -773,21 +816,26 @@ def main():
     # Bad practice
     enable_bad_practice = True
     if enable_bad_practice:
-        # tests.append(TestIOStream())
-        # tests.append(TestUsingStd())
-        # tests.append(TestUsingDirectives())
-        # tests.append(TestStdPrefix())
-        # tests.append(TestROOT())
-        # tests.append(TestPI())
-        # tests.append(TestPdgDatabase())
-        # tests.append(TestPdgCode())
+        tests.append(TestIOStream())
+        tests.append(TestUsingStd())
+        tests.append(TestUsingDirectives())
+        tests.append(TestStdPrefix())
+        tests.append(TestROOT())
+        tests.append(TestPI())
+        tests.append(TestPdgDatabase())
+        tests.append(TestPdgCode())
         tests.append(TestPdgMass())
-        # tests.append(TestLogging())
-        # tests.append(TestConstRefInForLoop())
-        # tests.append(TestConstRefInSubscription())
+        tests.append(TestLogging())
+        tests.append(TestConstRefInForLoop())
+        tests.append(TestConstRefInSubscription())
+
+    # Documentation
+    enable_documentation = True
+    if enable_documentation:
+        tests.append(TestDocumentationFile())
 
     # Naming conventions
-    enable_naming = False
+    enable_naming = True
     if enable_naming:
         tests.append(TestNameFunctionVariable())
         tests.append(TestNameMacro())
@@ -801,7 +849,7 @@ def main():
         tests.append(TestNameWorkflow())
 
     # PWGHF
-    enable_pwghf = False
+    enable_pwghf = True
     if enable_pwghf:
         tests.append(TestHfConstAuto())
         tests.append(TestHfNameStructClass())
