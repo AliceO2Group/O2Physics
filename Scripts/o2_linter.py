@@ -28,7 +28,7 @@ github_mode = False # GitHub mode
 
 def is_camel_case(name: str) -> bool:
     """forExample or ForExample"""
-    return not "_" in name and not "-" in name
+    return not "_" in name and not "-" in name and not " " in name
 
 
 def is_upper_camel_case(name: str) -> bool:
@@ -43,17 +43,17 @@ def is_lower_camel_case(name: str) -> bool:
 
 def is_kebab_case(name: str) -> bool:
     """for-example"""
-    return name.islower() and not "_" in name
+    return name.islower() and not "_" in name and not " " in name
 
 
 def is_snake_case(name: str) -> bool:
     """for_example"""
-    return name.islower() and not "-" in name
+    return name.islower() and not "-" in name and not " " in name
 
 
 def is_screaming_snake_case(name: str) -> bool:
     """FOR_EXAMPLE"""
-    return name.isupper() and not "-" in name
+    return name.isupper() and not "-" in name and not " " in name
 
 
 def print_error(path: str, line: int, title: str, message: str) -> str:
@@ -628,7 +628,7 @@ class TestNameWorkflow(TestSpec):
             if self.is_disabled(line, "#"):
                 continue
             # Extract workflow name.
-            workflow_name = line.strip().split("(")[1]
+            workflow_name = line.strip().split("(")[1].split()[0]
             if not is_kebab_case(workflow_name):
                 passed = False
                 print_error(path, i + 1, self.name, f"Invalid workflow name: {workflow_name}.")
