@@ -100,8 +100,8 @@ DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float); //!
 DECLARE_SOA_COLUMN(QvecBPosIm, qvecBPosIm, float); //!
 DECLARE_SOA_COLUMN(QvecBNegRe, qvecBNegRe, float); //!
 DECLARE_SOA_COLUMN(QvecBNegIm, qvecBNegIm, float); //!
-DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int); //!
-DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int); //!
+DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int);       //!
+DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int);       //!
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event information table
