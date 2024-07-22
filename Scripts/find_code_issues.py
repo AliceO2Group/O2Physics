@@ -239,9 +239,6 @@ class TestPdgCode(TestSpec):
     message = "Avoid using hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead."
     suffixes = [".h", ".cxx", ".C"]
 
-    def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path)
-
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
@@ -252,6 +249,23 @@ class TestPdgCode(TestSpec):
             code = match.group(1)
             if code not in ("0", "1", "999"):
                 return False
+        return True
+
+
+class TestPdgMass(TestSpec):
+    """Detect unnecessary call of Mass() for a known PDG code."""
+    name = "known pdg mass"
+    message = "Consider using o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
+    suffixes = [".h", ".cxx", ".C"]
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        pattern_pdg_code = "[+-]?(k[A-Z][a-zA-Z0-9]*|[0-9]+)"
+        if re.search(f"->GetParticle\({pattern_pdg_code}\)->Mass\(\)", line):
+            return False
+        if re.search(f"->Mass\({pattern_pdg_code}\)", line):
+            return False
         return True
 
 
@@ -766,7 +780,8 @@ def main():
         # tests.append(TestROOT())
         # tests.append(TestPI())
         # tests.append(TestPdgDatabase())
-        tests.append(TestPdgCode())
+        # tests.append(TestPdgCode())
+        tests.append(TestPdgMass())
         # tests.append(TestLogging())
         # tests.append(TestConstRefInForLoop())
         # tests.append(TestConstRefInSubscription())
