@@ -364,8 +364,6 @@ struct HfTaskLb {
           continue;
         }
 
-
-
         float ptProngs[2], yProngs[2], etaProngs[2];
         int counter = 0;
         for (const auto& daught : particle.daughters_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>()) {
@@ -374,8 +372,6 @@ struct HfTaskLb {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-
-
 
         registry.fill(HIST("MC/hPtProng0Gen"), ptProngs[0], particle.pt());
         registry.fill(HIST("MC/hPtProng1Gen"), ptProngs[1], particle.pt());

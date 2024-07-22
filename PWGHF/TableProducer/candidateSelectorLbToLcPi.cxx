@@ -56,7 +56,6 @@ struct HfCandidateSelectorLbToLcPi {
   HfHelper hfHelper;
 
   using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::pidTPCFullPi>;
-  //using TracksWPID = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
@@ -191,21 +190,17 @@ struct HfCandidateSelectorLbToLcPi {
         continue;
       }
 
-
       // PID selection for pion
-      if(trackPi.pt() > ptPidTpcMin && trackPi.pt() < ptPidTpcMax)
-        if(std::abs(trackPi.tpcNSigmaPi()) > nSigmaTpcMax)
-        {
+      if (trackPi.pt() > ptPidTpcMin && trackPi.pt() < ptPidTpcMax)
+        if (std::abs(trackPi.tpcNSigmaPi()) > nSigmaTpcMax) {
           hfSelLbToLcPiCandidate(statusLb);
           continue;
         }
-      if(trackPi.pt() > ptPidTofMin && trackPi.pt() < ptPidTofMax)
-        if(std::abs(trackPi.tofNSigmaPi()) > nSigmaTofMax)
-        {
+      if (trackPi.pt() > ptPidTofMin && trackPi.pt() < ptPidTofMax)
+        if (std::abs(trackPi.tofNSigmaPi()) > nSigmaTofMax) {
           hfSelLbToLcPiCandidate(statusLb);
           continue;
         }
-
 
       hfSelLbToLcPiCandidate(1);
       // LOGF(debug, "Lb candidate selection successful, candidate should be selected");
