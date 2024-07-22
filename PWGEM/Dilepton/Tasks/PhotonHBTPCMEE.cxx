@@ -40,5 +40,5 @@ using namespace o2::aod;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PhotonHBT<PairType::kPCMDalitzEE, MyV0Photons, aod::V0Legs, FilteredMyTracks>>(cfgc, TaskName{"photon-hbt-pcmee"})};
+    adaptAnalysisTask<PhotonHBT<o2::aod::pwgem::dilepton::core::photonhbt::ggHBTPairType::kPCMEE, MyV0Photons, aod::V0Legs, FilteredMyTracks>>(cfgc, TaskName{"photon-hbt-pcmee"})};
 }

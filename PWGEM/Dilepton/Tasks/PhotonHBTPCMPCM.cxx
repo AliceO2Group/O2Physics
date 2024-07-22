@@ -40,5 +40,5 @@ using namespace o2::aod;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PhotonHBT<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"photon-hbt-pcmpcm"})};
+    adaptAnalysisTask<PhotonHBT<o2::aod::pwgem::dilepton::core::photonhbt::ggHBTPairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"photon-hbt-pcmpcm"})};
 }

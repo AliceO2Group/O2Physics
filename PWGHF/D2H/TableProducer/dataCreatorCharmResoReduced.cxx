@@ -262,7 +262,7 @@ struct HfDataCreatorCharmResoReduced {
   bool isTrackSelected(const Tr& track, const std::array<int, 3>& dDaughtersIds)
   {
 
-    if (rejectPairsWithCommonDaughter && std::find(dDaughtersIds.begin(), dDaughtersIds.end(), track.globalIndex())) {
+    if (rejectPairsWithCommonDaughter && std::find(dDaughtersIds.begin(), dDaughtersIds.end(), track.globalIndex()) != dDaughtersIds.end()) {
       return false;
     }
 
