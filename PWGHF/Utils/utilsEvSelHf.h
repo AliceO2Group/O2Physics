@@ -251,6 +251,8 @@ struct HfEventSelectionMc {
   bool useItsRofBorderCut{false};   // Apply the ITS RO frame border cut
   float zPvPosMin{-1000.f};         // Minimum PV posZ (cm)
   float zPvPosMax{1000.f};          // Maximum PV posZ (cm)
+  float centralityMin{0.f};         // Minimum centrality
+  float centralityMax{100.f};       // Maximum centrality
 
   // histogram names
   static constexpr char nameHistParticles[] = "hParticles";
@@ -280,6 +282,10 @@ struct HfEventSelectionMc {
         zPvPosMin = option.defaultValue.get<float>();
       } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
         zPvPosMax = option.defaultValue.get<float>();
+      } else if (option.name.compare("hfEvSel.centralityMin") == 0) {
+        centralityMin = option.defaultValue.get<float>();
+      } else if (option.name.compare("hfEvSel.centralityMax") == 0) {
+        centralityMax = option.defaultValue.get<float>();
       }
     }
   }
@@ -288,7 +294,7 @@ struct HfEventSelectionMc {
   /// \param mcCollision MC collision to test against the selection criteria
   /// \return a bitmask with the event selections not satisfied by the analysed collision
   template <typename TBc, typename TMcColl>
-  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, float& centrality, float centralityMin, float centralityMax)
+  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, float& centrality)
   {
     uint16_t rejectionMask{0};
     float zPv = mcCollision.posZ();

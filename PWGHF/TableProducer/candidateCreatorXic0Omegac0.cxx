@@ -662,8 +662,6 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Produces<aod::HfToOmegaKMCGen> rowMCMatchGenToOmegaK;
 
   // Configuration
-  o2::framework::Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
-  o2::framework::Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
   o2::framework::Configurable<int> centralityEstimator{"centralityEstimator", 0, "Centrality estimator: 0 - FT0C, 1 - FT0M"};
 
@@ -944,7 +942,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           centrality = centColl;
         }
       } // end loop over collisions
-      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision, centrality, centralityMin, centralityMax);
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision, centrality);
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
