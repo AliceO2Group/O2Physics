@@ -29,8 +29,7 @@ struct mcCollisionConverter {
         mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
         mcCollision.t(), mcCollision.weight(),
         mcCollision.impactParameter(),
-        0.0f // dummy event plane, not available in _000
-      );
+        0.0f); // dummy event plane, not available in _000
     }
   }
 };
