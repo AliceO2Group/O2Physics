@@ -251,6 +251,8 @@ struct HfEventSelectionMc {
   bool useItsRofBorderCut{false};   // Apply the ITS RO frame border cut
   float zPvPosMin{-1000.f};         // Minimum PV posZ (cm)
   float zPvPosMax{1000.f};          // Maximum PV posZ (cm)
+  float centralityMin{0.f};         // Minimum centrality
+  float centralityMax{100.f};       // Maximum centrality
 
   // histogram names
   static constexpr char nameHistParticles[] = "hParticles";
@@ -280,20 +282,56 @@ struct HfEventSelectionMc {
         zPvPosMin = option.defaultValue.get<float>();
       } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
         zPvPosMax = option.defaultValue.get<float>();
+      } else if (option.name.compare("hfEvSel.centralityMin") == 0) {
+        centralityMin = option.defaultValue.get<float>();
+      } else if (option.name.compare("hfEvSel.centralityMax") == 0) {
+        centralityMax = option.defaultValue.get<float>();
       }
     }
   }
 
   /// \brief Function to apply event selections to generated MC collisions
   /// \param mcCollision MC collision to test against the selection criteria
+  /// \param collSlice collection of reconstructed collisions
+  /// \param centrality centrality variable to be set in this function
   /// \return a bitmask with the event selections not satisfied by the analysed collision
-  template <typename TBc, typename TMcColl>
-  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
+  template <typename TBc, o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename TMcColl>
+  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, CCs const& collSlice, float& centrality)
   {
     uint16_t rejectionMask{0};
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
 
+    float multiplicity{0.f};
+    for (const auto& collision : collSlice) {
+      float collCent{0.f};
+      float collMult{0.f};
+      if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
+        if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
+          collCent = collision.centFT0A();
+        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
+          collCent = collision.centFT0C();
+        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+          collCent = collision.centFT0M();
+        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
+          collCent = collision.centFV0A();
+        } else {
+          LOGP(fatal, "Unsupported centrality estimator!");
+        }
+        collMult = collision.numContrib();
+        if (collMult > multiplicity) {
+          centrality = collCent;
+          multiplicity = collMult;
+        }
+      } else {
+        LOGP(fatal, "Unsupported centrality estimator!");
+      }
+    }
+
+    /// centrality selection
+    if (centrality < centralityMin || centrality > centralityMax) {
+      SETBIT(rejectionMask, EventRejection::Centrality);
+    }
     /// Sel8 trigger selection
     if (useSel8Trigger && (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
       SETBIT(rejectionMask, EventRejection::Trigger);
