@@ -1313,7 +1313,7 @@ struct tofSpectra {
 
     } // track
   }   // process function
-  PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", true);
+  PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", false);
 
   void processStandard(CollisionCandidates::iterator const& collision,
                        TrackCandidates const& tracks)
