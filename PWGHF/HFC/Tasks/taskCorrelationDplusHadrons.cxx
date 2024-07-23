@@ -260,6 +260,11 @@ struct HfTaskCorrelationDplusHadrons {
       float bdtScoreBkg = candidate.mlScoreBkg();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
 
+      // reject entries outside pT ranges of interest
+      if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back()) {
+        continue;
+      }
+
       if (bdtScorePrompt < mlOutputPrompt->at(effBinD) || bdtScoreBkg > mlOutputBkg->at(effBinD)) {
         continue;
       }
@@ -289,8 +294,9 @@ struct HfTaskCorrelationDplusHadrons {
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
 
       // reject entries outside pT ranges of interest
-      if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
+      if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back()) {
         continue;
+      }
 
       if (bdtScorePrompt < mlOutputPrompt->at(effBinD) || bdtScoreBkg > mlOutputBkg->at(effBinD)) {
         continue;
@@ -357,6 +363,7 @@ struct HfTaskCorrelationDplusHadrons {
       if (applyEfficiency) {
         efficiencyWeightD = 1. / efficiencyD->at(effBinD);
       }
+      registry.fill(HIST("hMassDplusVsPt"), massD, ptD, efficiencyWeightD);
       if (isDplusPrompt) {
         registry.fill(HIST("hMassPromptDplusVsPt"), massD, ptD, efficiencyWeightD);
         registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
