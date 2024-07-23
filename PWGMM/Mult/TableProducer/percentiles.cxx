@@ -37,7 +37,6 @@ struct Binner {
 
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
 
-
   // The objects are uploaded with https://alimonitor.cern.ch/ccdb/upload.jsp
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "Users/a/aalkin/gencentralities", "base path to the ccdb object"};
@@ -130,7 +129,6 @@ struct Binner {
   }
 
   PROCESS_SWITCH(Binner, bin, "Bin collisions", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
