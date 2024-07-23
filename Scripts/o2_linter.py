@@ -218,6 +218,7 @@ class TestROOT(TestSpec):
         pattern = r"TMath|(U?(Int|Char|Short)|Double(32)?|Float(16)?|U?Long(64)?|Bool)_t"
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         return re.search(pattern, line) is None
 
 
@@ -234,6 +235,7 @@ class TestPI(TestSpec):
         pattern = r"M_PI|TMath::(Two)?Pi"
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         return re.search(pattern, line) is None
 
 
@@ -249,6 +251,7 @@ class TestPdgDatabase(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         return not "TDatabasePDG" in line
 
 
@@ -261,6 +264,7 @@ class TestPdgCode(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         if re.search(r"->(GetParticle|Mass)\([+-]?[0-9]+\)", line):
             return False
         match = re.search(r"[Pp][Dd][Gg][\w]* ={1,2} [+-]?([0-9]+);", line)
@@ -280,6 +284,7 @@ class TestPdgMass(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         pattern_pdg_code = r"[+-]?(k[A-Z][a-zA-Z0-9]*|[0-9]+)"
         if re.search(fr"->GetParticle\({pattern_pdg_code}\)->Mass\(\)", line):
             return False
@@ -301,6 +306,7 @@ class TestLogging(TestSpec):
         pattern = r"^([Pp]rintf\(|(std::)?cout <)"
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         return re.search(pattern, line) is None
 
 
@@ -313,6 +319,7 @@ class TestConstRefInForLoop(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         if not line.startswith("for (") or " : " not in line:
             return True
         line = line[:line.index(" : ")] # keep only the iterator part
@@ -337,6 +344,8 @@ class TestConstRefInSubscription(TestSpec):
                 continue
             if self.is_disabled(line):
                 continue
+            if "//" in line: # Remove comment. (Ignore /* to avoid truncating at /*parameter*/.)
+                line = line[:line.find("//")]
             if re.search(r"^void process[\w]*\(", line):
                 line_process = (i + 1)
                 i_closing = line.rfind(")")
@@ -517,6 +526,7 @@ class TestNameConstant(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         words = line.split()
         if not "constexpr" in words or not "=" in words:
             return True
@@ -565,6 +575,7 @@ class TestNameUpperCamelCase(TestSpec):
             return True
         if not line.startswith(f"{self.keyword} "):
             return True
+        line = remove_comment_cpp(line)
         # Extract object name.
         words = line.split()
         if not words[1].isalnum(): # "struct : ...", "enum { ..."
@@ -675,6 +686,7 @@ class TestHfConstAuto(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         return not "auto const" in line
 
 
@@ -692,6 +704,7 @@ class TestHfNameStructClass(TestSpec):
             return True
         if not line.startswith(("struct ", "class ")):
             return True
+        line = remove_comment_cpp(line)
         # Extract struct/class name.
         words = line.split()
         if not words[1].isalnum(): # "struct : ..."
@@ -718,9 +731,10 @@ class TestHfStructMembers(TestSpec):
         dic_struct = {}
         struct_name = ""
         for i, line in enumerate(content):
-            if line.strip().startswith("//"):
+            if is_comment_cpp(line):
                 continue
             if line.startswith("struct "): # expecting no indentation
+                line = remove_comment_cpp(line)
                 struct_name = line.strip().split()[1]
                 dic_struct[struct_name] = {}
                 continue
