@@ -298,10 +298,10 @@ struct phiInJets {
   {
     bool pid = false;
 
-    if (!cfgIsKstar)
+    if (!cfgIsKstar) {
       pid = trackPIDKaon<T>(candidate);
 
-    else {
+    } else {
       if (!FT)
         pid = trackPIDPion<T>(candidate);
       else
@@ -537,8 +537,9 @@ struct phiInJets {
         if (goodjets > 0)
           return 2;
         return 1;
-      } else
+      } else {
         return -1;
+      }
     } else {
       if (lResonance.M() > 0.85 && lResonance.M() < 0.95) {
         if (jetFlag)
@@ -546,8 +547,9 @@ struct phiInJets {
         if (goodjets > 0)
           return 2;
         return 1;
-      } else
+      } else {
         return -1;
+      }
     }
   } // MinvReconstruction
 
@@ -1334,12 +1336,12 @@ struct phiInJets {
               }
             }
 
-            if (cfgSingleJet)
+            if (cfgSingleJet) {
               if (goodjets > 1) {
                 jetpt_mcd = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
                 jetpt_mcp = DistinguishJetsMC(mcp_pt, mcp_phi, mcp_eta, lResonance);
               }
-
+	    }
             if (jetFlag) { // Fill Resp. Matrix
               if (cDebugLevel > 0) {
                 std::cout << "******************************************" << std::endl;
@@ -1350,7 +1352,7 @@ struct phiInJets {
                 std::cout << "******************************************" << std::endl;
               }
               JEhistos.fill(HIST("Resp_Matrix_MATCHED"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
-              int dice = rand() % 2;
+              int dice = rand_r() % 2;
               if (dice > 0)
                 JEhistos.fill(HIST("Resp_Matrix_MATCHED_rand0"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
               else
