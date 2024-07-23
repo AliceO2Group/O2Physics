@@ -95,7 +95,7 @@ struct femtoDreamProducerTask {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
   Configurable<bool> ConfEvtAddOfflineCheck{"ConfEvtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)"};
   Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtodream tables"};
-  Configurable<bool> ConfIsActivateReso{"ConfIsActivateReso", true, "Activate filling of sl Resonances into femtodream tables"};
+  Configurable<bool> ConfIsActivateReso{"ConfIsActivateReso", false, "Activate filling of sl Resonances into femtodream tables"};
 
   Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
   // Configurable<bool> ConfRejectITSHitandTOFMissing{ "ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
@@ -156,7 +156,7 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<float>> ConfDaughterPTPCThr{"ConfDaughterPTPCThr", std::vector<float>{0.40, 0.40}, "Reso Daughter sel: momentum threshold TPC only PID, p_TPC,Thr"};           // 0.4
   Configurable<std::vector<float>> ConfDaughterPIDnSigmaMax{"ConfDaughterPIDnSigmaMax", std::vector<float>{3.00, 3.00}, "Reso Daughter sel: Max. PID nSigma TPC"};                        // 3.0
   Configurable<std::vector<int>> ConfDaughterPIDspecies{"ConfDaughterPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Kaon}, "Reso Daughter sel: Particles species for PID"};
-  Configurable<std::vector<float>> ConfDaug1Daugh2ResoMass{"ConfDaug1Daugh2ResoMass", std::vector<float>{o2::constants::physics::MassKMinus, o2::constants::physics::MassKPlus, o2::constants::physics::MassPhi}, "Masses: Daughter1 - Daughter2 - Resonance"};
+  Configurable<std::vector<float>> ConfDaug1Daugh2ResoMass{"ConfDaug1Daugh2ResoMass", std::vector<float>{o2::constants::physics::MassKPlus, o2::constants::physics::MassKMinus, o2::constants::physics::MassPhi}, "Masses: Daughter1 - Daughter2 - Resonance"};
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
   /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
@@ -269,27 +269,6 @@ struct femtoDreamProducerTask {
 
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
-  }
-
-  // Function to calculate invariant mass of resonance
-  float CalculateInvMass(const ROOT::Math::PtEtaPhiMVector part1,
-                         const ROOT::Math::PtEtaPhiMVector part2, float massD1, float massD2)
-  {
-    Double_t invMass = 0;
-
-    float EDaug1 = TMath::Sqrt(
-      massD1 * massD1 + part1.Px() * part1.Px() + part1.Py() * part1.Py() + part1.Pz() * part1.Pz());
-    float EDaug2 = TMath::Sqrt(
-      massD2 * massD2 + part2.Px() * part2.Px() + part2.Py() * part2.Py() + part2.Pz() * part2.Pz());
-
-    float energysum = EDaug1 + EDaug2;
-    float pSum2 = (part2.Px() + part1.Px()) * (part2.Px() + part1.Px()) +
-
-                  (part2.Py() + part1.Py()) * (part2.Py() + part1.Py()) +
-
-                  (part2.Pz() + part1.Pz()) * (part2.Pz() + part1.Pz());
-    invMass = TMath::Sqrt(energysum * energysum - pSum2);
-    return invMass;
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
@@ -632,12 +611,13 @@ struct femtoDreamProducerTask {
 
           ROOT::Math::PtEtaPhiMVector tempD1(Daughter1.at(iDaug1).pt(), Daughter1.at(iDaug1).eta(), Daughter1.at(iDaug1).phi(), ConfDaug1Daugh2ResoMass.value[0]);
           ROOT::Math::PtEtaPhiMVector tempD2(Daughter2.at(iDaug2).pt(), Daughter2.at(iDaug2).eta(), Daughter2.at(iDaug2).phi(), ConfDaug1Daugh2ResoMass.value[1]);
-          ResoRegistry.fill(HIST("AnalysisQA/Reso/InvMass"), CalculateInvMass(tempD1, tempD2, ConfDaug1Daugh2ResoMass.value[0], ConfDaug1Daugh2ResoMass.value[1]));
 
-          if ((CalculateInvMass(tempD1, tempD2, ConfDaug1Daugh2ResoMass.value[0], ConfDaug1Daugh2ResoMass.value[1]) > ConfResoInvMassLowLimit.value) && (CalculateInvMass(tempD1, tempD2, ConfDaug1Daugh2ResoMass.value[0], ConfDaug1Daugh2ResoMass.value[1]) < ConfResoInvMassUpLimit.value)) {
+          ROOT::Math::PtEtaPhiMVector tempPhi = tempD1 + tempD2;
 
-            ROOT::Math::PtEtaPhiMVector tempPhi = tempD1 + tempD2;
-            tempPhi.SetM(CalculateInvMass(tempD1, tempD2, ConfDaug1Daugh2ResoMass.value[0], ConfDaug1Daugh2ResoMass.value[1]));
+          ResoRegistry.fill(HIST("AnalysisQA/Reso/InvMass"), tempPhi.M());
+
+          if ((tempPhi.M() >= ConfResoInvMassLowLimit.value) && (tempPhi.M() <= ConfResoInvMassUpLimit.value)) {
+
             ResoRegistry.fill(HIST("AnalysisQA/Reso/InvMass_selected"), tempPhi.M());
             ResoRegistry.fill(HIST("AnalysisQA/Reso/PtD1_selected"), Daughter1.at(iDaug1).pt());
             ResoRegistry.fill(HIST("AnalysisQA/Reso/PtD2_selected"), Daughter2.at(iDaug2).pt());
@@ -672,8 +652,8 @@ struct femtoDreamProducerTask {
                         0,
                         0.f,
                         indexChildID,
-                        CalculateInvMass(tempD1, tempD2, ConfDaug1Daugh2ResoMass.value[0], ConfDaug1Daugh2ResoMass.value[1]),
-                        CalculateInvMass(tempD1, tempD2, ConfDaug1Daugh2ResoMass.value[0], ConfDaug1Daugh2ResoMass.value[1]));
+                        tempPhi.M(),
+                        tempPhi.M());
             if (ConfIsDebug.value) {
               fillDebugParticle<true>(Daughter1.at(iDaug1)); // QA for positive daughter
               fillDebugParticle<true>(Daughter2.at(iDaug2)); // QA for negative daughter
