@@ -66,12 +66,12 @@ struct kstar892analysis {
   Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<float> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
   /// PID Selections
-  Configurable<float> cfgHighPt{"cfgHighPt", 3.0, "Minimum Pt to apply tighter PID selections on Mixed Event"};
+  Configurable<float> cfgHighPt{"cfgHighPt", 999.0, "Minimum Pt to apply tighter PID selections on Mixed Event"};
   // Pion
   Configurable<float> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                // TPC
   Configurable<float> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                // TOF
-  Configurable<float> cMaxTPCnSigmaPionHighPtME{"cMaxTPCnSigmaPionHighPtME", 2.0, "TPC nSigma cut for Pion at pt>3GeV for Mixed Event"};                // TPC
-  Configurable<float> cMaxTOFnSigmaPionHighPtME{"cMaxTOFnSigmaPionHighPtME", 2.0, "TOF nSigma cut for Pion at pt>3GeV for Mixed Event"};                // TOF
+  Configurable<float> cMaxTPCnSigmaPionHighPtME{"cMaxTPCnSigmaPionHighPtME", 2.0, "TPC nSigma cut for Pion at high pt for Mixed Event"};                // TPC
+  Configurable<float> cMaxTOFnSigmaPionHighPtME{"cMaxTOFnSigmaPionHighPtME", 2.0, "TOF nSigma cut for Pion at high pt for Mixed Event"};                // TOF
   Configurable<float> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
   // Kaon
   Configurable<float> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};               // TPC
@@ -103,14 +103,14 @@ struct kstar892analysis {
   Configurable<float> cMaxMinvMotherCut{"cMaxMinvMotherCut", 1.5, "Maximum Minv of mother cut"};
 
   //configurables for partitions
-  Configurable<float> cMaxPtTPC{"cMaxPtTPC", 5.0, "maximum pt to apply TPC PID and TOF if available"};
-  Configurable<float> cMinPtTOF{"cMinPtTOF", 4.0 , "minimum pt to require TOF PID in addition to TPC"};
+  Configurable<float> cMaxPtTPC{"cMaxPtTPC", 1.2, "maximum pt to apply TPC PID and TOF if available"};
+  Configurable<float> cMinPtTOF{"cMinPtTOF", 0.8, "minimum pt to require TOF PID in addition to TPC"};
 
   void init(o2::framework::InitContext&)
   {
 
-    LOG(info) << "\n cfgITScluster ============>"<< static_cast<uint8_t>(cfgITScluster);
-    LOG(info)<< "\n cfgTPCcluster ============>"<< static_cast<uint8_t>(cfgTPCcluster);
+    // LOG(info) << "\n cfgITScluster ============>"<< static_cast<uint8_t>(cfgITScluster);
+    // LOG(info)<< "\n cfgTPCcluster ============>"<< static_cast<uint8_t>(cfgTPCcluster);
 
     AxisSpec centAxis = {binsCent, "V0M (%)"};
     AxisSpec dcaxyAxis = {cDCABins, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
@@ -130,7 +130,7 @@ struct kstar892analysis {
       histos.add("TestME/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
       histos.add("TestME/hPairsCounterSameE", "tot n pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
       histos.add("TestME/hPairsCounterMixedE", "tot n pairs mixedE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
-
+      
       // event histograms
       histos.add("QAevent/hEvtCounterSameE", "Number of analyzed Same Events", HistType::kTH1F, {{1, 0.5, 1.5}});
       histos.add("QAevent/hVertexZSameE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
@@ -146,13 +146,14 @@ struct kstar892analysis {
     histos.add("k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLS", "Invariant mass of K(892)0 like sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLSAnti", "Invariant mass of Anti-K(892)0 like sign", kTH1F, {invMassAxis});
-    histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
-
-    if (additionalMEPlots) {
-      histos.add("k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH1F, {invMassAxis});
-      histos.add("k892invmassME_DSAnti", "Invariant mass of K(892)0 mixed event DSAnti", kTH1F, {invMassAxis});
+    if(doprocessMELight || doprocessMELightWithTof || doprocessMELightTPCLowPt || doprocessMELightTOFHighPt) {
+      histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
+      if (additionalMEPlots) {
+	histos.add("k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH1F, {invMassAxis});
+	histos.add("k892invmassME_DSAnti", "Invariant mass of K(892)0 mixed event DSAnti", kTH1F, {invMassAxis});
+      }
     }
-
+      
     if (additionalQAplots) {
       // TPC ncluster distirbutions
       histos.add("TPCncluster/TPCnclusterpi", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
@@ -183,21 +184,23 @@ struct kstar892analysis {
     histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
-    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {centAxis, ptAxis, invMassAxis});
+    if(doprocessMELight || doprocessMELightWithTof || doprocessMELightTPCLowPt || doprocessMELightTOFHighPt) {
+      histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {centAxis, ptAxis, invMassAxis});
 
-    if (additionalMEPlots) {
-      histos.add("QAME/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
-      histos.add("QAME/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-      histos.add("QAME/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-      histos.add("QAME/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
-      histos.add("QAME/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-      histos.add("QAME/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+      if (additionalMEPlots) {
+	histos.add("QAME/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+	histos.add("QAME/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+	histos.add("QAME/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+	histos.add("QAME/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+	histos.add("QAME/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+	histos.add("QAME/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
 
-      histos.add("h3k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH3F, {centAxis, ptAxis, invMassAxis});
-      histos.add("h3k892invmassME_DSAnti", "Invariant mass of K(892)0 mixed event DSAnti", kTH3F, {centAxis, ptAxis, invMassAxis});
+	histos.add("h3k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH3F, {centAxis, ptAxis, invMassAxis});
+	histos.add("h3k892invmassME_DSAnti", "Invariant mass of K(892)0 mixed event DSAnti", kTH3F, {centAxis, ptAxis, invMassAxis});
+      }
     }
 
-    if (doprocessMCLight || doprocessMCLightWithTof) {
+    if (doprocessMCLight || doprocessMCLightWithTof || doprocessMCLightTPCLowPt || doprocessMCLightTOFHighPt) {
       // MC QA
       histos.add("QAMCTrue/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
       histos.add("QAMCTrue/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
@@ -231,12 +234,13 @@ struct kstar892analysis {
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
+  //Filters
   Filter acceptanceFilter = nabs(aod::resodaughter::pt) >= cMinPtcut; 
-  Filter qualityFilter2 = (aod::track::itsChi2NCl <= cfgITSChi2NCl)  && (aod::track::tpcChi2NCl <= cfgTPCChi2NCl) && (aod::resodaughter::tpcCrossedRowsOverFindableCls >= cfgRatioTPCRowsOverFindableCls);
+  Filter qualityFilter = (aod::track::itsChi2NCl <= cfgITSChi2NCl)  && (aod::track::tpcChi2NCl <= cfgTPCChi2NCl) && (aod::resodaughter::tpcCrossedRowsOverFindableCls >= cfgRatioTPCRowsOverFindableCls);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) <= cMaxDCArToPVcut) && (nabs(aod::track::dcaZ) <= cMaxDCAzToPVcut);
   Filter hasTPCfilter = aod::resodaughter::hasTPC==true;
   Filter primarytrackFilter =  aod::resodaughter::isPVContributor && aod::resodaughter::isPrimaryTrack && aod::resodaughter::isGlobalTrackWoDCA;
-
+ 
   //partitions for data
   Partition<soa::Filtered<aod::ResoTracks>> resoKaWithTof = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true); 
   Partition<soa::Filtered<aod::ResoTracks>> resoPiWithTof = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true); 
@@ -253,7 +257,10 @@ struct kstar892analysis {
   Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiWithTof = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true);
   Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKa = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon); 
   Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPi =  (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion);
-
+  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKaTPClowPt = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiTPClowPt = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKaTOFhighPt = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true)  && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiTOFhighPt = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true)  && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
 
@@ -516,7 +523,7 @@ struct kstar892analysis {
 	  histos.fill(HIST("QA/trkDCAxy_ka"), trk2.dcaXY());
 	  histos.fill(HIST("QA/trkDCAz_pi"), trk1.dcaZ());
 	  histos.fill(HIST("QA/trkDCAz_ka"), trk2.dcaZ());
-	} else if(additionalMEPlots) {
+      } else if(additionalMEPlots) {
 	//  --- PID QA Pion
 	histos.fill(HIST("QAME/TPC_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
 	if (isTrk1hasTOF) {
@@ -654,6 +661,33 @@ struct kstar892analysis {
   }
   PROCESS_SWITCH(kstar892analysis, processDataLightWithTof, "Process Event for data, tracks with TOF", false);
 
+  void processDataTPCLowPt(aod::ResoCollision& collision,
+			       soa::Filtered<aod::ResoTracks> const& resotracks)
+  {
+    if (additionalQAeventPlots)
+      histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
+
+    auto candPi = resoPiTPClowPt->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+    auto candKa = resoKaTPClowPt->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+       
+    fillHistograms<false, false>(collision, candPi, candKa);
+  }
+  PROCESS_SWITCH(kstar892analysis, processDataTPCLowPt, "Process Event for data, TPC at low pt", false);
+
+  void processDataTOFHighPt(aod::ResoCollision& collision,
+			       soa::Filtered<aod::ResoTracks> const& resotracks)
+  {
+    if (additionalQAeventPlots)
+      histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
+
+    auto candPi = resoPiTOFhighPt->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+    auto candKa = resoKaTOFhighPt->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+       
+    fillHistograms<false, false>(collision, candPi, candKa);
+  }
+  PROCESS_SWITCH(kstar892analysis, processDataTOFHighPt, "Process Event for data, TOF at high pt", false);
+
+  
   void processMCLight(ResoMCCols::iterator const& collision,
                       soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const& resotracks)
   {
@@ -680,6 +714,33 @@ struct kstar892analysis {
   }
   PROCESS_SWITCH(kstar892analysis, processMCLightWithTof, "Process Event for MC (Reconstructed), tracks with TOF", false);
 
+  void processMCLightTPCLowPt(ResoMCCols::iterator const& collision,
+			     soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const& resotracks)
+  {
+    if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+      return;
+
+    auto candPi = resoMCrecPiTPClowPt->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+    auto candKa = resoMCrecKaTPClowPt->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+
+    fillHistograms<true, false>(collision, candPi, candKa);
+  }
+  PROCESS_SWITCH(kstar892analysis, processMCLightTPCLowPt, "Process Event for MC (reconstructed), TPC at low pt", false);
+
+  void processMCLightTOFHighPt(ResoMCCols::iterator const& collision,
+			     soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const& resotracks)
+  {
+    if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+      return;
+
+    auto candPi = resoMCrecPiTOFhighPt->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+    auto candKa = resoMCrecKaTOFhighPt->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex(), cache);
+
+    fillHistograms<true, false>(collision, candPi, candKa);
+  }
+  PROCESS_SWITCH(kstar892analysis, processMCLightTOFHighPt, "Process Event for MC (reconstructed), TOF at high pt", false);
+
+  
   void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents& resoParents, aod::McParticles& mcparticles )
   {
     auto multiplicity = collision.cent();
@@ -790,6 +851,43 @@ struct kstar892analysis {
     }
   }
   PROCESS_SWITCH(kstar892analysis, processMELightWithTof, "Process EventMixing light with tof", false);
+
+  void processMELightTPCLowPt(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
+  {
+    auto tracksTuple = std::make_tuple(resotracks);
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {      
+      if (additionalQAeventPlots)
+        histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
+
+      auto candPi = resoPiTPClowPt->sliceByCached(aod::resodaughter::resoCollisionId, collision1.globalIndex(), cache);
+      auto candKa = resoKaTPClowPt->sliceByCached(aod::resodaughter::resoCollisionId, collision2.globalIndex(), cache);
+       
+      fillHistograms<false, true>(collision1, candPi, candKa);
+    }
+  }
+  PROCESS_SWITCH(kstar892analysis, processMELightTPCLowPt, "Process EventMixing light with TPC at low pt", false);
+
+  void processMELightTOFHighPt(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
+  {
+    auto tracksTuple = std::make_tuple(resotracks);
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {      
+      if (additionalQAeventPlots)
+        histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
+
+      auto candPi = resoPiTOFhighPt->sliceByCached(aod::resodaughter::resoCollisionId, collision1.globalIndex(), cache);
+      auto candKa = resoKaTOFhighPt->sliceByCached(aod::resodaughter::resoCollisionId, collision2.globalIndex(), cache);
+       
+      fillHistograms<false, true>(collision1, candPi, candKa);
+    }
+  }
+  PROCESS_SWITCH(kstar892analysis, processMELightTOFHighPt, "Process EventMixing light with TOF at high pt", false);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
