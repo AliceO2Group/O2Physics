@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// In case of questions please write to:
+/// \author Fuchun Cui(fcui@cern.ch)
+
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include "Framework/runDataProcessing.h"
