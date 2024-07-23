@@ -966,8 +966,8 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fTrackHistNames[fNCutsBarrel + icut * fNPairCuts + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
-          }     // end if enableBarrelHistos
+            } // end if (pair cuts)
+          } // end if enableBarrelHistos
         }
       }
     }
@@ -1009,7 +1009,7 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fMuonHistNames[fNCutsMuon + icut * fNCutsMuon + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
+            } // end if (pair cuts)
           }
         }
       }
@@ -1287,7 +1287,7 @@ struct AnalysisSameEventPairing {
                             VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
                             VarManager::fgValues[VarManager::kR2EP_AB], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kCentFT0C],
                             VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi],
-                            VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI], VarManager::fgValues[VarManager::kMultDimuons],
+                            VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI], VarManager::fgValues[VarManager::kMultDimuons],
                             VarManager::fgValues[VarManager::kVertexingPz], VarManager::fgValues[VarManager::kVertexingSV]);
             }
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
@@ -1298,7 +1298,7 @@ struct AnalysisSameEventPairing {
                                  VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kR3SP],
                                  VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kR2EP_AB], VarManager::fgValues[VarManager::kR2EP_AC], VarManager::fgValues[VarManager::kR2EP_BC],
                                  VarManager::fgValues[VarManager::kCos3DeltaPhi], VarManager::fgValues[VarManager::kR3EP],
-                                 VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI],
+                                 VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI],
                                  VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF],
                                  VarManager::fgValues[VarManager::kMultDimuons], VarManager::fgValues[VarManager::kMultA]);
               }
@@ -1363,8 +1363,8 @@ struct AnalysisSameEventPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
-      }   // end loop over pairs of track associations
-    }     // end loop over events
+      } // end loop over pairs of track associations
+    } // end loop over events
   }
 
   template <int TPairType, uint32_t TEventFillMap, typename TAssoc1, typename TAssoc2, typename TTracks1, typename TTracks2>
@@ -1422,8 +1422,8 @@ struct AnalysisSameEventPairing {
             }
           }
         } // end for (cuts)
-      }   // end for (track2)
-    }     // end for (track1)
+      } // end for (track2)
+    } // end for (track1)
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -1675,7 +1675,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        }   // end if (pair cuts)
+        } // end if (pair cuts)
       } else {
         names = {};
         std::vector<TString> pairHistPrefixes = {"PairsBarrelSEPM"};
@@ -1726,7 +1726,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        }   // end if (pair cuts)
+        } // end if (pair cuts)
       }
     }
     // Make sure only pairs or only triplets of leg cuts were given
@@ -1750,7 +1750,7 @@ struct AnalysisAsymmetricPairing {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigHistogramSubgroups.value.data()); // define all histograms
-    VarManager::SetUseVars(fHistMan->GetUsedVars());                                   // provide the list of required variables so that VarManager knows what to fill
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
@@ -1953,9 +1953,9 @@ struct AnalysisAsymmetricPairing {
           if constexpr (trackHasCov && TTwoProngFitter) {
             ditrackExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
           }
-        }   // end inner assoc loop (leg A)
-      }     // end outer assoc loop (leg B)
-    }       // end event loop
+        } // end inner assoc loop (leg A)
+      } // end outer assoc loop (leg B)
+    } // end event loop
   }
 
   // Template function to run same event triplets (e.g. D+->K-pi+pi+)
@@ -2484,8 +2484,8 @@ struct AnalysisDileptonTrack {
             }
           }
         } // end for (dileptons)
-      }   // end for (assocs)
-    }     // end event loop
+      } // end for (assocs)
+    } // end event loop
   }
 
   void processMuonMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
@@ -2523,8 +2523,8 @@ struct AnalysisDileptonTrack {
             }
           }
         } // end for (dileptons)
-      }   // end for (assocs)
-    }     // end event loop
+      } // end for (assocs)
+    } // end event loop
   }
 
   void processDummy(MyEvents&)
