@@ -501,7 +501,7 @@ class TestNameFunctionVariable(TestSpec):
 class TestNameMacro(TestSpec):
     """Test macro names."""
     name = "name/macro"
-    message = "Use SCREAMING_SNAKE_CASE for macro names."
+    message = "Use SCREAMING_SNAKE_CASE for names of macros."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -520,7 +520,7 @@ class TestNameMacro(TestSpec):
 class TestNameConstant(TestSpec):
     """Test constexpr constant names."""
     name = "name/constexpr-constant"
-    message = "Use UpperCamelCase for constexpr constant names. Names of special constants may be prefixed with \"k\"."
+    message = "Use UpperCamelCase for names of constexpr constants. Names of special constants may be prefixed with \"k\"."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -676,7 +676,7 @@ class TestNameWorkflow(TestSpec):
             # Compare the actual and expected file names.
             if expected_workflow_file_name != workflow_file_name:
                 passed = False
-                print_error(path, i + 1, self.name, f"Workflow name {workflow_name} does not match the workflow file name {workflow_file_name} (expected {expected_workflow_file_name}).")
+                print_error(path, i + 1, self.name, f"Workflow name {workflow_name} does not match its file name {workflow_file_name}. (Matches {expected_workflow_file_name}.)")
         return passed
 
 
