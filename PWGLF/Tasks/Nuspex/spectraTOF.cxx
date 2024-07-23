@@ -1271,11 +1271,16 @@ struct tofSpectra {
     return false;
   }
 
-  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels,
+                                        aod::TPCMults, aod::PVMults, aod::MultZeqs,
+                                        aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
-  void processOccupancy(CollisionCandidates::iterator const& collision, soa::Join<TrackCandidates, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  void processOccupancy(CollisionCandidates::iterator const& collision,
+                        soa::Join<TrackCandidates,
+                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
   {
     if (!isEventSelected<true, true>(collision)) {
       return;
@@ -1309,6 +1314,7 @@ struct tofSpectra {
     } // track
   }   // process function
   PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", true);
+
   void processStandard(CollisionCandidates::iterator const& collision,
                        TrackCandidates const& tracks)
   {
