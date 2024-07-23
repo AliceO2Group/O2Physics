@@ -1273,7 +1273,7 @@ struct tofSpectra {
 
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                         aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
+                                    aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
   void processOccupancy(CollisionCandidates::iterator const& collision, soa::Join<TrackCandidates, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
   {
