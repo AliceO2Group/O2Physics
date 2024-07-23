@@ -30,7 +30,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-
 /// Dstar analysis task
 struct HfTaskDstarToD0Pi {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
@@ -75,7 +74,6 @@ struct HfTaskDstarToD0Pi {
     AxisSpec axisDecayLength = {binningDecayLength, " decay length (cm)"};
     AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
     AxisSpec axisCentrality = {binningCentrality, "centrality (%)"};
-
 
     registry.add("Yield/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
@@ -189,7 +187,7 @@ struct HfTaskDstarToD0Pi {
         registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
       } else if (signDstar < 0) {
-         registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), (invAntiDstar - invD0Bar), candDstar.pt(), centrality);
+        registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), (invAntiDstar - invD0Bar), candDstar.pt(), centrality);
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invAntiDstar - invD0Bar));
@@ -203,9 +201,8 @@ struct HfTaskDstarToD0Pi {
 
   PresliceUnsorted<CollisionsWCentMcLabel> colsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   SliceCache cache;
-  
 
-  void processMC(aod::McCollisions const &, CollisionsWCentMcLabel const & collisions,  CandDstarWSelFlagMcRec const&,
+  void processMC(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagMcRec const&,
                  CandDstarMcGen const& rowsMcPartilces,
                  aod::TracksWMc const&)
   {
@@ -230,7 +227,7 @@ struct HfTaskDstarToD0Pi {
 
         auto recCollision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
         float centFT0M = recCollision.centFT0M();
-        LOGF(info,"centFT0M: %f",centFT0M);
+        LOGF(info, "centFT0M: %f", centFT0M);
 
         registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
         if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
@@ -283,16 +280,16 @@ struct HfTaskDstarToD0Pi {
     // MC at Generator Level
     for (const auto& mcParticle : rowsMcPartilces) {
       if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
-        
+
         auto ptGen = mcParticle.pt();
         // auto yGen = mcParticle.y(); // Can we use this definition?
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {
           continue;
         }
-        
+
         auto mcCollision = mcParticle.mcCollision_as<aod::McCollisions>();
-        auto recCollisions = collisions.sliceBy(colsPerMcCollision,mcCollision.globalIndex());
+        auto recCollisions = collisions.sliceBy(colsPerMcCollision, mcCollision.globalIndex());
         // auto recCollisions = collisions.sliceByCached(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex(), cache);
         // auto recCollisions = collisions.sliceByCachedUnsorted(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex(), cache);
 
@@ -306,15 +303,15 @@ struct HfTaskDstarToD0Pi {
 
         float centFT0MGen;
         if (recCollisions.size()) {
-        // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
-        std::vector<float> colCentVec;
-        for (const auto& recCol : recCollisions) {
-          colCentVec.push_back(recCol.centFT0M());
-        }
-        std::sort(colCentVec.begin(), colCentVec.end());
-        centFT0MGen = colCentVec[0]; // Selecting most central collision amplitute
+          // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
+          std::vector<float> colCentVec;
+          for (const auto& recCol : recCollisions) {
+            colCentVec.push_back(recCol.centFT0M());
+          }
+          std::sort(colCentVec.begin(), colCentVec.end());
+          centFT0MGen = colCentVec[0]; // Selecting most central collision amplitute
         } else {
-        centFT0MGen = -999.;
+          centFT0MGen = -999.;
         }
 
         registry.fill(HIST("QA/hEtaDstarGen"), mcParticle.eta());
