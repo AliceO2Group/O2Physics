@@ -76,7 +76,7 @@ def remove_comment_cpp(line: str) -> str:
     for keyword in ("//", "/*"):
         if keyword in line:
             line = line[:line.index(keyword)]
-    return line
+    return line.strip()
 
 
 class TestSpec(ABC):
@@ -546,6 +546,63 @@ class TestNameConstant(TestSpec):
         return is_upper_camel_case(constant_name)
 
 
+class TestNameColumn(TestSpec):
+    """Test names of O2 columns."""
+    name = "name/o2-column"
+    message = "Use UpperCamelCase for names of O2 columns and matching lowerCamelCase names for their getters."
+    suffixes = [".h", ".cxx"]
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        if not (match := re.match("DECLARE(_[A-Z]+)*_COLUMN(_[A-Z]+)*\(", line)):
+            return True
+        # Extract names of the column type and getter.
+        line = remove_comment_cpp(line)
+        line = line[len(match.group()):].strip() # Extract part after "(".
+        if not (match := re.match("([^,]+), ([^,\) ]+)", line)):
+            print(f"Failed to extract column type and getter from \"{line}\".")
+            return False
+        column_type_name = match.group(1)
+        column_getter_name = match.group(2)
+        # print(f"Got \"{column_type_name}\" \"{column_getter_name}\"")
+        # return True
+        if column_type_name[0] == "_": # probably a macro variable
+            return True
+        # The actual test comes here.
+        if not is_upper_camel_case(column_type_name):
+            return False
+        if not is_lower_camel_case(column_getter_name):
+            return False
+        return f"{column_type_name[0].lower()}{column_type_name[1:]}" == column_getter_name
+
+
+class TestNameTable(TestSpec):
+    """Test names of O2 tables."""
+    name = "name/o2-table"
+    message = "Use UpperCamelCase for names of O2 tables."
+    suffixes = [".h", ".cxx"]
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        if not (match := re.match("DECLARE(_[A-Z]+)*_TABLES?(_[A-Z]+)*\(", line)):
+            return True
+        # Extract names of the column type and getter.
+        line = remove_comment_cpp(line)
+        line = line[len(match.group()):].strip() # Extract part after "(".
+        if not (match := re.match("([^,\) ]+)", line)):
+            print(f"Failed to extract table type from \"{line}\".")
+            return False
+        table_type_name = match.group(1)
+        # print(f"Got \"{table_type_name}\"")
+        # return True
+        if table_type_name[0] == "_": # probably a macro variable
+            return True
+        # The actual test comes here.
+        return is_upper_camel_case(table_type_name)
+
+
 class TestNameNamespace(TestSpec):
     """Test names of namespaces."""
     name = "name/namespace"
@@ -886,6 +943,8 @@ def main():
         tests.append(TestNameFunctionVariable())
         tests.append(TestNameMacro())
         tests.append(TestNameConstant())
+        tests.append(TestNameColumn())
+        tests.append(TestNameTable())
         tests.append(TestNameNamespace())
         tests.append(TestNameEnum())
         tests.append(TestNameClass())
