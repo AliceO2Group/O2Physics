@@ -345,7 +345,7 @@ class TestConstRefInSubscription(TestSpec):
                 words = arguments.split(", ")
                 # test
                 for arg in words:
-                    if not re.search(r"[\w<>:]* ?const ?[\w<>:]*&", arg):
+                    if not re.search(r"([\w>] const|const [\w<>:]+)&", arg):
                         passed = False
                         print_error(path, i + 1, self.name, f"Argument {arg} is not const&.")
                 line_process = 0
