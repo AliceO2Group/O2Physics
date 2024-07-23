@@ -295,13 +295,13 @@ struct HfEventSelectionMc {
   /// \param collSlice collection of reconstructed collisions
   /// \param centrality centrality variable to be set in this function
   /// \return a bitmask with the event selections not satisfied by the analysed collision
-  template <typename TBc, o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename TMcColl> 
+  template <typename TBc, o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename TMcColl>
   uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, CCs const& collSlice, float& centrality)
   {
     uint16_t rejectionMask{0};
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
-    
+
     float multiplicity{0.f};
     for (const auto& collision : collSlice) {
       float collCent{0.f};
@@ -309,29 +309,25 @@ struct HfEventSelectionMc {
       if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
         if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
           collCent = collision.centFT0A();
-          collMult = collision.multFT0A();
         } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
           collCent = collision.centFT0C();
-          collMult = collision.multFT0C();
         } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
           collCent = collision.centFT0M();
-          collMult = collision.multFT0M();
         } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
           collCent = collision.centFV0A();
-          collMult = collision.multFV0A();
         } else {
           LOGP(fatal, "Unsupported centrality estimator!");
         }
+        collMult = collision.numContrib();
         if (collMult > multiplicity) {
           centrality = collCent;
           multiplicity = collMult;
         }
-      }
-      else {
+      } else {
         LOGP(fatal, "Unsupported centrality estimator!");
       }
     }
-  
+
     /// centrality selection
     if (centrality < centralityMin || centrality > centralityMax) {
       SETBIT(rejectionMask, EventRejection::Centrality);
