@@ -321,7 +321,6 @@ struct tofSpectra {
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{binsOptions.binsDca, "DCA_{z} (cm)"};
     const AxisSpec lengthAxis{100, 0, 600, "Track length (cm)"};
-    const AxisSpec nsigmaTPCAxis1{binsOptions.binsnsigmaTPC, "nsigmaTPC"};
 
     if (enableTrackCutHistograms) {
       const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
@@ -402,19 +401,20 @@ struct tofSpectra {
     histos.add("Data/pos/pt/tpc", "pos TPC", kTH1D, {ptAxis});
     histos.add("Data/neg/pt/tpc", "neg TPC", kTH1D, {ptAxis});
     if (doprocessOccupancy) {
-      histos.add("nsigmatpc/test_occupancy/pos/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatpc/test_occupancy/neg/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatpc/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatpc/test_occupancy/neg/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatpc/test_occupancy/pos/pr", "occuppancy dependent proton", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatpc/test_occupancy/neg/pr", "occuppancy dependent proton", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
+      const AxisSpec nsigmaTPCAxisOccupancy{binsOptions.binsnsigmaTPC, "nsigmaTPC"};
+      histos.add("nsigmatpc/test_occupancy/pos/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatpc/test_occupancy/neg/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatpc/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatpc/test_occupancy/neg/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatpc/test_occupancy/pos/pr", "occuppancy dependent proton", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatpc/test_occupancy/neg/pr", "occuppancy dependent proton", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
 
-      histos.add("nsigmatof/test_occupancy/pos/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatof/test_occupancy/neg/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatof/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatof/test_occupancy/neg/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatof/test_occupancy/pos/pr", "occuppancy dependent proton", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
-      histos.add("nsigmatof/test_occupancy/neg/pr", "occuppancy dependent proton", kTHnSparseD, {ptAxis, nsigmaTPCAxis1, multAxis, occupancyAxis});
+      histos.add("nsigmatof/test_occupancy/pos/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatof/test_occupancy/neg/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatof/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatof/test_occupancy/neg/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatof/test_occupancy/pos/pr", "occuppancy dependent proton", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+      histos.add("nsigmatof/test_occupancy/neg/pr", "occuppancy dependent proton", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
     }
 
     if (doprocessMC) {
