@@ -94,8 +94,8 @@ struct qaMatchEff {
     Configurable<float> centralityMaxCut{"centralityMaxCut", 100.0f, "Maximum centrality"};
   } centralityCuts;
   struct : ConfigurableGroup {
-    Configurable<int> minTracksInTimeRange{"minTracksInTimeRange", 0.0f, "Minimum number of tracks in the time range"};
-    Configurable<int> maxTracksInTimeRange{"maxTracksInTimeRange", 999999.0f, "Maximum number of tracks in the time range"};
+    Configurable<float> minTracksInTimeRange{"minTracksInTimeRange", 0.0f, "Minimum number of tracks in the time range"};
+    Configurable<float> maxTracksInTimeRange{"maxTracksInTimeRange", 999999.9f, "Maximum number of tracks in the time range"};
   } occupancyCuts;
   //
   // Track selections
