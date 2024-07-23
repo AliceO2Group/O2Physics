@@ -217,7 +217,7 @@ struct tofSpectra {
     const AxisSpec pAxis{binsOptions.binsPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binsOptions.binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec etaAxis{binsOptions.binsEta, "#eta"};
-    const AxisSpec impParamAxis{binsOptions.binsImpactParam, "Impact parameter"}; //
+    const AxisSpec impParamAxis{binsOptions.binsImpactParam, "Impact parameter"};
     const AxisSpec occupancyAxis{binsOptions.binsOccupancy, "Occupancy Axis"};
     AxisSpec multAxis{binsOptions.binsMultiplicity, "Undefined multiplicity estimator"};
     switch (multiplicityEstimator) {
