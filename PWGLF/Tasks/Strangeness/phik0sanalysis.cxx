@@ -166,13 +166,15 @@ struct phik0shortanalysis {
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
-  using MCCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
+  using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
 
   // Defining the type of the V0s
   using FullV0s = soa::Filtered<aod::V0Datas>;
 
   // Defining the type of the tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  using FullMCTracks = soa::Join<FullTracks, aod::McTrackLabels>;
+
   using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
   using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
 
@@ -214,19 +216,29 @@ struct phik0shortanalysis {
     eventHist.add("hVertexZRec", "hVertexZRec", kTH1F, {vertexZAxis});
     eventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
 
-    // Number of MC events per selection
-    MCeventHist.add("hMCEventSelection", "hMCEventSelection", kTH1F, {{7, -0.5f, 6.5f}});
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(5, "posZ cut");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(6, "INEL>0 cut");
-    MCeventHist.get<TH1>(HIST("hMCEventSelection"))->GetXaxis()->SetBinLabel(7, "With at least a #phi");
+    // Number of MC events per selection for Rec and Gen
+    MCeventHist.add("hRecMCEventSelection", "hRecMCEventSelection", kTH1F, {{7, -0.5f, 6.5f}});
+    MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
+    MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
+    MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+    MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(5, "posZ cut");
+    MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(6, "INEL>0 cut");
+    MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(7, "With at least a #phi");
 
-    // MC Event information
-    MCeventHist.add("hMCVertexZRec", "hMCVertexZRec", kTH1F, {vertexZAxis});
-    MCeventHist.add("hMCMultiplicityPercent", "MC Multiplicity Percentile", kTH1F, {multAxis});
+    MCeventHist.add("hGenMCEventSelection", "hGenMCEventSelection", kTH1F, {{5, -0.5f, 4.5f}});
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(2, "posZ cut");
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(3, "INEL>0 cut");
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(4, "With at least a rec coll");
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi");
+
+    // MC Event information for Rec and Gen
+    MCeventHist.add("hRecMCVertexZRec", "hRecMCVertexZRec", kTH1F, {vertexZAxis});
+    MCeventHist.add("hRecMCMultiplicityPercent", "RecMC Multiplicity Percentile", kTH1F, {multAxis});
+
+    MCeventHist.add("hGenMCVertexZRec", "hGenMCVertexZRec", kTH1F, {vertexZAxis});
+    MCeventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {multAxis});
 
     // Phi tpological/PID cuts
     PhicandHist.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
@@ -261,6 +273,16 @@ struct phik0shortanalysis {
     PhiK0SHist.add("h3PhiK0SInvMassMixedEventFirstCut", "2D Invariant mass of Phi and K0Short for Mixed Event Deltay < FirstCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
     PhiK0SHist.add("h3PhiK0SInvMassMixedEventSecondCut", "2D Invariant mass of Phi and K0Short for Mixed Event Deltay < SecondCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
 
+    // MC 2D mass for Phi and K0S
+    MCPhiK0SHist.add("h3PhiK0SInvMassRecMCInclusive", "2D Invariant mass of Phi and K0Short for RecMC Inclusive", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
+    MCPhiK0SHist.add("h3PhiK0SInvMassRecMCFirstCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < FirstCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
+    MCPhiK0SHist.add("h3PhiK0SInvMassRecMCSecondCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < SecondCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
+
+    // GenMC pT of K0S coupled to Phi
+    MCPhiK0SHist.add("h2PhiK0SpTGenMCInclusive", "pT of K0Short coupled to Phi for GenMC Inclusive", kTH2F, {multAxis, ptAxis});
+    MCPhiK0SHist.add("h2PhiK0SpTGenMCFirstCut", "pT of K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {multAxis, ptAxis});
+    MCPhiK0SHist.add("h2PhiK0SpTGenMCSecondCut", "pT of K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {multAxis, ptAxis});
+
     // Phi mass vs Pion NSigma dE/dx
     for (int i = 0; i < nMultBin; i++) {
       PhiPionHist.add(PhiPiSEInc[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Inclusive", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisInc.at(i)});
@@ -271,6 +293,16 @@ struct phik0shortanalysis {
     PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
     PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
     PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+
+    // MC Phi mass vs Pion NSigma dE/dx
+    MCPhiPionHist.add("h4PhiInvMassPiNSigmadEdxRecMCInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    MCPhiPionHist.add("h4PhiInvMassPiNSigmadEdxRecMCFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    MCPhiPionHist.add("h4PhiInvMassPiNSigmadEdxRecMCSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+
+    // GenMC pT of Pion coupled to Phi
+    MCPhiPionHist.add("h2PhiPiPionpTGenMCInclusive", "pT of Pion coupled to Phi for GenMC Inclusive", kTH2F, {multAxis, ptAxis});
+    MCPhiPionHist.add("h2PhiPiPionpTGenMCFirstCut", "pT of Pion coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {multAxis, ptAxis});
+    MCPhiPionHist.add("h2PhiPiPionpTGenMCSecondCut", "pT of Pion coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {multAxis, ptAxis});
   }
 
   // Event selection and QA filling
@@ -295,22 +327,22 @@ struct phik0shortanalysis {
   template <typename T>
   bool acceptMCEventQA(const T& collision)
   {
-    MCeventHist.fill(HIST("hMCEventSelection"), 0); // all collisions
+    MCeventHist.fill(HIST("hRecMCEventSelection"), 0); // all collisions
     if (!collision.selection_bit(aod::evsel::kIsTriggerTVX))
       return false;
-    MCeventHist.fill(HIST("hMCEventSelection"), 1); // kIsTriggerTVX collisions
+    MCeventHist.fill(HIST("hRecMCEventSelection"), 1); // kIsTriggerTVX collisions
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
-    MCeventHist.fill(HIST("hMCEventSelection"), 2); // kNoTimeFrameBorder collisions
+    MCeventHist.fill(HIST("hRecMCEventSelection"), 2); // kNoTimeFrameBorder collisions
     if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-      MCeventHist.fill(HIST("hMCEventSelection"), 3); // kNoITSROFrameBorder collisions (not requested in the selection, but useful for QA)
+      MCeventHist.fill(HIST("hRecMCEventSelection"), 3); // kNoITSROFrameBorder collisions (not requested in the selection, but useful for QA)
     if (std::abs(collision.posZ()) > cutzvertex)
       return false;
-    MCeventHist.fill(HIST("hMCEventSelection"), 4); // vertex-Z selected
-    MCeventHist.fill(HIST("hMCVertexZRec"), collision.posZ());
+    MCeventHist.fill(HIST("hRecMCEventSelection"), 4); // vertex-Z selected
+    MCeventHist.fill(HIST("hRecMCVertexZRec"), collision.posZ());
     if (!collision.isInelGt0())
       return false;
-    MCeventHist.fill(HIST("hMCEventSelection"), 5); // INEL>0 collisions
+    MCeventHist.fill(HIST("hRecMCEventSelection"), 5); // INEL>0 collisions
     return true;
   }
 
@@ -1101,6 +1133,11 @@ struct phik0shortanalysis {
   }
 
   PROCESS_SWITCH(phik0shortanalysis, processMEPhiPion, "Process Mixed Event for Phi-Pion Analysis", false);
+
+  void processMCEffPhiK0S()
+  {
+
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
