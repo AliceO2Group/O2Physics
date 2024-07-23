@@ -75,7 +75,7 @@ def remove_comment_cpp(line: str) -> str:
     """Remove C++ comments from the end of a line."""
     for keyword in ("//", "/*"):
         if keyword in line:
-            line = line[:line.find(keyword)]
+            line = line[:line.index(keyword)]
     return line
 
 
@@ -96,7 +96,7 @@ class TestSpec(ABC):
         for prefix in [prefix_comment, prefix_disable]:
             if not prefix in line:
                 return False
-            line = line[(line.find(prefix) + len(prefix)):] # Strip away part before prefix.
+            line = line[(line.index(prefix) + len(prefix)):] # Strip away part before prefix.
         if self.name in line:
             return True
         return False
@@ -345,11 +345,11 @@ class TestConstRefInSubscription(TestSpec):
             if self.is_disabled(line):
                 continue
             if "//" in line: # Remove comment. (Ignore /* to avoid truncating at /*parameter*/.)
-                line = line[:line.find("//")]
+                line = line[:line.index("//")]
             if re.search(r"^void process[\w]*\(", line):
                 line_process = (i + 1)
                 i_closing = line.rfind(")")
-                i_start = line.find("(") + 1
+                i_start = line.index("(") + 1
                 i_end = i_closing if i_closing != -1 else len(line)
                 arguments = line[i_start:i_end] # get arguments between parentheses
                 n_parens_opened = line.count("(") - line.count(")")
@@ -444,7 +444,7 @@ class TestNameFunctionVariable(TestSpec):
         # For functions, stripping after "(" is enough but this way we also identify many declarations of variables.
         for keyword in ("(", "{", ";", " = ", "//", "/*"):
             if keyword in line:
-                line = line[:line.find(keyword)]
+                line = line[:line.index(keyword)]
 
         # Check the words.
         words = line.split()
@@ -480,7 +480,7 @@ class TestNameFunctionVariable(TestSpec):
 
         # Extract function/variable name.
         if "[" in funval_name: # Remove brackets for arrays.
-            funval_name = funval_name[:funval_name.find("[")]
+            funval_name = funval_name[:funval_name.index("[")]
         if "::" in funval_name: # Remove the class prefix for methods.
             funval_name = funval_name.split("::")[-1]
 
@@ -537,7 +537,7 @@ class TestNameConstant(TestSpec):
             opens_brackets = ["[" in w for w in words]
             constant_name = words[opens_brackets.index(True)] # the name is in the first element with "["
         if "[" in constant_name: # Remove brackets for arrays.
-            constant_name = constant_name[:constant_name.find("[")]
+            constant_name = constant_name[:constant_name.index("[")]
         if "::" in constant_name: # Remove the class prefix for methods.
             constant_name = constant_name.split("::")[-1]
         # The actual test comes here.
