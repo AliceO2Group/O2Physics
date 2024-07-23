@@ -654,13 +654,14 @@ struct HfCandidateCreator2ProngExpressions {
   Produces<aod::HfCand2ProngMcGen> rowMcMatchGen;
 
   // Configuration
-  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
-  o2::framework::Configurable<int> centralityEstimator{"centralityEstimator", 0, "Centrality estimator: 0 - FT0C, 1 - FT0M"};
-
+  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
-  using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::Mults>;
-  PresliceUnsorted<CCs> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::Mults>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::Mults>;
+  PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   HistogramRegistry registry{"registry"};
@@ -679,11 +680,12 @@ struct HfCandidateCreator2ProngExpressions {
   }
 
   /// Performs MC matching.
-  void processMc(aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles,
-                 CCs const& collInfos,
-                 aod::McCollisions const&,
-                 BCsInfo const&)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
+  void runCreator2ProngMc(aod::TracksWMc const& tracks,
+                          aod::McParticles const& mcParticles,
+                          CCs const& collInfos,
+                          aod::McCollisions const&,
+                          BCsInfo const&)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
 
@@ -698,6 +700,19 @@ struct HfCandidateCreator2ProngExpressions {
       flag = 0;
       origin = 0;
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
+ 
+      // Check whether the particle is from background events. If so, reject it.
+      if (rejectBackground) {
+        for (const auto& daughter : arrayDaughters) {
+          if (daughter.has_mcParticle()) {
+            auto mcParticle = daughter.mcParticle();
+            if (mcParticle.fromBackgroundEvent()) {
+              rowMcMatchRec(flag, origin, -1.f, 0);
+              continue;
+            }
+          }
+        }
+      }
       std::vector<int> idxBhadMothers{};
 
       // D0(bar) → π± K∓
@@ -748,34 +763,15 @@ struct HfCandidateCreator2ProngExpressions {
 
       // Slice the collisions table to get the collision info for the current MC collision
       auto mcCollision = particle.mcCollision();
-      auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       float centrality{-1.f};
-      float mult{-1.f};
-      // Loop over the collisions in the current MC collision, and select the one with the highest FT0C multiplicity
-      for (const auto& collision : collSlice) {
-        float multColl{-1.f};
-        float centColl{-1.f};
-        switch (centralityEstimator) {
-          case 0: // FT0C
-            multColl = collision.multFT0C();
-            centColl = collision.centFT0C();
-            break;
-          case 1: // FT0M
-            multColl = collision.multFT0M();
-            centColl = collision.centFT0M();
-            break;
-          default:
-            LOG(info) << "Unknown centrality estimator, fallback to FT0C";
-            multColl = collision.multFT0C();
-            centColl = collision.centFT0C();
-            break;
-        }
-        if (mult < multColl) {
-          mult = multColl;
-          centrality = centColl;
-        }
-      } // end loop over collisions
-      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision, centrality);
+      uint16_t rejectionMask{0};
+      if constexpr (centEstimator == CentralityEstimator::FT0C) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      }
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
@@ -813,8 +809,26 @@ struct HfCandidateCreator2ProngExpressions {
       }
     }
   }
+  
+  void processMcCentFT0C(aod::TracksWMc const& tracks,
+                         aod::McParticles const& mcParticles,
+                         McCollisionsFT0Cs const& collInfos,
+                         aod::McCollisions const& mcCollisions,
+                         BCsInfo const& BCsInfo)
+  {
+    runCreator2ProngMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  } 
+  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMcCentFT0C, "Process MC - FT0c centrality", false);
 
-  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMc, "Process MC", false);
+  void processMcCentFT0M(aod::TracksWMc const& tracks,
+                         aod::McParticles const& mcParticles,
+                         McCollisionsFT0Ms const& collInfos,
+                         aod::McCollisions const& mcCollisions,
+                         BCsInfo const& BCsInfo)
+  {
+    runCreator2ProngMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMcCentFT0M, "Process MC - FT0m centrality", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
