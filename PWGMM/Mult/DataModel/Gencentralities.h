@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_GENCENTRALITIES_H_
-#define O2_ANALYSIS_GENCENTRALITIES_H_
+#ifndef PWGMM_MULT_DATAMODEL_GENCENTRALITIES_H_
+#define PWGMM_MULT_DATAMODEL_GENCENTRALITIES_H_
 
 #include "Framework/AnalysisDataModel.h"
 namespace o2::aod
@@ -24,4 +24,4 @@ DECLARE_SOA_TABLE(GenCents, "AOD", "GENCENT",
                   gencents::GenCentFT0C,
                   gencents::GenCentFT0M);
 } // namespace o2::aod
-#endif // O2_ANALYSIS_GENCENTRALITIES_H_
+#endif // PWGMM_MULT_DATAMODEL_GENCENTRALITIES_H_
