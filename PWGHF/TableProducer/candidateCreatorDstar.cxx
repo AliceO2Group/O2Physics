@@ -681,8 +681,6 @@ struct HfCandidateCreatorDstarExpressions {
   PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMcCentFT0M, "Process MC - FT0m centrality", false);
 };
 
-
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
