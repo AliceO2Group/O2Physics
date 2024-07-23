@@ -300,7 +300,7 @@ class TestConstRefInForLoop(TestSpec):
         if not line.startswith("for (") or " : " not in line:
             return True
         line = line[:line.index(" : ")] # keep only the iterator part
-        return True if re.search(r"\([\w]* ?const ?[\w]*&", line) else False
+        return re.search(r"(\w const|const \w+)& ", line) is not None
 
 
 class TestConstRefInSubscription(TestSpec):
