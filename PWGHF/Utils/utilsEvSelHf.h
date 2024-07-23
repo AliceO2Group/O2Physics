@@ -295,13 +295,13 @@ struct HfEventSelectionMc {
   /// \param collSlice collection of reconstructed collisions
   /// \param centrality centrality variable to be set in this function
   /// \return a bitmask with the event selections not satisfied by the analysed collision
-  template <typename TBc, o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename TMcColl> 
+  template <typename TBc, o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename TMcColl>
   uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, CCs const& collSlice, float& centrality)
   {
     uint16_t rejectionMask{0};
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
-    
+
     float multiplicity{0.f};
     for (const auto& collision : collSlice) {
       float collCent{0.f};
@@ -326,12 +326,11 @@ struct HfEventSelectionMc {
           centrality = collCent;
           multiplicity = collMult;
         }
-      }
-      else {
+      } else {
         LOGP(fatal, "Unsupported centrality estimator!");
       }
     }
-  
+
     /// centrality selection
     if (centrality < centralityMin || centrality > centralityMax) {
       SETBIT(rejectionMask, EventRejection::Centrality);

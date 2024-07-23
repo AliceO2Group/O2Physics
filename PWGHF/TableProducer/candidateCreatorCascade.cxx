@@ -516,7 +516,6 @@ struct HfCandidateCreatorCascadeMc {
       }
     }
 
-
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       // Reject particles from background events
@@ -585,7 +584,7 @@ struct HfCandidateCreatorCascadeMc {
                          BCsInfo const& BCsInfo)
   {
     runCreatorCascMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
-  } 
+  }
   PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMcCentFT0C, "Process MC - FT0c centrality", false);
 
   void processMcCentFT0M(MyTracksWMc const& tracks,

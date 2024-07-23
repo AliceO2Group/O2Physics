@@ -743,8 +743,7 @@ struct HfCandidateCreator3ProngExpressions {
       }
     }
   }
-  
-  
+
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Cs const& collInfos,
@@ -752,7 +751,7 @@ struct HfCandidateCreator3ProngExpressions {
                          BCsInfo const& BCsInfo)
   {
     runCreator3ProngMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
-  } 
+  }
   PROCESS_SWITCH(HfCandidateCreator3ProngExpressions, processMcCentFT0C, "Process MC - FT0c centrality", false);
 
   void processMcCentFT0M(aod::TracksWMc const& tracks,
