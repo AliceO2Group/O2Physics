@@ -22,8 +22,6 @@ DECLARE_SOA_COLUMN(GenCentFT0M, gencentFT0M, float);
 } // namespace gencents
 DECLARE_SOA_TABLE(GenCents, "AOD", "GENCENT",
                   gencents::GenCentFT0C,
-                  gencents::GenCentFT0M
-                  );
+                  gencents::GenCentFT0M);
 } // namespace o2::aod
 #endif // O2_ANALYSIS_GENCENTRALITIES_H_
-
