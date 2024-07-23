@@ -71,6 +71,14 @@ def is_comment_cpp(line: str) -> bool:
     return line.strip().startswith(("//", "/*"))
 
 
+def remove_comment_cpp(line: str) -> str:
+    """Remove C++ comments from the end of a line."""
+    for keyword in ("//", "/*"):
+        if keyword in line:
+            line = line[:line.find(keyword)]
+    return line
+
+
 class TestSpec(ABC):
     """Prototype of a test class"""
     name = "test-template" # short name of the test
@@ -173,19 +181,27 @@ class TestStdPrefix(TestSpec):
     name = "std-prefix"
     message = "Use std:: prefix for names from the std namespace."
     suffixes = [".h", ".cxx", ".C"]
-    prefix_bad = r"[^\w:\.]"
+    prefix_bad = r"[^\w:\.\"]"
     patterns = [r"vector<", r"array[<\{\(]", r"f?abs\(", r"sqrt\(", r"pow\(", r"min\(", r"max\(", r"log\(", r"exp\(", r"sin\(", r"cos\(", r"tan\(", r"atan\(", r"atan2\("]
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
+        line = remove_comment_cpp(line)
         for pattern in self.patterns:
-            if re.search(fr"{self.prefix_bad}{pattern}", line):
+            iterators = re.finditer(fr"{self.prefix_bad}{pattern}", line)
+            matches = [(it.start(), it.group()) for it in iterators]
+            if not matches:
+                continue
+            if not "\"" in line: # Found a match which cannot be inside a string.
                 return False
-            # occurrences = re.findall(pattern, line)
-            # if occurrences:
-            #     print(occurrences)
-            #     return False
+            # Ignore matches inside strings.
+            for match in matches:
+                n_quotes_before = line.count("\"", 0, match[0]) # Count quotation marks before the match.
+                if n_quotes_before % 2: # If odd, we are inside a string and we should ignore this match.
+                    continue
+                # We are not inside a string and this match is valid.
+                return False
         return True
 
 
@@ -855,7 +871,7 @@ def main():
         tests.append(TestNameFilePython())
         tests.append(TestNameWorkflow())
 
-    # PWGHF
+    # PWG-HF
     enable_pwghf = True
     if enable_pwghf:
         tests.append(TestHfConstAuto())
