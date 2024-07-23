@@ -148,7 +148,6 @@ struct phiInJets {
     JEhistos.add("nEvents_MCRec_MATCHED", "nEvents_MCRec_MATCHED", kTH1F, {{4, 0.0, 4.0}});
     JEhistos.add("nEvents_MCGen_MATCHED", "nEvents_MCGen_MATCHED", kTH1F, {{4, 0.0, 4.0}});
 
-    
     JEhistos.add("hMCRec_nonmatch_hUSS_KtoKangle_v_pt", "hMCRec_nonmatch_hUSS_KtoKangle_v_pt", kTH2F, {axisEta, PtAxis});
     JEhistos.add("hMCTrue_nonmatch_hUSS_Kangle_v_pt", "hMCTrue_nonmatch_hUSS_Kangle_v_pt", kTH2F, {axisEta, PtAxis});
     JEhistos.add("hMCRec_nonmatch_hUSS_Kangle_v_pt", "hMCRec_nonmatch_hUSS_Kangle_v_pt", kTH2F, {axisEta, PtAxis});
@@ -246,7 +245,7 @@ struct phiInJets {
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>; // , aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                    aod::pidTPCKa, aod::pidTOFKa,aod::pidTPCPi, aod::pidTOFPi>;
+                                    aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPi, aod::pidTOFPi>;
   Filter jetCuts = aod::jet::pt > cfgjetPtMin&& aod::jet::r == nround(cfgjetR.node() * 100.0f);
 
   // Function for track quality cuts
@@ -299,15 +298,15 @@ struct phiInJets {
   {
     bool pid = false;
 
-    if(!cfgIsKstar)
-     pid=trackPIDKaon<T>(candidate);
+    if (!cfgIsKstar)
+      pid = trackPIDKaon<T>(candidate);
 
-    else{
-      if(!FT)
-	pid=trackPIDPion<T>(candidate);
+    else {
+      if (!FT)
+        pid = trackPIDPion<T>(candidate);
       else
-	pid=trackPIDKaon<T>(candidate);
-    }      
+        pid = trackPIDKaon<T>(candidate);
+    }
     return pid;
   }
 
@@ -331,74 +330,72 @@ struct phiInJets {
     return false;
   }
 
-   template <typename T>
-   bool trackPIDPion(const T& candidate)
-   {
-     bool tpcPIDPassed{false}, tofPIDPassed{false};
-     if (std::abs(candidate.tpcNSigmaPi()) < cfgnTPCPID)
-       tpcPIDPassed = true;
+  template <typename T>
+  bool trackPIDPion(const T& candidate)
+  {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaPi()) < cfgnTPCPID)
+      tpcPIDPassed = true;
 
-     if (candidate.hasTOF()) {
-       if (std::abs(candidate.tofNSigmaPi()) < cfgnTOFPID) {
-         tofPIDPassed = true;
-       }
-     } else {
-       tofPIDPassed = true;
-     }
-     if (tpcPIDPassed && tofPIDPassed) {
-       return true;
-     }
-     return false;
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaPi()) < cfgnTOFPID) {
+        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
+      return true;
+    }
+    return false;
   }
 
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
-  
+
   template <typename JetType>
   double DistinguishJets(const JetType& jets, const TLorentzVector lResonance)
   {
     if (cDebugLevel > 0)
-      std::cout<<"oof, multiple jets fit to the same phi. Time to find the best phi-jet link"<<std::endl;
-    
-    double best_R=0;
-    double best_jetpt=0; 
+      std::cout << "oof, multiple jets fit to the same phi. Time to find the best phi-jet link" << std::endl;
+
+    double best_R = 0;
+    double best_jetpt = 0;
     for (auto const& jet : jets) {
       double phidiff = TVector2::Phi_mpi_pi(jet.phi() - lResonance.Phi());
       double etadiff = jet.eta() - lResonance.Eta();
       double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
-      if (R < cfgjetR && best_R==0){
-	best_R=R;
-	best_jetpt=jet.pt();
+      if (R < cfgjetR && best_R == 0) {
+        best_R = R;
+        best_jetpt = jet.pt();
+      } else if (R < best_R) {
+        best_R = R;
+        best_jetpt = jet.pt();
       }
-      else if(R < best_R){
-	best_R=R;
-	best_jetpt=jet.pt();
-      }
-    }//jetloop
+    } // jetloop
     return best_jetpt;
   }
-  
+
   template <typename Jet_pt, typename Jet_phi, typename Jet_eta>
-  double DistinguishJetsMC(const Jet_pt& jet_pt, const Jet_phi& jet_phi, const Jet_eta& jet_eta,const TLorentzVector lResonance)
+  double DistinguishJetsMC(const Jet_pt& jet_pt, const Jet_phi& jet_phi, const Jet_eta& jet_eta, const TLorentzVector lResonance)
   {
     if (cDebugLevel > 0)
-      std::cout<<"oof, multiple jets fit to the same phi. Time to find the best phi-jet link"<<std::endl;
-    
-    double best_R=0;
-    double best_jetpt=0; 
+      std::cout << "oof, multiple jets fit to the same phi. Time to find the best phi-jet link" << std::endl;
+
+    double best_R = 0;
+    double best_jetpt = 0;
     for (int i = 0; i < jet_pt.size(); i++) {
       double phidiff = TVector2::Phi_mpi_pi(jet_phi[i] - lResonance.Phi());
       double etadiff = jet_eta[i] - lResonance.Eta();
       double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
-      if (R < cfgjetR && best_R==0){
-	best_R=R;
-	best_jetpt=jet_pt[i];
+      if (R < cfgjetR && best_R == 0) {
+        best_R = R;
+        best_jetpt = jet_pt[i];
+      } else if (R < best_R) {
+        best_R = R;
+        best_jetpt = jet_pt[i];
       }
-      else if(R < best_R){
-	best_R=R;
-	best_jetpt=jet_pt[i];
-      }
-    }//jetloop
+    } // jetloop
     return best_jetpt;
   }
 
@@ -412,29 +409,28 @@ struct phiInJets {
     if (!trackSelection(trk1) || !trackSelection(trk2))
       return -1;
 
-    if (!trackPID(trk1,true) || !trackPID(trk2,false))
+    if (!trackPID(trk1, true) || !trackPID(trk2, false))
       return -1;
 
-    if(!cfgIsKstar){
+    if (!cfgIsKstar) {
       if (trk1.globalIndex() >= trk2.globalIndex())
-	return -1; // For Phi, we only need to iterate each pair once
-    }
-    else{
+        return -1; // For Phi, we only need to iterate each pair once
+    } else {
       if (trk1.globalIndex() == trk2.globalIndex())
-	return -1; // For Kstar, we need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
+        return -1; // For Kstar, we need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
     }
 
     lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
-    if(!cfgIsKstar)
+    if (!cfgIsKstar)
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
     else
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-      
+
     lResonance = lDecayDaughter1 + lDecayDaughter2;
 
     if (std::abs(lResonance.Eta()) > cfgtrkMaxEta)
-      return -1;  
-    
+      return -1;
+
     /////////////////////////////////////////////////////////////////////////////
     // Fill Global Event Minv
     if (trk1.sign() * trk2.sign() < 0) {
@@ -468,18 +464,18 @@ struct phiInJets {
       double phidiff = TVector2::Phi_mpi_pi(jet.phi() - lResonance.Phi());
       double etadiff = jet.eta() - lResonance.Eta();
       double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
-      if (R < cfgjetR){
+      if (R < cfgjetR) {
         jetFlag = true;
-	jetpt = jet.pt();
-	goodjets++;
-      }      
+        jetpt = jet.pt();
+        goodjets++;
+      }
     }
-    
-     if(cfgSingleJet)
-       if(goodjets>1)
-	 jetpt=DistinguishJets<JetType>(jets, lResonance);
-     
-     /////////////////////////////////////////////////////////////////////////////
+
+    if (cfgSingleJet)
+      if (goodjets > 1)
+        jetpt = DistinguishJets<JetType>(jets, lResonance);
+
+    /////////////////////////////////////////////////////////////////////////////
     // Fill inside Jet
     if (jetFlag) {
       if (trk1.sign() * trk2.sign() < 0) {
@@ -534,28 +530,25 @@ struct phiInJets {
       }
     } //! jetflag
     /////////////////////////////////////////////////////////////////////////////
-    if(!cfgIsKstar){
-      if(lResonance.M()>1.005 && lResonance.M()<1.035){
-	if(jetFlag)
-	  return 3;
-	if(goodjets>0)
-	  return 2;	
-	return 1;
-      }
-      else
-	return -1;
+    if (!cfgIsKstar) {
+      if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
+        if (jetFlag)
+          return 3;
+        if (goodjets > 0)
+          return 2;
+        return 1;
+      } else
+        return -1;
+    } else {
+      if (lResonance.M() > 0.85 && lResonance.M() < 0.95) {
+        if (jetFlag)
+          return 3;
+        if (goodjets > 0)
+          return 2;
+        return 1;
+      } else
+        return -1;
     }
-    else{
-      if(lResonance.M()>0.85 && lResonance.M()<0.95){
-	if(jetFlag)
-	  return 3;
-	if(goodjets>0)
-	  return 2;	
-	return 1;
-      }
-      else
-	return -1;
-    }	  
   } // MinvReconstruction
 
   /////////////////////////////////////////////////////////////////////////////
@@ -582,18 +575,18 @@ struct phiInJets {
       auto trk1 = track1.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPi, aod::pidTOFPi>>();
       auto trk2 = track2.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPi, aod::pidTOFPi>>();
       int Reso = minvReconstruction<false, false>(1.0, trk1, trk2, chargedjets);
-      if(Reso>0)
-	nReso++;
-      if(Reso>1)
-	nResoWTrig++;
-      if(Reso>2)
-	nResoInTrig++;
+      if (Reso > 0)
+        nReso++;
+      if (Reso > 1)
+        nResoWTrig++;
+      if (Reso > 2)
+        nResoInTrig++;
     }
-    //Here we have to fill the number of reso candidates per event
+    // Here we have to fill the number of reso candidates per event
     JEhistos.fill(HIST("hNResoPerEvent"), nReso);
     JEhistos.fill(HIST("hNResoPerEventWJet"), nResoWTrig);
     JEhistos.fill(HIST("hNResoPerEventInJet"), nResoInTrig);
-    
+
     int nJets = 0;
     for (auto chargedjet : chargedjets) {
       JEhistos.fill(HIST("FJetaHistogram"), chargedjet.eta());
@@ -638,9 +631,9 @@ struct phiInJets {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
- using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPi, aod::pidTOFPi>;
- using myCompleteJetTracks = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
- int nJEEvents = 0;
+  using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPi, aod::pidTOFPi>;
+  using myCompleteJetTracks = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
+  int nJEEvents = 0;
   int nprocessRecEvents = 0;
   void processRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& /*originalTracks*/)
   {
@@ -711,16 +704,15 @@ struct phiInJets {
         if (!trackSelection(originalTrack2))
           continue;
         if (cfgSimPID)
-          if (!trackPID(originalTrack2,false))
-            continue;	
-	if(!cfgIsKstar){
-	  if (originalTrack.globalIndex() >= originalTrack2.globalIndex())
-	    continue;
-	}
-	else{
-	  if (originalTrack.globalIndex() == originalTrack2.globalIndex())
-	    continue;
-	}	
+          if (!trackPID(originalTrack2, false))
+            continue;
+        if (!cfgIsKstar) {
+          if (originalTrack.globalIndex() >= originalTrack2.globalIndex())
+            continue;
+        } else {
+          if (originalTrack.globalIndex() == originalTrack2.globalIndex())
+            continue;
+        }
         if (fabs(originalTrack.eta()) > cfgtrkMaxEta || fabs(originalTrack2.eta()) > cfgtrkMaxEta)
           continue;
 
@@ -731,15 +723,14 @@ struct phiInJets {
           auto part2 = track2.mcParticle();
           if (fabs(part1.pdgCode()) != 321)
             continue; // Not Kaon
-	  if(!cfgIsKstar){
-	    if (fabs(part2.pdgCode()) != 321)
-	      continue; // Not Kaon
-	  }
-	  else{
-	    if (fabs(part2.pdgCode()) != 211)
-	      continue; // Not Kaon
-	  }
-	    
+          if (!cfgIsKstar) {
+            if (fabs(part2.pdgCode()) != 321)
+              continue; // Not Kaon
+          } else {
+            if (fabs(part2.pdgCode()) != 211)
+              continue; // Not Kaon
+          }
+
           if (!part1.has_mothers())
             continue; // Not decaying Kaon
           if (!part2.has_mothers())
@@ -759,42 +750,40 @@ struct phiInJets {
             mothers2PDG.push_back(part2_mom.pdgCode());
           }
 
-	  if(!cfgIsKstar){
-	    if (mothers1PDG[0] != 333)
-	      continue; // mother not phi
-	    if (mothers2PDG[0] != 333)
-	      continue; // mother not phi
-	  }
-	  else{
-	    if (mothers1PDG[0] != 313)
-	      continue; // mother not phi
-	    if (mothers2PDG[0] != 313)
-	      continue; // mother not phi
-	  }
+          if (!cfgIsKstar) {
+            if (mothers1PDG[0] != 333)
+              continue; // mother not phi
+            if (mothers2PDG[0] != 333)
+              continue; // mother not phi
+          } else {
+            if (mothers1PDG[0] != 313)
+              continue; // mother not phi
+            if (mothers2PDG[0] != 313)
+              continue; // mother not phi
+          }
           if (mothers1[0] != mothers2[0])
             continue; // Kaons not from the same phi
 
           TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
           lDecayDaughter1.SetXYZM(originalTrack.px(), originalTrack.py(), originalTrack.pz(), massKa);
-	  if(!cfgIsKstar)
-	    lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massKa);
-	  else
-	    lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);	    
+          if (!cfgIsKstar)
+            lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massKa);
+          else
+            lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);
           lResonance = lDecayDaughter1 + lDecayDaughter2;
-	  
-	  double phidiff_Kaons = TVector2::Phi_mpi_pi(lDecayDaughter2.Phi() - lDecayDaughter1.Phi());
-	  double etadiff_Kaons = lDecayDaughter2.Eta() - lDecayDaughter1.Eta();
-	  double R_Kaons = TMath::Sqrt((etadiff_Kaons * etadiff_Kaons) + (phidiff_Kaons * phidiff_Kaons));
+
+          double phidiff_Kaons = TVector2::Phi_mpi_pi(lDecayDaughter2.Phi() - lDecayDaughter1.Phi());
+          double etadiff_Kaons = lDecayDaughter2.Eta() - lDecayDaughter1.Eta();
+          double R_Kaons = TMath::Sqrt((etadiff_Kaons * etadiff_Kaons) + (phidiff_Kaons * phidiff_Kaons));
           if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
             continue;
-	  JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_KtoKangle_v_pt"),R_Kaons, lResonance.Pt());
+          JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_KtoKangle_v_pt"), R_Kaons, lResonance.Pt());
           JEhistos.fill(HIST("ptJEHistogramPhi"), lResonance.Pt());
-	  
-	  
-	  //Now we do jets
+
+          // Now we do jets
           bool jetFlag = false;
-	  int goodjets = 0;
-	  double jetpt = 0;
+          int goodjets = 0;
+          double jetpt = 0;
           for (int i = 0; i < mcd_pt.size(); i++) {
             double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
             double etadiff = mcd_eta[i] - lResonance.Eta();
@@ -810,16 +799,16 @@ struct phiInJets {
               JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_Kangle_v_pt"), R_K1, lResonance.Pt());
               JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_Kangle_v_pt"), R_K2, lResonance.Pt());
             }
-            if (R < cfgjetR){
+            if (R < cfgjetR) {
               jetFlag = true;
-	      jetpt = mcd_pt[i];
-	      goodjets++;
-	    }
+              jetpt = mcd_pt[i];
+              goodjets++;
+            }
           }
-	  
-	   if(cfgSingleJet)
-	     if(goodjets>1)
-	       jetpt=DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
+
+          if (cfgSingleJet)
+            if (goodjets > 1)
+              jetpt = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
 
           if (jetFlag) {
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
@@ -927,31 +916,30 @@ struct phiInJets {
         TLorentzVector lResonance;
         lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
 
-	int GenPID=0;
-	if(!cfgIsKstar)
-	  GenPID = 333;
-	else
-	  GenPID = 313;
-	    
+        int GenPID = 0;
+        if (!cfgIsKstar)
+          GenPID = 333;
+        else
+          GenPID = 313;
+
         if (abs(mcParticle.pdgCode()) == GenPID) {
           JEhistos.fill(HIST("ptGeneratedPhi_ALLBR"), mcParticle.pt());
 
           bool skip = false;
-	  
+
           // First we check for Forced BR
-	  // if we check for Phi
-	  if(!cfgIsKstar){
-	    if (mcParticle.has_daughters())
-	      for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
-		if (fabs(dgth.pdgCode()) != 321)
-		  skip = true;
-	  }
-	  else{
-	    if (mcParticle.has_daughters())
-	      for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
-		if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211 )
-		  skip = true;
-	  }
+          // if we check for Phi
+          if (!cfgIsKstar) {
+            if (mcParticle.has_daughters())
+              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+                if (fabs(dgth.pdgCode()) != 321)
+                  skip = true;
+          } else {
+            if (mcParticle.has_daughters())
+              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+                if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
+                  skip = true;
+          }
 
           if (skip && cfgBR)
             continue;
@@ -959,9 +947,9 @@ struct phiInJets {
           JEhistos.fill(HIST("mGeneratedPhi"), lResonance.M());
 
           ////////////////////////////Implementation of phi finding
-	  
-	  int goodjets = 0;
-	  double jetpt = 0;
+
+          int goodjets = 0;
+          double jetpt = 0;
           TLorentzVector lResonance;
           lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
           bool jetFlag = false;
@@ -978,16 +966,15 @@ struct phiInJets {
                   JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_Kangle_v_pt"), R_K, lResonance.Pt());
               }
             }
-            if (R < cfgjetR){
+            if (R < cfgjetR) {
               jetFlag = true;
-	      jetpt = mcp_pt[i];
-	      goodjets++;
-	    }
+              jetpt = mcp_pt[i];
+              goodjets++;
+            }
           }
-	  if(cfgSingleJet)
-	    if(goodjets>1)
-	      jetpt=DistinguishJetsMC(mcp_pt, mcp_phi, mcp_eta, lResonance);
-
+          if (cfgSingleJet)
+            if (goodjets > 1)
+              jetpt = DistinguishJetsMC(mcp_pt, mcp_phi, mcp_eta, lResonance);
 
           if (jetFlag) {
             JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
@@ -1111,34 +1098,33 @@ struct phiInJets {
         continue;
 
       int GenPID = 0;
-      
-      if(!cfgIsKstar)
-	GenPID = 333;
+
+      if (!cfgIsKstar)
+        GenPID = 333;
       else
-	GenPID = 313;
+        GenPID = 313;
 
       if (fabs(mcParticle.pdgCode()) == GenPID) {
 
         bool skip = false;
         // First we check for Forced BR
-	// if we check for Phi
-	if(!cfgIsKstar){
-	  if (mcParticle.has_daughters())
-	    for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
-	      if (fabs(dgth.pdgCode()) != 321)
-		skip = true;
-	}
-	else{
-	  if (mcParticle.has_daughters())
-	    for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
-	      if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211 )
-		skip = true;
-	}
+        // if we check for Phi
+        if (!cfgIsKstar) {
+          if (mcParticle.has_daughters())
+            for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+              if (fabs(dgth.pdgCode()) != 321)
+                skip = true;
+        } else {
+          if (mcParticle.has_daughters())
+            for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+              if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
+                skip = true;
+        }
 
-	if (skip && cfgBR)
-	  continue;
-	int goodjets = 0;
-	double jetpt = 0;	  
+        if (skip && cfgBR)
+          continue;
+        int goodjets = 0;
+        double jetpt = 0;
         TLorentzVector lResonance;
         lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
         bool jetFlag = false;
@@ -1146,16 +1132,15 @@ struct phiInJets {
           double phidiff = TVector2::Phi_mpi_pi(mcp_phi[i] - lResonance.Phi());
           double etadiff = mcp_eta[i] - lResonance.Eta();
           double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
-	  if (R < cfgjetR){
-	    jetFlag = true;
-	    jetpt = mcp_pt[i];
-	    goodjets++;
-	  }
-        }	
-	if(cfgSingleJet)
-	  if(goodjets>1)
-	    jetpt=DistinguishJetsMC(mcp_pt, mcp_phi, mcp_eta, lResonance);
-	
+          if (R < cfgjetR) {
+            jetFlag = true;
+            jetpt = mcp_pt[i];
+            goodjets++;
+          }
+        }
+        if (cfgSingleJet)
+          if (goodjets > 1)
+            jetpt = DistinguishJetsMC(mcp_pt, mcp_phi, mcp_eta, lResonance);
 
         if (jetFlag) {
           JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE_1D"), lResonance.M());
@@ -1256,23 +1241,22 @@ struct phiInJets {
       auto trk1 = track1.track_as<myCompleteTracks>();
       for (const auto& track2 : tracks) {
         auto trk2 = track2.track_as<myCompleteTracks>();
-	if(!cfgIsKstar){
-	  if (trk1.globalIndex() >= trk2.globalIndex())
-	    continue;
-	}
-	else{
-	  if (trk1.globalIndex() == trk2.globalIndex())
-	    continue;
-	}
+        if (!cfgIsKstar) {
+          if (trk1.globalIndex() >= trk2.globalIndex())
+            continue;
+        } else {
+          if (trk1.globalIndex() == trk2.globalIndex())
+            continue;
+        }
         if (fabs(trk1.eta()) > cfgtrkMaxEta || fabs(trk2.eta()) > cfgtrkMaxEta)
           continue;
         if ((trk1.sign() * trk2.sign()) > 0)
           continue; // Not K+K-
         if (trackSelection(trk1) && trackSelection(trk2)) {
           if (cfgSimPID) {
-            if (!trackPID(trk1,true))
+            if (!trackPID(trk1, true))
               continue;
-            if (!trackPID(trk2,false))
+            if (!trackPID(trk2, false))
               continue;
           }
           if (track1.has_mcParticle() && track2.has_mcParticle()) {
@@ -1280,14 +1264,13 @@ struct phiInJets {
             auto part2 = track2.mcParticle();
             if (fabs(part1.pdgCode()) != 321)
               continue; // Not Kaon
-	    if(!cfgIsKstar){
-	      if (fabs(part2.pdgCode()) != 321)
-		continue; // Not Kaon
-	    }
-	    else{
-	      if (fabs(part2.pdgCode()) != 211)
-		continue; // Not Kaon    
-	    }    
+            if (!cfgIsKstar) {
+              if (fabs(part2.pdgCode()) != 321)
+                continue; // Not Kaon
+            } else {
+              if (fabs(part2.pdgCode()) != 211)
+                continue; // Not Kaon
+            }
             if (!part1.has_mothers())
               continue; // Not decaying Kaon
             if (!part2.has_mothers())
@@ -1310,71 +1293,69 @@ struct phiInJets {
               mothers2PDG.push_back(part2_mom.pdgCode());
               mothers2Pt.push_back(part2_mom.pt());
             }
-	    if(!cfgIsKstar){
-	      if (mothers1PDG[0] != 333)
-		continue; // mother not phi
-	      if (mothers2PDG[0] != 333)
-		continue; // mother not phi
-	    }
-	    else{
-	      if (mothers1PDG[0] != 313)
-		continue; // mother not phi
-	      if (mothers2PDG[0] != 313)
-		continue; // mother not phi
-	    }
+            if (!cfgIsKstar) {
+              if (mothers1PDG[0] != 333)
+                continue; // mother not phi
+              if (mothers2PDG[0] != 333)
+                continue; // mother not phi
+            } else {
+              if (mothers1PDG[0] != 313)
+                continue; // mother not phi
+              if (mothers2PDG[0] != 313)
+                continue; // mother not phi
+            }
             if (mothers1[0] != mothers2[0])
               continue; // Kaons not from the same phi
 
             TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
             lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
-	    if(!cfgIsKstar)
-	      lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
-	    else
-	      lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-	    
+            if (!cfgIsKstar)
+              lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
+            else
+              lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+
             lResonance = lDecayDaughter1 + lDecayDaughter2;
             if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
               continue;
 
             bool jetFlag = false;
-	    int goodjets = 0;
-	    double jetpt_mcp = 0;
-	    double jetpt_mcd = 0;
+            int goodjets = 0;
+            double jetpt_mcp = 0;
+            double jetpt_mcd = 0;
             for (int i = 0; i < mcd_pt.size(); i++) {
               double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
               double etadiff = mcd_eta[i] - lResonance.Eta();
               double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
-              if (R < cfgjetR){
-		jetpt_mcd = mcd_pt[i];
-		jetpt_mcp = mcp_pt[i];
-		goodjets++;
+              if (R < cfgjetR) {
+                jetpt_mcd = mcd_pt[i];
+                jetpt_mcp = mcp_pt[i];
+                goodjets++;
                 jetFlag = true;
-	      }
-	    }
-	    
-	    if(cfgSingleJet)
-	      if(goodjets>1){
-		jetpt_mcd=DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
-		jetpt_mcp=DistinguishJetsMC(mcp_pt, mcp_phi, mcp_eta, lResonance);
-	      }
-	    
-	    if (jetFlag) { // Fill Resp. Matrix
-	      if (cDebugLevel > 0) {
-		std::cout << "******************************************" << std::endl;
-		std::cout << "Rec. Phi Pt: " << lResonance.Pt() << std::endl;
-		std::cout << "Rec. Jet Pt: " << jetpt_mcd << std::endl;
-		std::cout << "Gen. Phi Pt: " << mothers1Pt[0] << std::endl;
-		std::cout << "Gen. Jet Pt: " << jetpt_mcp << std::endl;
-		std::cout << "******************************************" << std::endl;
-	      }
-	      JEhistos.fill(HIST("Resp_Matrix_MATCHED"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
-	      int dice = rand() % 2;
-	      if(dice>0)
-		JEhistos.fill(HIST("Resp_Matrix_MATCHED_rand0"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
-	      else
-		JEhistos.fill(HIST("Resp_Matrix_MATCHED_rand1"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
-		
-	    }            
+              }
+            }
+
+            if (cfgSingleJet)
+              if (goodjets > 1) {
+                jetpt_mcd = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
+                jetpt_mcp = DistinguishJetsMC(mcp_pt, mcp_phi, mcp_eta, lResonance);
+              }
+
+            if (jetFlag) { // Fill Resp. Matrix
+              if (cDebugLevel > 0) {
+                std::cout << "******************************************" << std::endl;
+                std::cout << "Rec. Phi Pt: " << lResonance.Pt() << std::endl;
+                std::cout << "Rec. Jet Pt: " << jetpt_mcd << std::endl;
+                std::cout << "Gen. Phi Pt: " << mothers1Pt[0] << std::endl;
+                std::cout << "Gen. Jet Pt: " << jetpt_mcp << std::endl;
+                std::cout << "******************************************" << std::endl;
+              }
+              JEhistos.fill(HIST("Resp_Matrix_MATCHED"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
+              int dice = rand() % 2;
+              if (dice > 0)
+                JEhistos.fill(HIST("Resp_Matrix_MATCHED_rand0"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
+              else
+                JEhistos.fill(HIST("Resp_Matrix_MATCHED_rand1"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
+            }
             if (jetFlag) {
               JEhistos.fill(HIST("hMCRec_hUSS_INSIDE_1D"), lResonance.M());
               if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
