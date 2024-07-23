@@ -84,6 +84,18 @@ struct NucleusCandidate {
   uint32_t clusterSizesITS;
 };
 
+struct NucleusCandidateDCA {
+  int globalIndex;
+  float pt;
+  float DCAxy;
+  float DCAz;
+  float nSigmaTPC;
+  float tofMass;
+  uint8_t itsNCls;
+  uint8_t tpcNCls;
+  uint8_t partHypo;
+};
+
 struct NucleusCandidateFlow {
   float centFV0A;
   float centFT0M;
@@ -143,12 +155,12 @@ constexpr int FlowHistDefault[5][1]{
   {0},
   {0},
   {0}};
-constexpr int DCAHistDefault[5][1]{
-  {0},
-  {0},
-  {0},
-  {0},
-  {0}};
+constexpr int DCAHistDefault[5][2]{
+  {0, 0},
+  {0, 0},
+  {0, 0},
+  {0, 0},
+  {0, 0}};
 constexpr double DownscalingDefault[5][1]{
   {1.},
   {1.},
@@ -165,7 +177,7 @@ static const std::vector<std::string> pidName{"TPC", "TOF"};
 static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
 static const std::vector<std::string> flowConfigNames{"Save flow hists"};
-static const std::vector<std::string> DCAConfigNames{"Save DCA hists"};
+static const std::vector<std::string> DCAConfigNames{"Save DCA hist", "Matter/Antimatter"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
 static const std::vector<std::string> DownscalingConfigName{"Fraction of kept candidates"};
@@ -189,6 +201,7 @@ std::shared_ptr<THnSparse> hDCAHists[2][5];
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
+std::vector<NucleusCandidateDCA> candidates_dca;
 std::vector<NucleusCandidateFlow> candidates_flow;
 
 enum centDetectors {
@@ -242,8 +255,8 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
   Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
+  Configurable<LabeledArray<int>> cfgDCAHist{"cfgDCAHist", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
   Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::FlowHistDefault[0], 5, 1, nuclei::names, nuclei::flowConfigNames}, "Flow hist configuration"};
-  Configurable<LabeledArray<int>> cfgDCAHist{"cfgDCAHist", {nuclei::DCAHistDefault[0], 5, 1, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
 
   ConfigurableAxis cfgDCAxyBinsProtons{"cfgDCAxyBinsProtons", {1500, -1.5f, 1.5f}, "DCAxy binning for Protons"};
   ConfigurableAxis cfgDCAxyBinsDeuterons{"cfgDCAxyBinsDeuterons", {1500, -1.5f, 1.5f}, "DCAxy binning for Deuterons"};
@@ -540,7 +553,7 @@ struct nucleiSpectra {
         }
         ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{trackParCov.getPt() * nuclei::charges[iS], trackParCov.getEta(), trackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
-
+        float tofMass = -10.f;
         for (int iPID{0}; iPID < 2; ++iPID) {
           if (selectedTPC[iS]) {
             if (iPID && !track.hasTOF()) {
@@ -552,7 +565,6 @@ struct nucleiSpectra {
               nuclei::hDCAxy[iPID][iS][iC]->Fill(centrality, fvector.pt(), dcaInfo[0]);
               nuclei::hDCAz[iPID][iS][iC]->Fill(centrality, fvector.pt(), dcaInfo[1]);
               if (std::abs(dcaInfo[0]) < cfgDCAcut->get(iS, 0u)) {
-                float tofMass = -10.f;
                 if (!iPID) { /// temporary exclusion of the TOF nsigma PID for the He3 and Alpha
                   nuclei::hNsigma[iPID][iS][iC]->Fill(centrality, fvector.pt(), nSigma[iPID][iS]);
                   nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
@@ -576,12 +588,22 @@ struct nucleiSpectra {
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound());
                   }
                 }
-                if (cfgDCAHist->get(iS)) {
-                  nuclei::hDCAHists[iC][iS]->Fill(fvector.pt(), dcaInfo[0], dcaInfo[1], nSigma[0][iS], tofMass, track.itsNCls(), track.tpcNClsFound());
-                }
               }
             }
           }
+        }
+
+        if (cfgDCAHists->get(iS, iC) && selectedTPC[iS]) {
+          nuclei::candidates_dca.emplace_back(NucleusCandidateDCA{
+            track.globalIndex(),
+            fvector.pt() * track.sign(),
+            dcaInfo[0],
+            dcaInfo[1],
+            nSigma[0][iS],
+            tofMass,
+            track.itsNCls(),
+            track.tpcNClsFound(),
+            iS});
         }
 
         if (cfgTreeConfig->get(iS, 0u) && selectedTPC[iS]) {
@@ -635,6 +657,7 @@ struct nucleiSpectra {
   void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    nuclei::candidates_dca.clear();
     if (!eventSelection(collision)) {
       return;
     }
@@ -646,12 +669,16 @@ struct nucleiSpectra {
     for (auto& c : nuclei::candidates) {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
+    for (auto& c : nuclei::candidates_dca) {
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigma, c.tofMass, c.ITScls, c.TPCcls);
+    }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
 
   void processDataFlow(CollWithEP const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    nuclei::candidates_dca.clear();
     nuclei::candidates_flow.clear();
     if (!eventSelection(collision)) {
       return;
@@ -663,6 +690,9 @@ struct nucleiSpectra {
     for (auto& c : nuclei::candidates) {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
+    for (auto& c : nuclei::candidates_dca) {
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigma, c.tofMass, c.ITScls, c.TPCcls);
+    }
     for (auto& c : nuclei::candidates_flow) {
       nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
     }
@@ -672,6 +702,7 @@ struct nucleiSpectra {
   void processDataFlowAlternative(CollWithQvec const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    nuclei::candidates_dca.clear();
     nuclei::candidates_flow.clear();
     if (!eventSelection(collision)) {
       return;
@@ -683,6 +714,9 @@ struct nucleiSpectra {
     for (auto& c : nuclei::candidates) {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
+    for (auto& c : nuclei::candidates_dca) {
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigma, c.tofMass, c.ITScls, c.TPCcls);
+    }
     for (auto& c : nuclei::candidates_flow) {
       nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
     }
@@ -693,6 +727,7 @@ struct nucleiSpectra {
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    nuclei::candidates_dca.clear();
     for (auto& c : mcCollisions) {
       spectra.fill(HIST("hGenVtxZ"), c.posZ());
     }
@@ -733,6 +768,19 @@ struct nucleiSpectra {
       }
       float absoDecL = computeAbsoDecL(particle);
       nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absoDecL);
+    }
+
+    for (auto& c : nuclei::candidates_dca) {
+      auto label = trackLabelsMC.iteratorAt(c.globalIndex);
+      if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+        continue;
+      }
+      auto particle = particlesMC.iteratorAt(label.mcParticleId());
+      int partHypoPDG = nuclei::codes[c.partHypo];
+      if (!particle.isPhysicalPrimary() || std::abs(particle.pdgCode()) != partHypoPDG) {
+        continue;
+      }
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigma, c.tofMass, c.ITScls, c.TPCcls);
     }
 
     int index{0};
