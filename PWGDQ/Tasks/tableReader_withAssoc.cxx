@@ -1483,6 +1483,12 @@ struct AnalysisSameEventPairing {
     runSameSideMixing<pairTypeMuMu, gkEventFillMap>(events, muonAssocs, muons, muonAssocsPerCollision);
   }
 
+  void processMixingBarrelSkimmed(soa::Filtered<MyEventsHashSelected>& events,
+                               soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, MyBarrelTracksWithCov const& tracks)
+  {
+    runSameSideMixing<pairTypeEE, gkEventFillMap>(events, trackAssocs, tracks, trackAssocsPerCollision);
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -1493,6 +1499,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithCollSkimmed, "Run barrel only pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingAllSkimmed, "Run all types of mixed pairing, with skimmed tracks/muons", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelSkimmed, "Run barrel type mixing pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
 
@@ -1902,7 +1909,7 @@ struct AnalysisAsymmetricPairing {
                   }
                 }
               }
-              for (unsigned int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
+              for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
                 if (twoTrackFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
                   if (sign1 * sign2 < 0) {
                     fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues);
@@ -2062,7 +2069,7 @@ struct AnalysisAsymmetricPairing {
         if (fConfigAmbiguousHistograms.value && ((threeTrackFilter & (uint32_t(1) << 29)) || (threeTrackFilter & (uint32_t(1) << 30)) || (threeTrackFilter & (uint32_t(1) << 31)))) {
           fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
         }
-        for (unsigned int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
+        for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
           if (threeTrackFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
             fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues);
           }
