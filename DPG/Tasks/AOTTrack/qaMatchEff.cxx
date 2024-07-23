@@ -87,14 +87,15 @@ struct qaMatchEff {
   Configurable<bool> isPbPb{"isPbPb", false, "Boolean to tag if the data is PbPb collisions. If false, it is pp"};
   Configurable<bool> isEnableEventSelection{"isEnableEventSelection", true, "Boolean to switch the event selection on/off."};
   Configurable<bool> isCentralityRequired{"isCentralityRequired", false, "Boolean to switch the centrality selection on/off."};
+  Configurable<bool> isRejectNearByEvent{"isRejectNearByEvent", false, "Boolean to switch the rejection of near by events on/off."};
   Configurable<bool> isEnableOccupancyCut{"isEnableOccupancyCut", false, "Boolean to switch the occupancy cut on/off."};
   struct : ConfigurableGroup {
     Configurable<float> centralityMinCut{"centralityMinCut", 0.0f, "Minimum centrality"};
     Configurable<float> centralityMaxCut{"centralityMaxCut", 100.0f, "Maximum centrality"};
   } centralityCuts;
   struct : ConfigurableGroup {
-    Configurable<int> minTracksInTimeRange{"minTracksInTimeRange", 0, "Minimum number of tracks in the time range"};
-    Configurable<int> maxTracksInTimeRange{"maxTracksInTimeRange", 1000, "Maximum number of tracks in the time range"};
+    Configurable<int> minTracksInTimeRange{"minTracksInTimeRange", 0.0f, "Minimum number of tracks in the time range"};
+    Configurable<int> maxTracksInTimeRange{"maxTracksInTimeRange", 999999.0f, "Maximum number of tracks in the time range"};
   } occupancyCuts;
   //
   // Track selections
@@ -3360,6 +3361,13 @@ struct qaMatchEff {
       if (centrality < centralityCuts.centralityMinCut || centrality > centralityCuts.centralityMaxCut) {
         if (doDebug)
           LOGF(info, "Centrality not in the range, skipping...");
+        return;
+      }
+    }
+    if (isRejectNearByEvent) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        if (doDebug)
+          LOGF(info, "Nearby event found, skipping...");
         return;
       }
     }
