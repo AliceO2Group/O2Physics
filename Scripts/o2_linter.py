@@ -392,7 +392,7 @@ class TestDocumentationFile(TestSpec):
         passed = False
         doc_items = []
         doc_items.append({"keyword": "file", "pattern": fr"{os.path.basename(path)}$", "found": False})
-        doc_items.append({"keyword": "brief", "pattern": r"\w.* \w", "found": False})
+        doc_items.append({"keyword": "brief", "pattern": r"\w.* \w", "found": False}) # at least two words
         doc_items.append({"keyword": "author", "pattern": r"[\w]+", "found": False})
         doc_prefix = "///"
         n_lines_copyright = 11
@@ -617,6 +617,15 @@ class TestNameFileCpp(TestSpec):
 
     def test_file(self, path : str, content) -> bool:
         file_name = os.path.basename(path)
+        # workflow file
+        if re.search("(TableProducer|Tasks)/.*\.cxx", path):
+            return is_lower_camel_case(file_name)
+         # data model file
+        if "DataModel/" in path:
+            return is_upper_camel_case(file_name)
+         # utility file
+        if re.search("[Uu]til(ity|ities|s)?", file_name):
+            return is_lower_camel_case(file_name)
         return is_camel_case(file_name)
 
 
