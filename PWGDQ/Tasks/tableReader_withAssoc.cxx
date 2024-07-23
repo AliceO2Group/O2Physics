@@ -966,8 +966,8 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fTrackHistNames[fNCutsBarrel + icut * fNPairCuts + iPairCut] = names;
               } // end loop (pair cuts)
-            } // end if (pair cuts)
-          } // end if enableBarrelHistos
+            }   // end if (pair cuts)
+          }     // end if enableBarrelHistos
         }
       }
     }
@@ -1009,7 +1009,7 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fMuonHistNames[fNCutsMuon + icut * fNCutsMuon + iPairCut] = names;
               } // end loop (pair cuts)
-            } // end if (pair cuts)
+            }   // end if (pair cuts)
           }
         }
       }
@@ -1363,8 +1363,8 @@ struct AnalysisSameEventPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
-      } // end loop over pairs of track associations
-    } // end loop over events
+      }   // end loop over pairs of track associations
+    }     // end loop over events
   }
 
   template <int TPairType, uint32_t TEventFillMap, typename TAssoc1, typename TAssoc2, typename TTracks1, typename TTracks2>
@@ -1422,8 +1422,8 @@ struct AnalysisSameEventPairing {
             }
           }
         } // end for (cuts)
-      } // end for (track2)
-    } // end for (track1)
+      }   // end for (track2)
+    }     // end for (track1)
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -1675,7 +1675,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        } // end if (pair cuts)
+        }   // end if (pair cuts)
       } else {
         names = {};
         std::vector<TString> pairHistPrefixes = {"PairsBarrelSEPM"};
@@ -1726,7 +1726,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        } // end if (pair cuts)
+        }   // end if (pair cuts)
       }
     }
     // Make sure only pairs or only triplets of leg cuts were given
@@ -1954,8 +1954,8 @@ struct AnalysisAsymmetricPairing {
             ditrackExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
           }
         } // end inner assoc loop (leg A)
-      } // end outer assoc loop (leg B)
-    } // end event loop
+      }   // end outer assoc loop (leg B)
+    }     // end event loop
   }
 
   // Template function to run same event triplets (e.g. D+->K-pi+pi+)
@@ -2484,8 +2484,8 @@ struct AnalysisDileptonTrack {
             }
           }
         } // end for (dileptons)
-      } // end for (assocs)
-    } // end event loop
+      }   // end for (assocs)
+    }     // end event loop
   }
 
   void processMuonMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
@@ -2523,8 +2523,8 @@ struct AnalysisDileptonTrack {
             }
           }
         } // end for (dileptons)
-      } // end for (assocs)
-    } // end event loop
+      }   // end for (assocs)
+    }     // end event loop
   }
 
   void processDummy(MyEvents&)

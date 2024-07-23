@@ -780,9 +780,9 @@ struct AnalysisEventMixing {
               }
             }
           } // end if (filter bits)
-        } // end for (cuts)
-      } // end for (track2)
-    } // end for (track1)
+        }   // end for (cuts)
+      }     // end for (track2)
+    }       // end for (track1)
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -1014,9 +1014,9 @@ struct AnalysisSameEventPairing {
               }
               fTrackHistNames.push_back(names);
             } // end loop (pair cuts)
-          } // end if (pair cuts)
-        } // end loop (track cuts)
-      } // end if (track cuts)
+          }   // end if (pair cuts)
+        }     // end loop (track cuts)
+      }       // end if (track cuts)
     }
 
     if (context.mOptions.get<bool>("processDecayToMuMuSkimmed") || context.mOptions.get<bool>("processDecayToMuMuVertexingSkimmed") || context.mOptions.get<bool>("processDecayToMuMuSkimmedWithColl") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmed") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmedWithWeights") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmedWithWeightsAndColl") || context.mOptions.get<bool>("processVnCentrDecayToMuMuSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
@@ -1048,9 +1048,9 @@ struct AnalysisSameEventPairing {
               histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
               fMuonHistNames.push_back(names);
             } // end loop (pair cuts)
-          } // end if (pair cuts)
-        } // end loop (track cuts)
-      } // end if (track cuts)
+          }   // end if (pair cuts)
+        }     // end loop (track cuts)
+      }       // end if (track cuts)
     }
     if (context.mOptions.get<bool>("processElectronMuonSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNamesBarrel = fConfigTrackCuts.value;
@@ -1081,10 +1081,10 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fTrackMuonHistNames.push_back(names);
               } // end loop (pair cuts)
-            } // end if (pair cuts)
-          } // end loop (track cuts)
-        } // end if (equal number of cuts)
-      } // end if (track cuts)
+            }   // end if (pair cuts)
+          }     // end loop (track cuts)
+        }       // end if (equal number of cuts)
+      }         // end if (track cuts)
     }
 
     // Usage example of ccdb
@@ -1336,12 +1336,12 @@ struct AnalysisSameEventPairing {
                 }
               }
             }
-          } // end loop (pair cuts)
+          }      // end loop (pair cuts)
         } else { // end if (filter bits)
           iCut = iCut + 1 + fPairCuts.size();
         }
       } // end loop (cuts)
-    } // end loop over pairs
+    }   // end loop over pairs
   }
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
@@ -1782,7 +1782,7 @@ struct AnalysisDileptonHadron {
           fHistMan->FillHistClass("DileptonHadronInvMassME", VarManager::fgValues);
           fHistMan->FillHistClass("DileptonHadronCorrelationME", VarManager::fgValues);
         } // end for (track)
-      } // end for (dilepton)
+      }   // end for (dilepton)
 
     } // end event loop
   }
@@ -1956,7 +1956,7 @@ struct AnalysisDileptonTrackTrack {
               }
             }
           } // check if the Ditrack cut is selected
-        } // loop over hadron cuts
+        }   // loop over hadron cuts
       }
     }
   }
