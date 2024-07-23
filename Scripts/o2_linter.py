@@ -247,7 +247,7 @@ class TestPdgCode(TestSpec):
             return True
         if re.search(r"->(GetParticle|Mass)\([+-]?[0-9]+\)", line):
             return False
-        match = re.search(r"[Pp][Dd][Gg][\w]* = [+-]?([0-9]+);", line)
+        match = re.search(r"[Pp][Dd][Gg][\w]* ={1,2} [+-]?([0-9]+);", line)
         if match:
             code = match.group(1)
             if code not in ("0", "1", "999"):
@@ -366,9 +366,9 @@ class TestDocumentationFile(TestSpec):
     def test_file(self, path : str, content) -> bool:
         passed = False
         doc_items = []
-        doc_items.append({"keyword": "file", "pattern": f"{os.path.basename(path)}$", "found": False})
-        doc_items.append({"keyword": "brief", "pattern": "[\w]+", "found": False})
-        doc_items.append({"keyword": "author", "pattern": "[\w]+", "found": False})
+        doc_items.append({"keyword": "file", "pattern": fr"{os.path.basename(path)}$", "found": False})
+        doc_items.append({"keyword": "brief", "pattern": r"\w.* \w", "found": False})
+        doc_items.append({"keyword": "author", "pattern": r"[\w]+", "found": False})
         doc_prefix = "///"
         n_lines_copyright = 11
         last_doc_line = n_lines_copyright
@@ -510,6 +510,10 @@ class TestNameConstant(TestSpec):
         if constant_name.endswith("]") and "[" not in constant_name: # it's an array and we do not have the name before "[" here
             opens_brackets = ["[" in w for w in words]
             constant_name = words[opens_brackets.index(True)] # the name is in the first element with "["
+        if "[" in constant_name: # Remove brackets for arrays.
+            constant_name = constant_name[:constant_name.find("[")]
+        if "::" in constant_name: # Remove the class prefix for methods.
+            constant_name = constant_name.split("::")[-1]
         # The actual test comes here.
         if constant_name.startswith("k"): # exception for special constants
             constant_name = constant_name[1:] # test the name without "k"
