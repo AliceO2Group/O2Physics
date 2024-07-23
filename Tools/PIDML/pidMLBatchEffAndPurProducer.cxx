@@ -9,8 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidEffAndPurProducer
-/// \brief Batch PID execution task, which prepares data for efficiency and purity analysis of ML Model PID
+/// \file pidMLBatchEffAndPurProducer
+/// \brief Batch PID execution task. It produces derived data needed for ROOT script which
+/// generates efficiency (recall) and purity (precision) analysis of ML Model PID
 ///
 /// \author Michał Olędzki <mioledzk@cern.ch>
 /// \author Marek Mytkowski <mmytkows@cern.ch>
@@ -55,14 +56,12 @@ struct PidMlBatchEffAndPurProducer {
   static constexpr float etaCut = 0.8f;
   static constexpr float nSigmaTofPtCut = 0.5f;
   static constexpr float tofMissing = -999.0f;
-  static constexpr float trdMissing = 0.0f;
   static constexpr int nPids = 6;
   static constexpr int pids[nPids] = {211, 321, 2212, -211, -321, -2212};
 
   o2::ccdb::CcdbApi ccdbApi;
   std::vector<PidONNXModel> models;
 
-  Configurable<uint32_t> cfgDetector{"detector", kTPCTOFTRD, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
   Configurable<std::vector<int>> cfgPids{"pids", std::vector<int>(pids, pids + nPids), "PIDs to predict"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
@@ -169,9 +168,7 @@ struct PidMlBatchEffAndPurProducer {
     }
   }
 
-  Filter trackFilter = requireGlobalTrackInFilter(); // &&
-                       // (nabs(aod::pidtofsignal::tofSignal - tofMissing) > eps) &&
-                       // (nabs(aod::track::trdSignal - trdMissing) > eps);
+  Filter trackFilter = requireGlobalTrackInFilter();
 
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels,
                                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu,
@@ -229,11 +226,11 @@ struct PidMlBatchEffAndPurProducer {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       for (const int& pid : cfgPids.value)
         models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, timestamp, pid, static_cast<PidMLDetector>(cfgDetector.value), 1.1));
+                                         ccdbApi, timestamp, pid, 1.1));
     } else {
       for (int& pid : cfgPids.value)
         models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, -1, pid, static_cast<PidMLDetector>(cfgDetector.value), 1.1));
+                                         ccdbApi, -1, pid, 1.1));
     }
 
     for (auto& mcPart : mcParticles) {

@@ -33,7 +33,6 @@ struct PidMlEffAndPurProducer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
-  Configurable<uint32_t> cfgDetector{"detector", kTPCOnly, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
   Configurable<double> cfgNSigmaCut{"n-sigma-cut", 3.0f, "TPC and TOF PID nSigma cut"};
   Configurable<double> cfgTofPtCut{"tof-pt-cut", 0.5f, "From what pT TOF is used"};
@@ -56,15 +55,13 @@ struct PidMlEffAndPurProducer {
   int currentRunNumber = -1;
 
   Filter trackFilter = requireGlobalTrackInFilter();
-    // && (nabs(aod::pidtofsignal::tofSignal - kTOFMissingSignal) > kEpsilon)
-    // && (nabs(aod::track::trdSignal - kTRDMissingSignal) > kEpsilon);
 
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels,
     aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu, 
     aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu>>;
   
   typedef struct nSigma_t {
-    double tpc, tof; 
+    double tpc, tof;
   } nSigma_t;
 
   nSigma_t GetNSigma(const BigTracks::iterator &track) {
@@ -100,7 +97,7 @@ struct PidMlEffAndPurProducer {
     int sign = cfgPid > 0 ? 1 : -1;
     if(track.sign() != sign) return false;
 
-    if (cfgDetector == 0 || track.pt() <= cfgTofPtCut || (track.tofSignal() - kTOFMissingSignal) < kEpsilon) {
+    if (track.pt() <= cfgTofPtCut || (track.tofSignal() - kTOFMissingSignal) < kEpsilon) {
       if (TMath::Abs(nSigma.tpc) >= cfgNSigmaCut)
         return false;
     } else {
@@ -116,7 +113,7 @@ struct PidMlEffAndPurProducer {
       ccdbApi.init(cfgCCDBURL);
     } else {
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-          ccdbApi, -1, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
+          ccdbApi, -1, cfgPid.value, cfgCertainty.value);
     }
 
     const AxisSpec axisPt{100, 0, 5.0, "pt"};
@@ -151,7 +148,7 @@ struct PidMlEffAndPurProducer {
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-          ccdbApi, timestamp, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
+          ccdbApi, timestamp, cfgPid.value, cfgCertainty.value);
     }
 
     for (auto& mcPart : mcParticles) {

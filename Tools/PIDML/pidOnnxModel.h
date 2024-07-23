@@ -32,13 +32,6 @@
 
 #include "CCDB/CcdbApi.h"
 
-enum PidMLDetector {
-  kTPCOnly = 0,
-  kTPCTOF,
-  kTPCTOFTRD,
-  kNDetectors ///< number of available detectors configurations
-};
-
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
 namespace
 {
@@ -61,7 +54,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, PidMLDetector detector, double minCertainty) : mUseCCDB(useCCDB), mDetector(detector), mPid(pid), mMinCertainty(minCertainty)
+  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, double minCertainty) : mUseCCDB(useCCDB), mPid(pid), mMinCertainty(minCertainty)
   {
     std::string modelFile;
     loadInputFiles(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pid, modelFile);
@@ -110,27 +103,21 @@ struct PidONNXModel {
   }
 
   bool mUseCCDB;
-  PidMLDetector mDetector;
   int mPid;
   double mMinCertainty;
 
  private:
   void getModelPaths(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
   {
-    modelDir = path + "/TPC";
-    if (mDetector >= kTPCTOF) {
-      modelDir += "_TOF";
-    }
-    if (mDetector >= kTPCTOFTRD) {
-      modelDir += "_TRD";
-    }
+    modelDir = path;
+    modelFile = "attention_model_";
 
-    modelFile = "simple_model_";
     if (pid < 0) {
       modelFile += "0" + std::to_string(-pid);
     } else {
       modelFile += std::to_string(pid);
     }
+
     modelFile += ext;
     modelPath = modelDir + "/" + modelFile;
   }
@@ -192,73 +179,40 @@ struct PidONNXModel {
     // TODO: Hardcoded for now. Planning to implement RowView extension to get runtime access to selected columns
     // sign is short, trackType and tpcNClsShared uint8_t
 
-    // Proposed model input
-    if(!mUseCCDB) {
-      float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
+    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
 
-      std::vector<float> inputValues{scaledTPCSignal};
+    std::vector<float> inputValues{scaledTPCSignal};
 
-      if ((track.trdSignal() - kTRDMissingSignal) > kEpsilon) {
-        float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
-        inputValues.push_back(scaledTRDSignal);
-        inputValues.push_back(track.trdPattern());
-      } else {
-        inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-        inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-      }
-
-      if ((track.tofSignal() - kTOFMissingSignal) > kEpsilon) {
-        float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
-        float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
-        inputValues.push_back(scaledTOFSignal);
-        inputValues.push_back(scaledBeta);
-      } else {
-        inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-        inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-      }
-
-      float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
-      float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
-      float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
-      float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
-      float scaledTPCNClsShared = (static_cast<float>(track.tpcNClsShared()) - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
-      float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
-      float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
-
-      inputValues.insert(inputValues.end(), {track.p(), track.pt(), track.px(), track.py(), track.pz(), static_cast<float>(track.sign()), scaledX, scaledY, scaledZ, scaledAlpha, static_cast<float>(track.trackType()), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ});
-
-      return inputValues;
-
-    // Simple model input
+    if ((track.trdSignal() - kTRDMissingSignal) > kEpsilon) {
+      float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
+      inputValues.push_back(scaledTRDSignal);
+      inputValues.push_back(track.trdPattern());
     } else {
-      float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
-      float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
-      float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
-      float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
-      float scaledTPCNClsShared = (static_cast<float>(track.tpcNClsShared()) - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
-      float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
-      float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
-
-      float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
-
-      std::vector<float> inputValues{track.px(), track.py(), track.pz(), static_cast<float>(track.sign()), scaledX, scaledY, scaledZ, scaledAlpha, static_cast<float>(track.trackType()), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p(), scaledTPCSignal};
-
-      if (mDetector >= kTPCTOF) {
-        float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
-        float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
-        inputValues.push_back(scaledTOFSignal);
-        inputValues.push_back(scaledBeta);
-      }
-
-      if (mDetector >= kTPCTOFTRD) {
-        float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
-        float scaledTRDPattern = (track.trdPattern() - mScalingParams.at("fTRDPattern").first) / mScalingParams.at("fTRDPattern").second;
-        inputValues.push_back(scaledTRDSignal);
-        inputValues.push_back(scaledTRDPattern);
-      }
-
-      return inputValues;
+      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
     }
+
+    if ((track.tofSignal() - kTOFMissingSignal) > kEpsilon) {
+      float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
+      float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
+      inputValues.push_back(scaledTOFSignal);
+      inputValues.push_back(scaledBeta);
+    } else {
+      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+    }
+
+    float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
+    float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
+    float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
+    float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
+    float scaledTPCNClsShared = (static_cast<float>(track.tpcNClsShared()) - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
+    float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
+    float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
+
+    inputValues.insert(inputValues.end(), {track.p(), track.pt(), track.px(), track.py(), track.pz(), static_cast<float>(track.sign()), scaledX, scaledY, scaledZ, scaledAlpha, static_cast<float>(track.trackType()), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ});
+
+    return inputValues;
   }
 
   // FIXME: Temporary solution, new networks will have sigmoid layer added
