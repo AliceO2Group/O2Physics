@@ -320,9 +320,9 @@ class TestConstRefInForLoop(TestSpec):
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
-        if not line.startswith("for (") or " : " not in line:
+        if not re.match("for \(.* :", line):
             return True
-        line = line[:line.index(" : ")] # keep only the iterator part
+        line = line[:line.index(" :")] # keep only the iterator part
         return re.search(r"(\w const|const \w+)& ", line) is not None
 
 
