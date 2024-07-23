@@ -255,7 +255,7 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
   Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
-  Configurable<LabeledArray<int>> cfgDCAHist{"cfgDCAHist", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
+  Configurable<LabeledArray<int>> cfgDCAHists{"cfgDCAHists", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
   Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::FlowHistDefault[0], 5, 1, nuclei::names, nuclei::flowConfigNames}, "Flow hist configuration"};
 
   ConfigurableAxis cfgDCAxyBinsProtons{"cfgDCAxyBinsProtons", {1500, -1.5f, 1.5f}, "DCAxy binning for Protons"};
@@ -595,15 +595,15 @@ struct nucleiSpectra {
 
         if (cfgDCAHists->get(iS, iC) && selectedTPC[iS]) {
           nuclei::candidates_dca.emplace_back(NucleusCandidateDCA{
-            track.globalIndex(),
+            static_cast<int>(track.globalIndex()),
             fvector.pt() * track.sign(),
             dcaInfo[0],
             dcaInfo[1],
             nSigma[0][iS],
             tofMass,
             track.itsNCls(),
-            track.tpcNClsFound(),
-            iS});
+            static_cast<uint8_t>(track.tpcNClsFound()),
+            static_cast<uint8_t>(iS)});
         }
 
         if (cfgTreeConfig->get(iS, 0u) && selectedTPC[iS]) {
@@ -670,7 +670,7 @@ struct nucleiSpectra {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
     for (auto& c : nuclei::candidates_dca) {
-      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigma, c.tofMass, c.ITScls, c.TPCcls);
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
@@ -691,7 +691,7 @@ struct nucleiSpectra {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
     for (auto& c : nuclei::candidates_dca) {
-      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigma, c.tofMass, c.ITScls, c.TPCcls);
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
     }
     for (auto& c : nuclei::candidates_flow) {
       nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
@@ -715,7 +715,7 @@ struct nucleiSpectra {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
     for (auto& c : nuclei::candidates_dca) {
-      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigma, c.tofMass, c.ITScls, c.TPCcls);
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
     }
     for (auto& c : nuclei::candidates_flow) {
       nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
@@ -780,7 +780,7 @@ struct nucleiSpectra {
       if (!particle.isPhysicalPrimary() || std::abs(particle.pdgCode()) != partHypoPDG) {
         continue;
       }
-      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigma, c.tofMass, c.ITScls, c.TPCcls);
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
     }
 
     int index{0};
