@@ -655,7 +655,7 @@ struct HfCandidateCreator2ProngExpressions {
 
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
-  
+
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::Mults>;
@@ -700,7 +700,7 @@ struct HfCandidateCreator2ProngExpressions {
       flag = 0;
       origin = 0;
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
- 
+
       // Check whether the particle is from background events. If so, reject it.
       if (rejectBackground) {
         for (const auto& daughter : arrayDaughters) {
@@ -809,7 +809,7 @@ struct HfCandidateCreator2ProngExpressions {
       }
     }
   }
-  
+
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Cs const& collInfos,
@@ -817,7 +817,7 @@ struct HfCandidateCreator2ProngExpressions {
                          BCsInfo const& BCsInfo)
   {
     runCreator2ProngMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
-  } 
+  }
   PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMcCentFT0C, "Process MC - FT0c centrality", false);
 
   void processMcCentFT0M(aod::TracksWMc const& tracks,

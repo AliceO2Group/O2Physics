@@ -667,7 +667,7 @@ struct HfCandidateCreatorDstarExpressions {
                          BCsInfo const& BCsInfo)
   {
     runCreatorDstarMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
-  } 
+  }
   PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMcCentFT0C, "Process MC - FT0c centrality", false);
 
   void processMcCentFT0M(aod::TracksWMc const& tracks,
@@ -680,7 +680,6 @@ struct HfCandidateCreatorDstarExpressions {
   }
   PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMcCentFT0M, "Process MC - FT0m centrality", false);
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
