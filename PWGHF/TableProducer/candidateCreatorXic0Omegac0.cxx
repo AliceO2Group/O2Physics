@@ -693,7 +693,6 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       LOGP(fatal, "At most one process function for OmegacToOmegaK collision study can be enabled at a time.");
     }
 
-
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-xic0-omegac0") == 0) {
@@ -1243,12 +1242,12 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPiFT0c, "Run Omegac0 to omega pi MC process function - FT0C", false);
 
   void processMcOmegacToOmegaK(aod::HfCandToOmegaK const& candidates,
-                                aod::TracksWMc const& tracks,
-                                aod::McParticles const& mcParticles,
-                                aod::McCollisions const& mcColls,
-                                aod::McCollisionLabels const& mcLabels,
-                                McCollisionsFT0Ms const& collInfos,
-                                BCsInfo const& bcs)
+                               aod::TracksWMc const& tracks,
+                               aod::McParticles const& mcParticles,
+                               aod::McCollisions const& mcColls,
+                               aod::McCollisionLabels const& mcLabels,
+                               McCollisionsFT0Ms const& collInfos,
+                               BCsInfo const& bcs)
   {
     runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, collInfos, mcColls, mcLabels, bcs);
   }
