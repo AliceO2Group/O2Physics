@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <string>
+#include <unordered_map>
 #include "Common/Core/RecoDecay.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -28,8 +29,9 @@ namespace o2::aod
 
 namespace pwgem::dilepton::swt
 {
-enum swtAliases { // software trigger aliases for EM
-  kHighTrackMult = 0,
+enum class swtAliases : int { // software trigger aliases for EM
+  kUnDef = 0,
+  kHighTrackMult = 1,
   kHighFt0Mult,
   kSingleE,
   kLMeeIMR,
@@ -40,18 +42,19 @@ enum swtAliases { // software trigger aliases for EM
   kDiMuon,
   kNaliases
 };
-} // namespace pwgem::dilepton::swt
 
-constexpr std::string aliasLabels[o2::aod::pwgem::dilepton::swt::kNaliases] = {
-  "fHighTrackMult",
-  "fHighFt0Mult",
-  "fSingleE",
-  "fLMeeIMR",
-  "fLMeeHMR",
-  "fDiElectron",
-  "fSingleMuLow",
-  "fSingleMuHigh",
-  "fDiMuon"};
+const std::unordered_map<std::string, int> aliasLabels = {
+  {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
+  {"fHighFt0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0Mult)},
+  {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
+  {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
+  {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
+  {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
+  {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
+  {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
+  {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
+};
+} // namespace pwgem::dilepton::swt
 
 namespace emevent
 {
