@@ -53,19 +53,21 @@ enum {
   kAllCutsINELg010,
   kECend,
 };
-DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
-DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity of the event
-DECLARE_SOA_COLUMN(EvtPl, evtPl, float);           //! Second harmonic event plane
-DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float); //! Second harmonic event plane resolution of A-B sub events
-DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float); //! Second harmonic event plane resolution of A-C sub events
-DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float); //! Second harmonic event plane resolution of B-C sub events
-DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
+DECLARE_SOA_COLUMN(Cent, cent, float);                                         //! Centrality (Multiplicity) percentile (Default: FT0M)
+DECLARE_SOA_COLUMN(Spherocity, spherocity, float);                             //! Spherocity of the event
+DECLARE_SOA_COLUMN(EvtPl, evtPl, float);                                       //! Second harmonic event plane
+DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float);                             //! Second harmonic event plane resolution of A-B sub events
+DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float);                             //! Second harmonic event plane resolution of A-C sub events
+DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float);                             //! Second harmonic event plane resolution of B-C sub events
+DECLARE_SOA_COLUMN(BMagField, bMagField, float);                               //! Magnetic field
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int); //! track occupancy in time interval
 // MC
 DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
 DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
 DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);         //! TriggerTVX
 DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
 DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
+DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
 
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
@@ -81,6 +83,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   resocollision::EvtPlResAC,
                   resocollision::EvtPlResBC,
                   resocollision::BMagField,
+                  resocollision::TrackOccupancyInTimeRange,
                   timestamp::Timestamp);
 using ResoCollision = ResoCollisions::iterator;
 
@@ -89,7 +92,8 @@ DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
                   resocollision::IsINELgt0,
                   resocollision::IsTriggerTVX,
                   resocollision::IsInSel8,
-                  resocollision::IsInAfterAllCuts);
+                  resocollision::IsInAfterAllCuts,
+                  resocollision::ImpactParameter);
 using ResoMCCollision = ResoMCCollisions::iterator;
 
 // Resonance Daughters
