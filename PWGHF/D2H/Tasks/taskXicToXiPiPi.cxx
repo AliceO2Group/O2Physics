@@ -227,7 +227,7 @@ struct HfTaskXicToXiPiPi {
   {
     for (const auto& candidate : candidates) {
       auto yCandXic = candidate.y(o2::constants::physics::MassXiCPlus);
-      if (yCandRecoMax >= 0. && std::abs(yCandXic) > yCandRecoMax) { /// TODO: why yCandRecoMax >= 0.??
+      if (yCandRecoMax >= 0. && std::abs(yCandXic) > yCandRecoMax) {
         continue;
       }
 
