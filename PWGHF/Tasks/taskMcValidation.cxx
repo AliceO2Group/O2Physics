@@ -24,16 +24,19 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/StaticFor.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_evsel;
 
 namespace
 {
@@ -393,11 +396,14 @@ struct HfTaskMcValidationRec {
 
   using HfCand2ProngWithMCRec = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec>;
   using HfCand3ProngWithMCRec = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>;
-  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::HfSelCollision>;
+  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using TracksWithSel = soa::Join<aod::TracksWMc, aod::TracksExtra, aod::TrackSelection, aod::TrackCompColls>;
 
   Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
   Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HfEventSelection hfEvSel;        // event selection and monitoring
 
   AxisSpec axisDeltaMom{2000, -1., 1.};
   AxisSpec axisOrigin{4, -1.5, 2.5};
@@ -478,6 +484,16 @@ struct HfTaskMcValidationRec {
 
   void init(InitContext&)
   {
+    std::array<bool, 3> procCollisions = {doprocessColl, doprocessCollWithCentFTOC, doprocessCollWithCentFTOM};
+    if (std::accumulate(procCollisions.begin(), procCollisions.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for collision study can be enabled at a time.");
+    }
+
+    std::array<bool, 3> procCollAccoc = {doprocessCollAssoc, doprocessCollAssocWithCentFTOC, doprocessCollAssocWithCentFTOM};
+    if (std::accumulate(procCollAccoc.begin(), procCollAccoc.end(), 0) > 1) {
+      LOGP(fatal, "At most one process for collision association study function can be enabled at a time.");
+    }
+
     histOriginTracks[0] = registry.add<THnSparse>("TrackToCollChecks/histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
     histOriginTracks[1] = registry.add<THnSparse>("TrackToCollChecks/histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision
     histOriginTracks[2] = registry.add<THnSparse>("TrackToCollChecks/histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
@@ -519,19 +535,31 @@ struct HfTaskMcValidationRec {
     histContributors = registry.add<TH1>("TrackToCollChecks/histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
     histContributors->GetXaxis()->SetBinLabel(1, "correct MC collision");
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
+    hfEvSel.addHistograms(registry); // collision monitoring
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
   }
 
-  void process(CollisionsWithMCLabels::iterator const& collision,
-               aod::McCollisions const&)
+  template<o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+  void checkCollisions(Coll const& collision,
+                       aod::McCollisions const&,
+                       aod::BCsWithTimestamps const&)
   {
-    // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
-    if (collision.whyRejectColl() != 0) {
-      return;
-    }
+    // apply event selection
     if (!collision.has_mcCollision()) {
       return;
     }
-    auto mcCollision = collision.mcCollision_as<aod::McCollisions>();
+
+    float centrality{-1.f};
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb);
+    if (rejectionMask != 0) {
+      /// at least one event selection not satisfied --> reject the candidate
+      return;
+    }
+
+    auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
     if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
       return;
     }
@@ -540,24 +568,30 @@ struct HfTaskMcValidationRec {
     registry.fill(HIST("histYvtxReco"), collision.posY());
     registry.fill(HIST("histZvtxReco"), collision.posZ());
     registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), collision.posZ() - mcCollision.posZ());
-  } // end process
+  }
 
-  void processCollAssoc(CollisionsWithMCLabels const& collisions,
-                        TracksWithSel const&,
-                        aod::McParticles const& mcParticles,
-                        aod::McCollisions const&,
-                        aod::BCs const&)
+  template<o2::hf_centrality::CentralityEstimator centEstimator, typename Colls>
+  void checkCollisionAssociation(Colls const& collisions,
+                                 TracksWithSel const&,
+                                 aod::McParticles const& mcParticles,
+                                 aod::McCollisions const&,
+                                 aod::BCsWithTimestamps const&)
   {
     // loop over collisions
-    for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
+    for (const auto& collision : collisions) {
       // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
-      if (collision.whyRejectColl() != 0) {
+
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
+
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto mcCollision = collision.mcCollision_as<aod::McCollisions>();
+      auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
       if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
         continue;
       }
@@ -678,7 +712,60 @@ struct HfTaskMcValidationRec {
       }
     }
   }
+
+  void processColl(CollisionsWithMCLabels::iterator const& collision,
+                   aod::McCollisions const& mcCollisions,
+                   aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisions<o2::hf_centrality::CentralityEstimator::None>(collision, mcCollisions, bcs);
+  } // end process
+  PROCESS_SWITCH(HfTaskMcValidationRec, processColl, "Process collision information without centrality selection", true);
+
+  void processCollWithCentFTOC(soa::Join<CollisionsWithMCLabels, aod::CentFT0Cs>::iterator const& collision,
+                               aod::McCollisions const& mcCollisions,
+                               aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisions<o2::hf_centrality::CentralityEstimator::FT0C>(collision, mcCollisions, bcs);
+  } // end process
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollWithCentFTOC, "Process collision information with centrality selection with FT0C", false);
+
+  void processCollWithCentFTOM(soa::Join<CollisionsWithMCLabels, aod::CentFT0Ms>::iterator const& collision,
+                               aod::McCollisions const& mcCollisions,
+                               aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisions<o2::hf_centrality::CentralityEstimator::FT0M>(collision, mcCollisions, bcs);
+  } // end process
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollWithCentFTOM, "Process collision information with centrality selection with FT0M", false);
+
+  void processCollAssoc(CollisionsWithMCLabels const& collisions,
+                        TracksWithSel const& tracks,
+                        aod::McParticles const& mcParticles,
+                        aod::McCollisions const& mcCollisions,
+                        aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisionAssociation<o2::hf_centrality::CentralityEstimator::None>(collisions, tracks, mcParticles, mcCollisions, bcs);
+  }
   PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssoc, "Process collision-association information, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
+
+  void processCollAssocWithCentFTOC(soa::Join<CollisionsWithMCLabels, aod::CentFT0Cs> const& collisions,
+                                    TracksWithSel const& tracks,
+                                    aod::McParticles const& mcParticles,
+                                    aod::McCollisions const& mcCollisions,
+                                    aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisionAssociation<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, tracks, mcParticles, mcCollisions, bcs);
+  }
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssocWithCentFTOC, "Process collision-association information with centrality selection with FT0C, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
+
+  void processCollAssocWithCentFTOM(soa::Join<CollisionsWithMCLabels, aod::CentFT0Ms> const& collisions,
+                                    TracksWithSel const& tracks,
+                                    aod::McParticles const& mcParticles,
+                                    aod::McCollisions const& mcCollisions,
+                                    aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisionAssociation<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, tracks, mcParticles, mcCollisions, bcs);
+  }
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssocWithCentFTOM, "Process collision-association information with centrality selection with FT0M, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
 
   void processEff(HfCand2ProngWithMCRec const& cand2Prongs,
                   HfCand3ProngWithMCRec const& cand3Prongs,
