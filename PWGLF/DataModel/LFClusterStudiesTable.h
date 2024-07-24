@@ -45,7 +45,7 @@ DECLARE_SOA_COLUMN(McPdgCodeMother, mcPdgCodeMother, int);
  * 5: ^{3}He
  */
 DECLARE_SOA_COLUMN(PartID, partID, uint8_t);
-DECLARE_SOA_COLUMN(PartIDMc, partIDMc, uint8_t);
+DECLARE_SOA_COLUMN(PartIDMc, partIDMc, int);
 DECLARE_SOA_COLUMN(IsPositive, isPositive, bool);
 
 DECLARE_SOA_COLUMN(P, p, float);
@@ -95,6 +95,22 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::ItsClusterSize,
   LFClusterStudiesTables::PartID,
   LFClusterStudiesTables::IsPositive,
+  LFClusterStudiesTables::PTPC,
+  LFClusterStudiesTables::PIDinTrk,
+  LFClusterStudiesTables::TpcNSigma,
+  LFClusterStudiesTables::TofNSigma,
+  LFClusterStudiesTables::CosPAMother,
+  LFClusterStudiesTables::MassMother);
+
+DECLARE_SOA_TABLE(
+  ClStTableMcExt, "AOD", "CLSTTABLEMCEXT",
+  LFClusterStudiesTables::P,
+  LFClusterStudiesTables::Eta,
+  LFClusterStudiesTables::Phi,
+  LFClusterStudiesTables::ItsClusterSize,
+  LFClusterStudiesTables::PartID,
+  LFClusterStudiesTables::IsPositive,
+  LFClusterStudiesTables::PartIDMc,
   LFClusterStudiesTables::PTPC,
   LFClusterStudiesTables::PIDinTrk,
   LFClusterStudiesTables::TpcNSigma,
