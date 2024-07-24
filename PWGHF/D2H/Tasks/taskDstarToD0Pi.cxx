@@ -47,6 +47,9 @@ struct HfTaskDstarToD0Pi {
   using CollisionsWCent = soa::Join<aod::Collisions, aod::CentFT0Ms>;
   using CollisionsWCentMcLabel = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Ms>;
 
+  PresliceUnsorted<CollisionsWCentMcLabel> colsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+  SliceCache cache;
+
   Partition<CandDstarWSelFlag> rowsSelectedCandDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Partition<CandDstarWSelFlagMcRec> rowsSelectedCandDstarMcRec = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
 
@@ -198,9 +201,6 @@ struct HfTaskDstarToD0Pi {
       }
     }
   }
-
-  PresliceUnsorted<CollisionsWCentMcLabel> colsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
-  SliceCache cache;
 
   void processMC(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagMcRec const&,
                  CandDstarMcGen const& rowsMcPartilces,
