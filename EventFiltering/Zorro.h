@@ -29,6 +29,12 @@ class BasicCCDBManager;
 };
 }; // namespace o2
 
+struct ZorroHelper
+{
+  uint64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
+  ClassDefNV(ZorroHelper, 1);
+};
+
 class Zorro
 {
  public:
@@ -53,8 +59,7 @@ class Zorro
   TH1D* mSelections = nullptr;
   TH1D* mInspectedTVX = nullptr;
   std::vector<o2::dataformats::IRFrame> mBCranges;
-  std::vector<std::array<uint64_t, 2>>* mFilterBitMask = nullptr;
-  std::vector<std::array<uint64_t, 2>>* mSelectionBitMask = nullptr;
+  std::vector<ZorroHelper>* mZorroHelpers = nullptr;
   std::vector<std::string> mTOIs;
   std::vector<int> mTOIidx;
   std::vector<int> mTOIcounts;

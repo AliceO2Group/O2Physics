@@ -34,15 +34,12 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   mScalers = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "FilterCounters", timestamp, metadata);
   mSelections = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "SelectionCounters", timestamp, metadata);
   mInspectedTVX = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "InspectedTVX", timestamp, metadata);
-  auto selectedBCs = mCCDB->getSpecific<std::vector<std::array<uint64_t, 2>>>(mBaseCCDBPath + "SelectedBCs", timestamp, metadata);
+  mZorroHelpers = mCCDB->getSpecific<std::vector<ZorroHelper>>(mBaseCCDBPath + "ZorroHelpers", timestamp, metadata);
+  std::sort(mZorroHelpers->begin(), mZorroHelpers->end(), [](const auto& a, const auto& b) { return std::min(a.bcAOD, a.bcEvSel) < std::min(b.bcAOD, b.bcEvSel); });
   mBCranges.clear();
-  for (auto bc : *selectedBCs) {
-    mBCranges.emplace_back(InteractionRecord::long2IR(std::min(bc[0], bc[1])), InteractionRecord::long2IR(std::max(bc[0], bc[1])));
+  for (auto helper : *mZorroHelpers) {
+    mBCranges.emplace_back(InteractionRecord::long2IR(std::min(helper.bcAOD, helper.bcEvSel)), InteractionRecord::long2IR(std::max(helper.bcAOD, helper.bcEvSel)));
   }
-  std::sort(mBCranges.begin(), mBCranges.end(), [](const auto& a, const auto& b) { return a.getMin() < b.getMin(); });
-
-  mSelectionBitMask = mCCDB->getSpecific<std::vector<std::array<uint64_t, 2>>>(mBaseCCDBPath + "SelectionBitMask", timestamp, metadata);
-  mFilterBitMask = mCCDB->getSpecific<std::vector<std::array<uint64_t, 2>>>(mBaseCCDBPath + "FilterBitMask", timestamp, metadata);
 
   mLastBCglobalId = 0;
   mLastSelectedIdx = 0;
@@ -74,7 +71,7 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
     if (!bcFrame.getOverlap(mBCranges[i]).isZeroLength()) {
       for (int iMask{0}; iMask < 2; ++iMask) {
         for (int iTOI{0}; iTOI < 64; ++iTOI) {
-          result.set(iMask * 64 + iTOI, mFilterBitMask->at(i)[iMask] & (1ull << iTOI));
+          result.set(iMask * 64 + iTOI, mZorroHelpers->at(i).selMask[iMask] & (1ull << iTOI));
         }
       }
       mLastSelectedIdx = i;
@@ -86,7 +83,7 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
 
 bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance)
 {
-  int lastSelectedIdx = mLastSelectedIdx;
+  uint64_t lastSelectedIdx = mLastSelectedIdx;
   std::bitset<128> result = fetch(bcGlobalId, tolerance);
   for (size_t i{0}; i < mTOIidx.size(); ++i) {
     if (mTOIidx[i] < 0) {
