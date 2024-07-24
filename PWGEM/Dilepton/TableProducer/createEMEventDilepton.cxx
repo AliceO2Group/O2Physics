@@ -133,20 +133,9 @@ struct CreateEMEventDilepton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      bool is_sel8_by_hand = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
-      // LOGF(info, "collision.sel8() = %d, is_sel8_by_hand = %d", collision.sel8(), is_sel8_by_hand);
-
-      if (is_sel8_by_hand != collision.sel8()) {
-        LOGF(info, "================================================================= collision.sel8() = %d, is_sel8_by_hand = %d ==================================================================================", collision.sel8(), is_sel8_by_hand);
-      }
-
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-
-      // if(!(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      //   continue;
-      // }
 
       registry.fill(HIST("hEventCounter"), 1);
 

@@ -54,7 +54,7 @@ DECLARE_SOA_COLUMN(JetFlavor, jetFl, int16_t); //! The jet flavor (b, c, or lf)
 DECLARE_SOA_COLUMN(JetR, jetR, int16_t);       //! The jet radius
 } // namespace jetInfo
 
-DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAMS",
+DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAM",
                   o2::soa::Index<>,
                   jetInfo::JetpT,
                   jetInfo::JetEta,
@@ -84,7 +84,7 @@ DECLARE_SOA_COLUMN(DeltaRTrackVertex, rtrackvertex, float);            //! DR be
 // DECLARE_SOA_COLUMN(DCATrackJet, dcatrackjet, float);                              //! The distance between track and jet, unfortunately it cannot be calculated in O2
 } // namespace trackInfo
 
-DECLARE_SOA_TABLE(bjetTracksParams, "AOD", "BJETTRACKPARAMS",
+DECLARE_SOA_TABLE(bjetTracksParams, "AOD", "BJETTRACKSPARAM",
                   o2::soa::Index<>,
                   trackInfo::bjetParamId,
                   trackInfo::TrackpT,
@@ -118,7 +118,7 @@ DECLARE_SOA_COLUMN(DecayLength3DError, lxyzsigma, float); //! The decay length o
 // DECLARE_SOA_COLUMN(SVDispersion, svdispersion, float);                              //! The SV dispersion, unfortunately it cannot be calculated in O2
 } // namespace SVInfo
 
-DECLARE_SOA_TABLE(bjetSVParams, "AOD", "BJETSVPARAMS",
+DECLARE_SOA_TABLE(bjetSVParams, "AOD", "BJETSVPARAM",
                   o2::soa::Index<>,
                   SVInfo::bjetParamId,
                   SVInfo::SVpT,

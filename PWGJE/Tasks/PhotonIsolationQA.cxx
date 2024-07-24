@@ -164,7 +164,7 @@ struct PhotonIsolationQA {
     MC_Info.add("hMcParticleProcessCode", "physical process code of mc particle linked to mc cluster", o2HistType::kTH1F, {{200, 0, 200}});
 
     std::vector<std::string> bin_names = {"A", "B", "C", "D", "True Bckgr A"};
-    for (int i = 0; i < bin_names.size(); i++) {
+    for (size_t i = 0; i < bin_names.size(); i++) {
       MC_Info.get<TH2>(HIST("hABCDControlRegion"))->GetXaxis()->SetBinLabel(i + 1, bin_names[i].c_str());
       Data_Info.get<TH2>(HIST("hABCDControlRegion"))->GetXaxis()->SetBinLabel(i + 1, bin_names[i].c_str());
     }

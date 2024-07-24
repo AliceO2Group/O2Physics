@@ -260,7 +260,7 @@ struct HfCandidateCreatorCascade {
           // LOG(info) << "Vertexing succeeded for Lc candidate";
         }
       } catch (const std::runtime_error& error) {
-        LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         hCandidates->Fill(SVFitting::Fail);
         continue;
       }
@@ -384,7 +384,7 @@ struct HfCandidateCreatorCascade {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
@@ -401,7 +401,7 @@ struct HfCandidateCreatorCascade {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
@@ -418,7 +418,7 @@ struct HfCandidateCreatorCascade {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
 
     } /// end loop over collisions
   }
@@ -436,6 +436,14 @@ struct HfCandidateCreatorCascadeMc {
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   HistogramRegistry registry{"registry"};
 
+  // Configuration
+  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
+
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
   {
@@ -449,10 +457,12 @@ struct HfCandidateCreatorCascadeMc {
     hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
-  void processMc(MyTracksWMc const& tracks,
-                 aod::McParticles const& mcParticles,
-                 aod::McCollisions const&,
-                 BCsInfo const&)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
+  void runCreatorCascMc(MyTracksWMc const& tracks,
+                        aod::McParticles const& mcParticles,
+                        CCs const& collInfos,
+                        aod::McCollisions const&,
+                        BCsInfo const&)
   {
     int8_t sign = 0;
     int8_t origin = 0;
@@ -473,6 +483,19 @@ struct HfCandidateCreatorCascadeMc {
 
       auto arrayDaughtersV0 = std::array{trackV0DaughPos, trackV0DaughNeg};
       auto arrayDaughtersLc = std::array{bach, trackV0DaughPos, trackV0DaughNeg};
+      // Check whether the particle is from background events. If so, reject it.
+      if (rejectBackground) {
+        auto arrayDaughers = std::array{bach, trackV0DaughPos, trackV0DaughNeg};
+        for (const auto& daughter : arrayDaughers) {
+          if (daughter.has_mcParticle()) {
+            auto mcParticle = daughter.mcParticle();
+            if (mcParticle.fromBackgroundEvent()) {
+              rowMcMatchRec(sign, origin, -1.f, 0);
+              continue;
+            }
+          }
+        }
+      }
 
       RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
       if (sign != 0) { // we have already positively checked the K0s
@@ -492,16 +515,27 @@ struct HfCandidateCreatorCascadeMc {
         rowMcMatchRec(sign, origin, -1.f, 0);
       }
     }
-    //}
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
+      // Reject particles from background events
+      if (particle.fromBackgroundEvent() && rejectBackground) {
+        continue;
+      }
       origin = 0;
       std::vector<int> idxBhadMothers{};
 
+      // Slice the collisions table to get the collision info for the current MC collision
       auto mcCollision = particle.mcCollision();
-
-      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      float centrality{-1.f};
+      uint16_t rejectionMask{0};
+      if constexpr (centEstimator == CentralityEstimator::FT0C) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      }
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
@@ -543,7 +577,25 @@ struct HfCandidateCreatorCascadeMc {
     }
   }
 
-  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMc, "Process MC data", false);
+  void processMcCentFT0C(MyTracksWMc const& tracks,
+                         aod::McParticles const& mcParticles,
+                         McCollisionsFT0Cs const& collInfos,
+                         aod::McCollisions const& mcCollisions,
+                         BCsInfo const& BCsInfo)
+  {
+    runCreatorCascMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMcCentFT0C, "Process MC - FT0c centrality", false);
+
+  void processMcCentFT0M(MyTracksWMc const& tracks,
+                         aod::McParticles const& mcParticles,
+                         McCollisionsFT0Ms const& collInfos,
+                         aod::McCollisions const& mcCollisions,
+                         BCsInfo const& BCsInfo)
+  {
+    runCreatorCascMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMcCentFT0M, "Process MC - FT0m centrality", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

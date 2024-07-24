@@ -45,6 +45,13 @@ struct FactorialMoments {
   Configurable<std::vector<Int_t>> confCentCut{"centLimits", {0, 5}, "centrality min and max"};
   Configurable<std::vector<Float_t>> confVertex{"vertexXYZ", {0.3f, 0.4f, 10.0f}, "vertex cuts"};
   Configurable<std::vector<Float_t>> confPtBins{"ptCuts", {0.2f, 2.0f}, "pT cuts"};
+  Configurable<bool> IsApplySameBunchPileup{"IsApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
+  Configurable<bool> IsApplyGoodZvtxFT0vsPV{"IsApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> IsApplyVertexITSTPC{"IsApplyVertexITSTPC", true, "Enable VertexITSTPC cut"};
+  Configurable<bool> IsApplyVertexTOFmatched{"IsApplyVertexTOFmatched", true, "Enable VertexTOFmatched cut"};
+  Configurable<bool> IsApplyVertexTRDmatched{"IsApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
+  Configurable<bool> IsApplyExtraCorrCut{"IsApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
+  Configurable<bool> IsApplyExtraPhiCut{"IsApplyExtraPhiCut", false, "Enable extra phi cut"};
 
   Filter filterTracks = (nabs(aod::track::eta) < confEta) && (aod::track::pt >= confPtMin) && (nabs(aod::track::dcaXY) < confDCAxy) && (nabs(aod::track::dcaZ) < confDCAz);
   Filter filterCollisions = (nabs(aod::collision::posZ) < confVertex.value[2]) && (nabs(aod::collision::posX) < confVertex.value[0]) && (nabs(aod::collision::posY) < confVertex.value[1]);
@@ -163,7 +170,7 @@ struct FactorialMoments {
               if (binconVal >= iOrder + 2) {
                 fqBin = TMath::Factorial(binconVal) / (TMath::Factorial(binconVal - (iOrder + 2)));
               }
-              if (isnan(fqBin)) {
+              if (std::isnan(fqBin)) {
                 break;
               }
               sumfqBin[iOrder] += fqBin;
@@ -189,9 +196,21 @@ struct FactorialMoments {
     if (!coll.sel8()) {
       return;
     }
+
+    if (IsApplySameBunchPileup && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    if (IsApplyGoodZvtxFT0vsPV && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    if (IsApplyVertexITSTPC && !coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return;
+    }
+
     if (coll.centFT0C() < confCentCut.value[0] || coll.centFT0C() > confCentCut.value[1]) {
       return;
     }
+
     histos.fill(HIST("mVertexX"), coll.posX());
     histos.fill(HIST("mVertexY"), coll.posY());
     histos.fill(HIST("mVertexZ"), coll.posZ());
@@ -209,7 +228,7 @@ struct FactorialMoments {
     binConEvent = {{{0, 0, 0, 0, 0}}};
 
     for (auto const& track : tracks) {
-      if ((track.pt() < confPtMin) || (!track.isGlobalTrack()) || (track.tpcNClsFindable() < confMinTPCCls)) {
+      if ((track.pt() < confPtMin) || ((!track.isGlobalTrack()) && (!track.hasITS())) || (track.tpcNClsFindable() < confMinTPCCls)) {
         continue;
       }
       histos.fill(HIST("mCollID"), track.collisionId());
@@ -242,7 +261,7 @@ struct FactorialMoments {
     // Calculate the normalized factorial moments
     calculateMoments(mHistArrReset);
   }
-  PROCESS_SWITCH(FactorialMoments, processRun3, "main process function", false);
+  PROCESS_SWITCH(FactorialMoments, processRun3, "main process function", true);
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& coll, TracksFMs const& tracks)
   {

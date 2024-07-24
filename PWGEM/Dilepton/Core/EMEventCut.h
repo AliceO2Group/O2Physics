@@ -41,8 +41,6 @@ class EMEventCut : public TNamed
     kNCuts
   };
 
-  static const char* mCutNames[static_cast<int>(EMEventCuts::kNCuts)];
-
   template <typename T>
   bool IsSelected(T const& collision) const
   {
@@ -126,9 +124,6 @@ class EMEventCut : public TNamed
   void SetRequireNoSameBunchPileup(bool flag);
   void SetRequireVertexITSTPC(bool flag);
   void SetRequireGoodZvtxFT0vsPV(bool flag);
-
-  /// @brief Print the track selection
-  void print() const;
 
  private:
   bool mRequireSel8{true};

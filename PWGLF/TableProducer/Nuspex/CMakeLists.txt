@@ -73,3 +73,8 @@ o2physics_add_dpl_workflow(ebye-maker
     SOURCES ebyeMaker.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cluster-studies-tree-creator
+    SOURCES LFTreeCreatorClusterStudies.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

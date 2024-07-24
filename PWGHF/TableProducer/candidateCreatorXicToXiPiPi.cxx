@@ -217,7 +217,12 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
 
       // reconstruct the 3-prong secondary vertex
-      if (df.process(trackCasc, trackParCovCharmBachelor0, trackParCovCharmBachelor1) == 0) {
+      try {
+        if (df.process(trackCasc, trackParCovCharmBachelor0, trackParCovCharmBachelor1) == 0) {
+          continue;
+        }
+      } catch (const std::runtime_error& error) {
+        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         continue;
       }
 
