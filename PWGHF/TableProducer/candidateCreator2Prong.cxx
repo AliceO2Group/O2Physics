@@ -669,6 +669,11 @@ struct HfCandidateCreator2ProngExpressions {
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
   {
+    std::array<bool, 3> procCollisions = {doprocessMc, doprocessMcCentFT0C, doprocessMcCentFT0M};
+    if (std::accumulate(procCollisions.begin(), procCollisions.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for collision study can be enabled at a time.");
+    }
+
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-2prong") == 0) {
@@ -752,14 +757,14 @@ struct HfCandidateCreator2ProngExpressions {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        continue;
-      }
-
       flag = 0;
       origin = 0;
       std::vector<int> idxBhadMothers{};
+      // Reject particles from background events
+      if (particle.fromBackgroundEvent() && rejectBackground) {
+        rowMcMatchGen(flag, origin, -1);
+        continue;
+      }
 
       // Slice the collisions table to get the collision info for the current MC collision
       auto mcCollision = particle.mcCollision();
@@ -809,6 +814,16 @@ struct HfCandidateCreator2ProngExpressions {
       }
     }
   }
+
+  void processMc(aod::TracksWMc const& tracks,
+                 aod::McParticles const& mcParticles,
+                 McCollisionsFT0Cs const& collInfos,
+                 aod::McCollisions const& mcCollisions,
+                 BCsInfo const& BCsInfo)
+  {
+    runCreator2ProngMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMc, "Process MC - no centrality", true);
 
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
