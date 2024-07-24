@@ -24,6 +24,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "EventFiltering/Zorro.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -50,6 +51,7 @@ struct CreateEMEventDilepton {
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   Produces<o2::aod::EMEventsQvec> event_qvec;
+  Produces<o2::aod::EMSWTriggerBits> emswtbit;
 
   enum class EMEventType : int {
     kEvent = 0,
@@ -64,6 +66,8 @@ struct CreateEMEventDilepton {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
+  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
+  Configurable<std::string> swt_names{"swt_names", "fHighTrackMult,fHighFt0Mult", "comma-separated software trigger names"}; // !trigger names have to be pre-registered in dileptonTable.h for bit operation!
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -73,6 +77,7 @@ struct CreateEMEventDilepton {
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
   }
 
+  Zorro zorro;
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -82,6 +87,11 @@ struct CreateEMEventDilepton {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if (enable_swt) {
+      LOGF(info, "enable software triggers : %s", swt_names.value.data());
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), swt_names.value);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -137,6 +147,16 @@ struct CreateEMEventDilepton {
         continue;
       }
 
+      // if (enable_swt) {
+      //   LOGF(info, "zorro.isSelected(bc.globalBC()) = %d", zorro.isSelected(bc.globalBC()));
+      // }
+      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
+        emswtbit(0);
+        continue;
+      }
+      // LOGF(info, "collision.multNTracksPV() = %d, collision.multFT0A() = %f, collision.multFT0C() = %f", collision.multNTracksPV(), collision.multFT0A(), collision.multFT0C());
+
+      emswtbit(1);
       registry.fill(HIST("hEventCounter"), 1);
 
       if (collision.sel8()) {

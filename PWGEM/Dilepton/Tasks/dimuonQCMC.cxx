@@ -142,6 +142,8 @@ struct dimuonQCMC {
     const AxisSpec axis_pt{ConfPtmumuBins, "p_{T,#mu#mu} (GeV/c)"};
     const AxisSpec axis_dca{ConfDCAmumuBins, "DCA_{#mu#mu}^{xy} (#sigma)"};
     // const AxisSpec axis_pca{ConfPCAmumuBins, "PCA (mm)"}; // particle closest approach
+    const AxisSpec axis_pt_meson{ConfPtmumuBins, "p_{T} (GeV/c)"}; // for omega, phi meson pT spectra
+    const AxisSpec axis_y_meson{25, -4.5, -2.0, "y"};              // rapidity of meson
 
     const AxisSpec axis_dphi_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{#mu1} - #varphi_{#mu2} (rad.)"};             // for kHFll
     const AxisSpec axis_cos_theta_cs{10, 0.f, 1.f, "|cos(#theta_{CS})|"};                                           // for kPolarization
@@ -162,6 +164,10 @@ struct dimuonQCMC {
     fRegistry.addClone("Generated/sm/Eta/", "Generated/sm/NonPromptJPsi/");
     fRegistry.addClone("Generated/sm/Eta/", "Generated/sm/PromptPsi2S/");
     fRegistry.addClone("Generated/sm/Eta/", "Generated/sm/NonPromptPsi2S/");
+    fRegistry.add("Generated/sm/Omega2mumu/hPt", "pT of #omega meson", kTH1F, {axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Omega2mumu/hY", "rapidity of #omega meson", kTH1F, {axis_y_meson}, true);
+    fRegistry.add("Generated/sm/Phi2mumu/hPt", "pT of #phi meson", kTH1F, {axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Phi2mumu/hY", "rapidity of #phi meson", kTH1F, {axis_y_meson}, true);
 
     fRegistry.add("Generated/ccbar/c2mu_c2mu/hadron_hadron/hs", "m_{#mu#mu} vs. p_{T,#mu#mu}", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/ccbar/c2mu_c2mu/hadron_hadron/", "Generated/ccbar/c2mu_c2mu/meson_meson/");
@@ -230,7 +236,6 @@ struct dimuonQCMC {
     fRegistry.addClone("Track/lf/", "Track/b2c2mu/");
   }
 
-  bool cfgDoFlow = false;
   void init(InitContext&)
   {
     DefineEMEventCut();
@@ -706,13 +711,13 @@ struct dimuonQCMC {
         continue;
       }
 
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarymuon::emeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarymuon::emeventId, collision.globalIndex(), cache);
@@ -815,9 +820,6 @@ struct dimuonQCMC {
                 fRegistry.fill(HIST("Generated/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 if (mcmother.daughtersIds().size() == 2) { // omega->ee
                   fRegistry.fill(HIST("Generated/sm/Omega2mumu/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
-                  // float mt = std::sqrt(std::pow(v12.M(), 2) + std::pow(v12.Pt(),2));
-                  // float cos_thetaCS_byhand =  2.f * (v1.E() * v2.Pz() - v2.E() * v1.Pz()) / (v12.M() * mt);
-                  // LOGF(info, "cos_thetaCS = %f, cos_thetaCS_byhand = %f", cos_thetaCS, cos_thetaCS_byhand);
                 }
                 break;
               case 333:
@@ -1036,6 +1038,46 @@ struct dimuonQCMC {
           }
         }
       } // end of true LS++ pair loop
+
+    } // end of collision loop
+
+    // for oemga, phi efficiency
+    for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      auto mccollision = collision.emmcevent_as<aod::EMMCEvents>();
+
+      auto mctracks_per_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
+
+      for (auto& mctrack : mctracks_per_coll) {
+
+        if (!(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
+          continue;
+        }
+
+        if (!(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) || (mctrack.y() < minY || maxY < mctrack.y())) {
+          continue;
+        }
+        switch (abs(mctrack.pdgCode())) {
+          case 223:
+            fRegistry.fill(HIST("Generated/sm/Omega2mumu/hPt"), mctrack.pt());
+            fRegistry.fill(HIST("Generated/sm/Omega2mumu/hY"), mctrack.y());
+            break;
+          case 333:
+            fRegistry.fill(HIST("Generated/sm/Phi2mumu/hPt"), mctrack.pt());
+            fRegistry.fill(HIST("Generated/sm/Phi2mumu/hY"), mctrack.y());
+            break;
+          default:
+            break;
+        }
+
+      } // end of mctracks per mccollision
 
     } // end of collision loop
   }

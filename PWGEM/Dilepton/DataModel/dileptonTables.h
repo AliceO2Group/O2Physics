@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <string>
 #include "Common/Core/RecoDecay.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -25,9 +26,37 @@
 namespace o2::aod
 {
 
+namespace pwgem::dilepton::swt
+{
+enum swtAliases { // software trigger aliases for EM
+  kHighTrackMult = 0,
+  kHighFt0Mult,
+  kSingleE,
+  kLMeeIMR,
+  kLMeeHMR,
+  kDiElectron,
+  kSingleMuLow,
+  kSingleMuHigh,
+  kDiMuon,
+  kNaliases
+};
+} // namespace pwgem::dilepton::swt
+
+constexpr std::string aliasLabels[o2::aod::pwgem::dilepton::swt::kNaliases] = {
+  "fHighTrackMult",
+  "fHighFt0Mult",
+  "fSingleE",
+  "fLMeeIMR",
+  "fLMeeHMR",
+  "fDiElectron",
+  "fSingleMuLow",
+  "fSingleMuHigh",
+  "fDiMuon"};
+
 namespace emevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
+DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16); //! Bitmask of fired trigger aliases (see above for definitions)
 DECLARE_SOA_COLUMN(NeeULS, neeuls, int);
 DECLARE_SOA_COLUMN(NeeLSpp, neelspp, int);
 DECLARE_SOA_COLUMN(NeeLSmm, neelsmm, int);
@@ -133,6 +162,10 @@ DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table
                   emevent::EP3BNeg<emevent::Q3xBNeg, emevent::Q3yBNeg>,
                   emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>);
 using EMEventQvec = EMEventsQvec::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerBits, "AOD", "EMSWTRIGGERBIT", //!
+                  emevent::SWTAlias);
+using EMSWTriggerBit = EMSWTriggerBits::iterator;
 
 DECLARE_SOA_TABLE(EMEventsNee, "AOD", "EMEVENTNEE", emevent::NeeULS, emevent::NeeLSpp, emevent::NeeLSmm); // joinable to EMEvents
 using EMEventNee = EMEventsNee::iterator;

@@ -207,6 +207,10 @@ struct PhotonHBT {
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
     used_dileptonIds.shrink_to_fit();
+
+    if (eid_bdt) {
+      delete eid_bdt;
+    }
   }
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -303,7 +307,9 @@ struct PhotonHBT {
     const AxisSpec axis_qlong_cms{60, -0.3, +0.3, "q_{long}^{CMS} (GeV/c)"};
     const AxisSpec axis_qlong_lcms{60, -0.3, +0.3, "q_{long}^{LCMS} (GeV/c)"};
 
-    fRegistry.add("Pair/same/hs", "diphoton correlation", kTHnSparseD, {axis_kt, axis_qinv, axis_qout_cms, axis_qside_cms, axis_qlong_cms, axis_qlong_lcms}, true);
+    fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_kt, axis_qinv}, true);
+    fRegistry.add("Pair/same/hs_3d_cms", "diphoton correlation 3D CMS", kTHnSparseD, {axis_kt, axis_qout_cms, axis_qside_cms, axis_qlong_cms}, true);
+    fRegistry.add("Pair/same/hs_3d_lcms", "diphoton correlation 3D LCMS", kTHnSparseD, {axis_kt, axis_qout_cms, axis_qside_cms, axis_qlong_lcms}, true);
     fRegistry.addClone("Pair/same/", "Pair/mix/");
   }
 
@@ -376,6 +382,7 @@ struct PhotonHBT {
     }
   }
 
+  o2::ml::OnnxModel* eid_bdt = nullptr;
   void DefineDileptonCut()
   {
     fDielectronCut = DielectronCut("fDielectronCut", "fDielectronCut");
@@ -414,7 +421,7 @@ struct PhotonHBT {
     fDielectronCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
-      o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
+      eid_bdt = new o2::ml::OnnxModel();
       if (dielectroncuts.loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
         std::map<std::string, std::string> metadata;
@@ -479,7 +486,9 @@ struct PhotonHBT {
     // LOGF(info, "v1_lcms_cartesian.Pz() = %f, v2_lcms_cartesian.Pz() = %f",v1_lcms_cartesian.Pz(), v2_lcms_cartesian.Pz());
     // LOGF(info, "q12_lcms_cartesian.Pz() = %f", q12_lcms_cartesian.Pz());
 
-    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs"), kt, qinv, qout_cms, qside_cms, qlong_cms, qlong_lcms);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), kt, qinv);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d_cms"), kt, qout_cms, qside_cms, qlong_cms);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d_lcms"), kt, qout_cms, qside_cms, qlong_lcms);
   }
 
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>

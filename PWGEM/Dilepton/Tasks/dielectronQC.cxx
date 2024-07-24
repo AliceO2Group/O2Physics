@@ -277,6 +277,10 @@ struct dielectronQC {
 
     used_trackIds.clear();
     used_trackIds.shrink_to_fit();
+
+    if (eid_bdt) {
+      delete eid_bdt;
+    }
   }
 
   void addhistograms()
@@ -412,6 +416,7 @@ struct dielectronQC {
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
+  o2::ml::OnnxModel* eid_bdt = nullptr;
   void DefineDileptonCut()
   {
     fDielectonCut = DielectronCut("fDielectonCut", "fDielectonCut");
@@ -448,7 +453,7 @@ struct dielectronQC {
     fDielectonCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
-      o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
+      eid_bdt = new o2::ml::OnnxModel();
       if (dielectroncuts.loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
         std::map<std::string, std::string> metadata;
