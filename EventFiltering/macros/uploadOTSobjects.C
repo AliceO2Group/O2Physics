@@ -90,7 +90,8 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
   }
 }
 
-void uploadOTSobjects(std::string periodName) {
+void uploadOTSobjects(std::string periodName)
+{
   int year = 2000 + std::stoi(periodName.substr(3, 2));
   gSystem->Exec(Form("alien_find /alice/data/%i/%s/ ctf_skim_full/AnalysisResults_fullrun.root | sed 's:/AnalysisResults_fullrun\\.root::' > list_%s.txt", year, periodName.data(), periodName.data()));
   uploadOTSobjects(Form("list_%s.txt", periodName.data()), "", true);
