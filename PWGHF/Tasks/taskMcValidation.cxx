@@ -403,7 +403,7 @@ struct HfTaskMcValidationRec {
   Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  HfEventSelection hfEvSel;        // event selection and monitoring
+  HfEventSelection hfEvSel; // event selection and monitoring
 
   AxisSpec axisDeltaMom{2000, -1., 1.};
   AxisSpec axisOrigin{4, -1.5, 2.5};
@@ -542,7 +542,7 @@ struct HfTaskMcValidationRec {
     ccdb->setLocalObjectValidityChecking();
   }
 
-  template<o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   void checkCollisions(Coll const& collision,
                        aod::McCollisions const&,
                        aod::BCsWithTimestamps const&)
@@ -570,7 +570,7 @@ struct HfTaskMcValidationRec {
     registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), collision.posZ() - mcCollision.posZ());
   }
 
-  template<o2::hf_centrality::CentralityEstimator centEstimator, typename Colls>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Colls>
   void checkCollisionAssociation(Colls const& collisions,
                                  TracksWithSel const&,
                                  aod::McParticles const& mcParticles,
