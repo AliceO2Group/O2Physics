@@ -914,10 +914,6 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        continue;
-      }
       ptCharmBaryonGen = -999.;
       rapidityCharmBaryonGen = -999.;
       flag = 0;
@@ -928,6 +924,19 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       origin = RecoDecay::OriginType::None;
       std::vector<int> idxBhadMothers{};
 
+      // Reject particles from background events
+      if (particle.fromBackgroundEvent() && rejectBackground) {
+        if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
+          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
+          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
+          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        }
+        continue;
+      }
       // Slice the collisions table to get the collision info for the current MC collision
       auto mcCollision = particle.mcCollision();
       float centrality{-1.f};

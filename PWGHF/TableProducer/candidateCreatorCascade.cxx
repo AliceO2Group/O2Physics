@@ -518,12 +518,13 @@ struct HfCandidateCreatorCascadeMc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        continue;
-      }
       origin = 0;
       std::vector<int> idxBhadMothers{};
+      // Reject particles from background events
+      if (particle.fromBackgroundEvent() && rejectBackground) {
+        rowMcMatchGen(sign, origin, -1);
+        continue;
+      }
 
       // Slice the collisions table to get the collision info for the current MC collision
       auto mcCollision = particle.mcCollision();
