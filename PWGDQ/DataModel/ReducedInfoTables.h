@@ -977,6 +977,32 @@ DECLARE_SOA_TABLE(RedDleptDmesAll, "AOD", "RTDILPTDMESALL", //!
                   jpsidmescorr::BdtBkg,
                   jpsidmescorr::BdtPrompt,
                   jpsidmescorr::BdtNonprompt);
+
+namespace muondca
+{
+DECLARE_SOA_COLUMN(pDCA, pdca, float); //!
+DECLARE_SOA_COLUMN(DCA, dca, float);   //!
+DECLARE_SOA_COLUMN(DCAx, dcax, float); //!
+DECLARE_SOA_COLUMN(DCAy, dcay, float); //!
+DECLARE_SOA_COLUMN(Px, px, float);     //!
+DECLARE_SOA_COLUMN(Py, py, float);     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);     //!
+} // namespace muondca
+
+DECLARE_SOA_TABLE(ReducedMuonsDca, "AOD", "RTMUONDCA",
+                  muondca::pDCA,
+                  muondca::DCA,
+                  muondca::DCAx,
+                  muondca::DCAy,
+                  fwdtrack::RAtAbsorberEnd,
+                  reducedmuon::Pt,
+                  reducedmuon::Eta, reducedmuon::Phi,
+                  reducedmuon::Sign, reducedmuon::IsAmbiguous,
+                  muondca::Px,
+                  muondca::Py,
+                  muondca::Pz);
+
+using ReducedMuonDca = ReducedMuonsDca::iterator;
 } // namespace o2::aod
 
 #endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
