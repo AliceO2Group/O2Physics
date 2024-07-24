@@ -810,6 +810,16 @@ struct HfCandidateCreator2ProngExpressions {
     }
   }
 
+  void processMc(aod::TracksWMc const& tracks,
+                 aod::McParticles const& mcParticles,
+                 McCollisionsFT0Cs const& collInfos,
+                 aod::McCollisions const& mcCollisions,
+                 BCsInfo const& BCsInfo)
+  {
+    runCreator2ProngMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMc, "Process MC - no centrality", false);
+
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Cs const& collInfos,

@@ -302,35 +302,32 @@ struct HfEventSelectionMc {
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
 
-    float multiplicity{0.f};
-    for (const auto& collision : collSlice) {
-      float collCent{0.f};
-      float collMult{0.f};
-      if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-        if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-          collCent = collision.centFT0A();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-          collCent = collision.centFT0C();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-          collCent = collision.centFT0M();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-          collCent = collision.centFV0A();
-        } else {
-          LOGP(fatal, "Unsupported centrality estimator!");
-        }
-        collMult = collision.numContrib();
-        if (collMult > multiplicity) {
-          centrality = collCent;
-          multiplicity = collMult;
-        }
-      } else {
-        LOGP(fatal, "Unsupported centrality estimator!");
+    if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
+      float multiplicity{0.f};
+      for (const auto& collision : collSlice) {
+        float collCent{0.f};
+        float collMult{0.f};
+          if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
+            collCent = collision.centFT0A();
+          } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
+            collCent = collision.centFT0C();
+          } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+            collCent = collision.centFT0M();
+          } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
+            collCent = collision.centFV0A();
+          } else {
+            LOGP(fatal, "Unsupported centrality estimator!");
+          }
+          collMult = collision.numContrib();
+          if (collMult > multiplicity) {
+            centrality = collCent;
+            multiplicity = collMult;
+          }
       }
-    }
-
-    /// centrality selection
-    if (centrality < centralityMin || centrality > centralityMax) {
-      SETBIT(rejectionMask, EventRejection::Centrality);
+      /// centrality selection
+      if (centrality < centralityMin || centrality > centralityMax) {
+        SETBIT(rejectionMask, EventRejection::Centrality);
+      }
     }
     /// Sel8 trigger selection
     if (useSel8Trigger && (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {

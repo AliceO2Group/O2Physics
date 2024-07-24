@@ -662,6 +662,16 @@ struct HfCandidateCreatorDstarExpressions {
     }
   }
 
+  void processMc(aod::TracksWMc const& tracks,
+                 aod::McParticles const& mcParticles,
+                 McCollisionsFT0Cs const& collInfos,
+                 aod::McCollisions const& mcCollisions,
+                 BCsInfo const& BCsInfo)
+  {
+    runCreatorDstarMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMc, "Process MC - no centrality", false);
+
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Cs const& collInfos,

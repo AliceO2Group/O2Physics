@@ -578,6 +578,16 @@ struct HfCandidateCreatorCascadeMc {
     }
   }
 
+  void processMc(MyTracksWMc const& tracks,
+                 aod::McParticles const& mcParticles,
+                 McCollisionsFT0Cs const& collInfos,
+                 aod::McCollisions const& mcCollisions,
+                 BCsInfo const& BCsInfo)
+  {
+    runCreatorCascMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMc, "Process MC - no centrality", false);
+
   void processMcCentFT0C(MyTracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Cs const& collInfos,
