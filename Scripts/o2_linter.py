@@ -22,7 +22,7 @@ import argparse
 import os
 import re
 import sys
-
+from typing import Union
 
 github_mode = False # GitHub mode
 
@@ -56,14 +56,14 @@ def is_screaming_snake_case(name: str) -> bool:
     return name.isupper() and not "-" in name and not " " in name
 
 
-def print_error(path: str, line: int, title: str, message: str) -> str:
+def print_error(path: str, line: Union[int, None], title: str, message: str):
     """Format and print error message."""
     # return # Use to suppress error message when counting speed.
     str_line = "" if line is None else f"{line}:"
     print(f"{path}:{str_line} {message} [{title}]") # terminal format
     if github_mode:
         str_line = "" if line is None else f",line={line}"
-        print(f"::error file={path}{str_line},title=[{title}]::{message}") # GitHub action format
+        print(f"::error file={path}{str_line},title=[{title}]::{message}") # GitHub annotation format
 
 
 def is_comment_cpp(line: str) -> bool:
@@ -83,7 +83,7 @@ class TestSpec(ABC):
     """Prototype of a test class"""
     name = "test-template" # short name of the test
     message = "Test failed" # error message
-    suffixes = [] # suffixes of files to test
+    suffixes: "list[str]" = [] # suffixes of files to test
     per_line = True # Test lines separately one by one.
 
     def file_matches(self, path: str) -> bool:
@@ -320,7 +320,7 @@ class TestConstRefInForLoop(TestSpec):
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
-        if not re.match("for \(.* :", line):
+        if not re.match(r"for \(.* :", line):
             return True
         line = line[:line.index(" :")] # keep only the iterator part
         return re.search(r"(\w const|const \w+)& ", line) is not None
@@ -416,7 +416,7 @@ class TestDocumentationFile(TestSpec):
         if not passed:
             for item in doc_items:
                 if not item["found"]:
-                    print_error(path, last_doc_line, self.name, f"Documentation for \{item['keyword']} is missing, incorrect or misplaced.")
+                    print_error(path, last_doc_line, self.name, f"Documentation for \\{item['keyword']} is missing, incorrect or misplaced.")
         return passed
 
 
@@ -555,12 +555,12 @@ class TestNameColumn(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        if not (match := re.match("DECLARE(_[A-Z]+)*_COLUMN(_[A-Z]+)*\(", line)):
+        if not (match := re.match(r"DECLARE(_[A-Z]+)*_COLUMN(_[A-Z]+)*\(", line)):
             return True
         # Extract names of the column type and getter.
         line = remove_comment_cpp(line)
         line = line[len(match.group()):].strip() # Extract part after "(".
-        if not (match := re.match("([^,]+), ([^,\) ]+)", line)):
+        if not (match := re.match(r"([^,]+), ([^,\) ]+)", line)):
             print(f"Failed to extract column type and getter from \"{line}\".")
             return False
         column_type_name = match.group(1)
@@ -586,12 +586,12 @@ class TestNameTable(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        if not (match := re.match("DECLARE(_[A-Z]+)*_TABLES?(_[A-Z]+)*\(", line)):
+        if not (match := re.match(r"DECLARE(_[A-Z]+)*_TABLES?(_[A-Z]+)*\(", line)):
             return True
         # Extract names of the column type and getter.
         line = remove_comment_cpp(line)
         line = line[len(match.group()):].strip() # Extract part after "(".
-        if not (match := re.match("([^,\) ]+)", line)):
+        if not (match := re.match(r"([^,\) ]+)", line)):
             print(f"Failed to extract table type from \"{line}\".")
             return False
         table_type_name = match.group(1)
@@ -675,13 +675,13 @@ class TestNameFileCpp(TestSpec):
     def test_file(self, path : str, content) -> bool:
         file_name = os.path.basename(path)
         # workflow file
-        if re.search("(TableProducer|Tasks)/.*\.cxx", path):
+        if re.search(r"(TableProducer|Tasks)/.*\.cxx", path):
             return is_lower_camel_case(file_name)
-         # data model file
+        # data model file
         if "DataModel/" in path:
             return is_upper_camel_case(file_name)
-         # utility file
-        if re.search("[Uu]til(ity|ities|s)?", file_name):
+        # utility file
+        if re.search(r"[Uu]til(ity|ities|s)?", file_name):
             return is_lower_camel_case(file_name)
         return is_camel_case(file_name)
 
@@ -783,7 +783,7 @@ class TestHfNameStructClass(TestSpec):
 class TestHfStructMembers(TestSpec):
     """PWGHF: Test order of struct members.
     Caveat: Does not see Configurables in ConfigurableGroup."""
-    name = "pwghf/struct member order"
+    name = "pwghf/struct-member-order"
     message = "Declare struct members in the conventional order. See the PWGHF coding guidelines."
     suffixes = [".cxx"]
     per_line = False
@@ -794,7 +794,7 @@ class TestHfStructMembers(TestSpec):
 
     def test_file(self, path : str, content) -> bool:
         passed = True
-        dic_struct = {}
+        dic_struct:dict[str, dict] = {}
         struct_name = ""
         for i, line in enumerate(content):
             if is_comment_cpp(line):
@@ -867,7 +867,7 @@ class TestHfNameFileWorkflow(TestSpec):
 class TestHfNameConfigurable(TestSpec):
     """PWGHF: Test names of configurables."""
     name = "pwghf/name/configurable"
-    message = "Use lowerCamelCase for Configurable names and use the same name for the struct member as for the JSON string."
+    message = "Use lowerCamelCase for names of configurables and use the same name for the struct member as for the JSON string."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -968,28 +968,31 @@ def main():
 
     # Report overview before running.
     print(f"Testing {len(args.paths)} files.")
+    # print(args.paths)
     print("Enabled tests:", test_names)
     print("Suffixes of tested files:", suffixes)
+    # print(f"Github annotations: {github_mode}.")
 
     # Test files.
     for path in args.paths:
+        # print(f"Processing path \"{path}\".")
         # Skip not tested files.
         if not path.endswith(suffixes):
+            # print(f"Skipping path \"{path}\".")
             continue
         try:
             with open(path, "r") as file:
                 content = file.readlines()
                 for test in tests:
-                    if not test.run(path, content):
+                    result = test.run(path, content)
+                    if not result:
                         passed = False
-                    # if not passed:
-                    #     print(f"File {path} failed the test {test.name}.")
-                    # print(f"Test {'passed' if passed else 'failed'}.")
+                    # print(f"File \"{path}\" {'passed' if result else 'failed'} the test {test.name}.")
         except IOError:
-            print(f"Failed to open file {path}.")
+            print(f"Failed to open file \"{path}\".")
             sys.exit(1)
 
-    # Report result.
+    # Report global result.
     if passed:
         print("All tests passed.")
     else:

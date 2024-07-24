@@ -1,5 +1,5 @@
 ---
-# Find code issues in modified text files
+# Find issues in O2 code
 name: O2 linter
 
 'on': [pull_request, push]
@@ -23,6 +23,7 @@ jobs:
       - name: Run tests
         run: |
           # Diff against the common ancestor of the source branch and the target branch.
-          files=$(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
+          readarray -t files < <(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
           [ ${{ github.event_name }} == 'pull_request' ] && options="-g"
-          python Scripts/o2_linter.py $options $files
+          # shellcheck disable=SC2086 # Ignore unquoted options.
+          python Scripts/o2_linter.py $options "${files[@]}"
