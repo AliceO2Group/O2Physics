@@ -225,9 +225,9 @@ struct HfTaskDstarToD0Pi {
         registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
         registry.fill(HIST("Efficiency/hPtVsCentSkimDstarGenSig"), particleMother.pt(), centrality);
 
-        auto recCollision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
-        float centFT0M = recCollision.centFT0M();
-        LOGF(info, "centFT0M: %f", centFT0M);
+        // auto recCollision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
+        // float centFT0M = recCollision.centFT0M();
+        // LOGF(info, "centFT0M: %f", centFT0M);
 
         registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
         if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
@@ -302,14 +302,17 @@ struct HfTaskDstarToD0Pi {
         }
 
         float centFT0MGen;
+        // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
         if (recCollisions.size()) {
-          // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
-          std::vector<float> colCentVec;
+          std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;
+
           for (const auto& recCol : recCollisions) {
-            colCentVec.push_back(recCol.centFT0M());
+            // if(recCollisions.size()>1) LOGF(info, "cuurent cent: %f",recCol.centFT0M());
+            tempRecCols.push_back(std::make_pair(recCol, recCol.numContrib()));
           }
-          std::sort(colCentVec.begin(), colCentVec.end());
-          centFT0MGen = colCentVec[0]; // Selecting most central collision amplitute
+          std::sort(tempRecCols.begin(), tempRecCols.end(), compare);
+          centFT0MGen = tempRecCols.at(0).first.centFT0M();
+          // if(recCollisions.size()>1) LOGF(info, "assigned cent: %f",centFT0MGen);
         } else {
           centFT0MGen = -999.;
         }
@@ -331,6 +334,12 @@ struct HfTaskDstarToD0Pi {
     }
   }
   PROCESS_SWITCH(HfTaskDstarToD0Pi, processMC, "Process MC Data", false);
+
+  // Comparator function to sort based on the second argument of a tuple
+  static bool compare(const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& a, const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& b)
+  {
+    return a.second > b.second;
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
