@@ -77,6 +77,20 @@ static constexpr std::string_view PhiPiSEFCut[nMultBin] = {"h2PhiPiSEFCut_0_1", 
                                                            "h2PhiPiSEFCut_20_30", "h2PhiPiSEFCut_30_40", "h2PhiPiSEFCut_40_50", "h2PhiPiSEFCut_50_70", "h2PhiPiSEFCut_70_100"};
 static constexpr std::string_view PhiPiSESCut[nMultBin] = {"h2PhiPiSESCut_0_1", "h2PhiPiSESCut_1_5", "h2PhiPiSESCut_5_10", "h2PhiPiSESCut_10_15", "h2PhiPiSESCut_15_20",
                                                            "h2PhiPiSESCut_20_30", "h2PhiPiSESCut_30_40", "h2PhiPiSESCut_40_50", "h2PhiPiSESCut_50_70", "h2PhiPiSESCut_70_100"};
+
+static constexpr std::string_view MCPhiK0SSEInc[nMultBin] = {"h2MCPhiK0SSEInc_0_1", "h2MCPhiK0SSEInc_1_5", "h2MCPhiK0SSEInc_5_10", "h2MCPhiK0SSEInc_10_15", "h2MCPhiK0SSEInc_15_20",
+                                                             "h2MCPhiK0SSEInc_20_30", "h2MCPhiK0SSEInc_30_40", "h2MCPhiK0SSEInc_40_50", "h2MCPhiK0SSEInc_50_70", "h2MCPhiK0SSEInc_70_100"};
+static constexpr std::string_view MCPhiK0SSEFCut[nMultBin] = {"h2MCPhiK0SSEFCut_0_1", "h2MCPhiK0SSEFCut_1_5", "h2MCPhiK0SSEFCut_5_10", "h2MCPhiK0SSEFCut_10_15", "h2MCPhiK0SSEFCut_15_20",
+                                                              "h2MCPhiK0SSEFCut_20_30", "h2MCPhiK0SSEFCut_30_40", "h2MCPhiK0SSEFCut_40_50", "h2MCPhiK0SSEFCut_50_70", "h2MCPhiK0SSEFCut_70_100"};
+static constexpr std::string_view MCPhiK0SSESCut[nMultBin] = {"h2MCPhiK0SSESCut_0_1", "h2MCPhiK0SSESCut_1_5", "h2MCPhiK0SSESCut_5_10", "h2MCPhiK0SSESCut_10_15", "h2MCPhiK0SSESCut_15_20",
+                                                              "h2MCPhiK0SSESCut_20_30", "h2MCPhiK0SSESCut_30_40", "h2MCPhiK0SSESCut_40_50", "h2MCPhiK0SSESCut_50_70", "h2MCPhiK0SSESCut_70_100"};
+
+static constexpr std::string_view MCPhiPiSEInc[nMultBin] = {"h2MCPhiPiSEInc_0_1", "h2MCPhiPiSEInc_1_5", "h2MCPhiPiSEInc_5_10", "h2MCPhiPiSEInc_10_15", "h2MCPhiPiSEInc_15_20",
+                                                            "h2MCPhiPiSEInc_20_30", "h2MCPhiPiSEInc_30_40", "h2MCPhiPiSEInc_40_50", "h2MCPhiPiSEInc_50_70", "h2MCPhiPiSEInc_70_100"};
+static constexpr std::string_view MCPhiPiSEFCut[nMultBin] = {"h2MCPhiPiSEFCut_0_1", "h2MCPhiPiSEFCut_1_5", "h2MCPhiPiSEFCut_5_10", "h2MCPhiPiSEFCut_10_15", "h2MCPhiPiSEFCut_15_20",
+                                                             "h2MCPhiPiSEFCut_20_30", "h2MCPhiPiSEFCut_30_40", "h2MCPhiPiSEFCut_40_50", "h2MCPhiPiSEFCut_50_70", "h2MCPhiPiSEFCut_70_100"};
+static constexpr std::string_view MCPhiPiSESCut[nMultBin] = {"h2MCPhiPiSESCut_0_1", "h2MCPhiPiSESCut_1_5", "h2MCPhiPiSESCut_5_10", "h2MCPhiPiSESCut_10_15", "h2MCPhiPiSESCut_15_20",
+                                                             "h2MCPhiPiSESCut_20_30", "h2MCPhiPiSESCut_30_40", "h2MCPhiPiSESCut_40_50", "h2MCPhiPiSESCut_50_70", "h2MCPhiPiSESCut_70_100"};
 } // namespace
 
 struct phik0shortanalysis {
@@ -262,7 +276,7 @@ struct phik0shortanalysis {
     PhipurHist.add("h3PhipurPiInvMassFirstCut", "Invariant mass of Phi for Purity (Pi) Deltay < FirstCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhipurHist.add("h3PhipurPiInvMassSecondCut", "Invariant mass of Phi for Purity (Pi) Deltay < SecondCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
 
-    // 2D mass for Phi and K0S
+    // 2D mass for Phi and K0S for Same Event and Mixed Event
     for (int i = 0; i < nMultBin; i++) {
       PhiK0SHist.add(PhiK0SSEInc[i].data(), "2D Invariant mass of Phi and K0Short for Same Event Inclusive", kTH2F, {K0SmassAxis, cfgPhimassAxisInc.at(i)});
       PhiK0SHist.add(PhiK0SSEFCut[i].data(), "2D Invariant mass of Phi and K0Short for Same Event Deltay < FirstCut", kTH2F, {K0SmassAxis, cfgPhimassAxisFCut.at(i)});
@@ -274,16 +288,18 @@ struct phik0shortanalysis {
     PhiK0SHist.add("h3PhiK0SInvMassMixedEventSecondCut", "2D Invariant mass of Phi and K0Short for Mixed Event Deltay < SecondCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
 
     // MC 2D mass for Phi and K0S
-    MCPhiK0SHist.add("h3PhiK0SInvMassRecMCInclusive", "2D Invariant mass of Phi and K0Short for RecMC Inclusive", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
-    MCPhiK0SHist.add("h3PhiK0SInvMassRecMCFirstCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < FirstCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
-    MCPhiK0SHist.add("h3PhiK0SInvMassRecMCSecondCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < SecondCut", kTH3F, {multAxis, K0SmassAxis, PhimassAxis});
+    for (int i = 0; i < nMultBin; i++) {
+      MCPhiK0SHist.add(MCPhiK0SSEInc[i].data(), "2D Invariant mass of Phi and K0Short for RecMC Inclusive", kTH2F, {K0SmassAxis, cfgPhimassAxisInc.at(i)});
+      MCPhiK0SHist.add(MCPhiK0SSEFCut[i].data(), "2D Invariant mass of Phi and K0Short for RecMC Deltay < FirstCut", kTH2F, {K0SmassAxis, cfgPhimassAxisFCut.at(i)});
+      MCPhiK0SHist.add(MCPhiK0SSESCut[i].data(), "2D Invariant mass of Phi and K0Short for RecMC Deltay < SecondCut", kTH2F, {K0SmassAxis, cfgPhimassAxisSCut.at(i)});
+    }
 
     // GenMC pT of K0S coupled to Phi
     MCPhiK0SHist.add("h2PhiK0SpTGenMCInclusive", "pT of K0Short coupled to Phi for GenMC Inclusive", kTH2F, {multAxis, ptAxis});
     MCPhiK0SHist.add("h2PhiK0SpTGenMCFirstCut", "pT of K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {multAxis, ptAxis});
     MCPhiK0SHist.add("h2PhiK0SpTGenMCSecondCut", "pT of K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {multAxis, ptAxis});
 
-    // Phi mass vs Pion NSigma dE/dx
+    // Phi mass vs Pion NSigma dE/dx for Same Event and Mixed Event
     for (int i = 0; i < nMultBin; i++) {
       PhiPionHist.add(PhiPiSEInc[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Inclusive", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisInc.at(i)});
       PhiPionHist.add(PhiPiSEFCut[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Deltay < FirstCut", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisFCut.at(i)});
@@ -295,9 +311,11 @@ struct phik0shortanalysis {
     PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
 
     // MC Phi mass vs Pion NSigma dE/dx
-    MCPhiPionHist.add("h4PhiInvMassPiNSigmadEdxRecMCInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    MCPhiPionHist.add("h4PhiInvMassPiNSigmadEdxRecMCFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    MCPhiPionHist.add("h4PhiInvMassPiNSigmadEdxRecMCSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    for (int i = 0; i < nMultBin; i++) {
+      MCPhiPionHist.add(MCPhiPiSEInc[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Inclusive", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisInc.at(i)});
+      MCPhiPionHist.add(MCPhiPiSEFCut[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Deltay < FirstCut", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisFCut.at(i)});
+      MCPhiPionHist.add(MCPhiPiSESCut[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Deltay < SecondCut", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisSCut.at(i)});
+    }
 
     // GenMC pT of Pion coupled to Phi
     MCPhiPionHist.add("h2PhiPiPionpTGenMCInclusive", "pT of Pion coupled to Phi for GenMC Inclusive", kTH2F, {multAxis, ptAxis});
@@ -306,44 +324,41 @@ struct phik0shortanalysis {
   }
 
   // Event selection and QA filling
-  template <typename T>
+  template <bool isMC, typename T>
   bool acceptEventQA(const T& collision)
   {
-    eventHist.fill(HIST("hEventSelection"), 0); // all collisions
-    if (!collision.sel8())
-      return false;
-    eventHist.fill(HIST("hEventSelection"), 1); // sel8 collisions
-    if (std::abs(collision.posZ()) > cutzvertex)
-      return false;
-    eventHist.fill(HIST("hEventSelection"), 2); // vertex-Z selected
-    eventHist.fill(HIST("hVertexZRec"), collision.posZ());
-    if (!collision.isInelGt0())
-      return false;
-    eventHist.fill(HIST("hEventSelection"), 3); // INEL>0 collisions
-    return true;
-  }
-
-  // MC Event selection and QA filling
-  template <typename T>
-  bool acceptMCEventQA(const T& collision)
-  {
-    MCeventHist.fill(HIST("hRecMCEventSelection"), 0); // all collisions
-    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX))
-      return false;
-    MCeventHist.fill(HIST("hRecMCEventSelection"), 1); // kIsTriggerTVX collisions
-    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-      return false;
-    MCeventHist.fill(HIST("hRecMCEventSelection"), 2); // kNoTimeFrameBorder collisions
-    if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-      MCeventHist.fill(HIST("hRecMCEventSelection"), 3); // kNoITSROFrameBorder collisions (not requested in the selection, but useful for QA)
-    if (std::abs(collision.posZ()) > cutzvertex)
-      return false;
-    MCeventHist.fill(HIST("hRecMCEventSelection"), 4); // vertex-Z selected
-    MCeventHist.fill(HIST("hRecMCVertexZRec"), collision.posZ());
-    if (!collision.isInelGt0())
-      return false;
-    MCeventHist.fill(HIST("hRecMCEventSelection"), 5); // INEL>0 collisions
-    return true;
+    if constexpr (!isMC) { // data event
+      eventHist.fill(HIST("hEventSelection"), 0); // all collisions
+      if (!collision.sel8())
+        return false;
+      eventHist.fill(HIST("hEventSelection"), 1); // sel8 collisions
+      if (std::abs(collision.posZ()) > cutzvertex)
+        return false;
+      eventHist.fill(HIST("hEventSelection"), 2); // vertex-Z selected
+      eventHist.fill(HIST("hVertexZRec"), collision.posZ());
+      if (!collision.isInelGt0())
+        return false;
+      eventHist.fill(HIST("hEventSelection"), 3); // INEL>0 collisions
+      return true;
+    } else { // RecMC event
+      MCeventHist.fill(HIST("hRecMCEventSelection"), 0); // all collisions
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX))
+        return false;
+      MCeventHist.fill(HIST("hRecMCEventSelection"), 1); // kIsTriggerTVX collisions
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        return false;
+      MCeventHist.fill(HIST("hRecMCEventSelection"), 2); // kNoTimeFrameBorder collisions
+      if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        MCeventHist.fill(HIST("hRecMCEventSelection"), 3); // kNoITSROFrameBorder collisions (not requested in the selection, but useful for QA)
+      if (std::abs(collision.posZ()) > cutzvertex)
+        return false;
+      MCeventHist.fill(HIST("hRecMCEventSelection"), 4); // vertex-Z selected
+      MCeventHist.fill(HIST("hRecMCVertexZRec"), collision.posZ());
+      if (!collision.isInelGt0())
+        return false;
+      MCeventHist.fill(HIST("hRecMCEventSelection"), 5); // INEL>0 collisions
+      return true;
+    }
   }
 
   // Single track selection for strangeness sector
@@ -456,7 +471,7 @@ struct phik0shortanalysis {
   }
 
   // Fill 2D invariant mass histogram for V0 and Phi
-  template <bool isMix, std::size_t iBin>
+  template <bool isMix, bool isMC, std::size_t iBin>
   void fillInvMass2D(TLorentzVector V0, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
   {
     double massV0 = V0.M();
@@ -484,11 +499,21 @@ struct phik0shortanalysis {
           continue;
         PhiK0SHist.fill(HIST("h3PhiK0SInvMassMixedEventSecondCut"), multiplicity, massV0, massPhi, weightLtSecondCut);
       }
+
+      if constexpr (isMC) { // MC event
+        MCPhiK0SHist.fill(HIST(MCPhiK0SSEInc[iBin]), massV0, massPhi, weightInclusive);
+        if (deltay > cfgFirstCutonDeltay)
+          continue;
+        MCPhiK0SHist.fill(HIST(MCPhiK0SSEFCut[iBin]), massV0, massPhi, weightLtFirstCut);
+        if (deltay > cfgSecondCutonDeltay)
+          continue;
+        MCPhiK0SHist.fill(HIST(MCPhiK0SSESCut[iBin]), massV0, massPhi, weightLtSecondCut);
+      }
     }
   }
 
   // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
-  template <bool isMix, std::size_t iBin>
+  template <bool isMix, bool isMC, std::size_t iBin>
   void fillInvMassNSigmadEdx(TLorentzVector Pi, float nSigmadEdxPi, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
   {
     double rapidityPi = Pi.Rapidity();
@@ -516,13 +541,23 @@ struct phik0shortanalysis {
           continue;
         PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
       }
+
+      if constexpr (isMC) { // MC event
+        MCPhiPionHist.fill(HIST(MCPhiPiSEInc[iBin]), ptPi, nSigmadEdxPi, massPhi, weightInclusive);
+        if (deltay > cfgFirstCutonDeltay)
+          continue;
+        MCPhiPionHist.fill(HIST(MCPhiPiSEFCut[iBin]), ptPi, nSigmadEdxPi, massPhi, weightLtFirstCut);
+        if (deltay > cfgSecondCutonDeltay)
+          continue;
+        MCPhiPionHist.fill(HIST(MCPhiPiSESCut[iBin]), ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
+      }
     }
   }
 
   void processQAPurity(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
     // Check if the event selection is passed
-    if (!acceptEventQA(collision))
+    if (!acceptEventQA<false>(collision))
       return;
 
     float multiplicity = collision.centFT0M();
@@ -733,43 +768,43 @@ struct phik0shortanalysis {
 
       switch (iBin) {
         case 0: {
-          fillInvMass2D<false, 0>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 0>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 1: {
-          fillInvMass2D<false, 1>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 1>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 2: {
-          fillInvMass2D<false, 2>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 2>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 3: {
-          fillInvMass2D<false, 3>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 3>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 4: {
-          fillInvMass2D<false, 4>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 4>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 5: {
-          fillInvMass2D<false, 5>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 5>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 6: {
-          fillInvMass2D<false, 6>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 6>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 7: {
-          fillInvMass2D<false, 7>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 7>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 8: {
-          fillInvMass2D<false, 8>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 8>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 9: {
-          fillInvMass2D<false, 9>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMass2D<false, false, 9>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         default:
@@ -858,43 +893,43 @@ struct phik0shortanalysis {
 
       switch (iBin) {
         case 0: {
-          fillInvMassNSigmadEdx<false, 0>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 0>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 1: {
-          fillInvMassNSigmadEdx<false, 1>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 1>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 2: {
-          fillInvMassNSigmadEdx<false, 2>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 2>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 3: {
-          fillInvMassNSigmadEdx<false, 3>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 3>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 4: {
-          fillInvMassNSigmadEdx<false, 4>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 4>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 5: {
-          fillInvMassNSigmadEdx<false, 5>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 5>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 6: {
-          fillInvMassNSigmadEdx<false, 6>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 6>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 7: {
-          fillInvMassNSigmadEdx<false, 7>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 7>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 8: {
-          fillInvMassNSigmadEdx<false, 8>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 8>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 9: {
-          fillInvMassNSigmadEdx<false, 9>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigmadEdx<false, false, 9>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         default:
@@ -973,43 +1008,43 @@ struct phik0shortanalysis {
 
         switch (iBin) {
           case 0: {
-            fillInvMass2D<true, 0>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 0>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 1: {
-            fillInvMass2D<true, 1>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 1>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 2: {
-            fillInvMass2D<true, 2>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 2>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 3: {
-            fillInvMass2D<true, 3>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 3>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 4: {
-            fillInvMass2D<true, 4>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 4>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 5: {
-            fillInvMass2D<true, 5>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 5>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 6: {
-            fillInvMass2D<true, 6>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 6>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 7: {
-            fillInvMass2D<true, 7>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 7>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 8: {
-            fillInvMass2D<true, 8>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 8>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 9: {
-            fillInvMass2D<true, 9>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMass2D<true, false, 9>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           default:
@@ -1086,43 +1121,43 @@ struct phik0shortanalysis {
 
         switch (iBin) {
           case 0: {
-            fillInvMassNSigmadEdx<true, 0>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 0>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 1: {
-            fillInvMassNSigmadEdx<true, 1>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 1>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 2: {
-            fillInvMassNSigmadEdx<true, 2>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 2>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 3: {
-            fillInvMassNSigmadEdx<true, 3>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 3>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 4: {
-            fillInvMassNSigmadEdx<true, 4>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 4>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 5: {
-            fillInvMassNSigmadEdx<true, 5>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 5>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 6: {
-            fillInvMassNSigmadEdx<true, 6>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 6>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 7: {
-            fillInvMassNSigmadEdx<true, 7>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 7>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 8: {
-            fillInvMassNSigmadEdx<true, 8>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 8>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 9: {
-            fillInvMassNSigmadEdx<true, 9>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigmadEdx<true, false, 9>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           default:
