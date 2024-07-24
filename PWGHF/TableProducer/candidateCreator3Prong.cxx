@@ -472,6 +472,10 @@ struct HfCandidateCreator3ProngExpressions {
 
   void init(InitContext& initContext)
   {
+    std::array<bool, 3> procCollisions = {doprocessMc, doprocessMcCentFT0C, doprocessMcCentFT0M};
+    if (std::accumulate(procCollisions.begin(), procCollisions.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for collision study can be enabled at a time.");
+    }
 
     // inspect for which particle species the candidates were created and which zPvPosMax cut was set for reconstructed
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
@@ -753,7 +757,7 @@ struct HfCandidateCreator3ProngExpressions {
   {
     runCreator3ProngMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
   }
-  PROCESS_SWITCH(HfCandidateCreator3ProngExpressions, processMc, "Process MC - no centrality", false);
+  PROCESS_SWITCH(HfCandidateCreator3ProngExpressions, processMc, "Process MC - no centrality", true);
 
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
