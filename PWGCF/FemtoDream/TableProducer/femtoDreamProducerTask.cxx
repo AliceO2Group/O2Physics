@@ -95,6 +95,7 @@ struct femtoDreamProducerTask {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
   Configurable<bool> ConfEvtAddOfflineCheck{"ConfEvtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)"};
   Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtodream tables"};
+  Configurable<bool> ConfIsActivateReso{"ConfIsActivateReso", false, "Activate filling of sl Resonances into femtodream tables"};
 
   Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
   // Configurable<bool> ConfRejectITSHitandTOFMissing{ "ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
@@ -141,6 +142,22 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<float>> ConfChildPIDnSigmaMax{"ConfChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "V0 Child sel: Max. PID nSigma TPC"};
   Configurable<std::vector<int>> ConfChildPIDspecies{"ConfChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Child sel: Particles species for PID"};
 
+  Configurable<float> ConfResoInvMassLowLimit{"ConfResoInvMassLowLimit", 1.011461, "Lower limit of the Reso invariant mass"};
+  Configurable<float> ConfResoInvMassUpLimit{"ConfResoInvMassUpLimit", 1.027461, "Upper limit of the Reso invariant mass"};
+  Configurable<std::vector<float>> ConfDaughterCharge{"ConfDaughterCharge", std::vector<float>{1, -1}, "Reso Daughter sel: Charge"};
+  Configurable<std::vector<float>> ConfDaughterEta{"ConfDaughterEta", std::vector<float>{0.8, 0.8}, "Reso Daughter sel: Eta"};         // 0.8
+  Configurable<std::vector<float>> ConfDaughterDCAxy{"ConfDaughterDCAxy", std::vector<float>{0.1, 0.1}, "Reso Daughter sel: DCAxy"};   // 0.1
+  Configurable<std::vector<float>> ConfDaughterDCAz{"ConfDaughterDCAz", std::vector<float>{0.2, 0.2}, "Reso Daughter sel: DCAz"};      // 0.2
+  Configurable<std::vector<float>> ConfDaughterNClus{"ConfDaughterNClus", std::vector<float>{80, 80}, "Reso Daughter sel: NClusters"}; // 0.2
+  Configurable<std::vector<float>> ConfDaughterNCrossed{"ConfDaughterNCrossed", std::vector<float>{70, 70}, "Reso Daughter sel: NCrossedRowss"};
+  Configurable<std::vector<float>> ConfDaughterTPCfCls{"ConfDaughterTPCfCls", std::vector<float>{0.8, 0.8}, "Reso Daughter sel: Minimum fraction of crossed rows over findable cluster"}; // 0.2
+  Configurable<std::vector<float>> ConfDaughterPtUp{"ConfDaughterPtUp", std::vector<float>{2.0, 2.0}, "Reso Daughter sel: Upper limit pT"};                                               // 2.0
+  Configurable<std::vector<float>> ConfDaughterPtLow{"ConfDaughterPtLow", std::vector<float>{0.15, 0.15}, "Reso Daughter sel: Lower limit pT"};                                           // 0.15
+  Configurable<std::vector<float>> ConfDaughterPTPCThr{"ConfDaughterPTPCThr", std::vector<float>{0.40, 0.40}, "Reso Daughter sel: momentum threshold TPC only PID, p_TPC,Thr"};           // 0.4
+  Configurable<std::vector<float>> ConfDaughterPIDnSigmaMax{"ConfDaughterPIDnSigmaMax", std::vector<float>{3.00, 3.00}, "Reso Daughter sel: Max. PID nSigma TPC"};                        // 3.0
+  Configurable<std::vector<int>> ConfDaughterPIDspecies{"ConfDaughterPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Kaon}, "Reso Daughter sel: Particles species for PID"};
+  Configurable<std::vector<float>> ConfDaug1Daugh2ResoMass{"ConfDaug1Daugh2ResoMass", std::vector<float>{o2::constants::physics::MassKPlus, o2::constants::physics::MassKMinus, o2::constants::physics::MassPhi}, "Masses: Daughter1 - Daughter2 - Resonance"};
+
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
   /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
                     (nabs(aod::v0data::y) < V0DecVtxMax.value) &&
@@ -151,6 +168,7 @@ struct femtoDreamProducerTask {
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"V0", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry ResoRegistry{"Reso", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -170,6 +188,16 @@ struct femtoDreamProducerTask {
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
     V0Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+    ResoRegistry.add("AnalysisQA/Reso/InvMass", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
+    ResoRegistry.add("AnalysisQA/Reso/InvMass_selected", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
+    ResoRegistry.add("AnalysisQA/Reso/Daughter1/Pt", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    ResoRegistry.add("AnalysisQA/Reso/Daughter1/Eta", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    ResoRegistry.add("AnalysisQA/Reso/Daughter1/Phi", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    ResoRegistry.add("AnalysisQA/Reso/Daughter2/Pt", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    ResoRegistry.add("AnalysisQA/Reso/Daughter2/Eta", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    ResoRegistry.add("AnalysisQA/Reso/Daughter2/Phi", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    ResoRegistry.add("AnalysisQA/Reso/PtD1_selected", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    ResoRegistry.add("AnalysisQA/Reso/PtD2_selected", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
 
     colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfEvtAddOfflineCheck.value, ConfIsRun3.value);
     colCuts.init(&qaRegistry);
@@ -431,6 +459,7 @@ struct femtoDreamProducerTask {
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+    std::vector<typename TrackType::iterator> Daughter1, Daughter2;
 
     for (auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
@@ -458,6 +487,32 @@ struct femtoDreamProducerTask {
 
       if constexpr (isMC) {
         fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
+      }
+
+      if (ConfIsActivateReso.value) {
+        // Already strict cuts for Daughter of reso selection
+        // TO DO: change TTV0 task to apply there the strict selection and have here only loose selection
+
+        // select daugher 1
+        if (track.sign() == ConfDaughterCharge.value[0] && track.pt() <= ConfDaughterPtUp.value[0] && track.pt() >= ConfDaughterPtLow.value[0] && std::abs(track.eta()) <= ConfDaughterEta.value[0] && std::abs(track.dcaXY()) <= ConfDaughterDCAxy.value[0] && std::abs(track.dcaZ()) <= ConfDaughterDCAz.value[0] && track.tpcNClsCrossedRows() >= ConfDaughterNCrossed.value[0] && track.tpcNClsFound() >= ConfDaughterNClus.value[0] && track.tpcCrossedRowsOverFindableCls() >= ConfDaughterTPCfCls.value[0]) {
+          if ((track.tpcInnerParam() < ConfDaughterPTPCThr.value[0] && std::abs(o2::aod::pidutils::tpcNSigma(ConfDaughterPIDspecies.value[0], track)) <= ConfDaughterPIDnSigmaMax.value[0]) ||
+              (track.tpcInnerParam() >= ConfDaughterPTPCThr.value[0] && std::abs(std::sqrt(o2::aod::pidutils::tpcNSigma(ConfDaughterPIDspecies.value[0], track) * o2::aod::pidutils::tpcNSigma(ConfDaughterPIDspecies.value[0], track) + o2::aod::pidutils::tofNSigma(ConfDaughterPIDspecies.value[0], track) * o2::aod::pidutils::tofNSigma(ConfDaughterPIDspecies.value[0], track))) <= ConfDaughterPIDnSigmaMax.value[0])) {
+            Daughter1.push_back(track);
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/Daughter1/Pt"), track.pt());
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/Daughter1/Eta"), track.eta());
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/Daughter1/Phi"), track.phi());
+          }
+        }
+        // select daugher 2
+        if (track.sign() == ConfDaughterCharge.value[1] && track.pt() <= ConfDaughterPtUp.value[1] && track.pt() >= ConfDaughterPtLow.value[1] && std::abs(track.eta()) <= ConfDaughterEta.value[1] && std::abs(track.dcaXY()) <= ConfDaughterDCAxy.value[1] && std::abs(track.dcaZ()) <= ConfDaughterDCAz.value[1] && track.tpcNClsCrossedRows() >= ConfDaughterNCrossed.value[1] && track.tpcNClsFound() >= ConfDaughterNClus.value[1] && track.tpcCrossedRowsOverFindableCls() >= ConfDaughterTPCfCls.value[1]) {
+          if ((track.tpcInnerParam() < ConfDaughterPTPCThr.value[1] && std::abs(o2::aod::pidutils::tpcNSigma(ConfDaughterPIDspecies.value[1], track)) <= ConfDaughterPIDnSigmaMax.value[1]) ||
+              (track.tpcInnerParam() >= ConfDaughterPTPCThr.value[1] && std::abs(std::sqrt(o2::aod::pidutils::tpcNSigma(ConfDaughterPIDspecies.value[1], track) * o2::aod::pidutils::tpcNSigma(ConfDaughterPIDspecies.value[1], track) + o2::aod::pidutils::tofNSigma(ConfDaughterPIDspecies.value[1], track) * o2::aod::pidutils::tofNSigma(ConfDaughterPIDspecies.value[1], track))) <= ConfDaughterPIDnSigmaMax.value[1])) {
+            Daughter2.push_back(track);
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/Daughter2/Pt"), track.pt());
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/Daughter2/Eta"), track.eta());
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/Daughter2/Phi"), track.phi());
+          }
+        }
       }
     }
 
@@ -537,13 +592,77 @@ struct femtoDreamProducerTask {
                     indexChildID,
                     v0.mLambda(),
                     v0.mAntiLambda());
-        if (ConfIsDebug) {
+        if (ConfIsDebug.value) {
           fillDebugParticle<true>(postrack); // QA for positive daughter
           fillDebugParticle<true>(negtrack); // QA for negative daughter
           fillDebugParticle<false>(v0);      // QA for v0
         }
         if constexpr (isMC) {
           fillMCParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
+        }
+      }
+    }
+
+    if (ConfIsActivateReso.value) {
+      for (auto iDaug1 = 0; iDaug1 < Daughter1.size(); ++iDaug1) {
+        for (auto iDaug2 = 0; iDaug2 < Daughter2.size(); ++iDaug2) {
+          // MC stuff is still missing, also V0 QA
+          // ALSO: fix indices and other table entries which are now set to 0 as deflaut as not needed for p-p-phi cf ana
+
+          ROOT::Math::PtEtaPhiMVector tempD1(Daughter1.at(iDaug1).pt(), Daughter1.at(iDaug1).eta(), Daughter1.at(iDaug1).phi(), ConfDaug1Daugh2ResoMass.value[0]);
+          ROOT::Math::PtEtaPhiMVector tempD2(Daughter2.at(iDaug2).pt(), Daughter2.at(iDaug2).eta(), Daughter2.at(iDaug2).phi(), ConfDaug1Daugh2ResoMass.value[1]);
+
+          ROOT::Math::PtEtaPhiMVector tempPhi = tempD1 + tempD2;
+
+          ResoRegistry.fill(HIST("AnalysisQA/Reso/InvMass"), tempPhi.M());
+
+          if ((tempPhi.M() >= ConfResoInvMassLowLimit.value) && (tempPhi.M() <= ConfResoInvMassUpLimit.value)) {
+
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/InvMass_selected"), tempPhi.M());
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/PtD1_selected"), Daughter1.at(iDaug1).pt());
+            ResoRegistry.fill(HIST("AnalysisQA/Reso/PtD2_selected"), Daughter2.at(iDaug2).pt());
+
+            childIDs[0] = 0;
+            childIDs[1] = 0;
+            std::vector<int> indexChildID = {0, 0};
+            outputParts(outputCollision.lastIndex(),
+                        static_cast<float>(Daughter1.at(iDaug1).pt()), static_cast<float>(Daughter1.at(iDaug1).eta()), static_cast<float>(Daughter1.at(iDaug1).phi()),
+                        aod::femtodreamparticle::ParticleType::kV0Child,
+                        static_cast<o2::aod::femtodreamparticle::cutContainerType>(0),
+                        static_cast<o2::aod::femtodreamparticle::cutContainerType>(0),
+                        static_cast<float>(Daughter1.at(iDaug1).dcaXY()),
+                        childIDs,
+                        0,
+                        0);
+            outputParts(outputCollision.lastIndex(),
+                        static_cast<float>(Daughter2.at(iDaug2).pt()), static_cast<float>(Daughter2.at(iDaug2).eta()), static_cast<float>(Daughter2.at(iDaug2).phi()),
+                        aod::femtodreamparticle::ParticleType::kV0Child,
+                        static_cast<o2::aod::femtodreamparticle::cutContainerType>(0),
+                        static_cast<o2::aod::femtodreamparticle::cutContainerType>(0),
+                        static_cast<float>(Daughter2.at(iDaug2).dcaXY()),
+                        childIDs,
+                        0,
+                        0);
+            outputParts(outputCollision.lastIndex(),
+                        static_cast<float>(tempPhi.pt()),
+                        static_cast<float>(tempPhi.eta()),
+                        static_cast<float>(tempPhi.phi()),
+                        aod::femtodreamparticle::ParticleType::kV0,
+                        static_cast<o2::aod::femtodreamparticle::cutContainerType>(0),
+                        0,
+                        0.f,
+                        indexChildID,
+                        tempPhi.M(),
+                        tempPhi.M());
+            if (ConfIsDebug.value) {
+              fillDebugParticle<true>(Daughter1.at(iDaug1)); // QA for positive daughter
+              fillDebugParticle<true>(Daughter2.at(iDaug2)); // QA for negative daughter
+              outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
+                               -999., -999., -999., -999., -999., -999., -999., -999.,
+                               -999., -999., -999., -999., -999., -999., -999., -999.,
+                               -999., -999., -999.); // QA for Reso
+            }
+          }
         }
       }
     }

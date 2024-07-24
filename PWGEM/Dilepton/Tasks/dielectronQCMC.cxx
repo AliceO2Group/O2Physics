@@ -179,7 +179,7 @@ struct dielectronQCMC {
     const AxisSpec axis_dphi_e_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{e} - #varphi_{ee} (rad.)"};                // for kUPC
 
     // generated info
-    fRegistry.add("Generated/sm/Pi0/hs", "m_{ee} vs. p_{T,ee} ULS", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
+    fRegistry.add("Generated/sm/Pi0/hs", "gen. dielectron signal", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Eta/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/EtaPrime/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Rho/");
@@ -196,7 +196,7 @@ struct dielectronQCMC {
     fRegistry.add("Generated/sm/Phi2ee/hPt", "pT of #phi meson", kTH1F, {axis_pt_meson}, true);
     fRegistry.add("Generated/sm/Phi2ee/hY", "rapidity of #phi meson", kTH1F, {axis_y_meson}, true);
 
-    fRegistry.add("Generated/ccbar/c2e_c2e/hadron_hadron/hs", "m_{ee} vs. p_{T,ee}", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
+    fRegistry.add("Generated/ccbar/c2e_c2e/hadron_hadron/hs", "generated dielectron signal", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/ccbar/c2e_c2e/hadron_hadron/", "Generated/ccbar/c2e_c2e/meson_meson/");
     fRegistry.addClone("Generated/ccbar/c2e_c2e/hadron_hadron/", "Generated/ccbar/c2e_c2e/baryon_baryon/");
     fRegistry.addClone("Generated/ccbar/c2e_c2e/hadron_hadron/", "Generated/ccbar/c2e_c2e/meson_baryon/");
@@ -206,7 +206,7 @@ struct dielectronQCMC {
     fRegistry.addClone("Generated/ccbar/c2e_c2e/", "Generated/bbbar/b2c2e_b2e_diffb/"); // LS
 
     // reconstructed pair info
-    fRegistry.add("Pair/sm/Photon/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.add("Pair/sm/Photon/hs", "rec. dielectron signal", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Pi0/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Eta/");
@@ -229,6 +229,13 @@ struct dielectronQCMC {
     fRegistry.addClone("Pair/ccbar/c2e_c2e/", "Pair/bbbar/b2c2e_b2c2e/");
     fRegistry.addClone("Pair/ccbar/c2e_c2e/", "Pair/bbbar/b2c2e_b2e_sameb/");
     fRegistry.addClone("Pair/ccbar/c2e_c2e/", "Pair/bbbar/b2c2e_b2e_diffb/"); // LS
+
+    // for correlated bkg due to mis-identified hadrons, and true combinatorial bkg
+    fRegistry.add("Pair/corr_bkg_eh/uls/hs", "rec. bkg", kTHnSparseF, {axis_mass, axis_pt, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lspp/");
+    fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lsmm/");
+    fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/corr_bkg_hh/");
+    fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/comb_bkg/");
 
     // track info
     fRegistry.add("Track/lf/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -525,20 +532,6 @@ struct dielectronQCMC {
     // float pca = 999.f, lxy = 999.f; // in unit of cm
     // o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, t1, t2, pca, lxy);
 
-    auto t1mc = t1.template emmcparticle_as<TMCParticles>();
-    auto t2mc = t2.template emmcparticle_as<TMCParticles>();
-    if (abs(t1mc.pdgCode()) != 11 || abs(t2mc.pdgCode()) != 11) {
-      return false;
-    }
-    if (t1mc.emmceventId() != t2mc.emmceventId()) {
-      return false;
-    }
-
-    int mother_id = FindLF(t1mc, t2mc, mcparticles);
-    int hfee_type = IsHF(t1mc, t2mc, mcparticles);
-    if (mother_id < 0 && hfee_type < 0) {
-      return false;
-    }
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -561,6 +554,52 @@ struct dielectronQCMC {
 
     float cos_thetaCS = 999, phiCS = 999.f;
     o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+
+    auto t1mc = t1.template emmcparticle_as<TMCParticles>();
+    auto t2mc = t2.template emmcparticle_as<TMCParticles>();
+    bool is_from_same_mcevent = (t1mc.emmceventId() == t2mc.emmceventId()) && (collision.emmceventId() == t1mc.emmceventId()) && (collision.emmceventId() == t2mc.emmceventId());
+
+    if ((FindCommonMotherFrom2ProngsWithoutPDG(t1mc, t2mc) > 0 || IsHF(t1mc, t2mc, mcparticles) > 0) && is_from_same_mcevent) { // for bkg study
+      if (abs(t1mc.pdgCode()) != 11 || abs(t2mc.pdgCode()) != 11) {                                                             // hh or eh correlated bkg
+        if (abs(t1mc.pdgCode()) != 11 && abs(t2mc.pdgCode()) != 11) {                                                           // hh correlated bkg
+          if (t1.sign() * t2.sign() < 0) {                                                                                      // ULS
+            fRegistry.fill(HIST("Pair/corr_bkg_hh/uls/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+          } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
+            fRegistry.fill(HIST("Pair/corr_bkg_hh/lspp/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+          } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
+            fRegistry.fill(HIST("Pair/corr_bkg_hh/lsmm/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+          }
+        } else {                           // eh correlated bkg
+          if (t1.sign() * t2.sign() < 0) { // ULS
+            fRegistry.fill(HIST("Pair/corr_bkg_eh/uls/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+          } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
+            fRegistry.fill(HIST("Pair/corr_bkg_eh/lspp/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+          } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
+            fRegistry.fill(HIST("Pair/corr_bkg_eh/lsmm/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+          }
+        }
+      }
+    } else {                           // true combinatorial bkg
+      if (t1.sign() * t2.sign() < 0) { // ULS
+        fRegistry.fill(HIST("Pair/comb_bkg/uls/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+      } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
+        fRegistry.fill(HIST("Pair/comb_bkg/lspp/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+      } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
+        fRegistry.fill(HIST("Pair/comb_bkg/lsmm/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
+      }
+    }
+
+    if (abs(t1mc.pdgCode()) != 11 || abs(t2mc.pdgCode()) != 11) {
+      return false;
+    }
+    if (!is_from_same_mcevent) {
+      return false;
+    }
+    int mother_id = FindLF(t1mc, t2mc, mcparticles);
+    int hfee_type = IsHF(t1mc, t2mc, mcparticles);
+    if (mother_id < 0 && hfee_type < 0) {
+      return false;
+    }
 
     if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);

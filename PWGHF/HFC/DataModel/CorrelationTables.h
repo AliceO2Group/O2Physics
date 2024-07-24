@@ -216,13 +216,23 @@ DECLARE_SOA_TABLE(Hadron, "AOD", "HADRON", //! Associated hadron properties
 // definition of columns and tables for Dplus-Hadron correlation pairs
 namespace hf_correlation_dplus_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);        //! DeltaPhi between D+ and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);        //! DeltaEta between D+ and Hadrons
-DECLARE_SOA_COLUMN(PtD, ptD, float);                  //! Transverse momentum of D+
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);        //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MD, mD, float);                    //! Invariant mass of D+
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool); //! Used in MC-Rec, D+ Signal
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);            //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between D+ and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between D+ and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                                       //! Transverse momentum of D+
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                                         //! Invariant mass of D+
+DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                         //! ML background score for D+ selection
+DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                   //! ML prompt score for D+ selection
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool);                      //! Used in MC-Rec, D+ Signal
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! DCA xy of the track
+DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
+DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! Used in MC-Rec, D+ Signal
+DECLARE_SOA_COLUMN(IsDecayChan, isDecayChan, bool);                        //! Used in MC-Rec, D+ decay channel check
+DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, D+ Prompt or Non-Prompt
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
 } // namespace hf_correlation_dplus_hadron
 
 DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR", //! D+-Hadrons pairs Informations
@@ -235,6 +245,29 @@ DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR", //! D+-Hadrons pairs Inf
 DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO", //! D+-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_dplus_hadron::MD,
                   aod::hf_correlation_dplus_hadron::SignalStatus);
+
+DECLARE_SOA_TABLE(DplusHadronGenInfo, "AOD", "DPLUSHGENINFO", //! Ds-Hadrons pairs Generated Information
+                  aod::hf_correlation_dplus_hadron::IsPrompt,
+                  aod::hf_correlation_dplus_hadron::IsPhysicalPrimary,
+                  aod::hf_correlation_dplus_hadron::TrackOrigin);
+
+DECLARE_SOA_TABLE(DplusHadronMlInfo, "AOD", "DPLUSHMLINFO", //! D+-Hadrons pairs Machine Learning Information
+                  aod::hf_correlation_dplus_hadron::MlScoreBkg,
+                  aod::hf_correlation_dplus_hadron::MlScorePrompt);
+
+DECLARE_SOA_TABLE(DplusRecoInfo, "AOD", "DPLUSRECOINFO", //! D+ candidates Reconstructed Information
+                  aod::hf_correlation_dplus_hadron::MD,
+                  aod::hf_correlation_dplus_hadron::PtD,
+                  aod::hf_correlation_dplus_hadron::MlScoreBkg,
+                  aod::hf_correlation_dplus_hadron::MlScorePrompt);
+
+DECLARE_SOA_TABLE(DplusGenInfo, "AOD", "DPLUSGENOINFO", //! D+ candidates Generated Information
+                  aod::hf_correlation_dplus_hadron::IsPrompt);
+
+DECLARE_SOA_TABLE(TrkRecInfoDplus, "AOD", "TRKRECINFODPLUS", //! Tracks Reconstructed Information
+                  aod::hf_correlation_dplus_hadron::TrackDcaXY,
+                  aod::hf_correlation_dplus_hadron::TrackDcaZ,
+                  aod::hf_correlation_dplus_hadron::TrackTPCNClsCrossedRows);
 
 // definition of columns and tables for Dstar-Hadron correlation pair
 namespace hf_correlation_dstar_hadron
