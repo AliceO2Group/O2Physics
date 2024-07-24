@@ -170,8 +170,8 @@ struct HfDataCreatorCharmResoReduced {
     }
 
     const AxisSpec axisPt{50, 0.f, 50.f, ""};
-    const AxisSpec axisP{10, 0.f, 10.f, ""};
-    const AxisSpec axisDeDx{500, 0.f, 2000.f, ""};
+    const AxisSpec axisP{100, 0.f, 10.f, ""};
+    const AxisSpec axisDeDx{500, 0.f, 1000.f, ""};
     const AxisSpec axisMassDplus{200, 1.7f, 2.1f, ""};
     const AxisSpec axisMassDstar{200, 0.139f, 0.179f, ""};
     const AxisSpec axisMassLambda{100, 1.05f, 1.35f, ""};
@@ -193,11 +193,13 @@ struct HfDataCreatorCharmResoReduced {
     registry.add("hV0Type", "V0 selection flag", {HistType::kTH1F, {{8, -0.5, 7.5}}});
     registry.add("hDType", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
 
+    // Configure CCDB access
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     ccdbApi.init(url);
+    runNumber = 0;
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
   }
 
@@ -460,12 +462,22 @@ struct HfDataCreatorCharmResoReduced {
           if (!isTrackSelected(track, prongIdsD)) {
             continue;
           }
+
+          // if the track has been reassociated, re-propagate it to PV (minor difference)
+          auto trackParCovTrack = getTrackParCov(track);
+          o2::gpu::gpustd::array<float, 2> dcaTrack{track.dcaXY(), track.dcaZ()};
+          std::array<float, 3> pVecTrack = track.pVector();
+          if (track.collisionId() != collision.globalIndex()) {
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovTrack, 2.f, matCorr, &dcaTrack);
+            getPxPyPz(trackParCovTrack, pVecTrack);
+          }
+
           registry.fill(HIST("hdEdxVsP"), track.p(), track.tpcSignal());
           float invMassKPiPiP{0.f};
           if (candD.signSoftPi() > 0) {
-            invMassKPiPiP = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), track.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
+            invMassKPiPiP = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), pVecTrack}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
           } else {
-            invMassKPiPiP = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), track.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
+            invMassKPiPiP = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), pVecTrack}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
           }
           registry.fill(HIST("hMassDstarProton"), invMassKPiPiP - invMassD);
           if (!selectedTracks.count(track.globalIndex())) {
@@ -492,7 +504,7 @@ struct HfDataCreatorCharmResoReduced {
           hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2]);
         }
         fillHfReducedCollision = true;
-        if constexpr (DecayChannel == DecayChannel::DstarV0) {
+        if constexpr (DecayChannel == DecayChannel::DstarV0 || DecayChannel == DecayChannel::DstarTrack) {
           registry.fill(HIST("hMassVsPtDstarPaired"), candD.pt(), invMassD - invMassDdau);
         } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
           registry.fill(HIST("hMassVsPtDplusPaired"), candD.pt(), invMassD);
