@@ -9,9 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
+#ifndef PWGMM_MULT_DATAMODEL_GENCENTRALITIES_H_
+#define PWGMM_MULT_DATAMODEL_GENCENTRALITIES_H_
 
-#pragma link C++ class ZorroHelper + ;
-#pragma link C++ class std::vector < ZorroHelper> + ;
+#include "Framework/AnalysisDataModel.h"
+namespace o2::aod
+{
+namespace gencents
+{
+DECLARE_SOA_COLUMN(GenCentFT0C, gencentFT0C, float);
+DECLARE_SOA_COLUMN(GenCentFT0M, gencentFT0M, float);
+} // namespace gencents
+DECLARE_SOA_TABLE(GenCents, "AOD", "GENCENT",
+                  gencents::GenCentFT0C,
+                  gencents::GenCentFT0M);
+} // namespace o2::aod
+#endif // PWGMM_MULT_DATAMODEL_GENCENTRALITIES_H_

@@ -294,23 +294,22 @@ struct dimuonQC {
       } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV4)) {
         nmod = 4;
       }
-
       fRegistry.add("Pair/same/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/same/uls/hPrfUQ", Form("dimuon v_{%d} %s", nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/same/uls/hPrfUQ", Form("dimuon <u_{#mu#mu,%d} #upoint Q_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
       fRegistry.add("Pair/mix/uls/hs", "dimuon", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfUQ_leg1", Form("dimuon v_{%d} leg1 %s", nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfCosDPhi_leg1", Form("dimuon v_{%d} leg1", nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfSP12_leg1", Form("dimuon v_{%d} leg1 %s%s", nmod, qvec_det_names[cfgQvecEstimator].data(), "BPos"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfSP13_leg1", Form("dimuon v_{%d} leg1 %s%s", nmod, qvec_det_names[cfgQvecEstimator].data(), "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfSP23_leg1", Form("dimuon v_{%d} leg1 %s%s", nmod, "BPos", "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfUQ_leg2", Form("dimuon v_{%d} leg2 %s", nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfCosDPhi_leg2", Form("dimuon v_{%d} leg2", nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfSP12_leg2", Form("dimuon v_{%d} leg2 %s%s", nmod, qvec_det_names[cfgQvecEstimator].data(), "BPos"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfSP13_leg2", Form("dimuon v_{%d} leg2 %s%s", nmod, qvec_det_names[cfgQvecEstimator].data(), "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfSP23_leg2", Form("dimuon v_{%d} leg2 %s%s", nmod, "BPos", "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfUQ_leg1", Form("dimuon leg1 <u_{#mu1,%d} #upoint Q_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfCosDPhi_leg1", Form("dimuon leg1 <cos(%d(#varphi_{#mu1} - #varphi_{#mu#mu}))>", nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP12_leg1", Form("dimuon leg1 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, "BPos"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP13_leg1", Form("dimuon leg1 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP23_leg1", Form("dimuon leg1 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, "BPos", nmod, "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfUQ_leg2", Form("dimuon leg2 <u_{#mu2,%d} #upoint Q_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfCosDPhi_leg2", Form("dimuon leg2 <cos(%d(#varphi_{#mu2} - #varphi_{#mu#mu}))>", nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP12_leg2", Form("dimuon leg2 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, "BPos"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP13_leg2", Form("dimuon leg2 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      fRegistry.add("Pair/mix/uls/hPrfSP23_leg2", Form("dimuon leg2 <Q_{%d}^{%s} #upoint Q_{%d}^{%s}>", nmod, "BPos", nmod, "BNeg"), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) {
@@ -398,6 +397,19 @@ struct dimuonQC {
     fDimuonCut.SetDCAxy(0.f, dimuoncuts.cfg_max_dcaxy);
     fDimuonCut.SetRabs(dimuoncuts.cfg_min_rabs, dimuoncuts.cfg_max_rabs);
     fDimuonCut.SetMaxPDCARabsDep([&](float rabs) { return (rabs < 26.5 ? 594.f : 324.f); });
+  }
+
+  template <typename TQvectors>
+  bool isGoodQvector(TQvectors const& qvectors)
+  {
+    bool is_good = true;
+    for (auto& qn : qvectors[nmod]) {
+      if (abs(qn[0]) > 100.f || abs(qn[1]) > 100.f) {
+        is_good = false;
+        break;
+      }
+    }
+    return is_good;
   }
 
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2, typename TMixedQvectors>
@@ -689,34 +701,10 @@ struct dimuonQC {
         continue;
       }
 
-      if (nmod == 2) {
-        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, 2>(&fRegistry, collision);
-      } else if (nmod == 3) {
-        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, 3>(&fRegistry, collision);
-      } else {
-        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
-      }
-
-      if (!fEMEventCut.IsSelected(collision)) {
-        continue;
-      }
-
-      if (nmod == 2) {
-        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, 2>(&fRegistry, collision);
-      } else if (nmod == 3) {
-        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, 3>(&fRegistry, collision);
-      } else {
-        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
-      }
-
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
-
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
       std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
-
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
@@ -729,6 +717,36 @@ struct dimuonQC {
         {q3ft0m, q3ft0a, q3ft0c, q3btot},                                 // 3rd harmonics
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 4th harmonics
       };
+
+      if (nmod == 2) {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, 2>(&fRegistry, collision);
+      } else if (nmod == 3) {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, 3>(&fRegistry, collision);
+      } else {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
+      }
+      if (nmod < 0 || isGoodQvector(qvectors)) {
+        fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev - 1); // is qvector calibarated
+      }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+
+      if (nmod > 0 && !isGoodQvector(qvectors)) {
+        continue;
+      }
+
+      if (nmod == 2) {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, 2>(&fRegistry, collision);
+      } else if (nmod == 3) {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, 3>(&fRegistry, collision);
+      } else {
+        o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
+      }
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev - 1); // is qvector calibarated
+
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarymuon::emeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarymuon::emeventId, collision.globalIndex(), cache);

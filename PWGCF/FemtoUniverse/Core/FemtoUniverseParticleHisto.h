@@ -348,7 +348,6 @@ class FemtoUniverseParticleHisto
   template <bool isMC, bool isDebug, typename T, typename H>
   void fillQABase(T const& part, H const& histFolder)
   {
-    fillQA_base<o2::aod::femtouniverseMCparticle::MCType::kRecon>(part, histFolder);
     std::string tempFitVarName;
     if (mHistogramRegistry) {
       fillQA_base<o2::aod::femtouniverseMCparticle::MCType::kRecon>(part, histFolder);

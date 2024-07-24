@@ -343,6 +343,14 @@ class VarManager : public TObject
     kEnergyCommonZNC,
     kEnergyCommonZPA,
     kEnergyCommonZPC,
+    kEnergyZNA1,
+    kEnergyZNA2,
+    kEnergyZNA3,
+    kEnergyZNA4,
+    kEnergyZNC1,
+    kEnergyZNC2,
+    kEnergyZNC3,
+    kEnergyZNC4,
     kTimeZNA,
     kTimeZNC,
     kTimeZPA,
@@ -3732,6 +3740,26 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   }
   float znaCommon = collision.energyCommonZNA() < 0 ? -1.f : collision.energyCommonZNA();
   float zncCommon = collision.energyCommonZNC() < 0 ? -1.f : collision.energyCommonZNC();
+  float zpaCommon = collision.energyCommonZPA() < 0 ? -1.f : collision.energyCommonZPA();
+  float zpcCommon = collision.energyCommonZPC() < 0 ? -1.f : collision.energyCommonZPC();
+
+  // Store ZNA and ZNC energies for calibrations
+  values[kEnergyCommonZNA] = znaCommon;
+  values[kEnergyCommonZNC] = zncCommon;
+  values[kEnergyCommonZPA] = zpaCommon;
+  values[kEnergyCommonZPC] = zpcCommon;
+  values[kEnergyZNA1] = znaEnergy[0];
+  values[kEnergyZNA2] = znaEnergy[1];
+  values[kEnergyZNA3] = znaEnergy[2];
+  values[kEnergyZNA4] = znaEnergy[3];
+  values[kEnergyZNC1] = zncEnergy[0];
+  values[kEnergyZNC2] = zncEnergy[1];
+  values[kEnergyZNC3] = zncEnergy[2];
+  values[kEnergyZNC4] = zncEnergy[3];
+  values[kTimeZNA] = collision.timeZNA();
+  values[kTimeZNC] = collision.timeZNC();
+  values[kTimeZPA] = collision.timeZPA();
+  values[kTimeZPC] = collision.timeZPC();
 
   constexpr float beamEne = 5.36 * 0.5;
   constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
