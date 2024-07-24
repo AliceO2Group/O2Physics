@@ -109,12 +109,12 @@ struct SGFITAnalyzer {
     registry.add("collisions/multiplicityZ1PVCAC", "Multiplicity of PV contributors AC-side; PV contributors; Tracks", {HistType::kTH1F, {{axismult}}});
     registry.add("collisions/GapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("collisions/TrueGapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{4, -1.5, 2.5}}});
-    registry.add("collisions/2D/multiplicityVsMeanPtPVCA", "Multiplicity of PV contributors A-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult},{axismeanpt}}});
-    registry.add("collisions/2D/multiplicityVsEtaPVCA", "Multiplicity of PV contributors A-side; PV contributors; #eta", {HistType::kTH2F, {{axismult},{axiseta}}});
-    registry.add("collisions/2D/multiplicityVsMeanPtPVCC", "Multiplicity of PV contributors C-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult},{axismeanpt}}});
-    registry.add("collisions/2D/multiplicityVsEtaPVCC", "Multiplicity of PV contributors C-side; PV contributors; #eta", {HistType::kTH2F, {{axismult},{axiseta}}});
-    registry.add("collisions/2D/multiplicityVsMeanPtPVCAC", "Multiplicity of PV contributors AC-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult},{axismeanpt}}});
-    registry.add("collisions/2D/multiplicityVsEtaPVCAC", "Multiplicity of PV contributors AC-side; PV contributors; #eta", {HistType::kTH2F, {{axismult},{axiseta}}});
+    registry.add("collisions/2D/multiplicityVsMeanPtPVCA", "Multiplicity of PV contributors A-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult}, {axismeanpt}}});
+    registry.add("collisions/2D/multiplicityVsEtaPVCA", "Multiplicity of PV contributors A-side; PV contributors; #eta", {HistType::kTH2F, {{axismult}, {axiseta}}});
+    registry.add("collisions/2D/multiplicityVsMeanPtPVCC", "Multiplicity of PV contributors C-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult}, {axismeanpt}}});
+    registry.add("collisions/2D/multiplicityVsEtaPVCC", "Multiplicity of PV contributors C-side; PV contributors; #eta", {HistType::kTH2F, {{axismult}, {axiseta}}});
+    registry.add("collisions/2D/multiplicityVsMeanPtPVCAC", "Multiplicity of PV contributors AC-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult}, {axismeanpt}}});
+    registry.add("collisions/2D/multiplicityVsEtaPVCAC", "Multiplicity of PV contributors AC-side; PV contributors; #eta", {HistType::kTH2F, {{axismult}, {axiseta}}});
 
     // track histograms
     registry.add("tracks/QCAll", "Track QC of all tracks; Hit in detector; Tracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
@@ -800,21 +800,21 @@ struct SGFITAnalyzer {
       }
     }
     if (pva) {
-       registry.get<TH1>(HIST("collisions/multiplicityPVCA"))->Fill(pva, 1.);
-       registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCA"))->Fill(pva, avPtPVa/pva, 1.);
-       for(auto &element: vecEtaPVa)
-         registry.get<TH2>(HIST("collisions/2D/multiplicityVsEtaPVCA"))->Fill(pva, element, 1.);
+      registry.get<TH1>(HIST("collisions/multiplicityPVCA"))->Fill(pva, 1.);
+      registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCA"))->Fill(pva, avPtPVa / pva, 1.);
+      for (auto& element : vecEtaPVa)
+        registry.get<TH2>(HIST("collisions/2D/multiplicityVsEtaPVCA"))->Fill(pva, element, 1.);
     }
     if (pvc) {
       registry.get<TH1>(HIST("collisions/multiplicityPVCC"))->Fill(pvc, 1.);
-      registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCC"))->Fill(pvc, avPtPVc/pvc, 1.);
-      for(auto &element: vecEtaPVc)
+      registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCC"))->Fill(pvc, avPtPVc / pvc, 1.);
+      for (auto& element : vecEtaPVc)
         registry.get<TH2>(HIST("collisions/2D/multiplicityVsEtaPVCC"))->Fill(pvc, element, 1.);
     }
     if (pvac) {
       registry.get<TH1>(HIST("collisions/multiplicityPVCAC"))->Fill(pvac, 1.);
-      registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCAC"))->Fill(pvac, avPtPVac/pvac, 1.);
-      for(auto &element: vecEtaPVac)
+      registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCAC"))->Fill(pvac, avPtPVac / pvac, 1.);
+      for (auto& element : vecEtaPVac)
         registry.get<TH2>(HIST("collisions/2D/multiplicityVsEtaPVCAC"))->Fill(pvac, element, 1.);
     }
     if (pva)
