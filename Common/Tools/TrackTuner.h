@@ -431,7 +431,7 @@ struct TrackTuner {
         qOverPtMC = std::max(0.0, evalGraph(ptMC, grOneOverPtPionMC.get()));
         qOverPtData = std::max(0.0, evalGraph(ptMC, grOneOverPtPionData.get()));
       } // qOverPtMC, qOverPtData block ends here
-    }   // updateCurvature, updateCurvatureIU block ends here
+    } // updateCurvature, updateCurvatureIU block ends here
 
     if (updateTrackDCAs) {
       dcaXYMeanMC = evalGraph(ptMC, grDcaXYMeanVsPtPionMC.get());
@@ -586,7 +586,7 @@ struct TrackTuner {
       double trackParDcaZTuned = trackParDcaZMC + deltaDcaZTuned;
 
       // double dd0rpo=d0rpo-d0rpmc;
-      double deltaDcaXY = trackParDcaXYRec - trackParDcaXYMC;
+      double deltaDcaXY = trackParDcaXYRec - trackParDcaXYMC - dcaXYMeanMC;
 
       // double dd0rpn=dd0rpo*(sd0rpo>0. ? (sd0rpn/sd0rpo) : 1.);
       double deltaDcaXYTuned = deltaDcaXY * (dcaXYResMC > 0. ? (dcaXYResData / dcaXYResMC) : 1.);
@@ -600,7 +600,7 @@ struct TrackTuner {
 
       if (debugInfo) {
         LOG(info) << dcaZResMC << ", " << dcaZResData << ", diff(DcaZ - DcaZMC): " << deltaDcaZ << ", diff upgraded: " << deltaDcaZTuned << ", DcaZ Data : " << trackParDcaZTuned;
-        LOG(info) << dcaXYResMC << ", " << dcaXYResData << ", diff(DcaY - DcaYMC): " << deltaDcaXY << ", diff upgraded: " << deltaDcaXYTuned << ", DcaY Data :" << trackParDcaXYTuned;
+        LOG(info) << dcaXYResMC << ", " << dcaXYResData << ", " << dcaXYMeanMC << ", diff(DcaY - DcaYMC - dcaXYMeanMC): " << deltaDcaXY << ", diff upgraded: " << deltaDcaXYTuned << ", DcaY Data :" << trackParDcaXYTuned;
       }
       // option mimic data
       // ----------------------
@@ -720,7 +720,7 @@ struct TrackTuner {
           trackParCov.setCov(sigma1Pt2, 14);
         }
       } // ---> track cov matrix elements for 1/Pt ends here
-    }   // ---> updateTrackCovMat block ends here
+    } // ---> updateTrackCovMat block ends here
 
     if (updatePulls) {
       double ratioDCAxyPulls = 1.0;
