@@ -670,7 +670,7 @@ struct nucleiSpectra {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
     for (auto& c : nuclei::candidates_dca) {
-      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
@@ -691,7 +691,7 @@ struct nucleiSpectra {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
     for (auto& c : nuclei::candidates_dca) {
-      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
     }
     for (auto& c : nuclei::candidates_flow) {
       nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
@@ -715,7 +715,7 @@ struct nucleiSpectra {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
     for (auto& c : nuclei::candidates_dca) {
-      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(c.pt, c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
+      nuclei::hDCAHists[c.pt < 0][c.partHypo]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC, c.tofMass, c.itsNCls, c.tpcNCls);
     }
     for (auto& c : nuclei::candidates_flow) {
       nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
