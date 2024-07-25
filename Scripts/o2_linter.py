@@ -362,7 +362,7 @@ class TestConstRefInSubscription(TestSpec):
         passed = True
         n_parens_opened = 0 # number of opened parentheses
         arguments = "" # process function arguments
-        line_process = 0
+        line_process = 0 # line number of the process function
         for i, line in enumerate(content):
             line = line.strip()
             if is_comment_cpp(line):
@@ -372,7 +372,7 @@ class TestConstRefInSubscription(TestSpec):
             if "//" in line: # Remove comment. (Ignore /* to avoid truncating at /*parameter*/.)
                 line = line[:line.index("//")]
             if re.search(r"^void process[\w]*\(", line):
-                line_process = (i + 1)
+                line_process = i + 1
                 i_closing = line.rfind(")")
                 i_start = line.index("(") + 1
                 i_end = i_closing if i_closing != -1 else len(line)
@@ -762,14 +762,12 @@ class TestNameWorkflow(TestSpec):
 
 
 class TestNameTask(TestSpec):
-    """Test explicit task names."""
+    """Test explicit task names.
+    Detect usage of TaskName, check whether it is needed and whether the task name matches the struct name."""
     name = "name/o2-task"
     message = "Specify task name only when it cannot be derived from the struct name. Only append to the default name."
     suffixes = [".cxx"]
     per_line = False
-
-    def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path)
 
     def test_file(self, path : str, content) -> bool:
         is_inside_define = False # Are we inside defineDataProcessing?
@@ -781,7 +779,7 @@ class TestNameTask(TestSpec):
         for i, line in enumerate(content):
             if not line.strip():
                 continue
-            if self.is_disabled(line, "#"):
+            if self.is_disabled(line):
                 continue
             if is_comment_cpp(line):
                 continue
@@ -831,24 +829,24 @@ class TestNameTask(TestSpec):
                 task_name = match.group(1)
                 # print(f"{i + 1}: Got struct \"{struct_name}\" with task name \"{task_name}\".")
                 # Test explicit task name.
-                device_name_from_struct_name = camel_case_to_kebab_case(struct_name)
-                device_name_from_task_name = camel_case_to_kebab_case(task_name)
-                struct_name_from_device_name = kebab_case_to_camel_case_u(device_name_from_task_name)
+                device_name_from_struct_name = camel_case_to_kebab_case(struct_name) # default device name, in absence of TaskName
+                device_name_from_task_name = camel_case_to_kebab_case(task_name) # actual device name, generated from TaskName
+                struct_name_from_device_name = kebab_case_to_camel_case_u(device_name_from_task_name) # struct name matching the TaskName
                 if device_name_from_struct_name == device_name_from_task_name:
                     # If the task name results in the same device name as the struct name would, TaskName is redundant and should be removed.
                     print_error(path, i + 1, self.name, f"Specified task name {task_name} and the struct name {struct_name} produce the same device name {device_name_from_struct_name}. TaskName is redundant.")
                     passed = False
                 elif device_name_from_struct_name.replace("-", "") == device_name_from_task_name.replace("-", ""):
                     # If the device names generated from the task name and from the struct name differ in hyphenation, capitalisation of the struct name should be fixed and TaskName should be removed. (special cases: alice3-, -2prong)
-                    print_error(path, i + 1, self.name, f"Device names {device_name_from_task_name}, {device_name_from_struct_name} generated from the specified task name {task_name} and from the struct name {struct_name} differ in hyphenation. Consider fixing capitalisation of the struct name to {struct_name_from_device_name} and removing TaskName.")
+                    print_error(path, i + 1, self.name, f"Device names {device_name_from_task_name} and {device_name_from_struct_name} generated from the specified task name {task_name} and from the struct name {struct_name}, respectively, differ in hyphenation. Consider fixing capitalisation of the struct name to {struct_name_from_device_name} and removing TaskName.")
                     passed = False
                 elif device_name_from_task_name.startswith(device_name_from_struct_name):
-                    # If the device name generated from the task name is an extension of the device name generated from the struct name, accept it if the struct is templated. If the struct is not templated, extension is acceptable if adaptTask is called multiple times for the same struct.
-                    if struct_templated:
-                        print_error(path, i + 1, self.name, f"Device name {device_name_from_task_name} from the specified task name {task_name} is an extension of the device name {device_name_from_struct_name} from the struct name {struct_name} and the struct is templated. All good")
-                    else:
+                    # If the device name generated from the task name is an extension of the device name generated from the struct name, accept it if the struct is templated. If the struct is not templated, extension is acceptable if adaptAnalysisTask is called multiple times for the same struct.
+                    if not struct_templated:
                         print_error(path, i + 1, self.name, f"Device name {device_name_from_task_name} from the specified task name {task_name} is an extension of the device name {device_name_from_struct_name} from the struct name {struct_name} but the struct is not templated. Is it adapted multiple times?")
                         passed = False
+                    # else:
+                    #     print_error(path, i + 1, self.name, f"Device name {device_name_from_task_name} from the specified task name {task_name} is an extension of the device name {device_name_from_struct_name} from the struct name {struct_name} and the struct is templated. All good")
                 else:
                     # Other cases should be rejected.
                     print_error(path, i + 1, self.name, f"Specified task name {task_name} produces device name {device_name_from_task_name} which does not match the device name {device_name_from_struct_name} from the struct name {struct_name}. (Matching struct name {struct_name_from_device_name})")
