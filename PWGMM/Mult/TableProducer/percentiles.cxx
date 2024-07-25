@@ -8,16 +8,16 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Selections.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Common/DataModel/EventSelection.h>
+#include <Common/DataModel/TrackSelectionTables.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <CCDB/BasicCCDBManager.h>
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 #include "Gencentralities.h"
 
