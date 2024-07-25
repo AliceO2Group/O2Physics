@@ -119,12 +119,11 @@ struct Binner {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   // require a mix of ITS+TPC and ITS-only tracks (filters on the same table are automatically combined with &&)
   Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                                           ncheckbit(aod::track::trackCutFlag, trackSelectionITS);
+                              ncheckbit(aod::track::trackCutFlag, trackSelectionITS);
   Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                                  ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true);
+                                     ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true);
   Filter fTrackSelectionDCA = nabs(aod::track::dcaZ) <= 0.2f && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly);
   Filter fTracksEta = nabs(aod::track::eta) < 0.5f;
-
 
   void calibrateAdvanced(aod::McCollision const& mcc,
                          soa::SmallGroups<ExCols> const& collisions,
