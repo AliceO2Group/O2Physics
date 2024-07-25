@@ -439,8 +439,10 @@ struct HfCandidateCreatorCascadeMc {
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
 
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
 
@@ -541,6 +543,9 @@ struct HfCandidateCreatorCascadeMc {
       } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (centEstimator == CentralityEstimator::None) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
@@ -585,13 +590,13 @@ struct HfCandidateCreatorCascadeMc {
 
   void processMc(MyTracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 McCollisionsFT0Cs const& collInfos,
+                 McCollisionsNoCents const& collInfos,
                  aod::McCollisions const& mcCollisions,
                  BCsInfo const& BCsInfo)
   {
     runCreatorCascMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
   }
-  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMc, "Process MC - no centrality", true);
+  PROCESS_SWITCH(HfCandidateCreatorCascadeMc, processMc, "Process MC - no centrality", false);
 
   void processMcCentFT0C(MyTracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
