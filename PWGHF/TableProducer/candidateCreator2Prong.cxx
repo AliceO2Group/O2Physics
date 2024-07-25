@@ -658,6 +658,7 @@ struct HfCandidateCreator2ProngExpressions {
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
@@ -817,13 +818,13 @@ struct HfCandidateCreator2ProngExpressions {
 
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 McCollisionsFT0Cs const& collInfos,
+                 McCollisionsNoCents const& collInfos,
                  aod::McCollisions const& mcCollisions,
                  BCsInfo const& BCsInfo)
   {
     runCreator2ProngMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
   }
-  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMc, "Process MC - no centrality", true);
+  PROCESS_SWITCH(HfCandidateCreator2ProngExpressions, processMc, "Process MC - no centrality", false);
 
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,

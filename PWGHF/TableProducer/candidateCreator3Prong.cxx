@@ -465,6 +465,7 @@ struct HfCandidateCreator3ProngExpressions {
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   HistogramRegistry registry{"registry"};
 
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
@@ -751,13 +752,13 @@ struct HfCandidateCreator3ProngExpressions {
 
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 McCollisionsFT0Cs const& collInfos,
+                 McCollisionsNoCents const& collInfos,
                  aod::McCollisions const& mcCollisions,
                  BCsInfo const& BCsInfo)
   {
     runCreator3ProngMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
   }
-  PROCESS_SWITCH(HfCandidateCreator3ProngExpressions, processMc, "Process MC - no centrality", true);
+  PROCESS_SWITCH(HfCandidateCreator3ProngExpressions, processMc, "Process MC - no centrality", false);
 
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
