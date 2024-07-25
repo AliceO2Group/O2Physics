@@ -29,7 +29,6 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
