@@ -299,9 +299,9 @@ struct phik0shortanalysis {
     }
 
     // GenMC pT of K0S coupled to Phi
-    MCPhiK0SHist.add("h2PhiK0SpTGenMCInclusive", "pT of K0Short coupled to Phi for GenMC Inclusive", kTH2F, {multAxis, ptAxis});
-    MCPhiK0SHist.add("h2PhiK0SpTGenMCFirstCut", "pT of K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {multAxis, ptAxis});
-    MCPhiK0SHist.add("h2PhiK0SpTGenMCSecondCut", "pT of K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {multAxis, ptAxis});
+    MCPhiK0SHist.add("h1PhiK0SGenMCInclusive", "K0Short coupled to Phi for GenMC Inclusive", kTH1F, {10, -0.5f, 9.5f});
+    MCPhiK0SHist.add("h1PhiK0SGenMCFirstCut", "K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH1F, {10, -0.5f, 9.5f});
+    MCPhiK0SHist.add("h1PhiK0SGenMCSecondCut", "K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH1F, {10, -0.5f, 9.5f});
 
     // Phi mass vs Pion NSigma dE/dx for Same Event and Mixed Event
     for (int i = 0; i < nMultBin; i++) {
@@ -322,9 +322,9 @@ struct phik0shortanalysis {
     }
 
     // GenMC pT of Pion coupled to Phi
-    MCPhiPionHist.add("h2PhiPiPionpTGenMCInclusive", "pT of Pion coupled to Phi for GenMC Inclusive", kTH2F, {multAxis, ptAxis});
-    MCPhiPionHist.add("h2PhiPiPionpTGenMCFirstCut", "pT of Pion coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {multAxis, ptAxis});
-    MCPhiPionHist.add("h2PhiPiPionpTGenMCSecondCut", "pT of Pion coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {multAxis, ptAxis});
+    MCPhiPionHist.add("h1PhiPiGenMCInclusive", "Pion coupled to Phi for GenMC Inclusive", kTH1F, {10, -0.5f, 9.5f});
+    MCPhiPionHist.add("h1PhiPiGenMCFirstCut", "Pion coupled to Phi for GenMC Deltay < FirstCut", kTH1F, {10, -0.5f, 9.5f});
+    MCPhiPionHist.add("h1PhiPiGenMCSecondCut", "Pion coupled to Phi for GenMC Deltay < SecondCut", kTH1F, {10, -0.5f, 9.5f});
   }
 
   // Event selection and QA filling
@@ -607,9 +607,7 @@ struct phik0shortanalysis {
 
         PhipurHist.fill(HIST("h2PhipurInvMass"), multiplicity, recPhi.M());
 
-        bool isCountedK0SInclusive = false;
-        bool isCountedK0SFirstCut = false;
-        bool isCountedK0SSecondCut = false;
+        bool isCountedK0SInclusive = false, isCountedK0SFirstCut = false, isCountedK0SSecondCut = false;
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
@@ -655,9 +653,7 @@ struct phik0shortanalysis {
         }
         isFilledhV0 = true;
 
-        bool isCountedPiInclusive = false;
-        bool isCountedPiFirstCut = false;
-        bool isCountedPiSecondCut = false;
+        bool isCountedPiInclusive = false, isCountedPiFirstCut = false, isCountedPiSecondCut = false;
 
         // Loop over all primary pion candidates
         for (const auto& track : fullTracks) {
@@ -1188,6 +1184,7 @@ struct phik0shortanalysis {
         break;
       }
     }
+    int iCenter = iBin - 1;
 
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1339,6 +1336,39 @@ struct phik0shortanalysis {
           break;
       }
     }
+
+    bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
+
+    for (auto mcParticle1 : mcParticles) {
+      if (mcParticle1.y() > 0.8)
+        continue;
+      if (mcParticle1.pdgCode() != 310)
+        continue;
+
+      for (auto mcParticle2 : mcParticles) {
+        if (mcParticle2.y() > 0.8)
+          continue;
+        if (mcParticle2.pdgCode() != 333)
+          continue;
+
+        if (!isCountedPhiInclusive) {
+          MCPhiK0SHist.fill(HIST("h1PhiK0SGenMCInclusive"), iCenter);
+          isCountedPhiInclusive = true;
+        }
+        if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
+          continue;
+        if (!isCountedPhiFirstCut) {
+          MCPhiK0SHist.fill(HIST("h1PhiK0SGenMCFirstCut"), iCenter);
+          isCountedPhiFirstCut = true;
+        }
+        if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
+          continue;
+        if (!isCountedPhiSecondCut) {
+          MCPhiK0SHist.fill(HIST("h1PhiK0SGenMCSecondCut"), iCenter);
+          isCountedPhiSecondCut = true;
+        }
+      }
+    }
   }
 
   PROCESS_SWITCH(phik0shortanalysis, processMCEffPhiK0S, "Process MC Efficiency for Phi-K0S Analysis", false);
@@ -1358,6 +1388,7 @@ struct phik0shortanalysis {
         break;
       }
     }
+    int iCenter = iBin - 1;
 
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1491,6 +1522,39 @@ struct phik0shortanalysis {
         }
         default:
           break;
+      }
+    }
+
+    bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
+
+    for (auto mcParticle1 : mcParticles) {
+      if (mcParticle1.y() > 0.8)
+        continue;
+      if (std::abs(mcParticle1.pdgCode()) != 211)
+        continue;
+
+      for (auto mcParticle2 : mcParticles) {
+        if (mcParticle2.y() > 0.8)
+          continue;
+        if (mcParticle2.pdgCode() != 333)
+          continue;
+
+        if (!isCountedPhiInclusive) {
+          MCPhiPionHist.fill(HIST("h1PhiPionGenMCInclusive"), iCenter);
+          isCountedPhiInclusive = true;
+        }
+        if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
+          continue;
+        if (!isCountedPhiFirstCut) {
+          MCPhiPionHist.fill(HIST("h1PhiPionGenMCFirstCut"), iCenter);
+          isCountedPhiFirstCut = true;
+        }
+        if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
+          continue;
+        if (!isCountedPhiSecondCut) {
+          MCPhiPionHist.fill(HIST("h1PhiPionGenMCSecondCut"), iCenter);
+          isCountedPhiSecondCut = true;
+        }
       }
     }
   }
