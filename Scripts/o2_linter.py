@@ -761,6 +761,7 @@ class TestNameDevice(TestSpec):
         is_inside_define = False
         is_inside_adapt = False
         struct_name = ""
+        struct_templated = False # Is the struct templated?
         n_parens_opened = 0 # number of opened parentheses
         passed = True
         for i, line in enumerate(content):
@@ -789,10 +790,14 @@ class TestNameDevice(TestSpec):
                 is_inside_adapt = True
                 line = line[(index + len("adaptAnalysisTask<")):]
                 # Extract struct name.
-                if not (match := re.match(r"([^<>]+)", line)):
+                if not (match := re.match(r"([^>]+)", line)):
                     print_error(path, i + 1, self.name, f"Failed to extract struct name from \"{line}\".")
                     return False
                 struct_name = match.group(1)
+                if (index := struct_name.find("<")) > -1:
+                    struct_templated = True
+                    # print(f"{i + 1}: Got templated struct name {struct_name}")
+                    struct_name = struct_name[:index]
                 # print(f"{i + 1}: Got struct name {struct_name}")
                 line = line[(line.index(struct_name) + len(struct_name)):]
             if is_inside_adapt:
@@ -817,7 +822,7 @@ class TestNameDevice(TestSpec):
                     print_error(path, i + 1, self.name, f"Specified device name {device_name} matches exactly the struct name {struct_name}. TaskName seems unnecessary.")
                 # if template, check that device name is extension of struct name
                 elif expected_struct_name.startswith(struct_name):
-                    print_error(path, i + 1, self.name, f"Specified device name {device_name} is an extension of the struct name {struct_name}. Is the struct templated?")
+                    print_error(path, i + 1, self.name, f"Specified device name {device_name} is an extension of the struct name {struct_name}. Is the struct templated? {struct_templated}")
                 else:
                     print_error(path, i + 1, self.name, f"Specified device name {device_name} does not match the struct name {struct_name}. (Matching {expected_struct_name})")
         return passed
