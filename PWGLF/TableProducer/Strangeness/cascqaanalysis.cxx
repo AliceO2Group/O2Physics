@@ -50,8 +50,9 @@ struct cascqaanalysis {
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> isVertexITSTPCCut{"isVertexITSTPCCut", 0, "Select collisions with at least one ITS-TPC track"};
-  Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 0, "Same found-by-T0 bunch crossing rejection"};
-  Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 0, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
+  Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "Same found-by-T0 bunch crossing rejection"};
+  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
+  Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
 
   Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "TVX trigger"};
   Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "TF border cut"};
@@ -110,9 +111,9 @@ struct cascqaanalysis {
 
     TString hCandidateCounterLabels[4] = {"All candidates", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
-    TString hNEventsLabels[11] = {"All", "kIsTriggerTVX", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "z vrtx", "INEL", "INEL>0", "INEL>1"};
+    TString hNEventsLabels[12] = {"All", "kIsTriggerTVX", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "isVertexTOFmatched", "z vrtx", "INEL", "INEL>0", "INEL>1"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{11, 0.f, 11.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{12, 0.f, 12.f}}});
 
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
@@ -243,14 +244,14 @@ struct cascqaanalysis {
   {
     // 0 - INEL, 1 - INEL>0, 2 - INEL>1
     int evFlag = 0;
-    registry.fill(HIST("hNEvents"), 8.5); // INEL
+    registry.fill(HIST("hNEvents"), 9.5); // INEL
     if (collision.isInelGt0()) {
       evFlag += 1;
-      registry.fill(HIST("hNEvents"), 9.5); // INEL>0
+      registry.fill(HIST("hNEvents"), 10.5); // INEL>0
     }
     if (collision.isInelGt1()) {
       evFlag += 1;
-      registry.fill(HIST("hNEvents"), 10.5); // INEL>1
+      registry.fill(HIST("hNEvents"), 11.5); // INEL>1
     }
     return evFlag;
   }
@@ -297,18 +298,25 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 4.5);
     }
     // kNoSameBunchPileup selection
-    if (isNoSameBunchPileupCut && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 5.5);
     }
     // kIsGoodZvtxFT0vsPV selection
-    if (isGoodZvtxFT0vsPVCut && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 6.5);
+    }
+    // isVertexTOFmatched selection
+    if (isVertexTOFmatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 7.5);
     }
 
     // Z vertex selection
@@ -316,7 +324,7 @@ struct cascqaanalysis {
       return false;
     }
     if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 7.5);
+      registry.fill(HIST("hNEvents"), 8.5);
       registry.fill(HIST("hZCollision"), collision.posZ());
     }
 
@@ -448,15 +456,15 @@ struct cascqaanalysis {
     uint16_t nchFV0 = GetGenNchInFV0Aregion(mcPartSlice);
 
     int evType = 0;
-    registry.fill(HIST("hNEvents"), 8.5); // INEL
+    registry.fill(HIST("hNEvents"), 9.5); // INEL
     // Rec. collision associated with INEL>0 gen. one
     if (pwglf::isINELgtNmc(mcPartSlice, 0, pdgDB)) {
-      registry.fill(HIST("hNEvents"), 9.5); // INEL
+      registry.fill(HIST("hNEvents"), 10.5); // INEL
       evType++;
     }
     // Rec. collision associated with INEL>1 gen. one
     if (pwglf::isINELgtNmc(mcPartSlice, 1, pdgDB)) {
-      registry.fill(HIST("hNEvents"), 10.5); // INEL
+      registry.fill(HIST("hNEvents"), 11.5); // INEL
       evType++;
     }
 
