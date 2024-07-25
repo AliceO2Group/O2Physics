@@ -492,15 +492,19 @@ struct HfCandidateCreatorCascadeMc {
       auto arrayDaughtersLc = std::array{bach, trackV0DaughPos, trackV0DaughNeg};
       // Check whether the particle is from background events. If so, reject it.
       if (rejectBackground) {
-        auto arrayDaughers = std::array{bach, trackV0DaughPos, trackV0DaughNeg};
-        for (const auto& daughter : arrayDaughers) {
+        bool fromBkg{false};
+        for (const auto& daughter : arrayDaughtersLc) {
           if (daughter.has_mcParticle()) {
             auto mcParticle = daughter.mcParticle();
             if (mcParticle.fromBackgroundEvent()) {
-              rowMcMatchRec(sign, origin, -1.f, 0);
-              continue;
+              fromBkg = true;
+              break;
             }
           }
+        }
+        if (fromBkg) {
+          rowMcMatchRec(sign, origin, -1.f, 0);
+          continue;
         }
       }
 
