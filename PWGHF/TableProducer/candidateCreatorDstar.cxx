@@ -569,14 +569,19 @@ struct HfCandidateCreatorDstarExpressions {
 
       // Check whether the particle is from background events. If so, reject it.
       if (rejectBackground) {
+        bool fromBkg{false};
         for (const auto& daughter : arrayDaughtersDstar) {
           if (daughter.has_mcParticle()) {
             auto mcParticle = daughter.mcParticle();
             if (mcParticle.fromBackgroundEvent()) {
-              rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
-              continue;
+              fromBkg = true;
+              break;
             }
           }
+        }
+        if (fromBkg) {
+          rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
+          continue;
         }
       }
 

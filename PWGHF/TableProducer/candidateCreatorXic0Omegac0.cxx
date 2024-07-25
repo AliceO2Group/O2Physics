@@ -760,14 +760,19 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
       // Check whether the particle is from background events. If so, reject it.
       if (rejectBackground) {
-        for (const auto& daughter : arrayDaughters) {
+        bool fromBkg{false};
+        for (const auto& daughter : arrayDaughtersDstar) {
           if (daughter.has_mcParticle()) {
             auto mcParticle = daughter.mcParticle();
             if (mcParticle.fromBackgroundEvent()) {
-              rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
-              continue;
+              fromBkg = true;
+              break;
             }
           }
+        }
+        if (fromBkg) {
+          rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
+          continue;
         }
       }
 

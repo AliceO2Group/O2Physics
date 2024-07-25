@@ -710,14 +710,19 @@ struct HfCandidateCreator2ProngExpressions {
 
       // Check whether the particle is from background events. If so, reject it.
       if (rejectBackground) {
+        bool fromBkg{false};
         for (const auto& daughter : arrayDaughters) {
           if (daughter.has_mcParticle()) {
             auto mcParticle = daughter.mcParticle();
             if (mcParticle.fromBackgroundEvent()) {
-              rowMcMatchRec(flag, origin, -1.f, 0);
-              continue;
+              fromBkg = true;
+              break;
             }
           }
+        }
+        if (fromBkg) {
+          rowMcMatchRec(flag, origin, -1.f, 0);
+          continue;
         }
       }
       std::vector<int> idxBhadMothers{};
