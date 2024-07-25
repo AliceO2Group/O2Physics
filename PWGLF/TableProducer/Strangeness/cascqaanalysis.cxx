@@ -49,7 +49,7 @@ struct cascqaanalysis {
 
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<bool> isVertexITSTPCCut{"isVertexITSTPCCut", 0, "Select collisions with at least one ITS-TPC track"};
+  Configurable<bool> isVertexITSTPC{"isVertexITSTPC", 0, "Select collisions with at least one ITS-TPC track"};
   Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "Same found-by-T0 bunch crossing rejection"};
   Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
   Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
@@ -291,7 +291,7 @@ struct cascqaanalysis {
     }
 
     // kIsVertexITSTPC selection
-    if (isVertexITSTPCCut && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+    if (isVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     if (isFillEventSelectionQA) {
