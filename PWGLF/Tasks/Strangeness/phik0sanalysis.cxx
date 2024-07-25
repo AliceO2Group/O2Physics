@@ -453,23 +453,25 @@ struct phik0shortanalysis {
       return false;
     if (track.itsNCls() < minITSnCls)
       return false;
-    if (!track.hasTPC())
-      return false;
-    if (track.tpcNClsFound() < minTPCnClsFound)
-      return false;
-    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
-      return false;
-    if (track.tpcChi2NCl() > maxChi2TPC)
-      return false;
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
+    if (track.pt() < 1.2) {
+      if (!track.hasTPC())
+        return false;
+      if (track.tpcNClsFound() < minTPCnClsFound)
+        return false;
+      if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+        return false;
+      if (track.tpcChi2NCl() > maxChi2TPC)
+        return false;
+    }
+    if (track.pt() > 0.5) {
+      if (!track.hasTOF())
+        return false;
+    }
     if (std::abs(track.dcaXY()) > dcaxyMax)
       return false;
     if (std::abs(track.dcaZ()) > dcazMax)
-      return false;
-    if (!track.hasTOF())
-      return false;
-    if (std::abs(track.tofNSigmaPi()) > NSigmaTOFPion)
       return false;
     return true;
   }
