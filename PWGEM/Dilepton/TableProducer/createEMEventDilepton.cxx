@@ -24,6 +24,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "EventFiltering/Zorro.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -50,6 +51,7 @@ struct CreateEMEventDilepton {
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   Produces<o2::aod::EMEventsQvec> event_qvec;
+  Produces<o2::aod::EMSWTriggerBits> emswtbit;
 
   enum class EMEventType : int {
     kEvent = 0,
@@ -64,6 +66,8 @@ struct CreateEMEventDilepton {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
+  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fHighTrackMult,fHighFt0Mult", "comma-separated software trigger names"}; // !trigger names have to be pre-registered in dileptonTable.h for bit operation!
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -73,6 +77,14 @@ struct CreateEMEventDilepton {
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
   }
 
+  ~CreateEMEventDilepton()
+  {
+    swt_names.clear();
+    swt_names.shrink_to_fit();
+  }
+
+  Zorro zorro;
+  std::vector<std::string> swt_names;
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -82,6 +94,16 @@ struct CreateEMEventDilepton {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if (enable_swt) {
+      LOGF(info, "enable software triggers : %s", cfg_swt_names.value.data());
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
+      std::stringstream tokenizer(cfg_swt_names.value);
+      std::string token;
+      while (std::getline(tokenizer, token, ',')) {
+        swt_names.emplace_back(token);
+      }
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -137,13 +159,27 @@ struct CreateEMEventDilepton {
         continue;
       }
 
+      if (enable_swt) {
+        if (zorro.isSelected(bc.globalBC())) { // triggered event
+          uint16_t trigger_bitmap = 0;
+          for (auto& swtname : swt_names) {
+            LOGF(info, "swtname = %s , swt index = %d", swtname.data(), o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
+            trigger_bitmap |= BIT(o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
+          } // end of desired trigger names loop
+          LOGF(info, "trigger_bitmap = %d", trigger_bitmap);
+          emswtbit(trigger_bitmap);
+        } else { // rejected
+          continue;
+        }
+      }
+      // LOGF(info, "collision.multNTracksPV() = %d, collision.multFT0A() = %f, collision.multFT0C() = %f", collision.multNTracksPV(), collision.multFT0A(), collision.multFT0C());
+
       registry.fill(HIST("hEventCounter"), 1);
 
       if (collision.sel8()) {
         registry.fill(HIST("hEventCounter"), 2);
       }
 
-      // uint64_t tag = collision.selection_raw();
       event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange());

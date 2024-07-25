@@ -154,6 +154,19 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "IntercalibZNA_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -50.0, 50.0, VarManager::KIntercalibZNA);
       hm->AddHistogram(histClass, "IntercalibZNC_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -50.0, 50.0, VarManager::KIntercalibZNC);
 
+      hm->AddHistogram(histClass, "EnergyCommonZNA", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyCommonZNA);
+      hm->AddHistogram(histClass, "EnergyCommonZNC", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyCommonZNC);
+
+      hm->AddHistogram(histClass, "EnergyZNA1", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNA1);
+      hm->AddHistogram(histClass, "EnergyZNA2", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNA2);
+      hm->AddHistogram(histClass, "EnergyZNA3", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNA3);
+      hm->AddHistogram(histClass, "EnergyZNA4", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNA4);
+
+      hm->AddHistogram(histClass, "EnergyZNC1", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNC1);
+      hm->AddHistogram(histClass, "EnergyZNC2", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNC2);
+      hm->AddHistogram(histClass, "EnergyZNC3", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNC3);
+      hm->AddHistogram(histClass, "EnergyZNC4", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNC4);
+
       hm->AddHistogram(histClass, "Q2X0A", "", false, 500, -10.0, 10.0, VarManager::kQ2X0A);
       hm->AddHistogram(histClass, "Q2Y0A", "", false, 500, -10.0, 10.0, VarManager::kQ2Y0A);
       hm->AddHistogram(histClass, "Q2X0B", "", false, 500, -10.0, 10.0, VarManager::kQ2X0B);

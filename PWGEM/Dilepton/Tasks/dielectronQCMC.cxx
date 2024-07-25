@@ -157,7 +157,12 @@ struct dielectronQCMC {
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
   static constexpr std::string_view ele_source_types[9] = {"lf/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "PromptPsi2S/", "NonPromptPsi2S/", "c2e/", "b2e/", "b2c2e/"};
 
-  ~dielectronQCMC() {}
+  ~dielectronQCMC()
+  {
+    if (eid_bdt) {
+      delete eid_bdt;
+    }
+  }
 
   void addhistograms()
   {
@@ -288,7 +293,6 @@ struct dielectronQCMC {
   float beamP1 = 0.f;                                // beam momentum
   float beamP2 = 0.f;                                // beam momentum
 
-  bool cfgDoFlow = false;
   void init(InitContext&)
   {
     DefineEMEventCut();
@@ -382,6 +386,7 @@ struct dielectronQCMC {
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
+  o2::ml::OnnxModel* eid_bdt = nullptr;
   void DefineDileptonCut()
   {
     fDielectonCut = DielectronCut("fDielectonCut", "fDielectonCut");
@@ -418,7 +423,8 @@ struct dielectronQCMC {
     fDielectonCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
-      o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
+      // o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
+      eid_bdt = new o2::ml::OnnxModel();
       if (dielectroncuts.loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
         std::map<std::string, std::string> metadata;
@@ -645,7 +651,7 @@ struct dielectronQCMC {
               fRegistry.fill(HIST("Pair/sm/Phi/hMvsPhiV"), phiv, v12.M());
               fillTrackInfo<0, TMCParticles>(t1);
               fillTrackInfo<0, TMCParticles>(t2);
-              if (mcmother.daughtersIds().size() == 2) { // omeag->ee
+              if (mcmother.daughtersIds().size() == 2) { // phi->ee
                 fRegistry.fill(HIST("Pair/sm/Phi2ee/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), dca_ee_3d);
                 fRegistry.fill(HIST("Pair/sm/Phi2ee/hMvsPhiV"), phiv, v12.M());
               }
@@ -841,13 +847,13 @@ struct dielectronQCMC {
         continue;
       }
 
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, cfgDoFlow);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
@@ -955,9 +961,6 @@ struct dielectronQCMC {
                 fRegistry.fill(HIST("Generated/sm/Omega/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
                 if (mcmother.daughtersIds().size() == 2) { // omega->ee
                   fRegistry.fill(HIST("Generated/sm/Omega2ee/hs"), v12.M(), v12.Pt(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee));
-                  // float mt = std::sqrt(std::pow(v12.M(), 2) + std::pow(v12.Pt(),2));
-                  // float cos_thetaCS_byhand =  2.f * (v1.E() * v2.Pz() - v2.E() * v1.Pz()) / (v12.M() * mt);
-                  // LOGF(info, "cos_thetaCS = %f, cos_thetaCS_byhand = %f", cos_thetaCS, cos_thetaCS_byhand);
                 }
                 break;
               case 333:
@@ -1193,6 +1196,11 @@ struct dielectronQCMC {
       auto mctracks_per_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
 
       for (auto& mctrack : mctracks_per_coll) {
+
+        if (!(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
+          continue;
+        }
+
         if (!(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) || abs(mctrack.y()) > maxY) {
           continue;
         }
