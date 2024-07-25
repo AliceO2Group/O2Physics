@@ -56,6 +56,17 @@ def is_screaming_snake_case(name: str) -> bool:
     return name.isupper() and not "-" in name and not " " in name
 
 
+def kebab_case_to_camel_case_u(line: str) -> str:
+    """Convert kebab-case string to UpperCamelCase string."""
+    return "".join([w.title() if w[0].isnumeric() else w.capitalize() for w in line.split("-")])
+
+
+def kebab_case_to_camel_case_l(line: str) -> str:
+    """Convert kebab-case string to lowerCamelCase string."""
+    new_line = kebab_case_to_camel_case_u(line)
+    return f"{new_line[0].lower()}{new_line[1:]}" # start with lowercase letter
+
+
 def print_error(path: str, line: Union[int, None], title: str, message: str):
     """Format and print error message."""
     # return # Use to suppress error message when counting speed.
@@ -728,12 +739,87 @@ class TestNameWorkflow(TestSpec):
                 continue
             workflow_file_name = os.path.basename(words[1]) # the actual file name
             # Generate the file name matching the workflow name.
-            expected_workflow_file_name = "".join([w.title() if w[0].isnumeric() else w.capitalize() for w in workflow_name.split("-")]) + ".cxx"
-            expected_workflow_file_name = f"{expected_workflow_file_name[0].lower()}{expected_workflow_file_name[1:]}" # start with lowercase letter
+            expected_workflow_file_name = kebab_case_to_camel_case_l(workflow_name) + ".cxx"
             # Compare the actual and expected file names.
             if expected_workflow_file_name != workflow_file_name:
                 passed = False
                 print_error(path, i + 1, self.name, f"Workflow name {workflow_name} does not match its file name {workflow_file_name}. (Matches {expected_workflow_file_name}.)")
+        return passed
+
+
+class TestNameDevice(TestSpec):
+    """Test names of devices."""
+    name = "name/o2-device"
+    message = "Specify device name only when it cannot be derived from the struct name. Only append to the default name."
+    suffixes = [".cxx"]
+    per_line = False
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path)
+
+    def test_file(self, path : str, content) -> bool:
+        is_inside_define = False
+        is_inside_adapt = False
+        struct_name = ""
+        n_parens_opened = 0 # number of opened parentheses
+        passed = True
+        for i, line in enumerate(content):
+            if not line.strip():
+                continue
+            if self.is_disabled(line, "#"):
+                continue
+            if is_comment_cpp(line):
+                continue
+            line = remove_comment_cpp(line)
+            # Wait for defineDataProcessing.
+            if not is_inside_define:
+                if not re.match(r"(o2::)?(framework::)?WorkflowSpec defineDataProcessing\(", line):
+                    continue
+                # print(f"{i + 1}: Entering define.")
+                is_inside_define = True
+            # Return at the end of defineDataProcessing.
+            if is_inside_define and line[0] == "}":
+                # print(f"{i + 1}: Exiting define.")
+                break
+            # Wait for adaptAnalysisTask.
+            if not is_inside_adapt:
+                if (index := line.find("adaptAnalysisTask<")) == -1:
+                    continue
+                # print(f"{i + 1}: Entering adapt.")
+                is_inside_adapt = True
+                line = line[(index + len("adaptAnalysisTask<")):]
+                # Extract struct name.
+                if not (match := re.match(r"([^<>]+)", line)):
+                    print_error(path, i + 1, self.name, f"Failed to extract struct name from \"{line}\".")
+                    return False
+                struct_name = match.group(1)
+                # print(f"{i + 1}: Got struct name {struct_name}")
+                line = line[(line.index(struct_name) + len(struct_name)):]
+            if is_inside_adapt:
+                n_parens_opened += line.count("(") - line.count(")")
+                # print(f"{i + 1}: {n_parens_opened} opened parens")
+                if n_parens_opened <= 0:
+                    # print(f"{i + 1}: Exiting adapt.")
+                    is_inside_adapt = False
+                # Find device name.
+                if not "TaskName{" in line:
+                    continue
+                passed = False
+                # Extract device name.
+                if not (match := re.search(r"TaskName\{\"([^\}]+)\"\}", line)):
+                    print_error(path, i + 1, self.name, f"Failed to extract device name from \"{line}\".")
+                    return False
+                device_name = match.group(1)
+                # print(f"{i + 1}: Got struct \"{struct_name}\" with device name \"{device_name}\".")
+                # Test device name.
+                expected_struct_name = kebab_case_to_camel_case_u(device_name)
+                if struct_name == expected_struct_name:
+                    print_error(path, i + 1, self.name, f"Specified device name {device_name} matches exactly the struct name {struct_name}. TaskName seems unnecessary.")
+                # if template, check that device name is extension of struct name
+                elif expected_struct_name.startswith(struct_name):
+                    print_error(path, i + 1, self.name, f"Specified device name {device_name} is an extension of the struct name {struct_name}. Is the struct templated?")
+                else:
+                    print_error(path, i + 1, self.name, f"Specified device name {device_name} does not match the struct name {struct_name}. (Matching {expected_struct_name})")
         return passed
 
 
@@ -952,6 +1038,7 @@ def main():
         tests.append(TestNameFileCpp())
         tests.append(TestNameFilePython())
         tests.append(TestNameWorkflow())
+        tests.append(TestNameDevice())
 
     # PWG-HF
     enable_pwghf = True
