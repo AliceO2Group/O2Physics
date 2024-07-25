@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "CCDB/CcdbApi.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "TObjArray.h"
 #include "TriggerAliases.h"
 #include "TTree.h"
@@ -62,7 +63,7 @@ void upload_trigger_aliases()
   // ccdb.init("http://ccdb-test.cern.ch:8080");
   // ccdb.truncate("EventSelection/TriggerAliases");
 
-  map<string, string> metadata, metadataRCT, header;
+  map<string, string> metadata;
 
   // read list of runs from text file
   std::ifstream f("runs_run1.txt");
@@ -92,10 +93,11 @@ void upload_trigger_aliases()
       }
     }
 
-    // read SOR and EOR timestamps from RCT CCDB
-    header = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", run), metadataRCT, -1);
-    ULong64_t sor = atol(header["SOR"].c_str());
-    ULong64_t eor = atol(header["EOR"].c_str());
+    // read SOR and EOR timestamps from RCT CCDB (via utility function)
+    auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, run);
+    ULong64_t sor = soreor.first;
+    ULong64_t eor = soreor.second;
+
     // add safety margins to avoid edge effects due to SOR/EOR time differences in DCS and CTP
     sor -= 60000;
     eor += 300000;

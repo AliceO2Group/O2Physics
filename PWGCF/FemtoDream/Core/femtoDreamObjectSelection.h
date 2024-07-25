@@ -84,14 +84,14 @@ class FemtoDreamObjectSelection
       case (femtoDreamSelection::SelectionType::kUpperLimit):
       case (femtoDreamSelection::SelectionType::kAbsUpperLimit):
         std::sort(sels.begin(), sels.end(), [](FemtoDreamSelection<selValDataType, selVariable> a, FemtoDreamSelection<selValDataType, selVariable> b) {
-          return a.getSelectionValue() > b.getSelectionValue();
+          return a.getSelectionValue() >= b.getSelectionValue();
         });
         break;
       case (femtoDreamSelection::SelectionType::kLowerLimit):
       case (femtoDreamSelection::SelectionType::kAbsLowerLimit):
       case (femtoDreamSelection::SelectionType::kEqual):
         std::sort(sels.begin(), sels.end(), [](FemtoDreamSelection<selValDataType, selVariable> a, FemtoDreamSelection<selValDataType, selVariable> b) {
-          return a.getSelectionValue() < b.getSelectionValue();
+          return a.getSelectionValue() <= b.getSelectionValue();
         });
         break;
     }
@@ -126,14 +126,14 @@ class FemtoDreamObjectSelection
         switch (sel.getSelectionType()) {
           case (femtoDreamSelection::SelectionType::kUpperLimit):
           case (femtoDreamSelection::SelectionType::kAbsUpperLimit):
-            if (minimalSel < sel.getSelectionValue()) {
+            if (minimalSel <= sel.getSelectionValue()) {
               minimalSel = sel.getSelectionValue();
             }
             break;
           case (femtoDreamSelection::SelectionType::kLowerLimit):
           case (femtoDreamSelection::SelectionType::kAbsLowerLimit):
           case (femtoDreamSelection::SelectionType::kEqual):
-            if (minimalSel > sel.getSelectionValue()) {
+            if (minimalSel >= sel.getSelectionValue()) {
               minimalSel = sel.getSelectionValue();
             }
             break;

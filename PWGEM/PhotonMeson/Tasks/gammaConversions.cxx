@@ -611,7 +611,7 @@ struct GammaConversions {
   Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emeventId;
   void processRec(aod::EMEvents::iterator const& theCollision,
                   V0DatasAdditional const& theV0s,
-                  aod::V0Legs const& theAllTracks)
+                  aod::V0Legs const&)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
             "hCollisionZ",
@@ -636,8 +636,8 @@ struct GammaConversions {
 
   void processMc(aod::EMEvents::iterator const& theCollision,
                  V0DatasAdditional const& theV0s,
-                 V0LegsWithMC const& theAllTracks,
-                 aod::V0DaughterMcParticles const& TheAllTracksMC,
+                 V0LegsWithMC const&,
+                 aod::V0DaughterMcParticles const&,
                  aod::McGammasTrue const& theV0sTrue)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,

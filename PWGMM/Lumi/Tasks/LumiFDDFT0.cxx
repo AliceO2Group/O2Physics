@@ -165,7 +165,7 @@ struct LumiFDDFT0 {
     mRunNumber = 0;
   }
 
-  void processFull(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&,
+  void processFull(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const& /*fdds*/, aod::FT0s const& /*ft0s*/, aod::BCsWithTimestamps const&,
                    o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov,
                                  o2::aod::TracksExtra> const& unfiltered_tracks)
   {

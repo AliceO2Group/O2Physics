@@ -72,6 +72,11 @@ struct femoDreamCollisionMasker {
   std::array<std::vector<femtodreamparticle::cutContainerType>, CollisionMasks::kNParts> TrackPIDTPCTOFBits;
   // particle momemtum threshold for PID
   std::array<std::vector<float>, CollisionMasks::kNParts> TrackPIDThreshold;
+  // bool if same particle species are mixed
+  // bits indicate number of particles in the event
+  // kPartOne -> 1 track, kPartTwo -> 2 tracks, kPartThree -> 3 tracks
+  std::vector<bool> TrackSameSpecies;
+  std::vector<bool> TrackDCACutPtDep;
 
   // particle selection for v0
   std::array<std::vector<femtodreamparticle::cutContainerType>, CollisionMasks::kNParts> V0CutBits;
@@ -89,6 +94,8 @@ struct femoDreamCollisionMasker {
   std::array<std::vector<float>, CollisionMasks::kNParts> FilterPtMax;
   std::array<std::vector<float>, CollisionMasks::kNParts> FilterEtaMin;
   std::array<std::vector<float>, CollisionMasks::kNParts> FilterEtaMax;
+  std::array<std::vector<float>, CollisionMasks::kNParts> FilterTempFitVarMin;
+  std::array<std::vector<float>, CollisionMasks::kNParts> FilterTempFitVarMax;
   std::array<std::vector<float>, CollisionMasks::kNParts> FilterInvMassMin;
   std::array<std::vector<float>, CollisionMasks::kNParts> FilterInvMassMax;
   std::array<std::vector<float>, CollisionMasks::kNParts> FilterInvMassAntiMin;
@@ -110,6 +117,8 @@ struct femoDreamCollisionMasker {
       rng = new std::mt19937(randomSeed);
     }
 
+    int counter = 0;
+    std::bitset<8 * sizeof(aod::femtodreamcollision::BitMaskType)> bitmask;
     std::vector<std::string> MatchedWorkflows;
     LOG(info) << "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*";
     LOG(info) << " Collision masker self-configuration ";
@@ -118,91 +127,119 @@ struct femoDreamCollisionMasker {
     for (DeviceSpec const& device : workflows.devices) {
       if (device.name.find("femto-dream-pair-task-track-track") != std::string::npos) {
         LOG(info) << "Matched workflow: " << device.name;
+        bitmask.set(counter);
+        LOG(info) << "Assign bitmask: " << bitmask.to_string();
+        bitmask.reset();
+        counter++;
         TaskFinder = CollisionMasks::kTrackTrack;
         for (auto const& option : device.options) {
-          if (option.name.compare(std::string("ConfTrk1_CutBit")) == 0) {
+          if (option.name.compare(std::string("Track1.CutBit")) == 0) {
             TrackCutBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk1_TPCBit")) == 0) {
+          } else if (option.name.compare(std::string("Track1.TPCBit")) == 0) {
             TrackPIDTPCBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk1_TPCBit_Reject")) == 0) {
+          } else if (option.name.compare(std::string("Track1.TPCBit_Reject")) == 0) {
             TrackPIDTPCBitsReject.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk1_TPCTOFBit")) == 0) {
+          } else if (option.name.compare(std::string("Track1.TPCTOFBit")) == 0) {
             TrackPIDTPCTOFBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk1_PIDThres")) == 0) {
+          } else if (option.name.compare(std::string("Track1.PIDThres")) == 0) {
             TrackPIDThreshold.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk1_minPt")) == 0) {
+          } else if (option.name.compare(std::string("Track1.PtMin")) == 0) {
             FilterPtMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk1_maxPt")) == 0) {
+          } else if (option.name.compare(std::string("Track1.PtMax")) == 0) {
             FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk1_minEta")) == 0) {
+          } else if (option.name.compare(std::string("Track1.EtaMin")) == 0) {
             FilterEtaMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk1_maxEta")) == 0) {
+          } else if (option.name.compare(std::string("Track1.EtaMax")) == 0) {
             FilterEtaMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk2_CutBit")) == 0) {
+          } else if (option.name.compare(std::string("Track1.TempFitVarMin")) == 0) {
+            FilterTempFitVarMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Track1.TempFitVarMax")) == 0) {
+            FilterTempFitVarMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Track2.CutBit")) == 0) {
             TrackCutBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk2_TPCBit")) == 0) {
+          } else if (option.name.compare(std::string("Track2.TPCBit")) == 0) {
             TrackPIDTPCBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk2_TPCBit_Reject")) == 0) {
+          } else if (option.name.compare(std::string("Track2.TPCBit_Reject")) == 0) {
             TrackPIDTPCBitsReject.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk2_TPCTOFBit")) == 0) {
+          } else if (option.name.compare(std::string("Track2.TPCTOFBit")) == 0) {
             TrackPIDTPCTOFBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk2_PIDThres")) == 0) {
+          } else if (option.name.compare(std::string("Track2.PIDThres")) == 0) {
             TrackPIDThreshold.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk2_minPt")) == 0) {
+          } else if (option.name.compare(std::string("Track2.PtMin")) == 0) {
             FilterPtMin.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk2_maxPt")) == 0) {
+          } else if (option.name.compare(std::string("Track2.PtMax")) == 0) {
             FilterPtMax.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk2_minEta")) == 0) {
+          } else if (option.name.compare(std::string("Track2.EtaMin")) == 0) {
             FilterEtaMin.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk2_maxEta")) == 0) {
+          } else if (option.name.compare(std::string("Track2.EtaMax")) == 0) {
             FilterEtaMax.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Track2.TempFitVarMin")) == 0) {
+            FilterTempFitVarMin.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Track2.TempFitVarMax")) == 0) {
+            FilterTempFitVarMax.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Option.SameSpecies")) == 0) {
+            TrackSameSpecies.push_back(option.defaultValue.get<bool>());
+          } else if (option.name.compare(std::string("Option.DCACutPtDep")) == 0) {
+            TrackDCACutPtDep.push_back(option.defaultValue.get<bool>());
           }
         }
       } else if (device.name.find(std::string("femto-dream-pair-task-track-v0")) != std::string::npos) {
         LOG(info) << "Matched workflow: " << device.name;
+        bitmask.set(counter);
+        LOG(info) << "Assign bitmask: " << bitmask.to_string();
+        bitmask.reset();
+        counter++;
         TaskFinder = CollisionMasks::kTrackV0;
         for (auto const& option : device.options) {
-          if (option.name.compare(std::string("ConfTrk1_CutBit")) == 0) {
+          if (option.name.compare(std::string("Option.DCACutPtDep")) == 0) {
+            TrackDCACutPtDep.push_back(option.defaultValue.get<bool>());
+          } else if (option.name.compare(std::string("Track1.CutBit")) == 0) {
             TrackCutBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk1_TPCBit")) == 0) {
+          } else if (option.name.compare(std::string("Track1.TPCBit")) == 0) {
             TrackPIDTPCBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk1_TPCTOFBit")) == 0) {
+          } else if (option.name.compare(std::string("Track1.TPCBit_Reject")) == 0) {
+            TrackPIDTPCBitsReject.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("Track1.TPCTOFBit")) == 0) {
             TrackPIDTPCTOFBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfTrk1_PIDThres")) == 0) {
+          } else if (option.name.compare(std::string("Track1.PIDThres")) == 0) {
             TrackPIDThreshold.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk1_minPt")) == 0) {
+          } else if (option.name.compare(std::string("Track1.PtMin")) == 0) {
             FilterPtMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk1_maxPt")) == 0) {
+          } else if (option.name.compare(std::string("Track1.PtMax")) == 0) {
             FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk1_minEta")) == 0) {
+          } else if (option.name.compare(std::string("Track1.EtaMin")) == 0) {
             FilterEtaMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfTrk1_maxEta")) == 0) {
+          } else if (option.name.compare(std::string("Track1.EtaMax")) == 0) {
             FilterEtaMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_CutBit")) == 0) {
+          } else if (option.name.compare(std::string("Track1.TempFitVarMin")) == 0) {
+            FilterTempFitVarMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Track1.TempFitVarMax")) == 0) {
+            FilterTempFitVarMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("V02.CutBit")) == 0) {
             V0CutBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfV02_minPt")) == 0) {
+          } else if (option.name.compare(std::string("V02.PtMin")) == 0) {
             FilterPtMin.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_maxPt")) == 0) {
+          } else if (option.name.compare(std::string("V02.PtMax")) == 0) {
             FilterPtMax.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_minEta")) == 0) {
+          } else if (option.name.compare(std::string("V02.EtaMin")) == 0) {
             FilterEtaMin.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_maxEta")) == 0) {
+          } else if (option.name.compare(std::string("V02.EtaMax")) == 0) {
             FilterEtaMax.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_minInvMass")) == 0) {
+          } else if (option.name.compare(std::string("V02.InvMassMin")) == 0) {
             FilterInvMassMin.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_maxInvMass")) == 0) {
+          } else if (option.name.compare(std::string("V02.InvMassMax")) == 0) {
             FilterInvMassMax.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_minInvMassAnti")) == 0) {
+          } else if (option.name.compare(std::string("V02.InvMassAntiMin")) == 0) {
             FilterInvMassAntiMin.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_maxInvMassAnti")) == 0) {
+          } else if (option.name.compare(std::string("V02.InvMassAntiMax")) == 0) {
             FilterInvMassAntiMax.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<float>());
-          } else if (option.name.compare(std::string("ConfV02_ChildPos_CutBit")) == 0) {
+          } else if (option.name.compare(std::string("V02.ChildPos_CutBit")) == 0) {
             PosChildCutBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfV02_ChildPos_TPCBit")) == 0) {
+          } else if (option.name.compare(std::string("V02.ChildPos_TPCBit")) == 0) {
             PosChildPIDTPCBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfV02_ChildNeg_CutBit")) == 0) {
+          } else if (option.name.compare(std::string("V02.ChildNeg_CutBit")) == 0) {
             NegChildCutBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
-          } else if (option.name.compare(std::string("ConfV02_ChildNeg_TPCBit")) == 0) {
+          } else if (option.name.compare(std::string("V02.ChildNeg_TPCBit")) == 0) {
             NegChildPIDTPCBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
           }
         }
@@ -222,6 +259,10 @@ struct femoDreamCollisionMasker {
             FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfMinpT")) == 0) {
             FilterPtMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMaxDCAxy")) == 0) {
+            FilterTempFitVarMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMinDCAxy")) == 0) {
+            FilterTempFitVarMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           }
         }
       } else if (device.name.find("femto-dream-triplet-task-track-track-v0") != std::string::npos) {
@@ -240,6 +281,10 @@ struct femoDreamCollisionMasker {
             FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfMinpT")) == 0) {
             FilterPtMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMaxDCAxy")) == 0) {
+            FilterTempFitVarMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMinDCAxy")) == 0) {
+            FilterTempFitVarMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfCutV0")) == 0) {
             V0CutBits.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
           } else if (option.name.compare(std::string("Conf_ChildPos_CutV0")) == 0) {
@@ -276,18 +321,28 @@ struct femoDreamCollisionMasker {
   }
 
   // make bitmask for a track for two body task
-  template <typename T, typename R>
-  void MaskForTrack(T& BitSet, CollisionMasks::Parts P, R& track)
+  template <typename T, typename R, typename S>
+  void MaskForTrack(T& BitSet, CollisionMasks::Parts P, R& track, S& counter)
   {
     if (track.partType() != static_cast<uint8_t>(femtodreamparticle::kTrack)) {
       return;
     }
     for (size_t index = 0; index < TrackCutBits.at(P).size(); index++) {
       // check filter cuts
+      // if they are not passed, skip the particle
       if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index) ||
           track.eta() < FilterEtaMin.at(P).at(index) || track.eta() > FilterEtaMax.at(P).at(index)) {
-        // if they are not passed, skip the particle
-        continue;
+        // check if we apply pt dependend dca cut
+        if (TrackDCACutPtDep.at(index)) {
+          if (std::fabs(track.tempFitVar()) > 0.0105f * (0.035f / std::pow(track.pt(), 1.1f))) {
+            continue;
+          }
+        } else {
+          // or cut on the DCA directly
+          if (track.tempFitVar() < FilterTempFitVarMin.at(P).at(index) || track.tempFitVar() > FilterTempFitVarMax.at(P).at(index)) {
+            continue;
+          }
+        }
       }
       // set the bit at the index of the selection equal to one if the track passes all selections
       // check track cuts
@@ -296,10 +351,12 @@ struct femoDreamCollisionMasker {
         if (track.p() <= TrackPIDThreshold.at(P).at(index)) {
           if ((track.pidcut() & TrackPIDTPCBits.at(P).at(index)) == TrackPIDTPCBits.at(P).at(index) && ((track.pidcut() & TrackPIDTPCBitsReject.at(P).at(index)) == 0u)) {
             BitSet.at(P).set(index);
+            counter.at(P).at(index)++;
           }
         } else {
           if ((track.pidcut() & TrackPIDTPCTOFBits.at(P).at(index)) == TrackPIDTPCTOFBits.at(P).at(index)) {
             BitSet.at(P).set(index);
+            counter.at(P).at(index)++;
           }
         }
       }
@@ -310,7 +367,7 @@ struct femoDreamCollisionMasker {
   // This function ALWAYS checks Track P; if howManyTracksToSetInMask is set to more than 1, it also checks how many
   // tracks there are which pass Track P selection and accordingly sets the bits in the mask for Tracks P+1 or both P+1 and P+2
   template <typename T>
-  void MaskForTrack_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& col, FDParticles const& parts, int howManyTracksToSetInMask)
+  void MaskForTrack_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& /*col*/, FDParticles const& parts, int howManyTracksToSetInMask)
   {
     if (howManyTracksToSetInMask == 2) {
       if (P == 2) {
@@ -329,7 +386,8 @@ struct femoDreamCollisionMasker {
           continue;
         }
         // check filter cuts
-        if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index)) {
+        if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index) ||
+            track.tempFitVar() > FilterTempFitVarMax.at(P).at(index) || track.tempFitVar() < FilterTempFitVarMin.at(P).at(index)) {
           // if they are not passed, skip the particle
           continue;
         }
@@ -406,7 +464,7 @@ struct femoDreamCollisionMasker {
   // This function ALWAYS checks V0 P; if howManyVoaToSetInMask is set to more than 1, it also checks how many
   // V0s there are which pass V0 P selection and accordingly sets the bits in the mask for V0s P+1 or both P+1 and P+2
   template <typename T>
-  void MaskForV0_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& col, FDParticles const& parts, int howManyV0sToSetInMask)
+  void MaskForV0_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& /*col*/, FDParticles const& parts, int howManyV0sToSetInMask)
   {
     if (howManyV0sToSetInMask == 2) {
       if (P == 2) {
@@ -473,20 +531,34 @@ struct femoDreamCollisionMasker {
     // create a bit mask for particle one, particle two and particle three
     std::array<std::bitset<8 * sizeof(femtodreamcollision::BitMaskType)>, CollisionMasks::kNParts> Mask = {{0}};
 
+    // array to keep track of found particles
+    std::array<std::array<int, 8 * sizeof(femtodreamcollision::BitMaskType)>, CollisionMasks::kNParts> FoundParts = {{{0}}};
+
     switch (TaskFinder) {
       case CollisionMasks::kTrackTrack:
         // pair-track-track task
         // create mask for track 1 and track 2
         for (auto const& part : parts) {
-          MaskForTrack(Mask, CollisionMasks::kPartOne, part);
-          MaskForTrack(Mask, CollisionMasks::kPartTwo, part);
+          MaskForTrack(Mask, CollisionMasks::kPartOne, part, FoundParts);
+          MaskForTrack(Mask, CollisionMasks::kPartTwo, part, FoundParts);
+        }
+        // check if SameSpecies option is set
+        // if so, only set the bit for kPartTwo to true if there are at least to tracks in the collision that pass the selections
+        // this allows to (optionally) select only events with at least two particles for the mixing
+        for (size_t index = 0; index < TrackSameSpecies.size(); index++) {
+          if (TrackSameSpecies.at(index) == true) {
+            Mask.at(CollisionMasks::kPartTwo).reset(index);
+            if (FoundParts.at(CollisionMasks::kPartOne).at(index) >= 2) {
+              Mask.at(CollisionMasks::kPartTwo).set(index);
+            }
+          }
         }
         break;
       case CollisionMasks::kTrackV0:
         // pair-track-v0 task
         // create mask for track 1 and v0 2
         for (auto const& part : parts) {
-          MaskForTrack(Mask, CollisionMasks::kPartOne, part);
+          MaskForTrack(Mask, CollisionMasks::kPartOne, part, FoundParts);
           MaskForV0(Mask, CollisionMasks::kPartTwo, part, parts);
         }
         break;
@@ -503,7 +575,7 @@ struct femoDreamCollisionMasker {
         break;
       // TODO: add all supported pair/triplet tasks
       default:
-        LOG(fatal) << "No femtodream pair task found!";
+        LOG(fatal) << "No femtodream task found!";
     }
     // fill bitmask for each collision
     Masks(static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartOne).to_ulong()),

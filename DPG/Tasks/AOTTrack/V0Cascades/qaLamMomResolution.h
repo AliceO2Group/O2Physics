@@ -34,6 +34,9 @@ DECLARE_SOA_COLUMN(ChargePion, chargePion, int);
 // eta
 DECLARE_SOA_COLUMN(EtaProton, etaProton, float);
 DECLARE_SOA_COLUMN(EtaPion, etaPion, float);
+// phi
+DECLARE_SOA_COLUMN(PhiProton, phiProton, float);
+DECLARE_SOA_COLUMN(PhiPion, phiPion, float);
 // nTPCclusters
 DECLARE_SOA_COLUMN(NTPCClusProton, nTPCclusProton, int);
 DECLARE_SOA_COLUMN(NTPCClusPion, nTPCclusPion, int);
@@ -65,6 +68,20 @@ DECLARE_SOA_COLUMN(PyPionIUErr, pyPionIUErr, float);
 DECLARE_SOA_COLUMN(PzPionIUErr, pzPionIUErr, float);
 DECLARE_SOA_COLUMN(Sigma1PtProtonIU, sigma1ptProtonIU, float);
 DECLARE_SOA_COLUMN(Sigma1PtPionIU, sigma1ptPionIU, float);
+// IU position
+DECLARE_SOA_COLUMN(XProtonIU, xProtonIU, float);
+DECLARE_SOA_COLUMN(YProtonIU, yProtonIU, float);
+DECLARE_SOA_COLUMN(ZProtonIU, zProtonIU, float);
+DECLARE_SOA_COLUMN(XPionIU, xPionIU, float);
+DECLARE_SOA_COLUMN(YPionIU, yPionIU, float);
+DECLARE_SOA_COLUMN(ZPionIU, zPionIU, float);
+// IU position uncertainties
+DECLARE_SOA_COLUMN(XProtonIUErr, xProtonIUErr, float);
+DECLARE_SOA_COLUMN(YProtonIUErr, yProtonIUErr, float);
+DECLARE_SOA_COLUMN(ZProtonIUErr, zProtonIUErr, float);
+DECLARE_SOA_COLUMN(XPionIUErr, xPionIUErr, float);
+DECLARE_SOA_COLUMN(YPionIUErr, yPionIUErr, float);
+DECLARE_SOA_COLUMN(ZPionIUErr, zPionIUErr, float);
 // DCA
 DECLARE_SOA_COLUMN(DCAxyProton, dcaxyProton, float);
 DECLARE_SOA_COLUMN(DCAxyPion, dcaxyPion, float);
@@ -93,6 +110,8 @@ DECLARE_SOA_TABLE(LamDaughters, "AOD", "LAMDAUGHTERS",
                   qaLamMomResolution::ChargePion,
                   qaLamMomResolution::EtaProton,
                   qaLamMomResolution::EtaPion,
+                  qaLamMomResolution::PhiProton,
+                  qaLamMomResolution::PhiPion,
                   qaLamMomResolution::NTPCClusProton,
                   qaLamMomResolution::NTPCClusPion,
                   qaLamMomResolution::PxProton,
@@ -127,6 +146,18 @@ DECLARE_SOA_TABLE(LamDaughters, "AOD", "LAMDAUGHTERS",
                   qaLamMomResolution::PzPionMC,
                   qaLamMomResolution::Sigma1PtProtonIU,
                   qaLamMomResolution::Sigma1PtPionIU,
+                  qaLamMomResolution::XProtonIU,
+                  qaLamMomResolution::YProtonIU,
+                  qaLamMomResolution::ZProtonIU,
+                  qaLamMomResolution::XProtonIUErr,
+                  qaLamMomResolution::YProtonIUErr,
+                  qaLamMomResolution::ZProtonIUErr,
+                  qaLamMomResolution::XPionIU,
+                  qaLamMomResolution::YPionIU,
+                  qaLamMomResolution::ZPionIU,
+                  qaLamMomResolution::XPionIUErr,
+                  qaLamMomResolution::YPionIUErr,
+                  qaLamMomResolution::ZPionIUErr,
                   qaLamMomResolution::DCAxyProton,
                   qaLamMomResolution::DCAzProton,
                   qaLamMomResolution::DCAxyProtonErr,

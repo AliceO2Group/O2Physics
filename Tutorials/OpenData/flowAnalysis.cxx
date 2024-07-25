@@ -289,7 +289,7 @@ struct flow_base {
     return grpo->getNominalL3Field();
   }
 
-  void process(FilteredCollisions::iterator const& collision, BCsWithRun2Infos const& bcs, FilteredTracks const& tracks)
+  void process(FilteredCollisions::iterator const& collision, BCsWithRun2Infos const& /*bcs*/, FilteredTracks const& tracks)
   {
     // Some utilities
     //_______________________________________________________________________________

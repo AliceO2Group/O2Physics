@@ -258,7 +258,7 @@ struct femtoWorldPairTaskTrackPhi {
   /// This function processes the same event and takes care of all the histogramming
   /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-Phi, Phi-Phi, ...
   void processSameEvent(o2::aod::FemtoWorldCollision& col,
-                        o2::aod::FemtoWorldParticles& parts)
+                        o2::aod::FemtoWorldParticles&)
   {
     // const auto& magFieldTesla = col.magField();
     auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
@@ -309,7 +309,7 @@ struct femtoWorldPairTaskTrackPhi {
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-Phi, Phi-Phi, ...
   void processMixedEvent(o2::aod::FemtoWorldCollisions& cols,
-                         o2::aod::FemtoWorldParticles& parts)
+                         o2::aod::FemtoWorldParticles&)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
 

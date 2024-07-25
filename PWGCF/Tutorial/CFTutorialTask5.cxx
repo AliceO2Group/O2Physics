@@ -94,7 +94,7 @@ struct CFTutorialTask5 {
     histos.add("hInvariantMassMixedInterface", ";M_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2});", kTH1F, {{100, 0., 1.0}});
   }
 
-  void processSame(MyFilteredCollision const& coll, MyFilteredTracks const& tracks)
+  void processSame(MyFilteredCollision const& coll, MyFilteredTracks const&)
   {
     auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
@@ -132,7 +132,7 @@ struct CFTutorialTask5 {
   }
   PROCESS_SWITCH(CFTutorialTask5, processSame, "Enable processing same event", true);
 
-  void processMixed(MyFilteredCollisions const& colls, MyFilteredTracks const& tracks)
+  void processMixed(MyFilteredCollisions const& colls, MyFilteredTracks const&)
   {
     BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, colls, colls)) {

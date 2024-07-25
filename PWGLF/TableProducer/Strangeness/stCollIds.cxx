@@ -31,21 +31,21 @@ struct StCollIds {
 
   void init(InitContext const&) {}
 
-  void processTrackedCascades(aod::TrackedCascades const& trackedCascades, aod::Tracks const& tracks)
+  void processTrackedCascades(aod::TrackedCascades const& trackedCascades, aod::Tracks const& /*tracks*/)
   {
     for (const auto& trackedCascade : trackedCascades)
       trackedCascadeColls(trackedCascade.track().collisionId());
   }
   PROCESS_SWITCH(StCollIds, processTrackedCascades, "process cascades from strangeness tracking", true);
 
-  void processTrackedV0s(aod::TrackedV0s const& trackedV0s, aod::Tracks const& tracks)
+  void processTrackedV0s(aod::TrackedV0s const& trackedV0s, aod::Tracks const& /*tracks*/)
   {
     for (const auto& trackedV0 : trackedV0s)
       trackedV0Colls(trackedV0.track().collisionId());
   }
   PROCESS_SWITCH(StCollIds, processTrackedV0s, "process V0s from strangeness tracking", true);
 
-  void processTracked3Bodys(aod::Tracked3Bodys const& tracked3Bodys, aod::Tracks const& tracks)
+  void processTracked3Bodys(aod::Tracked3Bodys const& tracked3Bodys, aod::Tracks const& /*tracks*/)
   {
     for (const auto& tracked3Body : tracked3Bodys)
       tracked3BodyColls(tracked3Body.track().collisionId());

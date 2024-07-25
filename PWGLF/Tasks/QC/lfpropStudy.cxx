@@ -368,7 +368,7 @@ struct lfpropStudy {
     }
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& /*collision*/,
                    TracksType const& tracks)
   {
     histos.fill(HIST("hEventCounter"), 0.5);
@@ -405,7 +405,7 @@ struct lfpropStudy {
   }
   PROCESS_SWITCH(lfpropStudy, processDataNoColl, "process data without collisions association", false);
 
-  void processDataCovMat(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+  void processDataCovMat(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& /*collision*/,
                          TracksCovMatType const& tracks)
   {
     histos.fill(HIST("hEventCounter"), 0.5);
@@ -424,7 +424,7 @@ struct lfpropStudy {
   }
   PROCESS_SWITCH(lfpropStudy, processDataCovMat, "process data with Cov. Mat.", false);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& /*collision*/,
                  TracksLabeledType const& tracks,
                  aod::McParticles const& particlesMC)
   {

@@ -168,6 +168,15 @@ struct femtoWorldEficiencyTask {
     registryPri.add("plus/TOFmatchingPr", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryPri.add("minus/TOFmatchingPr", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
+    registryPri.add("plus/GenPriPi", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("minus/GenPriPi", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryPri.add("plus/GenPriKa", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("minus/GenPriKa", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryPri.add("plus/GenPriPr", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryPri.add("minus/GenPriPr", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
     // Pri our tracking cuts only
     registryPriCuts.add("plus/PiPriPt", "PiPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryPriCuts.add("plus/KaPriPt", "KaPri;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
@@ -374,7 +383,7 @@ struct femtoWorldEficiencyTask {
 
   using BigTracksMC = soa::Join<TracksPID, aod::McTrackLabels, aod::TrackSelection>;
   Preslice<BigTracksMC> perCollisionID = aod::track::collisionId;
-  void processMCTruth(aod::McCollision const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, aod::McParticles const& mcparticles, soa::Filtered<BigTracksMC> const& tracks)
+  void processMCTruth(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, aod::McParticles const& mcparticles, soa::Filtered<BigTracksMC> const& tracks)
   {
     // Loop over reconstructed collisions corresponding to MC collision
     for (auto& collision : collisions) {
@@ -417,6 +426,16 @@ struct femtoWorldEficiencyTask {
             // PID only
             registryPri.fill(HIST("plus/AllPri"), track.pt(), track.eta());
             registryPri.fill(HIST("plus/AllPriPt"), mcParticle.pt());
+            // generated primary, no cuts, no nsigma
+            if (mcParticle.pdgCode() == 211) {
+              registryPri.fill(HIST("plus/GenPriPi"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == 321) {
+              registryPri.fill(HIST("plus/GenPriKa"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == 2212) {
+              registryPri.fill(HIST("plus/GenPriPr"), mcParticle.pt());
+            }
             // histogram pt TOF matching
             if (track.hasTOF()) {
               registryPri.fill(HIST("plus/TOFmatchingAll"), mcParticle.pt());
@@ -458,6 +477,16 @@ struct femtoWorldEficiencyTask {
             // PID only
             registryPri.fill(HIST("minus/AllPri"), track.pt(), track.eta());
             registryPri.fill(HIST("minus/AllPriPt"), mcParticle.pt());
+            // generated primary, no cuts, no nsigma
+            if (mcParticle.pdgCode() == -211) {
+              registryPri.fill(HIST("minus/GenPriPi"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == -321) {
+              registryPri.fill(HIST("minus/GenPriKa"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == -2212) {
+              registryPri.fill(HIST("minus/GenPriPr"), mcParticle.pt());
+            }
             // histogram pt TOF matching
             if (track.hasTOF()) {
               registryPri.fill(HIST("minus/TOFmatchingAll"), mcParticle.pt());

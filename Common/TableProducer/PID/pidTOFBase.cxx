@@ -30,6 +30,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "TableHelper.h"
 #include "pidTOFBase.h"
 
@@ -39,22 +41,13 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}},
-                                       {"evtime", VariantType::Int, 1, {"Produce the table for the Event Time"}}};
-  std::swap(workflowOptions, options);
-}
-
-#include "Framework/runDataProcessing.h"
-
 /// Selection criteria for tracks used for TOF event time
 float trackDistanceForGoodMatch = 999.f;
 float trackDistanceForGoodMatchLowMult = 999.f;
 int multiplicityThreshold = 0;
 using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
 using Run3Cols = o2::soa::Join<aod::Collisions, aod::PVMults>;
-bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& ev)
+bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& /*ev*/)
 {
   if (!tr.hasTOF()) {
     return false;
@@ -69,6 +62,8 @@ bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& ev)
 struct tofSignal {
   o2::framework::Produces<o2::aod::TOFSignal> table;
   o2::framework::Produces<o2::aod::pidTOFFlags> tableFlags;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   bool enableTable = false;      // Flag to check if the TOF signal table is requested or not
   bool enableTableFlags = false; // Flag to check if the TOF signal flags table is requested or not
   // CCDB configuration
@@ -78,6 +73,7 @@ struct tofSignal {
   Configurable<float> distanceForGoodMatch{"distanceForGoodMatch", 999.f, "Maximum distance to consider a good match"};
   Configurable<float> distanceForGoodMatchLowMult{"distanceForGoodMatchLowMult", 999.f, "Maximum distance to consider a good match for low multiplicity events"};
   Configurable<int> multThreshold{"multThreshold", 0, "Multiplicity threshold to consider a low multiplicity event"};
+  Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -101,6 +97,13 @@ struct tofSignal {
     trackDistanceForGoodMatchLowMult = distanceForGoodMatchLowMult;
     multiplicityThreshold = multThreshold;
     LOG(info) << "Configuring selections for good match: " << trackDistanceForGoodMatch << " low mult " << trackDistanceForGoodMatchLowMult << " mult. threshold " << multiplicityThreshold;
+    if (!enableQaHistograms) {
+      return;
+    }
+    histos.add("tofSignal", "tofSignal", kTH1D, {{1000, -1000, 1000000, "tofSignal (ps)"}});
+    if (enableTableFlags) {
+      histos.add("goodForPIDFlags", "goodForPIDFlags", kTH1D, {{3, 0, 3, "flags"}});
+    }
   }
   void processRun3(Run3Trks const& tracks, Run3Cols const& collisions)
   {
@@ -112,11 +115,19 @@ struct tofSignal {
       tableFlags.reserve(tracks.size());
     }
     for (auto& t : tracks) {
-      table(o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(t));
+      const auto s = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(t);
+      if (enableQaHistograms) {
+        histos.fill(HIST("tofSignal"), s);
+      }
+      table(s);
       if (!enableTableFlags) {
         continue;
       }
-      tableFlags(isTrackGoodMatchForTOFPID(t, collisions));
+      const auto b = isTrackGoodMatchForTOFPID(t, collisions);
+      if (enableQaHistograms) {
+        histos.fill(HIST("goodForPIDFlags"), s);
+      }
+      tableFlags(b);
     }
   }
   PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", true);
@@ -537,9 +548,6 @@ struct tofEventTime {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
-  if (!cfgc.options().get<int>("evtime")) {
-    return workflow;
-  }
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   return workflow;
 }

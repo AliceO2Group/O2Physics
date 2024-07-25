@@ -65,6 +65,7 @@ struct HfTaskSingleMuonSource {
 
   Configurable<int> mcMaskSelection{"mcMaskSelection", 0, "McMask for correct match, valid values are 0 and 128"};
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
+  Configurable<int> charge{"charge", -1, "Muon track charge, validated values are 0, 1 and -1, 0 represents both 1 and -1"};
 
   double pDcaMax = 594.0; // p*DCA maximum value for large Rabs
   double rAbsMin = 26.5;  // R at absorber end minimum value
@@ -87,21 +88,24 @@ struct HfTaskSingleMuonSource {
       "NonpromptCharmMu",
       "PromptCharmMu",
       "LightDecayMu",
+      "QuarkoniumDecayMu",
       "SecondaryMu",
       "Hadron",
       "Unidentified"};
 
-    AxisSpec axisColNumber{1, 0., 1., "Selected collisions"};
+    AxisSpec axisColNumber{1, 0.5, 1.5, "Selected collisions"};
     AxisSpec axisDCA{5000, 0., 5., "DCA (cm)"};
     AxisSpec axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
     AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
     AxisSpec axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
 
+    HistogramConfigSpec h1ColNumber{HistType::kTH1F, {axisColNumber}};
     HistogramConfigSpec h1Pt{HistType::kTH1F, {axisPt}};
     HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
     HistogramConfigSpec h2PtDeltaPt{HistType::kTH2F, {axisPt, axisDeltaPt}};
 
+    registry.add("h1ColNumber", "", h1ColNumber);
     for (const auto& src : muonSources) {
       registry.add(Form("h1%sPt", src.Data()), "", h1Pt);
       registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
@@ -216,6 +220,12 @@ struct HfTaskSingleMuonSource {
     return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)));
   }
 
+  // this muon comes from quarkonium decay
+  bool isQuarkoniumDecayMu(const uint8_t& mask)
+  {
+    return (isMuon(mask) && TESTBIT(mask, HasQuarkoniumParent) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasCharmParent)));
+  }
+
   // this muon comes from transport
   bool isSecondaryMu(const uint8_t& mask)
   {
@@ -266,6 +276,10 @@ struct HfTaskSingleMuonSource {
         registry.fill(HIST("h2LightDecayMuPtDCA"), pt, dca);
         registry.fill(HIST("h2LightDecayMuPtChi2"), pt, chi2);
         registry.fill(HIST("h2LightDecayMuPtDeltaPt"), pt, deltaPt);
+      } else if (isQuarkoniumDecayMu(mask)) {
+        registry.fill(HIST("h2QuarkoniumDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2QuarkoniumDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h2QuarkoniumDecayMuPtDeltaPt"), pt, deltaPt);
       } else if (isSecondaryMu(mask)) {
         registry.fill(HIST("h2SecondaryMuPtDCA"), pt, dca);
         registry.fill(HIST("h2SecondaryMuPtChi2"), pt, chi2);
@@ -288,6 +302,8 @@ struct HfTaskSingleMuonSource {
         registry.fill(HIST("h1PromptCharmMuPt"), pt);
       } else if (isLightDecayMu(mask)) {
         registry.fill(HIST("h1LightDecayMuPt"), pt);
+      } else if (isQuarkoniumDecayMu(mask)) {
+        registry.fill(HIST("h1QuarkoniumDecayMuPt"), pt);
       } else if (isSecondaryMu(mask)) {
         registry.fill(HIST("h1SecondaryMuPt"), pt);
       } else if (isHadron(mask)) {
@@ -306,6 +322,7 @@ struct HfTaskSingleMuonSource {
     if (std::abs(collision.posZ()) > edgeZ) {
       return;
     }
+    registry.fill(HIST("h1ColNumber"), 1.);
 
     for (const auto& muon : muons) {
       // muon selections
@@ -326,6 +343,9 @@ struct HfTaskSingleMuonSource {
         continue;
       }
       if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
+        continue;
+      }
+      if (charge != 0 && muon.sign() != charge) {
         continue;
       }
       fillHistograms(muon);

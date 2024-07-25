@@ -45,6 +45,9 @@ static constexpr std::string_view SplitMult = "Events/SplitMult";               
 static constexpr std::string_view EventChi2 = "Events/Control/Chi2";              // collisions chi2 distribution
 static constexpr std::string_view EventTimeRes = "Events/Control/TimeResolution"; // collisions time resolution distribution
 
+static constexpr std::string_view NpvcZvtx = "Events/NpvcZvtx";       // N PV contributors vs vtx Z for selected collisions
+static constexpr std::string_view NpvcZvxtGen = "Events/NpvcZvtxGen"; // -- simulated collisions
+
 static constexpr std::string_view MCVertex = "MCEvents/Vertex";                     // MC vertex position
 static constexpr std::string_view RecoVertex = "Events/Vertex";                     // Reco vertex position
 static constexpr std::string_view MCCorrelates = "MCEvents/Properties/Correlates";  // Correlation of generated multiplicity and other event properties

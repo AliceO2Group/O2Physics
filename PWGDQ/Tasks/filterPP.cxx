@@ -15,8 +15,7 @@
 #include <vector>
 #include <memory>
 #include <cstring>
-#include <TH1F.h>
-#include <TH2I.h>
+#include <TH1.h>
 #include <THashList.h>
 #include <TString.h>
 #include "Framework/AnalysisTask.h"
@@ -137,7 +136,7 @@ struct DQEventSelectionTask {
   }
 
   template <uint32_t TEventFillMap, typename TEvent>
-  void runEventSelection(TEvent const& collision, aod::BCs const& bcs)
+  void runEventSelection(TEvent const& collision, aod::BCs const&)
   {
     // Reset the Values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -378,7 +377,7 @@ struct DQFilterPPTask {
   Produces<aod::DQEventFilter> eventFilter;
   Produces<aod::DqFilters> dqtable;
   OutputObj<THashList> fOutputList{"output"};
-  OutputObj<TH1I> fStats{"Statistics"};
+  OutputObj<TH1D> fStats{"Statistics"};
   HistogramManager* fHistMan;
 
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
@@ -450,7 +449,7 @@ struct DQFilterPPTask {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);
 
     // setup the Stats histogram
-    fStats.setObject(new TH1I("Statistics", "Stats for DQ triggers", fNBarrelCuts + fNMuonCuts + 2, -2.5, -0.5 + fNBarrelCuts + fNMuonCuts));
+    fStats.setObject(new TH1D("Statistics", "Stats for DQ triggers", fNBarrelCuts + fNMuonCuts + 2, -2.5, -0.5 + fNBarrelCuts + fNMuonCuts));
     fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
     fStats->GetXaxis()->SetBinLabel(2, "Events selected");
     if (fNBarrelCuts) {
@@ -491,7 +490,7 @@ struct DQFilterPPTask {
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons>
-  void runFilterPP(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& muons)
+  void runFilterPP(TEvent const& collision, aod::BCs const&, TTracks const& tracksBarrel, TMuons const& muons)
   {
     fStats->Fill(-2.0);
     // if the event is not selected produce tables and return

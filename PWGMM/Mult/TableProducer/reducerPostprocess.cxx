@@ -21,48 +21,21 @@ using namespace o2::framework::expressions;
 
 struct ReducerPostprocess {
   Produces<aod::RFeatMins> features;
+  std::vector<int> spatialMap;
 
-  using MCFull = soa::Join<aod::RMCCollisions, aod::RHepMCinfos>;
-  void processFull(MCFull const&,
-                   soa::Join<aod::RCollisions, aod::RMCColLabels> const& cols)
+  using MC = aod::RMCCollisions;
+  using C = soa::Join<aod::RCollisions, aod::RMCColLabels>;
+  void process(MC const&, C const& cols)
   {
-    std::vector<int> spatialMap;
-    bool first = true;
+    spatialMap.resize(cols.begin().mapetaphi().size());
     for (auto& col : cols) {
-      auto mccol = col.rmccollision_as<MCFull>();
-      if (first) {
-        spatialMap.resize(col.mapetaphi().size());
-        first = false;
-      }
+      auto mccol = col.rmccollision_as<MC>();
       for (auto i = 0U; i < col.mapetaphi().size(); ++i) {
         spatialMap[i] = col.mapetaphi()[i];
       }
-      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), mccol.processId(), mccol.impactParameter(), col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C(), spatialMap);
+      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C(), spatialMap);
     }
   }
-
-  PROCESS_SWITCH(ReducerPostprocess, processFull, "Process with HepMC", false);
-
-  using MCLite = aod::RMCCollisions;
-  void processLite(MCLite const&,
-                   soa::Join<aod::RCollisions, aod::RMCColLabels> const& cols)
-  {
-    std::vector<int> spatialMap;
-    bool first = true;
-    for (auto& col : cols) {
-      auto mccol = col.rmccollision_as<MCLite>();
-      if (first) {
-        spatialMap.resize(col.mapetaphi().size());
-        first = false;
-      }
-      for (auto i = 0U; i < col.mapetaphi().size(); ++i) {
-        spatialMap[i] = col.mapetaphi()[i];
-      }
-      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), -1, -1.f, col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C(), spatialMap);
-    }
-  }
-
-  PROCESS_SWITCH(ReducerPostprocess, processLite, "Process without HepMC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -160,8 +160,8 @@ struct HfTaskQaPidRejection {
 
   void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
                const soa::Join<TracksWPid, aod::McTrackLabels>& tracks,
-               const aod::McCollisions& mcCollisions,
-               const aod::McParticles& mcParticles,
+               const aod::McCollisions&,
+               const aod::McParticles&,
                const aod::RICHs&,
                const aod::MIDs&)
   {
@@ -351,10 +351,10 @@ struct HfTaskQaPidRejectionGeneral {
     histos.add("hKaonMID/peta", commonTitle + " Primary;" + p, kTH2D, {ptAxis, etaAxis});
   }
 
-  void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>& collisions,
+  void process(const soa::Join<aod::Collisions, aod::McCollisionLabels>&,
                const soa::Join<TracksWPid, aod::McTrackLabels>& tracks,
-               const aod::McCollisions& mcCollisions,
-               const aod::McParticles& mcParticles,
+               const aod::McCollisions&,
+               const aod::McParticles&,
                const aod::RICHs&,
                const aod::MIDs&)
   {

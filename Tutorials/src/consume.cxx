@@ -24,7 +24,7 @@ struct Consume {
   Configurable<float> ptCutOff{"ptcutoff", 10.f, "Pt cut off"};
   Configurable<float> etaRange{"etarange", 1.2f, "eta range"};
 
-  void process(aod::Collision const& collison, soa::Join<aod::Tracks, aod::Decisions> const& tracks)
+  void process(aod::Collision const&, soa::Join<aod::Tracks, aod::Decisions> const& tracks)
   {
     for (auto& track : tracks) {
       if (track.globalIndex() % 500 == 0 && track.inpt() && track.ineta()) {

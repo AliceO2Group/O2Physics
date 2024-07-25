@@ -108,7 +108,7 @@ struct HfCandidateSelectorDstarToD0Pi {
   AxisSpec axisSelStatus{2, -0.5f, 1.5f};
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     massPi = MassPiPlus;
     massK = MassKPlus;

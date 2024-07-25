@@ -316,7 +316,7 @@ void FemtoWorldV0Selection::init(HistogramRegistry* registry)
 }
 
 template <typename C, typename V, typename T>
-bool FemtoWorldV0Selection::isSelectedMinimal(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+bool FemtoWorldV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
@@ -388,7 +388,7 @@ bool FemtoWorldV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
 }
 
 template <typename C, typename V, typename T>
-void FemtoWorldV0Selection::fillLambdaQA(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+void FemtoWorldV0Selection::fillLambdaQA(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
@@ -439,7 +439,7 @@ void FemtoWorldV0Selection::fillLambdaQA(C const& col, V const& v0, T const& pos
 
 /// the CosPA of V0 needs as argument the posXYZ of collisions vertex so we need to pass the collsion as well
 template <typename cutContainerType, typename C, typename V, typename T>
-std::array<cutContainerType, 5> FemtoWorldV0Selection::getCutContainer(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+std::array<cutContainerType, 5> FemtoWorldV0Selection::getCutContainer(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
   auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack);
   auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack);
@@ -520,7 +520,7 @@ std::array<cutContainerType, 5> FemtoWorldV0Selection::getCutContainer(C const& 
 }
 
 template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename C, typename V, typename T>
-void FemtoWorldV0Selection::fillQA(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+void FemtoWorldV0Selection::fillQA(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
   if (mHistogramRegistry) {
     mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hPt"), v0.pt());

@@ -36,7 +36,7 @@ struct HistogramTrackSelection {
   void init(o2::framework::InitContext&) {}
 
   // group tracks according to collision
-  void process(aod::Collision const& collision,
+  void process(aod::Collision const& /*collision*/,
                soa::Join<aod::Tracks, aod::TrackSelection> const& tracks)
   {
     for (auto& track : tracks) {

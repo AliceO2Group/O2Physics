@@ -42,7 +42,7 @@ struct JetSpectraReference {
   // Filter jetCuts = aod::jet::pt > f_jetPtMin; //how does this work?
 
   void process(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,
-               aod::Tracks const& tracks)
+               aod::Tracks const& /*tracks*/)
   {
     registry.fill(HIST("hJetPt"), jet.pt());
     registry.fill(HIST("hNJetConstituents"), jet.tracks().size());

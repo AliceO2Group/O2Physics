@@ -68,7 +68,7 @@ struct skimmerGammaCalo {
     LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02 << std::endl;
   }
 
-  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks)
+  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const&)
   {
     for (const auto& emccluster : emcclusters) {
       historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
@@ -134,7 +134,7 @@ struct skimmerGammaCalo {
                         emccluster.definition(), vTrackIds, vEta, vPhi, vP, vPt);
     }
   }
-  void processMC(aod::Collision const&, soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters, aod::McParticles const& mcparticles)
+  void processMC(aod::Collision const&, soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters, aod::McParticles const&)
   {
     for (const auto& emccluster : emcclusters) {
       historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
@@ -165,7 +165,7 @@ struct skimmerGammaCalo {
   PROCESS_SWITCH(skimmerGammaCalo, processRec, "process only reconstructed info", true);
   PROCESS_SWITCH(skimmerGammaCalo, processMC, "process MC info", false); // Run this in addition to processRec for MCs to copy the cluster mc labels from the EMCALMCClusters to the skimmed EMCClusterMCLabels table
 
-  void processDummy(aod::Collision const& collision)
+  void processDummy(aod::Collision const&)
   {
     // do nothing
   }

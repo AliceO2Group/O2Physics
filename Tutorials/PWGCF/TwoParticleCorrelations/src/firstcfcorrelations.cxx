@@ -39,18 +39,18 @@ struct firstcorrelations {
   }
 
   template <typename TCollision, typename TTracks>
-  void fillQA(TCollision collision, float centrality, TTracks tracks)
+  void fillQA(TCollision /*collision*/, float /*centrality*/, TTracks /*tracks*/)
   {
   }
 
   template <typename TTarget, typename TCollision>
-  bool fillCollision(TTarget target, TCollision collision, float centrality)
+  bool fillCollision(TTarget /*target*/, TCollision /*collision*/, float /*centrality*/)
   {
     return true;
   }
 
   template <typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ)
+  void fillCorrelations(TTarget /*target*/, TTracks /*tracks1*/, TTracks /*tracks2*/, float /*centrality*/, float /*posZ*/)
   {
   }
 

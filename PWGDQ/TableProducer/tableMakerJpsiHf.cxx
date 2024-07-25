@@ -88,7 +88,7 @@ struct tableMakerJpsiHf {
   HistogramManager* fHistMan{};
   OutputObj<THashList> fOutputList{"output"};
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
     fValuesDileptonCharmHadron = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
@@ -238,7 +238,7 @@ struct tableMakerJpsiHf {
   }
 
   // process J/psi(->mumu) - D0
-  void processJspiToMuMuD0(MyEvents const& collisions, MyDimuonCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
+  void processJspiToMuMuD0(MyEvents const& collisions, MyDimuonCandidatesSelected const&, MyD0CandidatesSelected const&)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
@@ -251,7 +251,7 @@ struct tableMakerJpsiHf {
   }
 
   // process J/psi(->ee) - D0
-  void processJspiToEED0(MyEvents const& collisions, MyDielectronCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
+  void processJspiToEED0(MyEvents const& collisions, MyDielectronCandidatesSelected const&, MyD0CandidatesSelected const&)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
@@ -264,7 +264,7 @@ struct tableMakerJpsiHf {
   }
 
   // process J/psi(->mumu) - D0 adding the BDT output scores to the D0 table
-  void processJspiToMuMuD0WithBdt(MyEvents const& collisions, MyDimuonCandidatesSelected const& dileptons, MyD0CandidatesSelectedWithBdt const& dmesons)
+  void processJspiToMuMuD0WithBdt(MyEvents const& collisions, MyDimuonCandidatesSelected const&, MyD0CandidatesSelectedWithBdt const&)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
@@ -277,7 +277,7 @@ struct tableMakerJpsiHf {
   }
 
   // process J/psi(->ee) - D0 adding the BDT output scores to the D0 table
-  void processJspiToEED0WithBdt(MyEvents const& collisions, MyDielectronCandidatesSelected const& dileptons, MyD0CandidatesSelectedWithBdt const& dmesons)
+  void processJspiToEED0WithBdt(MyEvents const& collisions, MyDielectronCandidatesSelected const&, MyD0CandidatesSelectedWithBdt const&)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());

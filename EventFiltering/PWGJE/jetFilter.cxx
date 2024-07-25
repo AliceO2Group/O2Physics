@@ -59,6 +59,7 @@ struct jetFilter {
 
   Produces<aod::JetFilters> tags;
 
+  Configurable<std::string> evSel{"evSel", "sel8", "choose event selection"};
   Configurable<float> cfgJetR{"cfgJetR", 0.6,
                               "trigger jet resolution parameter"}; // jet cone radius
 
@@ -93,11 +94,13 @@ struct jetFilter {
 
   Filter trackFilter = (nabs(aod::jtrack::eta) < static_cast<float>(cfgEtaTPC)) && (aod::jtrack::pt > trackPtMin);
   int trackSelection = -1;
+  int eventSelection = -1;
 
   void init(o2::framework::InitContext&)
   {
     triggerJetR = TMath::Nint(cfgJetR * 100.0f);
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
 
     spectra.add("fCollZpos", "collision z position", HistType::kTH1F,
                 {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
@@ -184,7 +187,7 @@ struct jetFilter {
   {
 
     // collision process loop
-    bool keepEvent[kTriggerObjects]{false};
+    bool keepEvent[kTriggerObjects]{false, false, false, false};
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
       return;
@@ -192,6 +195,11 @@ struct jetFilter {
 
     spectra.fill(HIST("fCollZpos"), collision.posZ());
     hProcessedEvents->Fill(static_cast<float>(kBinAllEvents) + 0.1f); // all minimum bias events
+
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
+      return;
+    }
 
     // FILL SPECTRA OF INCLUSIVE JETS IN FIDUCIAL VOLUME
     if (TMath::Abs(collision.posZ()) < cfgZvtx) {

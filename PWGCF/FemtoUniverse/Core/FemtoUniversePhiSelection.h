@@ -619,8 +619,8 @@ std::array<cutContainerType, 5>
 template <o2::aod::femtouniverseparticle::ParticleType part,
           o2::aod::femtouniverseparticle::ParticleType daugh, typename C,
           typename V, typename T, typename Q>
-void FemtoUniversePhiSelection::fillQA(C const& col, V const& phi, T const& posTrack,
-                                       T const& negTrack, Q const& posPID, Q const& negPID)
+void FemtoUniversePhiSelection::fillQA(C const& /*col*/, V const& /*phi*/, T const& posTrack,
+                                       T const& negTrack, Q const& /*posPID*/, Q const& /*negPID*/)
 {
   if (mHistogramRegistry) {
     TLorentzVector part1Vec;

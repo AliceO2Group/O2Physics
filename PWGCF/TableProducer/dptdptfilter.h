@@ -17,6 +17,7 @@
 #include <string>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 #include <locale>
 #include <sstream>
 #include <functional>
@@ -100,6 +101,18 @@ enum TriggerSelectionType {
   kVTXTRDTOFMATCHED, ///< at least one vertex contributor is matched to TRD and TOF
   knEventSelection   ///< number of triggers for event selection
 };
+
+/// \enum StrongDebugging
+/// \brief Enable a per track information debugging. Only for local analyses
+enum StrongDebugging {
+  kNODEBUG = 0, ///< do not debug
+  kDEBUG        ///< output debugging information on a per track basis to a text file
+};
+
+//============================================================================================
+// The debug output stream
+//============================================================================================
+std::ofstream debugstream;
 
 //============================================================================================
 // The overall minimum momentum
@@ -891,7 +904,7 @@ inline float getCharge(ParticleObject& particle)
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
+inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
 {
   /* overall momentum cut */
   if (!(overallminp < particle.p())) {
@@ -977,6 +990,7 @@ struct PIDSpeciesSelection {
     LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
     LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
     LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
+    LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
   void AddExclude(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
   {
@@ -991,12 +1005,35 @@ struct PIDSpeciesSelection {
     LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
     LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
     LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
+    LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
-  template <typename TrackObject>
+  template <StrongDebugging outdebug, typename TrackObject>
   int8_t whichSpecies(TrackObject const& track)
   {
+    TString debuginfo;
     std::vector<float> tpcnsigmas = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
     std::vector<float> tofnsigmas = {track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+
+    auto outmomentumdebug = [&]() {
+      if constexpr (outdebug != 0) {
+        debuginfo += TString::Format("%.5f,%.5f,%.5f,%d,%.2f,%.4f,", track.p(), track.tpcInnerParam(), track.pt(), track.hasTOF() ? 1 : 0, track.tpcSignal(), track.beta());
+      }
+    };
+    auto outnsigmasdebug = [&]() {
+      if constexpr (outdebug != 0) {
+        for (auto tpcn : tpcnsigmas) {
+          debuginfo += TString::Format("%.4f,", tpcn);
+        }
+        for (auto tofn : tofnsigmas) {
+          debuginfo += TString::Format("%.4f,", tofn);
+        }
+      }
+    };
+
+    /* out debug if needed */
+    outmomentumdebug();
+    /* out debug if needed */
+    outnsigmasdebug();
 
     auto closeTo = [](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
       if (mindet[sp] <= values[sp] && values[sp] < maxdet[sp]) {
@@ -1097,12 +1134,34 @@ struct PIDSpeciesSelection {
       }
     };
 
+    auto outpiddebug = [&](int code, int pid, int pid2) {
+      if constexpr (outdebug != 0) {
+        int truepid = -1;
+        int isphysicalprimary = -1;
+        int process = -1;
+        if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+          if (!(track.mcParticleId() < 0)) {
+            auto particle = track.template mcParticle_as<aod::McParticles>();
+            truepid = particle.pdgCode();
+            isphysicalprimary = particle.isPhysicalPrimary() ? 1 : 0;
+            process = particle.getProcess();
+          }
+        }
+        debuginfo += TString::Format("%d,%d,%d,%d,%d,%d\n", code, pid, pid2, truepid, isphysicalprimary, process);
+        debugstream << debuginfo;
+      }
+    };
+
     /* adjust the nsigmas values if appropriate */
     adjustnsigmas();
+    /* out debug info if needed */
+    outnsigmasdebug();
 
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
       if (isA(configexclude[ix], speciesexclude[ix])) {
+        /* out debug info if needed */
+        outpiddebug(1, speciesexclude[ix], -1);
         return -(ix + 1);
       }
     }
@@ -1114,13 +1173,33 @@ struct PIDSpeciesSelection {
           if (id < 0) {
             id = ix;
           } else {
+            /* out debug info if needed */
+            outpiddebug(2, species[id], species[ix]);
             /* already identified once */
             return -127;
           }
         }
       }
+      /* check a species transverse momentum cut */
+      if (!(id < 0)) {
+        /* identified */
+        if ((track.pt() < config[id]->mPtMin) || config[id]->mPtMax < track.pt()) {
+          /* rejected */
+          outpiddebug(4, species[id], -1);
+          return -127;
+        }
+      }
+      /* out debug info if needed */
+      if (id < 0) {
+        /* not identified */
+        outpiddebug(3, -1, -1);
+      } else {
+        /* identified */
+        outpiddebug(0, species[id], -1);
+      }
       return id;
     } else {
+      outpiddebug(0, 0, -1);
       /* charged hadron */
       return 0;
     }
@@ -1139,6 +1218,11 @@ struct PIDSpeciesSelection {
     if (config.size() > 0) {
       for (uint8_t ix = 0; ix < config.size(); ++ix) {
         if (pdgcode == pdgcodes[species[ix]]) {
+          /* check a species transverse momentum cut */
+          if ((part.pt() < config[ix]->mPtMin) || config[ix]->mPtMax < part.pt()) {
+            /* rejected */
+            return -127;
+          }
           return ix;
         }
       }

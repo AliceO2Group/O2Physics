@@ -157,16 +157,13 @@ struct HfTaskBplus {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-  void process(aod::Collisions const& collision,
+  void process(aod::Collisions const&,
                soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi> const&,
                soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&,
                aod::Tracks const&)
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -203,14 +200,11 @@ struct HfTaskBplus {
 
   void processMc(soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec> const&,
                  soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& mcParticles,
-                 aod::TracksWMc const& tracks,
+                 aod::TracksWMc const&,
                  aod::HfCand2Prong const&)
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -262,7 +256,7 @@ struct HfTaskBplus {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassBPlus);
+        auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassBPlus);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
@@ -272,7 +266,7 @@ struct HfTaskBplus {
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
 
@@ -294,7 +288,7 @@ struct HfTaskBplus {
           registry.fill(HIST("hPtGenWithRapidityBelowHalf"), ptParticle);
         }
 
-        // reject B0 daughters that are not in geometrical acceptance
+        // reject B+ daughters that are not in geometrical acceptance
         if (!isProngInAcceptance(etaProngs[0], ptProngs[0]) || !isProngInAcceptance(etaProngs[1], ptProngs[1])) {
           continue;
         }

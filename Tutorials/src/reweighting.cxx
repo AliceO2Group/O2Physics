@@ -28,11 +28,16 @@
 // This workflow is used to create a flat tree for model training
 // Use o2-aod-merger to combine dataframes in output AnalysisResults_trees.root
 
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#else
+#include <onnxruntime_cxx_api.h>
+#endif
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "TrainingTree.h"
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -77,7 +82,11 @@ struct CreateWeights {
   Filter centralTracks = nabs(aod::track::eta) < centralEtaCut;
 
   /// onnx runtime session handle
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
   std::shared_ptr<Ort::Experimental::Session> onnxSession = nullptr;
+#else
+  std::shared_ptr<Ort::Session> onnxSession = nullptr;
+#endif
   /// onnx runtime session options
   Ort::SessionOptions sessionOptions;
   /// input vectore
@@ -89,9 +98,17 @@ struct CreateWeights {
   {
     auto path = (std::string)onnxModel;
     /// create session
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
     onnxSession = std::make_shared<Ort::Experimental::Session>(env, path, sessionOptions);
     /// adjust input shape to use row-by-row model application
     inputShapes = onnxSession->GetInputShapes();
+#else
+    onnxSession = std::make_shared<Ort::Session>(env, path.c_str(), sessionOptions);
+    /// adjust input shape to use row-by-row model application
+    for (size_t i = 0; i < onnxSession->GetInputCount(); ++i) {
+      inputShapes.emplace_back(onnxSession->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
+    }
+#endif
     if (inputShapes[0][0] < 0) {
       LOG(warning) << "Model with negative input shape, setting it to 1.";
       inputShapes[0][0] = 1;
@@ -103,9 +120,29 @@ struct CreateWeights {
     /// get the input variables
     auto features = collect(collision, tracks);
     /// add an entry in input vector
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
     inputML.push_back(Ort::Experimental::Value::CreateTensor<float>(features.data(), features.size(), inputShapes[0]));
     /// run inference
     auto result = onnxSession->Run(onnxSession->GetInputNames(), inputML, onnxSession->GetOutputNames());
+#else
+    Ort::MemoryInfo mem_info =
+      Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    inputML.push_back(Ort::Value::CreateTensor<float>(mem_info, features.data(), features.size(), inputShapes[0].data(), inputShapes[0].size()));
+    /// run inference
+
+    Ort::RunOptions runOptions;
+    Ort::AllocatorWithDefaultOptions tmpAllocator;
+    std::vector<const char*> inputNamesChar(onnxSession->GetInputCount(), nullptr);
+    for (size_t i = 0; i < onnxSession->GetInputCount(); ++i) {
+      inputNamesChar.push_back(onnxSession->GetInputNameAllocated(i, tmpAllocator).get());
+    }
+
+    std::vector<const char*> outputNamesChar(onnxSession->GetOutputCount(), nullptr);
+    for (size_t i = 0; i < onnxSession->GetOutputCount(); ++i) {
+      outputNamesChar.push_back(onnxSession->GetOutputNameAllocated(i, tmpAllocator).get());
+    }
+    auto result = onnxSession->Run(runOptions, inputNamesChar.data(), inputML.data(), inputML.size(), outputNamesChar.data(), outputNamesChar.size());
+#endif
     /// extract scores
     auto scores = result[1].GetTensorMutableData<float>();
     LOGP(info, "Col {}: scores ({}, {})", collision.globalIndex(), scores[0], scores[1]);
@@ -145,7 +182,7 @@ struct ConsumeWeights {
     /// fill histograms with using BDT scores produced by previous task as weights
 
     for (auto& track : tracks) {
-      if (isfinite(track.pt())) {
+      if (std::isfinite(track.pt())) {
         registry.fill(HIST("Weighted/Tracks/Pt"), track.pt(), collision.weight());
       }
     }
@@ -165,7 +202,7 @@ struct ConsumeWeights {
     /// fill histograms without weights
 
     for (auto& track : tracks) {
-      if (isfinite(track.pt())) {
+      if (std::isfinite(track.pt())) {
         registry.fill(HIST("Tracks/Pt"), track.pt());
       }
     }

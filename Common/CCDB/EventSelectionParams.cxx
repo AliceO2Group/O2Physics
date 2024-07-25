@@ -44,7 +44,7 @@ const char* selectionLabels[kNsel] = {
   "kNoV0C012vsTklBG",
   "kNoInconsistentVtx",
   "kNoPileupInMultBins",
-  "kNoPilupMV",
+  "kNoPileupMV",
   "kNoPileupTPC",
   "kIsTriggerTVX",
   "kIsINT1",
@@ -54,7 +54,14 @@ const char* selectionLabels[kNsel] = {
   "kIsGoodZvtxFT0vsPV",
   "kIsVertexITSTPC",
   "kIsVertexTOFmatched",
-  "kIsVertexTRDmatched"};
+  "kIsVertexTRDmatched",
+  "kNoHighOccupancyAgressive",
+  "kNoHighOccupancyStrict",
+  "kNoHighOccupancyMedium",
+  "kNoHighOccupancyRelaxed",
+  "kNoHighOccupancyGentle",
+  "kNoCollInTimeRangeStandard",
+  "kNoCollInTimeRangeNarrow"};
 } // namespace o2::aod::evsel
 
 using namespace o2::aod::evsel;

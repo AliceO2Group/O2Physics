@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(decay3bodybuilder
     SOURCES decay3bodybuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hyhefour-builder
@@ -29,6 +29,11 @@ o2physics_add_dpl_workflow(hypertriton-reco-task
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lnn-reco-task
+    SOURCES lnnRecoTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hypertriton3bodyfinder
     SOURCES hypertriton3bodyfinder.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -38,6 +43,7 @@ o2physics_add_dpl_workflow(nucleustreecreator
     SOURCES LFTreeCreatorNuclei.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lithium4analysis
     SOURCES lithium4analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -45,7 +51,7 @@ o2physics_add_dpl_workflow(lithium4analysis
 
 o2physics_add_dpl_workflow(nuclei-spectra
     SOURCES nucleiSpectra.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(spectra-derived
@@ -61,4 +67,14 @@ o2physics_add_dpl_workflow(threebodymcfinder
 o2physics_add_dpl_workflow(threebody-reco-task
     SOURCES threebodyRecoTask.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(ebye-maker
+    SOURCES ebyeMaker.cxx
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cluster-studies-tree-creator
+    SOURCES LFTreeCreatorClusterStudies.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

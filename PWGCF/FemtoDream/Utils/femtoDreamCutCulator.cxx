@@ -26,7 +26,7 @@ using namespace o2::analysis::femtoDream;
 /// The function takes the path to the dpl-config.json as a argument and the
 /// does a Q&A session for the user to find the appropriate selection criteria
 /// for the analysis task
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* argv[])
 {
   std::string configFileName(argv[1]);
   std::filesystem::path configFile{configFileName};

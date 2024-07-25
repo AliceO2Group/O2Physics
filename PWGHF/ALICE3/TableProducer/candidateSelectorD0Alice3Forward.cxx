@@ -178,8 +178,8 @@ struct HfCandidateSelectorD0Alice3Forward {
   }
 
   void process(aod::HfCand2Prong const& candidates,
-               TracksSel const& forwardtracks,
-               aod::McParticles const& mcParticles,
+               TracksSel const&,
+               aod::McParticles const&,
                aod::RICHs const&,
                aod::FRICHs const&)
   {

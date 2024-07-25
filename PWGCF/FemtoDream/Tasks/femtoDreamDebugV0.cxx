@@ -79,7 +79,7 @@ struct femtoDreamDebugV0 {
 
   void init(InitContext&)
   {
-    eventHisto.init(&EventRegistry);
+    eventHisto.init(&EventRegistry, false);
     posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildPos_PDGCode.value, true);
     negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildNeg_PDGCode, true);
     V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_PDGCode.value, true);
@@ -89,7 +89,7 @@ struct femtoDreamDebugV0 {
   void process(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<false>(col);
     for (auto& part : groupPartsOne) {
       if (!part.has_children()) {
         continue;

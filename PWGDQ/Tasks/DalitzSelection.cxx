@@ -258,7 +258,7 @@ struct dalitzPairing {
     }
   }
 
-  void processFullTracks(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
+  void processFullTracks(MyEvents const& collisions, aod::BCsWithTimestamps const&, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
   {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();

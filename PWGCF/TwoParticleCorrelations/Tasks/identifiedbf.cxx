@@ -68,7 +68,7 @@ PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
 bool fUseTwoTrackCut = false;    // suppress too close tracks
 
-std::vector<std::string> tname = {"O", "T", "e+", "e-", "mu+", "mu-", "pi+", "pi-", "K+", "K-", "p+", "p-"}; ///< the track names
+std::vector<std::string> tname = {"e+", "e-", "pi+", "pi-", "K+", "K-", "p+", "p-"}; ///< the track names
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
@@ -112,18 +112,14 @@ struct IdentifiedBfCorrelationsTask {
     std::vector<std::vector<TProfile*>> fhSum2DptDptnw_vsC{nch, {nch, nullptr}}; //!<! un-weighted accumulated \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
 
     std::vector<std::vector<std::string>> chargePairsNames = {{"OO", "OT"}, {"TO", "TT"}};
-    std::vector<std::vector<std::string>> speciesPairNames = {{"OO", "OT", "OeO", "OeT", "OmuO", "OmuT", "OpiO", "OpiT", "OKO", "OKT", "OpO", "OpT"},
-                                                              {"TO", "TT", "TeO", "TeT", "TmuO", "TmuT", "TpiO", "TpiT", "TKO", "TKT", "TpO", "TpT"},
-                                                              {"eOO", "eOT", "eOeO", "eOeT", "eOmuO", "eOmuT", "eOpiO", "eOpiT", "eOKO", "eOKT", "eOpO", "eOpT"},
-                                                              {"eTO", "eTT", "eTeO", "eTeT", "eTmuO", "eTmuT", "eTpiO", "eTpiT", "eTKO", "eTKT", "eTpO", "eTpT"},
-                                                              {"muOO", "muOT", "muOeO", "muOeT", "muOmuO", "muOmuT", "muOpiO", "muOpiT", "muOKO", "muOKT", "muOpO", "muOpT"},
-                                                              {"muTO", "muTT", "muTeO", "muTeT", "muTmuO", "muTmuT", "muTpiO", "muTpiT", "muTKO", "muTKT", "muTpO", "muTpT"},
-                                                              {"piOO", "piOT", "piOeO", "piOeT", "piOmuO", "piOmuT", "piOpiO", "piOpiT", "piOKO", "piOKT", "piOpO", "piOpT"},
-                                                              {"piTO", "piTT", "piTeO", "piTeT", "piTmuO", "piTmuT", "piTpiO", "piTpiT", "piTKO", "piTKT", "piTpO", "piTpT"},
-                                                              {"KOO", "KOT", "KOeO", "KOeT", "KOmuO", "KOmuT", "KOpiO", "KOpiT", "KOKO", "KOKT", "KOpO", "KOpT"},
-                                                              {"KTO", "KTT", "KTeO", "KTeT", "KTmuO", "KTmuT", "KTpiO", "KTpiT", "KTKO", "KTKT", "KTpO", "KTpT"},
-                                                              {"pOO", "pOT", "pOeO", "pOeT", "pOmuO", "pOmuT", "pOpiO", "pOpiT", "pOKO", "pOKT", "pOpO", "pOpT"},
-                                                              {"pTO", "pTT", "pTeO", "pTeT", "pTmuO", "pTmuT", "pTpiO", "pTpiT", "pTKO", "pTKT", "pTpO", "pTpT"}};
+    std::vector<std::vector<std::string>> speciesPairNames = {{"e+e+", "e+e-", "e+pi+", "e+pi-", "e+K+", "e+K-", "e+p+", "e+p-"},
+                                                              {"e-e+", "e-e-", "e-pi+", "e-pi-", "e-K+", "e-K-", "e-p+", "e-p-"},
+                                                              {"pi+e+", "pi+e-", "pi+pi+", "pi+pi-", "pi+K+", "pi+K-", "pi+p+", "pi+p-"},
+                                                              {"pi-e+", "pi-e-", "pi-pi+", "pi-pi-", "pi-K+", "pi-K-", "pi-p+", "pi-p-"},
+                                                              {"K+e+", "K+e-", "K+pi+", "K+pi-", "K+K+", "K+K-", "K+p+", "K+p-"},
+                                                              {"K-e+", "K-e-", "K-pi+", "K-pi-", "K-K+", "K-K-", "K-p+", "K-p-"},
+                                                              {"p+e+", "p+e-", "p+pi+", "p+pi-", "p+K+", "p+K-", "p+p+", "p+p-"},
+                                                              {"p-e+", "p-e-", "p-pi+", "p-pi-", "p-K+", "p-K-", "p-p+", "p-p-"}};
     bool ccdbstored = false;
 
     float isCCDBstored()

@@ -13,26 +13,27 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
+#include <TParameter.h>
+#include <TH1F.h>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include <TParameter.h>
-#include <TH1F.h>
-
 #include "Framework/ASoA.h"
-#include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Expressions.h"
-
 #include "Framework/StaticFor.h"
-#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
-#include <vector>
+#include "MathUtils/Utils.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
+#include "PWGCF/Femto3D/Core/femto3dPairTask.h"
+
 #include "TLorentzVector.h"
 #include "TDatabasePDG.h"
-#include "PWGCF/Femto3D/Core/femto3dPairTask.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -40,11 +41,11 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using FilteredCollisions = aod::SingleCollSels;
-using FilteredTracks = aod::SingleTrackSels;
+using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
+using FilteredTracks = soa::Filtered<aod::SingleTrackSels>;
 
-typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
-typedef std::shared_ptr<soa::Filtered<FilteredCollisions>::iterator> colType;
+typedef std::shared_ptr<FilteredTracks::iterator> trkType;
+typedef std::shared_ptr<FilteredCollisions::iterator> colType;
 
 using MyFemtoPair = o2::aod::singletrackselector::FemtoPair<trkType>;
 
@@ -55,8 +56,8 @@ class ResoPair : public MyFemtoPair
   ResoPair(trkType const& first, trkType const& second) : MyFemtoPair(first, second)
   {
     SetPair(first, second);
-  };
-  ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical){};
+  }
+  ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical) {}
   bool IsClosePair() const { return MyFemtoPair::IsClosePair(_deta, _dphi, _radius); }
   void SetEtaDiff(const float deta) { _deta = deta; }
   void SetPhiStarDiff(const float dphi) { _dphi = dphi; }
@@ -194,19 +195,19 @@ struct K0MixedEvents {
     registry.add("ME", "ME", kTH1F, {invMassAxis});
     registry.add("SEvsPt", "SEvsPt", kTH2D, {invMassAxis, ptAxis});
     registry.add("MEvsPt", "MEvsPt", kTH2D, {invMassAxis, ptAxis});
-    registry.add("eta", Form("eta_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., "#eta"}});
-    registry.add("p_first", Form("p_%i", (int)_particlePDG_1), kTH1F, {ptAxis});
-    registry.add("dcaXY_first", Form("dca_%i", (int)_particlePDG_1), kTH2F, {ptAxis, dcaXyAxis});
-    registry.add("nsigmaTOF_first", Form("nsigmaTOF_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_1))}});
-    registry.add("nsigmaTPC_first", Form("nsigmaTPC_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TPC}(%s))", pdgToSymbol(_particlePDG_1))}});
-    registry.add("rapidity_first", Form("rapidity_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_1))}});
+    registry.add("eta", Form("eta_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., "#eta"}});
+    registry.add("p_first", Form("p_%i", _particlePDG_1.value), kTH1F, {ptAxis});
+    registry.add("dcaXY_first", Form("dca_%i", _particlePDG_1.value), kTH2F, {ptAxis, dcaXyAxis});
+    registry.add("nsigmaTOF_first", Form("nsigmaTOF_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_1))}});
+    registry.add("nsigmaTPC_first", Form("nsigmaTPC_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TPC}(%s))", pdgToSymbol(_particlePDG_1))}});
+    registry.add("rapidity_first", Form("rapidity_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_1))}});
 
     if (!IsIdentical) {
-      registry.add("p_second", Form("p_%i", (int)_particlePDG_2), kTH1F, {ptAxis});
-      registry.add("dcaXY_second", Form("dca_%i", (int)_particlePDG_2), kTH2F, {ptAxis, dcaXyAxis});
-      registry.add("nsigmaTOF_second", Form("nsigmaTOF_%i", (int)_particlePDG_2), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_2))}});
-      registry.add("nsigmaTPC_second", Form("nsigmaTPC_%i", (int)_particlePDG_2), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TPC}(%s))", pdgToSymbol(_particlePDG_2))}});
-      registry.add("rapidity_second", Form("rapidity_%i", (int)_particlePDG_2), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_2))}});
+      registry.add("p_second", Form("p_%i", _particlePDG_2.value), kTH1F, {ptAxis});
+      registry.add("dcaXY_second", Form("dca_%i", _particlePDG_2.value), kTH2F, {ptAxis, dcaXyAxis});
+      registry.add("nsigmaTOF_second", Form("nsigmaTOF_%i", _particlePDG_2.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_2))}});
+      registry.add("nsigmaTPC_second", Form("nsigmaTPC_%i", _particlePDG_2.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TPC}(%s))", pdgToSymbol(_particlePDG_2))}});
+      registry.add("rapidity_second", Form("rapidity_%i", _particlePDG_2.value), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_2))}});
     }
   }
 
@@ -214,8 +215,9 @@ struct K0MixedEvents {
   void mixTracks(Type const& tracks)
   { // template for identical particles from the same collision
 
-    for (long unsigned int ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
-      for (long unsigned int iii = ii + 1; iii < tracks.size(); iii++) {
+    LOG(debug) << "Mixing tracks of the same event";
+    for (uint32_t ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
+      for (uint32_t iii = ii + 1; iii < tracks.size(); iii++) {
 
         Pair->SetPair(tracks[ii], tracks[iii]);
 
@@ -236,6 +238,7 @@ struct K0MixedEvents {
   template <bool isSameEvent = false, typename Type>
   void mixTracks(Type const& tracks1, Type const& tracks2)
   {
+    LOG(debug) << "Mixing tracks of two different events";
     for (auto ii : tracks1) {
       for (auto iii : tracks2) {
 
@@ -262,16 +265,21 @@ struct K0MixedEvents {
     }
   }
 
-  void process(soa::Filtered<FilteredCollisions> const& collisions, soa::Filtered<FilteredTracks> const& tracks)
+  void process(FilteredTracks const& tracks, FilteredCollisions const& collisions)
   {
-    if (_particlePDG_1 == 0 || _particlePDG_2 == 0)
+    LOG(debug) << "Processing " << collisions.size() << " collisions and " << tracks.size() << " tracks";
+
+    if (_particlePDG_1 == 0 || _particlePDG_2 == 0) {
       LOGF(fatal, "One of passed PDG is 0!!!");
+    }
     registry.fill(HIST("Trks"), 2.f, tracks.size());
-    for (auto c : collisions) {
-      registry.fill(HIST("VTXc"), c.posZ());
+    for (auto collision : collisions) {
+      LOG(debug) << "Collision index " << collision.globalIndex();
+      registry.fill(HIST("VTXc"), collision.posZ());
     }
 
     for (auto track : tracks) {
+      LOG(debug) << "Track index " << track.singleCollSelId();
       if (track.itsChi2NCl() > _itsChi2NCl) {
         continue;
       }
@@ -289,8 +297,9 @@ struct K0MixedEvents {
       }
 
       registry.fill(HIST("Trks"), 1);
-      registry.fill(HIST("VTX"), track.singleCollSel().posZ());
-      if (abs(track.singleCollSel().posZ()) > _vertexZ)
+      const float& vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
+      registry.fill(HIST("VTX"), vtxZ);
+      if (abs(vtxZ) > _vertexZ)
         continue;
       registry.fill(HIST("eta"), track.pt(), track.eta());
       if (abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
@@ -326,11 +335,11 @@ struct K0MixedEvents {
         }
       }
 
-      if (IsIdentical)
+      if (IsIdentical) {
         continue;
-      else if ((track.sign() == _sign_2) &&
-               (_particlePDGtoReject != 0 || !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF))) &&
-               (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
+      } else if ((track.sign() == _sign_2) &&
+                 (_particlePDGtoReject != 0 || !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF))) &&
+                 (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
         selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         registry.fill(HIST("p_second"), track.p());
@@ -375,7 +384,7 @@ struct K0MixedEvents {
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
 
-        for (long unsigned int indx1 = 0; indx1 < (i->second).size(); indx1++) { // loop over all the events in each vertex&mult bin
+        for (uint32_t indx1 = 0; indx1 < (i->second).size(); indx1++) { // loop over all the events in each vertex&mult bin
 
           auto col1 = (i->second)[indx1];
 
@@ -387,7 +396,7 @@ struct K0MixedEvents {
             continue;
           }
 
-          for (long unsigned int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          for (uint32_t indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
             auto col2 = (i->second)[indx2];
 
@@ -397,13 +406,13 @@ struct K0MixedEvents {
         }
       }
 
-    } //====================================== end of mixing identical ======================================
-
-    else { //====================================== mixing non-identical ======================================
+      //====================================== end of mixing identical ======================================
+    } else {
+      //====================================== mixing non-identical ======================================
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
 
-        for (long unsigned int indx1 = 0; indx1 < (i->second).size(); indx1++) { // loop over all the events in each vertex&mult bin
+        for (uint32_t indx1 = 0; indx1 < (i->second).size(); indx1++) { // loop over all the events in each vertex&mult bin
 
           auto col1 = (i->second)[indx1];
 
@@ -415,7 +424,7 @@ struct K0MixedEvents {
             continue;
           }
 
-          for (long unsigned int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          for (uint32_t indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
             auto col2 = (i->second)[indx2];
 

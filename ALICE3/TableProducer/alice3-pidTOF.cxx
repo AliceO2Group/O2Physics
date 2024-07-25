@@ -186,7 +186,7 @@ struct ALICE3pidTOFTaskQA {
   Configurable<int> minMult{"minMult", 1, "Minimum track multiplicity with TOF"};
 
   template <uint8_t i>
-  void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)
+  void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& /*ptAxis*/)
   {
     // Exp signal
     const AxisSpec expAxis{1000, 0, 2e6, Form("t_{exp}(%s)", pT[i])};

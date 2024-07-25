@@ -83,7 +83,7 @@ struct PseudorapidityDensityMFT {
     "maxZDiff", 1.0f,
     "max allowed Z difference for reconstruced collisions (cm)"};
 
-  Configurable<bool> usePhiCut{"usePhiCut", true, "use azimuthal angle cut"};
+  Configurable<bool> usePhiCut{"usePhiCut", false, "use azimuthal angle cut"};
   Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f,
                                 "Cut on azimuthal angle of MFT tracks"};
 
@@ -555,7 +555,7 @@ struct PseudorapidityDensityMFT {
     aod::McCollisions::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels,
                                    aod::McCollisionLabels>> const& collisions,
-    Particles const& particles, aod::MFTTracks const& tracks,
+    Particles const& particles, aod::MFTTracks const& /*tracks*/,
     FiCentralTracks const& midtracks)
   {
     registry.fill(HIST("EventEfficiency"), 1.);
@@ -686,7 +686,7 @@ struct PseudorapidityDensityMFT {
   void processGenCent(aod::McCollisions::iterator const& mcCollision,
                       ExColsGenCent const& collisions,
                       Particles const& particles,
-                      MFTTracksLabeled const& tracks)
+                      MFTTracksLabeled const& /*tracks*/)
   {
 
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(),

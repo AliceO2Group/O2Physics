@@ -117,7 +117,7 @@ class FemtoUniverse3DContainer
   /// \param use3dplots Flag to fill 3D plots
   /// \param isiden Identical or non-identical particle pair
   template <typename T>
-  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, bool isMC, bool use3dplots, bool isiden)
+  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, bool /*isMC*/, bool use3dplots, bool isiden)
   {
     mHistogramRegistry = registry;
     std::string femtoObs1D, femtoObsKout, femtoObsKside, femtoObsKlong;

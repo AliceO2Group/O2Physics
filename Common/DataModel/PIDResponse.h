@@ -96,7 +96,7 @@ using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
 // PID index as template argument
 #define perSpeciesWrapper(functionName)                       \
   template <o2::track::PID::ID index, typename TrackType>     \
-  const auto functionName(const TrackType& track)             \
+  auto functionName(const TrackType& track)                   \
   {                                                           \
     if constexpr (index == o2::track::PID::Electron) {        \
       return track.functionName##El();                        \
@@ -122,7 +122,7 @@ using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
 perSpeciesWrapper(tofNSigma);
 perSpeciesWrapper(tofExpSigma);
 template <o2::track::PID::ID index, typename TrackType>
-const auto tofExpSignal(const TrackType& track)
+auto tofExpSignal(const TrackType& track)
 {
   if constexpr (index == o2::track::PID::Electron) {
     return track.tofExpSignalEl(track.tofSignal());
@@ -149,7 +149,7 @@ perSpeciesWrapper(tofExpSignalDiff);
 perSpeciesWrapper(tpcNSigma);
 perSpeciesWrapper(tpcExpSigma);
 template <o2::track::PID::ID index, typename TrackType>
-const auto tpcExpSignal(const TrackType& track)
+auto tpcExpSignal(const TrackType& track)
 {
   if constexpr (index == o2::track::PID::Electron) {
     return track.tpcExpSignalEl(track.tpcSignal());
@@ -178,7 +178,7 @@ perSpeciesWrapper(tpcExpSignalDiff);
 // PID index as function argument for TOF
 #define perSpeciesWrapper(functionName)                                                                             \
   template <typename TrackType>                                                                                     \
-  const auto functionName(const o2::track::PID::ID index, const TrackType& track)                                   \
+  auto functionName(const o2::track::PID::ID index, const TrackType& track)                                         \
   {                                                                                                                 \
     switch (index) {                                                                                                \
       case o2::track::PID::Electron:                                                                                \
@@ -226,7 +226,7 @@ perSpeciesWrapper(tpcExpSignalDiff);
 perSpeciesWrapper(tofNSigma);
 perSpeciesWrapper(tofExpSigma);
 template <typename TrackType>
-const auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
+auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
 {
   switch (index) {
     case o2::track::PID::Electron:
@@ -277,7 +277,7 @@ perSpeciesWrapper(tofExpSignalDiff);
 // PID index as function argument for TPC
 #define perSpeciesWrapper(functionName)                                                                             \
   template <typename TrackType>                                                                                     \
-  const auto functionName(const o2::track::PID::ID index, const TrackType& track)                                   \
+  auto functionName(const o2::track::PID::ID index, const TrackType& track)                                         \
   {                                                                                                                 \
     switch (index) {                                                                                                \
       case o2::track::PID::Electron:                                                                                \
@@ -325,7 +325,7 @@ perSpeciesWrapper(tofExpSignalDiff);
 perSpeciesWrapper(tpcNSigma);
 perSpeciesWrapper(tpcExpSigma);
 template <typename TrackType>
-const auto tpcExpSignal(const o2::track::PID::ID index, const TrackType& track)
+auto tpcExpSignal(const o2::track::PID::ID index, const TrackType& track)
 {
   switch (index) {
     case o2::track::PID::Electron:
@@ -403,7 +403,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOFT0AC, isEvTimeTOFT0AC, //! True if the Eve
 
 namespace pidtofsignal
 {
-DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! TOF signal from track time
+DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                   //! TOF signal from track time
+DECLARE_SOA_DYNAMIC_COLUMN(EventCollisionTime, eventCollisionTime, //! Event collision time used for the track. Needs the TOF
+                           [](float signal, float tMinusTexp, float texp) -> float { return texp + tMinusTexp - signal; });
+
 } // namespace pidtofsignal
 
 namespace pidtofbeta
@@ -528,7 +531,8 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsi
 } // namespace pidtof_tiny
 
 DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
-                  pidtofsignal::TOFSignal);
+                  pidtofsignal::TOFSignal,
+                  pidtofsignal::EventCollisionTime<pidtofsignal::TOFSignal>);
 
 DECLARE_SOA_TABLE(pidTOFFlags, "AOD", "pidTOFFlags", //! Table of the flags for TOF signal quality on the track level
                   pidflags::GoodTOFMatch);
@@ -603,6 +607,14 @@ DECLARE_SOA_TABLE(pidTOFHe, "AOD", "pidTOFHe", //! Table of the TOF response wit
                   pidtof_tiny::TOFNSigmaStoreHe, pidtof_tiny::TOFNSigmaHe<pidtof_tiny::TOFNSigmaStoreHe>);
 DECLARE_SOA_TABLE(pidTOFAl, "AOD", "pidTOFAl", //! Table of the TOF response with binned Nsigma for alpha
                   pidtof_tiny::TOFNSigmaStoreAl, pidtof_tiny::TOFNSigmaAl<pidtof_tiny::TOFNSigmaStoreAl>);
+
+namespace mcpidtpc
+{
+// Tuned MC on data
+DECLARE_SOA_COLUMN(DeDxTunedMc, mcTunedTPCSignal, float); //! TPC signal after TuneOnData application for MC
+} // namespace mcpidtpc
+
+DECLARE_SOA_TABLE(mcTPCTuneOnData, "AOD", "MCTPCTUNEONDATA", mcpidtpc::DeDxTunedMc);
 
 namespace pidtpc
 {

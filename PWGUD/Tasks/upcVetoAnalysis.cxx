@@ -105,17 +105,15 @@ struct UpcVetoAnalysis {
     fRun = bc.runNumber();
     o2::ccdb::CcdbApi ccdb_api;
     ccdb_api.init("http://alice-ccdb.cern.ch");
-    std::map<std::string, std::string> metadata;
-    std::map<std::string, std::string> headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", fRun),
-                                                                          metadata, -1);
-
-    fTsSOR = std::atol(headers["SOR"].c_str());
-    fTsEOR = std::atol(headers["EOR"].c_str());
+    auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb_api, fRun);
+    fTsSOR = soreor.first;
+    fTsEOR = soreor.second;
     LOGP(info, "fTsSOR={}, fTsEOR={}", fTsSOR, fTsEOR);
 
-    auto grplhcif = ccdb_api.retrieveFromTFileAny<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", metadata,
-                                                                                fTsSOR);
+    std::map<std::string, std::string> metadata;
+    auto grplhcif = ccdb_api.retrieveFromTFileAny<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", metadata, fTsSOR);
     bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+
     fNBcsB = 0;
     for (auto i = 0; i < o2::constants::lhc::LHCMaxBunches; ++i) {
       if (bcPatternB[i])

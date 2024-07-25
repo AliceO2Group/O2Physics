@@ -14,6 +14,8 @@
 /// \author Carolina Reetz c.reetz@cern.ch
 /// \brief  QA task to study momentum resolution of Lambda daughter tracks
 
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -50,18 +52,24 @@ struct qaLamMomResolution {
 
   Configurable<bool> collSelection{"collSelection", true, "Apply collision selection"};
   Configurable<bool> useTrackTuner{"useTrackTuner", false, "Apply pT/DCA corrections to MC"};
-  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=0|updateCurvature=1|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=1|oneOverPtUpgr=1.2", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackDCAs=0|updateTrackCovMat=0|updateCurvature=0|updateCurvatureIU=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=-1.|qOverPtData=-1.", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
+  Configurable<int> itsAfterburnerPos{"itsAfterburnerPos", 0, "Flag for the ITS afterburner tracks on positive daughters: -1 no AB, 0 no selection, 1 AB"};
+  Configurable<int> itsAfterburnerNeg{"itsAfterburnerNeg", 0, "Flag for the ITS afterburner tracks on negative daughters: -1 no AB, 0 no selection, 1 AB"};
+
   HistogramRegistry hist{"Histograms"};
 
   o2::dataformats::VertexBase mVtx;
+  o2::dataformats::VertexBase mPV;
   o2::dataformats::DCA mDcaInfoCovPos;
   o2::dataformats::DCA mDcaInfoCovNeg;
-  o2::track::TrackParametrizationWithError<float> mTrackParCovPos;
-  o2::track::TrackParametrizationWithError<float> mTrackParCovNeg;
+  o2::track::TrackParametrizationWithError<float> mTrackParCovPosVtx;
+  o2::track::TrackParametrizationWithError<float> mTrackParCovNegVtx;
+  o2::track::TrackParametrizationWithError<float> mTrackParCovPosPV;
+  o2::track::TrackParametrizationWithError<float> mTrackParCovNegPV;
 
   int runNumber = 0;
 
@@ -76,6 +84,7 @@ struct qaLamMomResolution {
   float radiusLambda = -1.0f;
   float ptLambda = -1.0f;
   float etaProton = -1.0f, etaPion = -1.0f;
+  float phiProton = -1.0f, phiPion = -1.0f;
   int tpcNClsProton = 0, tpcNClsPion = 0;
   int chargeProton = 0, chargePion = 0;
   // daughter momenta
@@ -88,11 +97,16 @@ struct qaLamMomResolution {
   std::array<float, 3> momProtonRecErr;
   std::array<float, 3> momPionRecErr;
   float sigma1PtProtonIU = -1.0f, sigma1PtPionIU = -1.0f;
+  // daughter IU position
+  std::array<float, 3> posProtonRecIU;
+  std::array<float, 3> posPionRecIU;
+  std::array<float, 3> posProtonRecIUErr;
+  std::array<float, 3> posPionRecIUErr;
   // daughter DCA
-  std::array<float, 2> DCAProtonRec;    // 0: xy, 1: z
-  std::array<float, 2> DCAPionRec;      // 0: xy, 1: z
-  std::array<float, 2> DCAProtonRecErr; // 0: xy, 1: z
-  std::array<float, 2> DCAPionRecErr;   // 0: xy, 1: z
+  std::array<float, 2> DCAProtonRec;    // 0: xy, 1: z // updated if tuner is used!
+  std::array<float, 2> DCAPionRec;      // 0: xy, 1: z // updated if tuner is used!
+  std::array<float, 2> DCAProtonRecErr; // 0: xy, 1: z // updated if tuner is used!
+  std::array<float, 2> DCAPionRecErr;   // 0: xy, 1: z // updated if tuner is used!
   // MC info
   std::array<float, 3> momProtonGen;
   std::array<float, 3> momPionGen;
@@ -137,15 +151,58 @@ struct qaLamMomResolution {
     runNumber = bc.runNumber();
   }
 
-  template <typename TV0, typename TV0Track>
+  template <typename TTrack>
+  bool selectAfterburner(TTrack const& posTrack, TTrack const& negTrack)
+  {
+    switch (itsAfterburnerPos) {
+      case -1:
+        if (posTrack.itsChi2NCl() >= 0) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (posTrack.itsChi2NCl() < 0) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid AB selection for positive daughter";
+        break;
+    }
+    switch (itsAfterburnerNeg) {
+      case -1:
+        if (negTrack.itsChi2NCl() >= 0) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (negTrack.itsChi2NCl() < 0) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid AB selection for negative daughter";
+        break;
+    }
+    return true;
+  }
+
+  template <typename TV0, typename TV0Track, typename TCollision>
   void tuneV0(TV0 const& v0,
               TV0Track const& posTrack,
               TV0Track const& negTrack,
               aod::McParticles const&,
+              TCollision const& collision,
               aod::BCsWithTimestamps const& bcs)
   {
     initCCDB(bcs.begin());
     trackTunedTracks->Fill(1, 2); // tune 2 tracks
+    o2::track::TrackParametrizationWithError<float> mTrackParCovPos;
+    o2::track::TrackParametrizationWithError<float> mTrackParCovNeg;
     setTrackParCov(posTrack, mTrackParCovPos);
     setTrackParCov(negTrack, mTrackParCovNeg);
     mTrackParCovPos.setPID(posTrack.pidForTracking());
@@ -155,12 +212,25 @@ struct qaLamMomResolution {
     auto mcParticlePos = posTrack.mcParticle();
     auto mcParticleNeg = negTrack.mcParticle();
 
+    // tune parameters at IU
     trackTuner.tuneTrackParams(mcParticlePos, mTrackParCovPos, matCorr, &mDcaInfoCovPos, trackTunedTracks);
     trackTuner.tuneTrackParams(mcParticleNeg, mTrackParCovNeg, matCorr, &mDcaInfoCovNeg, trackTunedTracks);
+    // propagate tuned tracks to Lambda vertex
+    mTrackParCovPosVtx = mTrackParCovPos;
+    mTrackParCovNegVtx = mTrackParCovNeg;
     mVtx.setPos({v0.x(), v0.y(), v0.z()});
     mVtx.setCov(v0.positionCovMat()[0], v0.positionCovMat()[1], v0.positionCovMat()[2], v0.positionCovMat()[3], v0.positionCovMat()[4], v0.positionCovMat()[5]);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovPos, 2.f, matCorr, &mDcaInfoCovPos);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovNeg, 2.f, matCorr, &mDcaInfoCovNeg);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovPosVtx, 2.f, matCorr, &mDcaInfoCovPos);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovNegVtx, 2.f, matCorr, &mDcaInfoCovNeg);
+
+    // get DCAs to PV
+    // DCA with respect to collision associated to the V0
+    mTrackParCovPosPV = mTrackParCovPos;
+    mTrackParCovNegPV = mTrackParCovNeg;
+    mPV.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mPV.setCov(collision.covXX(), collision.covXX(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, mTrackParCovPosPV, 2.f, matCorr, &mDcaInfoCovPos);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, mTrackParCovNegPV, 2.f, matCorr, &mDcaInfoCovNeg);
   }
 
   template <typename TCollision>
@@ -170,6 +240,7 @@ struct qaLamMomResolution {
                  massLambda, radiusLambda, ptLambda,
                  chargeProton, chargePion,
                  etaProton, etaPion,
+                 phiProton, phiPion,
                  tpcNClsProton, tpcNClsPion,
                  momProtonRec[0], momProtonRec[1], momProtonRec[2],
                  momProtonRecErr[0], momProtonRecErr[1], momProtonRecErr[2],
@@ -182,6 +253,10 @@ struct qaLamMomResolution {
                  momProtonGen[0], momProtonGen[1], momProtonGen[2],
                  momPionGen[0], momPionGen[1], momPionGen[2],
                  sigma1PtProtonIU, sigma1PtPionIU,
+                 posProtonRecIU[0], posProtonRecIU[1], posProtonRecIU[2],
+                 posProtonRecIUErr[0], posProtonRecIUErr[1], posProtonRecIUErr[2],
+                 posPionRecIU[0], posPionRecIU[1], posPionRecIU[2],
+                 posPionRecIUErr[0], posPionRecIUErr[1], posPionRecIUErr[2],
                  DCAProtonRec[0], DCAProtonRec[1],
                  DCAProtonRecErr[0], DCAProtonRecErr[1],
                  DCAPionRec[0], DCAPionRec[1],
@@ -215,7 +290,23 @@ struct qaLamMomResolution {
     momPionRecIUErr[2] = sqrt(pioncv[20]);
     sigma1PtPionIU = pionTrackIU.sigma1Pt();
 
-    // daughter DCA
+    // daughter position at IU
+    // proton
+    posProtonRecIU[0] = protonTrackIU.x();
+    posProtonRecIU[1] = protonTrackIU.y();
+    posProtonRecIU[2] = protonTrackIU.z();
+    posProtonRecIUErr[0] = sqrt(protoncv[0]);
+    posProtonRecIUErr[1] = sqrt(protoncv[2]);
+    posProtonRecIUErr[2] = sqrt(protoncv[5]);
+    // pion
+    posPionRecIU[0] = pionTrackIU.px();
+    posPionRecIU[1] = pionTrackIU.py();
+    posPionRecIU[2] = pionTrackIU.pz();
+    posPionRecIUErr[0] = sqrt(pioncv[0]);
+    posPionRecIUErr[1] = sqrt(pioncv[2]);
+    posPionRecIUErr[2] = sqrt(pioncv[5]);
+
+    // daughter DCA to PV
     DCAProtonRec[0] = protonTrackIU.dcaXY();
     DCAProtonRec[1] = protonTrackIU.dcaZ();
     DCAProtonRecErr[0] = sqrt(protonTrackIU.sigmaDcaXY2());
@@ -230,6 +321,8 @@ struct qaLamMomResolution {
     chargePion = pionTrackIU.sign();
     etaProton = protonTrackIU.eta();
     etaPion = pionTrackIU.eta();
+    phiProton = protonTrackIU.phi();
+    phiPion = pionTrackIU.phi();
     tpcNClsProton = protonTrackIU.tpcNClsFound();
     tpcNClsPion = pionTrackIU.tpcNClsFound();
   }
@@ -261,6 +354,10 @@ struct qaLamMomResolution {
           LOG(debug) << "V0 is a Lambda.";
           const auto& protonTrackIU = v0data.posTrack_as<MyTracks>();
           const auto& pionTrackIU = v0data.negTrack_as<MyTracks>();
+
+          // afterburner selection
+          if (!selectAfterburner(protonTrackIU, pionTrackIU))
+            continue;
 
           if (protonTrackIU.has_mcParticle() && pionTrackIU.has_mcParticle()) {
 
@@ -301,15 +398,15 @@ struct qaLamMomResolution {
               // optionally use track tuner to tune daughter tracks' pT at decay vertex
               if (useTrackTuner) {
                 // tune V0
-                tuneV0(v0data, protonTrackIU, pionTrackIU, mcparticles, bcs);
+                tuneV0(v0data, protonTrackIU, pionTrackIU, mcparticles, collision, bcs);
                 // get smeared parameters and cov matrix
                 std::array<float, 3> pPos{0., 0., 0.};
                 std::array<float, 3> pNeg{0., 0., 0.};
                 std::array<float, 21> cPos, cNeg;
-                mTrackParCovPos.getPxPyPzGlo(pPos);
-                mTrackParCovNeg.getPxPyPzGlo(pNeg);
-                mTrackParCovPos.getCovXYZPxPyPzGlo(cPos);
-                mTrackParCovNeg.getCovXYZPxPyPzGlo(cNeg);
+                mTrackParCovPosVtx.getPxPyPzGlo(pPos);
+                mTrackParCovNegVtx.getPxPyPzGlo(pNeg);
+                mTrackParCovPosVtx.getCovXYZPxPyPzGlo(cPos);
+                mTrackParCovNegVtx.getCovXYZPxPyPzGlo(cNeg);
                 // lambda
                 massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
                                                      std::array{pNeg[0], pNeg[1], pNeg[2]}},
@@ -329,6 +426,17 @@ struct qaLamMomResolution {
                 momPionRecErr[0] = sqrt(cNeg[9]);
                 momPionRecErr[1] = sqrt(cNeg[14]);
                 momPionRecErr[2] = sqrt(cNeg[20]);
+                // smeared DCAs at PV
+                // proton
+                DCAProtonRec[0] = mDcaInfoCovPos.getY();
+                DCAProtonRec[1] = mDcaInfoCovPos.getZ();
+                DCAProtonRecErr[0] = sqrt(mDcaInfoCovPos.getSigmaY2());
+                DCAProtonRecErr[1] = sqrt(mDcaInfoCovPos.getSigmaZ2());
+                // pion
+                DCAPionRec[0] = mDcaInfoCovNeg.getY();
+                DCAPionRec[1] = mDcaInfoCovNeg.getZ();
+                DCAPionRecErr[0] = sqrt(mDcaInfoCovNeg.getSigmaY2());
+                DCAPionRecErr[1] = sqrt(mDcaInfoCovNeg.getSigmaZ2());
               }
 
               // fill table
@@ -342,6 +450,10 @@ struct qaLamMomResolution {
           LOG(debug) << "V0 is an Anti-Lambda.";
           const auto& protonTrackIU = v0data.negTrack_as<MyTracks>();
           const auto& pionTrackIU = v0data.posTrack_as<MyTracks>();
+
+          // afterburner selection
+          if (!selectAfterburner(pionTrackIU, protonTrackIU))
+            continue;
 
           if (protonTrackIU.has_mcParticle() && pionTrackIU.has_mcParticle()) {
 
@@ -382,15 +494,15 @@ struct qaLamMomResolution {
               // optionally use track tuner to tune daughter tracks' pT at decay vertex
               if (useTrackTuner) {
                 // tune V0
-                tuneV0(v0data, pionTrackIU, protonTrackIU, mcparticles, bcs);
+                tuneV0(v0data, pionTrackIU, protonTrackIU, mcparticles, collision, bcs);
                 // get smeared parameters and cov matrix
                 std::array<float, 3> pPos{0., 0., 0.};
                 std::array<float, 3> pNeg{0., 0., 0.};
                 std::array<float, 21> cPos, cNeg;
-                mTrackParCovPos.getPxPyPzGlo(pPos);
-                mTrackParCovNeg.getPxPyPzGlo(pNeg);
-                mTrackParCovPos.getCovXYZPxPyPzGlo(cPos);
-                mTrackParCovNeg.getCovXYZPxPyPzGlo(cNeg);
+                mTrackParCovPosVtx.getPxPyPzGlo(pPos);
+                mTrackParCovNegVtx.getPxPyPzGlo(pNeg);
+                mTrackParCovPosVtx.getCovXYZPxPyPzGlo(cPos);
+                mTrackParCovNegVtx.getCovXYZPxPyPzGlo(cNeg);
                 // lambda
                 massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
                                                      std::array{pNeg[0], pNeg[1], pNeg[2]}},
@@ -410,6 +522,17 @@ struct qaLamMomResolution {
                 momPionRecErr[0] = sqrt(cPos[9]);
                 momPionRecErr[1] = sqrt(cPos[14]);
                 momPionRecErr[2] = sqrt(cPos[20]);
+                // smeared DCAs at PV
+                // proton
+                DCAProtonRec[0] = mDcaInfoCovNeg.getY();
+                DCAProtonRec[1] = mDcaInfoCovNeg.getZ();
+                DCAProtonRecErr[0] = sqrt(mDcaInfoCovNeg.getSigmaY2());
+                DCAProtonRecErr[1] = sqrt(mDcaInfoCovNeg.getSigmaZ2());
+                // pion
+                DCAPionRec[0] = mDcaInfoCovPos.getY();
+                DCAPionRec[1] = mDcaInfoCovPos.getZ();
+                DCAPionRecErr[0] = sqrt(mDcaInfoCovPos.getSigmaY2());
+                DCAPionRecErr[1] = sqrt(mDcaInfoCovPos.getSigmaZ2());
               }
 
               // fill table

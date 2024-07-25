@@ -168,7 +168,7 @@ struct sigma {
   }
   // v0 selection
   template <typename Collision, typename V0>
-  bool SelectionV0(Collision const& collision, V0 const& candidate, float multiplicity)
+  bool SelectionV0(Collision const& collision, V0 const& candidate, float /*multiplicity*/)
   {
     if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
@@ -365,8 +365,8 @@ struct sigma {
 
   PROCESS_SWITCH(sigma, processSE, "Process Same event", true);
 
-  void processME(EventCandidates const& collisions,
-                 TrackCandidates const& tracks, V0TrackCandidate const& V0s)
+  void processME(EventCandidates const& /*collisions*/,
+                 TrackCandidates const& /*tracks*/, V0TrackCandidate const& /*V0s*/)
 
   {
 

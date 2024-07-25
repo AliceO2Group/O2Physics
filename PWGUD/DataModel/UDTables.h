@@ -355,18 +355,37 @@ DECLARE_SOA_TABLE(UDFwdTracks, "AOD", "UDFWDTRACK",
                   udfwdtrack::TrackTime,
                   udfwdtrack::TrackTimeRes);
 
+namespace udfwdmatchindex
+{
+DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);    //!
+DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int64_t); //! Index of the track in the global track table
+DECLARE_SOA_COLUMN(MCHTrackId, mchTrackId, int64_t);   //! Id of original MCH track used for matching
+DECLARE_SOA_COLUMN(MFTTrackId, mftTrackId, int64_t);   //! Id of original MFT track used for matching
+} // namespace udfwdmatchindex
+
+// Details about FWD indices
+DECLARE_SOA_TABLE(UDFwdIndices, "AOD", "UDFWDINDEX",
+                  o2::soa::Index<>,
+                  udfwdmatchindex::UDCollisionId,
+                  udfwdmatchindex::GlobalIndex,
+                  udfwdmatchindex::MCHTrackId,
+                  udfwdmatchindex::MFTTrackId);
+
 // Muon track quality details
 DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
+                  fwdtrack::TrackType,
                   fwdtrack::NClusters,
                   fwdtrack::PDca,
                   fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2,
                   fwdtrack::Chi2MatchMCHMID,
+                  fwdtrack::Chi2MatchMCHMFT,
                   fwdtrack::MCHBitMap,
                   fwdtrack::MIDBitMap,
                   fwdtrack::MIDBoards);
 
 using UDFwdTrack = UDFwdTracks::iterator;
+using UDFwdIndex = UDFwdIndices::iterator;
 using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
 
 DECLARE_SOA_TABLE(UDFwdTracksProp, "AOD", "UDFWDTRACKPROP",
@@ -393,6 +412,24 @@ DECLARE_SOA_TABLE(UDFwdTracksCovProp, "AOD", "UDFWDTRKCOVPROP",
 
 using UDFwdTrackProp = UDFwdTracksProp::iterator;
 using UDFwdTrackCovProp = UDFwdTracksCovProp::iterator;
+
+namespace udfwdtrkcl
+{
+DECLARE_SOA_INDEX_COLUMN(UDFwdTrack, udFwdTrack); //!
+}
+
+DECLARE_SOA_TABLE(UDFwdTracksCls, "AOD", "UDFWDTRKCL", //! Forward Track Cluster information
+                  o2::soa::Index<>,
+                  udfwdtrkcl::UDFwdTrackId,
+                  fwdtrkcl::X,
+                  fwdtrkcl::Y,
+                  fwdtrkcl::Z,
+                  fwdtrkcl::ClInfo,
+                  fwdtrkcl::DEId<fwdtrkcl::ClInfo>,
+                  fwdtrkcl::IsGoodX<fwdtrkcl::ClInfo>,
+                  fwdtrkcl::IsGoodY<fwdtrkcl::ClInfo>);
+
+using UDFwdTrackCls = UDFwdTracksCls::iterator;
 
 namespace udmcfwdtracklabel
 {

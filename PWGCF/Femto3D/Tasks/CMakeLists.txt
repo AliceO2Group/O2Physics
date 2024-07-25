@@ -10,16 +10,16 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(femto3d-qa
-                    SOURCES femto3dQA.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
+    SOURCES femto3dQA.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(femto3d-pair-task
-                    SOURCES femto3dPairTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
+    SOURCES femto3dPairTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(femto3d-pair-task-mc
-                    SOURCES femto3dPairTaskMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
+    SOURCES femto3dPairTaskMC.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

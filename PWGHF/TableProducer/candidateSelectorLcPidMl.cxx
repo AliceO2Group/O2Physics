@@ -123,7 +123,15 @@ struct HfCandidateSelectorLcPidMl {
       }
       if (retrieveSuccess) {
         auto session = model.getSession();
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
         auto inputShapes = session->GetInputShapes();
+#else
+        std::vector<std::vector<int64_t>> inputShapes;
+        Ort::AllocatorWithDefaultOptions tmpAllocator;
+        for (size_t i = 0; i < session->GetInputCount(); ++i) {
+          inputShapes.emplace_back(session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
+        }
+#endif
         if (inputShapes[0][0] < 0) {
           LOGF(warning, "Model for Lc with negative input shape likely because converted with hummingbird, setting it to 1.");
           inputShapes[0][0] = 1;
@@ -250,9 +258,9 @@ struct HfCandidateSelectorLcPidMl {
         continue;
       }
 
-      std::array<float, 3> pVecPos1 = {trackPos1.px(), trackPos1.py(), trackPos1.pz()};
-      std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
-      std::array<float, 3> pVecPos2 = {trackPos2.px(), trackPos2.py(), trackPos2.pz()};
+      std::array<float, 3> pVecPos1 = trackPos1.pVector();
+      std::array<float, 3> pVecNeg = trackNeg.pVector();
+      std::array<float, 3> pVecPos2 = trackPos2.pVector();
       const float massPi = o2::constants::physics::MassPiPlus;
       const float massK = o2::constants::physics::MassKPlus;
       const float massProton = o2::constants::physics::MassProton;

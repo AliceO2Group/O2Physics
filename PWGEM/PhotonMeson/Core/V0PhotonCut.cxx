@@ -175,7 +175,7 @@ void V0PhotonCut::SetChi2PerClusterITS(float min, float max)
   mMaxChi2PerClusterITS = max;
   LOG(info) << "V0 Photon Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
 }
-void V0PhotonCut::SetMeanClusterSizeITS(float min, float max)
+void V0PhotonCut::SetMeanClusterSizeITSob(float min, float max)
 {
   mMinMeanClusterSizeITS = min;
   mMaxMeanClusterSizeITS = max;
@@ -222,6 +222,12 @@ void V0PhotonCut::SetRequireTPCTRDTOF(bool flag)
 {
   mRequireTPCTRDTOF = flag;
   LOG(info) << "V0 Photon Cut, require TPC-TOF track: " << mRequireTPCTRDTOF;
+}
+
+void V0PhotonCut::SetDisableITSonly(bool flag)
+{
+  mDisableITSonly = flag;
+  LOG(info) << "V0 Photon Cut, disable ITS only track: " << mDisableITSonly;
 }
 
 void V0PhotonCut::print() const

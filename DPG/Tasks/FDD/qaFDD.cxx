@@ -290,7 +290,7 @@ struct fddQA {
     }
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const& fdds,
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const&,
                aod::BCs const&)
   {
     float multFDDA = 0.f;
@@ -344,8 +344,8 @@ struct fddQA {
                  "Process FDD and FT0 info", true);
 
   void
-    processCorr(soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>::iterator const& col, aod::FT0s const& ft0s,
-                aod::FV0As const& fv0s, aod::Zdcs const& zdcs, aod::BCs const&)
+    processCorr(soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>::iterator const& col, aod::FT0s const&,
+                aod::FV0As const&, aod::Zdcs const&, aod::BCs const&)
   {
     float sumAmpFT0C = 0;
     float sumAmpFV0 = 0;
@@ -366,14 +366,13 @@ struct fddQA {
     int localBC = globalBC % nBCsPerOrbit;
 
     if (newRunNumber != oldRunNumber) {
-      std::map<string, string> metadataRCT, headers;
-      headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
-      ts = atol(headers["SOR"].c_str());
+      auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, newRunNumber);
+      ts = soreor.first;
 
       LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
       oldRunNumber = newRunNumber;
-      std::map<std::string, std::string> mapMetadata;
-      std::map<std::string, std::string> mapHeader;
+      // std::map<std::string, std::string> mapMetadata;
+      // std::map<std::string, std::string> mapHeader;
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
       for (int i = 0; i < static_cast<int>(CollidingBunch.size()); i++) {
@@ -451,7 +450,7 @@ struct fddQA {
   PROCESS_SWITCH(fddQA, processCorr,
                  "Process FDD time correlation", false);
 
-  void processFT0(aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCs const&)
+  void processFT0(aod::FT0s const& ft0s, aod::FV0As const&, aod::BCs const&)
   {
     for (auto& ft0 : ft0s) {
       int localBCFT0 = ft0.bc().globalBC() % nBCsPerOrbit;
@@ -476,7 +475,7 @@ struct fddQA {
 
   void
     processFITFromBC(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&,
-                     aod::Zdcs const& zdcs)
+                     aod::Zdcs const&)
   {
     bool Ora = false;
     bool Orc = false;
@@ -491,15 +490,14 @@ struct fddQA {
     newRunNumber = bc.runNumber();
 
     if (newRunNumber != oldRunNumber) {
-      uint64_t ts{};
-      std::map<string, string> metadataRCT, headers;
-      headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
-      ts = atol(headers["SOR"].c_str());
+      // uint64_t ts{};
+      // std::map<string, string> metadataRCT, headers;
+      auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, newRunNumber);
+      // headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
+      auto ts = soreor.first; // atol(headers["SOR"].c_str());
 
       LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
       oldRunNumber = newRunNumber;
-      std::map<std::string, std::string> mapMetadata;
-      std::map<std::string, std::string> mapHeader;
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
       for (int i = 0; i < static_cast<int>(CollidingBunch.size()); i++) {

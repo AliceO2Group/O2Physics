@@ -53,9 +53,9 @@ using namespace o2::framework::expressions;
 using std::array;
 
 // simple checkers
-#define biton(var, nbit) ((var) |= (static_cast<uint32_t>(1) << (nbit)))
+// #define biton(var, nbit) ((var) |= (static_cast<uint32_t>(1) << (nbit)))
 #define bitoff(var, nbit) ((var) &= ~(static_cast<uint32_t>(1) << (nbit))) //((a) &= ~(1ULL<<(b)))
-#define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
+// #define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 
@@ -100,7 +100,7 @@ struct alice3decayPreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // future dev if needed
   }
@@ -130,7 +130,7 @@ struct alice3decayPreselector {
     initializeMasks(tracks.size());
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFilterInnerTOF(tofTracks const& tracks)
+  void processFilterInnerTOF(tofTracks const&)
   {
     for (auto const& track : pInnerTOFPi)
       bitoff(selectionMap[track.globalIndex()], kInnerTOFPion);
@@ -140,7 +140,7 @@ struct alice3decayPreselector {
       bitoff(selectionMap[track.globalIndex()], kInnerTOFProton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFilterOuterTOF(tofTracks const& tracks)
+  void processFilterOuterTOF(tofTracks const&)
   {
     for (auto const& track : pOuterTOFPi)
       bitoff(selectionMap[track.globalIndex()], kOuterTOFPion);
@@ -150,7 +150,7 @@ struct alice3decayPreselector {
       bitoff(selectionMap[track.globalIndex()], kOuterTOFProton);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFilterRICH(richTracks const& tracks)
+  void processFilterRICH(richTracks const&)
   {
     for (auto const& track : pRICHPi)
       bitoff(selectionMap[track.globalIndex()], kRICHPion);
@@ -399,7 +399,7 @@ struct alice3decayFinder {
     return returnValue;
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // initialize O2 2-prong fitter (only once)
     fitter.setPropagateToPCA(true);
@@ -461,7 +461,7 @@ struct alice3decayFinder {
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processGenerated(aod::McParticles const& mcParticles)
+  void processGenerated(aod::McParticles const&)
   {
     // no grouping for MC particles -> as intended
     if (doprocessFindDmesons) {
@@ -479,7 +479,7 @@ struct alice3decayFinder {
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindDmesons(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const& mcParticles)
+  void processFindDmesons(aod::Collision const& collision, alice3tracks const&, aod::McParticles const&)
   {
     // group with this collision
     auto tracksPiPlusFromDgrouped = tracksPiPlusFromD->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -524,7 +524,7 @@ struct alice3decayFinder {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindLcBaryons(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const& mcParticles)
+  void processFindLcBaryons(aod::Collision const& collision, alice3tracks const&, aod::McParticles const&)
   {
     // group with this collision
     auto tracksPiPlusFromLcgrouped = tracksPiPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);

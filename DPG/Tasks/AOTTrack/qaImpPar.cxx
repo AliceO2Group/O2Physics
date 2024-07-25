@@ -154,7 +154,7 @@ struct QaImpactPar {
   void processData(o2::soa::Filtered<collisionRecoTable>::iterator& collision,
                    const trackTable& tracksUnfiltered,
                    const o2::soa::Filtered<trackFullTable>& tracks,
-                   o2::aod::BCsWithTimestamps const& bcs)
+                   o2::aod::BCsWithTimestamps const&)
   {
     /// here call the template processReco function
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
@@ -170,7 +170,7 @@ struct QaImpactPar {
                  o2::soa::Filtered<trackMCFullTable> const& tracks,
                  const o2::aod::McParticles& mcParticles,
                  const o2::aod::McCollisions&,
-                 o2::aod::BCsWithTimestamps const& bcs)
+                 o2::aod::BCsWithTimestamps const&)
   {
     /// here call the template processReco function
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
@@ -320,7 +320,7 @@ struct QaImpactPar {
   /// core template process function
   template <bool IS_MC, typename C, typename T, typename T_MC>
   void processReco(const C& collision, const trackTable& unfilteredTracks, const T& tracks,
-                   const T_MC& mcParticles,
+                   const T_MC& /*mcParticles*/,
                    o2::aod::BCsWithTimestamps::iterator const& bc)
   {
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]

@@ -339,7 +339,7 @@ struct strangepidqa {
     }
   }
 
-  void processSim(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFPIDs, aod::V0TOFBetas> const& v0s)
+  void processSim(aod::StraCollision const&, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFPIDs, aod::V0TOFBetas> const& v0s)
   {
     for (auto& lambda : v0s) { // selecting photons from Sigma0
       if (lambda.pdgCode() != 3122)

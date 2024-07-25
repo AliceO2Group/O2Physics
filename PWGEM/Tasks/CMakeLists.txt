@@ -48,3 +48,8 @@ o2physics_add_dpl_workflow(phosnonlin
                     SOURCES phosNonlin.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::PHOSBase O2::PHOSReconstruction
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phoselid
+                    SOURCES phosElId.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::PHOSBase
+                    COMPONENT_NAME Analysis)

@@ -181,7 +181,7 @@ struct DqCumulantFlow {
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis;
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
 
     ccdb->setURL(url.value);
@@ -388,7 +388,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<DqCumulantFlow>(cfgc)};
 }
 
-void FillFC(GFW* fGFW, OutputObj<FlowContainer> fFC, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag)
+void FillFC(GFW* fGFW, OutputObj<FlowContainer> fFC, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool /*fillflag*/)
 {
   // Calculate the correlations from the GFW
   double dnx, dny, valx;

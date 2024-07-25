@@ -397,7 +397,7 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
 }
 
 template <typename C, typename V, typename T>
-bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0,
+bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
                                               T const& posTrack,
                                               T const& negTrack)
 {
@@ -482,7 +482,7 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0,
 }
 
 template <typename C, typename V, typename T>
-void FemtoDreamV0Selection::fillLambdaQA(C const& col, V const& v0,
+void FemtoDreamV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
                                          T const& posTrack, T const& negTrack)
 {
   const auto signPos = posTrack.sign();
@@ -548,7 +548,7 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& col, V const& v0,
 /// to pass the collsion as well
 template <typename cutContainerType, typename C, typename V, typename T>
 std::array<cutContainerType, 5>
-  FemtoDreamV0Selection::getCutContainer(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+  FemtoDreamV0Selection::getCutContainer(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
   auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
   auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
@@ -639,7 +639,7 @@ std::array<cutContainerType, 5>
 template <o2::aod::femtodreamparticle::ParticleType part,
           o2::aod::femtodreamparticle::ParticleType daugh, typename C,
           typename V, typename T>
-void FemtoDreamV0Selection::fillQA(C const& col, V const& v0, T const& posTrack,
+void FemtoDreamV0Selection::fillQA(C const& /*col*/, V const& v0, T const& posTrack,
                                    T const& negTrack)
 {
   if (mQAHistogramRegistry) {

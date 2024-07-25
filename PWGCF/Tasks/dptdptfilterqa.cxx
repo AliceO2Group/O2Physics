@@ -24,7 +24,7 @@ using namespace o2::soa;
 using namespace o2::framework::expressions;
 
 #define DPTDPTFILTERLOGCOLLISIONS debug
-#define DPTDPTFILTERLOGTRACKS debug
+// #define DPTDPTFILTERLOGTRACKS debug
 
 namespace o2::analysis::dptdptfilterqa
 {

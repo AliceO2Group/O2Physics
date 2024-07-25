@@ -293,8 +293,8 @@ struct qaFT0TrgBased {
   void
     processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                 aod::FT0sCorrected>::iterator const& collision,
-                      aod::FT0s const& ft0s, aod::FV0As const& fv0s,
-                      aod::Zdcs const& zdcs)
+                      aod::FT0s const&, aod::FV0As const&,
+                      aod::Zdcs const&)
   {
 
     if (selection == 8 && !collision.sel8()) {
@@ -469,7 +469,7 @@ struct qaFT0TrgBased {
                  true);
 
   void processBCs(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&,
-                  aod::FT0s const&, aod::Zdcs const& zdcs)
+                  aod::FT0s const&, aod::Zdcs const&)
   {
 
     histos.fill(HIST("BCs/EventSelectionStats"), kAll);

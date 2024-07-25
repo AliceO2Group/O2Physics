@@ -369,7 +369,7 @@ struct HfTaskMcEfficiency {
   }
 
   template <typename C>
-  void candidate2ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const& colls, std::vector<int> pdgCodes)
+  void candidate2ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, std::vector<int> pdgCodes)
   {
     candidate2ProngLoop<true>(candidates, tracks, mcParticles, pdgCodes);
 
@@ -482,7 +482,7 @@ struct HfTaskMcEfficiency {
   /// 3-prong analyses
 
   template <bool hasDplus, bool hasDs, bool hasLc, typename C>
-  void candidate3ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const& colls, std::vector<int> pdgCodes)
+  void candidate3ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, std::vector<int> pdgCodes)
   {
     candidate3ProngLoop<true, hasDplus, hasDs, hasLc>(candidates, tracks, mcParticles, pdgCodes);
 

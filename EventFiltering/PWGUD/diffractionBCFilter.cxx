@@ -56,7 +56,7 @@ struct tracksWGTInBCs {
     }
   }
 
-  void processBarrel(BCs const& bcs, CCs const& collisions, TCs const& tracks, ATs const& ambTracks)
+  void processBarrel(BCs const& bcs, CCs const& /*collisions*/, TCs const& tracks, ATs const& ambTracks)
   {
     // run number
     int rnum = bcs.iteratorAt(0).runNumber();
@@ -139,7 +139,7 @@ struct tracksWGTInBCs {
   }
   PROCESS_SWITCH(tracksWGTInBCs, processBarrel, "Process barrel tracks", true);
 
-  void processForward(BCs& bcs, CCs& collisions, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
+  void processForward(BCs& bcs, CCs& /*collisions*/, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
   {
     // run number
     int rnum = bcs.iteratorAt(0).runNumber();
@@ -282,15 +282,15 @@ struct DGBCFilterRun3 {
   using FWs = aod::FwdTracks;
 
   void process(BCs const& bcs,
-               CCs const& collisions,
-               TCs& tracks,
+               CCs const& /*collisions*/,
+               TCs& /*tracks*/,
                // MFs& mfttracks,
                FWs& fwdtracks,
                TIBCs const& tibcs, FTIBCs const& ftibcs,
-               aod::Zdcs& zdcs,
-               aod::FT0s& ft0s,
-               aod::FV0As& fv0as,
-               aod::FDDs& fdds)
+               aod::Zdcs& /*zdcs*/,
+               aod::FT0s& /*ft0s*/,
+               aod::FV0As& /*fv0as*/,
+               aod::FDDs& /*fdds*/)
   {
 
     // Advance these pointers step-by-step

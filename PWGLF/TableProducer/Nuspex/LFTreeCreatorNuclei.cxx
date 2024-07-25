@@ -130,7 +130,7 @@ struct LfTreeCreatorNuclei {
                                     aod::pidTPCLfFullAl, aod::pidTOFFullAl>;
 
   template <bool isMC, typename TrackType, typename CollisionType>
-  bool checkQuality(CollisionType const& collision, TrackType const& tracks)
+  bool checkQuality(CollisionType const& /*collision*/, TrackType const& tracks)
   {
     bool out = kFALSE;
     for (auto& track : tracks) {
@@ -359,7 +359,7 @@ struct LfTreeCreatorNuclei {
 
   void processMC(soa::Filtered<soa::Join<EventCandidates, aod::McCollisionLabels>> const& collisions,
                  soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>> const& tracks,
-                 aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+                 aod::BCs const&, aod::McCollisions const&, aod::McParticles const&)
   {
     for (const auto& collision : collisions) {
 

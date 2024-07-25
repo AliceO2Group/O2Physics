@@ -165,7 +165,7 @@ struct TrackQaMc {
 
   };
 
-  void process(soa::Join<aod::FullTracks, aod::McTrackLabels>::iterator const& track){
+  void process(soa::Join<aod::FullTracks, aod::McTrackLabels>::iterator const&){
 
   };
 };

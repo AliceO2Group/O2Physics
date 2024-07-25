@@ -135,7 +135,7 @@ struct femtoUniverseProducerMCTruthTask {
   }
 
   template <typename CollisionType, typename TrackType>
-  void fillCollisions(CollisionType const& col, TrackType const& tracks)
+  void fillCollisions(CollisionType const& col, TrackType const& /*tracks*/)
   {
     for (auto& c : col) {
       const auto vtxZ = c.posZ();
@@ -206,7 +206,7 @@ struct femtoUniverseProducerMCTruthTask {
   }
 
   void
-    processTrackMC(aod::McCollision const& mcCol,
+    processTrackMC(aod::McCollision const&,
                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
                    aod::McParticles const& mcParticles,
                    aod::BCsWithTimestamps const&)

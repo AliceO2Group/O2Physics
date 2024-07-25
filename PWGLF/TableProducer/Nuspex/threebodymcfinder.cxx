@@ -83,7 +83,7 @@ struct threebodymcfinder {
   std::vector<int> d3bprong1Index;
   std::vector<int> d3bprong2Index;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // initialize histograms
     const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};

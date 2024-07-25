@@ -71,7 +71,7 @@ class FemtoUniverseAngularContainer
   /// \param kTAxis axis object for the kT axis
   /// \param mTAxis axis object for the mT axis
   template <typename T>
-  void init_base(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, T etaAxis, T phiAxis, bool use3dplots)
+  void init_base(std::string folderName, std::string /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*kTAxis*/, T /*mTAxis*/, T /*multAxis3D*/, T /*mTAxis3D*/, T etaAxis, T phiAxis, bool use3dplots)
   {
     mHistogramRegistry->add((folderName + "/DeltaEtaDeltaPhi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", kTH2F, {phiAxis, etaAxis});
     if (use3dplots) {
@@ -85,7 +85,7 @@ class FemtoUniverseAngularContainer
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
-  void init_MC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T mTAxis)
+  void init_MC(std::string /*folderName*/, std::string /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*mTAxis*/)
   {
   }
 
@@ -153,7 +153,7 @@ class FemtoUniverseAngularContainer
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
   template <o2::aod::femtouniverseMCparticle::MCType mc, typename T>
-  void setPair_base(const float femtoObs, const float mT, T const& part1, T const& part2, const int mult, bool use3dplots)
+  void setPair_base(const float /*femtoObs*/, const float /*mT*/, T const& part1, T const& part2, const int /*mult*/, bool use3dplots)
   {
     delta_eta = part1.eta() - part2.eta();
     delta_phi = part1.phi() - part2.phi();
@@ -179,7 +179,7 @@ class FemtoUniverseAngularContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  void setPair_MC(const float femtoObsMC, const float femtoObs, const float mT, const int mult)
+  void setPair_MC(const float /*femtoObsMC*/, const float /*femtoObs*/, const float /*mT*/, const int /*mult*/)
   {
     if (mHistogramRegistry) {
       // Fill the kstar distributions with the reconstructed information but only for particles with the right PDG code

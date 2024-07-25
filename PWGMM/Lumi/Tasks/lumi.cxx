@@ -143,7 +143,7 @@ struct lumiTask {
   void process(aod::Collision const& collision, aod::BCsWithTimestamps const&,
                o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection,
                              o2::aod::TracksCov, o2::aod::TracksExtra,
-                             o2::aod::TracksDCA> const& tracks,
+                             o2::aod::TracksDCA> const& /*tracks*/,
                o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov,
                              o2::aod::TracksExtra> const& unfiltered_tracks)
   {

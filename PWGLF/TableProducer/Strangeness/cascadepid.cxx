@@ -253,7 +253,7 @@ struct cascadepid {
     return length;
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -566,7 +566,7 @@ struct cascadepid {
     }
   }
 
-  void processStandardData(aod::Collisions const& collisions, CascOriginalDatas const& Cascades, TracksWithAllExtras const&, aod::BCsWithTimestamps const& bcs)
+  void processStandardData(aod::Collisions const& collisions, CascOriginalDatas const& Cascades, TracksWithAllExtras const&, aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto collision = collisions.begin();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();

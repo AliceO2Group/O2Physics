@@ -34,7 +34,7 @@ class PairWithCentMultKt
   /// @param kstarbins
   /// @param centmultbins
   template <typename t1, typename t2>
-  void init(HistogramRegistry* registry, t1& kstarbins, t1& centmultbins, t2& phiBins, t2& etaBins, bool processKT)
+  void init(HistogramRegistry* registry, t1& /*kstarbins*/, t1& centmultbins, t2& phiBins, t2& etaBins, bool processKT)
   {
     PairWithCentMultKtRegistry = registry;
     // AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};

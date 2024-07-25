@@ -52,7 +52,7 @@ struct EfficiencyGlobal {
     }
   }
 
-  void process(aod::Collision const& collision, aod::Tracks const& tracks)
+  void process(aod::Collision const& /*collision*/, aod::Tracks const& tracks)
   {
     for (auto& track : tracks) {
       pt->Fill(track.pt(), efficiency->GetBinContent(efficiency->FindBin(track.pt())));

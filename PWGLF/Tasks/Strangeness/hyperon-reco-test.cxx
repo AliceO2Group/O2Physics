@@ -77,10 +77,10 @@ struct myLambda {
 
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr>;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& /*collision*/,
                soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& V0s,
-               DauTracks const& tracks,
-               aod::McParticles const& mcParticles)
+               DauTracks const& /*tracks*/,
+               aod::McParticles const& /*mcParticles*/)
   {
     for (auto& v0 : V0s) {
       registry.fill(HIST("hReduction"), 0.5);
@@ -160,8 +160,8 @@ struct myXi {
 
   void process(aod::Collision const& collision,
                soa::Join<aod::CascDataExt, aod::McCascLabels> const& Cascades,
-               DauTracks const& tracks,
-               aod::McParticles const& mcParticles)
+               DauTracks const& /*tracks*/,
+               aod::McParticles const& /*mcParticles*/)
   {
     for (auto& casc : Cascades) {
       registry.fill(HIST("hReduction"), 0.5);
@@ -254,8 +254,8 @@ struct myOmega {
 
   void process(aod::Collision const& collision,
                soa::Join<aod::CascDataExt, aod::McCascLabels> const& Cascades,
-               DauTracks const& tracks,
-               aod::McParticles const& mcParticles)
+               DauTracks const& /*tracks*/,
+               aod::McParticles const& /*mcParticles*/)
   {
     for (auto& casc : Cascades) {
       registry.fill(HIST("hReduction"), 0.5);

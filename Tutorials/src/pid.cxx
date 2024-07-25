@@ -31,7 +31,7 @@ using namespace o2::track;
 
 /// Task to produce the response table
 struct pid {
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
   }
 

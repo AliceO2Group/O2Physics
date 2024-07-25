@@ -29,7 +29,10 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 enum JCollisionSel {
   sel8 = 0,
   sel8Full = 1,
-  sel7 = 2
+  sel7 = 2,
+  selMC = 3,
+  selUnanchoredMC = 4,
+  sel7KINT7 = 5
 };
 
 template <typename T>
@@ -52,6 +55,15 @@ int initialiseEventSelection(std::string eventSelection)
   if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
   }
+  if (eventSelection == "selMC") {
+    return JCollisionSel::selMC;
+  }
+  if (eventSelection == "selUnanchoredMC") {
+    return JCollisionSel::selUnanchoredMC;
+  }
+  if (eventSelection == "sel7KINT7") {
+    return JCollisionSel::sel7KINT7;
+  }
   return -1;
 }
 
@@ -67,6 +79,15 @@ uint8_t setEventSelectionBit(T const& collision)
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
+    if (collision.alias_bit(kINT7)) {
+      SETBIT(bit, JCollisionSel::sel7KINT7);
+    }
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    SETBIT(bit, JCollisionSel::selUnanchoredMC);
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      SETBIT(bit, JCollisionSel::selMC);
+    }
   }
   return bit;
 }
@@ -298,7 +319,9 @@ enum JTrackSel {
   trackSign = 0, // warning : this number is hardcoded in the sign coloumn in the JTracks table so should not be changed without changing it there too
   globalTrack = 1,
   qualityTrack = 2,
-  hybridTrack = 3
+  hybridTrack = 3,
+  uniformTrack = 4,
+  uniformTrackWoDCA = 5
 };
 
 template <typename T>
@@ -325,8 +348,12 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::globalTrack;
   } else if (trackSelection == "QualityTracks") {
     return JTrackSel::qualityTrack;
-  } else if (trackSelection == "hybridTracksJE") {
+  } else if (trackSelection == "hybridTracks") {
     return JTrackSel::hybridTrack;
+  } else if (trackSelection == "uniformTracks") {
+    return JTrackSel::uniformTrack;
+  } else if (trackSelection == "uniformTracksWoDCA") {
+    return JTrackSel::uniformTrackWoDCA;
   }
   return -1;
 }
@@ -349,7 +376,16 @@ uint8_t setTrackSelectionBit(T const& track)
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
   }
-
+  if ((track.passedGoldenChi2() && track.passedDCAxy()) &&
+      (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
+    SETBIT(bit, JTrackSel::uniformTrack);
+  }
+  if (track.passedGoldenChi2() &&
+      (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) {
+    SETBIT(bit, JTrackSel::uniformTrackWoDCA);
+  }
   return bit;
 }
 
@@ -366,6 +402,12 @@ template <typename T>
 float trackEnergy(T const& track, float mass = mPion)
 {
   return std::sqrt((track.p() * track.p()) + (mass * mass));
+}
+
+template <typename T>
+bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
+{
+  return abs(track.dcaZ()) < dcaZmax;
 }
 
 } // namespace jetderiveddatautilities

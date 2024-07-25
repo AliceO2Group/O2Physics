@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// temporary task to produce HF tables needed when making inclusive derived data - should become obsolete when tables are able to be prouduced based on a configurable
+// temporary task to produce HF and DQ tables needed when making D0 jet derived data - should become obsolete when tables are able to be prouduced based on a configurable
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
@@ -19,6 +19,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -26,20 +27,25 @@ using namespace o2::framework::expressions;
 
 struct JetDerivedDataProducerDummyD0Task {
 
-  Produces<aod::Hf3PCollBases> LcCollisionsTable;
-  Produces<aod::Hf3PBases> LcsTable;
-  Produces<aod::Hf3PPars> LcParsTable;
-  Produces<aod::Hf3PParEs> LcParExtrasTable;
-  Produces<aod::Hf3PSels> LcSelsTable;
-  Produces<aod::Hf3PMls> LcMlsTable;
-  Produces<aod::Hf3PMcs> LcMcsTable;
-  Produces<aod::Hf3PPBases> LcParticlesTable;
+  Produces<aod::Hf3PCollBases> lcCollisionsTable;
+  Produces<aod::Hf3PMcRCollIds> lcCollisionsMatchingTable;
+  Produces<aod::Hf3PBases> lcsTable;
+  Produces<aod::Hf3PPars> lcParsTable;
+  Produces<aod::Hf3PParEs> lcParExtrasTable;
+  Produces<aod::Hf3PSels> lcSelsTable;
+  Produces<aod::Hf3PMls> lcMlsTable;
+  Produces<aod::Hf3PMcs> lcMcsTable;
+  Produces<aod::Hf3PMcCollBases> lcMcCollisionsTable;
+  Produces<aod::Hf3PPBases> lcParticlesTable;
+
+  Produces<aod::ReducedEvents> dielectronCollisionsTable;
+  Produces<aod::Dielectrons> dielectronTable;
 
   void init(InitContext const&)
   {
   }
 
-  void processDummy(aod::JDummys const& dummys)
+  void processDummy(aod::JDummys const&)
   {
   }
   PROCESS_SWITCH(JetDerivedDataProducerDummyD0Task, processDummy, "leaves all tables empty", true);

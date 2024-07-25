@@ -58,7 +58,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
   /// \param track is daughter track
   /// \return true if track is good
   template <typename T>
-  bool daughterSelection(const T& track)
+  bool daughterSelection(const T& /*track*/)
   {
     return true;
   }
@@ -192,7 +192,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
 
   void process(aod::HfCandX const& hfCandXs,
                aod::HfCand2Prong const&,
-               TracksSel const& tracks)
+               TracksSel const&)
   {
     for (const auto& hfCandX : hfCandXs) { // looping over X candidates
       // note the difference between Jpsi (index0) and pions (index1,2)

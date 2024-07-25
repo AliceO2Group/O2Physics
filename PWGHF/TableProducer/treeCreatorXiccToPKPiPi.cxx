@@ -171,10 +171,10 @@ struct HfTreeCreatorXiccToPKPiPi {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mcCollisions,
+               aod::McCollisions const&,
                soa::Join<aod::HfCandXicc, aod::HfCandXiccMcRec, aod::HfSelXiccToPKPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& particles,
-               TracksWPid const& tracks,
+               TracksWPid const&,
                aod::HfCand3Prong const&)
   {
 
@@ -270,7 +270,7 @@ struct HfTreeCreatorXiccToPKPiPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCCPlusPlus),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCCPlusPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

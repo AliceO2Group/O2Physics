@@ -19,6 +19,8 @@
 #ifndef PWGLF_DATAMODEL_SPECTRATOF_H_
 #define PWGLF_DATAMODEL_SPECTRATOF_H_
 
+#include <memory>
+
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -38,19 +40,18 @@
 
 #include "TPDGCode.h"
 
-using namespace o2;
-using namespace o2::track;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
-static constexpr PID::ID Np = 9;
-static constexpr PID::ID NpCharge = Np * 2;
+static constexpr o2::track::PID::ID Np = 9;
+static constexpr int NCharges = 2;
+static constexpr o2::track::PID::ID NpCharge = Np * NCharges;
 static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "{}^{3}He", "#alpha"};
+static constexpr const char* pN[Np] = {"el", "mu", "pi", "ka", "pr", "de", "tr", "he", "al"};
+static constexpr const char* cN[NCharges] = {"pos", "neg"};
 static constexpr const char* pTCharge[NpCharge] = {"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "d", "t", "{}^{3}He", "#alpha",
                                                    "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}", "#bar{d}", "#bar{t}", "{}^{3}#bar{He}", "#bar{#alpha}"};
 static constexpr int PDGs[NpCharge] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040,
                                        -kElectron, -kMuonMinus, -kPiPlus, -kKPlus, -kProton, -1000010020, -1000010030, -1000020030, -1000020040};
 
+std::shared_ptr<TH2> hMultiplicityvsPercentile;
 static constexpr std::string_view hnsigmatpctof[NpCharge] = {"nsigmatpctof/pos/el", "nsigmatpctof/pos/mu", "nsigmatpctof/pos/pi",
                                                              "nsigmatpctof/pos/ka", "nsigmatpctof/pos/pr", "nsigmatpctof/pos/de",
                                                              "nsigmatpctof/pos/tr", "nsigmatpctof/pos/he", "nsigmatpctof/pos/al",
@@ -136,6 +137,12 @@ static constexpr std::string_view hpt_numtof_prm[NpCharge] = {"MC/el/pos/prm/pt/
                                                               "MC/el/neg/prm/pt/numtof", "MC/mu/neg/prm/pt/numtof", "MC/pi/neg/prm/pt/numtof",
                                                               "MC/ka/neg/prm/pt/numtof", "MC/pr/neg/prm/pt/numtof", "MC/de/neg/prm/pt/numtof",
                                                               "MC/tr/neg/prm/pt/numtof", "MC/he/neg/prm/pt/numtof", "MC/al/neg/prm/pt/numtof"};
+static constexpr std::string_view hpt_numtofgoodmatch_prm[NpCharge] = {"MC/el/pos/prm/pt/numtofgoodmatch", "MC/mu/pos/prm/pt/numtofgoodmatch", "MC/pi/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/ka/pos/prm/pt/numtofgoodmatch", "MC/pr/pos/prm/pt/numtofgoodmatch", "MC/de/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/tr/pos/prm/pt/numtofgoodmatch", "MC/he/pos/prm/pt/numtofgoodmatch", "MC/al/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/el/neg/prm/pt/numtofgoodmatch", "MC/mu/neg/prm/pt/numtofgoodmatch", "MC/pi/neg/prm/pt/numtofgoodmatch",
+                                                                       "MC/ka/neg/prm/pt/numtofgoodmatch", "MC/pr/neg/prm/pt/numtofgoodmatch", "MC/de/neg/prm/pt/numtofgoodmatch",
+                                                                       "MC/tr/neg/prm/pt/numtofgoodmatch", "MC/he/neg/prm/pt/numtofgoodmatch", "MC/al/neg/prm/pt/numtofgoodmatch"};
 
 //********************************************RD**********************************************************************************************
 static constexpr std::string_view hpt_numtof_str[NpCharge] = {"MC/el/pos/str/pt/numtof", "MC/mu/pos/str/pt/numtof", "MC/pi/pos/str/pt/numtof",
@@ -315,29 +322,33 @@ DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
 DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
 DECLARE_SOA_DYNAMIC_COLUMN(CentFV0A, centFV0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0A, centFT0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0C, centFT0C, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFV0A, multZeqFV0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFT0A, multZeqFT0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFT0C, multZeqFT0C, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDA, multZeqFDDA, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDC, multZeqFDDC, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTracklets, multTracklets, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(SelectionBit, selection_bit, //! Dummy
-                           [](aod::evsel::EventSelectionFlags v) -> bool { return true; });
+                           [](aod::evsel::EventSelectionFlags /*v*/) -> bool { return true; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
+                           [](int multPveta1) -> bool { return multPveta1 > 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
+                           [](int multPveta1) -> bool { return multPveta1 > 1; });
 
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
@@ -378,19 +389,19 @@ DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
                            [](float signedPt) -> float { return std::abs(signedPt); });
 DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS, //! Dummy
-                           [](float v) -> bool { return true; });
+                           [](float /*v*/) -> bool { return true; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTPC, hasTPC, //! Dummy
-                           [](float v) -> bool { return true; });
+                           [](float /*v*/) -> bool { return true; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
                            [](float tofSignal) -> bool { return tofSignal > 0; });
 DECLARE_SOA_DYNAMIC_COLUMN(TRDSignal, trdSignal, //! Dummy
-                           [](float v) -> float { return 0.f; });
+                           [](float /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float /*v*/) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; });          // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float v) -> uint8_t { return 0; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float /*v*/) -> uint32_t { return 0; });      // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float /*v*/) -> uint8_t { return 0; }); // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
                            [](float signedPt, float eta, float mass) -> float {
                              const auto pt = std::abs(signedPt);
@@ -399,9 +410,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                  
                              const auto energy = sqrt(p * p + mass * mass);
                              return 0.5f * log((energy + pz) / (energy - pz));
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, [](float v) -> bool { return false; }); // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float v) -> bool { return false; });     // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float v) -> bool { return false; });     // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, [](float /*v*/) -> bool { return false; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float /*v*/) -> bool { return false; });     // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float /*v*/) -> bool { return false; });     // Dummy
 
 } // namespace spectra
 
@@ -415,6 +426,8 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   spectra::Sel8,
                   spectra::MultNTracksPVeta1,
                   spectra::RunNumber,
+                  spectra::IsInelGt0<spectra::MultNTracksPVeta1>,
+                  spectra::IsInelGt1<spectra::MultNTracksPVeta1>,
                   spectra::CentFV0A<spectra::Sel8>,
                   spectra::CentFT0A<spectra::Sel8>,
                   spectra::CentFT0C<spectra::Sel8>,

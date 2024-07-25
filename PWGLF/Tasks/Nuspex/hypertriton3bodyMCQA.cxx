@@ -239,7 +239,7 @@ struct hypertriton3bodyTrackMcinfo {
     }
   };
 
-  void process(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels>::iterator const& collision, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks, aod::McCollisions const& mcCollisions)
+  void process(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels>::iterator const& collision, aod::McParticles const& /*particlesMC*/, MCLabeledTracksIU const& tracks, aod::McCollisions const& /*mcCollisions*/)
   {
 
     registry.fill(HIST("hEventCounter"), 0.5);

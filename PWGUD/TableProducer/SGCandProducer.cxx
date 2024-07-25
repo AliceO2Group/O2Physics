@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
@@ -32,7 +33,11 @@ struct SGCandProducer {
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
   Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
   Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
-  // Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
+  Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
+  Configurable<bool> noITSROFrameBorder{"noITSROFrameBorder", true, "reject ITS RO Frame Border"};
+  Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
+  Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
+  Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
   //  SG selector
   SGSelector sgSelector;
 
@@ -76,11 +81,13 @@ struct SGCandProducer {
     outputFwdTracks(outputCollisions.lastIndex(),
                     fwdtrack.px(), fwdtrack.py(), fwdtrack.pz(), fwdtrack.sign(),
                     bcnum, fwdtrack.trackTime(), fwdtrack.trackTimeRes());
-    outputFwdTracksExtra(fwdtrack.nClusters(),
+    outputFwdTracksExtra(fwdtrack.trackType(),
+                         fwdtrack.nClusters(),
                          fwdtrack.pDca(),
                          fwdtrack.rAtAbsorberEnd(),
                          fwdtrack.chi2(),
                          fwdtrack.chi2MatchMCHMID(),
+                         fwdtrack.chi2MatchMCHMFT(),
                          fwdtrack.mchBitMap(),
                          fwdtrack.midBitMap(),
                          fwdtrack.midBoards());
@@ -115,7 +122,7 @@ struct SGCandProducer {
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
     outputTracksExtra(track.tpcInnerParam(),
-                      track.itsClusterMap(),
+                      track.itsClusterSizes(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
@@ -144,20 +151,40 @@ struct SGCandProducer {
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+               aod::Zdcs& /*zdcs*/, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     // reject collisions at TF boundaries
-    // if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-    //  return;
-    //}
-    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    // reject collisions at ITS RO TF boundaries
+    if (noITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return;
+    }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
+    // reject Same Bunch PileUp
+    if (noSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(3., 1.);
+    // check vertex matching to FT0
+    if (IsGoodVertex && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(4., 1.);
+    // reject ITS Only vertices
+    if (ITSTPCVertex && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+      return;
+    }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(5., 1.);
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(6., 1.);
     auto bc = collision.foundBC_as<BCs>();
     auto newbc = bc;
 
@@ -171,7 +198,7 @@ struct SGCandProducer {
     } else {
       LOGF(info, "No Newbc %i", bc.globalBC());
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 3, 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 8, 1.);
     if (issgevent <= 2) {
       //    LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
       if (sameCuts.minRgtrwTOF()) {
@@ -203,10 +230,14 @@ struct SGCandProducer {
       }
       // update SGTracks tables
       for (auto& track : tracks) {
-        if (track.isPVContributor() || saveAllTracks) {
-          if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50) && track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
+        if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
+          if (track.isPVContributor()) {
             updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-          // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+          } else if (saveAllTracks) {
+            if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
+              updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+            // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+          }
         }
       }
       // update SGFwdTracks tables

@@ -14,6 +14,8 @@
 ///
 /// \author Federica Zanone, Heidelberg University
 
+#include "TMCProcess.h" // for VMC Particle Production Process
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -32,6 +34,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfTaskMcEfficiencyToXiPi {
+
   Configurable<float> rapidityCharmBaryonMax{"rapidityCharmBaryonMax", 0.5, "Max absolute value of rapidity for charm baryon"};
   Configurable<float> acceptanceEtaLf{"acceptanceEtaLf", 1.0, "Max absolute value of eta for LF daughters"};
   Configurable<float> acceptancePtPionFromCascade{"acceptancePtPionFromCascade", 0.2, "Min value of pt for pion <-- cascade"};
@@ -40,9 +43,6 @@ struct HfTaskMcEfficiencyToXiPi {
 
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement for pion <-- charm baryon"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pion <- charm baryon"};
-
-  Configurable<bool> matchOmegac{"matchOmegac", false, "Do MC studies for Omegac0"};
-  Configurable<bool> matchXic{"matchXic", true, "Do MC studies for Xic0"};
 
   ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
@@ -66,13 +66,22 @@ struct HfTaskMcEfficiencyToXiPi {
                        kNTrackableSteps };
 
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
-  using CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfToXiPiMCRec, aod::HfSelToXiPi>;
-  using ParticleInfo = soa::Join<aod::McParticles, aod::HfToXiPiMCGen>;
+  using Xic0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfXicToXiPiMCRec, aod::HfSelToXiPi>;
+  using Omegac0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfOmegacToXiPiMCRec, aod::HfSelToXiPi>;
+  using ParticleInfoXic0 = soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>;
+  using ParticleInfoOmegac0 = soa::Join<aod::McParticles, aod::HfOmegacToXiPiMCGen>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
+    if (!doprocessOmegac0 && !doprocessXic0) {
+      LOGF(fatal, "Neither processOmegac0 nor processXic0 enabled, please choose one!");
+    } else if (doprocessOmegac0 && doprocessXic0) {
+      LOGF(fatal, "Both processOmegac0 and processXic0 enabled, please choose ONLY one!");
+    }
+
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hCandidates->GetAxis(1)->SetTitle("#it{m}_{inv} (GeV/#it{c}^{2})");
@@ -110,9 +119,9 @@ struct HfTaskMcEfficiencyToXiPi {
 
     int decayFlag = 0;
     if (pdgCode == Pdg::kXiC0) {
-      decayFlag = 1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi;
+      decayFlag = 1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlag = 1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi;
+      decayFlag = 1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
     }
@@ -155,7 +164,7 @@ struct HfTaskMcEfficiencyToXiPi {
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   // genParticles -> join aod::McParticles and candidateCreator McGen tables
   template <typename T1, typename T2>
-  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisionLabels const& colls, int pdgCode)
+  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisions const&, BCsInfo const&, int pdgCode)
   {
     // fill hCandidates histogram
     candidateRecLoop(candidates, pdgCode);
@@ -191,10 +200,10 @@ struct HfTaskMcEfficiencyToXiPi {
     int decayFlagGen = 0;
 
     if (pdgCode == Pdg::kXiC0) {
-      decayFlagGen = 1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi;
+      decayFlagGen = 1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi;
       mass = MassXiC0;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlagGen = 1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi;
+      decayFlagGen = 1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi;
       mass = MassOmegaC0;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
@@ -220,25 +229,21 @@ struct HfTaskMcEfficiencyToXiPi {
       }
 
       // exclude cases with undesired decays
-      if (mcParticle.daughtersIds().size() != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for charm baryon {}: {}", mcParticle.globalIndex(), mcParticle.daughtersIds().size());
+      int cascId = -999;
+      int pionId = -999;
+      for (auto& dauCharm : mcParticle.template daughters_as<T2>()) {
+        if (std::abs(dauCharm.pdgCode()) == kXiMinus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
+          cascId = dauCharm.globalIndex();
+        } else if (std::abs(dauCharm.pdgCode()) == kPiPlus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
+          pionId = dauCharm.globalIndex();
+        }
       }
-      auto cascId = mcParticle.daughtersIds()[0];
-      auto pionId = mcParticle.daughtersIds()[1];
       if (cascId < 0 || pionId < 0) {
+        LOGP(debug, "Invalid charm baryon daughters PDG codes/production processes");
         continue;
       }
-      auto cascade = genParticles.rawIteratorAt(mcParticle.daughtersIds().front());
-      auto pion = genParticles.rawIteratorAt(mcParticle.daughtersIds().back());
-      if (std::abs(cascade.pdgCode()) == kPiPlus) { // check if std::abs(cascade.pdgCode()) is different wrt kXiMinus and equal to kPiPlus (daughters ID assignment swapped)
-        std::swap(cascade, pion);
-        std::swap(cascId, pionId);
-      } else if (std::abs(cascade.pdgCode()) == kXiMinus && std::abs(pion.pdgCode()) == kPiPlus) {
-        LOGP(debug, "Correct assignment of charm baryon daughters IDs - gen level");
-      } else {
-        LOGP(fatal, "Invalid charm baryon daughters PDG codes");
-      }
-
+      auto cascade = genParticles.rawIteratorAt(cascId);
+      auto pion = genParticles.rawIteratorAt(pionId);
       // check pion <-- charm baryon pt and eta
       bool inAcceptance = true;
       if (std::abs(pion.eta()) > acceptanceEtaPionFromCharm || pion.pt() < acceptancePtPionFromCharm) {
@@ -247,43 +252,37 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // check LF daughters pt (pion<--cascade) and eta
       // first create cascade daughters objects
-      if (cascade.daughtersIds().size() != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for cascade {}: {}", cascade.globalIndex(), cascade.daughtersIds().size());
+      int lambdaId = -999;
+      int pionFromCascadeId = -999;
+      for (auto& dauCasc : cascade.template daughters_as<T2>()) {
+        if (std::abs(dauCasc.pdgCode()) == kLambda0 && dauCasc.getProcess() == TMCProcess::kPDecay) {
+          lambdaId = dauCasc.globalIndex();
+        } else if (std::abs(dauCasc.pdgCode()) == kPiPlus && dauCasc.getProcess() == TMCProcess::kPDecay) {
+          pionFromCascadeId = dauCasc.globalIndex();
+        }
       }
-      auto lambdaId = cascade.daughtersIds()[0];
-      auto pionFromCascadeId = cascade.daughtersIds()[1];
       if (lambdaId < 0 || pionFromCascadeId < 0) {
+        LOGP(debug, "Invalid cascade daughters PDG codes/production processes");
         continue;
       }
-      auto lambda = genParticles.rawIteratorAt(cascade.daughtersIds().front());
-      auto pionFromCascade = genParticles.rawIteratorAt(cascade.daughtersIds().back());
-      if (std::abs(lambda.pdgCode()) == kPiPlus) { // check if std::abs(lambda.pdgCode()) is different wrt kLambda0 and equal to kPiPlus (daughters ID assignment swapped)
-        std::swap(lambda, pionFromCascade);
-        std::swap(lambdaId, pionFromCascadeId);
-      } else if (std::abs(lambda.pdgCode()) == kLambda0 && std::abs(pionFromCascade.pdgCode()) == kPiPlus) {
-        LOGP(debug, "Correct assignment of cascade daughters IDs - gen level");
-      } else {
-        LOGP(fatal, "Invalid cascade daughters PDG codes");
-      }
+      auto lambda = genParticles.rawIteratorAt(lambdaId);
+      auto pionFromCascade = genParticles.rawIteratorAt(pionFromCascadeId);
       // then create lambda daughters objects
-      if (lambda.daughtersIds().size() != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for lambda {}: {}", lambda.globalIndex(), lambda.daughtersIds().size());
+      int protonId = -999;
+      int pionFromLambdaId = -999;
+      for (auto& dauV0 : lambda.template daughters_as<T2>()) {
+        if (std::abs(dauV0.pdgCode()) == kProton && dauV0.getProcess() == TMCProcess::kPDecay) {
+          protonId = dauV0.globalIndex();
+        } else if (std::abs(dauV0.pdgCode()) == kPiPlus && dauV0.getProcess() == TMCProcess::kPDecay) {
+          pionFromLambdaId = dauV0.globalIndex();
+        }
       }
-      auto protonId = lambda.daughtersIds()[0];
-      auto pionFromLambdaId = lambda.daughtersIds()[1];
       if (protonId < 0 || pionFromLambdaId < 0) {
+        LOGP(debug, "Invalid lambda daughters PDG codes/production processes");
         continue;
       }
-      auto proton = genParticles.rawIteratorAt(lambda.daughtersIds().front());
-      auto pionFromLambda = genParticles.rawIteratorAt(lambda.daughtersIds().back());
-      if (std::abs(proton.pdgCode()) == kPiPlus) { // check if std::abs(proton.pdgCode()) is different wrt kProton and equal to kPiPlus (daughters ID assignment swapped)
-        std::swap(proton, pionFromLambda);
-        std::swap(protonId, pionFromLambdaId);
-      } else if (std::abs(proton.pdgCode()) == kProton && std::abs(pionFromLambda.pdgCode()) == kPiPlus) {
-        LOGP(debug, "Correct assignment of lambda daughters IDs - gen level");
-      } else {
-        LOGP(fatal, "Invalid lambda daughters PDG codes");
-      }
+      auto proton = genParticles.rawIteratorAt(protonId);
+      auto pionFromLambda = genParticles.rawIteratorAt(pionFromLambdaId);
       // check on pt and eta
       if (std::abs(pionFromCascade.eta()) > acceptanceEtaLf || std::abs(pionFromLambda.eta()) > acceptanceEtaLf || std::abs(proton.eta()) > acceptanceEtaLf) {
         inAcceptance = false;
@@ -372,21 +371,25 @@ struct HfTaskMcEfficiencyToXiPi {
   }   // close candidateMcLoop
 
   // process functions
-  void process(CandidateInfo const& candidates,
-               ParticleInfo const& genParticles,
-               TracksWithSelectionMC const& tracks,
-               aod::McCollisionLabels const& colls)
+  void processXic0(Xic0CandidateInfo const& candidates,
+                   ParticleInfoXic0 const& genParticles,
+                   BCsInfo const& bcs,
+                   TracksWithSelectionMC const& tracks,
+                   aod::McCollisions const& colls)
   {
-    if (matchXic && matchOmegac) {
-      LOGP(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
-    } else if (!matchXic && !matchOmegac) {
-      LOGP(fatal, "Please match either Omegac0 or Xic0");
-    } else if (matchXic) {
-      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
-    } else if (matchOmegac) {
-      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0);
-    }
+    candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0);
   }
+  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Enable Xic0 efficiency process", true);
+
+  void processOmegac0(Omegac0CandidateInfo const& candidates,
+                      ParticleInfoOmegac0 const& genParticles,
+                      BCsInfo const& bcs,
+                      TracksWithSelectionMC const& tracks,
+                      aod::McCollisions const& colls)
+  {
+    candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0);
+  }
+  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processOmegac0, "Enable Omegac0 efficiency process", false);
 
 }; // close struct
 

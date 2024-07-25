@@ -342,7 +342,7 @@ struct FITtest {
   }
 
   //...............................................................................................................
-  void processMain(CC const& collision, BCs const& bct0s, TCs const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds, aod::Zdcs& zdcs, aod::V0s const& v0s)
+  void processMain(CC const& collision, BCs const& /*bct0s*/, TCs const& tracks, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs& /*zdcs*/, aod::V0s const& /*v0s*/)
   {
     uint64_t bcnum = 0;
     LOGF(debug, "<FITtest. Collision %d", collision.globalIndex());
@@ -543,7 +543,7 @@ struct FITtest {
 
   PROCESS_SWITCH(FITtest, processMain, "Process Main", true);
   //...............................................................................................................
-  void processHadronic(CC const& collision, BCs const& bct0s, TCs const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds, aod::Zdcs& zdcs, aod::V0s const& v0s)
+  void processHadronic(CC const& collision, BCs const& /*bct0s*/, TCs const& tracks, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs& /*zdcs*/, aod::V0s const& /*v0s*/)
   {
     LOGF(debug, "<FITtest. Collision %d", collision.globalIndex());
 
@@ -737,7 +737,7 @@ struct FITtest {
 
   PROCESS_SWITCH(FITtest, processHadronic, "Process for hadroniclike events", true);
   //...............................................................................................................
-  void processInclusiveA(CC const& collision, BCs const& bct0s, TCs const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds, aod::Zdcs& zdcs, aod::V0s const& v0s)
+  void processInclusiveA(CC const& collision, BCs const& /*bct0s*/, TCs const& tracks, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs& /*zdcs*/, aod::V0s const& /*v0s*/)
   {
     uint64_t bcnum = 0;
     float totAmplitudeA = 0;
@@ -930,7 +930,7 @@ struct FITtest {
 
   PROCESS_SWITCH(FITtest, processInclusiveA, "Process Inclusive veto A side", true);
   //..................................................................................................................................
-  void processInclusiveC(CC const& collision, BCs const& bct0s, TCs const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds, aod::Zdcs& zdcs, aod::V0s const& v0s)
+  void processInclusiveC(CC const& collision, BCs const& /*bct0s*/, TCs const& tracks, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs& /*zdcs*/, aod::V0s const& /*v0s*/)
   {
     uint64_t bcnum = 0;
     float totAmplitudeA = 0;
@@ -1119,7 +1119,7 @@ struct FITtest {
 
   PROCESS_SWITCH(FITtest, processInclusiveC, "Process Inclusive veto C side", true);
   //..................................................................................................................................
-  void processExclusive(CC const& collision, BCs const& bct0s, TCs const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds, aod::Zdcs& zdcs, aod::V0s const& v0s)
+  void processExclusive(CC const& collision, BCs const& /*bct0s*/, TCs const& tracks, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs& /*zdcs*/, aod::V0s const& /*v0s*/)
   {
     float totAmplitudeA = 0;
     float totAmplitudeC = 0;

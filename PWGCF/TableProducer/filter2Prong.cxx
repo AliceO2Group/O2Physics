@@ -26,7 +26,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::math_utils::detail;
 
-#define FLOAT_PRECISION 0xFFFFFFF0
+// #define FLOAT_PRECISION 0xFFFFFFF0
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct Filter2Prong {
@@ -37,7 +37,7 @@ struct Filter2Prong {
   Produces<aod::CF2ProngTracks> output2ProngTracks;
 
   using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
-  void processData(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidates const& candidates)
+  void processData(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidates const& candidates)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
       return; // rejected collision

@@ -47,7 +47,7 @@ struct JetDerivedDataTriggerProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processChargedJetTriggers, "produces derived charged trigger table", false);
 
-  void processNoChargedJetTriggers(aod::Collision const& collision)
+  void processNoChargedJetTriggers(aod::Collision const&)
   {
     jChargedTriggerSelsTable(jetderiveddatautilities::JTrigSelCh::noChargedTigger);
   }
@@ -59,7 +59,7 @@ struct JetDerivedDataTriggerProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processFullJetTriggers, "produces derived full trigger table", false);
 
-  void processNoFullJetTriggers(aod::Collision const& collision)
+  void processNoFullJetTriggers(aod::Collision const&)
   {
     jFullTriggerSelsTable(jetderiveddatautilities::JTrigSelFull::noFullTrigger);
   }
@@ -71,7 +71,7 @@ struct JetDerivedDataTriggerProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processChargedHFJetTriggers, "produces derived charged hf trigger table", false);
 
-  void processNoChargedHFJetTriggers(aod::Collision const& collision)
+  void processNoChargedHFJetTriggers(aod::Collision const&)
   {
     jChargedHFTriggerSelsTable(jetderiveddatautilities::JTrigSelChHF::noChargedHFTigger);
   }

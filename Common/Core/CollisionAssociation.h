@@ -121,7 +121,7 @@ class CollisionAssociation
                         TTracksUnfiltered const& tracksUnfiltered,
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
-                        o2::aod::BCs const& bcs,
+                        o2::aod::BCs const&,
                         Assoc& association,
                         RevIndices& reverseIndices)
   {

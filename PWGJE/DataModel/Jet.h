@@ -28,10 +28,14 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
+#include "PWGJE/DataModel/JetReducedDataV0.h"
+#include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 namespace o2::aod
 {
@@ -95,19 +99,19 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! absolute p
     DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf"); \
   }
 
-#define DECLARE_CONSTITUENTS_TABLE(_jet_type_, _name_, _Description_, _track_type_, _cand_type_)      \
-  namespace _name_##constituents                                                                      \
-  {                                                                                                   \
-    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                                        \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN(_track_type_, tracks);                                             \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN(JCluster, clusters);                                               \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(HfCandidates, hfcandidates, int32_t, _cand_type_, "_hfcand"); \
-  }                                                                                                   \
-  DECLARE_SOA_TABLE(_jet_type_##Constituents, "AOD", _Description_ "C",                               \
-                    _name_##constituents::_jet_type_##Id,                                             \
-                    _name_##constituents::_track_type_##Ids,                                          \
-                    _name_##constituents::JClusterIds,                                                \
-                    _name_##constituents::HfCandidatesIds);
+#define DECLARE_CONSTITUENTS_TABLE(_jet_type_, _name_, _Description_, _track_type_, _cand_type_) \
+  namespace _name_##constituents                                                                 \
+  {                                                                                              \
+    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                                   \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN(_track_type_, tracks);                                        \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN(JCluster, clusters);                                          \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(Candidates, candidates, int32_t, _cand_type_, "_cand");  \
+  }                                                                                              \
+  DECLARE_SOA_TABLE(_jet_type_##Constituents, "AOD", _Description_ "C",                          \
+                    _name_##constituents::_jet_type_##Id,                                        \
+                    _name_##constituents::_track_type_##Ids,                                     \
+                    _name_##constituents::JClusterIds,                                           \
+                    _name_##constituents::CandidatesIds);
 
 // combine definition of tables for jets, constituents
 #define DECLARE_JET_TABLES(_collision_name_, _jet_type_, _track_type_, _hfcand_type_, _description_)        \
@@ -157,6 +161,21 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! absolute p
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevelEventWiseSubtracted, _shortname_ "DJET2DEWS")                     \
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevel, _shortname_ "JETDEWS2D")                     \
   DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevelEventWiseSubtracted, _subtracted_track_type_, _hfparticle_type_, _shortname_ "PJETEWS")
+
+#define STRINGIFY(x) #x
+
+// add duplicate tables for each predefined jet table so that the same jets can be run with multiple settings
+#define DECLARE_JET_DUPLICATE_TABLES_LEVELS(_jet_type_, _subtracted_track_type_, _hfcand_type_, _hfparticle_type_, _shortname_, _duplicatenumber_)                   \
+  DECLARE_JET_TABLES_LEVELS(_jet_type_##_duplicatenumber_, _subtracted_track_type_, _hfcand_type_, _hfparticle_type_, _shortname_ STRINGIFY(_duplicatenumber_))      \
+  DECLARE_JETMATCHING_TABLE(_jet_type_, _jet_type_##_duplicatenumber_, _shortname_ "JET2" STRINGIFY(_duplicatenumber_))                                              \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##_duplicatenumber_, _jet_type_, _shortname_ "JET" STRINGIFY(_duplicatenumber_) "2")                                           \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##_duplicatenumber_##MCDetectorLevel, _shortname_ "JETD2" STRINGIFY(_duplicatenumber_))           \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##_duplicatenumber_##MCDetectorLevel, _jet_type_##MCDetectorLevel, _shortname_ "JET" STRINGIFY(_duplicatenumber_) "2D")        \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##_duplicatenumber_##MCParticleLevel, _shortname_ "JETP2" STRINGIFY(_duplicatenumber_))           \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##_duplicatenumber_##MCParticleLevel, _jet_type_##MCParticleLevel, _shortname_ "JET" STRINGIFY(_duplicatenumber_) "2P")        \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##EventWiseSubtracted, _jet_type_##_duplicatenumber_##EventWiseSubtracted, _shortname_ "JETEWS2" STRINGIFY(_duplicatenumber_)) \
+  DECLARE_JETMATCHING_TABLE(_jet_type__duplicatenumber_##EventWiseSubtracted, _jet_type_##EventWiseSubtracted, _shortname_ "JET" STRINGIFY(_duplicatenumber_) "2EWS")
+
 namespace o2::aod
 {
 DECLARE_JET_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C");
@@ -165,6 +184,11 @@ DECLARE_JET_TABLES_LEVELS(Neutral, JTrackSub, HfD0Bases, HfD0PBases, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, JTrackD0Sub, HfD0Bases, HfD0PBases, "D0");
 DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, Hf3PBases, Hf3PPBases, "Lc");
 DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfCandBplus, HfD0PBases, "BPl");
+DECLARE_JET_TABLES_LEVELS(V0Charged, JTrackSub, V0Cores, JV0Mcs, "V0");
+DECLARE_JET_TABLES_LEVELS(DielectronCharged, JTrackSub, Dielectrons, JDielectronMcs, "DIEL");
+
+// duplicate jet tables (added as needed for analyses)
+DECLARE_JET_DUPLICATE_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C", 1);
 
 } // namespace o2::aod
 
@@ -175,25 +199,42 @@ using JetTracks = o2::aod::JTracks;
 using JetTracksMCD = o2::soa::Join<JetTracks, o2::aod::JMcTrackLbs>;
 using JetTracksSub = o2::aod::JTrackSubs;
 using JetClusters = o2::aod::JClusters;
+using JetClustersMCD = o2::soa::Join<o2::aod::JClusters, o2::aod::JMcClusterLbs>;
 
 using JetMcCollisions = o2::aod::JMcCollisions;
 using JetMcCollision = JetMcCollisions::iterator;
 using JetParticles = o2::aod::JMcParticles;
 
-using CandidatesD0MCP = o2::soa::Join<o2::aod::HfD0PBases, o2::aod::JD0PIds>;
-using CandidatesLcMCP = o2::soa::Join<o2::aod::Hf3PPBases, o2::aod::JLcPIds>;
-using CandidatesBplusMCP = o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCandBplusMcGen>;
-
+using CollisionsD0 = o2::soa::Join<o2::aod::HfD0CollBases, o2::aod::JD0CollisionIds>;
 using CandidatesD0Data = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::HfD0Mls, o2::aod::JD0Ids>;
 using CandidatesD0MCD = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::HfD0Mls, o2::aod::HfD0Mcs, o2::aod::JD0Ids>;
 using JetTracksSubD0 = o2::aod::JTrackD0Subs;
+using McCollisionsD0 = o2::soa::Join<o2::aod::HfD0McCollBases, o2::aod::JD0McCollisionIds>;
+using CandidatesD0MCP = o2::soa::Join<o2::aod::HfD0PBases, o2::aod::JD0PIds>;
+
+using CollisionsLc = o2::soa::Join<o2::aod::Hf3PCollBases, o2::aod::JLcCollisionIds>;
+using CandidatesLcData = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::JLcIds>;
+using CandidatesLcMCD = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::Hf3PMcs, o2::aod::JLcIds>;
+using JetTracksSubLc = o2::aod::JTrackLcSubs;
+using McCollisionsLc = o2::soa::Join<o2::aod::Hf3PMcCollBases, o2::aod::JLcMcCollisionIds>;
+using CandidatesLcMCP = o2::soa::Join<o2::aod::Hf3PPBases, o2::aod::JLcPIds>;
 
 using CandidatesBplusData = o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi>;
 using CandidatesBplusMCD = o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi, o2::aod::HfCandBplusMcRec>;
 using JetTracksSubBplus = o2::aod::JTrackBplusSubs;
+using CandidatesBplusMCP = o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCandBplusMcGen>;
 
-using CandidatesLcData = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::JLcIds>;
-using CandidatesLcMCD = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::Hf3PMcs, o2::aod::JLcIds>;
-using JetTracksSubLc = o2::aod::JTrackLcSubs;
+using CandidatesV0Data = o2::soa::Join<o2::aod::V0Cores, o2::aod::JV0Ids>;
+using CandidatesV0MCD = o2::soa::Join<o2::aod::V0Cores, o2::aod::V0MCCores, o2::aod::JV0Ids>;
+// using V0Daughters = o2::aod::DauTrackExtras;
+using McCollisionsV0 = o2::soa::Join<o2::aod::JV0McCollisions, o2::aod::JV0McCollisionIds>;
+using CandidatesV0MCP = o2::soa::Join<o2::aod::JV0Mcs, o2::aod::JV0McIds>;
+
+using CollisionsDielectron = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::JDielectronCollisionIds>;
+using CandidatesDielectronData = o2::soa::Join<o2::aod::Dielectrons, o2::aod::JDielectronIds>;
+using CandidatesDielectronMCD = o2::soa::Join<o2::aod::Dielectrons, o2::aod::JDielectronIds>;
+using JetTracksSubDielectron = o2::aod::JTrackDielectronSubs;
+using McCollisionsDielectron = o2::soa::Join<o2::aod::JDielectronMcCollisions, o2::aod::JDielectronMcCollisionIds>;
+using CandidatesDielectronMCP = o2::soa::Join<o2::aod::JDielectronMcs, o2::aod::JDielectronMcIds>;
 
 #endif // PWGJE_DATAMODEL_JET_H_

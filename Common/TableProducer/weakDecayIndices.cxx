@@ -21,7 +21,7 @@ using namespace o2::framework;
 struct WeakDecayIndicesV0 {
   Produces<aod::V0s_001> v0s_001;
 
-  void process(aod::V0s_000 const& v0s, aod::Tracks const& tracks)
+  void process(aod::V0s_000 const& v0s, aod::Tracks const&)
   {
     for (auto& v0 : v0s) {
       if (v0.posTrack().collisionId() != v0.negTrack().collisionId()) {
@@ -36,7 +36,7 @@ struct WeakDecayIndicesV0 {
 struct WeakDecayIndicesCascades {
   Produces<aod::Cascades_001> cascades_001;
 
-  void process(aod::V0s const& v0s, aod::Cascades_000 const& cascades, aod::Tracks const& tracks)
+  void process(aod::V0s const&, aod::Cascades_000 const& cascades, aod::Tracks const&)
   {
     for (auto& cascade : cascades) {
       if (cascade.bachelor().collisionId() != cascade.v0().posTrack().collisionId() || cascade.v0().posTrack().collisionId() != cascade.v0().negTrack().collisionId()) {

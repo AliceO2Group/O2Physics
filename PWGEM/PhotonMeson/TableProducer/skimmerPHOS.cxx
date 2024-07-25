@@ -43,7 +43,7 @@ struct skimmerPHOS {
     hPHOSClusterFilter->GetXaxis()->SetBinLabel(5, "out");
   }
 
-  void process(aod::Collisions const&, aod::BCs const&, aod::CaloClusters const& clusters, aod::Tracks const& tracks)
+  void process(aod::Collisions const&, aod::BCs const&, aod::CaloClusters const& clusters, aod::Tracks const&)
   {
     for (auto& cluster : clusters) {
       registry.fill(HIST("hPHOSClusterFilter"), 1);

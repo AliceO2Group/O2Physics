@@ -232,7 +232,7 @@ struct ft0QaTask {
   void
     processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                 aod::FT0sCorrected>::iterator const& collision,
-                      aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+                      aod::FT0s const&, aod::FV0As const&)
   {
 
     if (selection == 8 && !collision.sel8()) {

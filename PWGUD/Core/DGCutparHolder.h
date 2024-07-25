@@ -39,7 +39,7 @@ class DGCutparHolder
                  bool TOR = true,
                  float maxFITtime = 4,
                  std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.},
-                 std::vector<int> collisionSel = {0, 0, 0, 0, 0}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mITSOnlyTracks{ITSonlyTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mTVX{TVX}, mTSC{TSC}, mTCE{TCE}, mTOR{TOR}, mMaxFITtime{maxFITtime}, mFITAmpLimits{FITAmpLimits}, mCollisionSel{collisionSel}
+                 std::vector<int> collisionSel = {1, 1, 1, 0, 1, 0, 0}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mITSOnlyTracks{ITSonlyTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mTVX{TVX}, mTSC{TSC}, mTCE{TCE}, mTOR{TOR}, mMaxFITtime{maxFITtime}, mFITAmpLimits{FITAmpLimits}, mCollisionSel{collisionSel}
   {
   }
 
@@ -145,6 +145,13 @@ class DGCutparHolder
   std::vector<float> mFITAmpLimits;
 
   // collision selections to consider from event selection task
+  //  0: time frame border
+  //  1: same bunch pile-up
+  //  2: ITS ROF frame boarder
+  //  3: ZvtxFT0 vs PV
+  //  4: Vertex ITS-TPC
+  //  5: Vertex TRD matched
+  //  6: Vertex TOF matched
   std::vector<int> mCollisionSel;
 
   ClassDefNV(DGCutparHolder, 1);

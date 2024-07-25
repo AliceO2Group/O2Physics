@@ -65,7 +65,7 @@ struct ClusterTutorial {
   }
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCalo(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells)
+  void processCalo(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& /*emccluscells*/)
   {
 
     // do event selection if mDoEventSel is specified
@@ -96,7 +96,7 @@ struct ClusterTutorial {
   }
   PROCESS_SWITCH(ClusterTutorial, processCalo, "process only reconstructed info", true);
 
-  void processDummy(collisionEvSelIt const& collision)
+  void processDummy(collisionEvSelIt const&)
   {
     // do nothing
   }

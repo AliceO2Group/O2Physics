@@ -171,7 +171,7 @@ struct jetTrackCollisionQa {
   using Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   using TracksJE = soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>>;
 
-  void processESD(JetCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks, Tracks const& originalTracks)
+  void processESD(JetCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks, Tracks const&)
   {
     mHistManager.fill(HIST("controlCollisionVtxZ"), collision.posZ());
     if (evSel == true) {
@@ -239,7 +239,7 @@ struct jetTrackCollisionQa {
   PROCESS_SWITCH(jetTrackCollisionQa, processESD, "validate jet-finder output on run2 ESD", true);
 
   // process for run3 AOD's
-  void processRun3AOD(JetCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks, Tracks const& originalTracks)
+  void processRun3AOD(JetCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks, Tracks const&)
   {
     if (evSel == true) {
       if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8) || fabs(collision.posZ()) > 10) {
@@ -304,7 +304,7 @@ struct jetTrackCollisionQa {
   PROCESS_SWITCH(jetTrackCollisionQa, processRun3AOD, "validate jet-finder output on run3 AOD", false);
 
   // dummy process to run jetfinder validation code on ESD, but MC validation for run3 on hyperloop
-  void processDummy(JetCollisions const& collisions)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(jetTrackCollisionQa, processDummy, "Dummy process function turned on by default", false);
@@ -478,7 +478,7 @@ struct mcJetTrackCollisionQa {
   void processMcRun2(JetCollisionsMCD::iterator const& collision,
                      soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& mcPartJets,
                      soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcDetJets,
-                     JetParticles const& mcParticles, JetMcCollisions const& mcCollisions,
+                     JetParticles const&, JetMcCollisions const&,
                      MCTracksJE const& tracks)
   {
     if (fabs(collision.posZ()) > 10) {
@@ -512,7 +512,7 @@ struct mcJetTrackCollisionQa {
   void processMcRun3(JetCollisionsMCD::iterator const& collision,
                      soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& mcPartJets,
                      soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcDetJets,
-                     JetParticles const& mcParticles, JetMcCollisions const& mcCollisions,
+                     JetParticles const&, JetMcCollisions const&,
                      MCTracksJE const& tracks)
   {
     if (fabs(collision.posZ()) > 10) {
@@ -544,7 +544,7 @@ struct mcJetTrackCollisionQa {
   PROCESS_SWITCH(mcJetTrackCollisionQa, processMcRun3, "validate jet-finder output on run3 mc AOD's", false);
 
   // dummy process to run jetfinder validation code on AO2D's, but MC validation for run3 on hyperloop
-  void processDummy(JetMcCollisions const& collisions)
+  void processDummy(JetMcCollisions const&)
   {
   }
   PROCESS_SWITCH(mcJetTrackCollisionQa, processDummy, "Dummy process function turned off by default", true);

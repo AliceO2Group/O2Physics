@@ -139,6 +139,25 @@ struct DGAnaparHolder {
   // helper
   void Print();
 
+  // setter
+  void SetNTracks(int, int);
+  void SetMinRgtrwTOF(float);
+  void SetmaxDCA(float, float);
+  void SetdBC(int, int);
+  void SetFITvetoes(std::vector<int>);
+  void SetITSOnlyTracks(bool);
+  void SetNClTPC(int, int);
+  void SetChi2NClTPC(float, float);
+  void Setpt(float, float);
+  void Seteta(float, float);
+  void SetAlpha(float, float);
+  void Setptsys(float, float);
+  void SetnCombine(int);
+  void SetnetCharges(std::vector<int>);
+  void SetunlikeCharges(std::vector<int>);
+  void SetlikeCharges(std::vector<int>);
+  void SetPIDs(std::vector<int>);
+
   // getter
   int minNTracks() const { return mMinNTracks; }
   int maxNTracks() const { return mMaxNTracks; }

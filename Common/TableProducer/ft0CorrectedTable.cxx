@@ -29,7 +29,7 @@ struct FT0CorrectedTable {
   using BCsWithMatchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
   using CollisionEvSel = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 
-  void process(BCsWithMatchings const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::FT0s const& ft0s)
+  void process(BCsWithMatchings const&, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::FT0s const&)
   {
     for (auto& collision : collisions) {
       float vertexPV = collision.posZ();

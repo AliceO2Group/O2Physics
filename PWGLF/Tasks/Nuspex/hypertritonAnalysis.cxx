@@ -212,7 +212,7 @@ struct hypertritonAnalysis {
       registry.fill(HIST("hEventSelection"), ii, evselstats[ii]);
   }
 
-  void processRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& V0s, TracksCompleteIU const& tracks, aod::BCsWithTimestamps const&)
+  void processRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& V0s, TracksCompleteIU const& /*tracks*/, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -318,7 +318,7 @@ struct hypertritonAnalysis {
   }
   PROCESS_SWITCH(hypertritonAnalysis, processRealData, "Regular analysis", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0MC const& fullV0s, TracksCompleteIUMC const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0MC const& fullV0s, TracksCompleteIUMC const& /*tracks*/, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();

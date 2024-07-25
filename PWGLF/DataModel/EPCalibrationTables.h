@@ -34,6 +34,11 @@ DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);
 DECLARE_SOA_COLUMN(PsiTPCL, psiTPCL, float);
 DECLARE_SOA_COLUMN(PsiTPCR, psiTPCR, float);
+DECLARE_SOA_COLUMN(QFT0C, qFT0C, float);
+DECLARE_SOA_COLUMN(QFT0A, qFT0A, float);
+DECLARE_SOA_COLUMN(QTPC, qTPC, float);
+DECLARE_SOA_COLUMN(QTPCL, qTPCL, float);
+DECLARE_SOA_COLUMN(QTPCR, qTPCR, float);
 } // namespace epcalibrationtable
 DECLARE_SOA_TABLE(EPCalibrationTables, "AOD", "EPCALLCOLS",
                   epcalibrationtable::TriggerEventEP,
@@ -42,7 +47,12 @@ DECLARE_SOA_TABLE(EPCalibrationTables, "AOD", "EPCALLCOLS",
                   epcalibrationtable::PsiFT0A,
                   epcalibrationtable::PsiTPC,
                   epcalibrationtable::PsiTPCL,
-                  epcalibrationtable::PsiTPCR);
+                  epcalibrationtable::PsiTPCR,
+                  epcalibrationtable::QFT0C,
+                  epcalibrationtable::QFT0A,
+                  epcalibrationtable::QTPC,
+                  epcalibrationtable::QTPCL,
+                  epcalibrationtable::QTPCR);
 using EPCalibrationTable = EPCalibrationTables::iterator;
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_EPCALIBRATIONTABLES_H_

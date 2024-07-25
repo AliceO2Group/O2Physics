@@ -353,7 +353,7 @@ struct HfTaskLcToK0sP {
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP, aod::HfCandCascadeMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& mcParticles,
-                 aod::TracksWMc const& tracks,
+                 aod::TracksWMc const&,
                  TracksWPid const&)
   {
     // MC rec.

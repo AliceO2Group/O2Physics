@@ -921,7 +921,7 @@ struct CFFilterQA {
   }
 
   template <typename C, typename V, typename T>
-  bool isSelectedMinimalV0(C const& col, V const& v0, T const& posTrack,
+  bool isSelectedMinimalV0(C const& /*col*/, V const& v0, T const& posTrack,
                            T const& negTrack, float charge, double nSigmaTPCPos[2], double nSigmaTPCNeg[2])
   {
     const auto signPos = posTrack.sign();

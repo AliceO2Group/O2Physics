@@ -172,15 +172,13 @@ struct Alice3CDeuteron {
 #undef MakeHistos
   }
 
-  Preslice<aod::McParticles_000> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  void process(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
-               const o2::aod::McCollisions& Mccoll,
-               const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCov,
-                               aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullDe>& tracks,
-               const aod::McParticles_000& mcParticles)
+  SliceCache cache;
+  template <bool usePID = true, typename collType, typename trackType, typename partType>
+  void fillHistograms(const collType& coll, const trackType& tracks, const partType& mcParticles)
   {
-    const auto particlesInCollision = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());
+    const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, coll.mcCollision().globalIndex(), cache);
     for (const auto& i : particlesInCollision) {
       histos.get<TH1>(HIST("event/particlespdg"))->Fill(Form("%i", i.pdgCode()), 1);
       if (i.pdgCode() != 12345) {
@@ -208,14 +206,21 @@ struct Alice3CDeuteron {
     // }
     int ntrks = 0;
     for (const auto& t : tracks) {
-      if (t.mcParticle_as<aod::McParticles_000>().pdgCode() == 1000010020) {
-        histos.fill(HIST("event/trackspdg"), 1);
-      } else if (t.mcParticle_as<aod::McParticles_000>().pdgCode() == -321) {
-        histos.fill(HIST("event/trackspdg"), 2);
-      } else if (t.mcParticle_as<aod::McParticles_000>().pdgCode() == 211) {
-        histos.fill(HIST("event/trackspdg"), 3);
-      } else {
-        histos.fill(HIST("event/trackspdg"), 4);
+      if (!t.has_mcParticle()) {
+        continue;
+      }
+      switch (t.template mcParticle_as<aod::McParticles>().pdgCode()) {
+        case 1000010020:
+          histos.fill(HIST("event/trackspdg"), 1);
+          break;
+        case -321:
+          histos.fill(HIST("event/trackspdg"), 2);
+          break;
+        case 211:
+          histos.fill(HIST("event/trackspdg"), 3);
+          break;
+        default:
+          histos.fill(HIST("event/trackspdg"), 4);
       }
       ntrks++;
     }
@@ -225,17 +230,25 @@ struct Alice3CDeuteron {
     std::array<float, 2> dca2{1e10f, 1e10f};
     std::array<float, 2> dca3{1e10f, 1e10f};
     for (const auto& track1 : tracks) {
-      const auto index1 = track1.globalIndex();
-      int ncand = 0;
-      histos.fill(HIST("event/nsigmaDe"), track1.pt(), track1.tofNSigmaDe());
-      if (usePdg) {
-        if (track1.mcParticle_as<aod::McParticles_000>().pdgCode() != 1000010020) {
-          continue;
-        }
-      } else if (abs(track1.tofNSigmaDe()) > maxNsigmaDe || track1.sign() < 0.f) {
+      if (!track1.has_mcParticle()) {
         continue;
       }
-      histos.fill(HIST("event/nsigmaDecut"), track1.pt(), track1.tofNSigmaDe());
+      const auto index1 = track1.globalIndex();
+      int ncand = 0;
+      if constexpr (usePID) {
+        histos.fill(HIST("event/nsigmaDe"), track1.pt(), track1.tofNSigmaDe());
+      }
+      if (usePdg) {
+        if (track1.template mcParticle_as<aod::McParticles>().pdgCode() != 1000010020) {
+          continue;
+        }
+      }
+      if constexpr (usePID) {
+        if (abs(track1.tofNSigmaDe()) > maxNsigmaDe || track1.sign() < 0.f) {
+          continue;
+        }
+        histos.fill(HIST("event/nsigmaDecut"), track1.pt(), track1.tofNSigmaDe());
+      }
       if (!getTrackPar(track1).propagateParamToDCA(collPos,
                                                    magField * 10.f, &dca1, 100.)) {
         continue;
@@ -244,25 +257,37 @@ struct Alice3CDeuteron {
       histos.fill(HIST("event/track1dcaz"), dca1[1]);
 
       for (const auto& track2 : tracks) {
+        if (!track2.has_mcParticle()) {
+          continue;
+        }
+
         const auto index2 = track2.globalIndex();
         if (index1 == index2) {
           continue;
         }
-        histos.fill(HIST("event/nsigmaKa"), track2.pt(), track2.tofNSigmaKa());
+        if constexpr (usePID) {
+          histos.fill(HIST("event/nsigmaKa"), track2.pt(), track2.tofNSigmaKa());
+        }
         if (usePdg) {
-          if (track2.mcParticle_as<aod::McParticles_000>().pdgCode() != -321) {
+          if (track2.template mcParticle_as<aod::McParticles>().pdgCode() != -321) {
             continue;
           }
-        } else if (abs(track2.tofNSigmaKa()) > maxNsigmaKa || track2.sign() > 0.f) {
-          continue;
         }
-        histos.fill(HIST("event/nsigmaKacut"), track2.pt(), track2.tofNSigmaKa());
+        if constexpr (usePID) {
+          if (abs(track2.tofNSigmaKa()) > maxNsigmaKa || track2.sign() > 0.f) {
+            continue;
+          }
+          histos.fill(HIST("event/nsigmaKacut"), track2.pt(), track2.tofNSigmaKa());
+        }
         if (!getTrackPar(track2).propagateParamToDCA(collPos,
                                                      magField * 10.f, &dca2, 100.)) {
           continue;
         }
 
         for (const auto& track3 : tracks) {
+          if (!track3.has_mcParticle()) {
+            continue;
+          }
 
           const auto index3 = track3.globalIndex();
           if (index2 == index3) {
@@ -271,15 +296,20 @@ struct Alice3CDeuteron {
           if (index1 == index3) {
             continue;
           }
-          histos.fill(HIST("event/nsigmaPi"), track3.pt(), track3.tofNSigmaPi());
+          if constexpr (usePID) {
+            histos.fill(HIST("event/nsigmaPi"), track3.pt(), track3.tofNSigmaPi());
+          }
           if (usePdg) {
-            if (track3.mcParticle_as<aod::McParticles_000>().pdgCode() != 211) {
+            if (track3.template mcParticle_as<aod::McParticles>().pdgCode() != 211) {
               continue;
             }
-          } else if (abs(track3.tofNSigmaPi()) > maxNsigmaPi || track3.sign() < 0.f) {
-            continue;
           }
-          histos.fill(HIST("event/nsigmaPicut"), track3.pt(), track3.tofNSigmaPi());
+          if constexpr (usePID) {
+            if (abs(track3.tofNSigmaPi()) > maxNsigmaPi || track3.sign() < 0.f) {
+              continue;
+            }
+            histos.fill(HIST("event/nsigmaPicut"), track3.pt(), track3.tofNSigmaPi());
+          }
           bool iscut = false;
           if (abs(dca1[0]) < minDca || abs(dca1[1]) < minDca) {
             iscut = true;
@@ -318,9 +348,9 @@ struct Alice3CDeuteron {
             iscut = true;
           }
 
-          const auto mother1 = track1.mcParticle_as<aod::McParticles_000>().mother0_as<aod::McParticles_000>();
-          const auto mother2 = track2.mcParticle_as<aod::McParticles_000>().mother0_as<aod::McParticles_000>();
-          const auto mother3 = track3.mcParticle_as<aod::McParticles_000>().mother0_as<aod::McParticles_000>();
+          const auto mother1 = track1.template mcParticle_as<aod::McParticles>().template mothers_as<aod::McParticles>()[0];
+          const auto mother2 = track2.template mcParticle_as<aod::McParticles>().template mothers_as<aod::McParticles>()[0];
+          const auto mother3 = track3.template mcParticle_as<aod::McParticles>().template mothers_as<aod::McParticles>()[0];
           bool issig = true;
           if (mother1 != mother2) {
             issig = false;
@@ -384,8 +414,8 @@ struct Alice3CDeuteron {
           const float vz = mother1.vz();
           const float rmc = sqrt((secVtx[0] - vx) * (secVtx[0] - vx) + (secVtx[1] - vy) * (secVtx[1] - vy) + (secVtx[2] - vz) * (secVtx[2] - vz));
           ncand++;
-          const float radius3xy = sqrt((track3.mcParticle_as<aod::McParticles_000>().vx() - coll.mcCollision().posX()) * (track3.mcParticle_as<aod::McParticles_000>().vx() - coll.mcCollision().posX()) +
-                                       (track3.mcParticle_as<aod::McParticles_000>().vy() - coll.mcCollision().posY()) * (track3.mcParticle_as<aod::McParticles_000>().vy() - coll.mcCollision().posY()));
+          const float radius3xy = sqrt((track3.template mcParticle_as<aod::McParticles>().vx() - coll.mcCollision().posX()) * (track3.template mcParticle_as<aod::McParticles>().vx() - coll.mcCollision().posX()) +
+                                       (track3.template mcParticle_as<aod::McParticles>().vy() - coll.mcCollision().posY()) * (track3.template mcParticle_as<aod::McParticles>().vy() - coll.mcCollision().posY()));
 
 #define FillHistos(tag)                                                              \
   histos.fill(HIST(tag "/cpa"), CPA);                                                \
@@ -442,6 +472,25 @@ struct Alice3CDeuteron {
       histos.fill(HIST("event/candperdeuteron"), ncand);
     } // End loop on deuterons
   }
+
+  void processWithPid(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
+                      const o2::aod::McCollisions&,
+                      const soa::Join<o2::aod::TracksIU, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCov,
+                                      aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullDe>& tracks,
+                      const aod::McParticles& mcParticles)
+  {
+    fillHistograms<true>(coll, tracks, mcParticles);
+  }
+  PROCESS_SWITCH(Alice3CDeuteron, processWithPid, "With detector PID info", true);
+
+  void processNoPid(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
+                    const o2::aod::McCollisions&,
+                    const soa::Join<o2::aod::TracksIU, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCovIU>& tracks,
+                    const aod::McParticles& mcParticles)
+  {
+    fillHistograms<false>(coll, tracks, mcParticles);
+  }
+  PROCESS_SWITCH(Alice3CDeuteron, processNoPid, "With detector PID info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

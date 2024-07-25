@@ -105,7 +105,7 @@ struct OnTheFlyTOFPID {
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 

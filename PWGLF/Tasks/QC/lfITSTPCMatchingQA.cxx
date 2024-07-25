@@ -94,7 +94,7 @@ struct lfmatchingqa {
   float getITSClSize(T const& track)
   {
     float sum{0.f};
-    for (int iL{0}; iL < 6; ++iL) {
+    for (int iL{0}; iL < 7; ++iL) {
       sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
     }
     return sum / track.itsNCls();
@@ -176,7 +176,7 @@ struct lfmatchingqa {
   }
   PROCESS_SWITCH(lfmatchingqa, processData, "Data analysis", true);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFullMC const& tracks, aod::McParticles const& particlesMC, aod::BCs const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFullMC const& tracks, aod::McParticles const&, aod::BCs const&)
   {
 
     if (!collision.sel8())

@@ -58,6 +58,7 @@ struct phosPi0 {
   Configurable<float> mOccE{"minOccE", 0.5, "Min. cluster energy of occupancy plots"};
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using SelCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using BCsWithBcSels = soa::Join<aod::BCs, aod::BcSels>;
   using mcClusters = soa::Join<aod::CaloClusters, aod::PHOSCluLabels>;
   using mcAmbClusters = soa::Join<aod::CaloAmbiguousClusters, aod::PHOSAmbCluLabels>;
@@ -95,6 +96,7 @@ struct phosPi0 {
 
   int mPrevMCColId = -1; // mark MC collissions already scanned
   // fast access to histos
+  TH1* hColl;
   TH3 *hReMod, *hMiMod;
   TH2 *hReAll, *hReDisp, *hReCPV, *hReBoth, *hSignalAll, *hPi0SignalAll, *hPi0SignalCPV, *hPi0SignalDisp,
     *hPi0SignalBoth, *hMiAll, *hMiDisp, *hMiCPV, *hMiBoth;
@@ -125,16 +127,15 @@ struct phosPi0 {
       centAxis{10, 0., 10.},
       centralityAxis{100, 0., 100., "centrality", "centrality"};
 
-    auto h{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsCol", "Number of events", HistType::kTH1F, {{9, 0., 9.}}))};
-    h->GetXaxis()->SetBinLabel(1, "All");
-    h->GetXaxis()->SetBinLabel(2, "T0a||T0c");
-    h->GetXaxis()->SetBinLabel(3, "T0a&&T0c");
-    h->GetXaxis()->SetBinLabel(4, "alias kTVXinPHOS");
-    h->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
-    h->GetXaxis()->SetBinLabel(6, "kTVXinPHOS");
-    h->GetXaxis()->SetBinLabel(7, "PHOSClu");
-    h->GetXaxis()->SetBinLabel(8, "PHOSClu&&Trig");
-    h->GetXaxis()->SetBinLabel(9, "PHOSClu&&Trig&&BB");
+    hColl = std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsCol", "Number of events", HistType::kTH1F, {{9, 0., 9.}})).get();
+    hColl->GetXaxis()->SetBinLabel(1, "All");
+    hColl->GetXaxis()->SetBinLabel(2, "T0a||T0c");
+    hColl->GetXaxis()->SetBinLabel(3, "T0a&&T0c");
+    hColl->GetXaxis()->SetBinLabel(4, "kTVXinPHOS");
+    hColl->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
+    hColl->GetXaxis()->SetBinLabel(6, "PHOSClu");
+    hColl->GetXaxis()->SetBinLabel(7, "PHOSClu&&kTVXinPHOS");
+    hColl->GetXaxis()->SetBinLabel(8, "Accepted");
 
     auto h2{std::get<std::shared_ptr<TH1>>(mHistManager.add("eventsBC", "Number of events per trigger", HistType::kTH1F, {{8, 0., 8.}}))};
     h2->GetXaxis()->SetBinLabel(1, "All");
@@ -147,7 +148,7 @@ struct phosPi0 {
     h2->GetXaxis()->SetBinLabel(8, "PHOSClu&&Trig");
 
     mHistManager.add("contributors", "Contributors per collision", HistType::kTH2F, {{10, 0., 10.}, {10, 0., 100.}});
-    mHistManager.add("vertex", "vertex", HistType::kTH2F, {{10, 0., 10.}, vertexAxis});
+    mHistManager.add("vertex", "vertex", HistType::kTH1F, {vertexAxis});
 
     if (mFillQC) {
       // QC histograms for normal collisions
@@ -220,7 +221,7 @@ struct phosPi0 {
       mHistManager.add("hMCPi0SpPrim", "pi0 spectrum Primary", HistType::kTH1F, {ptAxis});
       mHistManager.add("hMCPi0RapPrim", "pi0 rapidity primary", HistType::kTH1F, {{100, -1., 1., "Rapidity"}});
       mHistManager.add("hMCPi0PhiPrim", "pi0 phi primary", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
-      mHistManager.add("hMCPi0SecVtx", "pi0 secondary", HistType::kTH2F, {{100, 0., 500., "Rapidity"}, {100, 0., TMath::TwoPi(), "#phi (rad)"}});
+      mHistManager.add("hMCPi0SecVtx", "pi0 secondary", HistType::kTH2F, {{100, 0., 500., "R (cm)"}, {100, -TMath::Pi(), TMath::Pi(), "#phi (rad)"}});
     }
   }
 
@@ -229,78 +230,104 @@ struct phosPi0 {
                    aod::CaloClusters const& clusters)
   {
     aod::McParticles const* mcPart = nullptr;
-    processAll<false>(col, clusters, mcPart);
+    scanAll<false>(col, clusters, mcPart);
   }
-  PROCESS_SWITCH(phosPi0, processData, "process data", true);
-  void processMC(SelCollisions::iterator const& col,
+  PROCESS_SWITCH(phosPi0, processData, "processData", true);
+  void processMC(SelCollisionsMC::iterator const& col,
                  mcClusters const& clusters,
-                 aod::McParticles const& mcPart)
+                 aod::McParticles const& mcPart,
+                 aod::McCollisions const& /*mcCol*/)
   {
-    processAll<true>(col, clusters, &mcPart);
+    scanAll<true>(col, clusters, &mcPart);
   }
-  PROCESS_SWITCH(phosPi0, processMC, "process MC", false);
+  PROCESS_SWITCH(phosPi0, processMC, "processMC", false);
 
   template <bool isMC, typename TCollision, typename TClusters>
-  void processAll(TCollision& col,
-                  TClusters& clusters,
-                  aod::McParticles const* mcPart)
+  void scanAll(TCollision& col,
+               TClusters& clusters,
+               aod::McParticles const* mcPart)
   {
     bool isColSelected = false;
     mixedEventBin = 0;
 
-    mHistManager.fill(HIST("eventsCol"), 0.);
+    hColl->Fill(0.5);
     if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
-      mHistManager.fill(HIST("eventsCol"), 1.);
+      hColl->Fill(1.5);
     }
     if (col.selection_bit(kIsBBT0A) && col.selection_bit(kIsBBT0C)) {
-      mHistManager.fill(HIST("eventsCol"), 2.);
+      hColl->Fill(2.5);
     }
     if (col.alias_bit(kTVXinPHOS)) {
-      mHistManager.fill(HIST("eventsCol"), 3.);
+      hColl->Fill(3.5);
     }
     if (col.selection_bit(kIsTriggerTVX)) {
-      mHistManager.fill(HIST("eventsCol"), 4.);
-    }
-    if (col.alias_bit(kTVXinPHOS)) {
-      mHistManager.fill(HIST("eventsCol"), 5.);
+      hColl->Fill(4.5);
     }
     if (clusters.size() > 0) {
-      mHistManager.fill(HIST("eventsCol"), 6);
+      hColl->Fill(5.5);
       if (col.alias_bit(kTVXinPHOS)) {
-        mHistManager.fill(HIST("eventsCol"), 7);
+        hColl->Fill(6.5);
       }
     }
-    isColSelected = col.alias_bit(mEvSelTrig);
+    isColSelected = false;
+    if constexpr (isMC) {
+      isColSelected = (col.selection_bit(kIsTriggerTVX) && (clusters.size() > 0));
+    } else {
+      isColSelected = col.alias_bit(mEvSelTrig);
+    }
     double vtxZ = col.posZ();
+    mHistManager.fill(HIST("vertex"), vtxZ);
     int mult = 1.; // multiplicity TODO!!!
     mixedEventBin = findMixedEventBin(vtxZ, mult);
-
-    if constexpr (isMC) {
-      isColSelected = true; // aliaces do not work in MC???
-    }
 
     if (!isColSelected) {
       return;
     }
+    hColl->Fill(7.5);
 
     // Fill MC distributions
     // pion rapidity, pt, phi
     // secondary pi0s
     if constexpr (isMC) {
+      // check current collision Id for clusters
+      int cluMcBCId = -1;
+      for (auto clu : clusters) {
+        auto mcList = clu.labels(); // const std::vector<int>
+        int nParents = mcList.size();
+        for (int iParent = 0; iParent < nParents; iParent++) { // Not found nbar parent yiet
+          int label = mcList[iParent];
+          if (label > -1) {
+            auto parent = mcPart->iteratorAt(label);
+            cluMcBCId = parent.mcCollision().bcId();
+            break;
+          }
+        }
+        if (cluMcBCId > -1) {
+          break;
+        }
+      }
       if (mcPart->begin() != mcPart->end()) {
         if (mcPart->begin().mcCollisionId() != mPrevMCColId) {
           mPrevMCColId = mcPart->begin().mcCollisionId(); // to avoid scanning full MC table each BC
           for (auto part : *mcPart) {
+            if (part.mcCollision().bcId() != cluMcBCId) {
+              continue;
+            }
             if (part.pdgCode() == 111) {
-              double pt = part.pt();
-              mHistManager.fill(HIST("hMCPi0SpAll"), pt);
               double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
-              double phiVtx = atan2(part.vy(), part.vx());
-              mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
               if (r < 0.5) {
-                mHistManager.fill(HIST("hMCPi0SpPrim"), pt);
                 mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
-                mHistManager.fill(HIST("hMCPi0PhiPrim"), part.phi());
+              }
+              if (abs(part.y()) < .5) {
+                double pt = part.pt();
+                mHistManager.fill(HIST("hMCPi0SpAll"), pt);
+                double phiVtx = atan2(part.vy(), part.vx());
+                if (r > 0.5) {
+                  mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
+                } else {
+                  mHistManager.fill(HIST("hMCPi0SpPrim"), pt);
+                  mHistManager.fill(HIST("hMCPi0PhiPrim"), part.phi());
+                }
               }
             }
           }
@@ -434,6 +461,122 @@ struct phosPi0 {
       }
     }
   }
+  void processBC(aod::BCs::iterator const& /*bc*/,
+                 aod::CaloAmbiguousClusters const& clusters)
+  {
+    bool isSelected = true;
+    mixedEventBin = 0;
+
+    mHistManager.fill(HIST("eventsBC"), 0.);
+    double vtxZ = 0; // no vtx info
+    int mult = 1.;   // multiplicity TODO!!!
+    mixedEventBin = findMixedEventBin(vtxZ, mult);
+
+    if (!isSelected) {
+      return;
+    }
+
+    // Fill invariant mass distributions
+    mCurEvent.clear();
+    for (const auto& clu : clusters) {
+      // Fill QC histos
+      if (mFillQC) {
+        mHistManager.fill(HIST("hM02Clu"), clu.e(), clu.m02());
+        mHistManager.fill(HIST("hM20Clu"), clu.e(), clu.m20());
+        mHistManager.fill(HIST("hNcellClu"), clu.e(), clu.ncell(), clu.mod());
+        mHistManager.fill(HIST("cluETime"), clu.e(), clu.time(), clu.mod());
+      }
+      if (clu.e() < mMinCluE ||
+          clu.ncell() < mMinCluNcell ||
+          clu.time() > mMaxCluTime || clu.time() < mMinCluTime ||
+          clu.m02() < mMinM02) {
+        continue;
+      }
+      if (mFillQC) {
+        mHistManager.fill(HIST("cluSp"), clu.e(), clu.mod());
+        if (clu.e() > mOccE) {
+          mHistManager.fill(HIST("cluOcc"), clu.x(), clu.z(), clu.mod());
+          if (clu.trackdist() > 2.) {
+            mHistManager.fill(HIST("cluCPVOcc"), clu.x(), clu.z(), clu.mod());
+            mHistManager.fill(HIST("cluSpCPV"), clu.e(), clu.mod());
+            if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+              mHistManager.fill(HIST("cluBothOcc"), clu.x(), clu.z(), clu.mod());
+              mHistManager.fill(HIST("cluSpBoth"), clu.e(), clu.mod());
+            }
+          }
+          if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+            mHistManager.fill(HIST("cluDispOcc"), clu.x(), clu.z(), clu.mod());
+            mHistManager.fill(HIST("cluSpDisp"), clu.e(), clu.mod());
+          }
+        }
+      }
+
+      int mcLabel = -1;
+      photon ph1(clu.px(), clu.py(), clu.pz(), clu.e(), clu.mod(), TestLambda(clu.e(), clu.m02(), clu.m20()), clu.trackdist() > mCPVCut, mcLabel);
+      // Mix with other photons added to stack
+      for (auto ph2 : mCurEvent) {
+        double m = pow(ph1.e + ph2.e, 2) - pow(ph1.px + ph2.px, 2) -
+                   pow(ph1.py + ph2.py, 2) - pow(ph1.pz + ph2.pz, 2);
+        if (m > 0) {
+          m = sqrt(m);
+        }
+        double pt = sqrt(pow(ph1.px + ph2.px, 2) +
+                         pow(ph1.py + ph2.py, 2));
+        int modComb = ModuleCombination(ph1.mod, ph2.mod);
+        hReMod->Fill(m, pt, modComb);
+        hReAll->Fill(m, pt);
+
+        if (ph1.isCPVOK() && ph2.isCPVOK()) {
+          hReCPV->Fill(m, pt);
+        }
+        if (ph1.isDispOK() && ph2.isDispOK()) {
+          hReDisp->Fill(m, pt);
+          if (ph1.isCPVOK() && ph2.isCPVOK()) {
+            hReBoth->Fill(m, pt);
+          }
+        }
+      }
+
+      // Add photon to stack
+      mCurEvent.emplace_back(ph1);
+    }
+
+    // Mixed
+    for (auto ph1 : mCurEvent) {
+      for (auto mixEvent : mMixedEvents[mixedEventBin]) {
+        for (auto ph2 : mixEvent) {
+          double m = pow(ph1.e + ph2.e, 2) - pow(ph1.px + ph2.px, 2) -
+                     pow(ph1.py + ph2.py, 2) - pow(ph1.pz + ph2.pz, 2);
+          if (m > 0) {
+            m = sqrt(m);
+          }
+          double pt = sqrt(pow(ph1.px + ph2.px, 2) +
+                           pow(ph1.py + ph2.py, 2));
+          int modComb = ModuleCombination(ph1.mod, ph2.mod);
+          hMiMod->Fill(m, pt, modComb);
+          hMiAll->Fill(m, pt);
+          if (ph1.isCPVOK() && ph2.isCPVOK()) {
+            hMiCPV->Fill(m, pt);
+          }
+          if (ph1.isDispOK() && ph2.isDispOK()) {
+            hMiDisp->Fill(m, pt);
+            if (ph1.isCPVOK() && ph2.isCPVOK()) {
+              hMiBoth->Fill(m, pt);
+            }
+          }
+        }
+      }
+    }
+
+    // Fill events to store and remove oldest to keep buffer size
+    if (mCurEvent.size() > 0) {
+      mMixedEvents[mixedEventBin].emplace_back(mCurEvent);
+      if (mMixedEvents[mixedEventBin].size() > static_cast<size_t>(mNMixedEvents)) {
+        mMixedEvents[mixedEventBin].pop_front();
+      }
+    }
+  }
+  PROCESS_SWITCH(phosPi0, processBC, "processBC", false);
 
   //_____________________________________________________________________________
   int ModuleCombination(int m1, int m2)
