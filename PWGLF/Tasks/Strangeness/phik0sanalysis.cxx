@@ -196,8 +196,12 @@ struct phik0shortanalysis {
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   SliceCache cache;
+
   Partition<FullTracks> posTracks = aod::track::signed1Pt > cfgCutCharge;
   Partition<FullTracks> negTracks = aod::track::signed1Pt < cfgCutCharge;
+
+  Partition<FullMCTracks> posMCTracks = aod::track::signed1Pt > cfgCutCharge;
+  Partition<FullMCTracks> negMCTracks = aod::track::signed1Pt < cfgCutCharge;
 
   void init(InitContext const&)
   {
@@ -1169,9 +1173,326 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processMEPhiPion, "Process Mixed Event for Phi-Pion Analysis", false);
 
-  void processMCEffPhiK0S()
+  void processMCEffPhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullV0s const& V0s, V0DauMCTracks const&, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
+     if (!acceptEventQA<true>(collision))
+      return;
 
+    float multiplicity = collision.centFT0M();
+    eventHist.fill(HIST("hRecMCMultiplicityPercent"), multiplicity);
+
+    int iBin = 0;
+    for (int i = 0; i < nMultBin; i++) {
+      if (multBin[i] < multiplicity && multiplicity <= multBin[i + 1]) {
+        iBin = i;
+        break;
+      }
+    }
+
+    // Defining positive and negative tracks for phi reconstruction
+    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+    // V0 already reconstructed by the builder
+    for (const auto& v0 : V0s) {
+      const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
+      const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
+      if (!posDaughterTrack.has_mcParticle() || !negDaughterTrack.has_mcParticle())
+        continue;
+      
+      auto posMCDaughterTrack = posDaughterTrack.mcParticle_as<aod::McParticles>();
+      auto negMCDaughterTrack = negDaughterTrack.mcParticle_as<aod::McParticles>();
+      if (posMCDaughterTrack.pdgCode() != 211 || negMCDaughterTrack.pdgCode() != -211)
+        continue;
+      if (!posMCDaughterTrack.has_mothers() || !negMCDaughterTrack.has_mothers())
+        continue;
+
+      int pdgParentv0 = 0;
+      bool isPhysPrim = false;
+      for (const auto& particleMotherOfNeg : negMCDaughterTrack.mothers_as<aod::McParticles>()) {
+        for (const auto& particleMotherOfPos : posMCDaughterTrack.mothers_as<aod::McParticles>()) {
+          if (particleMotherOfNeg == particleMotherOfPos) {
+            pdgParentv0 = particleMotherOfNeg.pdgCode();
+            isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
+          }
+        }
+      }
+      if (pdgParentv0 != 310 || !isPhysPrim)
+        continue;
+      
+      if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+        continue;
+
+      TLorentzVector recK0S;
+      recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+      if (recK0S.Rapidity() > 0.8)
+        continue;
+      
+      std::vector<TLorentzVector> listrecPhi;
+      int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
+
+      // Phi reconstruction
+      for (auto track1 : posThisColl) { // loop over all selected tracks
+        if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+          continue; // topological and PID selection
+
+        auto track1ID = track1.globalIndex();
+
+        if (!track1.has_mcParticle())
+          continue;
+
+        for (auto track2 : negThisColl) {
+          if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+            continue; // topological and PID selection
+
+          auto track2ID = track2.globalIndex();
+          if (track2ID == track1ID)
+            continue; // condition to avoid double counting of pair
+
+          if (!track2.has_mcParticle())
+            continue;
+
+          auto MCtrack1 = track1.mcParticle_as<aod::McParticles>();
+          auto MCtrack2 = track2.mcParticle_as<aod::McParticles>();
+          if (MCtrack1.pdgCode() != 321 || MCtrack2.pdgCode() != -321)
+            continue;
+          if (!MCtrack1.has_mothers() || !MCtrack2.has_mothers())
+            continue;
+          if (!MCtrack1.isPhysicalPrimary() || !MCtrack2.isPhysicalPrimary())
+            continue;
+
+          int pdgParentPhi = 0;
+          for (const auto& MotherOfMCtrack1 : MCtrack1.mothers_as<aod::McParticles>()) {
+            for (const auto& MotherOfMCtrack2 : MCtrack2.mothers_as<aod::McParticles>()) {
+              if (MotherOfMCtrack1 == MotherOfMCtrack2) {
+                pdgParentPhi = MotherOfMCtrack1.pdgCode();
+              }
+            }
+          }
+
+          if (pdgParentPhi != 333)
+            continue;
+
+          TLorentzVector recPhi;
+          recPhi = recMother(track1, track2, massKa, massKa);
+          if (recPhi.Rapidity() > 0.8)
+            continue;
+
+          listrecPhi.push_back(recPhi);
+
+          countInclusive++;
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          countLtFirstCut++;
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          countLtSecondCut++;
+        }
+      }
+
+      float weightInclusive = 1. / static_cast<float>(countInclusive);
+      float weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
+      float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
+
+      switch (iBin) {
+        case 0: {
+          fillInvMass2D<false, true, 0>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 1: {
+          fillInvMass2D<false, true, 1>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 2: {
+          fillInvMass2D<false, true, 2>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 3: {
+          fillInvMass2D<false, true, 3>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 4: {
+          fillInvMass2D<false, true, 4>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 5: {
+          fillInvMass2D<false, true, 5>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 6: {
+          fillInvMass2D<false, true, 6>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 7: {
+          fillInvMass2D<false, true, 7>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 8: {
+          fillInvMass2D<false, true, 8>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 9: {
+          fillInvMass2D<false, true, 9>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  }
+
+  PROCESS_SWITCH(phik0shortanalysis, processMCEffPhiK0S, "Process MC Efficiency for Phi-K0S Analysis", false);
+
+  void processMCEffPhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  {
+    if (!acceptEventQA<true>(collision))
+      return;
+
+    float multiplicity = collision.centFT0M();
+    eventHist.fill(HIST("hRecMCMultiplicityPercent"), multiplicity);
+
+    int iBin = 0;
+    for (int i = 0; i < nMultBin; i++) {
+      if (multBin[i] < multiplicity && multiplicity <= multBin[i + 1]) {
+        iBin = i;
+        break;
+      }
+    }
+
+    // Defining positive and negative tracks for phi reconstruction
+    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+    // Loop over all primary pion candidates
+    for (const auto& track : fullMCTracks) {
+
+      if (!track.has_mcParticle())
+        continue;
+
+      auto MCtrack = track.mcParticle_as<aod::McParticles>();
+      if (std::abs(MCtrack.pdgCode()) != 211 !! !MCtrack.isPhysicalPrimary())
+        continue;
+
+      // Pion selection
+      if (!selectionPion(track))
+        continue;
+
+      TLorentzVector recPi;
+      recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
+      if (recPi.Rapidity() > 0.8)
+        continue;
+
+      std::vector<TLorentzVector> listrecPhi;
+      int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
+
+      // Phi reconstruction
+      for (auto track1 : posThisColl) { // loop over all selected tracks
+        if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+          continue; // topological and PID selection
+
+        auto track1ID = track1.globalIndex();
+
+        if (!track1.has_mcParticle())
+          continue;
+
+        for (auto track2 : negThisColl) {
+          if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+            continue; // topological and PID selection
+
+          auto track2ID = track2.globalIndex();
+          if (track2ID == track1ID)
+            continue; // condition to avoid double counting of pair
+
+          if (!track2.has_mcParticle())
+            continue;
+
+          auto MCtrack1 = track1.mcParticle_as<aod::McParticles>();
+          auto MCtrack2 = track2.mcParticle_as<aod::McParticles>();
+          if (MCtrack1.pdgCode() != 321 || MCtrack2.pdgCode() != -321)
+            continue;
+          if (!MCtrack1.has_mothers() || !MCtrack2.has_mothers())
+            continue;
+          if (!MCtrack1.isPhysicalPrimary() || !MCtrack2.isPhysicalPrimary())
+            continue;
+
+          int pdgParentPhi = 0;
+          for (const auto& MotherOfMCtrack1 : MCtrack1.mothers_as<aod::McParticles>()) {
+            for (const auto& MotherOfMCtrack2 : MCtrack2.mothers_as<aod::McParticles>()) {
+              if (MotherOfMCtrack1 == MotherOfMCtrack2) {
+                pdgParentPhi = MotherOfMCtrack1.pdgCode();
+              }
+            }
+          }
+
+          if (pdgParentPhi != 333)
+            continue;
+
+          TLorentzVector recPhi;
+          recPhi = recMother(track1, track2, massKa, massKa);
+          if (recPhi.Rapidity() > 0.8)
+            continue;
+
+          listrecPhi.push_back(recPhi);
+
+          countInclusive++;
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          countLtFirstCut++;
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          countLtSecondCut++;
+        }
+      }
+
+      float weightInclusive = 1. / static_cast<float>(countInclusive);
+      float weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
+      float weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
+
+      switch (iBin) {
+        case 0: {
+          fillInvMassNSigmadEdx<false, true, 0>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 1: {
+          fillInvMassNSigmadEdx<false, true, 1>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 2: {
+          fillInvMassNSigmadEdx<false, true, 2>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 3: {
+          fillInvMassNSigmadEdx<false, true, 3>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 4: {
+          fillInvMassNSigmadEdx<false, true, 4>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 5: {
+          fillInvMassNSigmadEdx<false, true, 5>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 6: {
+          fillInvMassNSigmadEdx<false, true, 6>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 7: {
+          fillInvMassNSigmadEdx<false, true, 7>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 8: {
+          fillInvMassNSigmadEdx<false, true, 8>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        case 9: {
+          fillInvMassNSigmadEdx<false, true, 9>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          break;
+        }
+        default:
+          break;
+      }
+    }
   }
 };
 
