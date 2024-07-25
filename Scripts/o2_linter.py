@@ -67,6 +67,20 @@ def kebab_case_to_camel_case_l(line: str) -> str:
     return f"{new_line[0].lower()}{new_line[1:]}" # start with lowercase letter
 
 
+def camel_case_to_kebab_case(line: str) -> str:
+    """Convert CamelCase string to kebab-case string.
+    As done in O2/Framework/Foundation/include/Framework/TypeIdHelpers.h:type_to_task_name
+    """
+    if not line.strip():
+        return line
+    new_line = []
+    for i, c in enumerate(line):
+        if i > 0 and c.isupper() and line[i - 1] != "-":
+            new_line.append("-")
+        new_line.append(c.lower())
+    return "".join(new_line)
+
+
 def print_error(path: str, line: Union[int, None], title: str, message: str):
     """Format and print error message."""
     # return # Use to suppress error message when counting speed.
@@ -747,10 +761,10 @@ class TestNameWorkflow(TestSpec):
         return passed
 
 
-class TestNameDevice(TestSpec):
-    """Test names of devices."""
-    name = "name/o2-device"
-    message = "Specify device name only when it cannot be derived from the struct name. Only append to the default name."
+class TestNameTask(TestSpec):
+    """Test explicit task names."""
+    name = "name/o2-task"
+    message = "Specify task name only when it cannot be derived from the struct name. Only append to the default name."
     suffixes = [".cxx"]
     per_line = False
 
@@ -758,8 +772,8 @@ class TestNameDevice(TestSpec):
         return TestSpec.file_matches(self, path)
 
     def test_file(self, path : str, content) -> bool:
-        is_inside_define = False
-        is_inside_adapt = False
+        is_inside_define = False # Are we inside defineDataProcessing?
+        is_inside_adapt = False # Are we inside adaptAnalysisTask?
         struct_name = ""
         struct_templated = False # Is the struct templated?
         n_parens_opened = 0 # number of opened parentheses
@@ -806,25 +820,39 @@ class TestNameDevice(TestSpec):
                 if n_parens_opened <= 0:
                     # print(f"{i + 1}: Exiting adapt.")
                     is_inside_adapt = False
-                # Find device name.
+                # Find explicit task name.
                 if not "TaskName{" in line:
                     continue
                 passed = False
-                # Extract device name.
+                # Extract explicit task name.
                 if not (match := re.search(r"TaskName\{\"([^\}]+)\"\}", line)):
-                    print_error(path, i + 1, self.name, f"Failed to extract device name from \"{line}\".")
+                    print_error(path, i + 1, self.name, f"Failed to extract explicit task name from \"{line}\".")
                     return False
-                device_name = match.group(1)
-                # print(f"{i + 1}: Got struct \"{struct_name}\" with device name \"{device_name}\".")
-                # Test device name.
-                expected_struct_name = kebab_case_to_camel_case_u(device_name)
-                if struct_name == expected_struct_name:
-                    print_error(path, i + 1, self.name, f"Specified device name {device_name} matches exactly the struct name {struct_name}. TaskName seems unnecessary.")
-                # if template, check that device name is extension of struct name
-                elif expected_struct_name.startswith(struct_name):
-                    print_error(path, i + 1, self.name, f"Specified device name {device_name} is an extension of the struct name {struct_name}. Is the struct templated? {struct_templated}")
+                task_name = match.group(1)
+                # print(f"{i + 1}: Got struct \"{struct_name}\" with task name \"{task_name}\".")
+                # Test explicit task name.
+                device_name_from_struct_name = camel_case_to_kebab_case(struct_name)
+                device_name_from_task_name = camel_case_to_kebab_case(task_name)
+                struct_name_from_device_name = kebab_case_to_camel_case_u(device_name_from_task_name)
+                if device_name_from_struct_name == device_name_from_task_name:
+                    # If the task name results in the same device name as the struct name would, TaskName is redundant and should be removed.
+                    print_error(path, i + 1, self.name, f"Specified task name {task_name} and the struct name {struct_name} produce the same device name {device_name_from_struct_name}. TaskName is redundant.")
+                    passed = False
+                elif device_name_from_struct_name.replace("-", "") == device_name_from_task_name.replace("-", ""):
+                    # If the device names generated from the task name and from the struct name differ in hyphenation, capitalisation of the struct name should be fixed and TaskName should be removed. (special cases: alice3-, -2prong)
+                    print_error(path, i + 1, self.name, f"Device names {device_name_from_task_name}, {device_name_from_struct_name} generated from the specified task name {task_name} and from the struct name {struct_name} differ in hyphenation. Consider fixing capitalisation of the struct name to {struct_name_from_device_name} and removing TaskName.")
+                    passed = False
+                elif device_name_from_task_name.startswith(device_name_from_struct_name):
+                    # If the device name generated from the task name is an extension of the device name generated from the struct name, accept it if the struct is templated. If the struct is not templated, extension is acceptable if adaptTask is called multiple times for the same struct.
+                    if struct_templated:
+                        print_error(path, i + 1, self.name, f"Device name {device_name_from_task_name} from the specified task name {task_name} is an extension of the device name {device_name_from_struct_name} from the struct name {struct_name} and the struct is templated. All good")
+                    else:
+                        print_error(path, i + 1, self.name, f"Device name {device_name_from_task_name} from the specified task name {task_name} is an extension of the device name {device_name_from_struct_name} from the struct name {struct_name} but the struct is not templated. Is it adapted multiple times?")
+                        passed = False
                 else:
-                    print_error(path, i + 1, self.name, f"Specified device name {device_name} does not match the struct name {struct_name}. (Matching {expected_struct_name})")
+                    # Other cases should be rejected.
+                    print_error(path, i + 1, self.name, f"Specified task name {task_name} produces device name {device_name_from_task_name} which does not match the device name {device_name_from_struct_name} from the struct name {struct_name}. (Matching struct name {struct_name_from_device_name})")
+                    passed = False
         return passed
 
 
@@ -1043,7 +1071,7 @@ def main():
         tests.append(TestNameFileCpp())
         tests.append(TestNameFilePython())
         tests.append(TestNameWorkflow())
-        tests.append(TestNameDevice())
+        tests.append(TestNameTask())
 
     # PWG-HF
     enable_pwghf = True
