@@ -136,7 +136,12 @@ struct singleElectronQCMC {
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
   static constexpr std::string_view ele_source_types[9] = {"lf/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "PromptPsi2S/", "NonPromptPsi2S/", "c2e/", "b2e/", "b2c2e/"};
 
-  ~singleElectronQCMC() {}
+  ~singleElectronQCMC()
+  {
+    if (eid_bdt) {
+      delete eid_bdt;
+    }
+  }
 
   void addhistograms()
   {
@@ -271,6 +276,7 @@ struct singleElectronQCMC {
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
+  o2::ml::OnnxModel* eid_bdt = nullptr;
   void DefineDileptonCut()
   {
     fDielectonCut = DielectronCut("fDielectonCut", "fDielectonCut");
@@ -300,7 +306,7 @@ struct singleElectronQCMC {
     fDielectonCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
-      o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
+      eid_bdt = new o2::ml::OnnxModel();
       if (dielectroncuts.loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
         std::map<std::string, std::string> metadata;
