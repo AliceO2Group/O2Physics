@@ -43,7 +43,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyMCTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronMCLabels>;
@@ -53,10 +53,6 @@ struct singleElectronQCMC {
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -80,7 +76,7 @@ struct singleElectronQCMC {
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
   } eventcuts;
 
-  DielectronCut fDielectonCut;
+  DielectronCut fDielectronCut;
   struct : ConfigurableGroup {
     std::string prefix = "dielectroncut_group";
 
@@ -121,8 +117,6 @@ struct singleElectronQCMC {
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  float d_bz;
 
   struct : ConfigurableGroup {
     std::string prefix = "mctrackcut_group";
@@ -207,59 +201,16 @@ struct singleElectronQCMC {
     fRegistry.addClone("Track/lf/", "Track/b2c2e/");
   }
 
-  bool cfgDoFlow = false;
   void init(InitContext&)
   {
     DefineEMEventCut();
     DefineDileptonCut();
     addhistograms();
 
-    mRunNumber = 0;
-    d_bz = 0;
-
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-  }
-
-  template <typename TCollision>
-  void initCCDB(TCollision const& collision)
-  {
-    if (mRunNumber == collision.runNumber()) {
-      return;
-    }
-
-    // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
-      d_bz = d_bz_input;
-      o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
-      }
-      mRunNumber = collision.runNumber();
-      return;
-    }
-
-    auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
-    mRunNumber = collision.runNumber();
   }
 
   void DefineEMEventCut()
@@ -279,31 +230,31 @@ struct singleElectronQCMC {
   o2::ml::OnnxModel* eid_bdt = nullptr;
   void DefineDileptonCut()
   {
-    fDielectonCut = DielectronCut("fDielectonCut", "fDielectonCut");
+    fDielectronCut = DielectronCut("fDielectronCut", "fDielectronCut");
 
     // for track
-    fDielectonCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, 1e+10f);
-    fDielectonCut.SetTrackEtaRange(-dielectroncuts.cfg_max_eta_track, +dielectroncuts.cfg_max_eta_track);
-    fDielectonCut.SetMinNClustersTPC(dielectroncuts.cfg_min_ncluster_tpc);
-    fDielectonCut.SetMinNCrossedRowsTPC(dielectroncuts.cfg_min_ncrossedrows);
-    fDielectonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    fDielectonCut.SetChi2PerClusterTPC(0.0, dielectroncuts.cfg_max_chi2tpc);
-    fDielectonCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
-    fDielectonCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
-    fDielectonCut.SetMeanClusterSizeITSob(0, 16);
-    fDielectonCut.SetMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
-    fDielectonCut.SetMaxDcaZ(dielectroncuts.cfg_max_dcaz);
-    fDielectonCut.RequireITSibAny(dielectroncuts.cfg_require_itsib_any);
-    fDielectonCut.RequireITSib1st(dielectroncuts.cfg_require_itsib_1st);
+    fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, 1e+10f);
+    fDielectronCut.SetTrackEtaRange(-dielectroncuts.cfg_max_eta_track, +dielectroncuts.cfg_max_eta_track);
+    fDielectronCut.SetMinNClustersTPC(dielectroncuts.cfg_min_ncluster_tpc);
+    fDielectronCut.SetMinNCrossedRowsTPC(dielectroncuts.cfg_min_ncrossedrows);
+    fDielectronCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    fDielectronCut.SetChi2PerClusterTPC(0.0, dielectroncuts.cfg_max_chi2tpc);
+    fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
+    fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
+    fDielectronCut.SetMeanClusterSizeITSob(0, 16);
+    fDielectronCut.SetMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
+    fDielectronCut.SetMaxDcaZ(dielectroncuts.cfg_max_dcaz);
+    fDielectronCut.RequireITSibAny(dielectroncuts.cfg_require_itsib_any);
+    fDielectronCut.RequireITSib1st(dielectroncuts.cfg_require_itsib_1st);
 
     // for eID
-    fDielectonCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
-    fDielectonCut.SetTPCNsigmaElRange(dielectroncuts.cfg_min_TPCNsigmaEl, dielectroncuts.cfg_max_TPCNsigmaEl);
-    fDielectonCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
-    fDielectonCut.SetTPCNsigmaPiRange(dielectroncuts.cfg_min_TPCNsigmaPi, dielectroncuts.cfg_max_TPCNsigmaPi);
-    fDielectonCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
-    fDielectonCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
-    fDielectonCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
+    fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
+    fDielectronCut.SetTPCNsigmaElRange(dielectroncuts.cfg_min_TPCNsigmaEl, dielectroncuts.cfg_max_TPCNsigmaEl);
+    fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
+    fDielectronCut.SetTPCNsigmaPiRange(dielectroncuts.cfg_min_TPCNsigmaPi, dielectroncuts.cfg_max_TPCNsigmaPi);
+    fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
+    fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
+    fDielectronCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       eid_bdt = new o2::ml::OnnxModel();
@@ -320,7 +271,7 @@ struct singleElectronQCMC {
         eid_bdt->initModel(dielectroncuts.BDTLocalPathGamma.value, dielectroncuts.enableOptimizations.value);
       }
 
-      fDielectonCut.SetPIDModel(eid_bdt);
+      fDielectronCut.SetPIDModel(eid_bdt);
     } // end of PID ML
   }
 
@@ -373,7 +324,6 @@ struct singleElectronQCMC {
     fRegistry.fill(HIST("Track/") + HIST(ele_source_types[e_source_id]) + HIST("hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
   }
 
-  std::vector<int> used_trackIds;
   SliceCache cache;
   Preslice<MyMCTracks> perCollision_track = aod::emprimaryelectron::emeventId;
   Filter trackFilter = dielectroncuts.cfg_min_pt_track < o2::aod::track::pt && nabs(o2::aod::track::eta) < dielectroncuts.cfg_max_eta_track && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
@@ -386,22 +336,20 @@ struct singleElectronQCMC {
 
   void processQCMC(FilteredMyCollisions const& collisions, FilteredMyMCTracks const& tracks, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
   {
-    used_trackIds.reserve(tracks.size());
 
     for (auto& collision : collisions) {
-      initCCDB(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision, cfgDoFlow);
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision, cfgDoFlow);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
+      o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
 
       auto mccollision = collision.emmcevent_as<aod::EMMCEvents>();
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -416,11 +364,11 @@ struct singleElectronQCMC {
           continue;
         }
         if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-          if (!fDielectonCut.IsSelectedTrack<true>(track, collision)) {
+          if (!fDielectronCut.IsSelectedTrack<true>(track, collision)) {
             continue;
           }
         } else { // cut-based
-          if (!fDielectonCut.IsSelectedTrack(track)) {
+          if (!fDielectronCut.IsSelectedTrack(track)) {
             continue;
           }
         }
@@ -462,9 +410,6 @@ struct singleElectronQCMC {
       } // end of track loop
 
     } // end of collision loop
-
-    used_trackIds.clear();
-    used_trackIds.shrink_to_fit();
 
   } // end of process
   PROCESS_SWITCH(singleElectronQCMC, processQCMC, "run dielectron QC MC", true);
