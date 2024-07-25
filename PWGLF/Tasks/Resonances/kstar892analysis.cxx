@@ -45,7 +45,6 @@ struct kstar892analysis {
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
-  ConfigurableAxis occupancyBinning{"occupancyBinning", {VARIABLE_WIDTH, 0.0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0, 50000.0}, "binning of occupancy axis"};
 
   Configurable<float> cInvMassStart{"cInvMassStart", 0.6, "Invariant mass start"};
   Configurable<float> cInvMassEnd{"cInvMassEnd", 1.5, "Invariant mass end"};
@@ -97,7 +96,6 @@ struct kstar892analysis {
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
 
   // MC Event selection
-  Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", -1, "Maximum occupancy of event"};
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
 
   // cuts on mother
@@ -124,7 +122,6 @@ struct kstar892analysis {
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec pidQAAxis = {cPIDBins, -cPIDQALimit, cPIDQALimit};
-    AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
 
     if (additionalQAeventPlots) {
       // Test on Mixed event
@@ -143,8 +140,6 @@ struct kstar892analysis {
       histos.add("QAevent/hEvtCounterMixedE", "Number of analyzed Mixed Events", HistType::kTH1F, {{1, 0.5, 1.5}});
       histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
       histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
-
-      histos.add("QAevent/hOccupancyvsCentr", "Occupancy vs centrality of collision", HistType::kTH2F, {occupancyAxis, {120, 0.0f, 120.0f}});
     }
 
     // Mass QA (quick check)
@@ -448,12 +443,7 @@ struct kstar892analysis {
     if constexpr (IsMC) {
       impactpar = collision.impactParameter();
     }
-
     auto multiplicity = collision.cent();
-
-    auto occupancy = collision.trackOccupancyInTimeRange();
-    if (cfgOccupancyMax > 0 && occupancy > cfgOccupancyMax)
-      return;
 
     if (additionalQAeventPlots) {
       if constexpr (!IsMix) {
@@ -461,7 +451,6 @@ struct kstar892analysis {
         histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), collision.cent());
         histos.fill(HIST("TestME/hCollisionIndexSameE"), collision.globalIndex());
         histos.fill(HIST("TestME/hnTrksSameE"), dTracks1.size());
-        histos.fill(HIST("QAevent/hOccupancyvsCentr"), occupancy, multiplicity);
       } else {
         histos.fill(HIST("QAevent/hVertexZMixedE"), collision.posZ());
         histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), collision.cent());
@@ -648,7 +637,7 @@ struct kstar892analysis {
   ///////////////////////////////////////////////////////////////////////////////
 
   void processDataLight(aod::ResoCollision& collision,
-                        soa::Filtered<aod::ResoTracks> const& resotracks)
+                        soa::Filtered<aod::ResoTracks> const&)
   {
     // LOG(info) << "new collision, zvtx: " << collision.posZ();
     if (additionalQAeventPlots)
@@ -662,7 +651,7 @@ struct kstar892analysis {
   PROCESS_SWITCH(kstar892analysis, processDataLight, "Process Event for data", false);
 
   void processDataLightWithTof(aod::ResoCollision& collision,
-                               soa::Filtered<aod::ResoTracks> const& resotracks)
+                               soa::Filtered<aod::ResoTracks> const&)
   {
     // LOG(info) << "new collision, zvtx: " << collision.posZ();
     if (additionalQAeventPlots)
@@ -676,7 +665,7 @@ struct kstar892analysis {
   PROCESS_SWITCH(kstar892analysis, processDataLightWithTof, "Process Event for data, tracks with TOF", false);
 
   void processDataTPCLowPt(aod::ResoCollision& collision,
-                           soa::Filtered<aod::ResoTracks> const& resotracks)
+                           soa::Filtered<aod::ResoTracks> const&)
   {
     if (additionalQAeventPlots)
       histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
@@ -689,7 +678,7 @@ struct kstar892analysis {
   PROCESS_SWITCH(kstar892analysis, processDataTPCLowPt, "Process Event for data, TPC at low pt", false);
 
   void processDataTOFHighPt(aod::ResoCollision& collision,
-                            soa::Filtered<aod::ResoTracks> const& resotracks)
+                            soa::Filtered<aod::ResoTracks> const&)
   {
     if (additionalQAeventPlots)
       histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
@@ -702,7 +691,7 @@ struct kstar892analysis {
   PROCESS_SWITCH(kstar892analysis, processDataTOFHighPt, "Process Event for data, TOF at high pt", false);
 
   void processMCLight(ResoMCCols::iterator const& collision,
-                      soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const& resotracks)
+                      soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const&)
   {
     if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
@@ -715,7 +704,7 @@ struct kstar892analysis {
   PROCESS_SWITCH(kstar892analysis, processMCLight, "Process Event for MC (Reconstructed)", false);
 
   void processMCLightWithTof(ResoMCCols::iterator const& collision,
-                             soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const& resotracks)
+                             soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const&)
   {
     if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
@@ -728,7 +717,7 @@ struct kstar892analysis {
   PROCESS_SWITCH(kstar892analysis, processMCLightWithTof, "Process Event for MC (Reconstructed), tracks with TOF", false);
 
   void processMCLightTPCLowPt(ResoMCCols::iterator const& collision,
-                              soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const& resotracks)
+                              soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const&)
   {
     if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
@@ -741,7 +730,7 @@ struct kstar892analysis {
   PROCESS_SWITCH(kstar892analysis, processMCLightTPCLowPt, "Process Event for MC (reconstructed), TPC at low pt", false);
 
   void processMCLightTOFHighPt(ResoMCCols::iterator const& collision,
-                               soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const& resotracks)
+                               soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> const&)
   {
     if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
@@ -758,10 +747,6 @@ struct kstar892analysis {
     auto multiplicity = collision.cent();
     float impactpar = collision.impactParameter();
     histos.fill(HIST("QAMCTrue/ImpactParameter"), impactpar);
-
-    auto occupancy = collision.trackOccupancyInTimeRange();
-    if (cfgOccupancyMax > 0 && occupancy > cfgOccupancyMax)
-      return;
 
     for (auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 313 || abs(part.y()) >= 0.5)
