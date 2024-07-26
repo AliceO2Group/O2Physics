@@ -78,19 +78,19 @@ static constexpr std::string_view PhiPiSEFCut[nMultBin] = {"h2PhiPiSEFCut_0_1", 
 static constexpr std::string_view PhiPiSESCut[nMultBin] = {"h2PhiPiSESCut_0_1", "h2PhiPiSESCut_1_5", "h2PhiPiSESCut_5_10", "h2PhiPiSESCut_10_15", "h2PhiPiSESCut_15_20",
                                                            "h2PhiPiSESCut_20_30", "h2PhiPiSESCut_30_40", "h2PhiPiSESCut_40_50", "h2PhiPiSESCut_50_70", "h2PhiPiSESCut_70_100"};
 
-static constexpr std::string_view MCPhiK0SSEInc[nMultBin] = {"h2MCPhiK0SSEInc_0_1", "h2MCPhiK0SSEInc_1_5", "h2MCPhiK0SSEInc_5_10", "h2MCPhiK0SSEInc_10_15", "h2MCPhiK0SSEInc_15_20",
-                                                             "h2MCPhiK0SSEInc_20_30", "h2MCPhiK0SSEInc_30_40", "h2MCPhiK0SSEInc_40_50", "h2MCPhiK0SSEInc_50_70", "h2MCPhiK0SSEInc_70_100"};
-static constexpr std::string_view MCPhiK0SSEFCut[nMultBin] = {"h2MCPhiK0SSEFCut_0_1", "h2MCPhiK0SSEFCut_1_5", "h2MCPhiK0SSEFCut_5_10", "h2MCPhiK0SSEFCut_10_15", "h2MCPhiK0SSEFCut_15_20",
-                                                              "h2MCPhiK0SSEFCut_20_30", "h2MCPhiK0SSEFCut_30_40", "h2MCPhiK0SSEFCut_40_50", "h2MCPhiK0SSEFCut_50_70", "h2MCPhiK0SSEFCut_70_100"};
-static constexpr std::string_view MCPhiK0SSESCut[nMultBin] = {"h2MCPhiK0SSESCut_0_1", "h2MCPhiK0SSESCut_1_5", "h2MCPhiK0SSESCut_5_10", "h2MCPhiK0SSESCut_10_15", "h2MCPhiK0SSESCut_15_20",
-                                                              "h2MCPhiK0SSESCut_20_30", "h2MCPhiK0SSESCut_30_40", "h2MCPhiK0SSESCut_40_50", "h2MCPhiK0SSESCut_50_70", "h2MCPhiK0SSESCut_70_100"};
+static constexpr std::string_view MCPhiK0SSEInc[nMultBin] = {"h2RecMCPhiK0SSEInc_0_1", "h2RecMCPhiK0SSEInc_1_5", "h2RecMCPhiK0SSEInc_5_10", "h2RecMCPhiK0SSEInc_10_15", "h2RecMCPhiK0SSEInc_15_20",
+                                                             "h2RecMCPhiK0SSEInc_20_30", "h2RecMCPhiK0SSEInc_30_40", "h2RecMCPhiK0SSEInc_40_50", "h2RecMCPhiK0SSEInc_50_70", "h2RecMCPhiK0SSEInc_70_100"};
+static constexpr std::string_view MCPhiK0SSEFCut[nMultBin] = {"h2RecMCPhiK0SSEFCut_0_1", "h2RecMCPhiK0SSEFCut_1_5", "h2RecMCPhiK0SSEFCut_5_10", "h2RecMCPhiK0SSEFCut_10_15", "h2RecMCPhiK0SSEFCut_15_20",
+                                                              "h2RecMCPhiK0SSEFCut_20_30", "h2RecMCPhiK0SSEFCut_30_40", "h2RecMCPhiK0SSEFCut_40_50", "h2RecMCPhiK0SSEFCut_50_70", "h2RecMCPhiK0SSEFCut_70_100"};
+static constexpr std::string_view MCPhiK0SSESCut[nMultBin] = {"h2RecMCPhiK0SSESCut_0_1", "h2RecMCPhiK0SSESCut_1_5", "h2RecMCPhiK0SSESCut_5_10", "h2RecMCPhiK0SSESCut_10_15", "h2RecMCPhiK0SSESCut_15_20",
+                                                              "h2RecMCPhiK0SSESCut_20_30", "h2RecMCPhiK0SSESCut_30_40", "h2RecMCPhiK0SSESCut_40_50", "h2RecMCPhiK0SSESCut_50_70", "h2RecMCPhiK0SSESCut_70_100"};
 
-static constexpr std::string_view MCPhiPiSEInc[nMultBin] = {"h2MCPhiPiSEInc_0_1", "h2MCPhiPiSEInc_1_5", "h2MCPhiPiSEInc_5_10", "h2MCPhiPiSEInc_10_15", "h2MCPhiPiSEInc_15_20",
-                                                            "h2MCPhiPiSEInc_20_30", "h2MCPhiPiSEInc_30_40", "h2MCPhiPiSEInc_40_50", "h2MCPhiPiSEInc_50_70", "h2MCPhiPiSEInc_70_100"};
-static constexpr std::string_view MCPhiPiSEFCut[nMultBin] = {"h2MCPhiPiSEFCut_0_1", "h2MCPhiPiSEFCut_1_5", "h2MCPhiPiSEFCut_5_10", "h2MCPhiPiSEFCut_10_15", "h2MCPhiPiSEFCut_15_20",
-                                                             "h2MCPhiPiSEFCut_20_30", "h2MCPhiPiSEFCut_30_40", "h2MCPhiPiSEFCut_40_50", "h2MCPhiPiSEFCut_50_70", "h2MCPhiPiSEFCut_70_100"};
-static constexpr std::string_view MCPhiPiSESCut[nMultBin] = {"h2MCPhiPiSESCut_0_1", "h2MCPhiPiSESCut_1_5", "h2MCPhiPiSESCut_5_10", "h2MCPhiPiSESCut_10_15", "h2MCPhiPiSESCut_15_20",
-                                                             "h2MCPhiPiSESCut_20_30", "h2MCPhiPiSESCut_30_40", "h2MCPhiPiSESCut_40_50", "h2MCPhiPiSESCut_50_70", "h2MCPhiPiSESCut_70_100"};
+static constexpr std::string_view MCPhiPiSEInc[nMultBin] = {"h2RecMCPhiPiSEInc_0_1", "h2RecMCPhiPiSEInc_1_5", "h2RecMCPhiPiSEInc_5_10", "h2RecMCPhiPiSEInc_10_15", "h2RecMCPhiPiSEInc_15_20",
+                                                            "h2RecMCPhiPiSEInc_20_30", "h2RecMCPhiPiSEInc_30_40", "h2RecMCPhiPiSEInc_40_50", "h2RecMCPhiPiSEInc_50_70", "h2RecMCPhiPiSEInc_70_100"};
+static constexpr std::string_view MCPhiPiSEFCut[nMultBin] = {"h2RecMCPhiPiSEFCut_0_1", "h2RecMCPhiPiSEFCut_1_5", "h2RecMCPhiPiSEFCut_5_10", "h2RecMCPhiPiSEFCut_10_15", "h2RecMCPhiPiSEFCut_15_20",
+                                                             "h2RecMCPhiPiSEFCut_20_30", "hRecMCPhiPiSEFCut_30_40", "h2RecMCPhiPiSEFCut_40_50", "h2RecMCPhiPiSEFCut_50_70", "h2RecMCPhiPiSEFCut_70_100"};
+static constexpr std::string_view MCPhiPiSESCut[nMultBin] = {"h2RecMCPhiPiSESCut_0_1", "h2RecMCPhiPiSESCut_1_5", "h2RecMCPhiPiSESCut_5_10", "h2RecMCPhiPiSESCut_10_15", "h2RecMCPhiPiSESCut_15_20",
+                                                             "h2RecMCPhiPiSESCut_20_30", "h2RecMCPhiPiSESCut_30_40", "h2RecMCPhiPiSESCut_40_50", "h2RecMCPhiPiSESCut_50_70", "h2RecMCPhiPiSESCut_70_100"};
 } // namespace
 
 struct phik0shortanalysis {
@@ -305,20 +305,20 @@ struct phik0shortanalysis {
 
     // Phi mass vs Pion NSigma dE/dx for Same Event and Mixed Event
     for (int i = 0; i < nMultBin; i++) {
-      PhiPionHist.add(PhiPiSEInc[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Inclusive", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisInc.at(i)});
-      PhiPionHist.add(PhiPiSEFCut[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Deltay < FirstCut", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisFCut.at(i)});
-      PhiPionHist.add(PhiPiSESCut[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for Same Event Deltay < SecondCut", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisSCut.at(i)});
+      PhiPionHist.add(PhiPiSEInc[i].data(), "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Inclusive", kTHnSparseF, {ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, cfgPhimassAxisInc.at(i)});
+      PhiPionHist.add(PhiPiSEFCut[i].data(), "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < FirstCut", kTHnSparseF, {ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, cfgPhimassAxisFCut.at(i)});
+      PhiPionHist.add(PhiPiSESCut[i].data(), "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < SecondCut", kTHnSparseF, {ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, cfgPhimassAxisSCut.at(i)});
     }
 
-    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventInclusive", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
-    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut", "Phi Invariant mass vs Pion nSigma dE/dx for Mixed Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventInclusive", "Phi Invariant mass vs Pion nSigma TPC/TOF for Mixed Event Inclusive", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Mixed Event Deltay < FirstCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, PhimassAxis});
+    PhiPionHist.add("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Mixed Event Deltay < SecondCut", kTHnSparseF, {multAxis, ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, PhimassAxis});
 
     // MC Phi mass vs Pion NSigma dE/dx
     for (int i = 0; i < nMultBin; i++) {
-      MCPhiPionHist.add(MCPhiPiSEInc[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Inclusive", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisInc.at(i)});
-      MCPhiPionHist.add(MCPhiPiSEFCut[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Deltay < FirstCut", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisFCut.at(i)});
-      MCPhiPionHist.add(MCPhiPiSESCut[i].data(), "Phi Invariant mass vs Pion nSigma dE/dx for RecMC Deltay < SecondCut", kTH3F, {ptAxis, {100, -10.0f, 10.0f}, cfgPhimassAxisSCut.at(i)});
+      MCPhiPionHist.add(MCPhiPiSEInc[i].data(), "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Inclusive", kTHnSparseF, {ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, cfgPhimassAxisInc.at(i)});
+      MCPhiPionHist.add(MCPhiPiSEFCut[i].data(), "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Deltay < FirstCut", kTHnSparseF, {ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, cfgPhimassAxisFCut.at(i)});
+      MCPhiPionHist.add(MCPhiPiSESCut[i].data(), "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Deltay < SecondCut", kTHnSparseF, {ptAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, cfgPhimassAxisSCut.at(i)});
     }
 
     // GenMC pT of Pion coupled to Phi
@@ -455,6 +455,7 @@ struct phik0shortanalysis {
       return false;
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
+
     if (track.pt() < 1.2) {
       if (!track.hasTPC())
         return false;
@@ -465,10 +466,12 @@ struct phik0shortanalysis {
       if (track.tpcChi2NCl() > maxChi2TPC)
         return false;
     }
+
     if (track.pt() > 0.5) {
       if (!track.hasTOF())
         return false;
     }
+
     if (std::abs(track.dcaXY()) > dcaxyMax)
       return false;
     if (std::abs(track.dcaZ()) > dcazMax)
@@ -520,7 +523,7 @@ struct phik0shortanalysis {
 
   // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
   template <bool isMix, bool isMC, std::size_t iBin>
-  void fillInvMassNSigmadEdx(TLorentzVector Pi, float nSigmadEdxPi, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
+  void fillInvMassNSigma(TLorentzVector Pi, float nSigmaTPCPi, float nSigmaTOFPi, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
   {
     double rapidityPi = Pi.Rapidity();
     double ptPi = Pi.Pt();
@@ -531,31 +534,31 @@ struct phik0shortanalysis {
       double deltay = std::abs(rapidityPi - rapidityPhi);
 
       if constexpr (!isMix) { // same event
-        PhiPionHist.fill(HIST(PhiPiSEInc[iBin]), ptPi, nSigmadEdxPi, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST(PhiPiSEInc[iBin]), ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST(PhiPiSEFCut[iBin]), ptPi, nSigmadEdxPi, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST(PhiPiSEFCut[iBin]), ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST(PhiPiSESCut[iBin]), ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST(PhiPiSESCut[iBin]), ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightLtSecondCut);
       } else { // mixed event
-        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventInclusive"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventInclusive"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventFirstCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut"), multiplicity, ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h4PhiInvMassPiNSigmadEdxMixedEventSecondCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightLtSecondCut);
       }
 
       if constexpr (isMC) { // MC event
-        MCPhiPionHist.fill(HIST(MCPhiPiSEInc[iBin]), ptPi, nSigmadEdxPi, massPhi, weightInclusive);
+        MCPhiPionHist.fill(HIST(MCPhiPiSEInc[iBin]), ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightInclusive);
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        MCPhiPionHist.fill(HIST(MCPhiPiSEFCut[iBin]), ptPi, nSigmadEdxPi, massPhi, weightLtFirstCut);
+        MCPhiPionHist.fill(HIST(MCPhiPiSEFCut[iBin]), ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightLtFirstCut);
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        MCPhiPionHist.fill(HIST(MCPhiPiSESCut[iBin]), ptPi, nSigmadEdxPi, massPhi, weightLtSecondCut);
+        MCPhiPionHist.fill(HIST(MCPhiPiSESCut[iBin]), ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightLtSecondCut);
       }
     }
   }
@@ -895,43 +898,43 @@ struct phik0shortanalysis {
 
       switch (iBin) {
         case 0: {
-          fillInvMassNSigmadEdx<false, false, 0>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 0>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 1: {
-          fillInvMassNSigmadEdx<false, false, 1>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 1>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 2: {
-          fillInvMassNSigmadEdx<false, false, 2>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 2>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 3: {
-          fillInvMassNSigmadEdx<false, false, 3>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 3>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 4: {
-          fillInvMassNSigmadEdx<false, false, 4>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 4>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 5: {
-          fillInvMassNSigmadEdx<false, false, 5>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 5>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 6: {
-          fillInvMassNSigmadEdx<false, false, 6>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 6>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 7: {
-          fillInvMassNSigmadEdx<false, false, 7>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 7>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 8: {
-          fillInvMassNSigmadEdx<false, false, 8>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 8>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 9: {
-          fillInvMassNSigmadEdx<false, false, 9>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, false, 9>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         default:
@@ -1123,43 +1126,43 @@ struct phik0shortanalysis {
 
         switch (iBin) {
           case 0: {
-            fillInvMassNSigmadEdx<true, false, 0>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 0>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 1: {
-            fillInvMassNSigmadEdx<true, false, 1>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 1>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 2: {
-            fillInvMassNSigmadEdx<true, false, 2>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 2>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 3: {
-            fillInvMassNSigmadEdx<true, false, 3>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 3>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 4: {
-            fillInvMassNSigmadEdx<true, false, 4>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 4>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 5: {
-            fillInvMassNSigmadEdx<true, false, 5>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 5>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 6: {
-            fillInvMassNSigmadEdx<true, false, 6>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 6>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 7: {
-            fillInvMassNSigmadEdx<true, false, 7>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 7>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 8: {
-            fillInvMassNSigmadEdx<true, false, 8>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 8>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           case 9: {
-            fillInvMassNSigmadEdx<true, false, 9>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+            fillInvMassNSigma<true, false, 9>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
             break;
           }
           default:
@@ -1483,43 +1486,43 @@ struct phik0shortanalysis {
 
       switch (iBin) {
         case 0: {
-          fillInvMassNSigmadEdx<false, true, 0>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 0>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 1: {
-          fillInvMassNSigmadEdx<false, true, 1>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 1>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 2: {
-          fillInvMassNSigmadEdx<false, true, 2>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 2>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 3: {
-          fillInvMassNSigmadEdx<false, true, 3>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 3>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 4: {
-          fillInvMassNSigmadEdx<false, true, 4>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 4>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 5: {
-          fillInvMassNSigmadEdx<false, true, 5>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 5>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 6: {
-          fillInvMassNSigmadEdx<false, true, 6>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 6>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 7: {
-          fillInvMassNSigmadEdx<false, true, 7>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 7>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 8: {
-          fillInvMassNSigmadEdx<false, true, 8>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 8>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         case 9: {
-          fillInvMassNSigmadEdx<false, true, 9>(recPi, track.tpcNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+          fillInvMassNSigma<false, true, 9>(recPi, track.tpcNSigmaPi(), track.tofNSigmaPi(), listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
           break;
         }
         default:
