@@ -989,7 +989,7 @@ struct TaskPolarisationCharmHadrons {
         } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
           auto trackProng2 = candidate.template prong2_as<Trk>();
           getTrackingInfos(std::vector{trackProng0, trackProng1, trackProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
-        } 
+        }
       }
 
       float cosThetaStarHelicity = -10.f;
