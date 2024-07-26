@@ -114,34 +114,34 @@ def remove_comment_cpp(line: str) -> str:
     return line.strip()
 
 
-def block_ranges(line: str, c_open: str, c_close: str) -> "list[list[int]]":
-    """Get list of index ranges of longest blocks opened with str_open and closed with str_close."""
-    # print(f"Looking for {c_open}{c_close} blocks in \"{line}\".")
+def block_ranges(line: str, char_open: str, char_close: str) -> "list[list[int]]":
+    """Get list of index ranges of longest blocks opened with char_open and closed with char_close."""
+    # print(f"Looking for {char_open}{char_close} blocks in \"{line}\".")
     # print(line)
-    list_ranges = []
-    if not all((line, len(c_open) == 1, len(c_close) == 1)):
+    list_ranges: list[list[int]] = []
+    if not all((line, len(char_open) == 1, len(char_close) == 1)):
         return list_ranges
-    def direction(c:str) -> int:
-        if c == c_open:
+    def direction(char:str) -> int:
+        if char == char_open:
             return 1
-        if c == c_close:
+        if char == char_close:
             return -1
         return 0
     list_levels = [] # list of block levels (net number of opened blocks)
-    level = 0 # current block level (sum or previous directions)
-    for c in line:
-        list_levels.append(level := level + direction(c))
-    level_min = min(list_levels) # minimum level (!= 0 if there are opened blocks)
+    level_sum = 0 # current block level (sum of previous directions)
+    for char in line:
+        list_levels.append(level_sum := level_sum + direction(char))
+    level_min = min(list_levels) # minimum level (!= 0 if line has opened blocks)
     # Look for openings (level_min + 1) and closings (level_min).
     index_start = -1
     is_opened = False
     # print(list_levels)
-    for i, l in enumerate(list_levels):
-        if not is_opened and l > level_min:
+    for i, level in enumerate(list_levels):
+        if not is_opened and level > level_min:
             is_opened = True
             index_start = i
             # print(f"Opening at {i}")
-        elif is_opened and (l == level_min or i == len(list_levels) -1):
+        elif is_opened and (level == level_min or i == len(list_levels) - 1):
             is_opened = False
             list_ranges.append([index_start, i])
             # print(f"Closing at {i}")
