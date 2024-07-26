@@ -568,7 +568,7 @@ struct nucleiSpectra {
                 }
                 if (iPID) {
                   float charge{1};
-                  if (iS == 3 || iS == 4) 
+                  if (iS == 3 || iS == 4)
                     charge = 2;
                   tofMasses[iS] = correctedTpcInnerParam * charge * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS];
                   nuclei::hTOFmass[iS][iC]->Fill(centrality, fvector.pt(), tofMasses[iS]);
