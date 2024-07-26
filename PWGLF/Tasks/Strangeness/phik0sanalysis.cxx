@@ -331,7 +331,7 @@ struct phik0shortanalysis {
   template <bool isMC, typename T>
   bool acceptEventQA(const T& collision)
   {
-    if constexpr (!isMC) { // data event
+    if constexpr (!isMC) {                        // data event
       eventHist.fill(HIST("hEventSelection"), 0); // all collisions
       if (!collision.sel8())
         return false;
@@ -344,7 +344,7 @@ struct phik0shortanalysis {
         return false;
       eventHist.fill(HIST("hEventSelection"), 3); // INEL>0 collisions
       return true;
-    } else { // RecMC event
+    } else {                                             // RecMC event
       MCeventHist.fill(HIST("hRecMCEventSelection"), 0); // all collisions
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX))
         return false;
@@ -1176,7 +1176,7 @@ struct phik0shortanalysis {
 
   void processMCEffPhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullV0s const& V0s, V0DauMCTracks const&, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-     if (!acceptEventQA<true>(collision))
+    if (!acceptEventQA<true>(collision))
       return;
 
     float multiplicity = collision.centFT0M();
@@ -1201,7 +1201,7 @@ struct phik0shortanalysis {
       const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
       if (!posDaughterTrack.has_mcParticle() || !negDaughterTrack.has_mcParticle())
         continue;
-      
+
       auto posMCDaughterTrack = posDaughterTrack.mcParticle_as<aod::McParticles>();
       auto negMCDaughterTrack = negDaughterTrack.mcParticle_as<aod::McParticles>();
       if (posMCDaughterTrack.pdgCode() != 211 || negMCDaughterTrack.pdgCode() != -211)
@@ -1221,7 +1221,7 @@ struct phik0shortanalysis {
       }
       if (pdgParentv0 != 310 || !isPhysPrim)
         continue;
-      
+
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
@@ -1229,7 +1229,7 @@ struct phik0shortanalysis {
       recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
       if (recK0S.Rapidity() > 0.8)
         continue;
-      
+
       std::vector<TLorentzVector> listrecPhi;
       int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
@@ -1406,7 +1406,7 @@ struct phik0shortanalysis {
         continue;
 
       auto MCtrack = track.mcParticle_as<aod::McParticles>();
-      if (std::abs(MCtrack.pdgCode()) != 211 !! !MCtrack.isPhysicalPrimary())
+      if (std::abs(MCtrack.pdgCode()) != 211 || !MCtrack.isPhysicalPrimary())
         continue;
 
       // Pion selection
