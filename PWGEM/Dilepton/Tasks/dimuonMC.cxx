@@ -11,17 +11,17 @@
 //
 // ========================
 //
-// Analysis task for single electron QC
+// This code runs loop over dalitz ee table for dalitz QC.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 
-#include "PWGEM/Dilepton/Core/SingleTrackQC.h"
+#include "PWGEM/Dilepton/Core/DileptonMC.h"
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SingleTrackQC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, FilteredMyElectrons>>(cfgc, TaskName{"single-electron-qc"})};
+    adaptAnalysisTask<DileptonMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, FilteredMyMCMuons>>(cfgc, TaskName{"dimuon-mc"})};
 }
