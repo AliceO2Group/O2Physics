@@ -89,7 +89,8 @@ enum ParticlePairType {
 enum MassWindowType {
   kCentralWindow = 0,
   kLeftWindow,
-  kRightWindow
+  kRightWindow,
+  kNoOfMassWindows
 };
 
 struct lambdaCorrTableProducer {
@@ -135,16 +136,12 @@ struct lambdaCorrTableProducer {
   Configurable<bool> cfg_do_eta_analysis{"cfg_do_eta_analysis", false, "Eta Analysis"};
 
   // lambda mass windows
-  Configurable<float> cfg_lambda_mass_min{"cfg_lambda_mass_min", 1.11, "Minimum Central Window"};
-  Configurable<float> cfg_lambda_mass_max{"cfg_lambda_mass_max", 1.12, "Maximum Central Window"};
-  Configurable<float> cfg_lambda_left_min{"cfg_lambda_left_min", 1.08, "Minimum Left Window"};
-  Configurable<float> cfg_lambda_left_max{"cfg_lambda_left_max", 1.10, "Maximum Left Window"};
-  Configurable<float> cfg_lambda_right_min{"cfg_lambda_right_min", 1.13, "Minimum Right Window"};
-  Configurable<float> cfg_lambda_right_max{"cfg_lambda_right_max", 1.15, "Maximum Right Window"};
+  Configurable<std::vector<float>> cfg_lambda_mass{"cfg_lambda_mass", {1.11, 1.12}, "Minimum Central Window"};
+  Configurable<std::vector<float>> cfg_lambda_left{"cfg_lambda_left", {1.08, 1.09}, "Minimum Left Window"};
+  Configurable<std::vector<float>> cfg_lambda_right{"cfg_lambda_right", {1.13, 1.14}, "Minimum Right Window"};
 
   // global variable declaration
-  std::map<MassWindowType, float> mass_map_min;
-  std::map<MassWindowType, float> mass_map_max;
+  std::map<MassWindowType, std::vector<float>> mass_win_map;
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -152,8 +149,7 @@ struct lambdaCorrTableProducer {
   void init(InitContext const&)
   {
     // global variable
-    mass_map_min = {{kCentralWindow, cfg_lambda_mass_min}, {kLeftWindow, cfg_lambda_left_min}, {kRightWindow, cfg_lambda_right_min}};
-    mass_map_max = {{kCentralWindow, cfg_lambda_mass_max}, {kLeftWindow, cfg_lambda_left_max}, {kRightWindow, cfg_lambda_right_max}};
+    mass_win_map = {{kCentralWindow, cfg_lambda_mass}, {kLeftWindow, cfg_lambda_left}, {kRightWindow, cfg_lambda_right}};
 
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
@@ -385,14 +381,20 @@ struct lambdaCorrTableProducer {
     }
   }
 
-  template <ParticleType v0part, PidType pos_prong, PidType neg_prong, MassWindowType masswin, typename C, typename V, typename T>
+  template <ParticleType v0part, PidType pos_prong, PidType neg_prong, typename C, typename V, typename T>
   void selV0Particle(C const& collision, V const& v0track, T const& tracks)
   {
 
     // initialize variables
     auto postrack = v0track.template posTrack_as<T>();
     auto negtrack = v0track.template negTrack_as<T>();
-    float mass = 0., rap = 0.;
+
+    // apply daughter particle id
+    if (!selPIDTrack<pos_prong>(postrack) || !selPIDTrack<neg_prong>(negtrack)) {
+      return;
+    }
+
+    float mass = 0.;
 
     if (v0part == kLambda) {
       mass = v0track.mLambda();
@@ -401,30 +403,24 @@ struct lambdaCorrTableProducer {
       mass = v0track.mAntiLambda();
     }
 
+    // apply mass window selection [global]
+    if ((fabs(mass - MassLambda0) >= cfg_lambda_mass_window) || (fabs(v0track.mK0Short() - MassK0Short) <= cfg_kshort_rej)) {
+      return;
+    }
+
+    // apply kinematic acceptance on pT
+    if (v0track.pt() <= cfg_v0_pt_min || v0track.pt() >= cfg_v0_pt_max) {
+      return;
+    }
+
+    float rap = 0.;
     if (cfg_do_eta_analysis) {
       rap = v0track.eta();
     } else {
       rap = v0track.yLambda();
     }
 
-    // apply mass window selection [global]
-    if ((fabs(mass - MassLambda0) >= cfg_lambda_mass_window) || (fabs(v0track.mK0Short() - MassK0Short) <= cfg_kshort_rej)) {
-      return;
-    }
-
-    // apply daughter particle id
-    if (!selPIDTrack<pos_prong>(postrack) || !selPIDTrack<neg_prong>(negtrack)) {
-      return;
-    }
-
-    // apply kinematic acceptance
-    if (v0track.pt() <= cfg_v0_pt_min || v0track.pt() >= cfg_v0_pt_max) {
-      return;
-    }
-
-    if (cfg_do_eta_analysis && (fabs(v0track.eta()) >= cfg_v0_rap_max)) {
-      return;
-    } else if (fabs(v0track.yLambda()) >= cfg_v0_rap_max) {
+    if (fabs(rap) >= cfg_v0_rap_max) {
       return;
     }
 
@@ -436,12 +432,20 @@ struct lambdaCorrTableProducer {
       histos.fill(HIST("QA_Checks/h1d_lambda_mass"), v0track.mAntiLambda());
     }
 
-    // apply further mass window selection [central, left, right]
-    if (mass > mass_map_min[masswin] && mass < mass_map_max[masswin]) {
-      if (masswin == kCentralWindow) {
-        fillQALambda<v0part>(collision, v0track, tracks);
+    // loop over mass windows
+    for (auto m = mass_win_map.begin(); m != mass_win_map.end(); ++m) {
+
+      // apply mass window cut
+      if (mass > m->second[0] && mass < m->second[1]) {
+
+        if (m->first == kCentralWindow) {
+          fillQALambda<v0part>(collision, v0track, tracks);
+        }
+
+        lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0track.pt(), rap, v0track.phi(), mass, postrack.index(), negtrack.index(), (int8_t)v0part, (int8_t)m->first);
+
+        break;
       }
-      lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0track.pt(), rap, v0track.phi(), mass, postrack.index(), negtrack.index(), v0part, masswin);
     }
   }
 
@@ -465,12 +469,8 @@ struct lambdaCorrTableProducer {
         continue;
       }
 
-      selV0Particle<kLambda, kProton, kPion, kCentralWindow>(collision, v0, tracks);
-      selV0Particle<kLambda, kProton, kPion, kLeftWindow>(collision, v0, tracks);
-      selV0Particle<kLambda, kProton, kPion, kRightWindow>(collision, v0, tracks);
-      selV0Particle<kAntiLambda, kPion, kProton, kCentralWindow>(collision, v0, tracks);
-      selV0Particle<kAntiLambda, kPion, kProton, kLeftWindow>(collision, v0, tracks);
-      selV0Particle<kAntiLambda, kPion, kProton, kRightWindow>(collision, v0, tracks);
+      selV0Particle<kLambda, kProton, kPion>(collision, v0, tracks);
+      selV0Particle<kAntiLambda, kPion, kProton>(collision, v0, tracks);
     }
   }
 };
