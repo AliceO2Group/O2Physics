@@ -692,7 +692,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
       rowMcMatchGen(flag, debug, origin);
     } // close loop over generated particles
-  } // close process
+  }   // close process
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPiExpressions, processMc, "Process MC", false);
 }; // close struct
 

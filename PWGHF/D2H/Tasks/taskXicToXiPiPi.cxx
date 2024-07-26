@@ -270,7 +270,7 @@ struct HfTaskXicToXiPiPi {
       registry.fill(HIST("hChi2geoXi"), candidate.kfCascadeChi2(), ptCandXic);
       registry.fill(HIST("hChi2geoLam"), candidate.kfV0Chi2(), ptCandXic);
     } // candidate loop
-  } // process
+  }   // process
 
   /// MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
@@ -432,7 +432,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hYGenWithProngsInAcceptance"), yParticle, ptParticle);
       }
     } // gen
-  } // process
+  }   // process
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processMc, "Process MC", false);
 }; // struct
 
