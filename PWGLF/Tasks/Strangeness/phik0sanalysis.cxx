@@ -299,9 +299,9 @@ struct phik0shortanalysis {
     }
 
     // GenMC pT of K0S coupled to Phi
-    MCPhiK0SHist.add("h1PhiK0SGenMCInclusive", "K0Short coupled to Phi for GenMC Inclusive", kTH1F, {10, -0.5f, 9.5f});
-    MCPhiK0SHist.add("h1PhiK0SGenMCFirstCut", "K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH1F, {10, -0.5f, 9.5f});
-    MCPhiK0SHist.add("h1PhiK0SGenMCSecondCut", "K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH1F, {10, -0.5f, 9.5f});
+    MCPhiK0SHist.add("h1PhiK0SGenMCInclusive", "K0Short coupled to Phi for GenMC Inclusive", kTH1F, {{10, -0.5f, 9.5f}});
+    MCPhiK0SHist.add("h1PhiK0SGenMCFirstCut", "K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH1F, {{10, -0.5f, 9.5f}});
+    MCPhiK0SHist.add("h1PhiK0SGenMCSecondCut", "K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH1F, {{10, -0.5f, 9.5f}});
 
     // Phi mass vs Pion NSigma dE/dx for Same Event and Mixed Event
     for (int i = 0; i < nMultBin; i++) {
@@ -322,9 +322,9 @@ struct phik0shortanalysis {
     }
 
     // GenMC pT of Pion coupled to Phi
-    MCPhiPionHist.add("h1PhiPiGenMCInclusive", "Pion coupled to Phi for GenMC Inclusive", kTH1F, {10, -0.5f, 9.5f});
-    MCPhiPionHist.add("h1PhiPiGenMCFirstCut", "Pion coupled to Phi for GenMC Deltay < FirstCut", kTH1F, {10, -0.5f, 9.5f});
-    MCPhiPionHist.add("h1PhiPiGenMCSecondCut", "Pion coupled to Phi for GenMC Deltay < SecondCut", kTH1F, {10, -0.5f, 9.5f});
+    MCPhiPionHist.add("h1PhiPiGenMCInclusive", "Pion coupled to Phi for GenMC Inclusive", kTH1F, {{10, -0.5f, 9.5f}});
+    MCPhiPionHist.add("h1PhiPiGenMCFirstCut", "Pion coupled to Phi for GenMC Deltay < FirstCut", kTH1F, {{10, -0.5f, 9.5f}});
+    MCPhiPionHist.add("h1PhiPiGenMCSecondCut", "Pion coupled to Phi for GenMC Deltay < SecondCut", kTH1F, {{10, -0.5f, 9.5f}});
   }
 
   // Event selection and QA filling
