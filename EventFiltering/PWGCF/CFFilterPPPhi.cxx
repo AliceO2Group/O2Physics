@@ -202,6 +202,7 @@ struct CFFillterPPPhi {
     // phi cuts
     registry.add("TrackCuts/Phi/fPtPhiBefore", "Transverse momentum V0s;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Phi/fInvMassPhiBefore", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
+
     registry.add("TrackCuts/Phi/fEtaPhiBefore", "Pseudorapidity of V0;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/Phi/fPhiPhiBefore", "Azimuthal angle of V0;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
 
@@ -211,12 +212,13 @@ struct CFFillterPPPhi {
     registry.add("TrackCuts/Phi/fPhiPhi", "Azimuthal angle of V0;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
 
     // phi daughter
+    registry.add("TrackCuts/Phi/PosDaughter/Pt", "Transverse momentum Pos Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Phi/PosDaughter/Eta", "Phi Pos Daugh Eta;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
-    registry.add("TrackCuts/Phi/PosDaughter/DCAXY", "Phi Pos Daugh DCAXY;DCA_{XY};Entries", HistType::kTH1F, {{1000, -2.5f, 2.5f}});
-    registry.add("TrackCuts/Phi/PosDaughter/fTPCncls", "Phi Pos Daugh TPCncls;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/Phi/PosDaughter/Phi", "Azimuthal angle of Pos Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+
+    registry.add("TrackCuts/Phi/NegDaughter/Pt", "Transverse momentum Neg Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Phi/NegDaughter/Eta", "Phi Neg Daugh Eta;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
-    registry.add("TrackCuts/Phi/NegDaughter/DCAXY", "Phi Neg Daugh DCAXY;DCA_{XY};Entries", HistType::kTH1F, {{1000, -2.5f, 2.5f}});
-    registry.add("TrackCuts/Phi/NegDaughter/fTPCncls", "Phi Neg Daugh TPCncls;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/Phi/NegDaughter/Phi", "Azimuthal angle of Neg Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
 
     // triggers
     registry.add("ppphi/fMultiplicity", "Multiplicity of all triggered events;Mult;Entries", HistType::kTH1F, {{1000, 0, 1000}});
@@ -245,7 +247,7 @@ struct CFFillterPPPhi {
   bool isSelectedTrackProton(T const& track)
   {
     bool isSelected = false;
-    if (track.pt() < ConfTrkPtPrUp.value && track.pt() > ConfTrkPtPrDown.value && std::abs(track.eta()) <= ConfTrkEtaPr.value && std::abs(track.dcaXY()) <= ConfTrkDCAxyPr.value && std::abs(track.dcaZ()) <= ConfTrkDCAzPr.value && track.tpcNClsCrossedRows() >= ConfNCrossedPr.value && track.tpcNClsFound() >= ConfNClusPr.value && track.tpcCrossedRowsOverFindableCls() >= ConfTrkTPCfClsPr.value) {
+    if (track.pt() <= ConfTrkPtPrUp.value && track.pt() >= ConfTrkPtPrDown.value && std::abs(track.eta()) <= ConfTrkEtaPr.value && std::abs(track.dcaXY()) <= ConfTrkDCAxyPr.value && std::abs(track.dcaZ()) <= ConfTrkDCAzPr.value && track.tpcNClsCrossedRows() >= ConfNCrossedPr.value && track.tpcNClsFound() >= ConfNClusPr.value && track.tpcCrossedRowsOverFindableCls() >= ConfTrkTPCfClsPr.value) {
       if (track.tpcInnerParam() < ConfTrkPTPCPrThr.value && std::abs(track.tpcNSigmaPr()) <= ConfTrkPrSigmaPID.value) {
         isSelected = true;
       }
@@ -260,7 +262,7 @@ struct CFFillterPPPhi {
   bool isSelectedTrackKaon(T const& track)
   {
     bool isSelected = false;
-    if (track.pt() < ConfTrkPtKaUp.value && track.pt() > ConfTrkPtKaDown.value && std::abs(track.eta()) <= ConfTrkEtaKa.value && std::abs(track.dcaXY()) <= ConfTrkDCAxyKa.value && std::abs(track.dcaZ()) <= ConfTrkDCAzKa.value && track.tpcNClsCrossedRows() >= ConfNCrossedKa.value && track.tpcNClsFound() >= ConfNClusKa.value && track.tpcCrossedRowsOverFindableCls() >= ConfTrkTPCfClsKa.value) {
+    if (track.pt() <= ConfTrkPtKaUp.value && track.pt() >= ConfTrkPtKaDown.value && std::abs(track.eta()) <= ConfTrkEtaKa.value && std::abs(track.dcaXY()) <= ConfTrkDCAxyKa.value && std::abs(track.dcaZ()) <= ConfTrkDCAzKa.value && track.tpcNClsCrossedRows() >= ConfNCrossedKa.value && track.tpcNClsFound() >= ConfNClusKa.value && track.tpcCrossedRowsOverFindableCls() >= ConfTrkTPCfClsKa.value) {
       if (track.tpcInnerParam() < ConfTrkPTPCKaThr.value && std::abs(track.tpcNSigmaKa()) <= ConfTrkKaSigmaPID.value) {
         isSelected = true;
       }
@@ -272,38 +274,10 @@ struct CFFillterPPPhi {
   }
 
   float mMassProton = o2::constants::physics::MassProton;
-  float mMassKaon = o2::constants::physics::MassKPlus;
+  float mMassKaonPlus = o2::constants::physics::MassKPlus;
+  float mMassKaonMinus = o2::constants::physics::MassKMinus;
+
   float mMassPhi = o2::constants::physics::MassPhi;
-
-  // float getInvMass(const ROOT::Math::PtEtaPhiMVector part1,
-  //                  const ROOT::Math::PtEtaPhiMVector part2)
-  // {
-  //   const ROOT::Math::PtEtaPhiMVector trackSum = part1 + part2;
-  //   return trackSum.M();
-  // }
-
-  float CalculateInvMass(const ROOT::Math::PtEtaPhiMVector part1,
-                         const ROOT::Math::PtEtaPhiMVector part2)
-  {
-    Double_t invMass = 0;
-
-    float massDP = mMassKaon;
-    float massDN = mMassKaon;
-
-    float EDaugP = TMath::Sqrt(
-      massDP * massDP + part1.Px() * part1.Px() + part1.Py() * part1.Py() + part1.Pz() * part1.Pz());
-    float EDaugN = TMath::Sqrt(
-      massDN * massDN + part2.Px() * part2.Px() + part2.Py() * part2.Py() + part2.Pz() * part2.Pz());
-
-    float energysum = EDaugP + EDaugN;
-    float pSum2 = (part2.Px() + part1.Px()) * (part2.Px() + part1.Px()) +
-
-                  (part2.Py() + part1.Py()) * (part2.Py() + part1.Py()) +
-
-                  (part2.Pz() + part1.Pz()) * (part2.Pz() + part1.Pz());
-    invMass = TMath::Sqrt(energysum * energysum - pSum2);
-    return invMass;
-  }
 
   float getkstar(const ROOT::Math::PtEtaPhiMVector part1,
                  const ROOT::Math::PtEtaPhiMVector part2)
@@ -421,8 +395,9 @@ struct CFFillterPPPhi {
         }
 
         if (isSelectedTrackKaon(track)) {
-          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassKaon);
+          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassKaonPlus);
           if (track.sign() > 0) {
+            temp.SetM(mMassKaonPlus);
             kaons.push_back(temp);
             registry.fill(HIST("TrackCuts/Kaon/fPKaon"), track.p());
             registry.fill(HIST("TrackCuts/Kaon/fPTPCKaon"), track.tpcInnerParam());
@@ -445,6 +420,8 @@ struct CFFillterPPPhi {
             // KaonIndex.push_back(track.globalIndex());
           }
           if (track.sign() < 0) {
+            temp.SetM(mMassKaonMinus);
+
             antikaons.push_back(temp);
             registry.fill(HIST("TrackCuts/AntiKaon/fPAntiKaon"), track.p());
             registry.fill(HIST("TrackCuts/AntiKaon/fPTPCAntiKaon"), track.tpcInnerParam());
@@ -472,29 +449,31 @@ struct CFFillterPPPhi {
 
       for (const auto& postrack : kaons) {
         for (const auto& negtrack : antikaons) {
-          ROOT::Math::PtEtaPhiMVector temp = postrack + negtrack;
-          temp.SetM(mMassPhi);
 
-          registry.fill(HIST("TrackCuts/Phi/fInvMassPhiBefore"), CalculateInvMass(postrack, negtrack));
+          ROOT::Math::PtEtaPhiMVector temp = postrack + negtrack;
+          // temp.SetM(mMassPhi);
+          registry.fill(HIST("TrackCuts/Phi/fInvMassPhiBefore"), temp.M());
+
           registry.fill(HIST("TrackCuts/Phi/fPtPhiBefore"), temp.pt());
           registry.fill(HIST("TrackCuts/Phi/fEtaPhiBefore"), temp.eta());
           registry.fill(HIST("TrackCuts/Phi/fPhiPhiBefore"), temp.phi());
 
-          if ((CalculateInvMass(postrack, negtrack) > ConfResoInvMassLowLimit.value) && (CalculateInvMass(postrack, negtrack) < ConfResoInvMassUpLimit.value)) {
+          if ((temp.M() >= ConfResoInvMassLowLimit.value) && (temp.M() <= ConfResoInvMassUpLimit.value)) {
             // ROOT::Math::PtEtaPhiMVector temp = postrack + negtrack;
             phi.push_back(temp);
 
             registry.fill(HIST("TrackCuts/Phi/fPtPhi"), temp.pt());
             registry.fill(HIST("TrackCuts/Phi/fEtaPhi"), temp.eta());
             registry.fill(HIST("TrackCuts/Phi/fPhiPhi"), temp.phi());
-            registry.fill(HIST("TrackCuts/Phi/fInvMassPhi"), CalculateInvMass(postrack, negtrack));
+            registry.fill(HIST("TrackCuts/Phi/fInvMassPhi"), temp.M());
 
+            registry.fill(HIST("TrackCuts/Phi/PosDaughter/Pt"), postrack.pt());
             registry.fill(HIST("TrackCuts/Phi/PosDaughter/Eta"), postrack.eta());
-            // registry.fill(HIST("TrackCuts/Phi/PosDaughter/DCAXY"), postrack.dcaXY());
-            // registry.fill(HIST("TrackCuts/Phi/PosDaughter/fTPCncls"), postrack.tpcNClsFound());
+            registry.fill(HIST("TrackCuts/Phi/PosDaughter/Phi"), postrack.phi());
+
+            registry.fill(HIST("TrackCuts/Phi/NegDaughter/Pt"), negtrack.pt());
             registry.fill(HIST("TrackCuts/Phi/NegDaughter/Eta"), negtrack.eta());
-            // registry.fill(HIST("TrackCuts/Phi/NegDaughter/DCAXY"), negtrack.dcaXY());
-            // registry.fill(HIST("TrackCuts/Phi/NegDaughter/fTPCncls"), negtrack.tpcNClsFound());
+            registry.fill(HIST("TrackCuts/Phi/NegDaughter/Phi"), negtrack.phi());
           }
         }
       }

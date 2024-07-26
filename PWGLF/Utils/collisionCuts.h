@@ -44,6 +44,7 @@ class CollisonCuts
     kFlagVertexITSTPC,
     kFlagBunchPileup,
     kFlagZvtxFT0vsPV,
+    kFlagOccupancy,
     kAllpassed
   };
 
@@ -57,7 +58,7 @@ class CollisonCuts
   /// \param checkTrigger whether or not to check for the trigger alias
   /// \param trig Requested trigger alias
   /// \param checkOffline whether or not to check for offline selection criteria
-  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3, bool triggerTVXsel = false)
+  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3, bool triggerTVXsel = false, int trackOccupancyInTimeRangeMax = -1)
   {
     mCutsSet = true;
     mZvtxMax = zvtxMax;
@@ -71,6 +72,7 @@ class CollisonCuts
     mApplyZvertexTimedifference = false;
     mApplyPileupRejection = false;
     mApplyNoITSROBorderCut = false;
+    mtrackOccupancyInTimeRangeMax = trackOccupancyInTimeRangeMax;
   }
 
   /// Initializes histograms for the task
@@ -90,7 +92,9 @@ class CollisonCuts
       mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
       mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
-      mHistogramRegistry->add("CollCutCounts", "; ; Entries", kTH1F, {{10, 0., 10.}});
+      mHistogramRegistry->add("Event/trackOccupancyInTimeRange_noCut", "; Occupancy; Entries", kTH1F, {{500, 0., 20000.}});
+      mHistogramRegistry->add("CollCutCounts", "; ; Entries", kTH1F, {{11, 0., 11.}});
+
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllEvent), "all");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvertex), "Zvtx");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagTrigerTVX), "IsTriggerTVX");
@@ -100,6 +104,7 @@ class CollisonCuts
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagVertexITSTPC), "IsVertexITSTPC");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagBunchPileup), "NoSameBunchPileup");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvtxFT0vsPV), "IsGoodZvtxFT0vsPV");
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagOccupancy), "LowOccupancy");
       mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllpassed), "Allpassed");
     } else {
       mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", kTH1F, {{110, 0, 110}});
@@ -109,8 +114,8 @@ class CollisonCuts
   /// Print some debug information
   void printCuts()
   {
-    LOGF(info, "Debug information for Collison Cuts \n Max. z-vertex: %f \n Check trigger: %d \n Trigger: %d \n Check offline: %d \n Check Run3: %d \n Trigger TVX selection: %d \n Apply time frame border cut: %d \n Apply ITS-TPC vertex: %d \n Apply Z-vertex time difference: %d \n Apply Pileup rejection: %d \n Apply NoITSRO frame border cut: %d",
-         mZvtxMax, mCheckTrigger, mTrigger, mCheckOffline, mCheckIsRun3, mTriggerTVXselection, mApplyTFBorderCut, mApplyITSTPCvertex, mApplyZvertexTimedifference, mApplyPileupRejection, mApplyNoITSROBorderCut);
+    LOGF(info, "Debug information for Collison Cuts \n Max. z-vertex: %f \n Check trigger: %d \n Trigger: %d \n Check offline: %d \n Check Run3: %d \n Trigger TVX selection: %d \n Apply time frame border cut: %d \n Apply ITS-TPC vertex: %d \n Apply Z-vertex time difference: %d \n Apply Pileup rejection: %d \n Apply NoITSRO frame border cut: %d \n Track occupancy in time range max: %d",
+         mZvtxMax, mCheckTrigger, mTrigger, mCheckOffline, mCheckIsRun3, mTriggerTVXselection, mApplyTFBorderCut, mApplyITSTPCvertex, mApplyZvertexTimedifference, mApplyPileupRejection, mApplyNoITSROBorderCut, mtrackOccupancyInTimeRangeMax);
   }
 
   /// Set MB selection
@@ -142,6 +147,7 @@ class CollisonCuts
   bool isSelected(T const& col)
   {
     mHistogramRegistry->fill(HIST("Event/posZ_noCut"), col.posZ());
+    mHistogramRegistry->fill(HIST("Event/trackOccupancyInTimeRange_noCut"), col.trackOccupancyInTimeRange());
     mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllEvent);
     if (std::abs(col.posZ()) > mZvtxMax) {
       LOGF(debug, "Vertex out of range");
@@ -184,6 +190,11 @@ class CollisonCuts
         return false;
       }
       mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagZvtxFT0vsPV);
+      if (mtrackOccupancyInTimeRangeMax > 0 && col.trackOccupancyInTimeRange() > mtrackOccupancyInTimeRangeMax) {
+        LOGF(debug, "trackOccupancyInTimeRange selection failed");
+        return false;
+      }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagOccupancy);
     } else { // Run2 case
       if (mCheckOffline && !col.sel7()) {
         LOGF(debug, "Offline selection failed (sel7)");
@@ -254,6 +265,7 @@ class CollisonCuts
   bool mApplyNoITSROBorderCut = false;             ///< Apply NoITSRO frame border cut
   int mTrigger = kINT7;                            ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
+  int mtrackOccupancyInTimeRangeMax = -1;          ///< Maximum trackOccupancyInTimeRange cut (-1 no cut)
 };
 } // namespace o2::analysis
 

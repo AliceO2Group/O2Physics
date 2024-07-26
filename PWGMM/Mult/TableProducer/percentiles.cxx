@@ -8,19 +8,24 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include "Selections.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Common/DataModel/EventSelection.h>
+#include <Common/DataModel/TrackSelectionTables.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <CCDB/BasicCCDBManager.h>
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 #include "Gencentralities.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+using namespace pwgmm::mult;
 
 constexpr float FT0Alo = -3.3;
 constexpr float FT0Ahi = -2.1;
@@ -34,8 +39,10 @@ struct Binner {
 
   using Particles = soa::Filtered<aod::McParticles>;
   Preslice<Particles> perMcCol = aod::mcparticle::mcCollisionId;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
+  AxisSpec SmallMultAxis = {100, 0.5, 100.5};
 
   // The objects are uploaded with https://alimonitor.cern.ch/ccdb/upload.jsp
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -51,6 +58,15 @@ struct Binner {
     return std::abs(p->Charge()) >= 3.;
   }
 
+  template <typename C>
+  inline bool isCollisionSelectedMC(C const& collision)
+  {
+    return collision.selection_bit(aod::evsel::kIsTriggerTVX) &&
+           collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+           collision.selection_bit(aod::evsel::kIsVertexITSTPC) &&
+           collision.selection_bit(aod::evsel::kIsVertexTOFmatched);
+  }
+
   TH1F* multFT0C = nullptr;
   TH1F* multFT0M = nullptr;
 
@@ -63,9 +79,11 @@ struct Binner {
       ccdb->setURL(url.value);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
-    } else if (docalibrate) {
-    } else {
-      LOGP(fatal, "Need to have either calibration or binning enabled");
+    }
+    if (docalibrate) {
+    }
+    if (docalibrateAdvanced) {
+      h.add({"hCorrelate", " ; N_{part}^{FT0M}; N_{part}^{FT0C}; dN/d#eta|_{#eta = 0}", {HistType::kTHnSparseF, {MultAxis, MultAxis, SmallMultAxis}}});
     }
   }
 
@@ -95,7 +113,56 @@ struct Binner {
     }
   }
 
-  PROCESS_SWITCH(Binner, calibrate, "Create binnings", false);
+  PROCESS_SWITCH(Binner, calibrate, "Create binnings", true);
+
+  using ExCols = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
+  // require a mix of ITS+TPC and ITS-only tracks (filters on the same table are automatically combined with &&)
+  Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                              ncheckbit(aod::track::trackCutFlag, trackSelectionITS);
+  Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                     ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true);
+  Filter fTrackSelectionDCA = nabs(aod::track::dcaZ) <= 0.2f && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly);
+  Filter fTracksEta = nabs(aod::track::eta) < 0.5f;
+
+  void calibrateAdvanced(aod::McCollision const& mcc,
+                         soa::SmallGroups<ExCols> const& collisions,
+                         Particles const&,
+                         soa::Filtered<Trks> const& tracks)
+  {
+    auto pcFT0M = pFT0M.sliceBy(perMcCol, mcc.globalIndex());
+    auto pcFT0C = pFT0C.sliceBy(perMcCol, mcc.globalIndex());
+    int nFT0M = 0;
+    int nFT0C = 0;
+    int nTrkAt0 = 0;
+    for (auto& p : pcFT0M) {
+      if (isChargedParticle(p.pdgCode())) {
+        ++nFT0M;
+      }
+    }
+    h.fill(HIST("hFT0M"), nFT0M);
+    for (auto& p : pcFT0C) {
+      if (isChargedParticle(p.pdgCode())) {
+        ++nFT0C;
+      }
+    }
+    h.fill(HIST("hFT0C"), nFT0C);
+
+    bool selected = false;
+    for (auto& c : collisions) {
+      if (isCollisionSelectedMC(c)) {
+        selected = true;
+        auto sample = tracks.sliceBy(perCol, c.globalIndex());
+        nTrkAt0 += sample.size();
+      }
+    }
+    if (!selected) {
+      return;
+    }
+    h.fill(HIST("hCorrelate"), nFT0M, nFT0C, nTrkAt0);
+  }
+
+  PROCESS_SWITCH(Binner, calibrateAdvanced, "Create binning matched to dN/deta", false);
 
   void bin(aod::BCsWithTimestamps const& bcs, aod::McCollisions const& mccollisions, Particles const&)
   {

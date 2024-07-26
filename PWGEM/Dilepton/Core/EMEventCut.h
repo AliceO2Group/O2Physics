@@ -27,6 +27,7 @@ class EMEventCut : public TNamed
  public:
   EMEventCut() = default;
   EMEventCut(const char* name, const char* title) : TNamed(name, title) {}
+  ~EMEventCut() {}
 
   enum class EMEventCuts : int {
     kSel8 = 0,

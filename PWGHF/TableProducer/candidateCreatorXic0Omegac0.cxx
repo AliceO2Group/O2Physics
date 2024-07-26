@@ -664,8 +664,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
 
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
 
@@ -676,6 +678,23 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
   {
+    std::array<bool, 3> procCollisionsXicToXiPi{doprocessMcXicToXiPi, doprocessMcXicToXiPiFT0m, doprocessMcXicToXiPiFT0c};
+    if (std::accumulate(procCollisionsXicToXiPi.begin(), procCollisionsXicToXiPi.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for XicToXiPi collision study can be enabled at a time.");
+    }
+    std::array<bool, 3> procCollisionsOmegacToXiPi{doprocessMcOmegacToXiPi, doprocessMcOmegacToXiPiFT0m, doprocessMcOmegacToXiPiFT0c};
+    if (std::accumulate(procCollisionsOmegacToXiPi.begin(), procCollisionsOmegacToXiPi.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for OmegacToXiPi collision study can be enabled at a time.");
+    }
+    std::array<bool, 3> procCollisionsOmegacToOmegaPi{doprocessMcOmegacToOmegaPi, doprocessMcOmegacToOmegaPiFT0m, doprocessMcOmegacToOmegaPiFT0c};
+    if (std::accumulate(procCollisionsOmegacToOmegaPi.begin(), procCollisionsOmegacToOmegaPi.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for OmegacToOmegaPi collision study can be enabled at a time.");
+    }
+    std::array<bool, 3> procCollisionsOmegacToOmegaK{doprocessMcOmegacToOmegaK, doprocessMcOmegacToOmegaKFT0m, doprocessMcOmegacToOmegaKFT0c};
+    if (std::accumulate(procCollisionsOmegacToOmegaK.begin(), procCollisionsOmegacToOmegaK.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for OmegacToOmegaK collision study can be enabled at a time.");
+    }
+
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-xic0-omegac0") == 0) {
@@ -741,14 +760,19 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
       // Check whether the particle is from background events. If so, reject it.
       if (rejectBackground) {
+        bool fromBkg{false};
         for (const auto& daughter : arrayDaughters) {
           if (daughter.has_mcParticle()) {
             auto mcParticle = daughter.mcParticle();
             if (mcParticle.fromBackgroundEvent()) {
-              rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
-              continue;
+              fromBkg = true;
+              break;
             }
           }
+        }
+        if (fromBkg) {
+          rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
+          continue;
         }
       }
 
@@ -914,10 +938,6 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        continue;
-      }
       ptCharmBaryonGen = -999.;
       rapidityCharmBaryonGen = -999.;
       flag = 0;
@@ -928,6 +948,19 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       origin = RecoDecay::OriginType::None;
       std::vector<int> idxBhadMothers{};
 
+      // Reject particles from background events
+      if (particle.fromBackgroundEvent() && rejectBackground) {
+        if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
+          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
+          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
+          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        }
+        continue;
+      }
       // Slice the collisions table to get the collision info for the current MC collision
       auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
@@ -937,6 +970,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (centEstimator == CentralityEstimator::None) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
       hfEvSelMc.fillHistograms(rejectionMask);
@@ -1107,6 +1143,18 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processDoNoMc, "Do not run any MC process function", true);
 
+  void processMcXicToXiPi(aod::HfCandToXiPi const& candidates,
+                          aod::TracksWMc const& tracks,
+                          aod::McParticles const& mcParticles,
+                          aod::McCollisions const& mcColls,
+                          aod::McCollisionLabels const& mcLabels,
+                          McCollisionsNoCents const& collInfos,
+                          BCsInfo const& bcs)
+  {
+    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collInfos, mcColls, mcLabels, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPi, "Run Xic0 to xi pi MC process function - no centrality", false);
+
   void processMcXicToXiPiFT0m(aod::HfCandToXiPi const& candidates,
                               aod::TracksWMc const& tracks,
                               aod::McParticles const& mcParticles,
@@ -1130,6 +1178,18 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collInfos, mcColls, mcLabels, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPiFT0c, "Run Xic0 to xi pi MC process function - FT0C", false);
+
+  void processMcOmegacToXiPi(aod::HfCandToXiPi const& candidates,
+                             aod::TracksWMc const& tracks,
+                             aod::McParticles const& mcParticles,
+                             aod::McCollisions const& mcColls,
+                             aod::McCollisionLabels const& mcLabels,
+                             McCollisionsNoCents const& collInfos,
+                             BCsInfo const& bcs)
+  {
+    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, collInfos, mcColls, mcLabels, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToXiPi, "Run Omegac0 to xi pi MC process function - no centrality", false);
 
   void processMcOmegacToXiPiFT0m(aod::HfCandToXiPi const& candidates,
                                  aod::TracksWMc const& tracks,
@@ -1155,6 +1215,18 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToXiPiFT0c, "Run Omegac0 to xi pi MC process function - FT0C", false);
 
+  void processMcOmegacToOmegaPi(aod::HfCandToOmegaPi const& candidates,
+                                aod::TracksWMc const& tracks,
+                                aod::McParticles const& mcParticles,
+                                aod::McCollisions const& mcColls,
+                                aod::McCollisionLabels const& mcLabels,
+                                McCollisionsNoCents const& collInfos,
+                                BCsInfo const& bcs)
+  {
+    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collInfos, mcColls, mcLabels, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPi, "Run Omegac0 to omega pi MC process function - no centrality", false);
+
   void processMcOmegacToOmegaPiFT0m(aod::HfCandToOmegaPi const& candidates,
                                     aod::TracksWMc const& tracks,
                                     aod::McParticles const& mcParticles,
@@ -1178,6 +1250,18 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collInfos, mcColls, mcLabels, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPiFT0c, "Run Omegac0 to omega pi MC process function - FT0C", false);
+
+  void processMcOmegacToOmegaK(aod::HfCandToOmegaK const& candidates,
+                               aod::TracksWMc const& tracks,
+                               aod::McParticles const& mcParticles,
+                               aod::McCollisions const& mcColls,
+                               aod::McCollisionLabels const& mcLabels,
+                               McCollisionsNoCents const& collInfos,
+                               BCsInfo const& bcs)
+  {
+    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, collInfos, mcColls, mcLabels, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaK, "Run Omegac0 to omega K MC process function - no centrality", false);
 
   void processMcOmegacToOmegaKFT0m(aod::HfCandToOmegaK const& candidates,
                                    aod::TracksWMc const& tracks,
