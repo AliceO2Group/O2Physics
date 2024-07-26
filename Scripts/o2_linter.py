@@ -450,6 +450,39 @@ class TestConstRefInSubscription(TestSpec):
         return passed
 
 
+class TestWorkflowOptions(TestSpec):
+    """Detect usage of workflow options in defineDataProcessing. (Not supported on AliHyperloop.)"""
+    name = "o2-workflow-options"
+    message = "Do not use workflow options to customise workflow topology composition in defineDataProcessing. Use process function switches or metadata instead."
+    suffixes = [".cxx"]
+    per_line = False
+
+    def test_file(self, path : str, content) -> bool:
+        is_inside_define = False # Are we inside defineDataProcessing?
+        for i, line in enumerate(content):
+            if not line.strip():
+                continue
+            if self.is_disabled(line):
+                continue
+            if is_comment_cpp(line):
+                continue
+            line = remove_comment_cpp(line)
+            # Wait for defineDataProcessing.
+            if not is_inside_define:
+                if not re.match(r"(o2::)?(framework::)?WorkflowSpec defineDataProcessing\(", line):
+                    continue
+                # print(f"{i + 1}: Entering define.")
+                is_inside_define = True
+            # Return at the end of defineDataProcessing.
+            if is_inside_define and line[0] == "}":
+                # print(f"{i + 1}: Exiting define.")
+                break
+            # Detect options.
+            if ".options()" in line:
+                return False
+        return True
+
+
 # Documentation
 # Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/comments_guidelines.html
 
@@ -1102,6 +1135,7 @@ def main():
         tests.append(TestLogging())
         tests.append(TestConstRefInForLoop())
         tests.append(TestConstRefInSubscription())
+        tests.append(TestWorkflowOptions())
 
     # Documentation
     enable_documentation = True
