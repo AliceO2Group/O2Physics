@@ -800,7 +800,6 @@ struct HfCandidateCreator2ProngExpressions {
           continue;
         }
 
-
         // D0(bar) → π± K∓
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
           flag = sign * (1 << DecayType::D0ToPiK);

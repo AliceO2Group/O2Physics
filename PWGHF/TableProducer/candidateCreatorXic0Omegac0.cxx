@@ -937,7 +937,6 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       }
     } // close loop over candidates
 
-
     for (const auto& mcCollision : mcCollisions) {
 
       // Slice the particles table to get the particles for the current MC collision
