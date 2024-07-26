@@ -295,6 +295,7 @@ struct HfElectronSelectionWithTpcEmcal {
         if (eop < eopElectronMin || eop > eopElectronMax) {
           continue;
         }
+        
         registry.fill(HIST("hPIDafterPIDcuts"), eop, pMatchTrack, ptMatchTrack, tpcNsigmaMatchTrack, eMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster);
 
         isEMcal = true;
