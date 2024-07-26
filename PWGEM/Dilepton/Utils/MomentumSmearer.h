@@ -41,21 +41,21 @@ class MomentumSmearer
     setResEtaHistName(resEtaHistName);
     setResPhiPosHistName(resPhiPosHistName);
     setResPhiNegHistName(resPhiNegHistName);
-    setResPhiNegHistName("");
-    setResPhiNegHistName("");
+    setEffFileName("");
+    setEffHistName("");
     init();
   }
 
   /// Constructor with resolution histograms and efficiency
-  MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString /*effFileName*/, TString /*effHistName*/)
+  MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString effFileName, TString effHistName)
   {
     setResFileName(resFileName);
     setResPtHistName(resPtHistName);
     setResEtaHistName(resEtaHistName);
     setResPhiPosHistName(resPhiPosHistName);
     setResPhiNegHistName(resPhiNegHistName);
-    setResPhiNegHistName(resPhiNegHistName);
-    setResPhiNegHistName(resPhiNegHistName);
+    setEffFileName(effFileName);
+    setEffHistName(effHistName);
     init();
   }
 
