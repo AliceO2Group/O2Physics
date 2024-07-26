@@ -40,6 +40,8 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -54,8 +56,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using Track = o2::track::TrackParCov;
-using TracksFullIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCHe, aod::pidTOFEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe, aod::pidTOFHe>;
-using TracksFullIUMc = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCHe, aod::pidTOFEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe, aod::pidTOFHe, aod::McTrackLabels>;
+using TracksFullIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCKa, aod::pidTPCDe, aod::pidTOFDe, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFullIUMc = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCKa, aod::pidTPCDe, aod::pidTOFDe, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 using CollisionsCustom = soa::Join<aod::Collisions, aod::EvSels>;
 
 namespace BetheBloch
@@ -104,6 +106,7 @@ enum CascSelections {
   kCascCosPA,
   kAcceptedOmega,
   kRejectedXi,
+  kNSigmaTPC,
   kCascAll
 };
 
@@ -167,9 +170,10 @@ struct CandidateK {
   uint32_t itsClsize_K = 0xFFFFF;
   uint8_t partID_K = 0;
   bool isPositive_K = false;
-  float pTPC_K = -999.f;   // extra
-  uint32_t pidInTrk_K = 0; // extra
-  int partIDMc_K = 0;      // mc
+  float pTPC_K = -999.f;      // extra
+  uint32_t pidInTrk_K = 0;    // extra
+  float tpcNSigma_K = -999.f; // extra
+  int partIDMc_K = 0;         // mc
 
   float cosPA = -999.f;     // extra
   float massOmega = -999.f; // extra
@@ -200,6 +204,7 @@ struct candidateHe {
   uint32_t pidInTrk_he = 0;    // extra
   float tpcNSigma_he = -999.f; // extra
   float tofNSigma_he = -999.f; // extra
+  float massTOF_he = -999.f;   // extra
   int partIDMc_he = 0;         // mc
 };
 
@@ -246,6 +251,7 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> cascsetting_cosPA{"casc_setting_cosPA", 0.99f, "Cosine of the pointing angle of the V0"};
   Configurable<float> cascsetting_massWindowOmega{"casc_setting_massWindowOmega", 0.01f, "Mass window for the Omega"};
   Configurable<float> cascsetting_massWindowXi{"casc_setting_massWindowXi", 0.01f, "Mass window for the Xi"};
+  Configurable<float> cascsetting_nsigmatpc{"casc_setting_nsigmaTPC", 3.f, "Number of sigmas for the TPC PID"};
 
   Configurable<int> desetting_nClsIts{"desetting_nClsIts", 6, "Minimum number of ITS clusters"};
   Configurable<float> desetting_nsigmatpc{"desetting_nsigmaCutTPC", 2.f, "Number of sigmas for the TPC PID"};
@@ -253,7 +259,8 @@ struct LfTreeCreatorClusterStudies {
   Configurable<int> he3setting_nClsIts{"he3setting_nClsIts", 6, "Minimum number of ITS clusters"};
   Configurable<bool> he3setting_compensatePIDinTracking{"he3setting_compensatePIDinTracking", true, "Compensate PID in tracking"};
   Configurable<float> he3setting_nsigmatpc{"he3setting_nsigmaCutTPC", 2.f, "Number of sigmas for the TPC PID"};
-  Configurable<float> he3setting_nsigmatof{"he3setting_nsigmaCutTOF", 2.f, "Number of sigmas for the TOF PID"};
+  Configurable<float> he3setting_tofmasslow{"he3setting_tofmasslow", 1.8f, "Lower limit for the TOF mass"};
+  Configurable<float> he3setting_tofmasshigh{"he3setting_tofmasshigh", 4.2f, "Upper limit for the TOF mass"};
 
   // Bethe Bloch parameters
   std::array<float, 6> m_BBparamsDe, m_BBparamsHe;
@@ -285,11 +292,12 @@ struct LfTreeCreatorClusterStudies {
      {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); mass Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
      {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, 1.62f, 1.72f}}}},
      {"massOmegaWithBkg", "Mass Omega with Background; mass Omega (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 1.62f, 1.72f}}}},
-     {"nSigmaTPCEl", "nSigma TPC Electron; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC} e", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -2.0f, 2.0f}}}},
-     {"nSigmaTPCDe", "nSigma TPC Deuteron; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
-     {"nSigmaTPCHe", "nSigma TPC He3; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC} ^{3}He", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
-     {"nSigmaTOFDe", "nSigma TOF Deuteron; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
-     {"nSigmaTOFHe", "nSigma TOF He3; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF} ^{3}He", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
+     {"nSigmaTPCEl", "nSigma TPC Electron; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} e", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -2.0f, 2.0f}}}},
+     {"nSigmaTPCKa", "nSigma TPC Kaon; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} e", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -4.0f, 4.0f}}}},
+     {"nSigmaTPCDe", "nSigma TPC Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
+     {"nSigmaTPCHe", "nSigma TPC He3; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} ^{3}He", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
+     {"nSigmaTOFDe", "nSigma TOF Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{TOF} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
+     {"TOFmassHe", "TOF mass He3; signed #it{p}_{T} (GeV/#it{c}); mass_{TOF} ^{3}He (GeV/#it{c}^2)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 1.0f, 5.0f}}}},
      {"pmatchingEl", "#it{p} matching e; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
      {"pmatchingPi", "#it{p} matching #pi; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
      {"pmatchingKa", "#it{p} matching K; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
@@ -314,6 +322,8 @@ struct LfTreeCreatorClusterStudies {
   std::vector<V0TrackParCov> m_v0TrackParCovs;
 
   o2::vertexing::DCAFitterN<2> m_fitter;
+  o2::pid::tof::Beta<TracksFullIU::iterator> m_responseBeta;
+  o2::pid::tof::Beta<TracksFullIUMc::iterator> m_responseBetaMc;
 
   template <typename T>
   bool initializeFitter(const T& trackParCovA, const T& trackParCovB)
@@ -502,6 +512,26 @@ struct LfTreeCreatorClusterStudies {
       return true;
     }
     return false;
+  }
+
+  template <typename T>
+  float computeTOFmassHe3(const T& candidate)
+  {
+    float beta = m_responseBeta.GetBeta(candidate);
+    beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+    bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
+    float correctedTPCinnerParamHe3 = (heliumPID && he3setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
+    return correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
+  }
+
+  template <typename T>
+  float computeTOFmassHe3Mc(const T& candidate)
+  {
+    float beta = m_responseBetaMc.GetBeta(candidate);
+    beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+    bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
+    float correctedTPCinnerParamHe3 = (heliumPID && he3setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
+    return correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
   }
 
   // =========================================================================================================
@@ -798,6 +828,7 @@ struct LfTreeCreatorClusterStudies {
         candV0.pidInTrk_pos,   // pidInTrk_pos
         -999.f,                // TpcNSigma_pos
         -999.f,                // TofNSigma_pos
+        -999.f,                // TofMass_pos
         candV0.cosPA,          // cosPA
         candV0.massV0);        // massV0
       m_ClusterStudiesTableExtra(
@@ -811,6 +842,7 @@ struct LfTreeCreatorClusterStudies {
         candV0.pidInTrk_neg,   // pidInTrk_neg
         -999.f,                // TpcNSigma_neg
         -999.f,                // TofNSigma_neg
+        -999.f,                // TofMass_neg
         candV0.cosPA,          // cosPA
         candV0.massV0);        // massV0
     }
@@ -851,6 +883,7 @@ struct LfTreeCreatorClusterStudies {
         candV0.pidInTrk_pos,   // pidInTrk_pos
         -999.f,                // TpcNSigma_pos
         -999.f,                // TofNSigma_pos
+        -999.f,                // TofMass_pos
         candV0.cosPA,          // cosPA
         candV0.massV0);        // massV0
       m_ClusterStudiesTableMcExtra(
@@ -865,6 +898,7 @@ struct LfTreeCreatorClusterStudies {
         candV0.pidInTrk_neg,   // pidInTrk_neg
         -999.f,                // TpcNSigma_neg
         -999.f,                // TofNSigma_neg
+        -999.f,                // TofMass_neg
         candV0.cosPA,          // cosPA
         candV0.massV0);        // massV0
     }
@@ -919,9 +953,14 @@ struct LfTreeCreatorClusterStudies {
     if (std::abs(massXi - o2::constants::physics::MassXiMinus) < cascsetting_massWindowXi) {
       return false;
     } // enhance purity by rejecting Xi background
-    m_hAnalysis.fill(HIST("massOmega"), std::hypot(momMother[0], momMother[1]) * bachelorTrack.sign(), massOmega);
     m_hAnalysis.fill(HIST("casc_selections"), CascSelections::kRejectedXi);
+    if (std::abs(bachelorTrack.tpcNSigmaKa()) > cascsetting_nsigmatpc) {
+      return false;
+    }
+    m_hAnalysis.fill(HIST("casc_selections"), CascSelections::kNSigmaTPC);
+    m_hAnalysis.fill(HIST("massOmega"), std::hypot(momMother[0], momMother[1]) * bachelorTrack.sign(), massOmega);
     m_hAnalysis.fill(HIST("pmatchingKa"), bachelorTrack.sign() * bachelorTrack.tpcInnerParam(), bachelorTrack.tpcInnerParam() - bachelorTrack.p());
+    m_hAnalysis.fill(HIST("nSigmaTPCKa"), bachelorTrack.sign() * std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]), bachelorTrack.tpcNSigmaKa());
 
     uint8_t partID_bachelor = PartID::ka;
 
@@ -974,6 +1013,7 @@ struct LfTreeCreatorClusterStudies {
         candK.pidInTrk_K,   // PIDinTrk_K
         -999.f,             // TpcNSigma_K
         -999.f,             // TofNSigma_K
+        -999.f,             // TofMass_K
         candK.cosPA,        // cosPA
         candK.massOmega);   // massMother
     }
@@ -1005,6 +1045,7 @@ struct LfTreeCreatorClusterStudies {
         candK.pidInTrk_K,   // PIDinTrk_K
         -999.f,             // TpcNSigma_K
         -999.f,             // TofNSigma_K
+        -999.f,             // TofMass_K
         candK.cosPA,        // cosPA
         candK.massOmega);   // massMother
     }
@@ -1034,8 +1075,8 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.pt() * track.sign(), computeNSigmaDe(track));
-    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.pt() * track.sign(), track.tofNSigmaDe());
+    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
+    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
     m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), track.tpcInnerParam() - track.p());
 
     uint8_t partID = PartID::de;
@@ -1060,6 +1101,7 @@ struct LfTreeCreatorClusterStudies {
         track.pidForTracking(),               // PIDinTrk_De,
         computeNSigmaDe(track),               // TpcNSigma_De,
         track.tofNSigmaDe(),                  // TofNSigma_De,
+        -999.f,                               // TofMass_De,
         -999.f,                               // cosPA,
         -999.f);                              // massMother
     }
@@ -1090,8 +1132,8 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.pt() * track.sign(), computeNSigmaDe(track));
-    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.pt() * track.sign(), track.tofNSigmaDe());
+    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
+    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
     m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), track.tpcInnerParam() - track.p());
 
     uint8_t partID = PartID::de;
@@ -1118,6 +1160,7 @@ struct LfTreeCreatorClusterStudies {
         track.pidForTracking(),               // PIDinTrk_De,
         computeNSigmaDe(track),               // TpcNSigma_De,
         track.tofNSigmaDe(),                  // TofNSigma_De,
+        -999.f,                               // TofMass_De,
         -999.f,                               // cosPA,
         -999.f);                              // massMother
     }
@@ -1139,12 +1182,13 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtpc);
-    if (track.hasTOF() && std::abs(track.tofNSigmaHe()) > he3setting_nsigmatof) {
+    float tofMass = track.hasTOF() ? computeTOFmassHe3(track) : -999.f;
+    if (track.hasTOF() && (tofMass < he3setting_tofmasslow || tofMass > he3setting_tofmasshigh)) {
       return;
     }
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.pt() * track.sign(), computeNSigmaHe3(track));
-    m_hAnalysis.fill(HIST("nSigmaTOFHe"), track.pt() * track.sign(), track.tofNSigmaHe());
+    m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.p() * track.sign(), computeNSigmaHe3(track));
+    m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * track.tpcInnerParam(), track.tpcInnerParam() - track.p());
 
     uint8_t partID = PartID::he;
@@ -1170,7 +1214,8 @@ struct LfTreeCreatorClusterStudies {
         correctedTPCinnerParam * track.sign(), // pTPC_He3,
         track.pidForTracking(),                // PIDinTrk_He3,
         computeNSigmaHe3(track),               // TpcNSigma_He3,
-        track.tofNSigmaHe(),                   // TofNSigma_He3,
+        -999.f,                                // TofNSigma_He3,
+        tofMass,                               // TofMass_He3,
         -999.f,                                // cosPA,
         -999.f);                               // massMother
     }
@@ -1198,12 +1243,13 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtpc);
-    if (track.hasTOF() && std::abs(track.tofNSigmaHe()) > he3setting_nsigmatof) {
+    float tofMass = track.hasTOF() ? computeTOFmassHe3Mc(track) : -999.f;
+    if (track.hasTOF() && (tofMass < he3setting_tofmasslow || tofMass > he3setting_tofmasshigh)) {
       return;
     }
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.pt() * track.sign(), computeNSigmaHe3(track));
-    m_hAnalysis.fill(HIST("nSigmaTOFHe"), track.pt() * track.sign(), track.tofNSigmaHe());
+    m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.p() * track.sign(), computeNSigmaHe3(track));
+    m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * track.tpcInnerParam(), track.tpcInnerParam() - track.p());
 
     uint8_t partID = PartID::he;
@@ -1231,7 +1277,8 @@ struct LfTreeCreatorClusterStudies {
         correctedTPCinnerParam * track.sign(), // pTPC_He3
         track.pidForTracking(),                // PIDinTrk_He3
         computeNSigmaHe3(track),               // TpcNSigma_He3
-        track.tofNSigmaHe(),                   // TofNSigma  _He3
+        -999.f,                                // TofNSigma_He3
+        tofMass,                               // TofMass_He3
         -999.f,                                // cosPA_He3
         -999.f);                               // massMother_He3
     }
