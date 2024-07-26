@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0 # needed to get the full history
       - name: Run tests
         run: |
-          # Diff against the common ancestor of the source branch and the target branch.
+          # Diff against the common ancestor of the source branch and the main branch.
           readarray -t files < <(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
           [ ${{ github.event_name }} == 'pull_request' ] && options="-g"
           # shellcheck disable=SC2086 # Ignore unquoted options.

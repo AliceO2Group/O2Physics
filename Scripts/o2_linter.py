@@ -33,26 +33,36 @@ def is_camel_case(name: str) -> bool:
 
 def is_upper_camel_case(name: str) -> bool:
     """ForExample"""
+    if not name:
+        return False
     return name[0].isupper() and is_camel_case(name)
 
 
 def is_lower_camel_case(name: str) -> bool:
     """forExample"""
+    if not name:
+        return False
     return name[0].islower() and is_camel_case(name)
 
 
 def is_kebab_case(name: str) -> bool:
     """for-example"""
+    if not name:
+        return False
     return name.islower() and not "_" in name and not " " in name
 
 
 def is_snake_case(name: str) -> bool:
     """for_example"""
+    if not name:
+        return False
     return name.islower() and not "-" in name and not " " in name
 
 
 def is_screaming_snake_case(name: str) -> bool:
     """FOR_EXAMPLE"""
+    if not name:
+        return False
     return name.isupper() and not "-" in name and not " " in name
 
 
@@ -102,6 +112,43 @@ def remove_comment_cpp(line: str) -> str:
         if keyword in line:
             line = line[:line.index(keyword)]
     return line.strip()
+
+
+def block_ranges(line: str, c_open: str, c_close: str) -> "list[list[int]]":
+    """Get list of index ranges of longest blocks opened with str_open and closed with str_close."""
+    # print(f"Looking for {c_open}{c_close} blocks in \"{line}\".")
+    # print(line)
+    list_ranges = []
+    if not all((line, len(c_open) == 1, len(c_close) == 1)):
+        return list_ranges
+    def direction(c:str) -> int:
+        if c == c_open:
+            return 1
+        if c == c_close:
+            return -1
+        return 0
+    list_levels = [] # list of block levels (net number of opened blocks)
+    level = 0 # current block level (sum or previous directions)
+    for c in line:
+        list_levels.append(level := level + direction(c))
+    level_min = min(list_levels) # minimum level (!= 0 if there are opened blocks)
+    # Look for openings (level_min + 1) and closings (level_min).
+    index_start = -1
+    is_opened = False
+    # print(list_levels)
+    for i, l in enumerate(list_levels):
+        if not is_opened and l > level_min:
+            is_opened = True
+            index_start = i
+            # print(f"Opening at {i}")
+        elif is_opened and (l == level_min or i == len(list_levels) -1):
+            is_opened = False
+            list_ranges.append([index_start, i])
+            # print(f"Closing at {i}")
+    # print(f"block_ranges: Found {len(list_ranges)} blocks: {list_ranges}.")
+    if is_opened:
+        print("block_ranges: Block left opened.")
+    return list_ranges
 
 
 class TestSpec(ABC):
@@ -385,15 +432,16 @@ class TestConstRefInSubscription(TestSpec):
                 arguments += " " + line[i_start:i_end] # get arguments between parentheses
                 n_parens_opened += line.count("(") - line.count(")")
             if line_process > 0 and n_parens_opened == 0:
-                # process arguments
-                # sanitise template arguments
-                template_args = re.findall(r"<[\w:, ]*>", arguments)
-                if template_args:
-                    for arg in template_args:
-                        if ", " in arg:
-                            arguments = arguments.replace(arg, arg.replace(", ", ":"))
+                # Process arguments.
+                # Sanitise arguments with spaces between <>.
+                for start, end in block_ranges(arguments, "<", ">"):
+                    arg = arguments[start:(end + 1)]
+                    # print(f"Found argument \"{arg}\" in [{start}, {end}]")
+                    if ", " in arg:
+                        arguments = arguments.replace(arg, arg.replace(", ", "__"))
+                # Extract arguments.
                 words = arguments.split(", ")
-                # test
+                # Test each argument.
                 for arg in words:
                     if not re.search(r"([\w>] const|const [\w<>:]+)&", arg):
                         passed = False
@@ -454,6 +502,7 @@ class TestNameFunctionVariable(TestSpec):
     Might report false positives.
     Does not detect multiple variable declarations, i.e. "type name1, name2;"
     Does not detect function arguments on the same line as the function declaration.
+    Does not detect multi-line declarations.
     Does not check capitalisation for constexpr because of special rules for constants. See TestNameConstant.
     """
     name = "name/function-variable"
@@ -492,6 +541,8 @@ class TestNameFunctionVariable(TestSpec):
         funval_name = words[-1] # expecting the name in the last word
         if funval_name.endswith("]") and "[" not in funval_name: # it's an array and we do not have the name before "[" here
             opens_brackets = ["[" in w for w in words]
+            if not any(opens_brackets): # The opening "[" is not on this line. We have to give up.
+                return True
             index_name = opens_brackets.index(True) # the name is in the first element with "["
             funval_name = words[index_name]
             words = words[:(index_name + 1)] # Strip away words after the name.
@@ -560,13 +611,15 @@ class TestNameConstant(TestSpec):
         constant_name = words[-1] # last word before "="
         if constant_name.endswith("]") and "[" not in constant_name: # it's an array and we do not have the name before "[" here
             opens_brackets = ["[" in w for w in words]
+            if not any(opens_brackets): # The opening "[" is not on this line. We have to give up.
+                return True
             constant_name = words[opens_brackets.index(True)] # the name is in the first element with "["
         if "[" in constant_name: # Remove brackets for arrays.
             constant_name = constant_name[:constant_name.index("[")]
         if "::" in constant_name: # Remove the class prefix for methods.
             constant_name = constant_name.split("::")[-1]
         # The actual test comes here.
-        if constant_name.startswith("k"): # exception for special constants
+        if constant_name.startswith("k") and len(constant_name) > 1: # exception for special constants
             constant_name = constant_name[1:] # test the name without "k"
         return is_upper_camel_case(constant_name)
 
@@ -641,6 +694,8 @@ class TestNameNamespace(TestSpec):
             return True
         # Extract namespace name.
         namespace_name = line.split()[1]
+        if namespace_name == "{": # ignore anonymous namespaces
+            return True
         # The actual test comes here.
         return is_snake_case(namespace_name)
 
@@ -657,13 +712,12 @@ class TestNameUpperCamelCase(TestSpec):
             return True
         if not line.startswith(f"{self.keyword} "):
             return True
-        line = remove_comment_cpp(line)
         # Extract object name.
         words = line.split()
         if not words[1].isalnum(): # "struct : ...", "enum { ..."
             return True
         object_name = words[1]
-        if object_name == "class" and len(words) > 2: # enum class ...
+        if object_name in ("class", "struct") and len(words) > 2: # enum class ... or enum struct
             object_name = words[2]
         # The actual test comes here.
         return is_upper_camel_case(object_name)
