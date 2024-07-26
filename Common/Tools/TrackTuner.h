@@ -720,7 +720,7 @@ struct TrackTuner {
           trackParCov.setCov(sigma1Pt2, 14);
         }
       } // ---> track cov matrix elements for 1/Pt ends here
-    } // ---> updateTrackCovMat block ends here
+    }  // ---> updateTrackCovMat block ends here
 
     if (updatePulls) {
       double ratioDCAxyPulls = 1.0;
@@ -763,7 +763,7 @@ struct TrackTuner {
 
       sigma1PtZ *= ratioDCAzPulls;
       trackParCov.setCov(sigma1PtZ, 11);
-    } // ---> updatePulls block ends here
+    }  // ---> updatePulls block ends here
 
     /// sanity check for track covariance matrix element
     /// see https://github.com/AliceO2Group/AliceO2/blob/66de30958153cd7badf522150e8554f9fcf975ff/Common/DCAFitter/include/DCAFitter/DCAFitterN.h#L38-L54
