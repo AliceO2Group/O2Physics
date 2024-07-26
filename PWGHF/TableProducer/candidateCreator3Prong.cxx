@@ -647,7 +647,7 @@ struct HfCandidateCreator3ProngExpressions {
         rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0);
       }
     }
-    
+
     for (const auto& mcCollision : mcCollisions) {
 
       // Slice the particles table to get the particles for the current MC collision
