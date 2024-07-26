@@ -112,18 +112,21 @@ struct highmasslambdasvx {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.1f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 1.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 5, "Number of ITS cluster"};
+  Configurable<int> cfgITSclusterInnerlayer{"cfgITSclusterInnerlayer", 1, "Minimum Number of ITS cluster in inner barrel"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutTPCPre{"nsigmacutTPCPre", 5.0, "Value of the TPC Nsigma cut Pre filter"};
   // Configs for V0
+  Configurable<float> ConfV0decaylengthmin{"ConfV0decaylengthmin", 2, "Minimum V0 decay length"};
+  Configurable<float> ConfV0decaylengthmax{"ConfV0decaylengthmax", 100, "Maximum V0 decay length"};
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<double> ConfV0DCADaughMax{"ConfV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
   Configurable<double> ConfV0CPAMin{"ConfV0CPAMin", 0.9998f, "Minimum CPA of V0"};
   Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
   Configurable<float> ConfV0TranRadV0Max{"ConfV0TranRadV0Max", 100.f, "Maximum transverse radius"};
-  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.2, "Maximum V0 DCA to PV"};
+  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.1, "Maximum V0 DCA to PV"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
   Configurable<float> cSigmaMassKs0{"cSigmaMassKs0", 0.006, "Sigma cut on KS0 mass"};
   // config for V0 daughters
@@ -145,6 +148,7 @@ struct highmasslambdasvx {
   ConfigurableAxis configThnAxisSA{"configThnAxisSA", {100, -1, 1}, "SA"};
   ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
   ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {1, 30., 50}, "Centrality"};
+  ConfigurableAxis configThnAxisDecayLength{"configThnAxisDecayLength", {100, 0.0, 0.1}, "Decay length"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
@@ -174,7 +178,7 @@ struct highmasslambdasvx {
     // std::vector<double> decaylengthBinning = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0, 150.0, 200.0, 500.0, 10000.0, 20000.0};
     std::vector<double> ptLambdaBinning = {2.0, 3.0, 4.0, 5.0, 8.0, 16.0};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
-    AxisSpec decaulengthAxis = {300, 0.0, 0.3, "decaylength"};
+    AxisSpec decaylengthAxis = {configThnAxisDecayLength, "decaylength"};
     AxisSpec resAxis = {1000, -10, 10, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -187,15 +191,16 @@ struct highmasslambdasvx {
     // AxisSpec ctauAxis = {ctauBinning, "ctau"};
     //  const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
 
-    histos.add("hSparseV2SASameEvent_V2_EP", "hSparseV2SASameEvent_V2_EP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisV2, dcaAxis, decaulengthAxis, occupancyAxis});
-    histos.add("hSparseV2SASameEventRotational_V2_EP", "hSparseV2SASameEventRotational_V2_EP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisV2, dcaAxis, decaulengthAxis, occupancyAxis});
-    histos.add("hSparseV2SAMixedEvent_V2_EP", "hSparseV2SAMixedEvent_V2_EP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisV2, dcaAxis, decaulengthAxis, occupancyAxis});
+    histos.add("hSparseV2SASameEvent_V2_EP", "hSparseV2SASameEvent_V2_EP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisV2, dcaAxis, decaylengthAxis, occupancyAxis});
+    histos.add("hSparseV2SASameEventRotational_V2_EP", "hSparseV2SASameEventRotational_V2_EP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisV2, dcaAxis, decaylengthAxis, occupancyAxis});
+    histos.add("hSparseV2SAMixedEvent_V2_EP", "hSparseV2SAMixedEvent_V2_EP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisV2, dcaAxis, decaylengthAxis, occupancyAxis});
 
-    histos.add("hSparseV2SASameEvent_V2_IOP", "hSparseV2SASameEvent_V2_IOP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisPhiminusPsi, dcaAxis, decaulengthAxis, occupancyAxis});
-    histos.add("hSparseV2SASameEventRotational_V2_IOP", "hSparseV2SASameEventRotational_V2_IOP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisPhiminusPsi, dcaAxis, decaulengthAxis, occupancyAxis});
-    histos.add("hSparseV2SAMixedEvent_V2_IOP", "hSparseV2SAMixedEvent_V2_IOP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisPhiminusPsi, dcaAxis, decaulengthAxis, occupancyAxis});
+    histos.add("hSparseV2SASameEvent_V2_IOP", "hSparseV2SASameEvent_V2_IOP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisPhiminusPsi, dcaAxis, decaylengthAxis, occupancyAxis});
+    histos.add("hSparseV2SASameEventRotational_V2_IOP", "hSparseV2SASameEventRotational_V2_IOP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisPhiminusPsi, dcaAxis, decaylengthAxis, occupancyAxis});
+    histos.add("hSparseV2SAMixedEvent_V2_IOP", "hSparseV2SAMixedEvent_V2_IOP", HistType::kTHnSparseF, {thnAxisInvMass, ptAxis, thnAxisPhiminusPsi, dcaAxis, decaylengthAxis, occupancyAxis});
 
     histos.add("hRejectPID", "hRejectPID", kTH1F, {{2, 0.0f, 2.0f}});
+    histos.add("hV0decaylength", "hV0decaylength", kTH1F, {{1000, 0.0f, 1000.0f}});
     histos.add("hMomCorr", "hMomCorr", kTH3F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}, {8, 0.0f, 80.0f}});
     histos.add("hInvMassKs0", "hInvMassKs0", kTH1F, {{200, 0.4f, 0.6f}});
     histos.add("hchi2PCA", "hchi2PCA", kTH1F, {{10000, 0.0f, 10000.f}});
@@ -247,7 +252,7 @@ struct highmasslambdasvx {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    if (!(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.itsNClsInnerBarrel() >= cfgITSclusterInnerlayer)) {
       return false;
     }
     if (candidate.pt() > 0.0 && candidate.pt() < 0.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin1) {
@@ -370,12 +375,15 @@ struct highmasslambdasvx {
     const float tranRad = candidate.v0radius();
     const double dcaDaughv0 = TMath::Abs(candidate.dcaV0daughters());
     const double cpav0 = candidate.v0cosPA();
-
+    float decaylength = TMath::Sqrt(TMath::Power(collision.posX() - candidate.x(), 2.0) + TMath::Power(collision.posY() - candidate.y(), 2.0) + TMath::Power(collision.posZ() - candidate.z(), 2.0));
     float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
     float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
 
     if (pT < ConfV0PtMin) {
+      return false;
+    }
+    if ((decaylength < ConfV0decaylengthmin) || (decaylength > ConfV0decaylengthmax)) {
       return false;
     }
     if (dcaDaughv0 > ConfV0DCADaughMax) {
@@ -549,7 +557,10 @@ struct highmasslambdasvx {
         if (track1ID == negtrack.globalIndex()) {
           continue;
         }
-
+        auto v0decaylength = TMath::Sqrt(TMath::Power(collision.posX() - v0.x(), 2.0) + TMath::Power(collision.posY() - v0.y(), 2.0) + TMath::Power(collision.posZ() - v0.z(), 2.0));
+        if (firstprimarytrack == 0) {
+          histos.fill(HIST("hV0decaylength"), v0decaylength);
+        }
         float v0x, v0y, v0z, v0px, v0py, v0pz;
         // float v0PosPx, v0PosPy, v0PosPz, v0NegPx, v0NegPy, v0NegPz;
         // float dcaV0dau, dcaPosToPV, dcaNegToPV, v0cosPA;
