@@ -154,7 +154,7 @@ struct TaskPolarisationCharmHadrons {
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
 
   using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
-  using TracksWithMcLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
+  using TracksWithMcLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   using McParticlesDstarMatched = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
@@ -1315,7 +1315,8 @@ struct TaskPolarisationCharmHadrons {
 
   // Dstar with ML cuts
   void processDstarWithMl(aod::Collisions const& collisions,
-                          FilteredCandDstarWSelFlagAndMl const& dstarCandidates)
+                          FilteredCandDstarWSelFlagAndMl const& dstarCandidates,
+                          TracksWithExtra const& tracks)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -1325,12 +1326,12 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks)) {
           nCandsInSignalRegion++;
         }
 
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, iRotation, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate, iRotation, numPvContributors, -1 /*MC particles*/, tracks);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1375,7 +1376,8 @@ struct TaskPolarisationCharmHadrons {
   void processDstarMcWithMl(aod::McCollisions::iterator const&,
                             McParticlesDstarMatched const& mcParticles,
                             CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
-                            FilteredCandDstarWSelFlagAndMcAndMl const& dstarCandidates)
+                            FilteredCandDstarWSelFlagAndMcAndMl const& dstarCandidates,
+                            TracksWithExtra const& tracks)
   {
     int numPvContributorsGen{0};
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
@@ -1390,7 +1392,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks)) {
           nCandsInSignalRegion++;
         }
       }
@@ -1436,7 +1438,8 @@ struct TaskPolarisationCharmHadrons {
 
   // Lc->pKpi with ML cuts
   void processLcToPKPiWithMl(aod::Collisions const& collisions,
-                             FilteredCandLcToPKPiWSelFlagAndMl const& lcCandidates)
+                             FilteredCandLcToPKPiWSelFlagAndMl const& lcCandidates,
+                             TracksWithExtra const& tracks)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -1446,13 +1449,13 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks)) {
           nCandsInSignalRegion++;
         }
 
         /// rotational background
         for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, iRotation, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, iRotation, numPvContributors, -1 /*MC particles*/, tracks);
         }
       }
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
@@ -1497,7 +1500,8 @@ struct TaskPolarisationCharmHadrons {
   void processLcToPKPiMcWithMl(aod::McCollisions::iterator const&,
                                McParticles3ProngMatched const& mcParticles,
                                CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroups
-                               FilteredCandLcToPKPiWSelFlagAndMcAndMl const& lcCandidates)
+                               FilteredCandLcToPKPiWSelFlagAndMcAndMl const& lcCandidates,
+                               TracksWithExtra const& tracks)
   {
     int numPvContributorsGen{0};
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
@@ -1512,7 +1516,7 @@ struct TaskPolarisationCharmHadrons {
 
       for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, -1 /*tracks*/)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks)) {
           nCandsInSignalRegion++;
         }
       }
