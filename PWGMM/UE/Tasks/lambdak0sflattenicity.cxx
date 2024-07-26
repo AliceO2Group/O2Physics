@@ -419,38 +419,38 @@ struct lambdak0sflattenicity {
   {
     rEventSelection.fill(HIST("hEventsSelected"), 0);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      rEventSelection.fill(HIST("hEventsRejected"), 0);
+    if (collision.isInelGt0() == false) {
+      rEventSelection.fill(HIST("hEventsRejected"), 1);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 1);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      rEventSelection.fill(HIST("hEventsRejected"), 1);
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      rEventSelection.fill(HIST("hEventsRejected"), 2);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 2);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      rEventSelection.fill(HIST("hEventsRejected"), 2);
-      return false;
-    }
-    rEventSelection.fill(HIST("hEventsSelected"), 3);
-
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       rEventSelection.fill(HIST("hEventsRejected"), 3);
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 4);
+    rEventSelection.fill(HIST("hEventsSelected"), 3);
 
     if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       rEventSelection.fill(HIST("hEventsRejected"), 4);
       return false;
     }
+    rEventSelection.fill(HIST("hEventsSelected"), 4);
+
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      rEventSelection.fill(HIST("hEventsRejected"), 5);
+      return false;
+    }
     rEventSelection.fill(HIST("hEventsSelected"), 5);
 
-    if (collision.isInelGt0() == false) {
-      rEventSelection.fill(HIST("hEventsRejected"), 5);
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      rEventSelection.fill(HIST("hEventsRejected"), 6);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 6);
@@ -975,9 +975,9 @@ struct lambdak0sflattenicity {
     }
   }
 
-  PROCESS_SWITCH(lambdak0sflattenicity, processDataRun3, "Process Run 3 Data", false);
-  PROCESS_SWITCH(lambdak0sflattenicity, processRecMC, "Process Run 3 mc, reconstructed", true);
-  PROCESS_SWITCH(lambdak0sflattenicity, processGenMC, "Process Run 3 mc, generated", true);
+  PROCESS_SWITCH(lambdak0sflattenicity, processDataRun3, "Process Run 3 Data", true);
+  PROCESS_SWITCH(lambdak0sflattenicity, processRecMC, "Process Run 3 mc, reconstructed", false);
+  PROCESS_SWITCH(lambdak0sflattenicity, processGenMC, "Process Run 3 mc, generated", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
