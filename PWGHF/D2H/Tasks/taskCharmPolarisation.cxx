@@ -743,9 +743,9 @@ struct TaskPolarisationCharmHadrons {
   template <typename Trk>
   void getTrackingInfos(std::vector<Trk> const& prongTracks, float& etaMin, int& nItsClsMin, int& nTpcClsMin)
   {
-    etaMin = -1.f;
-    nItsClsMin = -1;
-    nTpcClsMin = -1;
+    etaMin = 10.f;
+    nItsClsMin = 10;
+    nTpcClsMin = 1000;
 
     for (const auto& track : prongTracks) {
       if (std::abs(track.eta()) < etaMin) {
