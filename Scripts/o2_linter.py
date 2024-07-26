@@ -12,7 +12,7 @@
 # or submit itself to any jurisdiction.
 
 """!
-@brief  O2 linter (Find issues in O2 code)
+@brief  O2 linter (Find O2-specific issues in O2 code)
 @author Vít Kučera <vit.kucera@cern.ch>, Inha University
 @date   2024-07-14
 """
