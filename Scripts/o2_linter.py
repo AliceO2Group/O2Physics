@@ -294,10 +294,10 @@ class TestROOT(TestSpec):
         return re.search(pattern, line) is None
 
 
-class TestPI(TestSpec):
-    """Detect use of external PI."""
+class TestPi(TestSpec):
+    """Detect use of external pi."""
     name = "external-pi"
-    message = "Consider using the PI constant (and its multiples) defined in o2::constants::math."
+    message = "Consider using the PI constant (and its multiples and fractions) defined in o2::constants::math."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -305,6 +305,38 @@ class TestPI(TestSpec):
 
     def test_line(self, line: str) -> bool:
         pattern = r"M_PI|TMath::(Two)?Pi"
+        if is_comment_cpp(line):
+            return True
+        line = remove_comment_cpp(line)
+        return re.search(pattern, line) is None
+
+
+class TestTwoPiAddSubtract(TestSpec):
+    """Detect adding/subtracting of 2 pi."""
+    name = "two-pi-add-subtract"
+    message = "Consider using RecoDecay::constrainAngle to restrict angle to a given range."
+    suffixes = [".h", ".cxx"]
+
+    def test_line(self, line: str) -> bool:
+        pattern_two_pi = r"(2(\.0*f?)? \* (M_PI|TMath::Pi\(\)|(((o2::)?constants::)?math::)?PI)|(((o2::)?constants::)?math::)?TwoPI|TMath::TwoPi\(\))"
+        pattern = fr"[\+-]=? {pattern_two_pi}"
+        if is_comment_cpp(line):
+            return True
+        line = remove_comment_cpp(line)
+        return re.search(pattern, line) is None
+
+
+class TestPiMultipleFraction(TestSpec):
+    """Detect multiplying/dividing of pi for existing equivalent constants."""
+    name = "pi-multiple-fraction"
+    message = "Consider using multiples/fractions of PI defined in o2::constants::math."
+    suffixes = [".h", ".cxx"]
+
+    def test_line(self, line: str) -> bool:
+        pattern_pi = r"(M_PI|TMath::(Two)?Pi\(\)|(((o2::)?constants::)?math::)?(Two)?PI)"
+        pattern_multiple = r"(2(\.0*f?)?|0\.2?5f?) \* " # * 2, 0.25, 0.5
+        pattern_fraction = r" / ((2|3|4)([ ,;\)]|\.0*f?))" # / 2, 3, 4
+        pattern = fr"{pattern_multiple}{pattern_pi}|{pattern_pi}{pattern_fraction}"
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
@@ -1128,7 +1160,9 @@ def main():
         tests.append(TestUsingDirectives())
         tests.append(TestStdPrefix())
         tests.append(TestROOT())
-        tests.append(TestPI())
+        tests.append(TestPi())
+        tests.append(TestTwoPiAddSubtract())
+        tests.append(TestPiMultipleFraction())
         tests.append(TestPdgDatabase())
         tests.append(TestPdgCode())
         tests.append(TestPdgMass())
