@@ -412,12 +412,12 @@ struct HfCandidateCreatorXicToXiPiPi {
       }
 
       // get geometrical chi2 of XicPlus
-      float chi2geoXicPlus = kfXicPlus.GetChi2()/kfXicPlus.GetNDF();
+      float chi2geoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
       // topological constraint of Xic to PV
       KFParticle kfXicPlusToPV = kfXicPlus;
       kfXicPlusToPV.SetProductionVertex(KFPV);
-      float chi2topoXicPlusPV = kfXicPlusToPV.GetChi2()/kfXicPlusToPV.GetNDF();
+      float chi2topoXicPlusPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
       if (constrainXicPlusToPv) {
         kfXicPlus = kfXicPlusToPV;
         kfXicPlus.TransportToDecayVertex();
@@ -426,7 +426,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       // topological constraint of Xi to XicPlus
       KFParticle kfXiToXicPlus = kfXi;
       kfXiToXicPlus.SetProductionVertex(kfXicPlus);
-      float chi2topoXiToXicPlus = kfXiToXicPlus.GetChi2()/kfXiToXicPlus.GetNDF();
+      float chi2topoXiToXicPlus = kfXiToXicPlus.GetChi2() / kfXiToXicPlus.GetNDF();
       kfXiToXicPlus.TransportToDecayVertex();
       if (constrainXiToXicPlus) {
         KFParticle kfXicPlusWithXiToXicPlus;
@@ -692,7 +692,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
       rowMcMatchGen(flag, debug, origin);
     } // close loop over generated particles
-  }   // close process
+  } // close process
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPiExpressions, processMc, "Process MC", false);
 }; // close struct
 

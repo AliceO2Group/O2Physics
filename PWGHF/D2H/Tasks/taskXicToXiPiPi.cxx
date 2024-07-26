@@ -106,7 +106,7 @@ struct HfTaskXicToXiPiPi {
     registry.add("hChi2geoXi", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
     registry.add("hChi2geoLam", "#Xi^{#plus}_{c} candidates;#Lambda #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
     registry.add("hChi2topoXiToXicPlus", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-    
+
     if (doprocessMc) {
       // MC reconstructed
       registry.add("hPtGenSig", "#Xi^{#plus}_{c} candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
@@ -270,7 +270,7 @@ struct HfTaskXicToXiPiPi {
       registry.fill(HIST("hChi2geoXi"), candidate.kfCascadeChi2(), ptCandXic);
       registry.fill(HIST("hChi2geoLam"), candidate.kfV0Chi2(), ptCandXic);
     } // candidate loop
-  }   // process
+  } // process
 
   /// MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
@@ -432,7 +432,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hYGenWithProngsInAcceptance"), yParticle, ptParticle);
       }
     } // gen
-  }   // process
+  } // process
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processMc, "Process MC", false);
 }; // struct
 
