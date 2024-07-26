@@ -358,7 +358,7 @@ struct femtoUniversePairTaskTrackPhi {
         qaRegistry.fill(HIST("PhiDaugh_neg/hDCAxy"), phidaugh.p(), phidaugh.tempFitVar());
       }
     }
-
+    float tpcNSigmaPr, tofNSigmaPr, tpcNSigmaPi, tofNSigmaPi, tpcNSigmaKa, tofNSigmaKa;
     if (!ConfTrack.ConfIsSame) {
       for (auto& track : groupPartsTrack) {
         // if (track.p() > ConfBothTracks.ConfCutTable->get("Track", "MaxP") || track.pt() > ConfBothTracks.ConfCutTable->get("Track", "MaxPt")) {
