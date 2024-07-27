@@ -345,8 +345,10 @@ class TestTwoPiAddSubtract(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
-        pattern_two_pi = r"(2(\.0*f?)? \* (M_PI|TMath::Pi\(\)|(((o2::)?constants::)?math::)?PI)|" \
+        pattern_two_pi = (
+            r"(2(\.0*f?)? \* (M_PI|TMath::Pi\(\)|(((o2::)?constants::)?math::)?PI)|"
             r"(((o2::)?constants::)?math::)?TwoPI|TMath::TwoPi\(\))"
+        )
         pattern = rf"[\+-]=? {pattern_two_pi}"
         if is_comment_cpp(line):
             return True
@@ -376,8 +378,10 @@ class TestPdgDatabase(TestSpec):
     """Detect use of TDatabasePDG."""
 
     name = "pdg/database"
-    message = "Direct use of TDatabasePDG is not allowed. " \
+    message = (
+        "Direct use of TDatabasePDG is not allowed. "
         "Use o2::constants::physics::Mass... or Service<o2::framework::O2DatabasePDG>."
+    )
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -524,8 +528,10 @@ class TestWorkflowOptions(TestSpec):
     """Detect usage of workflow options in defineDataProcessing. (Not supported on AliHyperloop.)"""
 
     name = "o2-workflow-options"
-    message = "Do not use workflow options to customise workflow topology composition in defineDataProcessing. " \
+    message = (
+        "Do not use workflow options to customise workflow topology composition in defineDataProcessing. "
         "Use process function switches or metadata instead."
+    )
     suffixes = [".cxx"]
     per_line = False
 
@@ -960,8 +966,8 @@ class TestNameWorkflow(TestSpec):
                     path,
                     i + 1,
                     self.name,
-                    f"Workflow name {workflow_name} does not match its file name {workflow_file_name}. " \
-                        f"(Matches {expected_workflow_file_name}.)",
+                    f"Workflow name {workflow_name} does not match its file name {workflow_file_name}. "
+                    f"(Matches {expected_workflow_file_name}.)",
                 )
         return passed
 
@@ -1051,8 +1057,8 @@ class TestNameTask(TestSpec):
                         path,
                         i + 1,
                         self.name,
-                        f"Specified task name {task_name} and the struct name {struct_name} produce " \
-                            f"the same device name {device_name_from_struct_name}. TaskName is redundant.",
+                        f"Specified task name {task_name} and the struct name {struct_name} produce "
+                        f"the same device name {device_name_from_struct_name}. TaskName is redundant.",
                     )
                     passed = False
                 elif device_name_from_struct_name.replace("-", "") == device_name_from_task_name.replace("-", ""):
@@ -1063,7 +1069,10 @@ class TestNameTask(TestSpec):
                         path,
                         i + 1,
                         self.name,
-                        f"Device names {device_name_from_task_name} and {device_name_from_struct_name} generated from the specified task name {task_name} and from the struct name {struct_name}, respectively, differ in hyphenation. Consider fixing capitalisation of the struct name to {struct_name_from_device_name} and removing TaskName.",
+                        f"Device names {device_name_from_task_name} and {device_name_from_struct_name} generated "
+                        f"from the specified task name {task_name} and from the struct name {struct_name}, "
+                        f"respectively, differ in hyphenation. Consider fixing capitalisation of the struct name "
+                        f"to {struct_name_from_device_name} and removing TaskName.",
                     )
                     passed = False
                 elif device_name_from_task_name.startswith(device_name_from_struct_name):
@@ -1075,10 +1084,10 @@ class TestNameTask(TestSpec):
                             path,
                             i + 1,
                             self.name,
-                            f"Device name {device_name_from_task_name} from the specified task name " \
-                                f"{task_name} is an extension of the device name {device_name_from_struct_name} " \
-                                    f"from the struct name {struct_name} but the struct is not templated. " \
-                                        "Is it adapted multiple times?",
+                            f"Device name {device_name_from_task_name} from the specified task name "
+                            f"{task_name} is an extension of the device name {device_name_from_struct_name} "
+                            f"from the struct name {struct_name} but the struct is not templated. "
+                            "Is it adapted multiple times?",
                         )
                         passed = False
                     # else:
@@ -1092,9 +1101,9 @@ class TestNameTask(TestSpec):
                         path,
                         i + 1,
                         self.name,
-                        f"Specified task name {task_name} produces device name {device_name_from_task_name} " \
-                            f"which does not match the device name {device_name_from_struct_name} from " \
-                                f"the struct name {struct_name}. (Matching struct name {struct_name_from_device_name})",
+                        f"Specified task name {task_name} produces device name {device_name_from_task_name} "
+                        f"which does not match the device name {device_name_from_struct_name} from "
+                        f"the struct name {struct_name}. (Matching struct name {struct_name_from_device_name})",
                     )
                     passed = False
         return passed
@@ -1215,8 +1224,8 @@ class TestHfStructMembers(TestSpec):
                         path,
                         first_line,
                         self.name,
-                        f"{struct_name}: {member.strip()} appears too early " \
-                            f"(before end of {self.member_order[index_last_member].strip()}).",
+                        f"{struct_name}: {member.strip()} appears too early "
+                        f"(before end of {self.member_order[index_last_member].strip()}).",
                     )
                 last_line_last_member = last_line
                 index_last_member = i_m
@@ -1227,8 +1236,10 @@ class TestHfNameFileWorkflow(TestSpec):
     """PWGHF: Test names of workflow files."""
 
     name = "pwghf/name/workflow-file"
-    message = "Name of a workflow file must match the name of the main task in it. " \
+    message = (
+        "Name of a workflow file must match the name of the main task in it. "
         "See the PWGHF O2 naming conventions for details."
+    )
     suffixes = [".cxx"]
     per_line = False
 
@@ -1262,8 +1273,10 @@ class TestHfNameConfigurable(TestSpec):
     """PWGHF: Test names of configurables."""
 
     name = "pwghf/name/configurable"
-    message = "Use lowerCamelCase for names of configurables and use the same name " \
+    message = (
+        "Use lowerCamelCase for names of configurables and use the same name "
         "for the struct member as for the JSON string."
+    )
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
