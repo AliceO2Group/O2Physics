@@ -128,6 +128,7 @@ struct muonExtrap {
       // Calculate DCA quantities (preferable to do it with VarManager)
       double dcax = muonTrackAtDCA.getX() - collision.posX();
       double dcay = muonTrackAtDCA.getY() - collision.posY();
+      
       double dca = std::sqrt(dcax * dcax + dcay * dcay);
       double pdca = muonTrackAtVertex.getP() * dca; 
       double xAtVtx = muonTrackAtVertex.getX();
