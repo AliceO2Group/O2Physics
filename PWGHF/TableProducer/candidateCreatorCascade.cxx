@@ -445,6 +445,7 @@ struct HfCandidateCreatorCascadeMc {
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
@@ -468,7 +469,7 @@ struct HfCandidateCreatorCascadeMc {
   void runCreatorCascMc(MyTracksWMc const& tracks,
                         aod::McParticles const& mcParticles,
                         CCs const& collInfos,
-                        aod::McCollisions const&,
+                        aod::McCollisions const& mcCollisions,
                         BCsInfo const&)
   {
     int8_t sign = 0;
@@ -527,18 +528,11 @@ struct HfCandidateCreatorCascadeMc {
       }
     }
 
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      origin = 0;
-      std::vector<int> idxBhadMothers{};
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        rowMcMatchGen(sign, origin, -1);
-        continue;
-      }
+    for (const auto& mcCollision : mcCollisions) {
 
+      // Slice the MC particles table to get the particles for the current MC collision
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
-      auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
       uint16_t rejectionMask{0};
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
@@ -553,41 +547,53 @@ struct HfCandidateCreatorCascadeMc {
       }
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
-        /// at least one event selection not satisfied --> reject the gen particle
-        rowMcMatchGen(sign, origin, -1);
+        // at least one event selection not satisfied --> reject all particles from this collision
+        for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
+          rowMcMatchGen(0, 0, -1);
+        }
         continue;
       }
 
-      // checking if I have a Lc --> K0S + p
-      RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
-      if (sign == 0) { // now check for anti-Lc
-        RecoDecay::isMatchedMCGen(mcParticles, particle, -Pdg::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
-        sign = -sign;
-      }
-      if (sign != 0) {
-        arrDaughLcIndex.clear();
-        // checking that the final daughters (decay depth = 3) are p, pi+, pi-
-        RecoDecay::getDaughters(particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
-        if (arrDaughLcIndex.size() == 3) {
-          for (std::size_t iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
-            auto daughI = mcParticles.rawIteratorAt(arrDaughLcIndex[iProng]);
-            arrDaughLcPDG[iProng] = daughI.pdgCode();
-          }
-          if (!(arrDaughLcPDG[0] == sign * arrDaughLcPDGRef[0] && arrDaughLcPDG[1] == arrDaughLcPDGRef[1] && arrDaughLcPDG[2] == arrDaughLcPDGRef[2])) { // this should be the condition, first bach, then v0
-            sign = 0;
-          } else {
-            LOG(debug) << "Lc --> K0S+p found in MC table";
+      // Match generated particles.
+      for (const auto& particle : mcParticlesPerMcColl) {
+        origin = 0;
+        std::vector<int> idxBhadMothers{};
+        // Reject particles from background events
+        if (particle.fromBackgroundEvent() && rejectBackground) {
+          rowMcMatchGen(sign, origin, -1);
+          continue;
+        }
+        // checking if I have a Lc --> K0S + p
+        RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
+        if (sign == 0) { // now check for anti-Lc
+          RecoDecay::isMatchedMCGen(mcParticles, particle, -Pdg::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
+          sign = -sign;
+        }
+        if (sign != 0) {
+          arrDaughLcIndex.clear();
+          // checking that the final daughters (decay depth = 3) are p, pi+, pi-
+          RecoDecay::getDaughters(particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
+          if (arrDaughLcIndex.size() == 3) {
+            for (std::size_t iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
+              auto daughI = mcParticles.rawIteratorAt(arrDaughLcIndex[iProng]);
+              arrDaughLcPDG[iProng] = daughI.pdgCode();
+            }
+            if (!(arrDaughLcPDG[0] == sign * arrDaughLcPDGRef[0] && arrDaughLcPDG[1] == arrDaughLcPDGRef[1] && arrDaughLcPDG[2] == arrDaughLcPDGRef[2])) { // this should be the condition, first bach, then v0
+              sign = 0;
+            } else {
+              LOG(debug) << "Lc --> K0S+p found in MC table";
+            }
           }
         }
-      }
-      // Check whether the particle is non-prompt (from a b quark).
-      if (sign != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-      }
-      if (origin == RecoDecay::OriginType::NonPrompt) {
-        rowMcMatchGen(sign, origin, idxBhadMothers[0]);
-      } else {
-        rowMcMatchGen(sign, origin, -1);
+        // Check whether the particle is non-prompt (from a b quark).
+        if (sign != 0) {
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+        }
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          rowMcMatchGen(sign, origin, idxBhadMothers[0]);
+        } else {
+          rowMcMatchGen(sign, origin, -1);
+        }
       }
     }
   }
