@@ -96,7 +96,6 @@ struct muonExtrap {
     registry.add("zAtVtx", "z at vertex", zSpec);
     registry.add("zAtDCA", "z at DCA", zSpec);
     registry.add("zAtRabs", "z at end abs", zSpec);
-
   }
 
   void processExtrapolation(MyEventsVtxCov::iterator const& collision, MyMuons const& muons)
