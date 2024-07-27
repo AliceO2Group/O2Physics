@@ -1,7 +1,7 @@
 // Copyright CERN and copyright holders of ALICE O2. 
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
-//
+// 
 // This software is distributed under the terms of the GNU General Public 
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
@@ -131,7 +131,7 @@ struct muonExtrap {
 
       // Calculate DCA quantities (preferable to do it with VarManager)
       double dcax = muonTrackAtDCA.getX() - collision.posX();
-      double dcay = muonTrackAtDCA.getY() - collision.posY() ;
+      double dcay = muonTrackAtDCA.getY() - collision.posY();
       double dca = std::sqrt(dcax * dcax + dcay * dcay);
       double pdca = muonTrackAtVertex.getP() * dca; 
       double xAtVtx = muonTrackAtVertex.getX();
