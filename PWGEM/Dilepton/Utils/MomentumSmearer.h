@@ -18,7 +18,6 @@
 #include <TH1D.h>
 #include <TString.h>
 #include <TGrid.h>
-#include <TObjArray.h>
 #include <TFile.h>
 #include <TKey.h>
 #include <CCDB/BasicCCDBManager.h>
@@ -66,23 +65,23 @@ class MomentumSmearer
   void getResolutionHistos(TList* list)
   {
 
-    fArrResoPt = reinterpret_cast<TObjArray*>(list->FindObject(fResPtHistName));
-    if (!fArrResoPt) {
+    fResoPt = reinterpret_cast<TH2F*>(list->FindObject(fResPtHistName));
+    if (!fResoPt) {
       LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
     }
 
-    fArrResoEta = reinterpret_cast<TObjArray*>(list->FindObject(fResEtaHistName));
-    if (!fArrResoEta) {
+    fResoEta = reinterpret_cast<TH2F*>(list->FindObject(fResEtaHistName));
+    if (!fResoEta) {
       LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
     }
 
-    fArrResoPhi_Pos = reinterpret_cast<TObjArray*>(list->FindObject(fResPhiPosHistName));
-    if (!fArrResoPhi_Pos) {
+    fResoPhi_Pos = reinterpret_cast<TH2F*>(list->FindObject(fResPhiPosHistName));
+    if (!fResoPhi_Pos) {
       LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
     }
 
-    fArrResoPhi_Neg = reinterpret_cast<TObjArray*>(list->FindObject(fResPhiNegHistName));
-    if (!fArrResoPhi_Neg) {
+    fResoPhi_Neg = reinterpret_cast<TH2F*>(list->FindObject(fResPhiNegHistName));
+    if (!fResoPhi_Neg) {
       LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
     }
   }
@@ -91,6 +90,15 @@ class MomentumSmearer
   void getEfficiencyHistos(T dir){
 
   }*/
+
+  void fillVecReso(TH2F* fReso, std::vector<TH1F*>& fVecReso)
+  {
+    TAxis* axisPt = fReso->GetXaxis();
+    int nBinsPt = axisPt->GetNbins();
+    for (int i = 1; i <= nBinsPt; i++) {
+      fVecReso.push_back(reinterpret_cast<TH1F*>(fReso->ProjectionY("", i, i)));
+    }
+  }
 
   void init()
   {
@@ -134,25 +142,29 @@ class MomentumSmearer
       }
     }
     if (fResType != 0) {
-      fArrResoPt = reinterpret_cast<TObjArray*>(listRes->FindObject(fResPtHistName));
-      if (!fArrResoPt) {
+      fResoPt = reinterpret_cast<TH2F*>(listRes->FindObject(fResPtHistName));
+      if (!fResoPt) {
         LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
       }
 
-      fArrResoEta = reinterpret_cast<TObjArray*>(listRes->FindObject(fResEtaHistName));
-      if (!fArrResoEta) {
+      fResoEta = reinterpret_cast<TH2F*>(listRes->FindObject(fResEtaHistName));
+      if (!fResoEta) {
         LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
       }
 
-      fArrResoPhi_Pos = reinterpret_cast<TObjArray*>(listRes->FindObject(fResPhiPosHistName));
-      if (!fArrResoPhi_Pos) {
+      fResoPhi_Pos = reinterpret_cast<TH2F*>(listRes->FindObject(fResPhiPosHistName));
+      if (!fResoPhi_Pos) {
         LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
       }
 
-      fArrResoPhi_Neg = reinterpret_cast<TObjArray*>(listRes->FindObject(fResPhiNegHistName));
-      if (!fArrResoPhi_Neg) {
+      fResoPhi_Neg = reinterpret_cast<TH2F*>(listRes->FindObject(fResPhiNegHistName));
+      if (!fResoPhi_Neg) {
         LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
       }
+      fillVecReso(fResoPt, fVecResoPt);
+      fillVecReso(fResoEta, fVecResoEta);
+      fillVecReso(fResoPhi_Pos, fVecResoPhi_Pos);
+      fillVecReso(fResoPhi_Neg, fVecResoPhi_Neg);
     }
 
     if (!fFromCcdb)
@@ -191,18 +203,18 @@ class MomentumSmearer
       }
     }
     if (fEffType != 0) {
-      fArrEff = reinterpret_cast<TObject*>(listEff->FindObject(fEffHistName));
-      if (!fArrEff) {
+      fEff = reinterpret_cast<TObject*>(listEff->FindObject(fEffHistName));
+      if (!fEff) {
         LOGP(fatal, "Could not open {} from file {}", fEffHistName.Data(), fEffFileName.Data());
       }
       // check which type is used
-      if (dynamic_cast<TH3*>(fArrEff)) {
+      if (dynamic_cast<TH3*>(fEff)) {
         fEffType = 3;
         LOGP(info, "Use 3d efficiency histo (pt, eta, phi)");
-      } else if (dynamic_cast<TH2*>(fArrEff)) {
+      } else if (dynamic_cast<TH2*>(fEff)) {
         fEffType = 2;
         LOGP(info, "Use 2d efficiency histo (pt, eta)");
-      } else if (dynamic_cast<TH1*>(fArrEff)) {
+      } else if (dynamic_cast<TH1*>(fEff)) {
         fEffType = 1;
         LOGP(info, "Use 1d efficiency histo (pt)");
       } else {
@@ -216,6 +228,24 @@ class MomentumSmearer
     fInitialized = true;
   }
 
+  void applySmearing(float ptgen, float vargen, float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1F*>& fVecReso)
+  {
+    TAxis* axisPt = fReso->GetXaxis();
+    int nBinsPt = axisPt->GetNbins();
+    int ptbin = axisPt->FindBin(ptgen);
+    if (ptbin < 1) {
+      ptbin = 1;
+    }
+    if (ptbin > nBinsPt) {
+      ptbin = nBinsPt;
+    }
+    float smearing = 0.;
+    if (fVecReso[ptbin - 1]->GetEntries() > 0) {
+      smearing = fVecReso[ptbin - 1]->GetRandom() * multiply;
+    }
+    varsmeared = vargen - smearing;
+  }
+
   void applySmearing(const int ch, const float ptgen, const float etagen, const float phigen, float& ptsmeared, float& etasmeared, float& phismeared)
   {
     if (fResType == 0) {
@@ -224,54 +254,13 @@ class MomentumSmearer
       phismeared = phigen;
       return;
     }
-    // smear pt
-    int ptbin = reinterpret_cast<TH2D*>(fArrResoPt->At(0))->GetXaxis()->FindBin(ptgen);
-    if (ptbin < 1) {
-      ptbin = 1;
-    }
-    if (ptbin > fArrResoPt->GetLast()) {
-      ptbin = fArrResoPt->GetLast();
-    }
-    float smearing = 0.;
-    TH1D* thisHist = reinterpret_cast<TH1D*>(fArrResoPt->At(ptbin));
-    if (thisHist->GetEntries() > 0) {
-      smearing = thisHist->GetRandom() * ptgen;
-    }
-    ptsmeared = ptgen - smearing;
-
-    // smear eta
-    ptbin = reinterpret_cast<TH2D*>(fArrResoEta->At(0))->GetXaxis()->FindBin(ptgen);
-    if (ptbin < 1) {
-      ptbin = 1;
-    }
-    if (ptbin > fArrResoEta->GetLast()) {
-      ptbin = fArrResoEta->GetLast();
-    }
-    smearing = 0.;
-    thisHist = reinterpret_cast<TH1D*>(fArrResoEta->At(ptbin));
-    if (thisHist->GetEntries() > 0) {
-      smearing = thisHist->GetRandom();
-    }
-    etasmeared = etagen - smearing;
-
-    // smear phi
-    ptbin = reinterpret_cast<TH2D*>(fArrResoPhi_Pos->At(0))->GetXaxis()->FindBin(ptgen);
-    if (ptbin < 1) {
-      ptbin = 1;
-    }
-    if (ptbin > fArrResoPhi_Pos->GetLast()) {
-      ptbin = fArrResoPhi_Pos->GetLast();
-    }
-    smearing = 0.;
-    if (ch < 0) {
-      thisHist = reinterpret_cast<TH1D*>(fArrResoPhi_Neg->At(ptbin));
+    applySmearing(ptgen, ptgen, ptgen, ptsmeared, fResoPt, fVecResoPt);
+    applySmearing(ptgen, etagen, 1., etasmeared, fResoEta, fVecResoEta);
+    if (ch > 0) {
+      applySmearing(ptgen, phigen, 1., phismeared, fResoPhi_Pos, fVecResoPhi_Pos);
     } else {
-      thisHist = reinterpret_cast<TH1D*>(fArrResoPhi_Pos->At(ptbin));
+      applySmearing(ptgen, phigen, 1., phismeared, fResoPhi_Neg, fVecResoPhi_Neg);
     }
-    if (thisHist->GetEntries() > 0) {
-      smearing = thisHist->GetRandom();
-    }
-    phismeared = phigen - smearing;
   }
 
   float getEfficiency(float pt, float eta, float phi)
@@ -282,7 +271,7 @@ class MomentumSmearer
     }
 
     if (fEffType == 1) {
-      TH1F* hist = reinterpret_cast<TH1F*>(fArrEff);
+      TH1F* hist = reinterpret_cast<TH1F*>(fEff);
       int ptbin = hist->GetXaxis()->FindBin(pt);
       int ptbin_max = hist->GetXaxis()->GetNbins();
       // make sure that no underflow or overflow bins are used
@@ -294,7 +283,7 @@ class MomentumSmearer
     }
 
     if (fEffType == 2) {
-      TH2F* hist = reinterpret_cast<TH2F*>(fArrEff);
+      TH2F* hist = reinterpret_cast<TH2F*>(fEff);
       int ptbin = hist->GetXaxis()->FindBin(pt);
       int ptbin_max = hist->GetXaxis()->GetNbins();
       int etabin = hist->GetYaxis()->FindBin(eta);
@@ -312,7 +301,7 @@ class MomentumSmearer
     }
 
     if (fEffType == 3) {
-      TH3F* hist = reinterpret_cast<TH3F*>(fArrEff);
+      TH3F* hist = reinterpret_cast<TH3F*>(fEff);
       int ptbin = hist->GetXaxis()->FindBin(pt);
       int ptbin_max = hist->GetXaxis()->GetNbins();
       int etabin = hist->GetYaxis()->FindBin(eta);
@@ -363,11 +352,11 @@ class MomentumSmearer
   TString getResPhiNegHistName() { return fResPhiNegHistName; }
   TString getEffFileName() { return fEffFileName; }
   TString getEffHistName() { return fEffHistName; }
-  TObjArray* getArrResoPt() { return fArrResoPt; }
-  TObjArray* getArrResoEta() { return fArrResoEta; }
-  TObjArray* getArrResoPhiPos() { return fArrResoPhi_Pos; }
-  TObjArray* getArrResoPhiNeg() { return fArrResoPhi_Neg; }
-  TObject* getArrEff() { return fArrEff; }
+  TH2F* getHistResoPt() { return fResoPt; }
+  TH2F* getHistResoEta() { return fResoEta; }
+  TH2F* getHistResoPhiPos() { return fResoPhi_Pos; }
+  TH2F* getHistResoPhiNeg() { return fResoPhi_Neg; }
+  TObject* getHistEff() { return fEff; }
   TString getCcdbPathRes() { return fCcdbPathRes; }
   TString getCcdbPathEff() { return fCcdbPathEff; }
 
@@ -384,11 +373,15 @@ class MomentumSmearer
   TString fCcdbPathEff;
   int fEffType = 0;
   int fResType = 0;
-  TObjArray* fArrResoPt;
-  TObjArray* fArrResoEta;
-  TObjArray* fArrResoPhi_Pos;
-  TObjArray* fArrResoPhi_Neg;
-  TObject* fArrEff;
+  TH2F* fResoPt;
+  TH2F* fResoEta;
+  TH2F* fResoPhi_Pos;
+  TH2F* fResoPhi_Neg;
+  std::vector<TH1F*> fVecResoPt;
+  std::vector<TH1F*> fVecResoEta;
+  std::vector<TH1F*> fVecResoPhi_Pos;
+  std::vector<TH1F*> fVecResoPhi_Neg;
+  TObject* fEff;
   int64_t fTimestamp;
   bool fFromCcdb = false;
   Service<ccdb::BasicCCDBManager> fCcdb;
