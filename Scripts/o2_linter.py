@@ -1308,7 +1308,7 @@ class TestHfNameConfigurable(TestSpec):
 
 def main():
     """Main function"""
-    parser = argparse.ArgumentParser(description="Run tests on files to find code issues.")
+    parser = argparse.ArgumentParser(description="O2 linter (Find O2-specific issues in O2 code)")
     parser.add_argument("paths", type=str, nargs="+", help="File path(s)")
     parser.add_argument(
         "-g",
