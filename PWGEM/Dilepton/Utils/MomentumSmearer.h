@@ -42,6 +42,8 @@ class MomentumSmearer
     setResPhiNegHistName(resPhiNegHistName);
     setEffFileName("");
     setEffHistName("");
+    setDCAFileName("");
+    setDCAHistName("");
     init();
   }
 
@@ -55,6 +57,23 @@ class MomentumSmearer
     setResPhiNegHistName(resPhiNegHistName);
     setEffFileName(effFileName);
     setEffHistName(effHistName);
+    setDCAFileName("");
+    setDCAHistName("");
+    init();
+  }
+
+  /// Constructor with resolution histograms and efficiency and dca
+  MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString effFileName, TString effHistName, TString dcaFileName, TString dcaHistName)
+  {
+    setResFileName(resFileName);
+    setResPtHistName(resPtHistName);
+    setResEtaHistName(resEtaHistName);
+    setResPhiPosHistName(resPhiPosHistName);
+    setResPhiNegHistName(resPhiNegHistName);
+    setEffFileName(effFileName);
+    setEffHistName(effHistName);
+    setDCAFileName(dcaFileName);
+    setDCAHistName(dcaHistName);
     init();
   }
 
@@ -86,11 +105,6 @@ class MomentumSmearer
     }
   }
 
-  /*template <typename T>
-  void getEfficiencyHistos(T dir){
-
-  }*/
-
   void fillVecReso(TH2F* fReso, std::vector<TH1F*>& fVecReso)
   {
     TAxis* axisPt = fReso->GetXaxis();
@@ -105,7 +119,7 @@ class MomentumSmearer
     if (fInitialized)
       return;
 
-    if ((fResFileName.BeginsWith("alien://") || fEffFileName.BeginsWith("alien://")) && (!fFromCcdb)) {
+    if ((fResFileName.BeginsWith("alien://") || fEffFileName.BeginsWith("alien://") || fDCAFileName.BeginsWith("alien://")) && (!fFromCcdb)) {
       TGrid::Connect("alien://");
     }
 
@@ -225,6 +239,49 @@ class MomentumSmearer
     if (!fFromCcdb)
       delete listEff;
 
+    LOGP(info, "Set DCA histos");
+    TList* listDCA = new TList();
+    if (fFromCcdb) {
+      if (fCcdbPathDCA.CompareTo("") != 0) {
+        fDCAType = 1;
+        listDCA = fCcdb->getForTimeStamp<TList>(fCcdbPathDCA.Data(), fTimestamp);
+        if (!listDCA) {
+          LOGP(fatal, "Could not get DCA file from CCDB");
+          return;
+        }
+      }
+    } else {
+      if (fDCAFileName.CompareTo("") != 0) {
+        fDCAType = 1;
+        TFile* fFile = TFile::Open(fDCAFileName);
+        if (!fFile) {
+          LOGP(fatal, "Could not open DCA file {}", fDCAFileName.Data());
+          return;
+        }
+        if (fFile->GetListOfKeys()->Contains("ccdb_object")) {
+          listDCA = reinterpret_cast<TList*>(fFile->Get("ccdb_object"));
+        } else {
+          for (TObject* keyAsObj : *(fFile->GetListOfKeys())) {
+            auto key = dynamic_cast<TKey*>(keyAsObj);
+            TObject* arr = nullptr;
+            fFile->GetObject(key->GetName(), arr);
+            listDCA->Add(arr);
+          }
+        }
+        fFile->Close();
+      }
+    }
+    if (fDCAType != 0) {
+      fDCA = reinterpret_cast<TH2F*>(listDCA->FindObject(fDCAHistName));
+      if (!fDCA) {
+        LOGP(fatal, "Could not open {} from file {}", fDCAHistName.Data(), fDCAFileName.Data());
+      }
+      fillVecReso(fDCA, fVecDCA);
+    }
+
+    if (!fFromCcdb)
+      delete listDCA;
+
     fInitialized = true;
   }
 
@@ -327,6 +384,28 @@ class MomentumSmearer
     return 1.;
   }
 
+  float getDCA(float ptsmeared)
+  {
+    if (fDCAType == 0) {
+      return 0.;
+    }
+
+    TAxis* axisPt = fDCA->GetXaxis();
+    int nBinsPt = axisPt->GetNbins();
+    int ptbin = axisPt->FindBin(ptsmeared);
+    if (ptbin < 1) {
+      ptbin = 1;
+    }
+    if (ptbin > nBinsPt) {
+      ptbin = nBinsPt;
+    }
+    float dca = 0.;
+    if (fVecDCA[ptbin - 1]->GetEntries() > 0) {
+      dca = fVecDCA[ptbin - 1]->GetRandom();
+    }
+    return dca;
+  }
+
   // setters
   void setResFileName(TString resFileName) { fResFileName = resFileName; }
   void setResPtHistName(TString resPtHistName) { fResPtHistName = resPtHistName; }
@@ -335,8 +414,11 @@ class MomentumSmearer
   void setResPhiNegHistName(TString resPhiNegHistName) { fResPhiNegHistName = resPhiNegHistName; }
   void setEffFileName(TString effFileName) { fEffFileName = effFileName; }
   void setEffHistName(TString effHistName) { fEffHistName = effHistName; }
+  void setDCAFileName(TString dcaFileName) { fDCAFileName = dcaFileName; }
+  void setDCAHistName(TString dcaHistName) { fDCAHistName = dcaHistName; }
   void setCcdbPathRes(TString ccdbPathRes) { fCcdbPathRes = ccdbPathRes; }
   void setCcdbPathEff(TString ccdbPathEff) { fCcdbPathEff = ccdbPathEff; }
+  void setCcdbPathDCA(TString ccdbPathDCA) { fCcdbPathDCA = ccdbPathDCA; }
   void setCcdb(Service<ccdb::BasicCCDBManager> ccdb)
   {
     fCcdb = ccdb;
@@ -352,6 +434,8 @@ class MomentumSmearer
   TString getResPhiNegHistName() { return fResPhiNegHistName; }
   TString getEffFileName() { return fEffFileName; }
   TString getEffHistName() { return fEffHistName; }
+  TString getDCAFileName() { return fDCAFileName; }
+  TString getDCaHistName() { return fDCAHistName; }
   TH2F* getHistResoPt() { return fResoPt; }
   TH2F* getHistResoEta() { return fResoEta; }
   TH2F* getHistResoPhiPos() { return fResoPhi_Pos; }
@@ -359,6 +443,7 @@ class MomentumSmearer
   TObject* getHistEff() { return fEff; }
   TString getCcdbPathRes() { return fCcdbPathRes; }
   TString getCcdbPathEff() { return fCcdbPathEff; }
+  TString getCcdbPathDCA() { return fCcdbPathDCA; }
 
  private:
   bool fInitialized = false;
@@ -369,10 +454,14 @@ class MomentumSmearer
   TString fResPhiNegHistName;
   TString fEffFileName;
   TString fEffHistName;
+  TString fDCAFileName;
+  TString fDCAHistName;
   TString fCcdbPathRes;
   TString fCcdbPathEff;
+  TString fCcdbPathDCA;
   int fEffType = 0;
   int fResType = 0;
+  int fDCAType = 0;
   TH2F* fResoPt;
   TH2F* fResoEta;
   TH2F* fResoPhi_Pos;
@@ -382,6 +471,8 @@ class MomentumSmearer
   std::vector<TH1F*> fVecResoPhi_Pos;
   std::vector<TH1F*> fVecResoPhi_Neg;
   TObject* fEff;
+  TH2F* fDCA;
+  std::vector<TH1F*> fVecDCA;
   int64_t fTimestamp;
   bool fFromCcdb = false;
   Service<ccdb::BasicCCDBManager> fCcdb;
