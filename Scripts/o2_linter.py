@@ -29,7 +29,7 @@ github_mode = False  # GitHub mode
 
 def is_camel_case(name: str) -> bool:
     """forExample or ForExample"""
-    return not "_" in name and not "-" in name and not " " in name
+    return "_" not in name and "-" not in name and " " not in name
 
 
 def is_upper_camel_case(name: str) -> bool:
@@ -50,21 +50,21 @@ def is_kebab_case(name: str) -> bool:
     """for-example"""
     if not name:
         return False
-    return name.islower() and not "_" in name and not " " in name
+    return name.islower() and "_" not in name and " " not in name
 
 
 def is_snake_case(name: str) -> bool:
     """for_example"""
     if not name:
         return False
-    return name.islower() and not "-" in name and not " " in name
+    return name.islower() and "-" not in name and " " not in name
 
 
 def is_screaming_snake_case(name: str) -> bool:
     """FOR_EXAMPLE"""
     if not name:
         return False
-    return name.isupper() and not "-" in name and not " " in name
+    return name.isupper() and "-" not in name and " " not in name
 
 
 def kebab_case_to_camel_case_u(line: str) -> str:
@@ -170,7 +170,7 @@ class TestSpec(ABC):
         """Detect whether the test is explicitly disabled."""
         prefix_disable = "o2-linter: disable="
         for prefix in [prefix_comment, prefix_disable]:
-            if not prefix in line:
+            if prefix not in line:
                 return False
             line = line[(line.index(prefix) + len(prefix)) :]  # Strip away part before prefix.
         if self.name in line:
@@ -289,7 +289,7 @@ class TestStdPrefix(TestSpec):
             matches = [(it.start(), it.group()) for it in iterators]
             if not matches:
                 continue
-            if not '"' in line:  # Found a match which cannot be inside a string.
+            if '"' not in line:  # Found a match which cannot be inside a string.
                 return False
             # Ignore matches inside strings.
             for match in matches:
@@ -309,7 +309,7 @@ class TestROOT(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and not "Macros/" in path
+        return TestSpec.file_matches(self, path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         pattern = r"TMath|(U?(Int|Char|Short)|Double(32)?|Float(16)?|U?Long(64)?|Bool)_t"
@@ -327,7 +327,7 @@ class TestPi(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and not "Macros/" in path
+        return TestSpec.file_matches(self, path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         pattern = r"M_PI|TMath::(Two)?Pi"
@@ -379,13 +379,13 @@ class TestPdgDatabase(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and not "Macros/" in path
+        return TestSpec.file_matches(self, path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
-        return not "TDatabasePDG" in line
+        return "TDatabasePDG" not in line
 
 
 class TestPdgCode(TestSpec):
@@ -438,7 +438,7 @@ class TestLogging(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and not "Macros/" in path
+        return TestSpec.file_matches(self, path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         pattern = r"^([Pp]rintf\(|(std::)?cout <)"
@@ -734,7 +734,7 @@ class TestNameConstant(TestSpec):
             return True
         line = remove_comment_cpp(line)
         words = line.split()
-        if not "constexpr" in words or not "=" in words:
+        if "constexpr" not in words or "=" not in words:
             return True
         # Extract constant name.
         words = words[: words.index("=")]  # keep only words before "="
@@ -863,24 +863,24 @@ class TestNameEnum(TestNameUpperCamelCase):
     """Test names of enumerators."""
 
     keyword = "enum"
-    name = f"name/enum"
-    message = f"Use UpperCamelCase for names of enumerators and their values."
+    name = "name/enum"
+    message = "Use UpperCamelCase for names of enumerators and their values."
 
 
 class TestNameClass(TestNameUpperCamelCase):
     """Test names of classes."""
 
     keyword = "class"
-    name = f"name/class"
-    message = f"Use UpperCamelCase for names of classes."
+    name = "name/class"
+    message = "Use UpperCamelCase for names of classes."
 
 
 class TestNameStruct(TestNameUpperCamelCase):
     """Test names of structs."""
 
     keyword = "struct"
-    name = f"name/struct"
-    message = f"Use UpperCamelCase for names of structs."
+    name = "name/struct"
+    message = "Use UpperCamelCase for names of structs."
 
 
 class TestNameFileCpp(TestSpec):
@@ -1021,7 +1021,7 @@ class TestNameTask(TestSpec):
                     # print(f"{i + 1}: Exiting adapt.")
                     is_inside_adapt = False
                 # Find explicit task name.
-                if not "TaskName{" in line:
+                if "TaskName{" not in line:
                     continue
                 passed = False
                 # Extract explicit task name.
@@ -1099,7 +1099,7 @@ class TestHfConstAuto(TestSpec):
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
-        return not "auto const" in line
+        return "auto const" not in line
 
 
 class TestHfNameStructClass(TestSpec):
@@ -1213,7 +1213,7 @@ class TestHfNameFileWorkflow(TestSpec):
     per_line = False
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path and not "Macros/" in path
+        return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
 
     def test_file(self, path: str, content) -> bool:
         file_name = os.path.basename(path).rstrip(".cxx")
@@ -1246,7 +1246,7 @@ class TestHfNameConfigurable(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path and not "Macros/" in path
+        return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
