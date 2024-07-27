@@ -111,10 +111,13 @@ struct lambdak0sflattenicity {
     // Histograms
     // Event selection
     rEventSelection.add("hVertexZ", "hVertexZ", {HistType::kTH1F, {vertexZAxis}});
-    rEventSelection.add("hVertexZGen", "hVertexZGen", {HistType::kTH1F, {vertexZAxis}});
     rEventSelection.add("hEventsRejected", "hEventsRejected", {HistType::kTH1F, {{11, -0.5, 10.5}}});
     rEventSelection.add("hEventsSelected", "hEventsSelected", {HistType::kTH1F, {{11, -0.5, 10.5}}});
 
+    if (doprocessGenMC) {
+      rEventSelection.add("hVertexZGen", "hVertexZGen", {HistType::kTH1F, {vertexZAxis}});
+      rEventSelection.add("hEventSelectionMCGen", "hEventSelectionMCGen", {HistType::kTH1F, {{11, -0.5, 10.5}}});
+    }
     // K0s reconstruction
     // Mass
     rKzeroShort.add("hMassK0s", "hMassK0s", {HistType::kTH1F, {K0sMassAxis}});
@@ -129,8 +132,11 @@ struct lambdak0sflattenicity {
     rKzeroShort.add("hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hMassK0spT", "hMassK0spT", {HistType::kTH2F, {{K0sMassAxis}, {ptAxis}}});
-    rKzeroShort.add("hPtK0ShortGen", "hPtK0ShortGen", {HistType::kTH1F, {ptAxis}});
 
+    if (doprocessGenMC) {
+      rKzeroShort.add("hPtK0ShortGen", "hPtK0ShortGen", {HistType::kTH1F, {ptAxis}});
+      rKzeroShort.add("K0sCounterMCGen", "K0sCounterMCGen", {HistType::kTH1F, {{10, 0, 10}}});
+    }
     // Lambda reconstruction
     // Mass
     rLambda.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {LambdaMassAxis}});
@@ -145,8 +151,11 @@ struct lambdak0sflattenicity {
     rLambda.add("hctauLambda", "hctauLambda", {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rLambda.add("h2DdecayRadiusLambda", "h2DdecayRadiusLambda", {HistType::kTH1F, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
     rLambda.add("hMassLambdapT", "hMassLambdapT", {HistType::kTH2F, {{LambdaMassAxis}, {ptAxis}}});
-    rLambda.add("hPtLambdaGen", "hPtLambdaGen", {HistType::kTH1F, {ptAxis}});
 
+    if (doprocessGenMC) {
+      rLambda.add("hPtLambdaGen", "hPtLambdaGen", {HistType::kTH1F, {ptAxis}});
+      rLambda.add("LambdaCounterMCGen", "LambdaCounterMCGen", {HistType::kTH1F, {{10, 0, 10}}});
+    }
     // AntiLambda reconstruction
     // Mass
     rAntiLambda.add("hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {AntiLambdaMassAxis}});
@@ -161,7 +170,11 @@ struct lambdak0sflattenicity {
     rAntiLambda.add("hctauAntiLambda", "hctauAntiLambda", {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rAntiLambda.add("h2DdecayRadiusAntiLambda", "h2DdecayRadiusAntiLambda", {HistType::kTH1F, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
     rAntiLambda.add("hMassAntiLambdapT", "hMassAntiLambdapT", {HistType::kTH2F, {{AntiLambdaMassAxis}, {ptAxis}}});
-    rAntiLambda.add("hPtAntiLambdaGen", "hPtAntiLambdaGen", {HistType::kTH1F, {ptAxis}});
+
+    if (doprocessGenMC) {
+      rAntiLambda.add("hPtAntiLambdaGen", "hPtAntiLambdaGen", {HistType::kTH1F, {ptAxis}});
+      rAntiLambda.add("AntiLambdaCounterMCGen", "AntiLambdaCounterMCGen", {HistType::kTH1F, {{10, 0, 10}}});
+    }
 
     rFlattenicity.add("hEv", "Ev", HistType::kTH1F, {{6, -0.5, 5.5, "index activated detector"}});
     rFlattenicity.add("hFV0amplRing1to4", "FV01to4", HistType::kTH1F, {{4000, -0.5, +49999.5, "FV0 amplitude"}});
@@ -419,38 +432,38 @@ struct lambdak0sflattenicity {
   {
     rEventSelection.fill(HIST("hEventsSelected"), 0);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      rEventSelection.fill(HIST("hEventsRejected"), 0);
+    if (collision.isInelGt0() == false) {
+      rEventSelection.fill(HIST("hEventsRejected"), 1);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 1);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      rEventSelection.fill(HIST("hEventsRejected"), 1);
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      rEventSelection.fill(HIST("hEventsRejected"), 2);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 2);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      rEventSelection.fill(HIST("hEventsRejected"), 2);
-      return false;
-    }
-    rEventSelection.fill(HIST("hEventsSelected"), 3);
-
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       rEventSelection.fill(HIST("hEventsRejected"), 3);
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 4);
+    rEventSelection.fill(HIST("hEventsSelected"), 3);
 
     if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       rEventSelection.fill(HIST("hEventsRejected"), 4);
       return false;
     }
+    rEventSelection.fill(HIST("hEventsSelected"), 4);
+
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      rEventSelection.fill(HIST("hEventsRejected"), 5);
+      return false;
+    }
     rEventSelection.fill(HIST("hEventsSelected"), 5);
 
-    if (collision.isInelGt0() == false) {
-      rEventSelection.fill(HIST("hEventsRejected"), 5);
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      rEventSelection.fill(HIST("hEventsRejected"), 6);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 6);
@@ -944,32 +957,83 @@ struct lambdak0sflattenicity {
     }
   }
 
-  Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < cutzvertex);
-  void processGenMC(soa::Filtered<aod::McCollisions>::iterator const& mcCollision,
+  // Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < cutzvertex);
+  void processGenMC(o2::aod::McCollision const& mcCollision,
                     const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions,
-                    aod::McParticles const& mcParticles)
+                    o2::aod::McParticles const& mcParticles)
   {
-    if (collisions.size() < 1) // to process generated collisions that've been reconstructed at least once
-    {
+    // if (collisions.size() < 1) // to process generated collisions that've been reconstructed at least once
+    // {
+    //   return;
+    // }
+
+    std::vector<int64_t> SelectedEvents(collisions.size());
+    int nevts = 0;
+    for (const auto& collision : collisions) {
+      if (!collision.sel8()) {
+        continue;
+      }
+      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    SelectedEvents.resize(nevts);
+
+    const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
+
+    rEventSelection.fill(HIST("hEventSelectionMCGen"), 0);
+
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
+    rEventSelection.fill(HIST("hEventSelectionMCGen"), 1); // hSelAndRecoMcCollCounter
+
+    if (abs(mcCollision.posZ()) > cutzvertex) { // 10cm
+      return;
+    }
+    rEventSelection.fill(HIST("hEventSelectionMCGen"), 2);
 
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
 
     for (const auto& mcParticle : mcParticles) {
 
       if (mcParticle.isPhysicalPrimary() && mcParticle.y() < 0.5) {
+        if (!mcParticle.has_daughters()) {
+          continue;
+        }
 
         if (mcParticle.pdgCode() == 310) {
+          rKzeroShort.fill(HIST("K0sCounterMCGen"), 0);
           rKzeroShort.fill(HIST("hPtK0ShortGen"), mcParticle.pt());
+          for (auto& mcparticleDaughter0 : mcParticle.daughters_as<aod::McParticles>()) {
+            for (auto& mcparticleDaughter1 : mcParticle.daughters_as<aod::McParticles>()) {
+              if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -211) {
+                rKzeroShort.fill(HIST("K0sCounterMCGen"), 1);
+              }
+            }
+          }
         }
 
         if (mcParticle.pdgCode() == 3122) {
+          rLambda.fill(HIST("LambdaCounterMCGen"), 0);
           rLambda.fill(HIST("hPtLambdaGen"), mcParticle.pt());
+          for (auto& mcparticleDaughter0 : mcParticle.daughters_as<aod::McParticles>()) {
+            for (auto& mcparticleDaughter1 : mcParticle.daughters_as<aod::McParticles>()) {
+              if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 2212) {
+                rLambda.fill(HIST("LambdaCounterMCGen"), 1);
+              }
+            }
+          }
         }
 
         if (mcParticle.pdgCode() == -3122) {
+          rAntiLambda.fill(HIST("AntiLambdaCounterMCGen"), 0.5);
           rAntiLambda.fill(HIST("hPtAntiLambdaGen"), mcParticle.pt());
+          for (auto& mcparticleDaughter0 : mcParticle.daughters_as<aod::McParticles>()) {
+            for (auto& mcparticleDaughter1 : mcParticle.daughters_as<aod::McParticles>()) {
+              if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -2212) {
+                rAntiLambda.fill(HIST("AntiLambdaCounterMCGen"), 1);
+              }
+            }
+          }
         }
       }
     }
