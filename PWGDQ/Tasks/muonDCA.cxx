@@ -129,7 +129,7 @@ struct muonExtrap {
       double dcax = muonTrackAtDCA.getX() - collision.posX();
       double dcay = muonTrackAtDCA.getY() - collision.posY();
       double dca = std::sqrt(dcax * dcax + dcay * dcay);
-      double pdca = muonTrackAtVertex.getP() * dca; 
+      double pdca = muonTrackAtVertex.getP() * dca;
       double xAtVtx = muonTrackAtVertex.getX();
       double yAtVtx = muonTrackAtVertex.getY();
       double zAtVtx = muonTrackAtVertex.getZ();
