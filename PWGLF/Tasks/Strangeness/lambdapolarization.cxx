@@ -112,8 +112,8 @@ struct lambdapolarization {
   Configurable<int> cfgNQvec{"cfgNQvec", 7, "The number of total Qvectors for looping over the task"};
 
   Configurable<std::string> cfgQvecDetName{"cfgQvecDetName", "FT0C", "The name of detector to be analyzed"};
-  Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "BPos", "The name of detector for reference A"};
-  Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "BNeg", "The name of detector for reference B"};
+  Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "TPCpos", "The name of detector for reference A"};
+  Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
   Configurable<bool> cfgShiftCorrDef{"cfgShiftCorrDef", false, "additional shift correction definition"};
@@ -152,9 +152,9 @@ struct lambdapolarization {
       return 2;
     } else if (name.value == "FV0A") {
       return 3;
-    } else if (name.value == "BPos") {
+    } else if (name.value == "TPCpos") {
       return 4;
-    } else if (name.value == "BNeg") {
+    } else if (name.value == "TPCneg") {
       return 5;
     } else {
       return 0;
@@ -224,7 +224,7 @@ struct lambdapolarization {
     RefBId = GetDetId(cfgQvecRefBName);
 
     if (DetId == RefAId || DetId == RefBId || RefAId == RefBId) {
-      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The BPos and BNeg will be used as reference systems");
+      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The TPCpos and TPCneg will be used as reference systems");
       DetId = 0;
       RefAId = 4;
       RefBId = 5;
@@ -368,6 +368,9 @@ struct lambdapolarization {
     QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
 
+    if (collision.qvecAmp()[DetId] < 1e-5 || collision.qvecAmp()[RefAId] < 1e-5 || collision.qvecAmp()[RefBId] < 1e-5)
+      return;
+
     if (nmode == 2) {
       histos.fill(HIST("psi2/QA/EP_Det"), centrality, TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode));
       histos.fill(HIST("psi2/QA/EP_RefA"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode));
@@ -477,7 +480,7 @@ struct lambdapolarization {
         aLambdaTag = 1;
       }
 
-      if (!LambdaTag && !aLambdaTag)
+      if (LambdaTag == aLambdaTag)
         continue;
 
       if (!SelectionV0(collision, v0))
@@ -492,6 +495,7 @@ struct lambdapolarization {
         PionVec = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
       }
       LambdaVec = ProtonVec + PionVec;
+      LambdaVec.SetM(massLambda);
 
       ROOT::Math::Boost boost{LambdaVec.BoostToCM()};
       ProtonBoostedVec = boost(ProtonVec);

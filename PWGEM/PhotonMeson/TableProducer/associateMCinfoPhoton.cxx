@@ -142,18 +142,18 @@ struct AssociateMCInfoPhoton {
 
       for (auto& mctrack : groupedMcTracks) { // store necessary information for denominator of efficiency
         if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && abs(mctrack.y()) < 0.9f && mctrack.pt() < 20.f) {
-          auto binNumber = hBinFinder->FindBin(mctrack.pt(), mctrack.y()); // caution: pack
+          auto binNumber = hBinFinder->FindBin(mctrack.pt(), abs(mctrack.y())); // caution: pack
           switch (abs(mctrack.pdgCode())) {
             case 22:
-              registry.fill(HIST("Generated/h2PtY_Gamma"), mctrack.pt(), mctrack.y());
+              registry.fill(HIST("Generated/h2PtY_Gamma"), mctrack.pt(), abs(mctrack.y()));
               genGamma[binNumber]++;
               break;
             case 111:
-              registry.fill(HIST("Generated/h2PtY_Pi0"), mctrack.pt(), mctrack.y());
+              registry.fill(HIST("Generated/h2PtY_Pi0"), mctrack.pt(), abs(mctrack.y()));
               genPi0[binNumber]++;
               break;
             case 221:
-              registry.fill(HIST("Generated/h2PtY_Eta"), mctrack.pt(), mctrack.y());
+              registry.fill(HIST("Generated/h2PtY_Eta"), mctrack.pt(), abs(mctrack.y()));
               genEta[binNumber]++;
               break;
             default:

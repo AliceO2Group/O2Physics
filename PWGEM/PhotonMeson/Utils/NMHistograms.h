@@ -21,12 +21,11 @@
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 using namespace o2::framework;
-// using namespace o2::aod::pwgem::photonmeson::photonpair;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 
 namespace o2::aod::pwgem::photonmeson::utils::nmhistogram
 {
-void addNMHistograms(HistogramRegistry* fRegistry, bool isMC, const char* pairname = "#gamma#gamma", const char* /*epdetname*/ = "")
+void addNMHistograms(HistogramRegistry* fRegistry, bool isMC, const char* pairname = "#gamma#gamma")
 {
   // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at skimming.!!
   std::vector<double> ptbins;

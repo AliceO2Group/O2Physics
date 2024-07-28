@@ -21,6 +21,7 @@
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
 
+#include "Gencentralities.h"
 #include "Index.h"
 #include "bestCollisionTable.h"
 
@@ -241,8 +242,8 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvEffBins::kSelectedPVgt0), EvEffBinLabels[static_cast<int>(EvEffBins::kSelectedPVgt0)].data());
     }
 
-    if (doprocessGenAmbiguousFT0C || doprocessGenAmbiguousFT0M || doprocessGenAmbiguousFT0Chi || doprocessGenAmbiguousFT0Mhi ||
-        doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi || doprocessGenAmbiguousExFT0C || doprocessGenAmbiguousExFT0M ||
+    if (doprocessGenAmbiguousFT0C || doprocessGenAmbiguousFT0M || doprocessGenAmbiguousFT0Cplus || doprocessGenAmbiguousFT0Mplus || doprocessGenAmbiguousFT0Chi || doprocessGenAmbiguousFT0Mhi ||
+        doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Cplus || doprocessGenFT0Mplus || doprocessGenFT0Chi || doprocessGenFT0Mhi || doprocessGenAmbiguousExFT0C || doprocessGenAmbiguousExFT0M ||
         doprocessGenExFT0C || doprocessGenExFT0M) {
       std::string effLabels{" ; N_{gen}; Z_{vtx} (cm); centrality"};
       std::vector<AxisSpec> effAxes{MultAxis, ZAxis, CentAxis};
@@ -1491,6 +1492,16 @@ struct MultiplicityCounter {
     // add generated centrality estimation
     if constexpr (hasSimCent<MC>()) {
       c_gen = mcCollision.centrality();
+    } else if constexpr (hasRecoCent<C>()) {
+      if constexpr (C::template contains<aod::CentFT0Cs>()) {
+        if constexpr (requires { mcCollision.gencentFT0C(); }) {
+          c_gen = mcCollision.gencentFT0C();
+        }
+      } else if (C::template contains<aod::CentFT0Ms>()) {
+        if constexpr (requires { mcCollision.gencentFT0M(); }) {
+          c_gen = mcCollision.gencentFT0M();
+        }
+      }
     }
 
     NrecPerCol.clear();
@@ -1523,6 +1534,11 @@ struct MultiplicityCounter {
         }
       }
     }
+    if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
+      if (std::abs(c_gen + 1) < 1e-6) {
+        c_gen = min_c_rec; // if there is no generator centrality info, fall back to reco (from the largest reco collision)
+      }
+    }
 
     for (auto& collision : collisions) {
       usedTracksIds.clear();
@@ -1533,11 +1549,7 @@ struct MultiplicityCounter {
         } else if (C::template contains<aod::CentFT0Ms>()) {
           c_rec = collision.centFT0M();
         }
-        if constexpr (hasSimCent<MC>()) {
-          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
-        } else {
-          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), min_c_rec);
-        }
+        binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
@@ -1545,11 +1557,6 @@ struct MultiplicityCounter {
         c_recPerCol.emplace_back(c_rec);
         auto z = collision.posZ();
         ++moreThanOne;
-        if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
-          if (!atLeastOne) {
-            c_gen = min_c_rec; // if there is no generator centrality info, fall back to reco (from the largest reco collision)
-          }
-        }
         atLeastOne = true;
 
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1704,6 +1711,16 @@ struct MultiplicityCounter {
     // add generated centrality estimation
     if constexpr (hasSimCent<MC>()) {
       c_gen = mcCollision.centrality();
+    } else if constexpr (hasRecoCent<C>()) {
+      if constexpr (C::template contains<aod::CentFT0Cs>()) {
+        if constexpr (requires { mcCollision.gencentFT0C(); }) {
+          c_gen = mcCollision.gencentFT0C();
+        }
+      } else if (C::template contains<aod::CentFT0Ms>()) {
+        if constexpr (requires { mcCollision.gencentFT0M(); }) {
+          c_gen = mcCollision.gencentFT0M();
+        }
+      }
     }
 
     bool atLeastOne = false;
@@ -1737,6 +1754,12 @@ struct MultiplicityCounter {
       }
     }
 
+    if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
+      if (std::abs(c_gen + 1) < 1e-6) {
+        c_gen = min_c_rec; // if there is no generator centrality info, fall back to reco (from the largest reco collision)
+      }
+    }
+
     for (auto& collision : collisions) {
       usedTracksIds.clear();
       float c_rec = -1;
@@ -1746,11 +1769,7 @@ struct MultiplicityCounter {
         } else if (C::template contains<aod::CentFT0Ms>()) {
           c_rec = collision.centFT0M();
         }
-        if constexpr (hasSimCent<MC>()) {
-          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
-        } else {
-          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), min_c_rec);
-        }
+        binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
@@ -1758,11 +1777,6 @@ struct MultiplicityCounter {
         c_recPerCol.emplace_back(c_rec);
         auto z = collision.posZ();
         ++moreThanOne;
-        if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
-          if (!atLeastOne) {
-            c_gen = min_c_rec; // if there is no generator centrality info, fall back to reco (from the largest reco collision)
-          }
-        }
         atLeastOne = true;
 
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1967,6 +1981,26 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0C, "Process generator-level info (FT0C centrality) w/o ambiguous", false);
 
+  void processGenAmbiguousFT0Cplus(
+    soa::Join<MC, aod::GenCents>::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneralAmbiguous<soa::Join<MC, aod::GenCents>, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousFT0Cplus, "Process generator-level info (FT0C centrality + gen level)", false);
+
+  void processGenFT0Cplus(
+    soa::Join<MC, aod::GenCents>::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneral<soa::Join<MC, aod::GenCents>, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Cplus, "Process generator-level info (FT0C centrality + gen level) w/o ambiguous", false);
+
   void processGenAmbiguousExFT0C(
     MCex::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
@@ -2006,6 +2040,26 @@ struct MultiplicityCounter {
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0M, "Process generator-level info (FT0M centrality) w/o ambiguous", false);
+
+  void processGenAmbiguousFT0Mplus(
+    soa::Join<MC, aod::GenCents>::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneralAmbiguous<soa::Join<MC, aod::GenCents>, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousFT0Mplus, "Process generator-level info (FT0M centrality + gen level)", false);
+
+  void processGenFT0Mplus(
+    soa::Join<MC, aod::GenCents>::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneral<soa::Join<MC, aod::GenCents>, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Mplus, "Process generator-level info (FT0M centrality + gen level) w/o ambiguous", false);
 
   void processGenAmbiguousExFT0M(
     MCex::iterator const& mcCollision,

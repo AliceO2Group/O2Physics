@@ -192,6 +192,14 @@ DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float); //!
 DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float); //!
 DECLARE_SOA_COLUMN(EnergyCommonZPA, energyCommonZPA, float); //!
 DECLARE_SOA_COLUMN(EnergyCommonZPC, energyCommonZPC, float); //!
+DECLARE_SOA_COLUMN(EnergyZNA1, energyZNA1, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNA2, energyZNA2, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNA3, energyZNA3, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNA4, energyZNA4, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNC1, energyZNC1, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNC2, energyZNC2, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNC3, energyZNC3, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNC4, energyZNC4, float);           //!
 DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);                 //!
 DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);                 //!
 DECLARE_SOA_COLUMN(TimeZPA, timeZPA, float);                 //!
@@ -204,7 +212,12 @@ DECLARE_SOA_TABLE(ReducedZdcs, "AOD", "REDUCEDZDC", //!   Event ZDC information
                   reducedzdc::TimeZNA, reducedzdc::TimeZNC,
                   reducedzdc::TimeZPA, reducedzdc::TimeZPC);
 
+DECLARE_SOA_TABLE(ReducedZdcsExtra, "AOD", "REDUCEDZDCEXTRA", //!   Event ZDC extra information
+                  reducedzdc::EnergyZNA1, reducedzdc::EnergyZNA2, reducedzdc::EnergyZNA3, reducedzdc::EnergyZNA4,
+                  reducedzdc::EnergyZNC1, reducedzdc::EnergyZNC2, reducedzdc::EnergyZNC3, reducedzdc::EnergyZNC4);
+
 using ReducedZdc = ReducedZdcs::iterator;
+using ReducedZdcExtra = ReducedZdcsExtra::iterator;
 
 namespace reducedtrack
 {
