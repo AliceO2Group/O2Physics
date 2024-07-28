@@ -101,8 +101,8 @@ struct SingleTrackQC {
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
-    Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", true, "flag to require ITS ib any hits"};
-    Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
+    Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
+    Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -176,17 +176,17 @@ struct SingleTrackQC {
       const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{e} (rad.)"};
       const AxisSpec axis_pin{{0.00, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 3.00, 4.00, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "p_{TPC inner wall} (GeV/c)"};
 
-      const AxisSpec axis_tpc_nsigma_el{100, -5.f, +5.f, "n #sigma_{e}^{TPC}"};
-      const AxisSpec axis_tpc_nsigma_mu{100, -5.f, +5.f, "n #sigma_{#mu}^{TPC}"};
-      const AxisSpec axis_tpc_nsigma_pi{100, -5.f, +5.f, "n #sigma_{#pi}^{TPC}"};
-      const AxisSpec axis_tpc_nsigma_ka{100, -5.f, +5.f, "n #sigma_{K}^{TPC}"};
-      const AxisSpec axis_tpc_nsigma_pr{100, -5.f, +5.f, "n #sigma_{p}^{TPC}"};
+      const AxisSpec axis_tpc_nsigma_el{80, -4.f, +4.f, "n #sigma_{e}^{TPC}"};
+      const AxisSpec axis_tpc_nsigma_mu{80, -4.f, +4.f, "n #sigma_{#mu}^{TPC}"};
+      const AxisSpec axis_tpc_nsigma_pi{80, -4.f, +4.f, "n #sigma_{#pi}^{TPC}"};
+      const AxisSpec axis_tpc_nsigma_ka{80, -4.f, +4.f, "n #sigma_{K}^{TPC}"};
+      const AxisSpec axis_tpc_nsigma_pr{80, -4.f, +4.f, "n #sigma_{p}^{TPC}"};
 
-      const AxisSpec axis_tof_nsigma_el{100, -5.f, +5.f, "n #sigma_{e}^{TOF}"};
-      const AxisSpec axis_tof_nsigma_mu{100, -5.f, +5.f, "n #sigma_{#mu}^{TOF}"};
-      const AxisSpec axis_tof_nsigma_pi{100, -5.f, +5.f, "n #sigma_{#pi}^{TOF}"};
-      const AxisSpec axis_tof_nsigma_ka{100, -5.f, +5.f, "n #sigma_{K}^{TOF}"};
-      const AxisSpec axis_tof_nsigma_pr{100, -5.f, +5.f, "n #sigma_{p}^{TOF}"};
+      const AxisSpec axis_tof_nsigma_el{80, -4.f, +4.f, "n #sigma_{e}^{TOF}"};
+      const AxisSpec axis_tof_nsigma_mu{80, -4.f, +4.f, "n #sigma_{#mu}^{TOF}"};
+      const AxisSpec axis_tof_nsigma_pi{80, -4.f, +4.f, "n #sigma_{#pi}^{TOF}"};
+      const AxisSpec axis_tof_nsigma_ka{80, -4.f, +4.f, "n #sigma_{K}^{TOF}"};
+      const AxisSpec axis_tof_nsigma_pr{80, -4.f, +4.f, "n #sigma_{p}^{TOF}"};
 
       // track info
       fRegistry.add("Track/positive/hs", "rec. single electron", kTHnSparseF, {axis_pt, axis_eta, axis_phi}, true);
