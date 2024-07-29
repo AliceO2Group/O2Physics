@@ -15,6 +15,7 @@
 #ifndef PWGEM_DILEPTON_UTILS_MOMENTUMSMEARER_H_
 #define PWGEM_DILEPTON_UTILS_MOMENTUMSMEARER_H_
 
+#include <vector>
 #include <TH1D.h>
 #include <TString.h>
 #include <TGrid.h>
