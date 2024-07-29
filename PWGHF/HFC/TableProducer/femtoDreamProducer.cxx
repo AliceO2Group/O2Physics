@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfFemtoDreamProducer.cxx
+/// \file femtoDreamProducer.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 
