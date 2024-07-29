@@ -20,24 +20,27 @@
 
 using o2::InteractionRecord;
 
-namespace {
-  int findBin(TH1* hist, const std::string& label) { // Find bin by label, avoiding the axis extention from the native ROOT implementation
-    for (int iBin{1}; iBin <= hist->GetNbinsX(); ++iBin) {
-      if (label == hist->GetXaxis()->GetBinLabel(iBin)) {
-        return iBin;
-      }
+namespace
+{
+int findBin(TH1* hist, const std::string& label)
+{ // Find bin by label, avoiding the axis extention from the native ROOT implementation
+  for (int iBin{1}; iBin <= hist->GetNbinsX(); ++iBin) {
+    if (label == hist->GetXaxis()->GetBinLabel(iBin)) {
+      return iBin;
     }
-    return -1;
   }
+  return -1;
 }
+} // namespace
 
-void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix) {
+void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix)
+{
   if (mRunNumberHistos == runNumber) {
     return;
   }
   mRunNumberHistos = runNumber;
   if (mSelections) {
-    mAnalysedTriggers = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "AnalysedTriggers").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX() - 2 , -0.5, mSelections->GetNbinsX() - 2.5}});
+    mAnalysedTriggers = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "AnalysedTriggers").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX() - 2, -0.5, mSelections->GetNbinsX() - 2.5}});
     for (int iBin{2}; iBin < mSelections->GetNbinsX(); ++iBin) { // Exclude first and last bins as they are total number of analysed and selected events, respectively
       mAnalysedTriggers->GetXaxis()->SetBinLabel(iBin - 1, mSelections->GetXaxis()->GetBinLabel(iBin));
     }
