@@ -342,6 +342,8 @@ struct AnalysisTrackSelection {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
   Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
+  // Track related options
+  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -439,7 +441,9 @@ struct AnalysisTrackSelection {
       filterMap = 0;
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
-      VarManager::FillTrackCollision<TTrackFillMap>(track, event);
+      if (fPropTrack) {
+        VarManager::FillTrackCollision<TTrackFillMap>(track, event);
+      }
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
