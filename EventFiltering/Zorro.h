@@ -22,7 +22,6 @@
 #include "CommonDataFormat/IRFrame.h"
 #include "Framework/HistogramRegistry.h"
 
-
 namespace o2
 {
 namespace ccdb

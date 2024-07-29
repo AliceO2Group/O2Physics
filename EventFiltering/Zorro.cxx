@@ -21,10 +21,11 @@
 
 using o2::InteractionRecord;
 
-void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, std::string prefix) {
+void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, std::string prefix)
+{
   TList* list = histRegistry.getListOfHistograms();
   if (mSelections && list->FindObject((std::to_string(mRunNumber) + "/" + prefix + "Selections").data()) == nullptr) {
-    mAnalysedTriggers = histRegistry.add<TH1>((std::to_string(mRunNumber) + "/" + prefix + "AnalysedTriggers").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX() - 2 , -0.5, mSelections->GetNbinsX() - 2.5}});
+    mAnalysedTriggers = histRegistry.add<TH1>((std::to_string(mRunNumber) + "/" + prefix + "AnalysedTriggers").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX() - 2, -0.5, mSelections->GetNbinsX() - 2.5}});
     for (int iBin{2}; iBin < mSelections->GetNbinsX(); ++iBin) { // Exclude first and last bins as they are total number of analysed and selected events, respectively
       mAnalysedTriggers->GetXaxis()->SetBinLabel(iBin - 1, mSelections->GetXaxis()->GetBinLabel(iBin));
     }
