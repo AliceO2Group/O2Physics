@@ -933,7 +933,7 @@ struct QaEfficiency {
         }
       }
     }
-   return false; // Otherwise, not considered a tertiary particle
+    return false; // Otherwise, not considered a tertiary particle
   }
   template <int pdgSign, o2::track::PID::ID id>
   void fillMCTrackHistograms(const TrackCandidatesMC::iterator& track, const bool doMakeHistograms)
