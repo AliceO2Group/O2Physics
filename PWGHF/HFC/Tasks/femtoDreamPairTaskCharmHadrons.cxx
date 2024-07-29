@@ -80,9 +80,9 @@ struct HfTaskCharmHadronsFemtoDream {
   Configurable<float> charmHadPromptBDTmax{"charmHadPromptBDTmax", 1., "Maximum prompt bdt score Charm Hadron (particle 2)"};
 
   /// General options
-  Configurable<float> CPRdeltaEtaMax{"CPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
-  Configurable<float> CPRdeltaPhiMax{"CPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<bool> CPRPlotPerRadii{"CPRPlotPerRadii", false, "Plot CPR per radii"};
+  Configurable<float> cprDeltaEtaMax{"cprDeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<float> cprDeltaPhiMax{"cprDeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
+  Configurable<bool> cprPlotPerRadii{"cprPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<bool> extendedPlots{"extendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
   Configurable<float> highkstarCut{"highkstarCut", 100000., "Set a cut for high k*, above which the pairs are rejected"};
   Configurable<bool> isMc{"isMc", false, "Set true in the case of a MonteCarlo Run"};
@@ -109,10 +109,10 @@ struct HfTaskCharmHadronsFemtoDream {
 
   /// Particle 1 (track)
   Configurable<femtodreamparticle::cutContainerType> cutBitTrack1{"cutBitTrack1", 5542474, "Particle 1 (Track) - Selection bit from cutCulator"};
-  Configurable<int> PDGCodeTrack1{"PDGCodeTrack1", 2212, "PDG code of Particle 1 (Track)"};
-  Configurable<float> PIDThresTrack1{"PIDThresTrack1", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
-  Configurable<femtodreamparticle::cutContainerType> TPCBitTrack1{"TPCBitTrack1", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
-  Configurable<femtodreamparticle::cutContainerType> TPCTOFBitTrack1{"TPCTOFBitTrack1", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
+  Configurable<int> pdgCodeTrack1{"pdgCodeTrack1", 2212, "PDG code of Particle 1 (Track)"};
+  Configurable<float> pidThresTrack1{"pidThresTrack1", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
+  Configurable<femtodreamparticle::cutContainerType> tpcBitTrack1{"tpcBitTrack1", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
+  Configurable<femtodreamparticle::cutContainerType> tpcTofBitTrack1{"tpcTofBitTrack1", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
   Configurable<float> etaTrack1Max{"etaTrack1Max", 10., "Maximum eta of partricle 1 (Track)"};
   Configurable<float> ptTrack1Max{"ptTrack1Max", 999., "Maximum pT of partricle 1 (Track)"};
   Configurable<float> etaTrack1Min{"etaTrack1Min", -10., "Minimum eta of partricle 1 (Track)"};
@@ -159,8 +159,8 @@ struct HfTaskCharmHadronsFemtoDream {
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
   /// Histogram output
-  HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry resultRegistry{"CorrelationsHF", {}, OutputObjHandlingPolicy::AnalysisObject};
+  //HistogramRegistry registry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry{"CorrelationsAndQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   /// Partition for particle 1
 
@@ -168,13 +168,13 @@ struct HfTaskCharmHadronsFemtoDream {
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) &&
-                                                 ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= PIDThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, TPCBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, TPCTOFBitTrack1));
+                                                 ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
 
   /// Partition for particle 2
   Partition<FilteredCharmCands> partitionCharmHadron = aod::fdhf::bdtBkg < charmHadBkgBDTmax && aod::fdhf::bdtFD < charmHadFdBDTmax && aod::fdhf::bdtFD > charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmHadPromptBDTmin;
   Partition<FilteredCharmMcCands> partitionMcCharmHadron = aod::fdhf::originMcRec == 1 || aod::fdhf::originMcRec == 2;
 
-  float massOne = o2::analysis::femtoDream::getMass(PDGCodeTrack1);
+  float massOne = o2::analysis::femtoDream::getMass(pdgCodeTrack1);
   float massTwo = o2::analysis::femtoDream::getMass(charmHadPDGCode);
   int8_t partSign = 0;
   int64_t processType = 0;
@@ -185,28 +185,28 @@ struct HfTaskCharmHadronsFemtoDream {
 
   void init(InitContext& /*context*/)
   {
-    eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, binmultTempFit, dummy, binpTTrack, dummy, dummy, binTempFitVarTrack, dummy, dummy, dummy, dummy, dummy, isMc, PDGCodeTrack1);
+    eventHisto.init(&registry);
+    trackHistoPartOne.init(&registry, binmultTempFit, dummy, binpTTrack, dummy, dummy, binTempFitVarTrack, dummy, dummy, dummy, dummy, dummy, isMc, pdgCodeTrack1);
 
-    sameEventCont.init<true>(&resultRegistry,
+    sameEventCont.init<true>(&registry,
                              binkstar, binpT, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
                              bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
                              isMc, use4D, extendedPlots,
                              highkstarCut,
                              smearingByOrigin, binInvMass);
 
-    sameEventCont.setPDGCodes(PDGCodeTrack1, charmHadPDGCode);
-    mixedEventCont.init<true>(&resultRegistry,
+    sameEventCont.setPDGCodes(pdgCodeTrack1, charmHadPDGCode);
+    mixedEventCont.init<true>(&registry,
                               binkstar, binpT, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
                               bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
                               isMc, use4D, extendedPlots,
                               highkstarCut,
                               smearingByOrigin, binInvMass);
 
-    mixedEventCont.setPDGCodes(PDGCodeTrack1, charmHadPDGCode);
-    pairCleaner.init(&qaRegistry);
+    mixedEventCont.setPDGCodes(pdgCodeTrack1, charmHadPDGCode);
+    pairCleaner.init(&registry);
     if (useCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, CPRdeltaPhiMax.value, CPRdeltaEtaMax.value, CPRPlotPerRadii.value);
+      pairCloseRejection.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value);
     }
   }
 
@@ -376,7 +376,9 @@ struct HfTaskCharmHadronsFemtoDream {
     }
   }
 
-  void processSameEvent(FilteredColision const& col, FilteredFDParticles const& parts, FilteredCharmCands const&)
+  void processSameEvent(FilteredColision const& col,
+                        FilteredFDParticles const& parts,
+                        FilteredCharmCands const&)
   {
     eventHisto.fillQA(col);
     auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -385,7 +387,9 @@ struct HfTaskCharmHadronsFemtoDream {
   }
   PROCESS_SWITCH(HfTaskCharmHadronsFemtoDream, processSameEvent, "Enable processing same event", false);
 
-  void processMixedEvent(FilteredColisions const& cols, FilteredFDParticles const& parts, FilteredCharmCands const&)
+  void processMixedEvent(FilteredColisions const& cols,
+                         FilteredFDParticles const& parts,
+                         FilteredCharmCands const&)
   {
     switch (mixingPolicy.value) {
       case femtodreamcollision::kMult:
@@ -409,7 +413,8 @@ struct HfTaskCharmHadronsFemtoDream {
   /// \param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
   void processSameEventMc(FilteredMcColision const& col,
                           FilteredFDMcParts const& parts,
-                          o2::aod::FDMCParticles const&, FilteredCharmMcCands const&)
+                          o2::aod::FDMCParticles const&,
+                          FilteredCharmMcCands const&)
   {
     auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceMcCharmHad = partitionMcCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -425,7 +430,10 @@ struct HfTaskCharmHadronsFemtoDream {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// @param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMc(FilteredMcColisions const& cols, FilteredFDMcParts const& parts, o2::aod::FDMCParticles const&, FilteredCharmMcCands const&)
+  void processMixedEventMc(FilteredMcColisions const& cols,
+                           FilteredFDMcParts const& parts,
+                           o2::aod::FDMCParticles const&, 
+                           FilteredCharmMcCands const&)
   {
     switch (mixingPolicy.value) {
       case femtodreamcollision::kMult:
