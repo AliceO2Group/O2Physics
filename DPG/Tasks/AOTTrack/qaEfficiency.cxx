@@ -930,9 +930,9 @@ struct QaEfficiency {
       for (const auto& mother : mothers) {
         if (!mother.isPhysicalPrimary() && mother.getProcess() == 4) {
           return true;
+        }
       }
     }
-  }
    return false; // Otherwise, not considered a tertiary particle
   }
   template <int pdgSign, o2::track::PID::ID id>
