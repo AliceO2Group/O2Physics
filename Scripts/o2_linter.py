@@ -1050,7 +1050,16 @@ class TestNameTask(TestSpec):
                 struct_name_from_device_name = kebab_case_to_camel_case_u(
                     device_name_from_task_name
                 )  # struct name matching the TaskName
-                if device_name_from_struct_name == device_name_from_task_name:
+                if not is_kebab_case(device_name_from_task_name):
+                    print_error(
+                        path,
+                        i + 1,
+                        self.name,
+                        f"Specified task name {task_name} produces an invalid device name "
+                        f"{device_name_from_task_name}.",
+                    )
+                    passed = False
+                elif device_name_from_struct_name == device_name_from_task_name:
                     # If the task name results in the same device name as the struct name would,
                     # TaskName is redundant and should be removed.
                     print_error(
