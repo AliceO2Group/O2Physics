@@ -569,6 +569,7 @@ class VarManager : public TObject
     kCosThetaCS,
     kPhiHE,
     kPhiCS,
+    kDeltaPhiPair2,
     kPsiPair,
     kDeltaPhiPair,
     kOpeningAngle,
@@ -2346,6 +2347,12 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
+
+  if (fgUsedVars[kDeltaPhiPair2]) {
+    double phipair2 = v1.Phi() - v2.Phi();
+    if (phipair2 > 3 * TMath::Pi()/2) values[kDeltaPhiPair2] = phipair2 - 2 * TMath::Pi();
+    if (phipair2 < - TMath::Pi()/2) values[kDeltaPhiPair2] = phipair2 + 2 * TMath::Pi();
+  }
 
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
