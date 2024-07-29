@@ -18,6 +18,8 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "Common/Core/TrackSelectorPID.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -52,6 +54,8 @@ struct HfCandidateSelectorLbToLcPi {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
   HfHelper hfHelper;
+
+  using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::pidTPCFullPi>;
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
@@ -143,7 +147,7 @@ struct HfCandidateSelectorLbToLcPi {
 
   void process(aod::HfCandLb const& hfCandLbs,
                soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&,
-               aod::Tracks const&)
+               TracksWExt const&)
   {
     for (const auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
 
@@ -159,12 +163,12 @@ struct HfCandidateSelectorLbToLcPi {
       // Lc is always index0 and pi is index1 by default
       // auto candLc = hfCandLb.prong0();
       auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      auto trackPi = hfCandLb.prong1();
+      auto trackPi = hfCandLb.prong1_as<TracksWExt>();
 
       // Check that the impact parameter resolution is not too far from the typical
-      auto track0 = candLc.prong0_as<aod::Tracks>();
-      auto track1 = candLc.prong1_as<aod::Tracks>();
-      auto track2 = candLc.prong2_as<aod::Tracks>();
+      auto track0 = candLc.prong0_as<TracksWExt>();
+      auto track1 = candLc.prong1_as<TracksWExt>();
+      auto track2 = candLc.prong2_as<TracksWExt>();
       float reso0 = candLc.errorImpactParameter0();
       float reso1 = candLc.errorImpactParameter1();
       float reso2 = candLc.errorImpactParameter2();
@@ -184,6 +188,20 @@ struct HfCandidateSelectorLbToLcPi {
         hfSelLbToLcPiCandidate(statusLb);
         // LOGF(debug, "Lb candidate selection failed at selection topology");
         continue;
+      }
+
+      // PID selection for pion
+      if (trackPi.pt() > ptPidTpcMin && trackPi.pt() < ptPidTpcMax) {
+        if (std::abs(trackPi.tpcNSigmaPi()) > nSigmaTpcMax) {
+          hfSelLbToLcPiCandidate(statusLb);
+          continue;
+        }
+      }
+      if (trackPi.pt() > ptPidTofMin && trackPi.pt() < ptPidTofMax) {
+        if (std::abs(trackPi.tofNSigmaPi()) > nSigmaTofMax) {
+          hfSelLbToLcPiCandidate(statusLb);
+          continue;
+        }
       }
 
       hfSelLbToLcPiCandidate(1);

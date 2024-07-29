@@ -89,6 +89,7 @@ struct PhotonHBT {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
+  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
@@ -100,10 +101,6 @@ struct PhotonHBT {
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
 
-  ConfigurableAxis ConfM1Bins{"ConfM1Bins", {VARIABLE_WIDTH, 0.0, 0.14, 0.5, 1.1, 2.0, 2.5}, "mass1 bins for output histograms"};
-  ConfigurableAxis ConfM2Bins{"ConfM2Bins", {VARIABLE_WIDTH, 0.0, 0.14, 0.5, 1.1, 2.0, 2.5}, "mass2 bins for output histograms"};
-  ConfigurableAxis ConfDCA1Bins{"ConfDCA1Bins", {VARIABLE_WIDTH, 0.0, 0.5, 1.0, 1.5, 2.0, 10.0}, "DCA1 bins for output histograms"};
-  ConfigurableAxis ConfDCA2Bins{"ConfDCA2Bins", {VARIABLE_WIDTH, 0.0, 0.5, 1.0, 1.5, 2.0, 10.0}, "DCA2 bins for output histograms"};
   ConfigurableAxis ConfKtBins{"ConfKtBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}, "kT bins for output histograms"};
 
   EMEventCut fEMEventCut;
@@ -139,6 +136,7 @@ struct PhotonHBT {
     Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
     Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
 
+    Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 10, "min ncluster tpc"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
@@ -152,12 +150,12 @@ struct PhotonHBT {
     std::string prefix = "dielectroncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
     Configurable<float> cfg_max_mass{"cfg_max_mass", 2.5, "max mass"}; // this is valid, because only ULS is used.
-    Configurable<float> cfg_min_pair_pt{"cfg_min_pair_pt", 0.0, "min mass"};
-    Configurable<float> cfg_max_pair_pt{"cfg_max_pair_pt", 1e+10, "max mass"};
-    Configurable<float> cfg_min_pair_y{"cfg_min_pair_y", -0.8, "min mass"};
-    Configurable<float> cfg_max_pair_y{"cfg_max_pair_y", +0.8, "max mass"};
+    Configurable<float> cfg_min_pair_pt{"cfg_min_pair_pt", 0.0, "min pair pT"};
+    Configurable<float> cfg_max_pair_pt{"cfg_max_pair_pt", 1e+10, "max pair pT"};
+    Configurable<float> cfg_min_pair_y{"cfg_min_pair_y", -0.8, "min pair rapidity"};
+    Configurable<float> cfg_max_pair_y{"cfg_max_pair_y", +0.8, "max pair rapidity"};
     Configurable<float> cfg_min_pair_dca3d{"cfg_min_pair_dca3d", 0.0, "min pair dca3d in sigma"};
-    Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 1e+10, "max pair dca3d in sigma"};
+    Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 2.0, "max pair dca3d in sigma"};
     Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
     Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
@@ -199,6 +197,13 @@ struct PhotonHBT {
     Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
   } dielectroncuts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "ggpaircut_group";
+    Configurable<bool> applydR{"applydR", false, "apply deta-dphi cut to avoid track splitting/merging"};
+    Configurable<float> cfgMinDeltaEta{"cfgMinDeltaEta", 0.f, "min. delta-eta between 2 photons"};
+    Configurable<float> cfgMinDeltaPhi{"cfgMinDeltaPhi", 0.f, "min. delta-phi between 2 photons"};
+  } ggpaircuts;
+
   ~PhotonHBT()
   {
     delete emh1;
@@ -210,6 +215,10 @@ struct PhotonHBT {
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
     used_dileptonIds.shrink_to_fit();
+
+    if (eid_bdt) {
+      delete eid_bdt;
+    }
   }
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -296,21 +305,22 @@ struct PhotonHBT {
   void addhistograms()
   {
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
+    std::string_view qvec_det_names[6] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
+    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
 
     // pair info
-    const AxisSpec axis_mass1{ConfM1Bins, "m1 (GeV/c^{2})"};
-    const AxisSpec axis_mass2{ConfM2Bins, "m2 (GeV/c^{2})"};
-    const AxisSpec axis_dca1{ConfDCA1Bins, "DCA1 (#sigma)"};
-    const AxisSpec axis_dca2{ConfDCA2Bins, "DCA2 (#sigma)"};
     const AxisSpec axis_kt{ConfKtBins, "k_{T} (GeV/c)"};
 
     const AxisSpec axis_qinv{30, 0.0, +0.3, "q_{inv} (GeV/c)"};
-    const AxisSpec axis_qout_cms{60, -0.3, +0.3, "q_{out}^{CMS} (GeV/c)"};
-    const AxisSpec axis_qside_cms{60, -0.3, +0.3, "q_{side}^{CMS} (GeV/c)"};
-    const AxisSpec axis_qlong_cms{60, -0.3, +0.3, "q_{long}^{CMS} (GeV/c)"};
-    const AxisSpec axis_qlong_lcms{60, -0.3, +0.3, "q_{long}^{LCMS} (GeV/c)"};
+    const AxisSpec axis_qabs_lcms{30, 0.0, +0.3, "|#bf{q}|^{LCMS} (GeV/c)"};
+    const AxisSpec axis_qout{60, -0.3, +0.3, "q_{out} (GeV/c)"};   // qout does not change between LAB and LCMS frame
+    const AxisSpec axis_qside{60, -0.3, +0.3, "q_{side} (GeV/c)"}; // qside does not change between LAB and LCMS frame
+    const AxisSpec axis_qlong{60, -0.3, +0.3, "q_{long} (GeV/c)"};
 
-    fRegistry.add("Pair/same/hs", "diphoton correlation", kTHnSparseD, {axis_mass1, axis_mass2, axis_dca1, axis_dca2, axis_kt, axis_qinv, axis_qout_cms, axis_qside_cms, axis_qlong_cms, axis_qlong_lcms}, true);
+    fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_kt, axis_qinv, axis_qabs_lcms}, true);
+    fRegistry.add("Pair/same/hs_3d", "diphoton correlation 3D LCMS", kTHnSparseD, {axis_kt, axis_qout, axis_qside, axis_qlong}, true);
+    fRegistry.add("Pair/same/hDeltaEtaDeltaPhi", "diphoton distance in #eta-#varphi plane;#Delta#varphi (rad);#Delta#eta", kTH2D, {{200, -0.1, +0.1}, {200, -0.1, 0.1}}, false);
     fRegistry.addClone("Pair/same/", "Pair/mix/");
   }
 
@@ -350,6 +360,8 @@ struct PhotonHBT {
     fV0PhotonCut.SetChi2PerClusterTPC(0.0, pcmcuts.cfg_max_chi2tpc);
     fV0PhotonCut.SetTPCNsigmaElRange(pcmcuts.cfg_min_TPCNsigmaEl, pcmcuts.cfg_max_TPCNsigmaEl);
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
+    fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
+
     if (pcmcuts.cfg_reject_v0_on_itsib) {
       fV0PhotonCut.SetNClustersITS(2, 4);
     } else {
@@ -381,6 +393,7 @@ struct PhotonHBT {
     }
   }
 
+  o2::ml::OnnxModel* eid_bdt = nullptr;
   void DefineDileptonCut()
   {
     fDielectronCut = DielectronCut("fDielectronCut", "fDielectronCut");
@@ -419,7 +432,7 @@ struct PhotonHBT {
     fDielectronCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
-      o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
+      eid_bdt = new o2::ml::OnnxModel();
       if (dielectroncuts.loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
         std::map<std::string, std::string> metadata;
@@ -438,7 +451,7 @@ struct PhotonHBT {
   }
 
   template <int ev_id, typename TCollision>
-  void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float dca1, const float dca2)
+  void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2)
   {
     // if constexpr (ev_id == 1 && pairtype == ggHBTPairType::kEEEE) {
     //   if (t1.has_ambiguousElectrons() && t2.has_ambiguousElectrons()) {
@@ -458,14 +471,12 @@ struct PhotonHBT {
     ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
     float qinv = -q12.M();
     float kt = k12.Pt();
-    float qlong_cms = q12.Pz();
 
-    ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
+    // ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
     ROOT::Math::XYZVector uv_out(k12.Px() / k12.Pt(), k12.Py() / k12.Pt(), 0); // unit vector for out. i.e. parallel to kt
     ROOT::Math::XYZVector uv_long(0, 0, 1);                                    // unit vector for long, beam axis
     ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long);                     // unit vector for side
-    float qout_cms = q_3d.Dot(uv_out);
-    float qside_cms = q_3d.Dot(uv_side);
+    // float qlong_lab = q_3d.Dot(uv_long);
 
     // longitudinally co-moving system (LCMS)
     ROOT::Math::PxPyPzEVector v1_cartesian(v1.Px(), v1.Py(), v1.Pz(), v1.E());
@@ -474,17 +485,32 @@ struct PhotonHBT {
     float beta_z = (v1 + v2).Pz() / (v1 + v2).E();
     ROOT::Math::Boost bst_z(0, 0, -beta_z); // Boost supports only PxPyPzEVector
     ROOT::Math::PxPyPzEVector q12_lcms = bst_z(q12_cartesian);
-    float qlong_lcms = q12_lcms.Pz();
+    ROOT::Math::XYZVector q_3d_lcms = q12_lcms.Vect(); // 3D q vector in LCMS
+    float qout_lcms = q_3d_lcms.Dot(uv_out);
+    float qside_lcms = q_3d_lcms.Dot(uv_side);
+    float qlong_lcms = q_3d_lcms.Dot(uv_long);
+    float qabs_lcms = q_3d_lcms.R();
 
     // ROOT::Math::PxPyPzEVector v1_lcms_cartesian = bst_z(v1_cartesian);
     // ROOT::Math::PxPyPzEVector v2_lcms_cartesian = bst_z(v2_cartesian);
     // ROOT::Math::PxPyPzEVector q12_lcms_cartesian = bst_z(q12_cartesian);
-    // LOGF(info, "q12.Pz() = %f, q12_cartesian.Pz() = %f",q12.Pz(), q12_cartesian.Pz());
-    // LOGF(info, "v1.Pz() = %f, v2.Pz() = %f",v1.Pz(), v2.Pz());
-    // LOGF(info, "v1_lcms_cartesian.Pz() = %f, v2_lcms_cartesian.Pz() = %f",v1_lcms_cartesian.Pz(), v2_lcms_cartesian.Pz());
+    // LOGF(info, "q12.Pz() = %f, q12_cartesian.Pz() = %f", q12.Pz(), q12_cartesian.Pz());
+    // LOGF(info, "v1.Pz() = %f, v2.Pz() = %f", v1.Pz(), v2.Pz());
+    // LOGF(info, "v1_lcms_cartesian.Pz() = %f, v2_lcms_cartesian.Pz() = %f", v1_lcms_cartesian.Pz(), v2_lcms_cartesian.Pz());
     // LOGF(info, "q12_lcms_cartesian.Pz() = %f", q12_lcms_cartesian.Pz());
+    // LOGF(info, "q_3d_lcms.Dot(uv_out) = %f, q_3d_lcms.Dot(uv_side) = %f, q_3d.Dot(uv_out) = %f, q_3d.Dot(uv_side) = %f", q_3d_lcms.Dot(uv_out), q_3d_lcms.Dot(uv_side), q_3d.Dot(uv_out), q_3d.Dot(uv_side));
+    // LOGF(info, "q12_lcms.Pz() = %f, q_3d_lcms.Dot(uv_long) = %f", q12_lcms.Pz(), q_3d_lcms.Dot(uv_long));
+    // ROOT::Math::PxPyPzEVector q12_lcms_tmp = bst_z(v1_cartesian) - bst_z(v2_cartesian);
+    // LOGF(info, "q12_lcms.Px() = %f, q12_lcms.Py() = %f, q12_lcms.Pz() = %f, q12_lcms_tmp.Px() = %f, q12_lcms_tmp.Py() = %f, q12_lcms_tmp.Pz() = %f", q12_lcms.Px(), q12_lcms.Py(), q12_lcms.Pz(), q12_lcms_tmp.Px(), q12_lcms_tmp.Py(), q12_lcms_tmp.Pz());
+    // float qabs_lcms_tmp = q12_lcms.P();
+    // LOGF(info, "qabs_lcms = %f, qabs_lcms_tmp = %f", qabs_lcms, qabs_lcms_tmp);
 
-    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs"), v1.M(), v2.M(), dca1, dca2, kt, qinv, qout_cms, qside_cms, qlong_cms, qlong_lcms);
+    float deta = v1.Eta() - v2.Eta();
+    float dphi = v1.Phi() - v2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hDeltaEtaDeltaPhi"), dphi, deta);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), kt, qinv, qabs_lcms);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), kt, qout_lcms, qside_lcms, qlong_lcms);
   }
 
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
@@ -497,14 +523,18 @@ struct PhotonHBT {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
+      const float eventplanes_2_for_mix[6] = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg()};
+      float ep2 = eventplanes_2_for_mix[cfgEP2Estimator_for_Mix];
+      fRegistry.fill(HIST("Event/before/hEP2_CentFT0C_forMix"), collision.centFT0C(), ep2);
 
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
+      fRegistry.fill(HIST("Event/after/hEP2_CentFT0C_forMix"), collision.centFT0C(), ep2);
 
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;
       if (zbin < 0) {
@@ -521,7 +551,6 @@ struct PhotonHBT {
         centbin = static_cast<int>(cent_bin_edges.size()) - 2;
       }
 
-      float ep2 = collision.ep2btot();
       int epbin = lower_bound(ep_bin_edges.begin(), ep_bin_edges.end(), ep2) - ep_bin_edges.begin() - 1;
       if (epbin < 0) {
         epbin = 0;
@@ -559,7 +588,13 @@ struct PhotonHBT {
 
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-          fillPairHistogram<0>(collision, v1, v2, 0.0, 0.0);
+          float deta = v1.Eta() - v2.Eta();
+          float dphi = v1.Phi() - v2.Phi();
+          o2::math_utils::bringToPMPi(dphi);
+          if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+            continue;
+          }
+          fillPairHistogram<0>(collision, v1, v2);
           ndiphoton++;
 
           std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
@@ -634,7 +669,13 @@ struct PhotonHBT {
 
             std::pair pair_tmp = std::make_pair(std::make_pair(pos1.trackId(), ele1.trackId()), std::make_pair(pos2.trackId(), ele2.trackId()));
             if (std::find(used_pairs_per_collision.begin(), used_pairs_per_collision.end(), pair_tmp) == used_pairs_per_collision.end()) {
-              fillPairHistogram<0>(collision, v1_ee, v2_ee, dca1_3d, dca2_3d);
+              float deta = v1_ee.Eta() - v2_ee.Eta();
+              float dphi = v1_ee.Phi() - v2_ee.Phi();
+              o2::math_utils::bringToPMPi(dphi);
+              if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+              fillPairHistogram<0>(collision, v1_ee, v2_ee);
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.first, pair_tmp.second));
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.second, pair_tmp.first));
               ndiphoton++;
@@ -699,7 +740,13 @@ struct PhotonHBT {
             ROOT::Math::PtEtaPhiMVector v_pos2(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v2_ee = v_pos2 + v_ele2;
-            fillPairHistogram<0>(collision, v1_gamma, v2_ee, 0.0, dca2_3d);
+            float deta = v1_gamma.Eta() - v2_ee.Eta();
+            float dphi = v1_gamma.Phi() - v2_ee.Phi();
+            o2::math_utils::bringToPMPi(dphi);
+            if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              continue;
+            }
+            fillPairHistogram<0>(collision, v1_gamma, v2_ee);
             ndiphoton++;
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
             std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
@@ -745,7 +792,13 @@ struct PhotonHBT {
             for (auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-              fillPairHistogram<1>(collision, v1, v2, 0.0, 0.0);
+              float deta = v1.Eta() - v2.Eta();
+              float dphi = v1.Phi() - v2.Phi();
+              o2::math_utils::bringToPMPi(dphi);
+              if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+              fillPairHistogram<1>(collision, v1, v2);
             }
           }
         } // end of loop over mixed event pool
@@ -765,7 +818,13 @@ struct PhotonHBT {
             for (auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), g1.mass());
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-              fillPairHistogram<1>(collision, v1, v2, g1.pairDca3DinSigmaOTF(), g2.pairDca3DinSigmaOTF());
+              float deta = v1.Eta() - v2.Eta();
+              float dphi = v1.Phi() - v2.Phi();
+              o2::math_utils::bringToPMPi(dphi);
+              if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+              fillPairHistogram<1>(collision, v1, v2);
             }
           }
         }                                                       // end of loop over mixed event pool
@@ -785,7 +844,13 @@ struct PhotonHBT {
             for (auto& g2 : photons2_from_event_pool) {                         // dielectron
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.0); // keep v1 for PCM
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-              fillPairHistogram<1>(collision, v1, v2, 0.0, g2.pairDca3DinSigmaOTF());
+              float deta = v1.Eta() - v2.Eta();
+              float dphi = v1.Phi() - v2.Phi();
+              o2::math_utils::bringToPMPi(dphi);
+              if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+              fillPairHistogram<1>(collision, v1, v2);
             }
           }
         } // end of loop over mixed event pool2
@@ -805,7 +870,13 @@ struct PhotonHBT {
             for (auto& g2 : photons1_from_event_pool) {                         // PCM
               ROOT::Math::PtEtaPhiMVector v1(g2.pt(), g2.eta(), g2.phi(), 0.0); // keep v1 for PCM
               ROOT::Math::PtEtaPhiMVector v2(g1.pt(), g1.eta(), g1.phi(), g1.mass());
-              fillPairHistogram<1>(collision, v1, v2, 0.0, g1.pairDca3DinSigmaOTF());
+              float deta = v1.Eta() - v2.Eta();
+              float dphi = v1.Phi() - v2.Phi();
+              o2::math_utils::bringToPMPi(dphi);
+              if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+              fillPairHistogram<1>(collision, v1, v2);
             }
           }
         } // end of loop over mixed event pool1

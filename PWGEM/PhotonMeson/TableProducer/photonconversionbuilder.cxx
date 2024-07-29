@@ -84,6 +84,7 @@ struct PhotonConversionBuilder {
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
   Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.15, "max pT for ITSonly tracks at SV"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron"};
+  Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -4.0, "min. TPC n sigma for electron"};
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
   Configurable<float> min_pt_leg_at_sv{"min_pt_leg_at_sv", 0.0, "min pT for v0 legs at SV"};                                                    // this is obsolete.
@@ -263,7 +264,7 @@ struct PhotonConversionBuilder {
       if (track.tpcNClsCrossedRows() < mincrossedrows || track.tpcChi2NCl() > maxchi2tpc) {
         return false;
       }
-      if (abs(track.tpcNSigmaEl()) > maxTPCNsigmaEl) {
+      if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
         return false;
       }
     }

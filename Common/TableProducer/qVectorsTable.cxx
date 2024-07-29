@@ -522,14 +522,14 @@ struct qVectorsTable {
       coll.centFV0A()};
     cent = centAllEstim[cfgCentEsti];
     bool IsCalibrated = true;
-    if (cent < 0. || cent > 80.) {
+    if (cent < 0. || cent > 90.) {
       cent = 110.;
       IsCalibrated = false;
     }
     for (std::size_t id = 0; id < cfgnMods->size(); id++) {
       int ind = cfgnMods->at(id);
       CalQvec(ind, coll, tracks, qvecRe, qvecIm, qvecAmp, TrkBPosLabel, TrkBNegLabel, TrkBTotLabel);
-      if (cent < 80) {
+      if (cent < 90.) {
         for (auto i{0u}; i < kBTot + 1; i++) {
           helperEP.DoRecenter(qvecRe[(kBTot + 1) * 4 * id + i * 4 + 1], qvecIm[(kBTot + 1) * 4 * id + i * 4 + 1],
                               objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));

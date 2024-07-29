@@ -226,6 +226,8 @@ struct TagTwoProngDisplacedVertices {
     Configurable<std::vector<std::string>> onnxFileNamesDzeroFromDstar{"onnxFileNamesDzeroFromDstar", std::vector<std::string>{"ModelHandler_onnx_DzeroToKPi.onnx"}, "ONNX file names for Kpi pairs from D0 <- D*+ decays"};
     Configurable<std::vector<std::string>> onnxFileNamesDzeroKaKaFromDstar{"onnxFileNamesDzeroKaKaFromDstar", std::vector<std::string>{"ModelHandler_onnx_DzeroToKK.onnx"}, "ONNX file names for KK pairs from D0 <- D*+ decays"};
     // ML cuts
+    Configurable<int> numMlClasses{"numMlClasses", 3, "Number of classes for the ML models"};
+    Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller}, "Whether to reject score values greater or smaller than the threshold"};
     Configurable<LabeledArray<double>> mlCutsPiPiFromDplus{"mlCutsPiPiFromDplus", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for pipi pairs from D+ decays"};
     Configurable<LabeledArray<double>> mlCutsKaKaFromDsOrDplus{"mlCutsKaKaFromDsOrDplus", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from Ds or D+ decays"};
     Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
@@ -320,14 +322,13 @@ struct TagTwoProngDisplacedVertices {
       registry.add<TH2>("hMassDzeroKaKaVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
     }
 
-    const std::vector<int> cutDirMl = {o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
     const std::array<LabeledArray<double>, aod::tagandprobe::TagChannels::NTagChannels> mlCuts = {mlConfig.mlCutsPiPiFromDplus, mlConfig.mlCutsKaKaFromDsOrDplus, mlConfig.mlCutsDzeroFromDstar, mlConfig.mlCutsDzeroFromDstar, mlConfig.mlCutsDzeroKaKaFromDstar};
     const std::array<std::vector<std::string>, aod::tagandprobe::TagChannels::NTagChannels> onnxFileNames = {mlConfig.onnxFileNamesPiPiFromDplus, mlConfig.onnxFileNamesKaKaFromDsOrDplus, mlConfig.onnxFileNamesDzeroFromDstar, mlConfig.onnxFileNamesDzeroFromDstar, mlConfig.onnxFileNamesDzeroKaKaFromDstar};
     const std::array<std::vector<std::string>, aod::tagandprobe::TagChannels::NTagChannels> modelPathsCcdb = {mlConfig.modelPathsCcdbPiPiFromDplus, mlConfig.modelPathsCcdbKaKaFromDsOrDplus, mlConfig.modelPathsCcdbDzeroFromDstar, mlConfig.modelPathsCcdbDzeroFromDstar, mlConfig.modelPathsCcdbDzeroKaKaFromDstar};
     applyMl = {mlConfig.applyMlPiPiFromDplus, mlConfig.applyMlKaKaFromDsOrDplus, mlConfig.applyMlDzeroFromDstar, mlConfig.applyMlDzeroFromDstar, mlConfig.applyMlDzeroKaKaFromDstar};
     for (auto iChannel{0u}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
       if (applyMl[iChannel]) {
-        mlResponse[iChannel].configure(ptBinsForTopologicalCuts[iChannel], mlCuts[iChannel], cutDirMl, 3);
+        mlResponse[iChannel].configure(ptBinsForTopologicalCuts[iChannel], mlCuts[iChannel], mlConfig.cutDirMl, mlConfig.numMlClasses);
         if (mlConfig.loadMlModelsFromCcdb) {
           mlResponse[iChannel].setModelPathsCCDB(onnxFileNames[iChannel], ccdbApi, modelPathsCcdb[iChannel], mlConfig.timestampCcdbForMlModels);
         } else {
