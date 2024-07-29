@@ -62,6 +62,7 @@ struct strangeness_tutorial {
   Configurable<bool> QAv0{"QAv0", false, "QAv0"};
   Configurable<bool> QAPID{"QAPID", false, "QAPID"};
   Configurable<bool> QAv0_daughters{"QAv0_daughters", false, "QA of v0 daughters"};
+  Configurable<bool> QAevents{"QAevents", false, "QA of events"};
   Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
   Configurable<bool> DCAv0topv{"DCAv0topv", false, "DCA V0 to PV"};
   Configurable<bool> armcut{"armcut", true, "arm cut"};
@@ -131,6 +132,8 @@ struct strangeness_tutorial {
   Configurable<float> ksMassMax{"ksMassMax", 0.55f, "Maximum mass of K0s"};
   Configurable<int> ksMassBins{"ksMassBins", 200, "Number of mass bins for K0s"};
   ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
+  ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
+  ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -173,8 +176,14 @@ struct strangeness_tutorial {
     }
 
     // Event selection
-    rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
-    rEventSelection.add("hmultiplicity", "hmultiplicity", {HistType::kTH1F, {{150, 0.0f, 150.0f}}});
+    if (QAevents) {
+      rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
+      rEventSelection.add("hmultiplicity", "multiplicity percentile distribution", {HistType::kTH1F, {{150, 0.0f, 150.0f}}});
+      rEventSelection.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      rEventSelection.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      rEventSelection.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      rEventSelection.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
+    }
 
     if (inv_mass1D) {
       hglue.add("h1glueInvMassDS", "h1glueInvMassDS", kTH1F, {glueballMassAxis});
@@ -185,14 +194,9 @@ struct strangeness_tutorial {
     hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
     hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
     hglue.add("h3glueInvMassRot", "h3glueInvMassRot", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
-
-    hglue.add("heventscheck", "heventscheck", kTH1F, {{9, 0, 9}});
-
-    // add angular distribution polarization axes
-    // histos.add("hSparseHESASameEvent", "hSparseHESASameEvent", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt,thnAxisCentrality,thnAxisPOL});
-    // histos.add("hSparsePPSASameEvent", "hSparsePPSASameEvent", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt,thnAxisCentrality,thnAxisPOL});
-    // histos.add("hSparseBASASameEvent", "hSparseBASASameEvent", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt,thnAxisCentrality,thnAxisPOL});
-    // histos.add("hSparseRndASASameEvent", "hSparseRndASASameEvent", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt,thnAxisCentrality,thnAxisPOL});
+    hglue.add("heventscheck", "heventscheck", kTH1I, {{10, 0, 10}});
+    hglue.add("htrackscheck_v0", "htrackscheck_v0", kTH1I, {{15, 0, 15}});
+    hglue.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
 
     // K0s topological/PID cuts
     if (QAv0) {
@@ -226,9 +230,10 @@ struct strangeness_tutorial {
     }
     if (QAPID) {
       rKzeroShort.add("hNSigmaPosPionK0s_before", "hNSigmaPosPionK0s_before", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
-      rKzeroShort.add("hNSigmaPosPionK0s_after", "hNSigmaPosPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+      // rKzeroShort.add("hNSigmaPosPionK0s_after", "hNSigmaPosPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
       rKzeroShort.add("hNSigmaNegPionK0s_before", "hNSigmaNegPionK0s_before", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
-      rKzeroShort.add("hNSigmaNegPionK0s_after", "hNSigmaNegPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+      // rKzeroShort.add("hNSigmaNegPionK0s_after", "hNSigmaNegPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+      rKzeroShort.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {axisPtfordEbydx, axisdEdx});
     }
     if (QAv0_daughters) {
       rKzeroShort.add("negative_pt", "Negative daughter pT", kTH1F, {ptAxis});
@@ -255,21 +260,28 @@ struct strangeness_tutorial {
   template <typename Collision>
   bool eventselection(Collision const& collision, const float& multiplicity)
   {
-    if (!collision.sel8()) {
-      return false;
-    }
+    hglue.fill(HIST("heventscheck"), 1.5);
+
     if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return false;
     }
+    hglue.fill(HIST("heventscheck"), 2.5);
+    if (!collision.sel8()) {
+      return false;
+    }
+    hglue.fill(HIST("heventscheck"), 3.5);
     if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
+    hglue.fill(HIST("heventscheck"), 4.5);
     if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
+    hglue.fill(HIST("heventscheck"), 5.5);
     if (itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
+    hglue.fill(HIST("heventscheck"), 6.5);
     // if (collision.alias_bit(kTVXinTRD)) {
     //   // TRD triggered
     //   // return 0;
@@ -278,9 +290,11 @@ struct strangeness_tutorial {
     if (additionalEvsel && multNTracksPV < fMultPVCutLow->Eval(multiplicity)) {
       return false;
     }
+    hglue.fill(HIST("heventscheck"), 7.5);
     if (additionalEvsel && multNTracksPV > fMultPVCutHigh->Eval(multiplicity)) {
       return false;
     }
+    hglue.fill(HIST("heventscheck"), 8.5);
     // if (multTrk < fMultCutLow->Eval(multiplicity))
     //  return 0;
     // if (multTrk > fMultCutHigh->Eval(multiplicity))
@@ -329,17 +343,25 @@ struct strangeness_tutorial {
       rKzeroShort.fill(HIST("mass_lambda_kshort"), candidate.mK0Short(), candidate.mLambda());
     }
 
+    hglue.fill(HIST("htrackscheck_v0"), 0.5);
+
     if (!DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
+
+    hglue.fill(HIST("htrackscheck_v0"), 1.5);
 
     if (rapidityks && TMath::Abs(candidate.yK0Short()) >= ConfKsrapidity) {
       return false;
     }
 
+    hglue.fill(HIST("htrackscheck_v0"), 2.5);
+
     if (masslambda && TMath::Abs(candidate.mLambda() - candidate.mK0Short()) >= competingcascrejlambda && TMath::Abs(candidate.mAntiLambda() - candidate.mK0Short()) >= competingcascrejlambdaanti) {
       return false;
     }
+
+    hglue.fill(HIST("htrackscheck_v0"), 3.5);
 
     // if (isStandarv0 && candidate.isStandardV0 == 0) {
     //   return false;
@@ -348,24 +370,37 @@ struct strangeness_tutorial {
     if (pT < ConfV0PtMin) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0"), 4.5);
+
     if (dcaDaughv0 > ConfV0DCADaughMax) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0"), 5.5);
+
     if (cpav0 < ConfV0CPAMin) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0"), 6.5);
+
     if (tranRad < ConfV0TranRadV0Min) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0"), 7.5);
+
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0"), 8.5);
+
     if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0"), 9.5);
+
     if (!armcut && arm < Confarmcut) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0"), 10.5);
 
     if (QAv0) {
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
@@ -381,33 +416,41 @@ struct strangeness_tutorial {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
       // tpcInnerParam is the momentum at the inner wall of TPC. So momentum of tpc vs nsigma of tpc is plotted.
       // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
-      (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
       // }
+      (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.pt(), track.tpcSignal());
     }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
     // const auto dcaXY = track.dcaXY(); // for this we need TrackDCA table
     const auto sign = track.sign();
-
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 0.5);
     if (!track.hasTPC())
       return false;
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 1.5);
     if (track.tpcNClsCrossedRows() < tpcCrossedrows)
       return false;
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 2.5);
     if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedrowsOverfcls)
       return false;
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 3.5);
 
     if (charge < 0 && sign > 0) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 4.5);
     if (charge > 0 && sign < 0) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 5.5);
     if (std::abs(eta) > ConfDaughEta) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 6.5);
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 7.5);
     // if (std::abs(dcaXY) < ConfDaughDCAMin) {
     //   return false;
     // }
@@ -415,12 +458,13 @@ struct strangeness_tutorial {
     if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
       return false;
     }
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 8.5);
 
-    if (QAPID) {
-      // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
-      (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      // }
-    }
+    // if (QAPID) {
+    //   // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
+    //   (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
+    //   // }
+    // }
 
     if (QAv0_daughters) {
       (charge == 1) ? rKzeroShort.fill(HIST("positive_pt"), track.pt()) : rKzeroShort.fill(HIST("negative_pt"), track.pt());
@@ -466,14 +510,16 @@ struct strangeness_tutorial {
       return;
     }
 
-    hglue.fill(HIST("heventscheck"), 1.5);
-
-    rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-    rEventSelection.fill(HIST("hmultiplicity"), multiplicity);
+    if (QAevents) {
+      rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+      rEventSelection.fill(HIST("hmultiplicity"), multiplicity);
+      rEventSelection.fill(HIST("multdist_FT0M"), collision.centFT0M());
+      rEventSelection.fill(HIST("multdist_FT0A"), collision.centFT0A());
+      rEventSelection.fill(HIST("multdist_FT0C"), collision.centFT0C());
+      rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
+    }
 
     for (auto& [v1, v2] : combinations(CombinationsStrictlyUpperIndexPolicy(V0s, V0s))) {
-
-      hglue.fill(HIST("heventscheck"), 2.5);
 
       if (v1.size() == 0 || v2.size() == 0) {
         continue;
@@ -497,6 +543,7 @@ struct strangeness_tutorial {
       if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
         continue;
       }
+
       double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
       double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
       double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
@@ -514,8 +561,6 @@ struct strangeness_tutorial {
       if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2)) {
         continue;
       }
-
-      hglue.fill(HIST("heventscheck"), 3.5);
 
       TLorentzVector lv1, lv2, lv3, lv4, lv5;
 
@@ -604,7 +649,6 @@ struct strangeness_tutorial {
 
   void processME(EventCandidates const& collisions, TrackCandidates const& /*tracks*/, V0TrackCandidate const& v0s)
   {
-    hglue.fill(HIST("heventscheck"), 4.5);
 
     const double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
     auto tracksTuple = std::make_tuple(v0s);
@@ -617,7 +661,6 @@ struct strangeness_tutorial {
     if (cfgMultFOTM) {
       for (auto& [c1, tracks1, c2, tracks2] : pair2) // two different centrality c1 and c2 and tracks corresponding to them
       {
-        hglue.fill(HIST("heventscheck"), 5.5);
 
         float multiplicity = 0.0f;
 
@@ -626,10 +669,8 @@ struct strangeness_tutorial {
         if (!eventselection(c1, multiplicity) || !eventselection(c2, multiplicity)) {
           continue;
         }
-        hglue.fill(HIST("heventscheck"), 6.5);
 
         for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-          hglue.fill(HIST("heventscheck"), 7.5);
 
           if (t1.size() == 0 || t2.size() == 0) {
             continue;
@@ -667,8 +708,6 @@ struct strangeness_tutorial {
           if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
             continue;
           }
-
-          hglue.fill(HIST("heventscheck"), 8.5);
 
           TLorentzVector lv1, lv2, lv3;
           lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massK0s);

@@ -513,6 +513,7 @@ struct HfCandidateCreatorDstarExpressions {
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -541,7 +542,7 @@ struct HfCandidateCreatorDstarExpressions {
   void runCreatorDstarMc(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          CCs const& collInfos,
-                         aod::McCollisions const&,
+                         aod::McCollisions const& mcCollisions,
                          BCsInfo const&)
   {
     rowsCandidateD0->bindExternalIndices(&tracks);
@@ -615,22 +616,10 @@ struct HfCandidateCreatorDstarExpressions {
       rowsMcMatchRecD0(flagD0, originD0, -1.f, 0);
     }
 
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      flagDstar = 0;
-      flagD0 = 0;
-      originDstar = 0;
-      originD0 = 0;
-      std::vector<int> idxBhadMothers{};
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
-        rowsMcMatchGenD0(flagD0, originD0, -1);
-        continue;
-      }
-
+    for (const auto& mcCollision : mcCollisions) {
+      // Slice the MC particles table to get the particles for the current MC collision
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
-      auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
       uint16_t rejectionMask{0};
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
@@ -645,35 +634,52 @@ struct HfCandidateCreatorDstarExpressions {
       }
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
-        /// at least one event selection not satisfied --> reject the gen particle
-        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
-        rowsMcMatchGenD0(flagD0, originD0, -1);
+        // at least one event selection not satisfied --> reject all particles from this collision
+        for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
+          rowsMcMatchGenDstar(0, 0, -1);
+          rowsMcMatchGenD0(0, 0, -1);
+        }
         continue;
       }
 
-      // D*± → D0(bar) π±
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2)) {
-        flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-      }
-      // D0(bar) → π± K∓
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
-        flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
-      }
+      // Match generated particles.
+      for (const auto& particle : mcParticlesPerMcColl) {
+        flagDstar = 0;
+        flagD0 = 0;
+        originDstar = 0;
+        originD0 = 0;
+        std::vector<int> idxBhadMothers{};
+        // Reject particles from background events
+        if (particle.fromBackgroundEvent() && rejectBackground) {
+          rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+          rowsMcMatchGenD0(flagD0, originD0, -1);
+          continue;
+        }
 
-      // check wether the particle is non-promt (from a B0 hadron)
-      if (flagDstar != 0) {
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-      }
-      if (flagD0 != 0) {
-        originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
-      }
+        // D*± → D0(bar) π±
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2)) {
+          flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+        }
+        // D0(bar) → π± K∓
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
+          flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
+        }
 
-      if (originDstar == RecoDecay::OriginType::NonPrompt) {
-        rowsMcMatchGenDstar(flagDstar, originDstar, idxBhadMothers[0]);
-      } else {
-        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+        // check wether the particle is non-promt (from a B0 hadron)
+        if (flagDstar != 0) {
+          originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+        }
+        if (flagD0 != 0) {
+          originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        }
+
+        if (originDstar == RecoDecay::OriginType::NonPrompt) {
+          rowsMcMatchGenDstar(flagDstar, originDstar, idxBhadMothers[0]);
+        } else {
+          rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+        }
+        rowsMcMatchGenD0(flagD0, originD0, -1.);
       }
-      rowsMcMatchGenD0(flagD0, originD0, -1.);
     }
   }
 
