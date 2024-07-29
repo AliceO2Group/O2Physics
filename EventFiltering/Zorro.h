@@ -15,6 +15,7 @@
 #define EVENTFILTERING_ZORRO_H_
 
 #include <bitset>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -43,7 +44,7 @@ class Zorro
   std::bitset<128> fetch(uint64_t bcGlobalId, uint64_t tolerance = 100);
   bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
-  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, std::string prefix = "");
+  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix = "");
 
   TH1D* getScalers() const { return mScalers; }
   TH1D* getSelections() const { return mSelections; }
@@ -58,6 +59,7 @@ class Zorro
  private:
   std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
   int mRunNumber = 0;
+  int mRunNumberHistos = 0;
   int mBCtolerance = 100;
   uint64_t mLastBCglobalId = 0;
   uint64_t mLastSelectedIdx = 0;
@@ -65,6 +67,7 @@ class Zorro
   TH1D* mSelections = nullptr;
   TH1D* mInspectedTVX = nullptr;
   std::shared_ptr<TH1> mAnalysedTriggers;
+  std::shared_ptr<TH1> mAnalysedTriggersOfInterest;
   std::bitset<128> mLastResult;
   std::vector<o2::dataformats::IRFrame> mBCranges;
   std::vector<ZorroHelper>* mZorroHelpers = nullptr;
