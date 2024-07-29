@@ -25,6 +25,7 @@ from abc import ABC
 from typing import Union
 
 github_mode = False  # GitHub mode
+prefix_disable = "o2-linter: disable="
 
 
 def is_camel_case(name: str) -> bool:
@@ -168,7 +169,6 @@ class TestSpec(ABC):
 
     def is_disabled(self, line: str, prefix_comment="//") -> bool:
         """Detect whether the test is explicitly disabled."""
-        prefix_disable = "o2-linter: disable="
         for prefix in [prefix_comment, prefix_disable]:
             if prefix not in line:
                 return False
@@ -1404,10 +1404,23 @@ def main():
             sys.exit(1)
 
     # Report global result.
+    title_result = "O2 linter result"
     if passed:
-        print("All tests passed.")
+        msg_result = "All tests passed."
+        if github_mode:
+            print(f"::notice title={title_result}::{msg_result}")
+        else:
+            print(f"{title_result}: {msg_result}")
     else:
-        print("Issues have been found.")
+        msg_result = "Issues have been found."
+        msg_disable = f"You can disable a test for a line by adding a comment with \"{prefix_disable}\"" \
+            " followed by the name of the test."
+        if github_mode:
+            print(f"::error title={title_result}::{msg_result}")
+            print(f"::notice::{msg_disable}")
+        else:
+            print(f"{title_result}: {msg_result}")
+            print(msg_disable)
         sys.exit(1)
 
 
