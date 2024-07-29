@@ -18,9 +18,10 @@
 #include <string>
 #include <vector>
 
+#include "TH1D.h"
 #include "CommonDataFormat/IRFrame.h"
+#include "Framework/HistogramRegistry.h"
 
-class TH1D;
 namespace o2
 {
 namespace ccdb
@@ -42,6 +43,12 @@ class Zorro
   std::bitset<128> fetch(uint64_t bcGlobalId, uint64_t tolerance = 100);
   bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
+  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, std::string prefix = "");
+
+  TH1D* getScalers() const { return mScalers; }
+  TH1D* getSelections() const { return mSelections; }
+  TH1D* getInspectedTVX() const { return mInspectedTVX; }
+  std::bitset<128> getLastResult() const { return mLastResult; }
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
 
   void setCCDBpath(std::string path) { mBaseCCDBPath = path; }
@@ -57,6 +64,8 @@ class Zorro
   TH1D* mScalers = nullptr;
   TH1D* mSelections = nullptr;
   TH1D* mInspectedTVX = nullptr;
+  std::shared_ptr<TH1> mAnalysedTriggers;
+  std::bitset<128> mLastResult;
   std::vector<o2::dataformats::IRFrame> mBCranges;
   std::vector<ZorroHelper>* mZorroHelpers = nullptr;
   std::vector<std::string> mTOIs;
