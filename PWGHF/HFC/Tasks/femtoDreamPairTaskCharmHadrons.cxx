@@ -431,7 +431,7 @@ struct HfTaskCharmHadronsFemtoDream {
   /// @param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMc(FilteredMcColisions const& cols,
                            FilteredFDMcParts const& parts,
-                           o2::aod::FDMCParticles const&, 
+                           o2::aod::FDMCParticles const&,
                            FilteredCharmMcCands const&)
   {
     switch (mixingPolicy.value) {
