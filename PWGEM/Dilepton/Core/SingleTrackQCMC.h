@@ -179,19 +179,6 @@ struct SingleTrackQCMC {
       const AxisSpec axis_eta{20, -1.0, +1.0, "#eta_{e}"};
       const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{e} (rad.)"};
       const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true charge"};
-      const AxisSpec axis_pin{{0.00, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 3.00, 4.00, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "p_{TPC inner wall} (GeV/c)"};
-
-      const AxisSpec axis_tpc_nsigma_el{80, -4.f, +4.f, "n #sigma_{e}^{TPC}"};
-      const AxisSpec axis_tpc_nsigma_mu{80, -4.f, +4.f, "n #sigma_{#mu}^{TPC}"};
-      const AxisSpec axis_tpc_nsigma_pi{80, -4.f, +4.f, "n #sigma_{#pi}^{TPC}"};
-      const AxisSpec axis_tpc_nsigma_ka{80, -4.f, +4.f, "n #sigma_{K}^{TPC}"};
-      const AxisSpec axis_tpc_nsigma_pr{80, -4.f, +4.f, "n #sigma_{p}^{TPC}"};
-
-      const AxisSpec axis_tof_nsigma_el{80, -4.f, +4.f, "n #sigma_{e}^{TOF}"};
-      const AxisSpec axis_tof_nsigma_mu{80, -4.f, +4.f, "n #sigma_{#mu}^{TOF}"};
-      const AxisSpec axis_tof_nsigma_pi{80, -4.f, +4.f, "n #sigma_{#pi}^{TOF}"};
-      const AxisSpec axis_tof_nsigma_ka{80, -4.f, +4.f, "n #sigma_{K}^{TOF}"};
-      const AxisSpec axis_tof_nsigma_pr{80, -4.f, +4.f, "n #sigma_{p}^{TOF}"};
 
       // generated info
       fRegistry.add("Generated/lf/hs", "gen. single electron", kTHnSparseF, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
@@ -214,17 +201,11 @@ struct SingleTrackQCMC {
       fRegistry.add("Track/lf/positive/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
       fRegistry.add("Track/lf/positive/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
       fRegistry.add("Track/lf/positive/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
-      fRegistry.add("Track/lf/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-      fRegistry.add("Track/lf/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/lf/positive/hTOFbeta", "TOF #beta;p_{in} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
-      fRegistry.add("Track/lf/positive/h1overTOFbeta", "TOF 1/#beta;p_{in} (GeV/c);1/#beta", kTH2F, {{1000, 0, 10}, {1000, 0.8, 1.8}}, false);
-      fRegistry.add("Track/lf/positive/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/lf/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
       fRegistry.add("Track/lf/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
       fRegistry.add("Track/lf/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
       fRegistry.add("Track/lf/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
       fRegistry.add("Track/lf/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-      fRegistry.add("Track/lf/positive/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
       fRegistry.add("Track/lf/positive/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
       fRegistry.add("Track/lf/positive/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
       fRegistry.add("Track/lf/positive/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
@@ -237,9 +218,22 @@ struct SingleTrackQCMC {
       fRegistry.addClone("Track/lf/", "Track/c2l/");
       fRegistry.addClone("Track/lf/", "Track/b2l/");
       fRegistry.addClone("Track/lf/", "Track/b2c2l/");
-      fRegistry.add("Track/PID/positive/hsPID", "track PID", kTHnSparseF, {axis_pin, axis_eta, axis_tpc_nsigma_el, axis_tpc_nsigma_mu, axis_tpc_nsigma_pi, axis_tpc_nsigma_ka, axis_tpc_nsigma_pr, axis_tof_nsigma_el, axis_tof_nsigma_mu, axis_tof_nsigma_pi, axis_tof_nsigma_ka, axis_tof_nsigma_pr}, true);
-      fRegistry.add("Track/PID/negative/hsPID", "track PID", kTHnSparseF, {axis_pin, axis_eta, axis_tpc_nsigma_el, axis_tpc_nsigma_mu, axis_tpc_nsigma_pi, axis_tpc_nsigma_ka, axis_tpc_nsigma_pr, axis_tof_nsigma_el, axis_tof_nsigma_mu, axis_tof_nsigma_pi, axis_tof_nsigma_ka, axis_tof_nsigma_pr}, true);
 
+      fRegistry.add("Track/PID/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+      fRegistry.add("Track/PID/positive/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
+      fRegistry.add("Track/PID/positive/h1overTOFbeta", "TOF 1/#beta;p_{pv} (GeV/c);1/#beta", kTH2F, {{1000, 0, 10}, {500, 0.8, 1.8}}, false);
+      fRegistry.add("Track/PID/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {32, 0, 16}}, false);
+      fRegistry.add("Track/PID/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.add("Track/PID/positive/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {80, -4, +4}}, false);
+      fRegistry.addClone("Track/PID/positive/", "Track/PID/negative/");
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       const AxisSpec axis_pt{ConfPteBins, "p_{T,#mu} (GeV/c)"};
       const AxisSpec axis_eta{25, -4.5, -2.0, "#eta_{#mu}"};
@@ -429,16 +423,25 @@ struct SingleTrackQCMC {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hMeanClusterSizeITS"), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTOFbeta"), track.tpcInnerParam(), track.beta());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/h1overTOFbeta"), track.tpcInnerParam(), 1. / track.beta());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
-      fRegistry.fill(HIST("Track/PID/positive/hsPID"), track.tpcInnerParam(), track.eta(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+
+      fRegistry.fill(HIST("Track/PID/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+      fRegistry.fill(HIST("Track/PID/positive/hTOFbeta"), track.p(), track.beta());
+      fRegistry.fill(HIST("Track/PID/positive/h1overTOFbeta"), track.p(), 1. / track.beta());
+      fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+
+      fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+      fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
+      fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
+      fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
+      fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
+      fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
+      fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
+      fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
     } else {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), -mctrack.pdgCode() / pdg_lepton);
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
@@ -455,16 +458,25 @@ struct SingleTrackQCMC {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hMeanClusterSizeITS"), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTOFbeta"), track.tpcInnerParam(), track.beta());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/h1overTOFbeta"), track.tpcInnerParam(), 1. / track.beta());
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
-      fRegistry.fill(HIST("Track/PID/negative/hsPID"), track.tpcInnerParam(), track.eta(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+
+      fRegistry.fill(HIST("Track/PID/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+      fRegistry.fill(HIST("Track/PID/negative/hTOFbeta"), track.p(), track.beta());
+      fRegistry.fill(HIST("Track/PID/negative/h1overTOFbeta"), track.p(), 1. / track.beta());
+      fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+
+      fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+      fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
+      fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
+      fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
+      fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
+      fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
+      fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
+      fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
     }
   }
 
