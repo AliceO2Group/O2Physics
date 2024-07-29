@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief  task for an analysis of rho photoproduction in UPCs, intended usage is with UD tables
+/// \brief  task for analysis of rho in UPCs using UD tables
 ///         includes event tagging based on ZN information, track selection, reconstruction,
-///         and also some basic stuff for phi anisotropy studies
+///         and also some basic stuff for decay phi anisotropy studies
 /// \author Jakub Juracka, jakub.juracka@cern.ch
 
 #include "Framework/AnalysisTask.h"
@@ -23,9 +23,8 @@
 #include "Common/DataModel/PIDResponse.h"
 
 #include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h" // has some useful funtions for stuff not available from the tables
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
-// ROOT headers
 #include <Math/Vector4D.h> // these should apparently be used instead of TLorentzVector
 #include <Math/Vector2D.h>
 
@@ -43,7 +42,6 @@ using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod:
 using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 
 struct upcRhoAnalysis {
-  // configurables
   double PcEtaCut = 0.9; // cut on track eta as per physics coordination recommendation
   Configurable<bool> tracksRequireTOF{"tracksRequireTOF", false, "requireTOF"};
   Configurable<double> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "tpcNSigmaPiCut"};
@@ -56,15 +54,15 @@ struct upcRhoAnalysis {
   Configurable<double> ZNtimeCut{"ZNtimeCut", 2.0, "ZNtimeCut"};
   Configurable<double> systemMassMinCut{"2systemMassMinCut", 0.5, "2systemMassMinCut"};
   Configurable<double> systemMassMaxCut{"2systemMassMaxCut", 1.1, "2systemMassMaxCut"};
-  Configurable<double> systemPtCut{"2systemPtMaxCut", 0.12, "2systemPtMaxCut"};
+  Configurable<double> systemPtCut{"2systemPtMaxCut", 0.1, "2systemPtMaxCut"};
   Configurable<double> systemYCut{"2systemYCut", 0.9, "2systemYCut"};
 
   ConfigurableAxis mAxis{"mAxis", {150, 0.0, 1.5}, "m (GeV/#it{c}^{2})"};
-  ConfigurableAxis ptAxis{"ptAxis", {500, 0.0, 5.0}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis pt2Axis{"pt2Axis", {2000, 0.0, 0.2}, "#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2})"};
+  ConfigurableAxis ptAxis{"ptAxis", {100, 0.0, 1.0}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis pt2Axis{"pt2Axis", {1000, 0.0, 0.1}, "#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2})"};
   ConfigurableAxis etaAxis{"etaAxis", {180, -0.9, 0.9}, "#eta"};
   ConfigurableAxis yAxis{"yAxis", {180, -0.9, 0.9}, "y"};
-  ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, 2.0*o2::constants::math::PI}, "#phi"};
+  ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, 2.0 * o2::constants::math::PI}, "#phi"};
   ConfigurableAxis phiAssymAxis{"phiAssymAxis", {180, 0, o2::constants::math::PI}, "#phi"};
   ConfigurableAxis nTracksAxis{"nTracksAxis", {101, -0.5, 100.5}, "N_{tracks}"};
   ConfigurableAxis tpcNSigmaPiAxis{"tpcNSigmaPiAxis", {400, -10.0, 30.0}, "TPC n#sigma_{#pi}"};
@@ -73,27 +71,27 @@ struct upcRhoAnalysis {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(o2::framework::InitContext&) {
+  void init(o2::framework::InitContext&)
+  {
     // QA //
     // collisions
     registry.add("QC/collisions/hNetCharge", ";net charge;counts", kTH1D, {{11, -5.5, 5.5}});
     registry.add("QC/collisions/hNumContributors", ";N_{contributors};counts", kTH1D, {{11, -0.5, 10.5}});
-    registry.add("QC/collisions/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1},{2000, -0.1, 0.1}});
+    registry.add("QC/collisions/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
     registry.add("QC/collisions/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
-    registry.add("QC/collisions/hZDCcommonEnergy", ";ZNA common energy;ZNC common energy;counts", kTH2D, {{250, -5.0, 20.0},{250, -5.0, 20.0}});
-    registry.add("QC/collisions/hZDCtime", ";ZNA time;ZNC time;counts", kTH2D, {{200, -10.0, 10.0},{200, -10.0, 10.0}});
+    registry.add("QC/collisions/hZDCcommonEnergy", ";ZNA common energy;ZNC common energy;counts", kTH2D, {{250, -5.0, 20.0}, {250, -5.0, 20.0}});
+    registry.add("QC/collisions/hZDCtime", ";ZNA time;ZNC time;counts", kTH2D, {{200, -10.0, 10.0}, {200, -10.0, 10.0}});
     // all tracks
     registry.add("QC/allTracks/hTpcNSigmaPi", ";TPC n#sigma_{#pi};counts", kTH1D, {tpcNSigmaPiAxis});
     registry.add("QC/allTracks/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {tofNSigmaPiAxis});
     registry.add("QC/allTracks/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {dcaAxis, dcaAxis});
-    registry.add("QC/allTracks/hTpcNsigmaPi2D", ";TPC n#sigma_{#pi^{+}};TPC n#sigma_{#pi^{-}};counts", kTH2D, {tpcNSigmaPiAxis, tpcNSigmaPiAxis});
     // tracks passing selections
     registry.add("QC/cutTracks/hTpcNSigmaPi", ";TPC n#sigma_{#pi};counts", kTH1D, {tpcNSigmaPiAxis});
     registry.add("QC/cutTracks/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {tofNSigmaPiAxis});
     registry.add("QC/cutTracks/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {dcaAxis, dcaAxis});
     registry.add("QC/cutTracks/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
-    registry.add("QC/cutTracks/hTpcNsigmaPi2D", ";TPC n#sigma_{#pi^{+}};TPC n#sigma_{#pi^{-}};counts", kTH2D, {tpcNSigmaPiAxis, tpcNSigmaPiAxis});
-    
+    registry.add("QC/cutTracks/hTpcNsigmaPi2D", ";TPC n#sigma_{#pi_{1}};TPC n#sigma_{#pi_{2}};counts", kTH2D, {tpcNSigmaPiAxis, tpcNSigmaPiAxis});
+
     // RECO HISTOS //
     // PIONS
     // no selection
@@ -124,265 +122,289 @@ struct upcRhoAnalysis {
     registry.add("reco/pions/XnXn/like-sign/hPt", ";p_{T}(#pi_{1}) (GeV/#it{c});p_{T}(#pi_{2}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
     registry.add("reco/pions/XnXn/like-sign/hEta", ";#eta(#pi_{1});#eta(#pi_{2});counts", kTH2D, {etaAxis, etaAxis});
     registry.add("reco/pions/XnXn/like-sign/hPhi", ";#phi(#pi_{1});#phi(#pi_{2});counts", kTH2D, {phiAxis, phiAxis});
-    
+
     // RHOS
     // no selection
-    registry.add("reco/system/2pi/no-selection/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/no-selection/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/no-selection/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/no-selection/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/no-selection/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/no-selection/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/no-selection/unlike-sign/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/no-selection/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/positive/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/no-selection/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/no-selection/like-sign/negative/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/no-selection/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/no-selection/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/no-selection/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/no-selection/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/no-selection/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/no-selection/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/no-selection/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/no-selection/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/no-selection/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
     // 0n0n
-    registry.add("reco/system/2pi/0n0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/0n0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/0n0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/0n0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/0n0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/0n0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/0n0n/unlike-sign/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/0n0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/positive/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/0n0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/0n0n/like-sign/negative/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/0n0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/0n0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/0n0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/0n0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/0n0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/0n0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/0n0n/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/0n0n/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/0n0n/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
     // Xn0n
-    registry.add("reco/system/2pi/Xn0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/Xn0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/Xn0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/Xn0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/Xn0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/Xn0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/Xn0n/unlike-sign/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/positive/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/Xn0n/like-sign/negative/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/Xn0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/Xn0n/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
     // XnXn
-    registry.add("reco/system/2pi/XnXn/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/XnXn/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/XnXn/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/XnXn/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/XnXn/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/XnXn/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/XnXn/unlike-sign/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/XnXn/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/positive/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/XnXn/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/XnXn/like-sign/negative/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/XnXn/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/XnXn/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/XnXn/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/XnXn/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/XnXn/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/XnXn/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/XnXn/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/XnXn/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/raw/XnXn/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
 
     // SELECTED RHOS
     // no selection
-    registry.add("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
     // 0n0n
-    registry.add("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
     // Xn0n
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
     // XnXn
-    registry.add("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPhiAssym", ";#phi;counts", kTH1D, {phiAssymAxis});
-    registry.add("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPtPhiProjection", ";p_{T}cos#phi;p_{T}sin#phi;counts", kTH2D, {{500, -0.25, 0.25},{250, 0.0, 0.25}});
-    
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAssymAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAssymAxis});
+
     // 4PI AND 6PI SYSTEM
     registry.add("reco/system/4pi/net-zero/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {{800, 0.0, 8.0}});
-    registry.add("reco/system/4pi/net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/4pi/net-zero/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/4pi/net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {{500, 0.0, 5.0}});
     registry.add("reco/system/4pi/net-zero/hY", ";y;counts", kTH1D, {yAxis});
     registry.add("reco/system/4pi/net-zero/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     registry.add("reco/system/4pi/non-net-zero/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {{800, 0.0, 8.0}});
-    registry.add("reco/system/4pi/non-net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/4pi/non-net-zero/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/4pi/non-net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {{500, 0.0, 5.0}});
     registry.add("reco/system/4pi/non-net-zero/hY", ";y;counts", kTH1D, {yAxis});
     registry.add("reco/system/4pi/non-net-zero/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     registry.add("reco/system/6pi/net-zero/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {{800, 0.0, 8.0}});
-    registry.add("reco/system/6pi/net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/6pi/net-zero/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/6pi/net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {{500, 0.0, 5.0}});
     registry.add("reco/system/6pi/net-zero/hY", ";y;counts", kTH1D, {yAxis});
     registry.add("reco/system/6pi/net-zero/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     registry.add("reco/system/6pi/non-net-zero/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {{800, 0.0, 8.0}});
-    registry.add("reco/system/6pi/non-net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/6pi/non-net-zero/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/6pi/non-net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {{500, 0.0, 5.0}});
     registry.add("reco/system/6pi/non-net-zero/hY", ";y;counts", kTH1D, {yAxis});
     registry.add("reco/system/6pi/non-net-zero/hPhi", ";#phi;counts", kTH1D, {phiAxis});
   }
 
   template <typename T>
-  bool trackPassesCuts(T const& track) { // check if track passes preliminary cuts (PID done separately)
-    if (!track.isPVContributor()) return false;
-    if (!track.hasITS()) return false;
-    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > tracksDcaMaxCut) return false;
-    if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut) return false;
-    if (std::abs(track.pt()) > tracksPtMaxCut) return false;
+  bool trackPassesCuts(T const& track) // track passes preliminary cuts (PID done separately)
+  {
+    if (!track.isPVContributor())
+      return false;
+    if (!track.hasITS())
+      return false;
+    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > tracksDcaMaxCut)
+      return false;
+    if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut)
+      return false;
+    if (std::abs(track.pt()) > tracksPtMaxCut)
+      return false;
     return true;
   }
 
   template <typename T>
-  bool tracksPassPiPID(const T& cutTracks) { // check if pre-cut tracks pass PID cut (fall within n-dimensional hypersphere)
+  bool tracksPassPiPID(const T& cutTracks) // pre-cut tracks pass n-dim PID cut
+  {
     double radius = 0.0;
-    for (const auto& track : cutTracks) radius += std::pow(track.tpcNSigmaPi(), 2);
+    for (const auto& track : cutTracks)
+      radius += std::pow(track.tpcNSigmaPi(), 2);
     return radius < std::pow(tracksTpcNSigmaPiCut, 2);
   }
 
   template <typename T>
-  double tracksTotalCharge(const T& cutTracks) { // calculate total charge of selected tracks
+  double tracksTotalCharge(const T& cutTracks) // total charge of selected tracks
+  {
     double charge = 0.0;
-    for (const auto& track : cutTracks) charge += track.sign();
+    for (const auto& track : cutTracks)
+      charge += track.sign();
     return charge;
   }
 
-  template <typename T>
-  bool systemPassCuts(const T& system) { // check if system passes system cuts
-    if (system.M() < systemMassMinCut || system.M() > systemMassMaxCut) return false;
-    if (system.Pt() > systemPtCut) return false;
-    if (std::abs(system.Rapidity()) > systemYCut) return false;
+  /* template <typename T>
+  bool systemPassCuts(const T& system) // reco system passes system cuts
+  {
+    if (system.M() < systemMassMinCut || system.M() > systemMassMaxCut)
+      return false;
+    if (system.Pt() > systemPtCut)
+      return false;
+    if (std::abs(system.Rapidity()) > systemYCut)
+      return false;
     return true;
-  }
+  } */
 
-  ROOT::Math::PxPyPzMVector reconstructSystem(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs) { // reconstruct system from 4-vectors
+  ROOT::Math::PxPyPzMVector reconstructSystem(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs) // reconstruct system from 4-vectors
+  {
     ROOT::Math::PxPyPzMVector system;
-    for (const auto& track4Vec : cutTracks4Vecs) system += track4Vec;
+    for (const auto& track4Vec : cutTracks4Vecs)
+      system += track4Vec;
     return system;
   }
 
   template <typename T>
-  double getPhiAssym(const T& cutTracks) { // phi anisotropy based on STAR + ALICE papers
-    // assign the tracks randomly
+  double getPhiRandom(const T& cutTracks) // decay phi anisotropy
+  {                                       // two possible definitions of phi: randomize the tracks
     std::vector<int> indices = {0, 1};
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count(); // get time-based seed
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();    // get time-based seed
     std::shuffle(indices.begin(), indices.end(), std::default_random_engine(seed)); // shuffle indices
     // calculate phi
     ROOT::Math::XYVector pOne(cutTracks[indices[0]].px(), cutTracks[indices[0]].py());
@@ -390,11 +412,30 @@ struct upcRhoAnalysis {
     auto pPlus = pOne + pTwo;
     auto pMinus = pOne - pTwo;
     // no method for direct calculation of angle -> use dot product formula
-    double cosPhi = (pPlus.Dot(pMinus))/(std::sqrt(pPlus.Mag2()) * std::sqrt(pMinus.Mag2()));
+    double cosPhi = (pPlus.Dot(pMinus)) / (std::sqrt(pPlus.Mag2()) * std::sqrt(pMinus.Mag2()));
     return std::acos(cosPhi);
   }
 
-  void processReco(FullUDCollision const& collision, FullUDTracks const& tracks, aod::UDZdcsReduced const& zdcs) {
+  template <typename T>
+  double getPhiCharge(const T& cutTracks)
+  { // two possible definitions of phi: charge-based assignment
+    ROOT::Math::XYVector pOne, pTwo;
+    if (cutTracks[0].sign() > 0) {
+      pOne.SetXY(cutTracks[0].px(), cutTracks[0].py());
+      pTwo.SetXY(cutTracks[1].px(), cutTracks[1].py());
+    } else {
+      pOne.SetXY(cutTracks[1].px(), cutTracks[1].py());
+      pTwo.SetXY(cutTracks[0].px(), cutTracks[0].py());
+    }
+    // calculate phi
+    auto pPlus = pOne + pTwo;
+    auto pMinus = pOne - pTwo;
+    double cosPhi = (pPlus.Dot(pMinus)) / (std::sqrt(pPlus.Mag2()) * std::sqrt(pMinus.Mag2()));
+    return std::acos(cosPhi);
+  }
+
+  void processReco(FullUDCollision const& collision, FullUDTracks const& tracks)
+  {
     // QC histograms
     registry.fill(HIST("QC/collisions/hNetCharge"), collision.netCharge());
     registry.fill(HIST("QC/collisions/hNumContributors"), collision.numContrib());
@@ -403,15 +444,18 @@ struct upcRhoAnalysis {
     registry.fill(HIST("QC/collisions/hZDCcommonEnergy"), collision.energyCommonZNA(), collision.energyCommonZNC());
     registry.fill(HIST("QC/collisions/hZDCtime"), collision.timeZNA(), collision.timeZNC());
 
-    // apply some cuts on collisions
-    if (std::abs(collision.posZ()) > collisionsPosZMaxCut) return;
+    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
+      return;
     // event tagging
     bool XnXn = false, OnOn = false, XnOn = false; // note: OnOn == 0n0n
-    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() < ZNcommonEnergyCut) OnOn = true;
+    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() < ZNcommonEnergyCut)
+      OnOn = true;
     if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut &&
-        collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut) XnXn = true;
-    if ((collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut) || 
-        (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut && collision.energyCommonZNC() < ZNcommonEnergyCut)) XnOn = true;
+        collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut)
+      XnXn = true;
+    if ((collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut) ||
+        (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut && collision.energyCommonZNC() < ZNcommonEnergyCut))
+      XnOn = true;
 
     // vectors for storing selected tracks and their 4-vectors
     std::vector<decltype(tracks.begin())> cutTracks;
@@ -422,17 +466,22 @@ struct upcRhoAnalysis {
       registry.fill(HIST("QC/allTracks/hTofNSigmaPi"), track.tofNSigmaPi());
       registry.fill(HIST("QC/allTracks/hDcaXYZ"), track.dcaZ(), track.dcaXY());
 
-      if (!trackPassesCuts(track)) continue; // apply cuts
+      if (!trackPassesCuts(track))
+        continue;
       cutTracks.push_back(track);
       cutTracks4Vecs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // apriori assume pion mass
-      
+
       registry.fill(HIST("QC/cutTracks/hTpcNSigmaPi"), track.tpcNSigmaPi());
       registry.fill(HIST("QC/cutTracks/hTofNSigmaPi"), track.tofNSigmaPi());
       registry.fill(HIST("QC/cutTracks/hDcaXYZ"), track.dcaZ(), track.dcaXY());
       registry.fill(HIST("QC/cutTracks/hTpcSignalVsPt"), track.pt(), track.tpcSignal());
     }
 
-    if (!tracksPassPiPID(cutTracks)) return;
+    if (cutTracks.size() == 2)
+      registry.fill(HIST("QC/cutTracks/hTpcNsigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
+
+    if (!tracksPassPiPID(cutTracks))
+      return;
     auto system = reconstructSystem(cutTracks4Vecs); // reconstruct system from 4-vectors
 
     if (cutTracks.size() == 2) {
@@ -457,88 +506,99 @@ struct upcRhoAnalysis {
         registry.fill(HIST("reco/pions/no-selection/unlike-sign/hPt"), piPos.Pt(), piNeg.Pt());
         registry.fill(HIST("reco/pions/no-selection/unlike-sign/hEta"), piPos.Eta(), piNeg.Eta());
         registry.fill(HIST("reco/pions/no-selection/unlike-sign/hPhi"), piPos.Phi() + o2::constants::math::PI, piNeg.Phi() + o2::constants::math::PI);
-        registry.fill(HIST("reco/system/2pi/no-selection/unlike-sign/hM"), system.M());
-        registry.fill(HIST("reco/system/2pi/no-selection/unlike-sign/hPt"), system.Pt());
-        registry.fill(HIST("reco/system/2pi/no-selection/unlike-sign/hPt2"), system.Pt()*system.Pt());
-        registry.fill(HIST("reco/system/2pi/no-selection/unlike-sign/hPtVsM"), system.M(), system.Pt());
-        registry.fill(HIST("reco/system/2pi/no-selection/unlike-sign/hY"), system.Rapidity());
-        registry.fill(HIST("reco/system/2pi/no-selection/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
-        registry.fill(HIST("reco/system/2pi/no-selection/unlike-sign/hPhiAssym"), getPhiAssym(cutTracks));
-        if (systemPassCuts(system)) { // ful cuts
-          registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hM"), system.M());
-          registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPt"), system.Pt());
-          registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPtVsM"), system.M(), system.Pt());
-          registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hY"), system.Rapidity());
-          registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPhiAssym"), getPhiAssym(cutTracks));
-          registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+        registry.fill(HIST("reco/system/2pi/raw/no-selection/unlike-sign/hM"), system.M());
+        registry.fill(HIST("reco/system/2pi/raw/no-selection/unlike-sign/hPt"), system.Pt());
+        registry.fill(HIST("reco/system/2pi/raw/no-selection/unlike-sign/hPt2"), system.Pt() * system.Pt());
+        registry.fill(HIST("reco/system/2pi/raw/no-selection/unlike-sign/hPtVsM"), system.M(), system.Pt());
+        registry.fill(HIST("reco/system/2pi/raw/no-selection/unlike-sign/hY"), system.Rapidity());
+        registry.fill(HIST("reco/system/2pi/raw/no-selection/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
+        registry.fill(HIST("reco/system/2pi/raw/no-selection/unlike-sign/hPhiRandom"), getPhiRandom(cutTracks));
+        registry.fill(HIST("reco/system/2pi/raw/no-selection/unlike-sign/hPhiCharge"), getPhiCharge(cutTracks));
+        if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) { // full cuts
+          registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPt2"), system.Pt() * system.Pt());
+          if (system.Pt() < systemPtCut) {
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hM"), system.M());
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPt"), system.Pt());
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPtVsM"), system.M(), system.Pt());
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hY"), system.Rapidity());
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPhiRandom"), getPhiRandom(cutTracks));
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPhiCharge"), getPhiCharge(cutTracks));
+          }
         }
-        if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) // only m and y cut
-          registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/unlike-sign/hPt2"), system.Pt()*system.Pt());
 
         // selection on ZDC energy
         if (OnOn) {
           registry.fill(HIST("reco/pions/0n0n/unlike-sign/hPt"), piPos.Pt(), piNeg.Pt());
           registry.fill(HIST("reco/pions/0n0n/unlike-sign/hEta"), piPos.Eta(), piNeg.Eta());
           registry.fill(HIST("reco/pions/0n0n/unlike-sign/hPhi"), piPos.Phi() + o2::constants::math::PI, piNeg.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/0n0n/unlike-sign/hM"), system.M());
-          registry.fill(HIST("reco/system/2pi/0n0n/unlike-sign/hPt"), system.Pt());
-          registry.fill(HIST("reco/system/2pi/0n0n/unlike-sign/hPt2"), system.Pt()*system.Pt());
-          registry.fill(HIST("reco/system/2pi/0n0n/unlike-sign/hPtVsM"), system.M(), system.Pt());
-          registry.fill(HIST("reco/system/2pi/0n0n/unlike-sign/hY"), system.Rapidity());
-          registry.fill(HIST("reco/system/2pi/0n0n/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/0n0n/unlike-sign/hPhiAssym"), getPhiAssym(cutTracks));
-          if (systemPassCuts(system)) {
-            registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPhiAssym"), getPhiAssym(cutTracks));
-            registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/unlike-sign/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+          registry.fill(HIST("reco/system/2pi/raw/0n0n/unlike-sign/hM"), system.M());
+          registry.fill(HIST("reco/system/2pi/raw/0n0n/unlike-sign/hPt"), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/0n0n/unlike-sign/hPt2"), system.Pt() * system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/0n0n/unlike-sign/hPtVsM"), system.M(), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/0n0n/unlike-sign/hY"), system.Rapidity());
+          registry.fill(HIST("reco/system/2pi/raw/0n0n/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
+          registry.fill(HIST("reco/system/2pi/raw/0n0n/unlike-sign/hPhiRandom"), getPhiRandom(cutTracks));
+          registry.fill(HIST("reco/system/2pi/raw/0n0n/unlike-sign/hPhiCharge"), getPhiCharge(cutTracks));
+          if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+            registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPt2"), system.Pt() * system.Pt());
+            if (system.Pt() < systemPtCut) {
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hM"), system.M());
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPt"), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPtVsM"), system.M(), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hY"), system.Rapidity());
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPhiRandom"), getPhiRandom(cutTracks));
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPhiCharge"), getPhiCharge(cutTracks));
+            }
           }
         } else if (XnOn) {
           registry.fill(HIST("reco/pions/Xn0n/unlike-sign/hPt"), piPos.Pt(), piNeg.Pt());
           registry.fill(HIST("reco/pions/Xn0n/unlike-sign/hEta"), piPos.Eta(), piNeg.Eta());
           registry.fill(HIST("reco/pions/Xn0n/unlike-sign/hPhi"), piPos.Phi() + o2::constants::math::PI, piNeg.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/Xn0n/unlike-sign/hM"), system.M());
-          registry.fill(HIST("reco/system/2pi/Xn0n/unlike-sign/hPt"), system.Pt());
-          registry.fill(HIST("reco/system/2pi/Xn0n/unlike-sign/hPt2"), system.Pt()*system.Pt());
-          registry.fill(HIST("reco/system/2pi/Xn0n/unlike-sign/hPtVsM"), system.M(), system.Pt());
-          registry.fill(HIST("reco/system/2pi/Xn0n/unlike-sign/hY"), system.Rapidity());
-          registry.fill(HIST("reco/system/2pi/Xn0n/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/Xn0n/unlike-sign/hPhiAssym"), getPhiAssym(cutTracks));
-          if (systemPassCuts(system)) {
-            registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPhiAssym"), getPhiAssym(cutTracks));
-            registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/unlike-sign/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+          registry.fill(HIST("reco/system/2pi/raw/Xn0n/unlike-sign/hM"), system.M());
+          registry.fill(HIST("reco/system/2pi/raw/Xn0n/unlike-sign/hPt"), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/Xn0n/unlike-sign/hPt2"), system.Pt() * system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/Xn0n/unlike-sign/hPtVsM"), system.M(), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/Xn0n/unlike-sign/hY"), system.Rapidity());
+          registry.fill(HIST("reco/system/2pi/raw/Xn0n/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
+          registry.fill(HIST("reco/system/2pi/raw/Xn0n/unlike-sign/hPhiRandom"), getPhiRandom(cutTracks));
+          registry.fill(HIST("reco/system/2pi/raw/Xn0n/unlike-sign/hPhiCharge"), getPhiCharge(cutTracks));
+          if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+            registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPt2"), system.Pt() * system.Pt());
+            if (system.Pt() < systemPtCut) {
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hM"), system.M());
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPt"), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPtVsM"), system.M(), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hY"), system.Rapidity());
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPhiRandom"), getPhiRandom(cutTracks));
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPhiCharge"), getPhiCharge(cutTracks));
+            }
           }
         } else if (XnXn) {
           registry.fill(HIST("reco/pions/XnXn/unlike-sign/hPt"), piPos.Pt(), piNeg.Pt());
           registry.fill(HIST("reco/pions/XnXn/unlike-sign/hEta"), piPos.Eta(), piNeg.Eta());
           registry.fill(HIST("reco/pions/XnXn/unlike-sign/hPhi"), piPos.Phi() + o2::constants::math::PI, piNeg.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/XnXn/unlike-sign/hM"), system.M());
-          registry.fill(HIST("reco/system/2pi/XnXn/unlike-sign/hPt"), system.Pt());
-          registry.fill(HIST("reco/system/2pi/XnXn/unlike-sign/hPt2"), system.Pt()*system.Pt());
-          registry.fill(HIST("reco/system/2pi/XnXn/unlike-sign/hPtVsM"), system.M(), system.Pt());
-          registry.fill(HIST("reco/system/2pi/XnXn/unlike-sign/hY"), system.Rapidity());
-          registry.fill(HIST("reco/system/2pi/XnXn/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/XnXn/unlike-sign/hPhiAssym"), getPhiAssym(cutTracks));
-          if (systemPassCuts(system)) {
-            registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPhiAssym"), getPhiAssym(cutTracks));
-            registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/unlike-sign/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+          registry.fill(HIST("reco/system/2pi/raw/XnXn/unlike-sign/hM"), system.M());
+          registry.fill(HIST("reco/system/2pi/raw/XnXn/unlike-sign/hPt"), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/XnXn/unlike-sign/hPt2"), system.Pt() * system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/XnXn/unlike-sign/hPtVsM"), system.M(), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/XnXn/unlike-sign/hY"), system.Rapidity());
+          registry.fill(HIST("reco/system/2pi/raw/XnXn/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
+          registry.fill(HIST("reco/system/2pi/raw/XnXn/unlike-sign/hPhiRandom"), getPhiRandom(cutTracks));
+          registry.fill(HIST("reco/system/2pi/raw/XnXn/unlike-sign/hPhiCharge"), getPhiCharge(cutTracks));
+          if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+            registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPt2"), system.Pt() * system.Pt());
+            if (system.Pt() < systemPtCut) {
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hM"), system.M());
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPt"), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPtVsM"), system.M(), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hY"), system.Rapidity());
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPhi"), system.Phi() + o2::constants::math::PI);
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPhiRandom"), getPhiRandom(cutTracks));
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPhiCharge"), getPhiCharge(cutTracks));
+            }
           }
         }
       }
@@ -550,40 +610,46 @@ struct upcRhoAnalysis {
         registry.fill(HIST("reco/pions/no-selection/like-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
         registry.fill(HIST("reco/pions/no-selection/like-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
         if (tracksTotalCharge(cutTracks) > 0) {
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/positive/hM"), system.M());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/positive/hPt"), system.Pt());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/positive/hPt2"), system.Pt()*system.Pt());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/positive/hPtVsM"), system.M(), system.Pt());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/positive/hY"), system.Rapidity());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/positive/hPhiAssym"), getPhiAssym(cutTracks));
-          if (systemPassCuts(system)) {
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPhiAssym"), getPhiAssym(cutTracks));
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/positive/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/positive/hM"), system.M());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/positive/hPt"), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/positive/hPt2"), system.Pt() * system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/positive/hPtVsM"), system.M(), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/positive/hY"), system.Rapidity());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/positive/hPhiRandom"), getPhiRandom(cutTracks));
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/positive/hPhiCharge"), getPhiCharge(cutTracks));
+          if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hPt2"), system.Pt() * system.Pt());
+            if (system.Pt() < systemPtCut) {
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hM"), system.M());
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hPt"), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hPtVsM"), system.M(), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hY"), system.Rapidity());
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hPhiRandom"), getPhiRandom(cutTracks));
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hPhiCharge"), getPhiCharge(cutTracks));
+            }
           }
         } else {
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/negative/hM"), system.M());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/negative/hPt"), system.Pt());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/negative/hPt2"), system.Pt()*system.Pt());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/negative/hPtVsM"), system.M(), system.Pt());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/negative/hY"), system.Rapidity());
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
-          registry.fill(HIST("reco/system/2pi/no-selection/like-sign/negative/hPhiAssym"), getPhiAssym(cutTracks));
-          if (systemPassCuts(system)) {
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPhiAssym"), getPhiAssym(cutTracks));
-            registry.fill(HIST("reco/system/2pi/pass-cuts/no-selection/like-sign/negative/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/negative/hM"), system.M());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/negative/hPt"), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/negative/hPt2"), system.Pt() * system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/negative/hPtVsM"), system.M(), system.Pt());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/negative/hY"), system.Rapidity());
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/negative/hPhiRandom"), getPhiRandom(cutTracks));
+          registry.fill(HIST("reco/system/2pi/raw/no-selection/like-sign/negative/hPhiCharge"), getPhiCharge(cutTracks));
+          if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+            registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hPt2"), system.Pt() * system.Pt());
+            if (system.Pt() < systemPtCut) {
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hM"), system.M());
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hPt"), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hPtVsM"), system.M(), system.Pt());
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hY"), system.Rapidity());
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hPhiRandom"), getPhiRandom(cutTracks));
+              registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hPhiCharge"), getPhiCharge(cutTracks));
+            }
           }
         }
 
@@ -593,40 +659,46 @@ struct upcRhoAnalysis {
           registry.fill(HIST("reco/pions/0n0n/like-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
           registry.fill(HIST("reco/pions/0n0n/like-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
           if (tracksTotalCharge(cutTracks) > 0) {
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/positive/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/positive/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/positive/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/positive/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/positive/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/positive/hPhiAssym"), getPhiAssym(cutTracks));
-            if (systemPassCuts(system)) {
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hM"), system.M());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPt"), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPt2"), system.Pt()*system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPtVsM"), system.M(), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hY"), system.Rapidity());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPhiAssym"), getPhiAssym(cutTracks));
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/positive/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/positive/hM"), system.M());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/positive/hPt"), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/positive/hPt2"), system.Pt() * system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/positive/hPtVsM"), system.M(), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/positive/hY"), system.Rapidity());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/positive/hPhiRandom"), getPhiRandom(cutTracks));
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/positive/hPhiCharge"), getPhiCharge(cutTracks));
+            if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPt2"), system.Pt() * system.Pt());
+              if (system.Pt() < systemPtCut) {
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hM"), system.M());
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPt"), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPtVsM"), system.M(), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hY"), system.Rapidity());
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPhiRandom"), getPhiRandom(cutTracks));
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPhiCharge"), getPhiCharge(cutTracks));
+              }
             }
           } else {
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/negative/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/negative/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/negative/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/negative/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/negative/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/0n0n/like-sign/negative/hPhiAssym"), getPhiAssym(cutTracks));
-            if (systemPassCuts(system)) {
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hM"), system.M());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPt"), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPt2"), system.Pt()*system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPtVsM"), system.M(), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hY"), system.Rapidity());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPhiAssym"), getPhiAssym(cutTracks));
-              registry.fill(HIST("reco/system/2pi/pass-cuts/0n0n/like-sign/negative/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/negative/hM"), system.M());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/negative/hPt"), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/negative/hPt2"), system.Pt() * system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/negative/hPtVsM"), system.M(), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/negative/hY"), system.Rapidity());
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/negative/hPhiRandom"), getPhiRandom(cutTracks));
+            registry.fill(HIST("reco/system/2pi/raw/0n0n/like-sign/negative/hPhiCharge"), getPhiCharge(cutTracks));
+            if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+              registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPt2"), system.Pt() * system.Pt());
+              if (system.Pt() < systemPtCut) {
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hM"), system.M());
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPt"), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPtVsM"), system.M(), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hY"), system.Rapidity());
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPhiRandom"), getPhiRandom(cutTracks));
+                registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPhiCharge"), getPhiCharge(cutTracks));
+              }
             }
           }
         } else if (XnOn) {
@@ -634,40 +706,46 @@ struct upcRhoAnalysis {
           registry.fill(HIST("reco/pions/Xn0n/like-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
           registry.fill(HIST("reco/pions/Xn0n/like-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
           if (tracksTotalCharge(cutTracks) > 0) {
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/positive/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/positive/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/positive/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/positive/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/positive/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/positive/hPhiAssym"), getPhiAssym(cutTracks));
-            if (systemPassCuts(system)) {
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hM"), system.M());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPt"), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPt2"), system.Pt()*system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPtVsM"), system.M(), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hY"), system.Rapidity());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPhiAssym"), getPhiAssym(cutTracks));
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/positive/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/positive/hM"), system.M());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/positive/hPt"), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/positive/hPt2"), system.Pt() * system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/positive/hPtVsM"), system.M(), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/positive/hY"), system.Rapidity());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/positive/hPhiRandom"), getPhiRandom(cutTracks));
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/positive/hPhiCharge"), getPhiCharge(cutTracks));
+            if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPt2"), system.Pt() * system.Pt());
+              if (system.Pt() < systemPtCut) {
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hM"), system.M());
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPt"), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPtVsM"), system.M(), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hY"), system.Rapidity());
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhiRandom"), getPhiRandom(cutTracks));
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhiCharge"), getPhiCharge(cutTracks));
+              }
             }
           } else {
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/negative/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/negative/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/negative/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/negative/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/negative/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/Xn0n/like-sign/negative/hPhiAssym"), getPhiAssym(cutTracks));
-            if (systemPassCuts(system)) {
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hM"), system.M());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPt"), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPt2"), system.Pt()*system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPtVsM"), system.M(), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hY"), system.Rapidity());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPhiAssym"), getPhiAssym(cutTracks));
-              registry.fill(HIST("reco/system/2pi/pass-cuts/Xn0n/like-sign/negative/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/negative/hM"), system.M());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/negative/hPt"), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/negative/hPt2"), system.Pt() * system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/negative/hPtVsM"), system.M(), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/negative/hY"), system.Rapidity());
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/negative/hPhiRandom"), getPhiRandom(cutTracks));
+            registry.fill(HIST("reco/system/2pi/raw/Xn0n/like-sign/negative/hPhiCharge"), getPhiCharge(cutTracks));
+            if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+              registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPt2"), system.Pt() * system.Pt());
+              if (system.Pt() < systemPtCut) {
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hM"), system.M());
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPt"), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPtVsM"), system.M(), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hY"), system.Rapidity());
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhiRandom"), getPhiRandom(cutTracks));
+                registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhiCharge"), getPhiCharge(cutTracks));
+              }
             }
           }
         } else if (XnXn) {
@@ -675,82 +753,85 @@ struct upcRhoAnalysis {
           registry.fill(HIST("reco/pions/XnXn/like-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
           registry.fill(HIST("reco/pions/XnXn/like-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
           if (tracksTotalCharge(cutTracks) > 0) {
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/positive/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/positive/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/positive/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/positive/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/positive/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/positive/hPhiAssym"), getPhiAssym(cutTracks));
-            if (systemPassCuts(system)) {
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hM"), system.M());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPt"), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPt2"), system.Pt()*system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPtVsM"), system.M(), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hY"), system.Rapidity());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPhiAssym"), getPhiAssym(cutTracks));
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/positive/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/positive/hM"), system.M());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/positive/hPt"), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/positive/hPt2"), system.Pt() * system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/positive/hPtVsM"), system.M(), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/positive/hY"), system.Rapidity());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/positive/hPhiRandom"), getPhiRandom(cutTracks));
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/positive/hPhiCharge"), getPhiCharge(cutTracks));
+            if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPt2"), system.Pt() * system.Pt());
+              if (system.Pt() < systemPtCut) {
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hM"), system.M());
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPt"), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPtVsM"), system.M(), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hY"), system.Rapidity());
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPhi"), system.Phi() + o2::constants::math::PI);
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPhiRandom"), getPhiRandom(cutTracks));
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPhiCharge"), getPhiCharge(cutTracks));
+              }
             }
           } else {
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/negative/hM"), system.M());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/negative/hPt"), system.Pt());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/negative/hPt2"), system.Pt()*system.Pt());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/negative/hPtVsM"), system.M(), system.Pt());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/negative/hY"), system.Rapidity());
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
-            registry.fill(HIST("reco/system/2pi/XnXn/like-sign/negative/hPhiAssym"), getPhiAssym(cutTracks));
-            if (systemPassCuts(system)) {
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hM"), system.M());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPt"), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPt2"), system.Pt()*system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPtVsM"), system.M(), system.Pt());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hY"), system.Rapidity());
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPhiAssym"), getPhiAssym(cutTracks));
-              registry.fill(HIST("reco/system/2pi/pass-cuts/XnXn/like-sign/negative/hPtPhiProjection"), system.Pt()*std::cos(getPhiAssym(cutTracks)),system.Pt()*std::sin(getPhiAssym(cutTracks)));
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/negative/hM"), system.M());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/negative/hPt"), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/negative/hPt2"), system.Pt() * system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/negative/hPtVsM"), system.M(), system.Pt());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/negative/hY"), system.Rapidity());
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/negative/hPhiRandom"), getPhiRandom(cutTracks));
+            registry.fill(HIST("reco/system/2pi/raw/XnXn/like-sign/negative/hPhiCharge"), getPhiCharge(cutTracks));
+            if (system.M() > systemMassMinCut && system.M() < systemMassMaxCut && std::abs(system.Rapidity()) < systemYCut) {
+              registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPt2"), system.Pt() * system.Pt());
+              if (system.Pt() < systemPtCut) {
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hM"), system.M());
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPt"), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPtVsM"), system.M(), system.Pt());
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hY"), system.Rapidity());
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPhi"), system.Phi() + o2::constants::math::PI);
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPhiRandom"), getPhiRandom(cutTracks));
+                registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPhiCharge"), getPhiCharge(cutTracks));
+              }
             }
           }
         }
       }
     }
-
+    // 4pi system
     if (cutTracks.size() == 4) {
       if (tracksTotalCharge(cutTracks) == 0) {
         registry.fill(HIST("reco/system/4pi/net-zero/hM"), system.M());
         registry.fill(HIST("reco/system/4pi/net-zero/hPt"), system.Pt());
-        registry.fill(HIST("reco/system/4pi/net-zero/hPtVsM"), system.M(), system.Pt());
         registry.fill(HIST("reco/system/4pi/net-zero/hY"), system.Rapidity());
         registry.fill(HIST("reco/system/4pi/net-zero/hPhi"), system.Phi() + o2::constants::math::PI);
       } else {
         registry.fill(HIST("reco/system/4pi/non-net-zero/hM"), system.M());
         registry.fill(HIST("reco/system/4pi/non-net-zero/hPt"), system.Pt());
-        registry.fill(HIST("reco/system/4pi/non-net-zero/hPtVsM"), system.M(), system.Pt());
         registry.fill(HIST("reco/system/4pi/non-net-zero/hY"), system.Rapidity());
         registry.fill(HIST("reco/system/4pi/non-net-zero/hPhi"), system.Phi() + o2::constants::math::PI);
       }
     }
-
+    // 6pi system
     if (cutTracks.size() == 6) {
       if (tracksTotalCharge(cutTracks) == 0) {
         registry.fill(HIST("reco/system/6pi/net-zero/hM"), system.M());
         registry.fill(HIST("reco/system/6pi/net-zero/hPt"), system.Pt());
-        registry.fill(HIST("reco/system/6pi/net-zero/hPtVsM"), system.M(), system.Pt());
         registry.fill(HIST("reco/system/6pi/net-zero/hY"), system.Rapidity());
         registry.fill(HIST("reco/system/6pi/net-zero/hPhi"), system.Phi() + o2::constants::math::PI);
       } else {
         registry.fill(HIST("reco/system/6pi/non-net-zero/hM"), system.M());
         registry.fill(HIST("reco/system/6pi/non-net-zero/hPt"), system.Pt());
-        registry.fill(HIST("reco/system/6pi/non-net-zero/hPtVsM"), system.M(), system.Pt());
         registry.fill(HIST("reco/system/6pi/non-net-zero/hY"), system.Rapidity());
         registry.fill(HIST("reco/system/6pi/non-net-zero/hPhi"), system.Phi() + o2::constants::math::PI);
       }
     }
-  } PROCESS_SWITCH(upcRhoAnalysis, processReco, "analyse reco tracks", true);
+  }
+  PROCESS_SWITCH(upcRhoAnalysis, processReco, "analyse reco tracks", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-    o2::framework::adaptAnalysisTask<upcRhoAnalysis>(cfgc)
-  };
+    o2::framework::adaptAnalysisTask<upcRhoAnalysis>(cfgc)};
 }
