@@ -547,7 +547,7 @@ class TestWorkflowOptions(TestSpec):
             line = remove_comment_cpp(line)
             # Wait for defineDataProcessing.
             if not is_inside_define:
-                if not re.match(r"(o2::)?(framework::)?WorkflowSpec defineDataProcessing\(", line):
+                if not re.match(r"((o2::)?framework::)?WorkflowSpec defineDataProcessing\(", line):
                     continue
                 # print(f"{i + 1}: Entering define.")
                 is_inside_define = True
@@ -844,6 +844,24 @@ class TestNameNamespace(TestSpec):
         return is_snake_case(namespace_name)
 
 
+class TestNameType(TestSpec):
+    """Test names of defined types."""
+
+    name = "name/type"
+    message = "Use UpperCamelCase for names of defined types."
+    suffixes = [".h", ".cxx", ".C"]
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        if not (match := re.match(r"using (\w+) = ", line)):
+            return True
+        # Extract type name.
+        type_name = match.group(1)
+        # The actual test comes here.
+        return is_upper_camel_case(type_name)
+
+
 class TestNameUpperCamelCase(TestSpec):
     """Base class for a test of UpperCamelCase names."""
 
@@ -998,7 +1016,7 @@ class TestNameTask(TestSpec):
             line = remove_comment_cpp(line)
             # Wait for defineDataProcessing.
             if not is_inside_define:
-                if not re.match(r"(o2::)?(framework::)?WorkflowSpec defineDataProcessing\(", line):
+                if not re.match(r"((o2::)?framework::)?WorkflowSpec defineDataProcessing\(", line):
                     continue
                 # print(f"{i + 1}: Entering define.")
                 is_inside_define = True
@@ -1365,6 +1383,7 @@ def main():
         tests.append(TestNameColumn())
         tests.append(TestNameTable())
         tests.append(TestNameNamespace())
+        tests.append(TestNameType())
         tests.append(TestNameEnum())
         tests.append(TestNameClass())
         tests.append(TestNameStruct())
