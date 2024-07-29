@@ -2350,10 +2350,12 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2 = v1.Phi() - v2.Phi();
-    if (phipair2 > 3 * TMath::Pi() / 2)
+    if (phipair2 > 3 * TMath::Pi()/2) {
       values[kDeltaPhiPair2] = phipair2 - 2 * TMath::Pi();
-    if (phipair2 < -TMath::Pi() / 2)
+    }
+    if (phipair2 < - TMath::Pi()/2) {
       values[kDeltaPhiPair2] = phipair2 + 2 * TMath::Pi();
+    }
   }
 
   if (fgUsedVars[kPsiPair]) {
