@@ -52,7 +52,6 @@ struct HfCandidateSelectorLc {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // Bayesian PID
-  Configurable<bool> usePidBayes{"usePidBayes", true, "Bool to use or not the PID based on Bayesian probability cut at filtering level"};
   Configurable<double> ptPidBayesMin{"ptPidBayesMin", 0., "Lower bound of track pT for Bayesian PID"};
   Configurable<double> ptPidBayesMax{"ptPidBayesMax", 100, "Upper bound of track pT for Bayesian PID"};
   // Combined PID options
@@ -97,13 +96,20 @@ struct HfCandidateSelectorLc {
   TrackSelectorPr selectorProton;
 
   using TracksSel = soa::Join<aod::TracksWExtra,
-                              aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr,
-                              aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+                              aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  using TracksSelBayesPid = soa::Join<TracksSel, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   HistogramRegistry registry{"registry"};
 
+  double massK0Star892;
+
   void init(InitContext const&)
   {
+    std::array<bool, 2> processes = {doprocessNoBayesPid, doprocessBayesPid};
+    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process function must be enabled at a time.");
+    }
+
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
     selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -140,6 +146,8 @@ struct HfCandidateSelectorLc {
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
     }
+
+    massK0Star892 = o2::constants::physics::MassK0Star892;
   }
 
   /// Single track quality cuts
@@ -221,6 +229,7 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
+    // cut on Lc->pKpi, piKp mass values
     if (trackProton.globalIndex() == candidate.prong0Id()) {
       if (std::abs(hfHelper.invMassLcToPKPi(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
@@ -228,6 +237,24 @@ struct HfCandidateSelectorLc {
     } else {
       if (std::abs(hfHelper.invMassLcToPiKP(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
+      }
+    }
+
+    /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
+    const double cutMassKPi = cuts->get(pTBin, "mass (Kpi)");
+    if (cutMassKPi > 0) {
+      if (trackProton.globalIndex() == candidate.prong0Id()) {
+        // inspecting the pKpi hypothesis
+        // K: prong1, pi: prong 2
+        if (std::abs(hfHelper.invMassKPiPairLcToPKPi(candidate) - massK0Star892) > cutMassKPi) {
+          return false;
+        }
+      } else {
+        // inspecting the piKp hypothesis
+        // K: prong1, pi: prong 0
+        if (std::abs(hfHelper.invMassKPiPairLcToPiKP(candidate) - massK0Star892) > cutMassKPi) {
+          return false;
+        }
       }
     }
 
@@ -260,8 +287,11 @@ struct HfCandidateSelectorLc {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates,
-               TracksSel const&)
+  /// \brief function to apply Lc selections
+  /// \param candidates Lc candidate table
+  /// \param tracks track table
+  template <bool useBayesPid = false, typename TTracks>
+  void runSelectLc(aod::HfCand3Prong const& candidates, TTracks const&)
   {
     // looping over 3-prong candidates
     for (const auto& candidate : candidates) {
@@ -290,9 +320,9 @@ struct HfCandidateSelectorLc {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
       }
 
-      auto trackPos1 = candidate.prong0_as<TracksSel>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.prong1_as<TracksSel>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.prong2_as<TracksSel>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.template prong0_as<TTracks>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.template prong1_as<TTracks>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.template prong2_as<TTracks>(); // positive daughter (negative for the antiparticles)
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
@@ -366,7 +396,7 @@ struct HfCandidateSelectorLc {
         }
       }
 
-      if (usePidBayes) {
+      if constexpr (useBayesPid) {
         TrackSelectorPID::Status pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
         TrackSelectorPID::Status pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
         TrackSelectorPID::Status pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
@@ -432,6 +462,26 @@ struct HfCandidateSelectorLc {
       hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
     }
   }
+
+  /// \brief process function w/o Bayes PID
+  /// \param candidates Lc candidate table
+  /// \param tracks track table
+  void processNoBayesPid(aod::HfCand3Prong const& candidates,
+                         TracksSel const& tracks)
+  {
+    runSelectLc<false>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorLc, processNoBayesPid, "Process Lc selection w/o Bayes PID", true);
+
+  /// \brief process function with Bayes PID
+  /// \param candidates Lc candidate table
+  /// \param tracks track table with Bayes PID information
+  void processBayesPid(aod::HfCand3Prong const& candidates,
+                       TracksSelBayesPid const& tracks)
+  {
+    runSelectLc<true>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorLc, processBayesPid, "Process Lc selection with Bayes PID", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

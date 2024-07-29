@@ -304,6 +304,7 @@ void DefaultConfiguration()
   pc.fParticleCutName[eisPrimaryTrack] = "isPrimaryTrack";
   pc.fParticleCutName[eisInAcceptanceTrack] = "isInAcceptanceTrack";
   pc.fParticleCutName[eisGlobalTrack] = "isGlobalTrack";
+  pc.fParticleCutName[ePtDependentDCAxyParameterization] = "PtDependentDCAxyParameterization";
   for (Int_t t = 0; t < eParticleCuts_N; t++) {
     if (pc.fParticleCutName[t].EqualTo("")) {
       LOGF(fatal, "\033[1;31m%s at line %d : particle cut name is not set for pc.fParticleCutName[%d] \033[0m", __FUNCTION__, __LINE__, t);
@@ -470,7 +471,7 @@ void DefaultConfiguration()
 
 Bool_t Alright(TString s)
 {
-  // Simple utility function, which for string formatted "someName-0" returns false, and for "someName-1" returns true.
+  // Simple utility function, which for a string formatted "someName-0" returns false, and for "someName-1" returns true.
 
   // a) Insanity check on the format;
   // b) Do the thing.
@@ -490,7 +491,7 @@ Bool_t Alright(TString s)
   }
 
   // b) Do the thing:
-  //    Algorithm: I split "someName-0" with respect to "-" as field separator, and check what is in the 2nd field.
+  //    Algorithm: I split "someName-0" with respect to "-" as a field separator, and check what is in the 2nd field.
   if (TString(oa->At(1)->GetName()).EqualTo("0")) {
     delete oa;
     return kFALSE;
@@ -602,7 +603,8 @@ void DefaultBooking()
   ph.fBookParticleHistograms[edcaXY] = Alright(lBookParticleHistograms[edcaXY]) && ph.fFillParticleHistograms;
   ph.fBookParticleHistograms[edcaZ] = Alright(lBookParticleHistograms[edcaZ]) && ph.fFillParticleHistograms;
   ph.fBookParticleHistograms[ePDG] = Alright(lBookParticleHistograms[ePDG]) && ph.fFillParticleHistograms;
-  // Remark: I do not need here anythig for etrackCutFlagFb1, etrackCutFlagFb2, ... eisGlobalTrack, because they are booleans
+  // Remark #1: I do not need here anythig for etrackCutFlagFb1, etrackCutFlagFb2, ... eisGlobalTrack, because they are booleans
+  // Remark #2: Nothing special here for ePtDependentDCAxyParameterization, because that is a string.
 
   // d) Particle histograms 2D:
   // By default all 2D particle histograms are booked. Set this flag to kFALSE to switch off booking of all 2D particle histograms:
@@ -1127,6 +1129,7 @@ void DefaultCuts()
   pc.fUseParticleCuts[eisPrimaryTrack] = Alright(lUseParticleCuts[eisPrimaryTrack]);
   pc.fUseParticleCuts[eisInAcceptanceTrack] = Alright(lUseParticleCuts[eisInAcceptanceTrack]);
   pc.fUseParticleCuts[eisGlobalTrack] = Alright(lUseParticleCuts[eisGlobalTrack]);
+  pc.fUseParticleCuts[ePtDependentDCAxyParameterization] = Alright(lUseParticleCuts[ePtDependentDCAxyParameterization]);
 
   // **) particles cuts defined via booleans:
   pc.fUseParticleCuts[etrackCutFlagFb1] = pc.fUseParticleCuts[etrackCutFlagFb1] && cf_pc.cftrackCutFlagFb1;
@@ -1202,7 +1205,7 @@ void DefaultCuts()
   pc.fdParticleCuts[ePDG][eMax] = lPDG[eMax];
 
   // **) particles cuts defined via string:
-  // pc.fsParticleCuts[...] = ... ;
+  pc.fsParticleCuts[ePtDependentDCAxyParameterization] = cf_pc.cfPtDependentDCAxyParameterization;
 
 } // void DefaultCuts()
 
@@ -1348,6 +1351,11 @@ void InsanityChecks()
     if (pc.fUseParticleCuts[etrackCutFlagFb2]) {
       LOGF(fatal, "\033[1;31m%s at line %d : particle cut etrackCutFlagFb2 is not validated, as of 20240511 it kills all reconstructed tracks \033[0m", __FUNCTION__, __LINE__);
     }
+  }
+
+  //   **) When it comes to DCAxy cut, ensure that either flat or pt-dependent cut is used, but not both:
+  if (pc.fUseParticleCuts[edcaXY] && pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
+    LOGF(fatal, "\033[1;31m%s at line %d : use either flat or pt-dependent DCAxy cut, but not both \033[0m", __FUNCTION__, __LINE__);
   }
 
   // *) Insanity checks on booking:
@@ -2002,7 +2010,8 @@ void BookParticleCutsHistograms()
 
   // a) Book the profile holding flags;
   // b) Book particle cut counter maps;
-  // c) Book the particle cut counter (absolute).
+  // c) Book the particle cut counter (absolute);
+  // d) Book the formula for pt-dependent DCAxy cut.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -2066,6 +2075,15 @@ void BookParticleCutsHistograms()
     } // for (Int_t cc = 0; cc < eCutCounter_N; cc++) // enum eCutCounter
 
   } // for (Int_t rs = 0; rs < 2; rs++) // reco/sim
+
+  // d) Book the formula for pt-dependent DCAxy cut:
+  if (pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
+    pc.fPtDependentDCAxyFormula = new TFormula("fPtDependentDCAxyFormula", pc.fsParticleCuts[ePtDependentDCAxyParameterization].Data());
+    // As a quick insanity check, try immediately to evaluate something from this formula:
+    if (std::isnan(pc.fPtDependentDCAxyFormula->Eval(1.44))) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+  } // if(pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
 
 } // void BookParticleCutsHistograms()
 
@@ -4285,10 +4303,10 @@ bool ValidTrack(T const& track)
   // c) Additional validity checks for all tracks (in Run 3, 2 and 1), use only during debugging:
   if (tc.fInsanityCheckForEachParticle) {
 
-    // *) isnan() check (remember that 'nan' is 0./0., inf-inf, etc. However 'inf' itself is NOT a 'nan', therefore isnan(1./0.) is false, isnan(0./0.) is true, etc.):
-    if (isnan(track.phi()) || isnan(track.pt()) || isnan(track.eta())) {
+    // *) std::isnan() check (remember that 'nan' is 0./0., inf-inf, etc. However 'inf' itself is NOT a 'nan', therefore std::isnan(1./0.) is false, std::isnan(0./0.) is true, etc.):
+    if (std::isnan(track.phi()) || std::isnan(track.pt()) || std::isnan(track.eta())) {
       if (tc.fVerboseForEachParticle) {
-        LOGF(info, "\033[1;31m%s isnan(track.phi()) || isnan(track.pt()) || isnan(track.eta())\033[0m", __FUNCTION__);
+        LOGF(info, "\033[1;31m%s std::isnan(track.phi()) || std::isnan(track.pt()) || std::isnan(track.eta())\033[0m", __FUNCTION__);
         LOGF(error, "track.phi() = %f\ntrack.pt() = %f\ntrack.eta() = %f", track.phi(), track.pt(), track.eta());
       }
       return kFALSE;
@@ -4617,6 +4635,17 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
         ParticleCut(eRec, eisGlobalTrack, eCutCounterBinning);
       } else if (!track.isGlobalTrack()) {
         if (!ParticleCut(eRec, eisGlobalTrack, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    // *) PtDependentDCAxyParameterization:
+    if (pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
+      if (cutModus == eCutCounterBinning) {
+        ParticleCut(eRec, ePtDependentDCAxyParameterization, eCutCounterBinning);
+      } else if (TMath::Abs(track.dcaXY()) > pc.fPtDependentDCAxyFormula->Eval(track.pt())) {
+        if (!ParticleCut(eRec, ePtDependentDCAxyParameterization, cutModus)) {
           return kFALSE;
         }
       }

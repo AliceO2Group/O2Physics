@@ -188,7 +188,8 @@ DECLARE_SOA_TABLE(MCHypKinkCands, "AOD", "MCHYPKINKCANDS",
                   hyperkink::TPCmomTrit, hyperkink::TPCsignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit,
                   hyperrec::GenXDecVtx, hyperrec::GenYDecVtx, hyperrec::GenZDecVtx,
                   hyperrec::GenPt, hyperkink::GenPtTrit,
-                  hyperrec::IsReco, hyperrec::IsSignal, hyperkink::MCMask, hyperkink::HyperPtITS);
+                  hyperrec::IsReco, hyperrec::IsSignal, hyperkink::MCMask, hyperkink::HyperPtITS,
+                  hyperrec::IsRecoMCCollision, hyperrec::IsSurvEvSel);
 
 } // namespace o2::aod
 

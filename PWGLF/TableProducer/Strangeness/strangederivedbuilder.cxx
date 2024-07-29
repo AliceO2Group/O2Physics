@@ -77,9 +77,7 @@ struct strangederivedbuilder {
   Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / sel8 selection
   Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
   Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
-  Produces<aod::V0MCCollRefs> v0mccollref;         // references collisions from V0s
   Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
-  Produces<aod::CascMCCollRefs> cascmccollref;     // references collisions from V0s
   Produces<aod::KFCascCollRefs> kfcasccollref;     // references collisions from KF cascades
   Produces<aod::TraCascCollRefs> tracasccollref;   // references collisions from tracked cascades
 
@@ -366,7 +364,7 @@ struct strangederivedbuilder {
       tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
-  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::McV0Labels> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
     // create collision indices beforehand
     std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
@@ -441,38 +439,14 @@ struct strangederivedbuilder {
         KFCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
       for (const auto& casc : TraCascTable_thisColl)
         TraCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
-
-      // populate MC collision references
-      for (const auto& v0 : V0Table_thisColl) {
-        uint32_t indMCColl = -1;
-        if (v0.has_mcParticle()) {
-          auto mcParticle = v0.mcParticle();
-          if (mcParticle.has_mcCollision()) {
-            indMCColl = mcParticle.mcCollisionId();
-          }
-        }
-        V0MCCollIndices[v0.globalIndex()] = indMCColl;
-      }
-      for (const auto& casc : CascTable_thisColl) {
-        uint32_t indMCColl = -1;
-        if (casc.has_mcParticle()) {
-          auto mcParticle = casc.mcParticle();
-          if (mcParticle.has_mcCollision()) {
-            indMCColl = mcParticle.mcCollisionId();
-          }
-        }
-        CascadeMCCollIndices[casc.globalIndex()] = indMCColl;
-      }
     }
 
     // populate references, including those that might not be assigned
     for (const auto& v0 : V0s) {
       v0collref(V0CollIndices[v0.globalIndex()]);
-      v0mccollref(V0MCCollIndices[v0.globalIndex()]);
     }
     for (const auto& casc : Cascades) {
       casccollref(CascadeCollIndices[casc.globalIndex()]);
-      cascmccollref(CascadeMCCollIndices[casc.globalIndex()]);
     }
     for (const auto& casc : KFCascades)
       kfcasccollref(KFCascadeCollIndices[casc.globalIndex()]);

@@ -141,7 +141,7 @@ struct phosNbar {
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
   {
-    mHistManager.add("evsel", "event selection", HistType::kTH1F, {{13, 0., 13.}});
+    mHistManager.add("evsel", "event selection", HistType::kTH1F, {{14, 0., 14.}});
     mHistManager.add("vtxZ", "Vertex z distribution", HistType::kTH1F, {{100, -20., 20., "z_{vtx} (cm)", "z_{vtx} (cm)"}});
     mHistManager.add("cluCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "E (GeV)", "E (GeV)"}, {10, 0., 10., "cut"}});
     mHistManager.add("nbarCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "E (GeV)", "E (GeV)"}, {10, 0., 10., "cut"}});
@@ -215,22 +215,43 @@ struct phosNbar {
     if (!selectEvent<isMC>(collision, mixIndex)) {
       return;
     }
+    if constexpr (isMC) {
+      if (clusters.size() == 0) {
+        return;
+      }
+    }
     // count events
     int ntr = tracks.size();
     int nclu = clusters.size();
     mHistManager.fill(HIST("evsel"), 10. + 2 * (ntr > 0) + (nclu > 0));
+    mHistManager.fill(HIST("evsel"), 8.);
 
     // Fill MC distributions
     // Sigma rapidity, pt, phi
     // secondary Sigmas
     if constexpr (isMC) {
+      // check current collision Id for clusters
+      int cluMcBCId = -1;
+      for (auto clu : clusters) {
+        auto mcList = clu.labels(); // const std::vector<int>
+        int nParents = mcList.size();
+        for (int iParent = 0; iParent < nParents; iParent++) { // Not found nbar parent yiet
+          int label = mcList[iParent];
+          if (label > -1) {
+            auto parent = mcParticles->iteratorAt(label);
+            cluMcBCId = parent.mcCollision().bcId();
+            break;
+          }
+        }
+        if (cluMcBCId > -1) {
+          break;
+        }
+      }
+      // Scan MC particles in current MC event
       if (mcParticles->begin() != mcParticles->end()) {
-        if (mcParticles->begin().mcCollisionId() != mPrevMCColId) {
-          mPrevMCColId = mcParticles->begin().mcCollisionId(); // to avoid scanning full MC table each BC
-          for (auto part : *mcParticles) {
-            if (collision.has_mcCollision() && (part.mcCollisionId() != collision.mcCollisionId())) {
-              continue;
-            }
+        for (auto part : *mcParticles) {
+          if (part.mcCollision().bcId() != cluMcBCId) {
+            continue;
             if (part.pdgCode() == -3112) { // Sigma+
               double pt = part.pt();
               mHistManager.fill(HIST("hMCSigPSp"), pt);
@@ -328,7 +349,6 @@ struct phosNbar {
             }
           } else {
             if (cp != 0) {
-              LOG(info) << "Common parent PDG=" << cp;
               if (cp == -1114 || cp == -2114 || cp == -2214) // Delta
                 hSignalOther->Fill(m, pt, 0.);
               if (cp == -3114 || cp == -3214 || cp == -3312) // Sigma*, Xi
@@ -454,8 +474,12 @@ struct phosNbar {
     if (col.alias_bit(kTVXinPHOS)) {
       mHistManager.fill(HIST("evsel"), 6);
     }
-    isColSelected = col.alias_bit(mEvSelTrig);
-
+    isColSelected = false;
+    if constexpr (isMC) {
+      isColSelected = col.selection_bit(kIsTriggerTVX);
+    } else {
+      isColSelected = col.alias_bit(mEvSelTrig);
+    }
     if (!isColSelected) {
       return false;
     }
@@ -471,9 +495,6 @@ struct phosNbar {
         return false;
       }
     }
-    // Remove pileup???
-    mHistManager.fill(HIST("evsel"), 8.);
-
     // so far only binning according to zvtx is implemented
     indx = (mVtxZ + 10.) / 20. * mNZbins;
     if (indx >= mNZbins) {
@@ -963,7 +984,7 @@ struct phosNbar {
   PROCESS_SWITCH(phosNbar, processData, "process data", false);
 
   void processMC(SelCollisionMC const& coll,
-                 aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart)
+                 aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart, aod::McCollisions const& /*mcCol*/)
   {
     // Initialize B-field
     if (mBz == 123456.) {

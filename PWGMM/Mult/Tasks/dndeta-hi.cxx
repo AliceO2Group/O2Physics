@@ -154,10 +154,6 @@ AxisSpec PtVarAxis = {kPtVarend - 1, +kPtVarbegin + 0.5, +kPtVarend - 0.5, "", "
 AxisSpec EvtClassAxis = {kECend - 1, +kECbegin + 0.5, +kECend - 0.5, "", "event class"};
 AxisSpec TrigClassAxis = {kTrigend - 1, +kTrigbegin + 0.5, +kTrigend - 0.5, "", "trigger class"};
 AxisSpec ParticleTypeAxis = {kParTypeend - 1, +kParTypebegin + 0.5, +kParTypeend - 0.5, "", "Particle type"};
-std::vector<double> centBinningPbPb = {0, 1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100};
-std::vector<double> centBinning = {0., 0.01, 0.1, 1.0, 5.0, 10., 15, 20., 25, 30., 35., 40., 45., 50., 70., 100.0};
-AxisSpec CentAxis = {centBinning, "", "centrality"};
-AxisSpec CentAxisPbPb = {centBinningPbPb, "", "centrality"};
 AxisSpec SpeciesAxis = {kSpeciesend - 1, +kSpeciesbegin + 0.5, +kSpeciesend - 0.5, "", "species class"};
 AxisSpec MassAxis = {600, 0.3f, 1.3f, "Mass (GeV/c^{2})", "Inv. Mass (GeV/c^{2})"};
 AxisSpec SignAxis = {kSignend - 1, +kSignbegin + 0.5, +kSignend - 0.5, "", "sign"};
@@ -199,6 +195,7 @@ struct MultiplicityCounter {
   Configurable<float> v0radius{"v0radius", 0.5, "Radius"};
   Configurable<float> etadau{"etadau", 4, "Eta Daughters"};
   Configurable<float> rapidity{"v0rapidity", 0.5, "V0 rapidity"};
+  ConfigurableAxis centBinning{"centrality", {VARIABLE_WIDTH, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100}, ""};
 
   // Configurable<bool> mftanalysis{"mftanalysis", false, "mft analysis switch"};
   Configurable<bool> zvtxcut{"zvtxcut", false, "z vtx cut < 10cm"};
@@ -212,6 +209,9 @@ struct MultiplicityCounter {
   std::vector<int> usedTracksIds;
   void init(InitContext&)
   {
+
+    AxisSpec CentAxis = {centBinning, "", "centrality"};
+    AxisSpec CentAxisPbPb = {centBinning, "", "centrality"};
     registry.add({"hetaresponse", ";etaresponse", {HistType::kTH2D, {{80, -4, 4}, {80, -4, 4}}}});
     registry.add({"hft0multiplicity", ";multiplicity", {HistType::kTH1D, {{10000, 0, 100000}}}});
     registry.add({"hcentrality", IsPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH1F, {{10000, 0, 100}}}});
@@ -226,6 +226,7 @@ struct MultiplicityCounter {
     registry.add({"hgendndeta", "evntclass;  zvtex, eta", {HistType::kTHnSparseD, {EvtClassAxis, ZAxis, EtaAxis, IsPbPb ? CentAxisPbPb : CentAxis, ParticleTypeAxis, PtVarAxis, phibin}}});
     registry.add({"hgenzvtx", "evntclass; zvtex", {HistType::kTHnSparseD, {EvtClassAxis, ZAxis, IsPbPb ? CentAxisPbPb : CentAxis}}});
     registry.add({"hv0mass", "etaaxis; invmass", {HistType::kTHnSparseD, {IsPbPb ? CentAxisPbPb : CentAxis, SpeciesAxis, V0EtaAxis, MassAxis}}});
+    registry.add({"hv0k0s", "invmass", {HistType::kTH1D, {{100, 0.4, 0.6}}}});
 
     registry.add({"recetaINELg0Sel8recz10", ";etaresponse", {HistType::kTH2D, {EtaAxis, ZAxis}}});
     registry.add({"genetaINELg0Sel8recz10", ";etaresponse", {HistType::kTH2D, {EtaAxis, ZAxis}}});
@@ -325,6 +326,8 @@ struct MultiplicityCounter {
       auto pertracks = tSample3->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto Ntrk = 0;
 
+      // if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      // if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       if (collision.sel8()) {
         btrigc[kSel8] = true;
         registry.fill(HIST("Selection"), 2.);
@@ -345,7 +348,7 @@ struct MultiplicityCounter {
         if (btrigc[kSel8])
           btrigc[kSel8g0] = true;
       }
-      if (btrigc[kSel8])
+      if (btrigc[kSel8g0])
         registry.fill(HIST("reczINELg0Sel8"), z);
 
       auto cent = -1.f;
@@ -540,6 +543,8 @@ struct MultiplicityCounter {
 
         Bool_1d btrigc(kTrigend, false);
         auto z = collision.posZ();
+        // if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        // if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
         if (collision.sel8()) {
           btrigc[kSel8] = true;
           registry.fill(HIST("Selection"), 2.);
@@ -755,11 +760,12 @@ struct MultiplicityCounter {
     }
   }
   PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
-
+  Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
   void processV0Counting(
     MyCollisionsCent const& collisions,
     aod::V0Datas const& fullV0s,
-    FiTracks const& /*tracks*/)
+    FiTracks const& /*tracks*/,
+    DaughterTracks const& /*Dautrks*/)
   {
     for (auto& collision : collisions) {
       if (!collision.sel8())
@@ -775,8 +781,27 @@ struct MultiplicityCounter {
           cent = collision.centFT0M();
       }
 
-      for (auto& v0 : fullV0s) {
+      auto v0s_per_coll = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
+      for (auto& v0 : v0s_per_coll) {
+
+        auto pTrack = v0.template posTrack_as<DaughterTracks>();
+        auto nTrack = v0.template negTrack_as<DaughterTracks>();
         if (std::abs(z) < 10) {
+          if (v0.v0radius() > v0radius)
+            continue;
+          if (v0.dcapostopv() > dcapostopv)
+            continue;
+          if (v0.dcanegtopv() > dcanegtopv)
+            continue;
+          if (v0.v0cosPA() < v0cospa)
+            continue;
+          if (fabs(pTrack.eta()) > 0.9)
+            continue;
+          if (fabs(nTrack.eta()) > 0.9)
+            continue;
+
+          if (fabs(v0.eta()) < 0.5)
+            registry.fill(HIST("hv0k0s"), v0.mK0Short());
           registry.fill(HIST("hv0mass"), cent, Double_t(kK0short), v0.eta(), Double_t(v0.mK0Short()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kLambda), v0.eta(), Double_t(v0.mLambda()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kAntilambda), v0.eta(), Double_t(v0.mAntiLambda()));

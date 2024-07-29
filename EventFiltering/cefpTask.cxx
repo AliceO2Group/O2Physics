@@ -213,6 +213,8 @@ struct centralEventFilterTask {
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
 
+  Configurable<bool> cfgDisableDownscalings{"cfgDisableDownscalings", false, "Disable downscalings"};
+
   FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
@@ -260,6 +262,9 @@ struct centralEventFilterTask {
         LOG(info) << "- Channel " << col.first << ": " << filterOpt.get(col.first.data(), 0u);
         col.second = filterOpt.get(col.first.data(), 0u);
       }
+    }
+    if (cfgDisableDownscalings.value) {
+      LOG(info) << "Downscalings are disabled for all channels.";
     }
   }
 
@@ -327,7 +332,7 @@ struct centralEventFilterTask {
         uint64_t decisionBin{(bin - 2) / 64};
         uint64_t triggerBit{BIT((bin - 2) % 64)};
         auto column{tablePtr->GetColumnByName(colName.first)};
-        double downscaling{colName.second};
+        double downscaling{cfgDisableDownscalings.value ? 1. : colName.second};
         if (column) {
           int entry = 0;
           for (int64_t iC{0}; iC < column->num_chunks(); ++iC) {
@@ -352,6 +357,7 @@ struct centralEventFilterTask {
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents - startCollision);
 
     for (uint64_t iE{0}; iE < outTrigger.size(); ++iE) {
+      bool triggered{false}, selected{false};
       for (uint64_t iD{0}; iD < outTrigger[0].size(); ++iD) {
         for (int iB{0}; iB < 64; ++iB) {
           if (!(outTrigger[iE][iD] & BIT(iB))) {
@@ -365,12 +371,14 @@ struct centralEventFilterTask {
             }
           }
         }
-        if (outTrigger[iE][iD]) {
-          mScalers->Fill(mScalers->GetNbinsX() - 1);
-        }
-        if (outDecision[iE][iD]) {
-          mFiltered->Fill(mFiltered->GetNbinsX() - 1);
-        }
+        triggered = triggered || outTrigger[iE][iD];
+        selected = selected || outDecision[iE][iD];
+      }
+      if (triggered) {
+        mScalers->Fill(mScalers->GetNbinsX() - 1);
+      }
+      if (selected) {
+        mFiltered->Fill(mFiltered->GetNbinsX() - 1);
       }
     }
 

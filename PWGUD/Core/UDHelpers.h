@@ -743,7 +743,7 @@ bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& /*lims*/, Sli
 // -----------------------------------------------------------------------------
 // check if all tracks come from same MCCollision
 template <typename T>
-int64_t sameMCCollision(T tracks, aod::McCollisions mccols, aod::McParticles mcparts)
+int64_t sameMCCollision(T tracks, aod::McCollisions, aod::McParticles)
 {
   int64_t colID = -1;
   for (auto const& track : tracks) {

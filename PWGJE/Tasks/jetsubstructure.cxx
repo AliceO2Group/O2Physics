@@ -32,6 +32,7 @@
 #include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/Core/JetSubstructureUtilities.h"
 
 using namespace o2;
@@ -48,13 +49,21 @@ struct JetSubstructureTask {
 
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
+  Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
   JetFinder jetReclusterer;
 
+  std::vector<float> energyMotherVec;
+  std::vector<float> ptLeadingVec;
+  std::vector<float> ptSubLeadingVec;
+  std::vector<float> thetaVec;
   std::vector<float> nSub;
+  std::vector<float> pairPtVec;
+  std::vector<float> pairEnergyVec;
+  std::vector<float> pairThetaVec;
 
   HistogramRegistry registry;
 
@@ -76,9 +85,13 @@ struct JetSubstructureTask {
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
   }
 
-  template <bool isMCP, bool isSubtracted, typename T, typename U>
-  void jetReclustering(T const& jet, U& outputTable)
+  template <bool isMCP, bool isSubtracted, typename T>
+  void jetReclustering(T const& jet)
   {
+    energyMotherVec.clear();
+    ptLeadingVec.clear();
+    ptSubLeadingVec.clear();
+    thetaVec.clear();
     jetReclustered.clear();
     fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
     jetReclustered = sorted_by_pt(jetReclustered);
@@ -89,10 +102,6 @@ struct JetSubstructureTask {
     auto nsd = 0.0;
     auto zg = -1.0;
     auto rg = -1.0;
-    std::vector<float> energyMotherVec;
-    std::vector<float> ptLeadingVec;
-    std::vector<float> ptSubLeadingVec;
-    std::vector<float> thetaVec;
 
     while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
       if (parentSubJet1.perp() < parentSubJet2.perp()) {
@@ -136,7 +145,29 @@ struct JetSubstructureTask {
     if constexpr (isSubtracted && !isMCP) {
       registry.fill(HIST("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted"), jet.pt(), nsd);
     }
-    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2]);
+  }
+
+  template <typename T, typename U>
+  void jetPairing(T const& jet, U const& /*tracks*/)
+  {
+    pairPtVec.clear();
+    pairEnergyVec.clear();
+    pairThetaVec.clear();
+    std::vector<typename U::iterator> tracksVec;
+    for (auto const& constituent : jet.template tracks_as<U>()) {
+      if (constituent.pt() >= pairConstituentPtMin) {
+        tracksVec.push_back(constituent);
+      }
+    }
+    if (tracksVec.size() >= 2) {
+      for (typename std::vector<typename U::iterator>::size_type track1Index = 0; track1Index < tracksVec.size() - 1; track1Index++) {
+        for (typename std::vector<typename U::iterator>::size_type track2Index = track1Index + 1; track2Index < tracksVec.size(); track2Index++) {
+          pairPtVec.push_back(tracksVec.at(track1Index).pt() * tracksVec.at(track2Index).pt());
+          pairEnergyVec.push_back(tracksVec.at(track1Index).energy() * tracksVec.at(track2Index).energy());
+          pairThetaVec.push_back(jetutilities::deltaR(tracksVec.at(track1Index), tracksVec.at(track2Index)));
+        }
+      }
+    }
   }
 
   template <bool isSubtracted, typename T, typename U, typename V>
@@ -147,8 +178,9 @@ struct JetSubstructureTask {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, tracks, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
-
-    jetReclustering<false, isSubtracted>(jet, outputTable);
+    jetReclustering<false, isSubtracted>(jet);
+    jetPairing(jet, tracks);
+    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec);
   }
 
   void processDummy(JetTracks const&)
@@ -185,7 +217,9 @@ struct JetSubstructureTask {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, particles, particles, particles, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
-    jetReclustering<true, false>(jet, jetSubstructureMCPTable);
+    jetReclustering<true, false>(jet);
+    jetPairing(jet, particles);
+    jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsMCP, "charged jet substructure on MC particle level", false);
 };

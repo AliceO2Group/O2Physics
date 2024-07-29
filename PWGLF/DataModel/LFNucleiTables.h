@@ -22,8 +22,6 @@
 #ifndef PWGLF_DATAMODEL_LFNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFNUCLEITABLES_H_
 
-using namespace o2;
-
 namespace o2::aod
 {
 namespace fullEvent

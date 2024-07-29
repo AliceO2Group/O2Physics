@@ -149,6 +149,12 @@ using V0ChargedJetMatching = JetMatchingMc<soa::Join<aod::V0ChargedMCDetectorLev
                                            CandidatesV0MCD,
                                            CandidatesV0MCP>;
 
+using DielectronChargedJetMatching = JetMatchingMc<soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents>,
+                                                   soa::Join<aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents>,
+                                                   aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCParticleLevelJets,
+                                                   aod::DielectronChargedMCParticleLevelJetsMatchedToDielectronChargedMCDetectorLevelJets,
+                                                   CandidatesDielectronMCD,
+                                                   CandidatesDielectronMCP>;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
@@ -160,6 +166,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-lc-ch"}));
   // tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-bplus-ch"}));
   tasks.emplace_back(adaptAnalysisTask<V0ChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-v0-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<DielectronChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-dielectron-ch"}));
 
   return WorkflowSpec{tasks};
 }

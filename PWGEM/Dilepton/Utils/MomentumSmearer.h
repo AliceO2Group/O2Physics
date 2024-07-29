@@ -47,7 +47,7 @@ class MomentumSmearer
   }
 
   /// Constructor with resolution histograms and efficiency
-  MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString effFileName, TString effHistName)
+  MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString /*effFileName*/, TString /*effHistName*/)
   {
     setResFileName(resFileName);
     setResPtHistName(resPtHistName);
@@ -154,7 +154,9 @@ class MomentumSmearer
         LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
       }
     }
-    delete listRes;
+
+    if (!fFromCcdb)
+      delete listRes;
 
     LOGP(info, "Set efficiency histos");
     TList* listEff = new TList();
@@ -207,7 +209,9 @@ class MomentumSmearer
         LOGP(fatal, "Could not identify type of histogram {}", fEffHistName.Data());
       }
     }
-    delete listEff;
+
+    if (!fFromCcdb)
+      delete listEff;
 
     fInitialized = true;
   }

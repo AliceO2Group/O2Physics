@@ -149,6 +149,7 @@ struct ParticleCuts {
   Double_t fdParticleCuts[eParticleCuts_N][2] = {{0.}};       // particles cuts defined via [min,max) . Remark: I use here eParticleHistograms_N , not to duplicate these enums for ParticleCuts.
   TString fsParticleCuts[eParticleCuts_N] = {""};             // particles cuts defined via booleans via string
   TH1D* fParticleCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each particle cut triggered
+  TFormula* fPtDependentDCAxyFormula = NULL;                  // the actual formula, used to evaluate for a given pT, the corresponding DCAxy, where the parameterization is given by configurable cfPtDependentDCAxyParameterization
 } pc;                                                         // "pc" is a common label for objects in this struct
 
 // *) Q-vectors:

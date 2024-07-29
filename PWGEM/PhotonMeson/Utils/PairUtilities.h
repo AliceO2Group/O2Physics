@@ -18,7 +18,7 @@
 #include <TVector2.h>
 #include <cmath>
 
-namespace o2::aod::photonpair
+namespace o2::aod::pwgem::photonmeson::photonpair
 {
 enum PairType {
   kPCMPCM = 0,
@@ -29,7 +29,7 @@ enum PairType {
   kPCMDalitzEE = 5,
   kPCMDalitzMuMu = 6,
   kPHOSEMC = 7,
-  kDalitzEEDalitzEE = 8,
+  kEEEE = 8, // dielectron-dielectron
   kNpair,
 };
 
@@ -52,6 +52,6 @@ bool DoesV0LegMatchWithCluster(TV0Leg const& v0leg, TCluster const& cluster, con
   float Ep = cluster.e() / v0leg.p();
   return (pow(deta / max_deta, 2) + pow(dphi / max_dphi, 2) < 1) && (abs(Ep - 1) < max_Ep_width);
 }
-} // namespace o2::aod::photonpair
+} // namespace o2::aod::pwgem::photonmeson::photonpair
 
 #endif // PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_

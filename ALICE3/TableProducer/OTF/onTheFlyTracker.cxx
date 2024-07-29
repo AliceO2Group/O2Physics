@@ -58,6 +58,7 @@ struct OnTheFlyTracker {
   Produces<aod::TracksCovExtension> tracksParCovExtension;
   Produces<aod::McTrackLabels> tracksLabels;
   Produces<aod::TracksDCA> tracksDCA;
+  Produces<aod::TracksDCACov> tracksDCACov;
   Produces<aod::CollisionsAlice3> collisionsAlice3;
   Produces<aod::TracksAlice3> TracksAlice3;
 
@@ -76,6 +77,7 @@ struct OnTheFlyTracker {
   Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
 
   Configurable<bool> populateTracksDCA{"populateTracksDCA", true, "populate TracksDCA table"};
+  Configurable<bool> populateTracksDCACov{"populateTracksDCACov", false, "populate TracksDCACov table"};
   Configurable<bool> populateTracksExtra{"populateTracksExtra", false, "populate TracksExtra table (legacy)"};
   Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
@@ -464,8 +466,10 @@ struct OnTheFlyTracker {
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
         tracksDCA(dcaXY, dcaZ);
+        if (populateTracksDCACov) {
+          tracksDCACov(dcaInfo.getSigmaY2(), dcaInfo.getSigmaZ2());
+        }
       }
-
       tracksPar(collisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
       tracksParExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
 
@@ -508,6 +512,9 @@ struct OnTheFlyTracker {
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
         tracksDCA(dcaXY, dcaZ);
+        if (populateTracksDCACov) {
+          tracksDCACov(dcaInfo.getSigmaY2(), dcaInfo.getSigmaZ2());
+        }
       }
 
       tracksPar(collisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());

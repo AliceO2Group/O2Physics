@@ -166,6 +166,10 @@ enum eParticleCuts {
   eisPrimaryTrack,
   eisInAcceptanceTrack, // TBI 20240516 check and document how acceptance window is defined
   eisGlobalTrack,       // not validated in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to real holes in NUA)
+
+  // special treatment:
+  ePtDependentDCAxyParameterization,
+
   eParticleCuts_N
 };
 

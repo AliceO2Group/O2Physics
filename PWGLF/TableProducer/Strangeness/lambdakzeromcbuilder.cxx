@@ -45,9 +45,17 @@ struct lambdakzeromcbuilder {
   Produces<aod::McV0Labels> v0labels; // MC labels for V0s
   Produces<aod::V0MCCores> v0mccores; // optionally aggregate information from MC side for posterior analysis (derived data)
   Produces<aod::V0CoreMCLabels> v0CoreMCLabels; // interlink V0Cores -> V0MCCores in asymmetric mode
+  Produces<aod::V0MCCollRefs> v0mccollref;      // references collisions from V0MCCores
 
   Configurable<bool> populateV0MCCoresSymmetric{"populateV0MCCoresSymmetric", false, "populate V0MCCores table for derived data analysis, keep V0MCCores joinable with V0Cores"};
   Configurable<bool> populateV0MCCoresAsymmetric{"populateV0MCCoresAsymmetric", false, "populate V0MCCores table for derived data analysis, create V0Cores -> V0MCCores interlink. Saves only labeled V0s."};
+
+  Configurable<bool> addGeneratedK0Short{"addGeneratedK0Short", false, "add V0MCCore entry for generated, not-recoed K0Short"};
+  Configurable<bool> addGeneratedLambda{"addGeneratedLambda", false, "add V0MCCore entry for generated, not-recoed Lambda"};
+  Configurable<bool> addGeneratedAntiLambda{"addGeneratedAntiLambda", false, "add V0MCCore entry for generated, not-recoed AntiLambda"};
+  Configurable<bool> addGeneratedGamma{"addGeneratedGamma", false, "add V0MCCore entry for generated, not-recoed Gamma"};
+
+  Configurable<float> rapidityWindow{"rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -80,6 +88,7 @@ struct lambdakzeromcbuilder {
     int pdgCodeMother;
     int pdgCodePositive;
     int pdgCodeNegative;
+    int mcCollision;
     bool isPhysicalPrimary;
     std::array<float, 3> xyz;
     std::array<float, 3> posP;
@@ -97,10 +106,11 @@ struct lambdakzeromcbuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 labels
-  void process(aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& /*particlesMC*/)
+  void process(aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& mcParticles)
   {
     // to be used if using the populateV0MCCoresAsymmetric mode, kept empty otherwise
     std::vector<mcV0info> mcV0infos; // V0MCCore information
+    std::vector<bool> mcParticleIsReco(mcParticles.size(), false); // mc Particle not recoed by V0s
 
     for (auto& v0 : v0table) {
       thisInfo.packedMcParticleIndices = 0; // not de-referenced properly yet
@@ -110,6 +120,10 @@ struct lambdakzeromcbuilder {
       thisInfo.pdgCodeMother = 0;
       thisInfo.pdgCodePositive = 0;
       thisInfo.pdgCodeNegative = 0;
+      thisInfo.mcCollision = -1;
+      thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
+      thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
+      thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
       auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
       auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
 
@@ -132,6 +146,11 @@ struct lambdakzeromcbuilder {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
                 thisInfo.label = lNegMother.globalIndex();
+
+                if (lNegMother.has_mcCollision()) {
+                  thisInfo.mcCollision = lNegMother.mcCollisionId(); // save this reference, please
+                }
+
                 // acquire information
                 thisInfo.xyz[0] = lMCPosTrack.vx();
                 thisInfo.xyz[1] = lMCPosTrack.vy();
@@ -153,6 +172,11 @@ struct lambdakzeromcbuilder {
       v0labels(
         thisInfo.label, thisInfo.motherLabel);
 
+      // Mark mcParticle as recoed (no searching necessary afterwards)
+      if (thisInfo.motherLabel > -1) {
+        mcParticleIsReco[thisInfo.motherLabel] = true;
+      }
+
       // ---] Symmetric populate [---
       // in this approach, V0Cores will be joinable with V0MCCores.
       // this is the most pedagogical approach, but it is also more limited
@@ -164,6 +188,7 @@ struct lambdakzeromcbuilder {
           thisInfo.isPhysicalPrimary, thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
           thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
           thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2]);
+        v0mccollref(thisInfo.mcCollision);
 
         // n.b. placing the interlink index here allows for the writing of
         //      code that is agnostic with respect to the joinability of
@@ -197,6 +222,49 @@ struct lambdakzeromcbuilder {
 
     // now populate V0MCCores if in asymmetric mode
     if (populateV0MCCoresAsymmetric) {
+      // first step: add any un-recoed v0mmcores that were requested
+      for (auto& mcParticle : mcParticles) {
+        thisInfo.packedMcParticleIndices = 0;
+        thisInfo.label = -1;
+        thisInfo.motherLabel = -1;
+        thisInfo.pdgCode = 0;
+        thisInfo.pdgCodeMother = 0;
+        thisInfo.pdgCodePositive = 0;
+        thisInfo.pdgCodeNegative = 0;
+        thisInfo.mcCollision = -1;
+        thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
+        thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
+        thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
+
+        if (mcParticleIsReco[mcParticle.globalIndex()] == true)
+          continue; // skip if already created in list
+
+        if (TMath::Abs(mcParticle.y()) > rapidityWindow)
+          continue; // skip outside midrapidity
+
+        if (
+          (addGeneratedK0Short && mcParticle.pdgCode() == 310) ||
+          (addGeneratedLambda && mcParticle.pdgCode() == 3122) ||
+          (addGeneratedAntiLambda && mcParticle.pdgCode() == -3122) ||
+          (addGeneratedGamma && mcParticle.pdgCode() == 22)) {
+          thisInfo.pdgCode = mcParticle.pdgCode();
+          thisInfo.isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+
+          if (mcParticle.has_mcCollision()) {
+            thisInfo.mcCollision = mcParticle.mcCollisionId(); // save this reference, please
+          }
+
+          // guarantee compressibility: keep momentum entirely in the positive prong
+          // WARNING: THIS IS AS ARBITRARY AS IT GETS but should be ok
+          thisInfo.posP[0] = mcParticle.px();
+          thisInfo.posP[1] = mcParticle.py();
+          thisInfo.posP[2] = mcParticle.pz();
+
+          // if I got here, it means this MC particle was not recoed and is of interest. Add it please
+          mcV0infos.push_back(thisInfo);
+        }
+      }
+
       for (auto info : mcV0infos) {
         v0mccores(
           info.label, info.pdgCode,
@@ -204,6 +272,7 @@ struct lambdakzeromcbuilder {
           info.isPhysicalPrimary, info.xyz[0], info.xyz[1], info.xyz[2],
           info.posP[0], info.posP[1], info.posP[2],
           info.negP[0], info.negP[1], info.negP[2]);
+        v0mccollref(thisInfo.mcCollision);
       }
     }
 

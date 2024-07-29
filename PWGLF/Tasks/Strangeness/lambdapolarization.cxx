@@ -109,10 +109,11 @@ struct lambdapolarization {
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.5, "minimum daughter pion pt"};
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
+  Configurable<int> cfgNQvec{"cfgNQvec", 7, "The number of total Qvectors for looping over the task"};
 
   Configurable<std::string> cfgQvecDetName{"cfgQvecDetName", "FT0C", "The name of detector to be analyzed"};
-  Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "BPos", "The name of detector for reference A"};
-  Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "BNeg", "The name of detector for reference B"};
+  Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "TPCpos", "The name of detector for reference A"};
+  Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
   Configurable<bool> cfgShiftCorrDef{"cfgShiftCorrDef", false, "additional shift correction definition"};
@@ -151,9 +152,9 @@ struct lambdapolarization {
       return 2;
     } else if (name.value == "FV0A") {
       return 3;
-    } else if (name.value == "BPos") {
+    } else if (name.value == "TPCpos") {
       return 4;
-    } else if (name.value == "BNeg") {
+    } else if (name.value == "TPCneg") {
       return 5;
     } else {
       return 0;
@@ -162,9 +163,6 @@ struct lambdapolarization {
 
   void init(o2::framework::InitContext&)
   {
-    if (cfgnMods > 1)
-      LOGF(fatal, "multiple harmonics not implemented yet"); // FIXME: will be updated after Qvector task updates
-
     AxisSpec massAxis = {100, 1.065, 1.165};
     AxisSpec ptAxis = {100, 0.0, 10.0};
     AxisSpec cosAxis = {110, -1.05, 1.05};
@@ -176,7 +174,7 @@ struct lambdapolarization {
     AxisSpec pidAxis = {100, -10, 10};
 
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
-    AxisSpec basisAxis = {6, 0, 6, "basis"};
+    AxisSpec basisAxis = {20, 0, 20, "basis"};
 
     for (auto i = 2; i < cfgnMods + 2; i++) {
       histos.add(Form("psi%d/h_lambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
@@ -226,7 +224,7 @@ struct lambdapolarization {
     RefBId = GetDetId(cfgQvecRefBName);
 
     if (DetId == RefAId || DetId == RefBId || RefAId == RefBId) {
-      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The BPos and BNeg will be used as reference systems");
+      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The TPCpos and TPCneg will be used as reference systems");
       DetId = 0;
       RefAId = 4;
       RefBId = 5;
@@ -328,9 +326,9 @@ struct lambdapolarization {
   template <typename TCollision>
   void FillShiftCorrection(TCollision const& collision, int nmode)
   {
-    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * 24;
-    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * 24;
-    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * 24;
+    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     for (int ishift = 1; ishift <= 10; ishift++) {
       if (nmode == 2) {
         histos.fill(HIST("psi2/ShiftFIT"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
@@ -366,9 +364,12 @@ struct lambdapolarization {
   template <typename TCollision>
   void FillEPQA(TCollision const& collision, int nmode)
   {
-    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * 24;
-    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * 24;
-    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * 24;
+    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+
+    if (collision.qvecAmp()[DetId] < 1e-5 || collision.qvecAmp()[RefAId] < 1e-5 || collision.qvecAmp()[RefBId] < 1e-5)
+      return;
 
     if (nmode == 2) {
       histos.fill(HIST("psi2/QA/EP_Det"), centrality, TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode));
@@ -401,9 +402,9 @@ struct lambdapolarization {
       auto deltapsiFT0A = 0.0;
       auto deltapsiFV0A = 0.0;
 
-      auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24]) / static_cast<float>(nmode);
-      auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]) / static_cast<float>(nmode);
-      auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]) / static_cast<float>(nmode);
+      auto psidefFT0C = TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode);
+      auto psidefFT0A = TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode);
+      auto psidefFV0A = TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode);
       for (int ishift = 1; ishift <= 10; ishift++) {
         auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
         auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
@@ -447,6 +448,10 @@ struct lambdapolarization {
   template <typename TCollision, typename V0>
   void FillHistograms(TCollision const& collision, V0 const& V0s, int nmode)
   {
+    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+
     for (auto& v0 : V0s) {
       auto postrack = v0.template posTrack_as<TrackCandidates>();
       auto negtrack = v0.template negTrack_as<TrackCandidates>();
@@ -475,7 +480,7 @@ struct lambdapolarization {
         aLambdaTag = 1;
       }
 
-      if (!LambdaTag && !aLambdaTag)
+      if (LambdaTag == aLambdaTag)
         continue;
 
       if (!SelectionV0(collision, v0))
@@ -490,21 +495,22 @@ struct lambdapolarization {
         PionVec = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
       }
       LambdaVec = ProtonVec + PionVec;
+      LambdaVec.SetM(massLambda);
 
       ROOT::Math::Boost boost{LambdaVec.BoostToCM()};
       ProtonBoostedVec = boost(ProtonVec);
 
       angle = ProtonBoostedVec.Pz() / ProtonBoostedVec.P();
-      relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24]) / static_cast<float>(nmode)));
+      relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
 
       if (cfgShiftCorr) {
         auto deltapsiFT0C = 0.0;
         auto deltapsiFT0A = 0.0;
         auto deltapsiFV0A = 0.0;
 
-        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24]) / static_cast<float>(nmode);
-        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]) / static_cast<float>(nmode);
-        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]) / static_cast<float>(nmode);
+        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 28], collision.qvecRe()[3 + (nmode - 2) * 28]) / static_cast<float>(nmode);
+        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 28], collision.qvecRe()[3 + 4 + (nmode - 2) * 28]) / static_cast<float>(nmode);
+        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 28], collision.qvecRe()[3 + 12 + (nmode - 2) * 28]) / static_cast<float>(nmode);
         for (int ishift = 1; ishift <= 10; ishift++) {
           auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
           auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
@@ -586,10 +592,6 @@ struct lambdapolarization {
       }
     }
     for (int i = 2; i < cfgnMods + 2; i++) {
-      QvecDetInd = 0;
-      QvecRefAInd = 4;
-      QvecRefBInd = 5;
-
       if (cfgShiftCorrDef) {
         FillShiftCorrection(collision, i);
       }

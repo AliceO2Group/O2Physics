@@ -228,7 +228,7 @@ struct JetPlanarFlowTask {
         if (particleSelection == "PhysicalPrimary" && !track.isPhysicalPrimary()) {
           continue;
         }
-        if (isinf(track.eta())) {
+        if (std::isinf(track.eta())) {
           continue;
         }
       } else {

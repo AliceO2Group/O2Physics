@@ -72,7 +72,7 @@ def load_workflows_from_json():
         # Get the workflow name from the JSON file name
         workflow = os.path.basename(file_json).split(".")[0]
         try:
-            with open(file_json, "r") as j:
+            with open(file_json, "r", encoding="utf8", errors="ignore") as j:
                 specs_wf = json.load(j)
                 db_wf[workflow] = specs_wf["workflow"]
         except FileNotFoundError:

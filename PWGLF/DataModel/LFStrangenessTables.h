@@ -1190,6 +1190,13 @@ DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlat
                   cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
                   cascdata::PxMC, cascdata::PyMC, cascdata::PzMC);
 
+namespace cascdata
+{
+DECLARE_SOA_INDEX_COLUMN(CascMCCore, cascMCCore); //! Index to CascMCCore entry
+}
+
+DECLARE_SOA_TABLE(CascCoreMCLabels, "AOD", "CASCCOREMCLABEL", //! optional table to refer to CascMCCores if not joinable
+                  o2::soa::Index<>, cascdata::CascMCCoreId);
 DECLARE_SOA_TABLE(CascMCCollRefs, "AOD", "CASCMCCOLLREF", //! refers MC candidate back to proper MC Collision
                   o2::soa::Index<>, cascdata::StraMCCollisionId, o2::soa::Marker<3>);
 
