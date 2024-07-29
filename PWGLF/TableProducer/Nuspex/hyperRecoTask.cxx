@@ -233,9 +233,10 @@ struct hyperRecoTask {
     hH4LMassBefSel = qaRegistry.add<TH1>("hH4LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
     hH4LMassTracked = qaRegistry.add<TH1>("hH4LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
 
-    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{3, -0.5, 2.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "Selected");
+    hEvents->GetXaxis()->SetBinLabel(3, "Zorro He events");
     if (doprocessMC) {
       hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
@@ -324,7 +325,10 @@ struct hyperRecoTask {
       }
 
       if (cfgSkimmedProcessing) {
-        zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+        bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+        if (zorroSelected) {
+          hEvents->Fill(2.);
+        }
       }
 
       goodCollision[collision.globalIndex()] = true;
