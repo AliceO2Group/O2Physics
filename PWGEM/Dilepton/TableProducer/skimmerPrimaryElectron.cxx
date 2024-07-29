@@ -25,6 +25,8 @@
 #include "Common/Core/trackUtilities.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/Core/TableHelper.h"
+#include "EventFiltering/Zorro.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
@@ -59,6 +61,10 @@ struct skimmerPrimaryElectron {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
+  Configurable<bool> force_enable_swt{"force_enable_swt", false, "flag to force process skimmed data (swt triggered)"}; // this is only for non-EM users.
+  Configurable<std::string> cfg_swt_names_force{"cfg_swt_names_force", "", "comma-separated software trigger names"};   // this is only for non-EM users.
 
   // Operation and minimisation criteria
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
@@ -90,12 +96,13 @@ struct skimmerPrimaryElectron {
 
   std::pair<int8_t, std::set<uint8_t>> itsRequirement = {1, {0, 1, 2}}; // any hits on 3 ITS ib layers.
 
+  Zorro zorro;
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -104,6 +111,13 @@ struct skimmerPrimaryElectron {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);       // for EM users.
+    getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true); // for EM users.
+    if (force_enable_swt) {                                                                                 // for non-EM users.
+      enable_swt = force_enable_swt;
+      cfg_swt_names = cfg_swt_names_force;
+    }
 
     if (fillQAHistogram) {
       fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -144,6 +158,10 @@ struct skimmerPrimaryElectron {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if (enable_swt) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -418,10 +436,13 @@ struct skimmerPrimaryElectron {
     stored_trackIds.reserve(tracks.size());
 
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
         continue;
       }
 
@@ -446,10 +467,13 @@ struct skimmerPrimaryElectron {
     stored_trackIds.reserve(tracks.size() * 2);
 
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
         continue;
       }
 
@@ -490,7 +514,7 @@ struct skimmerPrimaryElectron {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
@@ -519,7 +543,7 @@ struct skimmerPrimaryElectron {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
@@ -757,7 +781,7 @@ struct prefilterPrimaryElectron {
     std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
@@ -836,7 +860,7 @@ struct prefilterPrimaryElectron {
     std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
