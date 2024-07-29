@@ -926,14 +926,14 @@ struct QaEfficiency {
   bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
   {
     if (!mcParticle.has_daughters() && !mcParticle.isPhysicalPrimary() && mcParticle.getProcess() == 4) {
-    auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
-    for (const auto& mother : mothers) {
-      if (!mother.isPhysicalPrimary() && mother.getProcess() == 4) {
-        return true;
+      auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+      for (const auto& mother : mothers) {
+        if (!mother.isPhysicalPrimary() && mother.getProcess() == 4) {
+          return true;
       }
     }
   }
-  return false; // Otherwise, not considered a tertiary particle
+   return false; // Otherwise, not considered a tertiary particle
   }
   template <int pdgSign, o2::track::PID::ID id>
   void fillMCTrackHistograms(const TrackCandidatesMC::iterator& track, const bool doMakeHistograms)
