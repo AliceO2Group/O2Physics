@@ -23,7 +23,6 @@
 #include "CommonDataFormat/IRFrame.h"
 #include "Framework/HistogramRegistry.h"
 
-
 namespace o2
 {
 namespace ccdb
@@ -32,8 +31,7 @@ class BasicCCDBManager;
 };
 }; // namespace o2
 
-struct ZorroHelper
-{
+struct ZorroHelper {
   uint64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
   ClassDefNV(ZorroHelper, 1);
 };
