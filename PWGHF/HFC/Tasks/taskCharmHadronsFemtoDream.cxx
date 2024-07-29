@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoDreamPairTaskCharmHadrons.cxx
+/// \file taskCharmHadronsFemtoDream.cxx.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
 
