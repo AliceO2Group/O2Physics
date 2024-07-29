@@ -260,7 +260,7 @@ struct hyperRecoTask {
       return;
     }
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fHe3");
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
     }
     auto run3grp_timestamp = bc.timestamp();
 
