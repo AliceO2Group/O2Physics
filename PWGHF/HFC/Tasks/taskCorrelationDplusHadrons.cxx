@@ -150,8 +150,8 @@ struct HfTaskCorrelationDplusHadrons {
     // Histograms for data analysis
     registry.add("hBdtScorePrompt", "D+ BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
     registry.add("hBdtScoreBkg", "D+ BDT bkg score", {HistType::kTH1F, {axisBdtScore}});
+    registry.add("hMassDplusVsPt", "D+ candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     if (fillHistoData) {
-      registry.add("hMassDplusVsPt", "D+ candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
       registry.add("hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {axisDeltaEta}});
       registry.add("hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {axisDeltaPhi}});
       registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}});
