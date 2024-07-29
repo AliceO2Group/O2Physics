@@ -1352,7 +1352,7 @@ struct phiInJets {
                 std::cout << "******************************************" << std::endl;
               }
               JEhistos.fill(HIST("Resp_Matrix_MATCHED"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
-              unsigned int seed = 1992;
+	      unsigned int seed = static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count());
               int dice = rand_r(&seed) % 2;
               if (dice > 0)
                 JEhistos.fill(HIST("Resp_Matrix_MATCHED_rand0"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
