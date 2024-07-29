@@ -325,7 +325,7 @@ struct hyperRecoTask {
       }
 
       if (cfgSkimmedProcessing) {
-        bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+        bool zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
         if (zorroSelected) {
           hEvents->Fill(2.);
         }
