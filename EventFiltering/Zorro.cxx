@@ -12,44 +12,65 @@
 
 #include "Zorro.h"
 
+#include <algorithm>
 #include <map>
-
-#include "TList.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonDataFormat/InteractionRecord.h"
 
 using o2::InteractionRecord;
 
-void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, std::string prefix)
+namespace
 {
-  TList* list = histRegistry.getListOfHistograms();
-  if (mSelections && list->FindObject((std::to_string(mRunNumber) + "/" + prefix + "Selections").data()) == nullptr) {
-    mAnalysedTriggers = histRegistry.add<TH1>((std::to_string(mRunNumber) + "/" + prefix + "AnalysedTriggers").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX() - 2, -0.5, mSelections->GetNbinsX() - 2.5}});
+int findBin(TH1* hist, const std::string& label)
+{ // Find bin by label, avoiding the axis extention from the native ROOT implementation
+  for (int iBin{1}; iBin <= hist->GetNbinsX(); ++iBin) {
+    if (label == hist->GetXaxis()->GetBinLabel(iBin)) {
+      return iBin;
+    }
+  }
+  return -1;
+}
+} // namespace
+
+void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix)
+{
+  if (mRunNumberHistos == runNumber) {
+    return;
+  }
+  mRunNumberHistos = runNumber;
+  if (mSelections) {
+    mAnalysedTriggers = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "AnalysedTriggers").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX() - 2, -0.5, mSelections->GetNbinsX() - 2.5}});
     for (int iBin{2}; iBin < mSelections->GetNbinsX(); ++iBin) { // Exclude first and last bins as they are total number of analysed and selected events, respectively
       mAnalysedTriggers->GetXaxis()->SetBinLabel(iBin - 1, mSelections->GetXaxis()->GetBinLabel(iBin));
     }
-    std::shared_ptr<TH1> selections = histRegistry.add<TH1>((std::to_string(mRunNumber) + "/" + prefix + "Selections").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX(), -0.5, static_cast<double>(mSelections->GetNbinsX() - 0.5)}});
+    std::shared_ptr<TH1> selections = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "Selections").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX(), -0.5, static_cast<double>(mSelections->GetNbinsX() - 0.5)}});
     for (int iBin{1}; iBin <= mSelections->GetNbinsX(); ++iBin) {
       selections->GetXaxis()->SetBinLabel(iBin, mSelections->GetXaxis()->GetBinLabel(iBin));
       selections->SetBinContent(iBin, mSelections->GetBinContent(iBin));
       selections->SetBinError(iBin, mSelections->GetBinError(iBin));
     }
   }
-  if (mScalers && list->FindObject((std::to_string(mRunNumber) + "/" + prefix + "Scalers").data()) == nullptr) {
-    std::shared_ptr<TH1> scalers = histRegistry.add<TH1>((std::to_string(mRunNumber) + "/" + prefix + "Scalers").data(), "", o2::framework::HistType::kTH1D, {{mScalers->GetNbinsX(), -0.5, static_cast<double>(mScalers->GetNbinsX() - 0.5)}});
+  if (mScalers) {
+    std::shared_ptr<TH1> scalers = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "Scalers").data(), "", o2::framework::HistType::kTH1D, {{mScalers->GetNbinsX(), -0.5, static_cast<double>(mScalers->GetNbinsX() - 0.5)}});
     for (int iBin{1}; iBin <= mScalers->GetNbinsX(); ++iBin) {
       scalers->GetXaxis()->SetBinLabel(iBin, mScalers->GetXaxis()->GetBinLabel(iBin));
       scalers->SetBinContent(iBin, mScalers->GetBinContent(iBin));
       scalers->SetBinError(iBin, mScalers->GetBinError(iBin));
     }
   }
-  if (mInspectedTVX && list->FindObject((std::to_string(mRunNumber) + "/" + prefix + "InspectedTVX").data()) == nullptr) {
-    std::shared_ptr<TH1> inspectedTVX = histRegistry.add<TH1>((std::to_string(mRunNumber) + "/" + prefix + "InspectedTVX").data(), "", o2::framework::HistType::kTH1D, {{mInspectedTVX->GetNbinsX(), -0.5, static_cast<double>(mInspectedTVX->GetNbinsX() - 0.5)}});
+  if (mInspectedTVX) {
+    std::shared_ptr<TH1> inspectedTVX = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "InspectedTVX").data(), "", o2::framework::HistType::kTH1D, {{mInspectedTVX->GetNbinsX(), -0.5, static_cast<double>(mInspectedTVX->GetNbinsX() - 0.5)}});
     for (int iBin{1}; iBin <= mInspectedTVX->GetNbinsX(); ++iBin) {
       inspectedTVX->GetXaxis()->SetBinLabel(iBin, mInspectedTVX->GetXaxis()->GetBinLabel(iBin));
       inspectedTVX->SetBinContent(iBin, mInspectedTVX->GetBinContent(iBin));
       inspectedTVX->SetBinError(iBin, mInspectedTVX->GetBinError(iBin));
+    }
+  }
+  if (mTOIs.size()) {
+    mAnalysedTriggersOfInterest = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "AnalysedTriggersOfInterest").data(), "", o2::framework::HistType::kTH1D, {{static_cast<int>(mTOIs.size()), -0.5, static_cast<double>(mTOIs.size() - 0.5)}});
+    for (size_t i{0}; i < mTOIs.size(); ++i) {
+      mAnalysedTriggersOfInterest->GetXaxis()->SetBinLabel(i + 1, mTOIs[i].data());
     }
   }
 }
@@ -85,12 +106,16 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
     // Trim leading and trailing whitespaces from the token
     token.erase(0, token.find_first_not_of(" "));
     token.erase(token.find_last_not_of(" ") + 1);
-    int bin = mScalers->GetXaxis()->FindBin(token.c_str()) - 2;
+    int bin = findBin(mSelections, token) - 2;
     mTOIs.push_back(token);
     mTOIidx.push_back(bin);
     tois = tois.erase(0, pos + 1);
   }
   mTOIcounts.resize(mTOIs.size(), 0);
+  LOGF(info, "Zorro initialized for run %d, triggers of interest:", runNumber);
+  for (size_t i{0}; i < mTOIs.size(); ++i) {
+    LOGF(info, ">>> %s : %i", mTOIs[i].data(), mTOIidx[i]);
+  }
   return mTOIidx;
 }
 
@@ -134,6 +159,9 @@ bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance)
       continue;
     } else if (mLastResult.test(mTOIidx[i])) {
       mTOIcounts[i] += (lastSelectedIdx != mLastSelectedIdx); /// Avoid double counting
+      if (mAnalysedTriggersOfInterest && lastSelectedIdx != mLastSelectedIdx) {
+        mAnalysedTriggersOfInterest->Fill(i);
+      }
       return true;
     }
   }

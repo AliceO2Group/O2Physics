@@ -75,8 +75,7 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::Eta,
   LFClusterStudiesTables::Phi,
   LFClusterStudiesTables::ItsClusterSize,
-  LFClusterStudiesTables::PartID,
-  LFClusterStudiesTables::IsPositive);
+  LFClusterStudiesTables::PartID);
 
 DECLARE_SOA_TABLE(
   ClStTableMc, "AOD", "CLSTTABLEMC",
@@ -85,7 +84,6 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::Phi,
   LFClusterStudiesTables::ItsClusterSize,
   LFClusterStudiesTables::PartID,
-  LFClusterStudiesTables::IsPositive,
   LFClusterStudiesTables::PartIDMc);
 
 DECLARE_SOA_TABLE(
@@ -95,7 +93,6 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::Phi,
   LFClusterStudiesTables::ItsClusterSize,
   LFClusterStudiesTables::PartID,
-  LFClusterStudiesTables::IsPositive,
   LFClusterStudiesTables::PTPC,
   LFClusterStudiesTables::PIDinTrk,
   LFClusterStudiesTables::TpcNSigma,
@@ -111,7 +108,6 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::Phi,
   LFClusterStudiesTables::ItsClusterSize,
   LFClusterStudiesTables::PartID,
-  LFClusterStudiesTables::IsPositive,
   LFClusterStudiesTables::PartIDMc,
   LFClusterStudiesTables::PTPC,
   LFClusterStudiesTables::PIDinTrk,
