@@ -211,7 +211,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
         zorro.initCCDB(ccdb.service, runNumber, bc.timestamp(), softwareTrigger.value);
         currentRun = runNumber;
       }
-      zorro.populateHistRegistry(registry);
+      zorro.populateHistRegistry(registry, runNumber);
 
       if (!zorro.isSelected(bc.globalBC())) { /// Just let Zorro do the accounting
         SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
