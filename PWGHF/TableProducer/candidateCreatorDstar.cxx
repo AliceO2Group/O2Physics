@@ -636,8 +636,8 @@ struct HfCandidateCreatorDstarExpressions {
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          rowsMcMatchRecDstar(0, 0, -1.f, 0);
-          rowsMcMatchRecD0(0, 0, -1.f, 0);
+          rowsMcMatchGenDstar(0, 0, -1);
+          rowsMcMatchGenD0(0, 0, -1);
         }
         continue;
       }
