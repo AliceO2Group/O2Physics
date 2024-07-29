@@ -43,6 +43,7 @@ struct NPCascCandidate {
   float matchingChi2;
   bool isGoodMatch;
   bool isGoodCascade;
+  int pdgCodePrimary;
   float pvX;
   float pvY;
   float pvZ;
@@ -582,7 +583,15 @@ struct NonPromptCascadeTask {
 
       bool isGoodMatch = ((motherParticleID == ITStrack.mcParticleId())) ? true : false;
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.matchingChi2(), isGoodMatch, isGoodCascade,
+      int pdgCodePrimary = -1;
+      if (isGoodCascade && isGoodMatch) {
+        if (track.mcParticle().has_mothers()) {
+          const auto primary = track.mcParticle().mothers_as<aod::McParticles>()[0];
+          pdgCodePrimary = primary.pdgCode();
+        }
+      }
+
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.matchingChi2(), isGoodMatch, isGoodCascade, pdgCodePrimary,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -609,7 +618,7 @@ struct NonPromptCascadeTask {
       auto particle = mcParticles.iteratorAt(mcParticleId[i]);
       auto& c = candidates[i];
 
-      NPCTableMC(c.matchingChi2, c.isGoodMatch, c.isGoodCascade,
+      NPCTableMC(c.matchingChi2, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
                  c.pvX, c.pvY, c.pvZ,
                  c.cascPt, c.cascEta, c.cascPhi,
                  c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
@@ -819,7 +828,7 @@ struct NonPromptCascadeTask {
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.matchingChi2(), 0, 0,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.matchingChi2(), 0, 0, -1,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
