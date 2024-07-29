@@ -159,7 +159,6 @@ struct HfTaskCharmHadronsFemtoDream {
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
   /// Histogram output
-  //HistogramRegistry registry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registry{"CorrelationsAndQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   /// Partition for particle 1
