@@ -435,7 +435,7 @@ struct Pi0EtaToGammaGamma {
 
   /// \brief Calculate background (using rotation background method only for EMCal!)
   template <typename TPhotons>
-  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, EMCPhotonCut const& cut)
+  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
     if (photons_coll.size() < 3) {
@@ -646,8 +646,8 @@ struct Pi0EtaToGammaGamma {
               used_dileptonIds.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
-          }    // end of dielectron loop
-        }      // end of g1 loop
+          } // end of dielectron loop
+        } // end of g1 loop
       } else { // PCM-EMC, PCM-PHOS. Nightmare. don't run these pairs.
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
@@ -678,7 +678,7 @@ struct Pi0EtaToGammaGamma {
           }
           ndiphoton++;
         } // end of pairing loop
-      }   // end of pairing in same event
+      } // end of pairing in same event
 
       // event mixing
       if (!cfgDoMix || !(ndiphoton > 0)) {
