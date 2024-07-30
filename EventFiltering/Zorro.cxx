@@ -121,6 +121,7 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
 
 std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
 {
+  uint64_t lastSelectedIdx = mLastSelectedIdx;
   mLastResult.reset();
   o2::dataformats::IRFrame bcFrame{InteractionRecord::long2IR(bcGlobalId) - tolerance, InteractionRecord::long2IR(bcGlobalId) + tolerance};
   if (bcGlobalId < mLastBCglobalId) {
@@ -133,7 +134,7 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
         for (int iTOI{0}; iTOI < 64; ++iTOI) {
           if (mZorroHelpers->at(i).selMask[iMask] & (1ull << iTOI)) {
             mLastResult.set(iMask * 64 + iTOI, 1);
-            if (mAnalysedTriggers) {
+            if (mAnalysedTriggers && i != lastSelectedIdx) {
               mAnalysedTriggers->Fill(iMask * 64 + iTOI);
             }
           }
