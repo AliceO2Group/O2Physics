@@ -166,10 +166,11 @@ struct hstrangecorrelationfilter {
     histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
     histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
   }
-  
+
   // reco-level trigger quality checks (N.B.: DCA is filtered, not selected)
   template <class TTrack>
-  bool isValidTrigger(TTrack track){ 
+  bool isValidTrigger(TTrack track)
+  {
     if (track.eta() > triggerEtaMax || track.eta() < triggerEtaMin) {
       return false;
     }
@@ -207,8 +208,8 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if( !isValidTrigger(track) ) 
-        continue; 
+      if (!isValidTrigger(track))
+        continue;
       triggerTrack(
         track.collisionId(),
         false, // if you decide to check real data for primaries, you'll have a hard time
@@ -231,12 +232,12 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if( !isValidTrigger(track) ) 
-        continue; 
-      bool physicalPrimary = false; 
-      if( track.has_mcParticle()){ 
-        auto mcParticle = track.mcParticle(); 
-        physicalPrimary = mcParticle.isPhysicalPrimary(); 
+      if (!isValidTrigger(track))
+        continue;
+      bool physicalPrimary = false;
+      if (track.has_mcParticle()) {
+        auto mcParticle = track.mcParticle();
+        physicalPrimary = mcParticle.isPhysicalPrimary();
       }
       triggerTrack(
         track.collisionId(),
@@ -521,7 +522,7 @@ struct hstrangecorrelationfilter {
       ) {
         assocCascades(casc.collisionId(), casc.globalIndex(),
                       compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,
-                      origCascadeEntry.isTrueXiMinus(), origCascadeEntry.isTrueXiPlus(), 
+                      origCascadeEntry.isTrueXiMinus(), origCascadeEntry.isTrueXiPlus(),
                       origCascadeEntry.isTrueOmegaMinus(), origCascadeEntry.isTrueOmegaPlus(),
                       origCascadeEntry.isPhysicalPrimary(),
                       massRegXi, massRegOmega);

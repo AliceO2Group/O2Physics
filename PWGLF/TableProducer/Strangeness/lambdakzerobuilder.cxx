@@ -1598,7 +1598,7 @@ struct lambdakzeroPreselector {
       }
       v0tags(validV0,
              bitcheck(selectionMask[ii], bitTrueGamma), bitcheck(selectionMask[ii], bitTrueK0Short), bitcheck(selectionMask[ii], bitTrueLambda),
-             bitcheck(selectionMask[ii], bitTrueAntiLambda), 
+             bitcheck(selectionMask[ii], bitTrueAntiLambda),
              bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton), bitcheck(selectionMask[ii], bitPhysicalPrimary),
              bitcheck(selectionMask[ii], bitdEdxGamma), bitcheck(selectionMask[ii], bitdEdxK0Short), bitcheck(selectionMask[ii], bitdEdxLambda),
              bitcheck(selectionMask[ii], bitdEdxAntiLambda), bitcheck(selectionMask[ii], bitdEdxHypertriton), bitcheck(selectionMask[ii], bitdEdxAntiHypertriton),

@@ -160,8 +160,8 @@ struct correlateStrangeness {
   void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvz, float mult)
   {
     for (auto& triggerTrack : triggers) {
-      if(doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) 
-        continue; 
+      if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
+        continue;
       auto trigg = triggerTrack.track_as<TracksComplete>();
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult);
@@ -229,8 +229,8 @@ struct correlateStrangeness {
   void fillCorrelationsCascade(aod::TriggerTracks const& triggers, aod::AssocCascades const& assocs, bool mixing, float pvz, float mult)
   {
     for (auto& triggerTrack : triggers) {
-      if(doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) 
-        continue; 
+      if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
+        continue;
       auto trigg = triggerTrack.track_as<TracksComplete>();
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt(), mult);
@@ -306,8 +306,8 @@ struct correlateStrangeness {
   {
 
     for (auto& triggerTrack : triggers) {
-      if(doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) 
-        continue; 
+      if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
+        continue;
       auto trigg = triggerTrack.track_as<TracksComplete>();
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesPion"), trigg.pt(), mult);
@@ -731,8 +731,8 @@ struct correlateStrangeness {
     }
     if (!doprocessSameEventHCascades) {
       for (auto const& triggerTrack : triggerTracks) {
-        if(doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) 
-          continue; 
+        if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
+          continue;
         auto track = triggerTrack.track_as<TracksComplete>();
         histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
       }
@@ -798,8 +798,8 @@ struct correlateStrangeness {
       });
     }
     for (auto const& triggerTrack : triggerTracks) {
-      if(doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) 
-        continue; 
+      if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
+        continue;
       auto track = triggerTrack.track_as<TracksComplete>();
       histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
     }
@@ -839,8 +839,8 @@ struct correlateStrangeness {
     }
     if (!doprocessSameEventHCascades && !doprocessSameEventHV0s) {
       for (auto const& triggerTrack : triggerTracks) {
-        if(doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) 
-          continue; 
+        if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
+          continue;
         auto track = triggerTrack.track_as<TracksComplete>();
         histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
       }
