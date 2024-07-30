@@ -674,6 +674,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
+  std::shared_ptr<TH1> hGenCharmBaryonPtRapidityTightXicToXiPi, hGenCharmBaryonPtRapidityLooseXicToXiPi, hGenCharmBaryonPtRapidityTightOmegacToXiPi, hGenCharmBaryonPtRapidityLooseOmegacToXiPi, hGenCharmBaryonPtRapidityTightOmegacToOmegaPi, hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi, hGenCharmBaryonPtRapidityTightOmegacToOmegaK, hGenCharmBaryonPtRapidityLooseOmegacToOmegaK;
+
   HistogramRegistry registry{"registry"};
 
   // inspect for which zPvPosMax cut was set for reconstructed
