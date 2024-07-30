@@ -346,7 +346,7 @@ struct v2ellip {
             mpA_pr[pt]++;
           } else {
             continue;
-	  }
+          }
         } // end of pt loop
       } else {
         continue;
@@ -382,7 +382,7 @@ struct v2ellip {
             mpB_pr[pt]++;
           } else {
             continue;
-	  }
+          }
         } // end of pt loop
       } else {
         continue;
