@@ -30,29 +30,28 @@ namespace o2::aod
 namespace pwgem::dilepton::swt
 {
 enum class swtAliases : int { // software trigger aliases for EM
-  kUnDef = 0,
-  kHighTrackMult = 1,
+  kHighTrackMult = 0,
   kHighFt0Mult,
-  kSingleE,
-  kLMeeIMR,
-  kLMeeHMR,
-  kDiElectron,
-  kSingleMuLow,
-  kSingleMuHigh,
-  kDiMuon,
+  // kSingleE,
+  // kLMeeIMR,
+  // kLMeeHMR,
+  // kDiElectron,
+  // kSingleMuLow,
+  // kSingleMuHigh,
+  // kDiMuon,
   kNaliases
 };
 
 const std::unordered_map<std::string, int> aliasLabels = {
   {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
   {"fHighFt0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0Mult)},
-  {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
-  {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
-  {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
-  {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
-  {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
-  {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
-  {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
+  // {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
+  // {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
+  // {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
+  // {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
+  // {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
+  // {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
+  // {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
 };
 } // namespace pwgem::dilepton::swt
 
@@ -60,6 +59,7 @@ namespace emevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
 DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16); //! Bitmask of fired trigger aliases (see above for definitions)
+DECLARE_SOA_COLUMN(NInspectedTVX, nInspectedTVX, uint64_t);
 DECLARE_SOA_COLUMN(NeeULS, neeuls, int);
 DECLARE_SOA_COLUMN(NeeLSpp, neelspp, int);
 DECLARE_SOA_COLUMN(NeeLSmm, neelsmm, int);
@@ -174,9 +174,9 @@ DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table
                   emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>);
 using EMEventQvec = EMEventsQvec::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerBits, "AOD", "EMSWTRIGGERBIT", //!
-                  emevent::SWTAlias);
-using EMSWTriggerBit = EMSWTriggerBits::iterator;
+DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTRIGGERINFO", //!
+                  emevent::SWTAlias, emevent::NInspectedTVX);
+using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
 
 DECLARE_SOA_TABLE(EMEventsNee, "AOD", "EMEVENTNEE", emevent::NeeULS, emevent::NeeLSpp, emevent::NeeLSmm); // joinable to EMEvents
 using EMEventNee = EMEventsNee::iterator;

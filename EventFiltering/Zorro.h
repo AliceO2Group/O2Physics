@@ -15,12 +15,14 @@
 #define EVENTFILTERING_ZORRO_H_
 
 #include <bitset>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "TH1D.h"
 #include "CommonDataFormat/IRFrame.h"
+#include "Framework/HistogramRegistry.h"
 
-class TH1D;
 namespace o2
 {
 namespace ccdb
@@ -30,7 +32,7 @@ class BasicCCDBManager;
 }; // namespace o2
 
 struct ZorroHelper {
-  uint64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
+  ULong64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
   ClassDefNV(ZorroHelper, 1);
 };
 
@@ -42,6 +44,12 @@ class Zorro
   std::bitset<128> fetch(uint64_t bcGlobalId, uint64_t tolerance = 100);
   bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
+  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix = "");
+
+  TH1D* getScalers() const { return mScalers; }
+  TH1D* getSelections() const { return mSelections; }
+  TH1D* getInspectedTVX() const { return mInspectedTVX; }
+  std::bitset<128> getLastResult() const { return mLastResult; }
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
 
   void setCCDBpath(std::string path) { mBaseCCDBPath = path; }
@@ -51,12 +59,16 @@ class Zorro
  private:
   std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
   int mRunNumber = 0;
+  int mRunNumberHistos = 0;
   int mBCtolerance = 100;
   uint64_t mLastBCglobalId = 0;
   uint64_t mLastSelectedIdx = 0;
   TH1D* mScalers = nullptr;
   TH1D* mSelections = nullptr;
   TH1D* mInspectedTVX = nullptr;
+  std::shared_ptr<TH1> mAnalysedTriggers;
+  std::shared_ptr<TH1> mAnalysedTriggersOfInterest;
+  std::bitset<128> mLastResult;
   std::vector<o2::dataformats::IRFrame> mBCranges;
   std::vector<ZorroHelper>* mZorroHelpers = nullptr;
   std::vector<std::string> mTOIs;

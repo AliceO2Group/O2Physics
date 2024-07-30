@@ -70,6 +70,7 @@ struct kaonkaonAnalysisRun3 {
   Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> otherQAplots{"otherQAplots", true, "Other QA plots"};
+  Configurable<bool> QAevents{"QAevents", true, "QA events"};
   Configurable<bool> cfgMultFT0M{"cfgMultFT0M", true, "true for pp (FT0M estimator) and false for PbPb (FT0C estimator)"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
@@ -106,6 +107,8 @@ struct kaonkaonAnalysisRun3 {
   Configurable<float> cMasshigh{"cMasshigh", 2.5f, "High mass"};
   Configurable<int> cMassbins{"cMassbins", 320, "Number of mass bins"};
   Configurable<int> c_nof_rotations{"c_nof_rotations", 3, "Number of random rotations in the rotational background"};
+  ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
+  ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
 
   // different frames
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", true, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -147,18 +150,24 @@ struct kaonkaonAnalysisRun3 {
       }
     }
 
-    histos.add("hCentrality", "Centrality distribution", kTH1F, {axisMult});
-    histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
-    histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
+    if (QAevents) {
+      histos.add("hmutiplicity", "Multiplicity percentile distribution", kTH1F, {axisMult});
+      histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
+      histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
+      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+    }
+
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hNsigmaKaonTPC_before", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF_before", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
-    histos.add("hNsigmaKaonTPC_after", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
-    histos.add("hNsigmaKaonTOF_after", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+    // histos.add("hNsigmaKaonTPC_after", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+    // histos.add("hNsigmaKaonTOF_after", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF_TPC_before", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
-    histos.add("hNsigmaKaonTOF_TPC_after", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
+    // histos.add("hNsigmaKaonTOF_TPC_after", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
     if (otherQAplots) {
       histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
       histos.add("hFTOCvsTPCNoCut", "Mult correlation FT0C vs. TPC without any cut", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
@@ -170,7 +179,7 @@ struct kaonkaonAnalysisRun3 {
       histos.add("Chi2perclusterTPC", "Chi2 / cluster for the TPC track segment", kTH1F, {{50, 0.0f, 50.0f}});
       histos.add("Chi2perclusterTRD", "Chi2 / cluster for the TRD track segment", kTH1F, {{50, 0.0f, 50.0f}});
       histos.add("Chi2perclusterTOF", "Chi2 / cluster for the TOF track segment", kTH1F, {{50, 0.0f, 50.0f}});
-      histos.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {{100, 0.0f, 100.0f}, {axisPt}});
+      histos.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {axisPtfordEbydx, axisdEdx});
     }
     if (!isMC) {
       histos.add("h3PhiInvMassUnlikeSign", "KK Unlike Sign", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
@@ -317,8 +326,8 @@ struct kaonkaonAnalysisRun3 {
       histos.fill(HIST("Chi2perclusterTRD"), candidate2.trdChi2());
       histos.fill(HIST("Chi2perclusterTOF"), candidate1.tofChi2());
       histos.fill(HIST("Chi2perclusterTOF"), candidate2.tofChi2());
-      histos.fill(HIST("dE_by_dx_TPC"), candidate1.tpcSignal(), candidate1.pt());
-      histos.fill(HIST("dE_by_dx_TPC"), candidate2.tpcSignal(), candidate2.pt());
+      histos.fill(HIST("dE_by_dx_TPC"), candidate1.pt(), candidate1.tpcSignal());
+      histos.fill(HIST("dE_by_dx_TPC"), candidate2.pt(), candidate2.tpcSignal());
     }
 
     // polarization calculations
@@ -383,9 +392,14 @@ struct kaonkaonAnalysisRun3 {
       multiplicity = collision.centFT0M();
     else
       multiplicity = collision.centFT0C();
-    histos.fill(HIST("hCentrality"), multiplicity);
-    histos.fill(HIST("hNcontributor"), collision.numContrib());
-    histos.fill(HIST("hVtxZ"), collision.posZ());
+    if (QAevents) {
+      histos.fill(HIST("hmutiplicity"), multiplicity);
+      histos.fill(HIST("hVtxZ"), collision.posZ());
+      histos.fill(HIST("hNcontributor"), collision.numContrib());
+      histos.fill(HIST("multdist_FT0M"), collision.multFT0M());
+      histos.fill(HIST("multdist_FT0A"), collision.multFT0A());
+      histos.fill(HIST("multdist_FT0C"), collision.multFT0C());
+    }
     for (auto track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
@@ -472,11 +486,11 @@ struct kaonkaonAnalysisRun3 {
           }
         }
 
-        if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
-          histos.fill(HIST("hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
-          histos.fill(HIST("hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
-          histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
-        }
+        // if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
+        //   // histos.fill(HIST("hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
+        //   // histos.fill(HIST("hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
+        //   // histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+        // }
       }
     }
   }
@@ -581,11 +595,11 @@ struct kaonkaonAnalysisRun3 {
             }
           }
 
-          if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-            histos.fill(HIST("hNsigmaKaonTPC_after"), t1.pt(), t1.tpcNSigmaKa());
-            histos.fill(HIST("hNsigmaKaonTOF_after"), t1.pt(), t1.tofNSigmaKa());
-            histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), t1.tofNSigmaKa(), t1.tpcNSigmaKa());
-          }
+          // if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
+          //   histos.fill(HIST("hNsigmaKaonTPC_after"), t1.pt(), t1.tpcNSigmaKa());
+          //   histos.fill(HIST("hNsigmaKaonTOF_after"), t1.pt(), t1.tofNSigmaKa());
+          //   histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), t1.tofNSigmaKa(), t1.tpcNSigmaKa());
+          // }
           // if (isITSOnlycut) {
           //   FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
           // }
@@ -678,11 +692,11 @@ struct kaonkaonAnalysisRun3 {
             }
           }
 
-          if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-            histos.fill(HIST("hNsigmaKaonTPC_after"), t1.pt(), t1.tpcNSigmaKa());
-            histos.fill(HIST("hNsigmaKaonTOF_after"), t1.pt(), t1.tofNSigmaKa());
-            histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), t1.tofNSigmaKa(), t1.tpcNSigmaKa());
-          }
+          // if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
+          //   histos.fill(HIST("hNsigmaKaonTPC_after"), t1.pt(), t1.tpcNSigmaKa());
+          //   histos.fill(HIST("hNsigmaKaonTOF_after"), t1.pt(), t1.tofNSigmaKa());
+          //   histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), t1.tofNSigmaKa(), t1.tpcNSigmaKa());
+          // }
 
           // if (isITSOnlycut) {
           //   FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);

@@ -11,17 +11,17 @@
 //
 // ========================
 //
-// Analysis task for single electron QC
+// This code is for dimuon analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 
-#include "PWGEM/Dilepton/Core/SingleTrackQC.h"
+#include "PWGEM/Dilepton/Core/Dilepton.h"
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SingleTrackQC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, FilteredMyElectrons>>(cfgc, TaskName{"single-electron-qc"})};
+    adaptAnalysisTask<Dilepton<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, MyEMH_muon, FilteredMyMuons>>(cfgc, TaskName{"dimuon"})};
 }

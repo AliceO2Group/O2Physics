@@ -61,6 +61,7 @@ DECLARE_SOA_COLUMN(TpcSignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(TpcNcls, tpcNcls, uint8_t);
 DECLARE_SOA_COLUMN(TpcNSigma, tpcNSigma, float);
 DECLARE_SOA_COLUMN(TofNSigma, tofNSigma, float);
+DECLARE_SOA_COLUMN(TofMass, tofMass, float);
 DECLARE_SOA_COLUMN(Chi2its, chi2its, float);
 DECLARE_SOA_COLUMN(Chi2tpc, chi2tpc, float);
 DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);
@@ -74,8 +75,7 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::Eta,
   LFClusterStudiesTables::Phi,
   LFClusterStudiesTables::ItsClusterSize,
-  LFClusterStudiesTables::PartID,
-  LFClusterStudiesTables::IsPositive);
+  LFClusterStudiesTables::PartID);
 
 DECLARE_SOA_TABLE(
   ClStTableMc, "AOD", "CLSTTABLEMC",
@@ -84,7 +84,6 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::Phi,
   LFClusterStudiesTables::ItsClusterSize,
   LFClusterStudiesTables::PartID,
-  LFClusterStudiesTables::IsPositive,
   LFClusterStudiesTables::PartIDMc);
 
 DECLARE_SOA_TABLE(
@@ -94,11 +93,11 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::Phi,
   LFClusterStudiesTables::ItsClusterSize,
   LFClusterStudiesTables::PartID,
-  LFClusterStudiesTables::IsPositive,
   LFClusterStudiesTables::PTPC,
   LFClusterStudiesTables::PIDinTrk,
   LFClusterStudiesTables::TpcNSigma,
   LFClusterStudiesTables::TofNSigma,
+  LFClusterStudiesTables::TofMass,
   LFClusterStudiesTables::CosPAMother,
   LFClusterStudiesTables::MassMother);
 
@@ -109,12 +108,12 @@ DECLARE_SOA_TABLE(
   LFClusterStudiesTables::Phi,
   LFClusterStudiesTables::ItsClusterSize,
   LFClusterStudiesTables::PartID,
-  LFClusterStudiesTables::IsPositive,
   LFClusterStudiesTables::PartIDMc,
   LFClusterStudiesTables::PTPC,
   LFClusterStudiesTables::PIDinTrk,
   LFClusterStudiesTables::TpcNSigma,
   LFClusterStudiesTables::TofNSigma,
+  LFClusterStudiesTables::TofMass,
   LFClusterStudiesTables::CosPAMother,
   LFClusterStudiesTables::MassMother);
 

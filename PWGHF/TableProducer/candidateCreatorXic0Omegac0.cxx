@@ -670,6 +670,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -710,7 +711,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                         aod::TracksWMc const&,
                         aod::McParticles const& mcParticles,
                         CCs const& collInfos,
-                        aod::McCollisions const&,
+                        aod::McCollisions const& mcCollisions,
                         aod::McCollisionLabels const&,
                         BCsInfo const&)
   {
@@ -936,33 +937,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       }
     } // close loop over candidates
 
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      ptCharmBaryonGen = -999.;
-      rapidityCharmBaryonGen = -999.;
-      flag = 0;
-      sign = -9;
-      debugGenCharmBar = 0;
-      debugGenCasc = 0;
-      debugGenLambda = 0;
-      origin = RecoDecay::OriginType::None;
-      std::vector<int> idxBhadMothers{};
+    for (const auto& mcCollision : mcCollisions) {
 
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
-          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
-          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
-          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        }
-        continue;
-      }
+      // Slice the particles table to get the particles for the current MC collision
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
-      auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
       uint16_t rejectionMask{0};
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
@@ -977,165 +956,194 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       }
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
-        /// at least one event selection not satisfied --> reject the gen particle
-        if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
-          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
-          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
-          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+        /// at least one event selection not satisfied --> reject all particles from this collision
+        for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
+          if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+            rowMCMatchGenXicToXiPi(0, 0, 0, 0, -999., -999., RecoDecay::OriginType::None, -1);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
+            rowMCMatchGenOmegacToXiPi(0, 0, 0, 0, -999., -999., RecoDecay::OriginType::None, -1);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
+            rowMCMatchGenToOmegaPi(0, 0, 0, 0, -999., -999., RecoDecay::OriginType::None, -1);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
+            rowMCMatchGenToOmegaK(0, 0, 0, 0, -999., -999., RecoDecay::OriginType::None, -1);
+          }
         }
         continue;
       }
 
-      if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-        //  Xic → Xi pi
-        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
-          debugGenCharmBar = 1;
-          ptCharmBaryonGen = particle.pt();
-          rapidityCharmBaryonGen = particle.y();
-          for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
-            if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
-              continue;
-            }
-            // Xi -> Lambda pi
-            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
-              debugGenCasc = 1;
-              for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
-                if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
-                  continue;
-                }
-                // Lambda -> p pi
-                if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
-                  debugGenLambda = 1;
-                  flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi);
-                }
-              }
-            }
+      // Match generated particles.
+      for (const auto& particle : mcParticlesPerMcColl) {
+        ptCharmBaryonGen = -999.;
+        rapidityCharmBaryonGen = -999.;
+        flag = 0;
+        sign = -9;
+        debugGenCharmBar = 0;
+        debugGenCasc = 0;
+        debugGenLambda = 0;
+        origin = RecoDecay::OriginType::None;
+        std::vector<int> idxBhadMothers{};
+
+        // Reject particles from background events
+        if (particle.fromBackgroundEvent() && rejectBackground) {
+          if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+            rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
+            rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
+            rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
+            rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
-        }
-        // Check whether the charm baryon is non-prompt (from a b quark)
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-        }
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
-        } else {
-          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+          continue;
         }
 
-      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
-        //  Omegac → Xi pi
-        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
-          debugGenCharmBar = 1;
-          ptCharmBaryonGen = particle.pt();
-          rapidityCharmBaryonGen = particle.y();
-          for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
-            if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
-              continue;
-            }
-            // Xi -> Lambda pi
-            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
-              debugGenCasc = 1;
-              for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
-                if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
-                  continue;
-                }
-                // Lambda -> p pi
-                if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
-                  debugGenLambda = 1;
-                  flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi);
+        if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+          //  Xic → Xi pi
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+            debugGenCharmBar = 1;
+            ptCharmBaryonGen = particle.pt();
+            rapidityCharmBaryonGen = particle.y();
+            for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
+              if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
+                continue;
+              }
+              // Xi -> Lambda pi
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+                debugGenCasc = 1;
+                for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
+                  if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                    continue;
+                  }
+                  // Lambda -> p pi
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                    debugGenLambda = 1;
+                    flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi);
+                  }
                 }
               }
             }
           }
-        }
-        // Check whether the charm baryon is non-prompt (from a b quark)
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-        }
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
-        } else {
-          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        }
+          // Check whether the charm baryon is non-prompt (from a b quark)
+          if (flag != 0) {
+            origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+          }
+          if (origin == RecoDecay::OriginType::NonPrompt) {
+            rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
+          } else {
+            rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+          }
 
-      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
-        //  Omegac → Omega pi
-        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodePiPlus}, true, &sign)) {
-          debugGenCharmBar = 1;
-          ptCharmBaryonGen = particle.pt();
-          rapidityCharmBaryonGen = particle.y();
-          for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
-            if (std::abs(daughterCharm.pdgCode()) != pdgCodeOmegaMinus) {
-              continue;
-            }
-            // Omega -> Lambda K
-            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeOmegaMinus, std::array{pdgCodeLambda, pdgCodeKaonMinus}, true)) {
-              debugGenCasc = 1;
-              for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
-                if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
-                  continue;
-                }
-                // Lambda -> p pi
-                if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
-                  debugGenLambda = 1;
-                  flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
+          //  Omegac → Xi pi
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+            debugGenCharmBar = 1;
+            ptCharmBaryonGen = particle.pt();
+            rapidityCharmBaryonGen = particle.y();
+            for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
+              if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
+                continue;
+              }
+              // Xi -> Lambda pi
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+                debugGenCasc = 1;
+                for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
+                  if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                    continue;
+                  }
+                  // Lambda -> p pi
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                    debugGenLambda = 1;
+                    flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi);
+                  }
                 }
               }
             }
           }
-        }
-        // Check whether the charm baryon is non-prompt (from a b quark)
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-        }
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
-        } else {
-          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        }
+          // Check whether the charm baryon is non-prompt (from a b quark)
+          if (flag != 0) {
+            origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+          }
+          if (origin == RecoDecay::OriginType::NonPrompt) {
+            rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
+          } else {
+            rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+          }
 
-      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
-        //  Omegac → Omega K
-        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodeKaonPlus}, true, &sign)) {
-          debugGenCharmBar = 1;
-          ptCharmBaryonGen = particle.pt();
-          rapidityCharmBaryonGen = particle.y();
-          for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
-            if (std::abs(daughterCharm.pdgCode()) != pdgCodeOmegaMinus) {
-              continue;
-            }
-            // Omega -> Lambda K
-            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeOmegaMinus, std::array{pdgCodeLambda, pdgCodeKaonMinus}, true)) {
-              debugGenCasc = 1;
-              for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
-                if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
-                  continue;
-                }
-                // Lambda -> p pi
-                if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
-                  debugGenLambda = 1;
-                  flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
+          //  Omegac → Omega pi
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodePiPlus}, true, &sign)) {
+            debugGenCharmBar = 1;
+            ptCharmBaryonGen = particle.pt();
+            rapidityCharmBaryonGen = particle.y();
+            for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
+              if (std::abs(daughterCharm.pdgCode()) != pdgCodeOmegaMinus) {
+                continue;
+              }
+              // Omega -> Lambda K
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeOmegaMinus, std::array{pdgCodeLambda, pdgCodeKaonMinus}, true)) {
+                debugGenCasc = 1;
+                for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
+                  if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                    continue;
+                  }
+                  // Lambda -> p pi
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                    debugGenLambda = 1;
+                    flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi);
+                  }
                 }
               }
             }
           }
+          // Check whether the charm baryon is non-prompt (from a b quark)
+          if (flag != 0) {
+            origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+          }
+          if (origin == RecoDecay::OriginType::NonPrompt) {
+            rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
+          } else {
+            rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+          }
+
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
+          //  Omegac → Omega K
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodeKaonPlus}, true, &sign)) {
+            debugGenCharmBar = 1;
+            ptCharmBaryonGen = particle.pt();
+            rapidityCharmBaryonGen = particle.y();
+            for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
+              if (std::abs(daughterCharm.pdgCode()) != pdgCodeOmegaMinus) {
+                continue;
+              }
+              // Omega -> Lambda K
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeOmegaMinus, std::array{pdgCodeLambda, pdgCodeKaonMinus}, true)) {
+                debugGenCasc = 1;
+                for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
+                  if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                    continue;
+                  }
+                  // Lambda -> p pi
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                    debugGenLambda = 1;
+                    flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK);
+                  }
+                }
+              }
+            }
+          }
+          // Check whether the charm baryon is non-prompt (from a b quark)
+          if (flag != 0) {
+            origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+          }
+          if (origin == RecoDecay::OriginType::NonPrompt) {
+            rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
+          } else {
+            rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
+          }
         }
-        // Check whether the charm baryon is non-prompt (from a b quark)
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-        }
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
-        } else {
-          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-        }
-      }
-    } // close loop on MCParticles
-  }   // close process
+      } // close loop on MCParticles
+    }   // close loop on MCCollisions
+  }     // close process
 
   void processDoNoMc(aod::Collisions::iterator const&)
   {
