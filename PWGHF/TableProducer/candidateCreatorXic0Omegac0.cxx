@@ -13,6 +13,13 @@
 /// \brief Reconstruction of Omegac0 and Xic0 decays candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
+/// includes KFParticle
+#include "KFParticle.h"
+#include "KFParticleBase.h"
+#include "KFPTrack.h"
+#include "KFPVertex.h"
+#include "KFVertex.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -32,23 +39,16 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Tools/KFparticle/KFUtilities.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
-
-/// includes KFParticle
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFVertex.h"
 
 using namespace o2;
 using namespace o2::track;
