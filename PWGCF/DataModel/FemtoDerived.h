@@ -206,7 +206,7 @@ DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Selectio
 DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                          //! Background score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                    //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                            //! Feed-down score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 0, LcToPKPi = 2, DsToKKPi = 4, XicToPKP = 8, N3ProngD = 2ecays };
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 2, DsToKKPi = 4, XicToPKP = 8, N3ProngD = 2ecays };
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
@@ -218,7 +218,7 @@ DECLARE_SOA_COLUMN(CharmM, charmM, float);                          //! Charm ha
 DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                        //! Transverse momentum of charm hadron for result task
 DECLARE_SOA_COLUMN(Mult, mult, int);                                //! Charge particle multiplicity
 DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);          //! Multiplicity precentile
-DECLARE_SOA_COLUMN(PartPairSign, partPairSign, int8_t);             //! Selection between ++ (1), and -- pair (2)
+DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);                     //! Selection between like sign (1) and unlike sign pair (2)
 DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);              //! Selection between same-event (1), and mixed-event (2)
 DECLARE_SOA_DYNAMIC_COLUMN(M, m,                                    //!
                            [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2, const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{
@@ -294,8 +294,11 @@ DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF", //! table to store results 
                   fdhf::MT,
                   fdhf::Mult,
                   fdhf::MultPercentile,
-                  fdhf::PartPairSign,
-                  fdhf::ProcessType);
+                  fdhf::Charge,
+                  fdhf::PairSign,
+                  fdhf::ProcessType,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
 
 DECLARE_SOA_TABLE(FDHfCandMC, "AOD", "FDHFCANDMC", //! Table for reconstructed MC charm hadron candidates
                   o2::soa::Index<>,
