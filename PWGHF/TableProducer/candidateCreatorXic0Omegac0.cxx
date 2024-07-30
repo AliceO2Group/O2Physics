@@ -12,6 +12,7 @@
 /// \file candidateCreatorXic0Omegac0.cxx
 /// \brief Reconstruction of Omegac0 and Xic0 decays candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
+/// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 
 /// includes KFParticle
 #include "KFParticle.h"
