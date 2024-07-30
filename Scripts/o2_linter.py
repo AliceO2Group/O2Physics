@@ -302,7 +302,7 @@ class TestStdPrefix(TestSpec):
 
 
 class TestROOT(TestSpec):
-    """Detect use of unnecessary ROOT entities."""
+    """Detect unnecessary use of ROOT entities."""
 
     name = "root-entity"
     message = "Consider replacing ROOT entities with STD C++ or O2 entities."
@@ -357,7 +357,7 @@ class TestTwoPiAddSubtract(TestSpec):
 
 
 class TestPiMultipleFraction(TestSpec):
-    """Detect multiplying/dividing of pi for existing equivalent constants."""
+    """Detect multiples/fractions of pi for existing equivalent constants."""
 
     name = "pi-multiple-fraction"
     message = "Consider using multiples/fractions of PI defined in o2::constants::math."
