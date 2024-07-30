@@ -708,17 +708,17 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     }
     hfEvSelMc.addHistograms(registry); // particles monitoring
 
-    hGenCharmBaryonPtRapidityTightXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}}); // keep track of generated candidates pt when |y|<0.5
-    hGenCharmBaryonPtRapidityLooseXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}}); // keep track of generated candidates pt when |y|<0.8
+    hGenCharmBaryonPtRapidityTightXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}}); // keep track of generated candidates pt when |y|<0.5
+    hGenCharmBaryonPtRapidityLooseXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}}); // keep track of generated candidates pt when |y|<0.8
 
-    hGenCharmBaryonPtRapidityTightOmegacToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
-    hGenCharmBaryonPtRapidityLooseOmegacToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
+    hGenCharmBaryonPtRapidityTightOmegacToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
+    hGenCharmBaryonPtRapidityLooseOmegacToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
 
-    hGenCharmBaryonPtRapidityTightOmegacToOmegaPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToOmegaPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
-    hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
+    hGenCharmBaryonPtRapidityTightOmegacToOmegaPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToOmegaPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
+    hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
 
-    hGenCharmBaryonPtRapidityTightOmegacToOmegaK = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToOmegaK", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
-    hGenCharmBaryonPtRapidityLooseOmegacToOmegaK = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToOmegaK", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
+    hGenCharmBaryonPtRapidityTightOmegacToOmegaK = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToOmegaK", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
+    hGenCharmBaryonPtRapidityLooseOmegacToOmegaK = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToOmegaK", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
   }
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename CCs, typename TMyRecoCand>
