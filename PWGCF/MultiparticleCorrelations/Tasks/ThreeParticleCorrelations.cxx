@@ -20,7 +20,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct ThreePartCorr {
-  
+
   // Histogram registry
   HistogramRegistry MECorrRegistry{"MECorrRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry SECorrRegistry{"SECorrRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -55,39 +55,39 @@ struct ThreePartCorr {
 
   // Particle masses
   Double_t massLambda = 1.115683;
-  
+
   // Correlation variables
   Int_t T_Sign;
   Double_t CandMass;
-  Double_t *A_PID;
-  
+  Double_t* A_PID;
+
   Double_t DeltaPhi, DeltaEta;
 
   //================================================================================================================================================================================================================
-  
+
   void init(InitContext const&)
   {
-    
+
     const AxisSpec CentralityAxis{ConfCentBins};
     const AxisSpec ZvtxAxis{ConfZvtxBins};
     const AxisSpec PhiAxis{36, (-1. / 2) * M_PI, (3. / 2) * M_PI};
     const AxisSpec EtaAxis{32, -1.52, 1.52};
     const AxisSpec PtAxis{120, 0, 12};
     const AxisSpec LambdaInvMassAxis{100, 1.08, 1.16};
-    
+
     QARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
     QARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
-    QARegistry.add("hTrackPhi", "hTrackPhi", { HistType::kTH1D, {{100, (-1. / 2) * M_PI, (5. / 2) * M_PI}}});
+    QARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * M_PI, (5. / 2) * M_PI}}});
     QARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{CentralityAxis}}});
     QARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{ZvtxAxis}}});
-    
+
     QARegistry.add("hNSigmaPion", "hNSigmaPion", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
     QARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
     QARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
-    
+
     QARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {PtAxis}, {CentralityAxis}}});
     QARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {PtAxis}, {CentralityAxis}}});
-    
+
     SECorrRegistry.add("hSameLambdaPion_SGNL", "Same-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseD, {{PhiAxis}, {EtaAxis}, {CentralityAxis}, {ZvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     SECorrRegistry.add("hSameLambdaPion_SB", "Same-event #Lambda - #pi correlator (SB region)", {HistType::kTHnSparseD, {{PhiAxis}, {EtaAxis}, {CentralityAxis}, {ZvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     SECorrRegistry.add("hSameLambdaKaon_SGNL", "Same-event #Lambda - K correlator (SGNL region)", {HistType::kTHnSparseD, {{PhiAxis}, {EtaAxis}, {CentralityAxis}, {ZvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
@@ -104,13 +104,13 @@ struct ThreePartCorr {
   }
 
   //================================================================================================================================================================================================================
-  
+
   void processSame(MyFilteredCollision const& collision, MyFilteredV0s const& v0s, MyFilteredTracks const& tracks)
   {
 
     QARegistry.fill(HIST("hEventCentrality"), collision.centFT0C());
     QARegistry.fill(HIST("hEventZvtx"), collision.posZ());
-    
+
     // Start of the Track QA
     for (const auto& track : tracks) {
       A_PID = TrackPID(track);
@@ -145,7 +145,7 @@ struct ThreePartCorr {
         for (const auto& associate : tracks) {
           if (TrackFilters(trigger, associate)) {
 
-	    A_PID = TrackPID(associate);
+            A_PID = TrackPID(associate);
             DeltaPhi = DeltaPhiShift(trigger.phi(), associate.phi());
             DeltaEta = trigger.eta() - associate.eta();
 
@@ -189,7 +189,7 @@ struct ThreePartCorr {
             CandMass = trigger.mAntiLambda();
           }
 
-	  A_PID = TrackPID(associate);
+          A_PID = TrackPID(associate);
           DeltaPhi = DeltaPhiShift(trigger.phi(), associate.phi());
           DeltaEta = trigger.eta() - associate.eta();
 
@@ -221,24 +221,24 @@ struct ThreePartCorr {
 
   Double_t DeltaPhiShift(Double_t TriggerPhi, Double_t AssociatePhi)
   {
-    
+
     Double_t dPhi = TriggerPhi - AssociatePhi;
-  
+
     if (dPhi < (-1. / 2) * M_PI) {
       dPhi = dPhi + 2 * M_PI;
     } else if (dPhi > (3. / 2) * M_PI) {
       dPhi = dPhi - 2 * M_PI;
     }
-    
+
     return dPhi;
   }
 
   template <class TrackCand>
-  Double_t *TrackPID(const TrackCand& Track)
+  Double_t* TrackPID(const TrackCand& Track)
   {
-    
+
     static Double_t ID[2]; // {PID, NSigma}
-    
+
     Double_t NSigma[3];
     NSigma[0] = TMath::Abs(Track.tpcNSigmaPi());
     NSigma[1] = TMath::Abs(Track.tpcNSigmaKa());
@@ -261,7 +261,7 @@ struct ThreePartCorr {
   template <class V0Cand>
   Int_t V0Sign(const V0Cand& V0)
   {
-    
+
     if (TMath::Abs(V0.mLambda() - massLambda) <= TMath::Abs(V0.mAntiLambda() - massLambda)) {
       return 1;
     } else if (TMath::Abs(V0.mLambda() - massLambda) > TMath::Abs(V0.mAntiLambda() - massLambda)) {
@@ -272,28 +272,28 @@ struct ThreePartCorr {
   template <class V0Cand>
   Bool_t V0Filters(const V0Cand& V0)
   {
-    
+
     if (V0Sign(V0) == 1) {
       const auto& posDaughter = V0.template posTrack_as<MyFilteredTracks>();
       if (TMath::Abs(posDaughter.tpcNSigmaPr()) > 4.0) {
-	return kFALSE;
+        return kFALSE;
       }
-      //if(V0.mLambda() < 1.10 || V0.mLambda() > 1.13) { return kFALSE; }
+      // if(V0.mLambda() < 1.10 || V0.mLambda() > 1.13) { return kFALSE; }
     } else if (V0Sign(V0) == -1) {
       const auto& negDaughter = V0.template negTrack_as<MyFilteredTracks>();
       if (TMath::Abs(negDaughter.tpcNSigmaPr()) > 4.0) {
-	return kFALSE;
+        return kFALSE;
       }
-      //if(V0.mAntiLambda() < 1.10 || V0.mAntiLambda() > 1.13) { return kFALSE; }
+      // if(V0.mAntiLambda() < 1.10 || V0.mAntiLambda() > 1.13) { return kFALSE; }
     }
-    
+
     return kTRUE;
   }
-  
+
   template <class V0Cand, class TrackCand>
   Bool_t TrackFilters(const V0Cand& V0, const TrackCand& Track)
   {
-    
+
     if (Track.globalIndex() == V0.posTrackId() || Track.globalIndex() == V0.negTrackId()) {
       return kFALSE;
     }
