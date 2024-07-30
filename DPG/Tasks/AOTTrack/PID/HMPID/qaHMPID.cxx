@@ -45,8 +45,10 @@ namespace variables_table // declaration of columns to create
 DECLARE_SOA_COLUMN(ChAngle, chAngle, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(MomentumHMPID, momentumHMPID, float);
-DECLARE_SOA_COLUMN(MomentumTrack, momentumTrack, float);
+DECLARE_SOA_COLUMN(MomHMPID, momMPID, float);
+DECLARE_SOA_COLUMN(MomTrackX, momTrackX, float);
+DECLARE_SOA_COLUMN(MomTrackY, momTrackY, float);
+DECLARE_SOA_COLUMN(MomTrackZ, momTrackZ, float);
 DECLARE_SOA_COLUMN(Xtrack, xtrack, float);
 DECLARE_SOA_COLUMN(Ytrack, ytrack, float);
 DECLARE_SOA_COLUMN(Xmip, xmip, float);
@@ -72,8 +74,9 @@ DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 } // namespace variables_table
 
 DECLARE_SOA_TABLE(HMPID_analysis, "AOD", "HMPIDANALYSIS",
-                  variables_table::ChAngle, variables_table::Phi, variables_table::Eta, variables_table::MomentumHMPID,
-                  variables_table::MomentumTrack, variables_table::Xtrack, variables_table::Ytrack, variables_table::Xmip,
+                  variables_table::ChAngle, variables_table::Phi, variables_table::Eta, variables_table::MomHMPID,
+                  variables_table::MomTrackX, variables_table::MomTrackY, variables_table::MomTrackZ,
+                  variables_table::Xtrack, variables_table::Ytrack, variables_table::Xmip,
                   variables_table::Ymip, variables_table::Nphotons, variables_table::ChargeMIP, variables_table::ClusterSize,
                   variables_table::Chamber, variables_table::Photons_charge, variables_table::EtaTrack, variables_table::PhiTrack,
                   variables_table::ITSNcluster, variables_table::TPCNcluster, variables_table::TPCNClsCrossedRows,
@@ -128,15 +131,12 @@ struct pidHmpidQa {
     }
   }
 
-  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
-
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                    aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
   void process(const aod::HMPIDs& hmpids,
-               TrackCandidates const&,
-               CollisionCandidates const&)
+               const TrackCandidates& /*tracks*/,
+               const aod::Collisions& /*colls*/)
+
   {
 
     for (const auto& t : hmpids) {
@@ -151,7 +151,7 @@ struct pidHmpidQa {
       }
 
       HMPID_analysis(t.hmpidSignal(), t.track_as<TrackCandidates>().phi(), t.track_as<TrackCandidates>().eta(), t.hmpidMom(),
-                     track.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
+                     track.px(), track.py(), track.pz(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
                      t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000, t.hmpidClusSize() / 1000000,
                      *t.hmpidPhotsCharge(), track.eta(), track.phi(), track.itsNCls(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                      track.tpcChi2NCl(), track.itsChi2NCl(), track.dcaXY(), track.dcaZ());
