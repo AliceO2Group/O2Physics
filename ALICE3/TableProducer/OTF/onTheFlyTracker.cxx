@@ -26,6 +26,9 @@
 #include <utility>
 
 #include <TGeoGlobalMagField.h>
+#include <TGenPhaseSpace.h>
+#include <TLorentzVector.h>
+#include <TRandom3.h>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -67,6 +70,7 @@ struct OnTheFlyTracker {
   Produces<aod::TrackSelection> trackSelection;
   Produces<aod::TrackSelectionExtension> trackSelectionExtension;
 
+  Configurable<int> seed{"seed", 0, "TGenPhaseSpace seed"};
   Configurable<float> magneticField{"magneticField", 20.0f, "magnetic field in kG"};
   Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
@@ -75,6 +79,7 @@ struct OnTheFlyTracker {
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
   Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
+  Configurable<bool> treatXi{"treatXi", false, "Manually decay Xi^{-} and fill tables with daughters"};
 
   Configurable<bool> populateTracksDCA{"populateTracksDCA", true, "populate TracksDCA table"};
   Configurable<bool> populateTracksDCACov{"populateTracksDCACov", false, "populate TracksDCACov table"};
@@ -84,6 +89,7 @@ struct OnTheFlyTracker {
   Configurable<bool> processUnreconstructedTracks{"processUnreconstructedTracks", false, "process (smear) unreco-ed tracks"};
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
+  Configurable<bool> doXiQA{"doXiQA", false, "QA plots for when treating Xi"};
 
   Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
   Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
@@ -94,12 +100,26 @@ struct OnTheFlyTracker {
   Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
   Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
 
+  Configurable<std::string> lutPi0{"lutPi0", "lutCovm.pi.20kG.rmin20.geometry_v0.dat", "LUT for pions without layer 0"};
+  Configurable<std::string> lutPi1{"lutPi1", "lutCovm.pi.20kG.rmin20.geometry_v1.dat", "LUT for pions without layer 1"};
+  Configurable<std::string> lutPi2{"lutPi2", "lutCovm.pi.20kG.rmin20.geometry_v2.dat", "LUT for pions without layer 2"};
+  Configurable<std::string> lutPi3{"lutPi3", "lutCovm.pi.20kG.rmin20.geometry_v3.dat", "LUT for pions without layer 3"};
+  Configurable<std::string> lutPi4{"lutPi4", "lutCovm.pi.20kG.rmin20.geometry_v4.dat", "LUT for pions without layer 4"};
+  Configurable<std::string> lutPi5{"lutPi5", "lutCovm.pi.20kG.rmin20.geometry_v5.dat", "LUT for pions without layer 5"};
+  Configurable<std::string> lutPr0{"lutPr0", "lutCovm.pr.20kG.rmin20.geometry_v0.dat", "LUT for protons without layer 0"};
+  Configurable<std::string> lutPr1{"lutPr1", "lutCovm.pr.20kG.rmin20.geometry_v1.dat", "LUT for protons without layer 1"};
+  Configurable<std::string> lutPr2{"lutPr2", "lutCovm.pr.20kG.rmin20.geometry_v2.dat", "LUT for protons without layer 2"};
+  Configurable<std::string> lutPr3{"lutPr3", "lutCovm.pr.20kG.rmin20.geometry_v3.dat", "LUT for protons without layer 3"};
+  Configurable<std::string> lutPr4{"lutPr4", "lutCovm.pr.20kG.rmin20.geometry_v4.dat", "LUT for protons without layer 4"};
+  Configurable<std::string> lutPr5{"lutPr5", "lutCovm.pr.20kG.rmin20.geometry_v5.dat", "LUT for protons without layer 5"};
+
   ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
   ConfigurableAxis axisNVertices{"axisNVertices", {20, -0.5, 19.5}, "N_{vertices}"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {100, -0.5, 99.5}, "N_{contributors}"};
   ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
   ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
   ConfigurableAxis axisX{"axisX", {250, -50, 200}, "track X (cm)"};
+  ConfigurableAxis axisRadius{"axisRadius", {55, 0.01, 100}, "decay radius"};
 
   using PVertex = o2::dataformats::PrimaryVertex;
 
@@ -129,6 +149,14 @@ struct OnTheFlyTracker {
 
   // Track smearer
   o2::delphes::DelphesO2TrackSmearer mSmearer;
+
+  // Xi daughters uses different smearers
+  o2::delphes::DelphesO2TrackSmearer mSmearer0;
+  o2::delphes::DelphesO2TrackSmearer mSmearer1;
+  o2::delphes::DelphesO2TrackSmearer mSmearer2;
+  o2::delphes::DelphesO2TrackSmearer mSmearer3;
+  o2::delphes::DelphesO2TrackSmearer mSmearer4;
+  o2::delphes::DelphesO2TrackSmearer mSmearer5;
 
   // For processing and vertexing
   std::vector<TrackAlice3> tracksAlice3;
@@ -177,6 +205,103 @@ struct OnTheFlyTracker {
 
       // smear un-reco'ed tracks if asked to do so
       mSmearer.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+
+      if (treatXi) {
+        std::map<int, const char*> mapPdgLut0;
+        const char* lutPiChar0 = lutPi0->c_str();
+        const char* lutPrChar0 = lutPr0->c_str();
+        LOGF(info, "Load more pion lut files .....: %s", lutPiChar0);
+        LOGF(info, "Load more proton lut files ...: %s", lutPrChar0);
+        mapPdgLut0.insert(std::make_pair(211, lutPiChar0));
+        mapPdgLut0.insert(std::make_pair(2212, lutPrChar0));
+
+        std::map<int, const char*> mapPdgLut1;
+        const char* lutPiChar1 = lutPi1->c_str();
+        const char* lutPrChar1 = lutPr1->c_str();
+        LOGF(info, "Load more pion lut files .....: %s", lutPiChar1);
+        LOGF(info, "Load more proton lut files ...: %s", lutPrChar1);
+        mapPdgLut1.insert(std::make_pair(211, lutPiChar1));
+        mapPdgLut1.insert(std::make_pair(2212, lutPrChar1));
+
+        std::map<int, const char*> mapPdgLut2;
+        const char* lutPiChar2 = lutPi2->c_str();
+        const char* lutPrChar2 = lutPr2->c_str();
+        LOGF(info, "Load more pion lut files .....: %s", lutPiChar2);
+        LOGF(info, "Load more proton lut files ...: %s", lutPrChar2);
+        mapPdgLut2.insert(std::make_pair(211, lutPiChar2));
+        mapPdgLut2.insert(std::make_pair(2212, lutPrChar2));
+
+        std::map<int, const char*> mapPdgLut3;
+        const char* lutPiChar3 = lutPi3->c_str();
+        const char* lutPrChar3 = lutPr3->c_str();
+        LOGF(info, "Load more pion lut files .....: %s", lutPiChar3);
+        LOGF(info, "Load more proton lut files ...: %s", lutPrChar3);
+        mapPdgLut3.insert(std::make_pair(211, lutPiChar3));
+        mapPdgLut3.insert(std::make_pair(2212, lutPrChar3));
+
+        std::map<int, const char*> mapPdgLut4;
+        const char* lutPiChar4 = lutPi4->c_str();
+        const char* lutPrChar4 = lutPr4->c_str();
+        LOGF(info, "Load more pion lut files .....: %s", lutPiChar4);
+        LOGF(info, "Load more proton lut files ...: %s", lutPrChar4);
+        mapPdgLut4.insert(std::make_pair(211, lutPiChar4));
+        mapPdgLut4.insert(std::make_pair(2212, lutPrChar4));
+
+        std::map<int, const char*> mapPdgLut5;
+        const char* lutPiChar5 = lutPi5->c_str();
+        const char* lutPrChar5 = lutPr5->c_str();
+        LOGF(info, "Load more pion lut files .....: %s", lutPiChar5);
+        LOGF(info, "Load more proton lut files ...: %s", lutPrChar5);
+        mapPdgLut5.insert(std::make_pair(211, lutPiChar5));
+        mapPdgLut5.insert(std::make_pair(2212, lutPrChar5));
+
+        for (auto e : mapPdgLut0) {
+          if (!mSmearer0.loadTable(e.first, e.second)) {
+            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+          }
+        }
+        for (auto e : mapPdgLut1) {
+          if (!mSmearer1.loadTable(e.first, e.second)) {
+            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+          }
+        }
+        for (auto e : mapPdgLut2) {
+          if (!mSmearer2.loadTable(e.first, e.second)) {
+            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+          }
+        }
+        for (auto e : mapPdgLut3) {
+          if (!mSmearer3.loadTable(e.first, e.second)) {
+            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+          }
+        }
+        for (auto e : mapPdgLut4) {
+          if (!mSmearer4.loadTable(e.first, e.second)) {
+            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+          }
+        }
+        for (auto e : mapPdgLut5) {
+          if (!mSmearer5.loadTable(e.first, e.second)) {
+            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+          }
+        }
+
+        // interpolate efficiencies if requested to do so
+        mSmearer0.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+        mSmearer1.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+        mSmearer2.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+        mSmearer3.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+        mSmearer4.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+        mSmearer5.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+
+        // smear un-reco'ed tracks if asked to do so
+        mSmearer0.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+        mSmearer1.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+        mSmearer2.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+        mSmearer3.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+        mSmearer4.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+        mSmearer5.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+      }
     }
 
     // Basic QA
@@ -205,6 +330,18 @@ struct OnTheFlyTracker {
       histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axisX});
       histos.add("hRecoTrackX", "hRecoTrackX", kTH1F, {axisX});
       histos.add("hTrackXatDCA", "hTrackXatDCA", kTH1F, {axisX});
+    }
+
+    if (doXiQA) {
+      histos.add("hGenXi", "hGenXi", kTH2F, {axisRadius, axisMomentum});
+      histos.add("hRecoXi", "hRecoXi", kTH2F, {axisRadius, axisMomentum});
+
+      histos.add("hGenPiFromXi", "hGenPiFromXi", kTH2F, {axisRadius, axisMomentum});
+      histos.add("hGenPiFromL0", "hGenPiFromL0", kTH2F, {axisRadius, axisMomentum});
+      histos.add("hGenPrFromL0", "hGenPrFromL0", kTH2F, {axisRadius, axisMomentum});
+      histos.add("hRecoPiFromXi", "hRecoPiFromXi", kTH2F, {axisRadius, axisMomentum});
+      histos.add("hRecoPiFromL0", "hRecoPiFromL0", kTH2F, {axisRadius, axisMomentum});
+      histos.add("hRecoPrFromL0", "hRecoPrFromL0", kTH2F, {axisRadius, axisMomentum});
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -237,6 +374,94 @@ struct OnTheFlyTracker {
     vertexer.setValidateWithIR(kFALSE);
     vertexer.setBunchFilling(irSampler.getBunchFilling());
     vertexer.init();
+  }
+
+  /// Function to decay the xi
+  /// \param particle the particle to decay
+  /// \param decayDaughters the address of resulting daughters
+  /// \param xiDecayVertex the address of the xi decay vertex
+  /// \param l0DecayVertex the address of the l0 decay vertex
+  template <typename McParticleType>
+  void decayParticle(McParticleType particle, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& l0DecayVertex)
+  {
+    std::vector<double> xiVelocity(3);
+    std::vector<double> l0Velocity(3);
+    std::vector<double> xiMomentum = {particle.px(), particle.py(), particle.pz()};
+    std::vector<double> xiProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
+    double bz = magneticField * (-0.1); // To tesla (sign?!)
+    TRandom3 rand;
+    rand.SetSeed(seed);
+    double u = rand.Uniform(0, 1);
+    for (int i = 0; i < 3; i++) {
+      xiVelocity[i] = xiMomentum[i] / particle.e();
+    }
+    double xi_v_tot = particle.p() / particle.e();
+    double xi_ctau = 4.91 / 100; // xi
+    double xi_charge = -1.6022e-19;
+    double speedOfLight = 3e+8;
+    double xi_v_xy = speedOfLight * sqrt(xiVelocity[0] * xiVelocity[0] + xiVelocity[1] * xiVelocity[1]);
+    double xi_lifetime = (-xi_ctau * log(1 - u)) / xi_v_tot;
+    double xi_kgMass = 1.32171 * 1.78e-27;
+    double xi_r = (xi_kgMass * xi_v_xy) / (xi_charge * bz);
+    double xi_theta = ((xi_lifetime / speedOfLight) * xi_charge * bz) / xi_kgMass;
+    double xi_phi = TMath::ATan2(xiVelocity[1], xiVelocity[0]);
+    xiDecayVertex.push_back(xiProductionVertex[0] + xi_r * (std::sin(xi_theta) * std::cos(xi_phi) - (1 - std::cos(xi_theta)) * std::sin(xi_phi)));
+    xiDecayVertex.push_back(xiProductionVertex[1] + xi_r * ((1 - std::cos(xi_theta)) * std::cos(xi_phi) + std::sin(xi_theta) * std::sin(xi_phi)));
+    xiDecayVertex.push_back(xiProductionVertex[2] + xi_lifetime * xiVelocity[2]);
+    std::vector<double> xiDaughters = {1.115, 0.139};
+    double px = (xi_v_xy * std::cos(xi_theta + xi_phi) * particle.e()) / speedOfLight;
+    double py = (xi_v_xy * std::sin(xi_theta + xi_phi) * particle.e()) / speedOfLight;
+
+    TLorentzVector xi(px, py, particle.pz(), particle.e());
+    TGenPhaseSpace xiDecay;
+    xiDecay.SetDecay(xi, 2, xiDaughters.data());
+    xiDecay.Generate();
+    decayDaughters.push_back(*xiDecay.GetDecay(1));
+
+    double l0_ctau = 7.89 / 100; // lambda
+    double l0_v_tot = xiDecay.GetDecay(0)->P() / xiDecay.GetDecay(0)->E();
+    std::vector<double> l0Daughters = {0.139, 0.938};
+    l0Velocity[0] = xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->E();
+    l0Velocity[1] = xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->E();
+    l0Velocity[2] = xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->E();
+    double l0_lifetime = (-l0_ctau * log(1 - u)) / l0_v_tot;
+    for (int i = 0; i < 3; i++) {
+      l0DecayVertex.push_back(xiDecayVertex[i] + l0_lifetime * l0Velocity[i]);
+    }
+
+    TLorentzVector l0 = *xiDecay.GetDecay(0);
+    TGenPhaseSpace l0Decay;
+    l0Decay.SetDecay(l0, 2, l0Daughters.data());
+    l0Decay.Generate();
+    decayDaughters.push_back(*l0Decay.GetDecay(0));
+    decayDaughters.push_back(*l0Decay.GetDecay(1));
+  }
+
+  /// Function to convert a TLorentzVector into a perfect Track
+  /// \param pdgCode particle pdg
+  /// \param particle the particle to convert (TLorentzVector)
+  /// \param productionVertex where the particle was produced
+  /// \param o2track the address of the resulting TrackParCov
+  void convertTLorentzVectorToO2Track(int pdgCode, TLorentzVector particle, std::vector<double> productionVertex, o2::track::TrackParCov& o2track)
+  {
+    auto pdgInfo = pdgDB->GetParticle(pdgCode);
+    int charge = 0;
+    if (pdgInfo != nullptr) {
+      charge = pdgInfo->Charge() / 3;
+    }
+    std::array<float, 5> params;
+    std::array<float, 15> covm = {0.};
+    float s, c, x;
+    o2::math_utils::sincos((float)particle.Phi(), s, c);
+    o2::math_utils::rotateZInv((float)productionVertex[0], (float)productionVertex[1], x, params[0], s, c);
+    params[1] = (float)productionVertex[2];
+    params[2] = 0;
+    auto theta = 2. * std::atan(std::exp(-particle.PseudoRapidity()));
+    params[3] = 1. / std::tan(theta);
+    params[4] = charge / particle.Pt();
+
+    // Initialize TrackParCov in-place
+    new (&o2track)(o2::track::TrackParCov)(x, particle.Phi(), params, covm);
   }
 
   /// Function to convert a McParticle into a perfect Track
@@ -289,7 +514,11 @@ struct OnTheFlyTracker {
       }
       const auto pdg = std::abs(mcParticle.pdgCode());
       if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
-        continue;
+        if (!treatXi) {
+          continue;
+        } else if (pdg != 3312) {
+          continue;
+        }
       }
       const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
       if (!pdgInfo) {
@@ -305,14 +534,36 @@ struct OnTheFlyTracker {
     dNdEta /= (multEtaRange * 2.0f);
     uint32_t multiplicityCounter = 0;
     histos.fill(HIST("hLUTMultiplicity"), dNdEta);
+    gRandom->SetSeed(seed);
 
     for (const auto& mcParticle : mcParticles) {
-      if (!mcParticle.isPhysicalPrimary()) {
-        continue;
+      double xiDecayRadius2D = 0;
+      double l0DecayRadius2D = 0;
+      std::vector<TLorentzVector> decayProducts;
+      std::vector<double> xiDecayVertex, l0DecayVertex;
+      std::vector<double> layers = {0.50, 1.20, 2.50, 3.75, 7.00, 12.0, 20.0};
+      if (treatXi) {
+        if (mcParticle.pdgCode() == 3312) {
+          decayParticle(mcParticle, decayProducts, xiDecayVertex, l0DecayVertex);
+          xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]) * 100;
+          l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]) * 100;
+        }
       }
+
       const auto pdg = std::abs(mcParticle.pdgCode());
+      if (!mcParticle.isPhysicalPrimary()) {
+        if (!treatXi) {
+          continue;
+        } else if (pdg != 3312) {
+          continue;
+        }
+      }
       if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
-        continue;
+        if (!treatXi) {
+          continue;
+        } else if (pdg != 3312) {
+          continue;
+        }
       }
       if (std::fabs(mcParticle.eta()) > maxEta) {
         continue;
@@ -328,6 +579,13 @@ struct OnTheFlyTracker {
       if (TMath::Abs(mcParticle.pdgCode()) == 2212)
         histos.fill(HIST("hPtGeneratedPr"), mcParticle.pt());
 
+      if (doXiQA && mcParticle.pdgCode() == 3312) {
+        histos.fill(HIST("hGenXi"), xiDecayRadius2D, mcParticle.pt());
+        histos.fill(HIST("hGenPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
+        histos.fill(HIST("hGenPiFromL0"), l0DecayRadius2D, decayProducts[1].Pt());
+        histos.fill(HIST("hGenPrFromL0"), l0DecayRadius2D, decayProducts[2].Pt());
+      }
+
       if (mcParticle.pt() < minPt) {
         continue;
       }
@@ -337,6 +595,77 @@ struct OnTheFlyTracker {
         isDecayDaughter = true;
 
       multiplicityCounter++;
+      const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
+      std::vector<o2::track::TrackParCov> xiDaughterTrackParCovs(3);
+      std::vector<bool> isReco(3);
+      std::vector<o2::delphes::DelphesO2TrackSmearer> smearer = {mSmearer0, mSmearer1, mSmearer2, mSmearer3, mSmearer4, mSmearer5};
+      if (treatXi && mcParticle.pdgCode() == 3312) {
+        if (xiDecayRadius2D > 20) {
+          continue;
+        }
+
+        convertTLorentzVectorToO2Track(-211, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovs[0]);
+        convertTLorentzVectorToO2Track(-211, decayProducts[1], l0DecayVertex, xiDaughterTrackParCovs[1]);
+        convertTLorentzVectorToO2Track(2212, decayProducts[2], l0DecayVertex, xiDaughterTrackParCovs[2]);
+
+        // Map daughter to smearer
+        int firstSmearerIndex = -1;
+        int secondSmearerIndex = -1;
+        for (unsigned i = 0; i < layers.size(); i++) {
+          if (xiDecayRadius2D > layers[i]) {
+            firstSmearerIndex = i;
+          }
+          if (l0DecayRadius2D > layers[i]) {
+            secondSmearerIndex = i;
+          }
+        }
+        if (firstSmearerIndex > 5) {
+          isReco[0] = false;
+        } else if (firstSmearerIndex == -1) {
+          isReco[0] = mSmearer.smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
+        } else {
+          isReco[0] = smearer[firstSmearerIndex].smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
+        }
+        if (secondSmearerIndex > 5) {
+          isReco[1] = false;
+          isReco[2] = false;
+        } else if (secondSmearerIndex == -1) {
+          isReco[1] = mSmearer.smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
+          isReco[2] = mSmearer.smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+        } else {
+          isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
+          isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+        }
+        for (int i = 0; i < 3; i++) {
+          if (decayProducts[i].Pt() < minPt) {
+            isReco[i] = false;
+          }
+          if (!isReco[i] && !processUnreconstructedTracks) {
+            continue;
+          }
+          if (TMath::IsNaN(xiDaughterTrackParCovs[i].getZ())) {
+            continue;
+          }
+          if (isReco[i]) {
+            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+          } else {
+            ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+          }
+        }
+
+        if (doXiQA && mcParticle.pdgCode() == 3312) {
+          if (isReco[0] && isReco[1] && isReco[2])
+            histos.fill(HIST("hRecoXi"), xiDecayRadius2D, mcParticle.pt());
+          if (isReco[0])
+            histos.fill(HIST("hRecoPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
+          if (isReco[1])
+            histos.fill(HIST("hRecoPiFromL0"), l0DecayRadius2D, decayProducts[1].Pt());
+          if (isReco[2])
+            histos.fill(HIST("hRecoPrFromL0"), l0DecayRadius2D, decayProducts[2].Pt());
+        }
+        continue; // Not filling the tables with the xi itself
+      }
+
       o2::track::TrackParCov trackParCov;
       convertMCParticleToO2Track(mcParticle, trackParCov);
 
@@ -369,7 +698,6 @@ struct OnTheFlyTracker {
       }
 
       // populate vector with track if we reco-ed it
-      const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
       if (reconstructed) {
         tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
       } else {
