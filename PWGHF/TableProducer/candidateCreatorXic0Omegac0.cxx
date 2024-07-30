@@ -706,17 +706,16 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     hfEvSelMc.addHistograms(registry); // particles monitoring
 
     hGenCharmBaryonPtRapidityTightXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}}); // keep track of generated candidates pt when |y|<0.5
-    hGenCharmBaryonPtRapidityLooseXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});  // keep track of generated candidates pt when |y|<0.8
+    hGenCharmBaryonPtRapidityLooseXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}}); // keep track of generated candidates pt when |y|<0.8
 
     hGenCharmBaryonPtRapidityTightOmegacToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
     hGenCharmBaryonPtRapidityLooseOmegacToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
 
-    hGenCharmBaryonPtRapidityTightOmegacToOmegaPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToOmegaPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}}); 
-    hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});  
+    hGenCharmBaryonPtRapidityTightOmegacToOmegaPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToOmegaPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
+    hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
 
     hGenCharmBaryonPtRapidityTightOmegacToOmegaK = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToOmegaK", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
     hGenCharmBaryonPtRapidityLooseOmegacToOmegaK = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToOmegaK", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
-
   }
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename CCs, typename TMyRecoCand>
@@ -1039,11 +1038,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           // Check whether the charm baryon is non-prompt (from a b quark)
           if (flag != 0) {
             origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-            if(std::abs(rapidityCharmBaryonGen) < 0.5){
-              hGenCharmBaryonPtRapidityTightXicToXiPi->SetBinContent(hGenCharmBaryonPtRapidityTightXicToXiPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityTightXicToXiPi->GetBinContent(hGenCharmBaryonPtRapidityTightXicToXiPi->FindBin(ptCharmBaryonGen))+1);
+            if (std::abs(rapidityCharmBaryonGen) < 0.5) {
+              hGenCharmBaryonPtRapidityTightXicToXiPi->SetBinContent(hGenCharmBaryonPtRapidityTightXicToXiPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityTightXicToXiPi->GetBinContent(hGenCharmBaryonPtRapidityTightXicToXiPi->FindBin(ptCharmBaryonGen)) + 1);
             }
-            if (std::abs(rapidityCharmBaryonGen) < 0.8){
-              hGenCharmBaryonPtRapidityLooseXicToXiPi->SetBinContent(hGenCharmBaryonPtRapidityLooseXicToXiPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityLooseXicToXiPi->GetBinContent(hGenCharmBaryonPtRapidityLooseXicToXiPi->FindBin(ptCharmBaryonGen))+1);
+            if (std::abs(rapidityCharmBaryonGen) < 0.8) {
+              hGenCharmBaryonPtRapidityLooseXicToXiPi->SetBinContent(hGenCharmBaryonPtRapidityLooseXicToXiPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityLooseXicToXiPi->GetBinContent(hGenCharmBaryonPtRapidityLooseXicToXiPi->FindBin(ptCharmBaryonGen)) + 1);
             }
           }
           if (origin == RecoDecay::OriginType::NonPrompt) {
@@ -1081,11 +1080,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           // Check whether the charm baryon is non-prompt (from a b quark)
           if (flag != 0) {
             origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-            if(std::abs(rapidityCharmBaryonGen) < 0.5){
-              hGenCharmBaryonPtRapidityTightOmegacToXiPi->SetBinContent(hGenCharmBaryonPtRapidityTightOmegacToXiPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityTightOmegacToXiPi->GetBinContent(hGenCharmBaryonPtRapidityTightOmegacToXiPi->FindBin(ptCharmBaryonGen))+1);
+            if (std::abs(rapidityCharmBaryonGen) < 0.5) {
+              hGenCharmBaryonPtRapidityTightOmegacToXiPi->SetBinContent(hGenCharmBaryonPtRapidityTightOmegacToXiPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityTightOmegacToXiPi->GetBinContent(hGenCharmBaryonPtRapidityTightOmegacToXiPi->FindBin(ptCharmBaryonGen)) + 1);
             }
-            if (std::abs(rapidityCharmBaryonGen) < 0.8){
-              hGenCharmBaryonPtRapidityLooseOmegacToXiPi->SetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToXiPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityLooseOmegacToXiPi->GetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToXiPi->FindBin(ptCharmBaryonGen))+1);
+            if (std::abs(rapidityCharmBaryonGen) < 0.8) {
+              hGenCharmBaryonPtRapidityLooseOmegacToXiPi->SetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToXiPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityLooseOmegacToXiPi->GetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToXiPi->FindBin(ptCharmBaryonGen)) + 1);
             }
           }
           if (origin == RecoDecay::OriginType::NonPrompt) {
@@ -1123,11 +1122,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           // Check whether the charm baryon is non-prompt (from a b quark)
           if (flag != 0) {
             origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-            if(std::abs(rapidityCharmBaryonGen) < 0.5){
-              hGenCharmBaryonPtRapidityTightOmegacToOmegaPi->SetBinContent(hGenCharmBaryonPtRapidityTightOmegacToOmegaPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityTightOmegacToOmegaPi->GetBinContent(hGenCharmBaryonPtRapidityTightOmegacToOmegaPi->FindBin(ptCharmBaryonGen))+1);
+            if (std::abs(rapidityCharmBaryonGen) < 0.5) {
+              hGenCharmBaryonPtRapidityTightOmegacToOmegaPi->SetBinContent(hGenCharmBaryonPtRapidityTightOmegacToOmegaPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityTightOmegacToOmegaPi->GetBinContent(hGenCharmBaryonPtRapidityTightOmegacToOmegaPi->FindBin(ptCharmBaryonGen)) + 1);
             }
-            if (std::abs(rapidityCharmBaryonGen) < 0.8){
-              hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi->SetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi->GetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi->FindBin(ptCharmBaryonGen))+1);
+            if (std::abs(rapidityCharmBaryonGen) < 0.8) {
+              hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi->SetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi->GetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi->FindBin(ptCharmBaryonGen)) + 1);
             }
           }
           if (origin == RecoDecay::OriginType::NonPrompt) {
@@ -1165,11 +1164,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           // Check whether the charm baryon is non-prompt (from a b quark)
           if (flag != 0) {
             origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-            if(std::abs(rapidityCharmBaryonGen) < 0.5){
-              hGenCharmBaryonPtRapidityTightOmegacToOmegaK->SetBinContent(hGenCharmBaryonPtRapidityTightOmegacToOmegaK->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityTightOmegacToOmegaK->GetBinContent(hGenCharmBaryonPtRapidityTightOmegacToOmegaK->FindBin(ptCharmBaryonGen))+1);
+            if (std::abs(rapidityCharmBaryonGen) < 0.5) {
+              hGenCharmBaryonPtRapidityTightOmegacToOmegaK->SetBinContent(hGenCharmBaryonPtRapidityTightOmegacToOmegaK->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityTightOmegacToOmegaK->GetBinContent(hGenCharmBaryonPtRapidityTightOmegacToOmegaK->FindBin(ptCharmBaryonGen)) + 1);
             }
-            if (std::abs(rapidityCharmBaryonGen) < 0.8){
-              hGenCharmBaryonPtRapidityLooseOmegacToOmegaK->SetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToOmegaK->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityLooseOmegacToOmegaK->GetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToOmegaK->FindBin(ptCharmBaryonGen))+1);
+            if (std::abs(rapidityCharmBaryonGen) < 0.8) {
+              hGenCharmBaryonPtRapidityLooseOmegacToOmegaK->SetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToOmegaK->FindBin(ptCharmBaryonGen), hGenCharmBaryonPtRapidityLooseOmegacToOmegaK->GetBinContent(hGenCharmBaryonPtRapidityLooseOmegacToOmegaK->FindBin(ptCharmBaryonGen)) + 1);
             }
           }
           if (origin == RecoDecay::OriginType::NonPrompt) {
