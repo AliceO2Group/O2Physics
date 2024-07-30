@@ -452,9 +452,9 @@ struct OnTheFlyTracker {
     std::array<float, 5> params;
     std::array<float, 15> covm = {0.};
     float s, c, x;
-    o2::math_utils::sincos(static_cast<float>particle.Phi(), s, c);
-    o2::math_utils::rotateZInv(static_cast<float>productionVertex[0], static_cast<float>productionVertex[1], x, params[0], s, c);
-    params[1] = static_cast<float>productionVertex[2];
+    o2::math_utils::sincos(static_cast<float> particle.Phi(), s, c);
+    o2::math_utils::rotateZInv(static_cast<float> productionVertex[0], static_cast<float> productionVertex[1], x, params[0], s, c);
+    params[1] = static_cast<float> productionVertex[2];
     params[2] = 0;
     auto theta = 2. * std::atan(std::exp(-particle.PseudoRapidity()));
     params[3] = 1. / std::tan(theta);
