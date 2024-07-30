@@ -412,7 +412,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       }
 
       // get geometrical chi2 of XicPlus
-      float chi2geoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
+      float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
       // topological constraint of Xic to PV
       KFParticle kfXicPlusToPV = kfXicPlus;
@@ -538,7 +538,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        kfXicPlus.GetX(), kfXicPlus.GetY(), kfXicPlus.GetZ(),
                        kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
                        kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
-                       chi2geoXicPlus, massXiPiPi, signXic,
+                       chi2GeoXicPlus, massXiPiPi, signXic,
                        kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
                        kfCharmBachelor0.GetPx(), kfCharmBachelor0.GetPy(), kfCharmBachelor0.GetPz(),
                        kfCharmBachelor1.GetPx(), kfCharmBachelor1.GetPy(), kfCharmBachelor1.GetPz(),
