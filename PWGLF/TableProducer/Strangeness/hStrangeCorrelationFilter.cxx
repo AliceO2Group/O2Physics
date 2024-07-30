@@ -128,6 +128,7 @@ struct hstrangecorrelationfilter {
   using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
+  using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
   using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TracksDCA>;
   using V0DatasWithoutTrackX = soa::Join<aod::V0Indices, aod::V0Cores>;
@@ -165,7 +166,33 @@ struct hstrangecorrelationfilter {
     histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
     histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
   }
+  
+  // reco-level trigger quality checks (N.B.: DCA is filtered, not selected)
+  template <class TTrack>
+  bool isValidTrigger(TTrack track){ 
+    if (track.eta() > triggerEtaMax || track.eta() < triggerEtaMin) {
+      return false;
+    }
+    // if (track.sign()= 1 ) {continue;}
+    if (track.pt() > triggerPtCutMax || track.pt() < triggerPtCutMin) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < minTPCNCrossedRows) {
+      return false; // crossed rows
+    }
+    if (!track.hasITS() && triggerRequireITS) {
+      return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+    }
+    if (track.tpcNClsShared() > triggerMaxTPCSharedClusters) {
+      return false; // skip, has shared clusters
+    }
+    if (!(bitcheck(track.itsClusterMap(), 0)) && triggerRequireL0) {
+      return false; // skip, doesn't have cluster in ITS L0
+    }
+    return true;
+  }
 
+  // for real data processing
   void processTriggers(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<DauTracks> const& tracks)
   {
     // Perform basic event selection
@@ -180,30 +207,44 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (track.eta() > triggerEtaMax || track.eta() < triggerEtaMin) {
-        continue;
-      }
-      // if (track.sign()= 1 ) {continue;}
-      if (track.pt() > triggerPtCutMax || track.pt() < triggerPtCutMin) {
-        continue;
-      }
-      if (track.tpcNClsCrossedRows() < minTPCNCrossedRows) {
-        continue; // crossed rows
-      }
-      if (!track.hasITS() && triggerRequireITS) {
-        continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
-      }
-      if (track.tpcNClsShared() > triggerMaxTPCSharedClusters) {
-        continue; // skip, has shared clusters
-      }
-      if (!(bitcheck(track.itsClusterMap(), 0)) && triggerRequireL0) {
-        continue; // skip, doesn't have cluster in ITS L0
-      }
+      if( !isValidTrigger(track) ) 
+        continue; 
       triggerTrack(
         track.collisionId(),
+        false, // if you decide to check real data for primaries, you'll have a hard time
         track.globalIndex());
     }
   }
+
+  // for MC processing
+  void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<DauTracksMC> const& tracks, aod::McParticles const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if( !isValidTrigger(track) ) 
+        continue; 
+      bool physicalPrimary = false; 
+      if( track.has_mcParticle()){ 
+        auto mcParticle = track.mcParticle(); 
+        physicalPrimary = mcParticle.isPhysicalPrimary(); 
+      }
+      triggerTrack(
+        track.collisionId(),
+        physicalPrimary,
+        track.globalIndex());
+    }
+  }
+
   void processAssocPions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracks> const& tracks)
   {
     // Perform basic event selection
@@ -380,7 +421,7 @@ struct hstrangecorrelationfilter {
       ) {
         assocV0(v0.collisionId(), v0.globalIndex(),
                 compatibleK0Short, compatibleLambda, compatibleAntiLambda,
-                origV0entry.isTrueK0Short(), origV0entry.isTrueLambda(), origV0entry.isTrueAntiLambda(),
+                origV0entry.isTrueK0Short(), origV0entry.isTrueLambda(), origV0entry.isTrueAntiLambda(), origV0entry.isPhysicalPrimary(),
                 massRegK0Short, massRegLambda, massRegAntiLambda);
       }
     }
@@ -480,8 +521,9 @@ struct hstrangecorrelationfilter {
       ) {
         assocCascades(casc.collisionId(), casc.globalIndex(),
                       compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,
-                      origCascadeEntry.isTrueXiMinus(), origCascadeEntry.isTrueXiPlus(),
+                      origCascadeEntry.isTrueXiMinus(), origCascadeEntry.isTrueXiPlus(), 
                       origCascadeEntry.isTrueOmegaMinus(), origCascadeEntry.isTrueOmegaPlus(),
+                      origCascadeEntry.isPhysicalPrimary(),
                       massRegXi, massRegOmega);
       }
     }
