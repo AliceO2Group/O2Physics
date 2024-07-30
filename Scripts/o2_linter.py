@@ -713,7 +713,7 @@ class TestNameMacro(TestSpec):
     """Test macro names."""
 
     name = "name/macro"
-    message = "Use SCREAMING_SNAKE_CASE for names of macros."
+    message = "Use SCREAMING_SNAKE_CASE for names of macros. Leading and double underscores are not allowed."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -726,6 +726,10 @@ class TestNameMacro(TestSpec):
         if "(" in macro_name:
             macro_name = macro_name.split("(")[0]
         # The actual test comes here.
+        if macro_name.startswith("_"):
+            return False
+        if "__" in macro_name:
+            return False
         return is_screaming_snake_case(macro_name)
 
 
@@ -828,7 +832,7 @@ class TestNameNamespace(TestSpec):
     """Test names of namespaces."""
 
     name = "name/namespace"
-    message = "Use snake_case for names of namespaces."
+    message = "Use snake_case for names of namespaces. Double underscores are not allowed."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -841,6 +845,8 @@ class TestNameNamespace(TestSpec):
         if namespace_name == "{":  # ignore anonymous namespaces
             return True
         # The actual test comes here.
+        if "__" in namespace_name:
+            return False
         return is_snake_case(namespace_name)
 
 
