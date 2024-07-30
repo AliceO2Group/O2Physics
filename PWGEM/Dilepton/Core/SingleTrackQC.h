@@ -51,6 +51,9 @@ using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
+using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMSWTriggerInfos>;
+using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
+
 using MyElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyElectron = MyElectrons::iterator;
 using FilteredMyElectrons = soa::Filtered<MyElectrons>;
@@ -70,6 +73,7 @@ struct SingleTrackQC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+  Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
 
@@ -232,6 +236,7 @@ struct SingleTrackQC {
     }
   }
 
+  int mRunNumber;
   void init(InitContext&)
   {
     ccdb->setURL(ccdburl);
@@ -243,6 +248,27 @@ struct SingleTrackQC {
     DefineDielectronCut();
     DefineDimuonCut();
     addhistograms();
+    mRunNumber = 0;
+
+    if (doprocessQC_TriggeredData) {
+      fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
+    }
+  }
+
+  template <bool isTriggerAnalysis, typename TCollision>
+  void initCCDB(TCollision const& collision)
+  {
+    if (mRunNumber == collision.runNumber()) {
+      return;
+    }
+
+    mRunNumber = collision.runNumber();
+
+    if constexpr (isTriggerAnalysis) {
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
+      LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
+      fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
+    }
   }
 
   void DefineEMEventCut()
@@ -436,13 +462,19 @@ struct SingleTrackQC {
     }
   }
 
-  template <typename TCollisions, typename TTracks, typename TPreslice, typename TCut>
+  template <bool isTriggerAnalysis, typename TCollisions, typename TTracks, typename TPreslice, typename TCut>
   void runQC(TCollisions const& collisions, TTracks const& tracks, TPreslice const& perCollision, TCut const& cut)
   {
     for (auto& collision : collisions) {
+      initCCDB<isTriggerAnalysis>(collision);
       float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
+      }
+      if constexpr (isTriggerAnalysis) {
+        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
+          continue;
+        }
       }
 
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
@@ -496,13 +528,26 @@ struct SingleTrackQC {
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
-      runQC(collisions, electrons, perCollision_electron, fDielectronCut);
+      runQC<false>(collisions, electrons, perCollision_electron, fDielectronCut);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       auto muons = std::get<0>(std::tie(args...));
-      runQC(collisions, muons, perCollision_muon, fDimuonCut);
+      runQC<false>(collisions, muons, perCollision_muon, fDimuonCut);
     }
   }
-  PROCESS_SWITCH(SingleTrackQC, processQC, "run dielectron QC", true);
+  PROCESS_SWITCH(SingleTrackQC, processQC, "run single track QC", true);
+
+  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
+  void processQC_TriggeredData(FilteredMyCollisionsWithSWT const& collisions, Types const&... args)
+  {
+    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+      auto electrons = std::get<0>(std::tie(args...));
+      runQC<true>(collisions, electrons, perCollision_electron, fDielectronCut);
+    } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+      auto muons = std::get<0>(std::tie(args...));
+      runQC<true>(collisions, muons, perCollision_muon, fDimuonCut);
+    }
+  }
+  PROCESS_SWITCH(SingleTrackQC, processQC_TriggeredData, "run single track QC on triggered data", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQC, processDummy, "Dummy function", false);

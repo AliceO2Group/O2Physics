@@ -63,8 +63,7 @@ struct skimmerPrimaryElectron {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
   Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
-  Configurable<bool> force_enable_swt{"force_enable_swt", false, "flag to force process skimmed data (swt triggered)"}; // this is only for non-EM users.
-  Configurable<std::string> cfg_swt_names_force{"cfg_swt_names_force", "", "comma-separated software trigger names"};   // this is only for non-EM users.
+  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
 
   // Operation and minimisation criteria
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
@@ -112,11 +111,10 @@ struct skimmerPrimaryElectron {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);       // for EM users.
-    getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true); // for EM users.
-    if (force_enable_swt) {                                                                                 // for non-EM users.
-      enable_swt = force_enable_swt;
-      cfg_swt_names = cfg_swt_names_force;
+    if (inherit_from_emevent_dilepton) {
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);                           // for EM users.
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
     }
 
     if (fillQAHistogram) {
