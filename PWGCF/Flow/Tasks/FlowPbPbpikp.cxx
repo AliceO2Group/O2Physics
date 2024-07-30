@@ -312,8 +312,9 @@ struct v2ellip {
       }
       if (selectionPID(track, 0) || selectionPID(track, 1) || selectionPID(track, 2)) { // If track pion, kaon or proton
         histos.fill(HIST("hphi"), track.phi());
-      } else
+      } else {
         continue;
+      }
     } // end of track loop
 
     for (auto track1 : atrack) {
@@ -343,11 +344,13 @@ struct v2ellip {
             pn_sumsinA_pr[pt] += TMath::Sin(2 * track1.phi());
             pn_sumcosA_pr[pt] += TMath::Cos(2 * track1.phi());
             mpA_pr[pt]++;
-          } else
+          } else {
             continue;
+	  }
         } // end of pt loop
-      } else
+      } else {
         continue;
+      }
     } // track loop ends
 
     for (auto track2 : btrack) {
@@ -377,51 +380,51 @@ struct v2ellip {
             pn_sumsinB_pr[pt] += TMath::Sin(2 * track2.phi());
             pn_sumcosB_pr[pt] += TMath::Cos(2 * track2.phi());
             mpB_pr[pt]++;
-          } else
+          } else {
             continue;
+	  }
         } // end of pt loop
-      } else
+      } else {
         continue;
+      }
     } // track loop ends
 
     if (10.0 < multiplicity && multiplicity <= 20.0) {
       // reference flow
       if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 1, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / ((double)multA * multB)), multA * multB);
+        histos.fill(HIST("profv2ref"), 1, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
       }
 
       // pt wise differential flow
       for (auto pt = 0; pt < 14; pt++) {
         if ((mpA_pr[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pr_10_20"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / ((double)mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+          histos.fill(HIST("profv2diff_pr_10_20"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
         } // for proton
         if ((mpA_pi[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pi_10_20"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / ((double)mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+          histos.fill(HIST("profv2diff_pi_10_20"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
         } // for pion
         if ((mpA_k[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_k_10_20"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / ((double)mpA_k[pt] * multB)), mpA_k[pt] * multB);
+          histos.fill(HIST("profv2diff_k_10_20"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
         } // for kaon
-
-        std::cout << "Centrality: " << multiplicity << " pt  == " << ptbins[pt] << " to " << ptbins[pt + 1] << " mpA_k == " << mpA_k[pt] << " mpA_pr == " << mpA_pr[pt] << " mpA_pi == " << mpA_pi[pt] << std::endl;
       }
     } // 10 to 20 percent centrality
 
     if (20.0 < multiplicity && multiplicity <= 30.0) {
       // reference flow
       if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 2, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / ((double)multA * multB)), multA * multB);
+        histos.fill(HIST("profv2ref"), 2, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
       }
 
       // pt wise differential flow
       for (auto pt = 0; pt < 14; pt++) {
         if ((mpA_pr[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pr_20_30"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / ((double)mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+          histos.fill(HIST("profv2diff_pr_20_30"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
         } // for proton
         if ((mpA_pi[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pi_20_30"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / ((double)mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+          histos.fill(HIST("profv2diff_pi_20_30"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
         } // for pion
         if ((mpA_k[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_k_20_30"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / ((double)mpA_k[pt] * multB)), mpA_k[pt] * multB);
+          histos.fill(HIST("profv2diff_k_20_30"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
         } // for kaon
       }
     } // 20 to 30 percent centrality
@@ -429,19 +432,19 @@ struct v2ellip {
     if (30.0 < multiplicity && multiplicity <= 40.0) {
       // reference flow
       if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 3, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / ((double)multA * multB)), multA * multB);
+        histos.fill(HIST("profv2ref"), 3, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
       }
 
       // pt wise differential flow
       for (auto pt = 0; pt < 14; pt++) {
         if ((mpA_pr[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pr_30_40"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / ((double)mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+          histos.fill(HIST("profv2diff_pr_30_40"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
         } // for proton
         if ((mpA_pi[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pi_30_40"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / ((double)mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+          histos.fill(HIST("profv2diff_pi_30_40"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
         } // for pion
         if ((mpA_k[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_k_30_40"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / ((double)mpA_k[pt] * multB)), mpA_k[pt] * multB);
+          histos.fill(HIST("profv2diff_k_30_40"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
         } // for kaon
       }
     } // 30 to 40 percent centrality
@@ -449,19 +452,19 @@ struct v2ellip {
     if (40.0 < multiplicity && multiplicity <= 50.0) {
       // reference flow
       if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 4, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / ((double)multA * multB)), multA * multB);
+        histos.fill(HIST("profv2ref"), 4, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
       }
 
       // pt wise differential flow
       for (auto pt = 0; pt < 14; pt++) {
         if ((mpA_pr[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pr_40_50"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / ((double)mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+          histos.fill(HIST("profv2diff_pr_40_50"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
         } // for proton
         if ((mpA_pi[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pi_40_50"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / ((double)mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+          histos.fill(HIST("profv2diff_pi_40_50"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
         } // for pion
         if ((mpA_k[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_k_40_50"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / ((double)mpA_k[pt] * multB)), mpA_k[pt] * multB);
+          histos.fill(HIST("profv2diff_k_40_50"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
         } // for kaon
       }
     } // 40 to 50 percent centrality
@@ -469,21 +472,21 @@ struct v2ellip {
     if (50.0 < multiplicity && multiplicity <= 60.0) {
       // reference flow
       if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 5, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / ((double)multA * multB)), multA * multB);
+        histos.fill(HIST("profv2ref"), 5, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
       }
     } // 50 to 60 percent centrality
 
     if (60.0 < multiplicity && multiplicity <= 70.0) {
       // reference flow
       if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 6, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / ((double)multA * multB)), multA * multB);
+        histos.fill(HIST("profv2ref"), 6, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
       }
     } // 60 to 70 percent centrality
 
     if (70.0 < multiplicity && multiplicity <= 80.0) {
       // reference flow
       if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 7, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / ((double)multA * multB)), multA * multB);
+        histos.fill(HIST("profv2ref"), 7, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
       }
     } // 70 to 80 percent centrality
 
