@@ -664,6 +664,7 @@ struct HfCandidateCreator2ProngExpressions {
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   HistogramRegistry registry{"registry"};
@@ -691,7 +692,7 @@ struct HfCandidateCreator2ProngExpressions {
   void runCreator2ProngMc(aod::TracksWMc const& tracks,
                           aod::McParticles const& mcParticles,
                           CCs const& collInfos,
-                          aod::McCollisions const&,
+                          aod::McCollisions const& mcCollisions,
                           BCsInfo const&)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
@@ -762,19 +763,11 @@ struct HfCandidateCreator2ProngExpressions {
       }
     }
 
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      flag = 0;
-      origin = 0;
-      std::vector<int> idxBhadMothers{};
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        rowMcMatchGen(flag, origin, -1);
-        continue;
-      }
+    for (const auto& mcCollision : mcCollisions) {
 
+      // Slice the particles table to get the particles for the current MC collision
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
-      auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
       uint16_t rejectionMask{0};
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
@@ -789,38 +782,52 @@ struct HfCandidateCreator2ProngExpressions {
       }
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
-        /// at least one event selection not satisfied --> reject the gen particle
-        rowMcMatchGen(flag, origin, -1);
+        // at least one event selection not satisfied --> reject all particles from this collision
+        for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
+          rowMcMatchGen(0, 0, -1);
+        }
         continue;
       }
 
-      // D0(bar) → π± K∓
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
-        flag = sign * (1 << DecayType::D0ToPiK);
-      }
-
-      // J/ψ → e+ e−
-      if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
-          flag = 1 << DecayType::JpsiToEE;
+      // Match generated particles.
+      for (const auto& particle : mcParticlesPerMcColl) {
+        flag = 0;
+        origin = 0;
+        std::vector<int> idxBhadMothers{};
+        // Reject particles from background events
+        if (particle.fromBackgroundEvent() && rejectBackground) {
+          rowMcMatchGen(flag, origin, -1);
+          continue;
         }
-      }
 
-      // J/ψ → μ+ μ−
-      if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
-          flag = 1 << DecayType::JpsiToMuMu;
+        // D0(bar) → π± K∓
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+          flag = sign * (1 << DecayType::D0ToPiK);
         }
-      }
 
-      // Check whether the particle is non-prompt (from a b quark).
-      if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-      }
-      if (origin == RecoDecay::OriginType::NonPrompt) {
-        rowMcMatchGen(flag, origin, idxBhadMothers[0]);
-      } else {
-        rowMcMatchGen(flag, origin, -1);
+        // J/ψ → e+ e−
+        if (flag == 0) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
+            flag = 1 << DecayType::JpsiToEE;
+          }
+        }
+
+        // J/ψ → μ+ μ−
+        if (flag == 0) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
+            flag = 1 << DecayType::JpsiToMuMu;
+          }
+        }
+
+        // Check whether the particle is non-prompt (from a b quark).
+        if (flag != 0) {
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+        }
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          rowMcMatchGen(flag, origin, idxBhadMothers[0]);
+        } else {
+          rowMcMatchGen(flag, origin, -1);
+        }
       }
     }
   }

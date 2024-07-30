@@ -569,6 +569,7 @@ class VarManager : public TObject
     kCosThetaCS,
     kPhiHE,
     kPhiCS,
+    kDeltaPhiPair2,
     kPsiPair,
     kDeltaPhiPair,
     kOpeningAngle,
@@ -601,9 +602,12 @@ class VarManager : public TObject
     kCORR2POI,
     kCORR4REF,
     kCORR4POI,
-    kC4REF,
-    kC4POI,
-    kV4,
+    kM11REFoverMp,
+    kM01POIoverMp,
+    kM1111REFoverMp,
+    kM0111POIoverMp,
+    kCORR2POIMp,
+    kCORR4POIMp,
     kPsi2A,
     kPsi2APOS,
     kPsi2ANEG,
@@ -2344,6 +2348,16 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
+  if (fgUsedVars[kDeltaPhiPair2]) {
+    double phipair2 = v1.Phi() - v2.Phi();
+    if (phipair2 > 3 * TMath::Pi() / 2) {
+      values[kDeltaPhiPair2] = phipair2 - 2 * TMath::Pi();
+    }
+    if (phipair2 < -TMath::Pi() / 2) {
+      values[kDeltaPhiPair2] = phipair2 + 2 * TMath::Pi();
+    }
+  }
+
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
@@ -3914,6 +3928,14 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
     values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
     values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
+    values[kM01POIoverMp] = values[kMultDimuons] > 0 && !(isnan(values[kM01POI]) || isinf(values[kM01POI])) ? values[kM01POI] / values[kMultDimuons] : 0;
+    values[kM0111POIoverMp] = values[kMultDimuons] > 0 && !(isnan(values[kM0111POI]) || isinf(values[kM0111POI])) ? values[kM0111POI] / values[kMultDimuons] : 0;
+    values[kM11REFoverMp] = values[kMultDimuons] > 0 && !(isnan(values[kM11REF]) || isinf(values[kM11REF])) ? values[kM11REF] / values[kMultDimuons] : 0;
+    values[kM1111REFoverMp] = values[kMultDimuons] > 0 && !(isnan(values[kM1111REF]) || isinf(values[kM1111REF])) ? values[kM1111REF] / values[kMultDimuons] : 0;
+    values[kCORR2POIMp] = isnan(values[kCORR2POI]) || isinf(values[kCORR2POI]) ? 0 : values[kCORR2POI] * values[kMultDimuons];
+    values[kCORR4POIMp] = isnan(values[kCORR4POI]) || isinf(values[kCORR4POI]) ? 0 : values[kCORR4POI] * values[kMultDimuons];
+    values[kCORR2REF] = isnan(values[kCORR2REF]) || isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
+    values[kCORR4REF] = isnan(values[kCORR4REF]) || isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
   }
 }
 

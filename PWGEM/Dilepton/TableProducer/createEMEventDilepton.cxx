@@ -51,7 +51,7 @@ struct CreateEMEventDilepton {
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   Produces<o2::aod::EMEventsQvec> event_qvec;
-  Produces<o2::aod::EMSWTriggerBits> emswtbit;
+  Produces<o2::aod::EMSWTriggerInfos> emswtbit;
 
   enum class EMEventType : int {
     kEvent = 0,
@@ -75,6 +75,8 @@ struct CreateEMEventDilepton {
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
+
+    registry.add("hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
   }
 
   ~CreateEMEventDilepton()
@@ -84,7 +86,10 @@ struct CreateEMEventDilepton {
   }
 
   Zorro zorro;
+  std::vector<int> mTOIidx;
   std::vector<std::string> swt_names;
+  uint64_t mNinspectedTVX{0};
+
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -98,12 +103,18 @@ struct CreateEMEventDilepton {
 
     if (enable_swt) {
       LOGF(info, "enable software triggers : %s", cfg_swt_names.value.data());
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
+      mTOIidx = zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
       std::stringstream tokenizer(cfg_swt_names.value);
       std::string token;
       while (std::getline(tokenizer, token, ',')) {
         swt_names.emplace_back(token);
       }
+      for (auto& idx : mTOIidx) {
+        LOGF(info, "Trigger of Interest : index = %d", idx);
+      }
+      mNinspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
+      LOGF(info, "total inspected TVX events = %d in run number %d", mNinspectedTVX, bc.runNumber());
+      registry.fill(HIST("hNInspectedTVX"), bc.runNumber(), mNinspectedTVX);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -160,18 +171,25 @@ struct CreateEMEventDilepton {
       }
 
       if (enable_swt) {
-        if (zorro.isSelected(bc.globalBC())) { // triggered event
+        if (zorro.isSelected(bc.globalBC())) {     // triggered event
+          auto swt_bitset = zorro.getLastResult(); // this has to be called after zorro::isSelected
+          // LOGF(info, "swt_bitset.to_string().c_str() = %s", swt_bitset.to_string().c_str());
           uint16_t trigger_bitmap = 0;
-          for (auto& swtname : swt_names) {
-            LOGF(info, "swtname = %s , swt index = %d", swtname.data(), o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
-            trigger_bitmap |= BIT(o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
-          } // end of desired trigger names loop
-          LOGF(info, "trigger_bitmap = %d", trigger_bitmap);
-          emswtbit(trigger_bitmap);
+          for (size_t idx = 0; idx < mTOIidx.size(); idx++) {
+            if (swt_bitset.test(mTOIidx[idx])) {
+              auto swtname = swt_names[idx];
+              trigger_bitmap |= BIT(o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
+              // LOGF(info, "swtname = %s is fired. swt index in original swt table = %d, swt index for EM table = %d", swtname.data(), mTOIidx[idx], o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
+            }
+          }
+          emswtbit(trigger_bitmap, mNinspectedTVX);
         } else { // rejected
           continue;
         }
+        // zorro.populateHistRegistry(registry, bc.runNumber());
+        // LOGF(info, "zorro.getTOIcounters()[0] = %d", zorro.getTOIcounters()[0]);
       }
+
       // LOGF(info, "collision.multNTracksPV() = %d, collision.multFT0A() = %f, collision.multFT0C() = %f", collision.multNTracksPV(), collision.multFT0A(), collision.multFT0C());
 
       registry.fill(HIST("hEventCounter"), 1);
@@ -294,7 +312,6 @@ struct AssociateDileptonToEMEvent {
       auto leptons_coll = leptons.sliceBy(perCollision, collision.collisionId());
       int nl = leptons_coll.size();
       // LOGF(info, "collision.collisionId() = %d , nl = %d", collision.collisionId(), nl);
-
       for (int il = 0; il < nl; il++) {
         eventIds(collision.globalIndex());
       } // end of photon loop
