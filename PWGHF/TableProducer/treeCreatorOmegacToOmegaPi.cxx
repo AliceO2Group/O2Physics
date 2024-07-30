@@ -14,6 +14,7 @@
 ///        In this file are defined and filled the output tables
 ///
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
+/// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
