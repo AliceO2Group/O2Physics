@@ -22,7 +22,6 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/ASoA.h"
