@@ -30,7 +30,6 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
@@ -147,19 +146,10 @@ struct femtoUniverseEfficiencyBase {
   Configurable<float> ConfV0InvMassLowLimit{"ConfV0InvV0MassLowLimit", 1.10, "Lower limit of the V0 invariant mass"};
   Configurable<float> ConfV0InvMassUpLimit{"ConfV0InvV0MassUpLimit", 1.13, "Upper limit of the V0 invariant mass"};
 
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
   FemtoUniverseTrackSelection trackCuts;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPDG{"PDGHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0> pairCleaner;
-  FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0> pairCloseRejection;
-
-  /// @brief Counter for particle swapping
-  int fNeventsProcessed = 0;
 
   void init(InitContext&)
   {
@@ -167,30 +157,24 @@ struct femtoUniverseEfficiencyBase {
     eventHisto.init(&qaRegistry);
     trackHistoPartOneGen.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartOne, false);
     trackHistoPartOneRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartOne, false);
-    trackHistoV0OneRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartOne, true);
-    trackHistoV0OneChildPosRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, 0, true, "posChildV0_1");
-    trackHistoV0OneChildNegRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, 0, true, "negChildV0_1");
-
     registryPDG.add("part1/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
-    registryPDG.add("part1/dpositive/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
-    registryPDG.add("part1/dnegative/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
+    if (ConfParticleTypePartOne == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) {
+      trackHistoV0OneRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartOne, true);
+      trackHistoV0OneChildPosRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, 0, true, "posChildV0_1");
+      trackHistoV0OneChildNegRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, 0, true, "negChildV0_1");
+      registryPDG.add("part1/dpositive/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
+      registryPDG.add("part1/dnegative/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
+    }
 
     if (!ConfIsSame) {
       trackHistoPartTwoGen.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartTwo, false);
       trackHistoPartTwoRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartTwo, false);
-      trackHistoV0TwoRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartTwo, true);
-      trackHistoV0TwoChildPosRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, 0, true, "posChildV0_2");
-      trackHistoV0TwoChildNegRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, 0, true, "negChildV0_2");
+      if (ConfParticleTypePartTwo == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) {
+        trackHistoV0TwoRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, ConfPDGCodePartTwo, true);
+        trackHistoV0TwoChildPosRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, 0, true, "posChildV0_2");
+        trackHistoV0TwoChildNegRec.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, 0, 0, true, "negChildV0_2");
+      }
       registryPDG.addClone("part1/", "part2/");
-    }
-
-    MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
-
-    sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, 0, ConfUse3D);
-    sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
-    pairCleaner.init(&qaRegistry);
-    if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCutMin.value, ConfCPRdeltaPhiCutMax.value, ConfCPRdeltaEtaCutMin.value, ConfCPRdeltaEtaCutMax.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value);
     }
   }
 
@@ -326,7 +310,6 @@ struct femtoUniverseEfficiencyBase {
   template <typename CollisionType>
   void fillCollision(CollisionType col)
   {
-    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
     eventHisto.fillQA(col);
   }
 
@@ -341,11 +324,8 @@ struct femtoUniverseEfficiencyBase {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doMCGen(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, float /*magFieldTesla*/, int multCol)
+  void doMCGen(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen)
   {
-    bool swpart = fNeventsProcessed % 2;
-    fNeventsProcessed++;
-
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
       if (!ConfNoPDGPartOne && part.pidcut() != ConfPDGCodePartOne) {
@@ -362,20 +342,6 @@ struct femtoUniverseEfficiencyBase {
         trackHistoPartTwoGen.fillQA<isMC, false>(part);
       }
     }
-    /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(grouppartsOneMCGen, grouppartsTwoGen))) {
-
-      if (!ConfNoPDGPartOne && (p1.pidcut() != ConfPDGCodePartOne || p2.pidcut() != ConfPDGCodePartTwo)) {
-        continue;
-      }
-
-      if (swpart)
-        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
-      else
-        sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
-
-      swpart = !swpart;
-    }
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -389,11 +355,8 @@ struct femtoUniverseEfficiencyBase {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doMCRecTrackTrack(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, float /*magFieldTesla*/, int multCol)
+  void doMCRecTrackTrack(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen)
   {
-    bool swpart = fNeventsProcessed % 2;
-    fNeventsProcessed++;
-
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
       if (part.partType() != ConfParticleTypePartOne) {
@@ -404,6 +367,13 @@ struct femtoUniverseEfficiencyBase {
         continue;
       }
       trackHistoPartOneRec.fillQA<isMC, false>(part);
+
+      if (!part.has_fdMCParticle()) {
+        continue;
+      }
+      const auto mcParticle = part.fdMCParticle();
+
+      registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
     }
 
     if (!ConfIsSame) {
@@ -417,26 +387,14 @@ struct femtoUniverseEfficiencyBase {
         }
 
         trackHistoPartTwoRec.fillQA<isMC, false>(part);
-      }
-    }
-    /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(grouppartsOneMCGen, grouppartsTwoGen))) {
-      if (p1.partType() != ConfParticleTypePartOne || p2.partType() != ConfParticleTypePartTwo) {
-        continue;
-      }
 
-      if (!IsParticleNSigma(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon))) {
-        continue;
-      }
-      if (!IsParticleNSigma(p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon))) {
-        continue;
-      }
-      if (swpart)
-        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
-      else
-        sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
+        if (!part.has_fdMCParticle()) {
+          continue;
+        }
+        const auto mcParticle = part.fdMCParticle();
 
-      swpart = !swpart;
+        registryPDG.fill(HIST("part2/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
+      }
     }
   }
 
@@ -451,10 +409,8 @@ struct femtoUniverseEfficiencyBase {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doMCRecTrackPhi(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, float /*magFieldTesla*/, int multCol)
+  void doMCRecTrackPhi(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen)
   { // part1 is track and part2 is Phi
-    bool swpart = fNeventsProcessed % 2;
-    fNeventsProcessed++;
 
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
@@ -466,6 +422,13 @@ struct femtoUniverseEfficiencyBase {
         continue;
       }
       trackHistoPartOneRec.fillQA<isMC, false>(part);
+
+      if (!part.has_fdMCParticle()) {
+        continue;
+      }
+      const auto mcParticle = part.fdMCParticle();
+
+      registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
     }
 
     if (!ConfIsSame) {
@@ -474,24 +437,14 @@ struct femtoUniverseEfficiencyBase {
           continue;
         }
         trackHistoPartTwoRec.fillQA<isMC, false>(part);
-      }
-    }
-    /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(grouppartsOneMCGen, grouppartsTwoGen))) {
-      if (p1.partType() != ConfParticleTypePartOne || p2.partType() != ConfParticleTypePartTwo) {
-        continue;
-      }
 
-      if (!IsParticleNSigma(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon))) {
-        continue;
+        if (!part.has_fdMCParticle()) {
+          continue;
+        }
+        const auto mcParticle = part.fdMCParticle();
+
+        registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
       }
-
-      if (swpart)
-        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
-      else
-        sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
-
-      swpart = !swpart;
     }
   }
 
@@ -506,12 +459,8 @@ struct femtoUniverseEfficiencyBase {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename ParticlesType>
-  void doMCRecV0antiV0(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, float magFieldTesla, int multCol, ParticlesType parts)
+  void doMCRecV0antiV0(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, ParticlesType parts)
   {
-
-    bool swpart = fNeventsProcessed % 2;
-    fNeventsProcessed++;
-
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
 
@@ -572,67 +521,23 @@ struct femtoUniverseEfficiencyBase {
         registryPDG.fill(HIST("part2/dnegative/PDGvspT"), part.pt(), mcNegChild.pdgMCTruth());
       }
     }
-
-    /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(grouppartsOneMCGen, grouppartsTwoGen))) {
-
-      if (p1.partType() != ConfParticleTypePartOne || p2.partType() != ConfParticleTypePartTwo) {
-        continue;
-      }
-
-      // Lambda invariant mass cut for p1
-      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
-        continue;
-      // Lambda invariant mass cut for p2
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
-        continue;
-
-      const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
-      const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
-      /// Daughters that do not pass this condition are not selected
-      if (!IsParticleTPC(2212, trackCuts.getNsigmaTPC(posChild1, o2::track::PID::Proton)) || !IsParticleTPC(-211, trackCuts.getNsigmaTPC(negChild1, o2::track::PID::Pion))) // Lambda
-        continue;
-
-      const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
-      const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
-      /// Daughters that do not pass this condition are not selected
-      if (!IsParticleTPC(211, trackCuts.getNsigmaTPC(posChild2, o2::track::PID::Pion)) || !IsParticleTPC(-2212, trackCuts.getNsigmaTPC(negChild2, o2::track::PID::Proton))) // Antilambda
-        continue;
-
-      // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
-      }
-      if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
-          continue;
-        }
-      }
-
-      if (swpart)
-        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
-      else
-        sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
-
-      swpart = !swpart;
-    }
   }
 
   /// process function for to call doMCPlots with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
   void processTrackTrack(o2::aod::FDCollision& col,
-                         FemtoFullParticles&)
+                         FemtoFullParticles&, aod::FDMCParticles const&)
   {
     fillCollision(col);
     // MCGen
     auto thegrouppartsOneMCGen = partsOneMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegrouppartsTwoGen = partsTwoGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoGen, col.magField(), col.multNtr());
+    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoGen);
     // MCRec
     auto thegroupPartsTrackOneRec = partsTrackOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrackTwoReco = partsTrackTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCRecTrackTrack<false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoReco, col.magField(), col.multNtr());
+    doMCRecTrackTrack<false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoReco);
   }
   PROCESS_SWITCH(femtoUniverseEfficiencyBase, processTrackTrack, "Enable processing track-track efficiency task", true);
 
@@ -640,17 +545,17 @@ struct femtoUniverseEfficiencyBase {
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
   void processTrackPhi(o2::aod::FDCollision& col,
-                       FemtoFullParticles&)
+                       FemtoFullParticles&, aod::FDMCParticles const&)
   {
     fillCollision(col);
     // MCGen
     auto thegrouppartsOneMCGen = partsOneMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegrouppartsTwoGen = partsTwoGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoGen, col.magField(), col.multNtr());
+    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoGen);
     // MCRec
     auto thegroupPartsTrackOneRec = partsTrackOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrackTwoReco = partsTrackTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCRecTrackPhi<false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoReco, col.magField(), col.multNtr());
+    doMCRecTrackPhi<false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoReco);
   }
   PROCESS_SWITCH(femtoUniverseEfficiencyBase, processTrackPhi, "Enable processing track-phi efficiency task", false);
 
@@ -664,12 +569,12 @@ struct femtoUniverseEfficiencyBase {
     // MCGen
     auto thegrouppartsOneMCGen = partsOneMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegrouppartsTwoGen = partsTwoGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoGen, col.magField(), col.multNtr());
+    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoGen);
 
     // MCRec
     auto thegroupPartsTrackOneRec = partsTrackOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrackTwoReco = partsTrackTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCRecV0antiV0<false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoReco, col.magField(), col.multNtr(), parts);
+    doMCRecV0antiV0<false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoReco, parts);
   }
   PROCESS_SWITCH(femtoUniverseEfficiencyBase, processV0antiV0, "Enable processing V0-antiV0 efficiency task", false);
 };
