@@ -249,8 +249,8 @@ struct HfTaskXicToXiPiPi {
       registry.fill(HIST("hSVx"), candidate.xSecondaryVertex(), ptCandXic);
       registry.fill(HIST("hSVy"), candidate.ySecondaryVertex(), ptCandXic);
       registry.fill(HIST("hSVz"), candidate.zSecondaryVertex(), ptCandXic);
-      registry.fill(HIST("hChi2topoToPV"), candidate.xicPlusChi2topoToPV(), ptCandXic);
-      registry.fill(HIST("hChi2topoXiToXicPlus"), candidate.xicPlusChi2topoXiToXicPlus(), ptCandXic);
+      registry.fill(HIST("hChi2topoToPV"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
+      registry.fill(HIST("hChi2topoXiToXicPlus"), candidate.chi2TopoXiToXicPlus(), ptCandXic);
       registry.fill(HIST("hPtProng0vsPt"), candidate.ptProng0(), ptCandXic);
       registry.fill(HIST("hPtProng1vsPt"), candidate.ptProng1(), ptCandXic);
       registry.fill(HIST("hPtProng2vsPt"), candidate.ptProng2(), ptCandXic);
@@ -320,8 +320,8 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter1(), ptCandXic);
         registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter2(), ptCandXic);
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), ptCandXic);
-        registry.fill(HIST("hChi2topoToPVRecSig"), candidate.xicPlusChi2topoToPV(), ptCandXic);
-        registry.fill(HIST("hChi2topoXiToXicPlusRecSig"), candidate.xicPlusChi2topoXiToXicPlus(), ptCandXic);
+        registry.fill(HIST("hChi2topoToPVRecSig"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
+        registry.fill(HIST("hChi2topoXiToXicPlusRecSig"), candidate.chi2TopoXiToXicPlus(), ptCandXic);
         registry.fill(HIST("hChi2geoXiRecSig"), candidate.kfCascadeChi2(), ptCandXic);
         registry.fill(HIST("hChi2geoLamRecSig"), candidate.kfV0Chi2(), ptCandXic);
         registry.fill(HIST("hCPAXiRecSig"), candidate.cosPaXi(), ptCandXic);
@@ -355,8 +355,8 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter1(), ptCandXic);
         registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter2(), ptCandXic);
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandXic);
-        registry.fill(HIST("hChi2topoToPVRecBg"), candidate.xicPlusChi2topoToPV(), ptCandXic);
-        registry.fill(HIST("hChi2topoXiToXicPlusRecBg"), candidate.xicPlusChi2topoXiToXicPlus(), ptCandXic);
+        registry.fill(HIST("hChi2topoToPVRecBg"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
+        registry.fill(HIST("hChi2topoXiToXicPlusRecBg"), candidate.chi2TopoXiToXicPlus(), ptCandXic);
         registry.fill(HIST("hChi2geoXiRecBg"), candidate.kfCascadeChi2(), ptCandXic);
         registry.fill(HIST("hChi2geoLamRecBg"), candidate.kfV0Chi2(), ptCandXic);
         registry.fill(HIST("hCPAXiRecBg"), candidate.cosPaXi(), ptCandXic);
