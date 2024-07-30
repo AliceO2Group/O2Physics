@@ -1109,12 +1109,12 @@ struct correlateStrangeness {
         continue;
       }
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
-        if( !doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()){
+        if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           triggerIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, gphi);
         }
       }
-      if( !doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()){
+      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
         if (abs(mcParticle.pdgCode()) == 211) {
           piIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hPion"), gpt, geta, gphi);
