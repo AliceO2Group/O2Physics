@@ -1109,40 +1109,44 @@ struct correlateStrangeness {
         continue;
       }
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
-        triggerIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, gphi);
+        if( !doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()){
+          triggerIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, gphi);
+        }
       }
-      if (abs(mcParticle.pdgCode()) == 211) {
-        piIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hPion"), gpt, geta, gphi);
-      }
-      if (abs(mcParticle.pdgCode()) == 310) {
-        k0ShortIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hK0Short"), gpt, geta, gphi);
-      }
-      if (mcParticle.pdgCode() == 3122) {
-        lambdaIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hLambda"), gpt, geta, gphi);
-      }
-      if (mcParticle.pdgCode() == -3122) {
-        antiLambdaIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hAntiLambda"), gpt, geta, gphi);
-      }
-      if (mcParticle.pdgCode() == 3312) {
-        xiMinusIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hXiMinus"), gpt, geta, gphi);
-      }
-      if (mcParticle.pdgCode() == -3312) {
-        xiPlusIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hXiPlus"), gpt, geta, gphi);
-      }
-      if (mcParticle.pdgCode() == 3334) {
-        omegaMinusIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hOmegaMinus"), gpt, geta, gphi);
-      }
-      if (mcParticle.pdgCode() == -3334) {
-        omegaPlusIndices.emplace_back(iteratorNum);
-        histos.fill(HIST("ClosureTest/hOmegaPlus"), gpt, geta, gphi);
+      if( !doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()){
+        if (abs(mcParticle.pdgCode()) == 211) {
+          piIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hPion"), gpt, geta, gphi);
+        }
+        if (abs(mcParticle.pdgCode()) == 310) {
+          k0ShortIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hK0Short"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == 3122) {
+          lambdaIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hLambda"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == -3122) {
+          antiLambdaIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hAntiLambda"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == 3312) {
+          xiMinusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hXiMinus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == -3312) {
+          xiPlusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hXiPlus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == 3334) {
+          omegaMinusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hOmegaMinus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == -3334) {
+          omegaPlusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("ClosureTest/hOmegaPlus"), gpt, geta, gphi);
+        }
       }
     }
     associatedIndices.emplace_back(piIndices);
