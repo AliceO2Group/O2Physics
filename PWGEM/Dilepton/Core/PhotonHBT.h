@@ -71,6 +71,9 @@ using namespace o2::aod::pwgem::dilepton::core::photonhbt;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
+using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMSWTriggerInfos>;
+using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
+
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
@@ -90,7 +93,7 @@ struct PhotonHBT {
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
   Configurable<float> maxY{"maxY", 0.8, "maximum rapidity for reconstructed particles"};
@@ -100,6 +103,7 @@ struct PhotonHBT {
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
+  Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
 
   ConfigurableAxis ConfKtBins{"ConfKtBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}, "kT bins for output histograms"};
 
@@ -261,9 +265,13 @@ struct PhotonHBT {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    if (doprocessTriggerAnalysis) {
+      fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
+    }
   }
 
-  template <typename TCollision>
+  template <bool isTriggerAnalysis, typename TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
@@ -300,6 +308,12 @@ struct PhotonHBT {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = collision.runNumber();
+
+    if constexpr (isTriggerAnalysis) {
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
+      LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
+      fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
+    }
   }
 
   void addhistograms()
@@ -513,15 +527,20 @@ struct PhotonHBT {
     fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), kt, qout_lcms, qside_lcms, qlong_lcms);
   }
 
-  template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
+  template <bool isTriggerAnalysis, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
   void runPairing(TCollisions const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TSubInfos1 const&, TSubInfos2 const&, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCut1 const& cut1, TCut2 const& cut2)
   {
     for (auto& collision : collisions) {
-      initCCDB(collision);
+      initCCDB<isTriggerAnalysis>(collision);
       int ndiphoton = 0;
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
+      }
+      if constexpr (isTriggerAnalysis) {
+        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
+          continue;
+        }
       }
       const float eventplanes_2_for_mix[6] = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg()};
       float ep2 = eventplanes_2_for_mix[cfgEP2Estimator_for_Mix];
@@ -915,20 +934,39 @@ struct PhotonHBT {
     if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
-      runPairing(collisions, v0photons, v0photons, v0legs, v0legs, perCollision_pcm, perCollision_pcm, fV0PhotonCut, fV0PhotonCut);
+      runPairing<false>(collisions, v0photons, v0photons, v0legs, v0legs, perCollision_pcm, perCollision_pcm, fV0PhotonCut, fV0PhotonCut);
     } else if constexpr (pairtype == ggHBTPairType::kPCMEE) {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
       auto emprimaryelectrons = std::get<2>(std::tie(args...));
-      runPairing(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDielectronCut);
+      runPairing<false>(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDielectronCut);
     } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
       auto emprimaryelectrons = std::get<0>(std::tie(args...));
-      runPairing(collisions, nullptr, nullptr, emprimaryelectrons, emprimaryelectrons, perCollision_electron, perCollision_electron, fDielectronCut, fDielectronCut);
+      runPairing<false>(collisions, nullptr, nullptr, emprimaryelectrons, emprimaryelectrons, perCollision_electron, perCollision_electron, fDielectronCut, fDielectronCut);
     }
-
     ndf++;
   }
   PROCESS_SWITCH(PhotonHBT, processAnalysis, "pairing for analysis", false);
+
+  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
+  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, Types const&... args)
+  {
+    if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
+      auto v0photons = std::get<0>(std::tie(args...));
+      auto v0legs = std::get<1>(std::tie(args...));
+      runPairing<true>(collisions, v0photons, v0photons, v0legs, v0legs, perCollision_pcm, perCollision_pcm, fV0PhotonCut, fV0PhotonCut);
+    } else if constexpr (pairtype == ggHBTPairType::kPCMEE) {
+      auto v0photons = std::get<0>(std::tie(args...));
+      auto v0legs = std::get<1>(std::tie(args...));
+      auto emprimaryelectrons = std::get<2>(std::tie(args...));
+      runPairing<true>(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDielectronCut);
+    } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
+      auto emprimaryelectrons = std::get<0>(std::tie(args...));
+      runPairing<true>(collisions, nullptr, nullptr, emprimaryelectrons, emprimaryelectrons, perCollision_electron, perCollision_electron, fDielectronCut, fDielectronCut);
+    }
+    ndf++;
+  }
+  PROCESS_SWITCH(PhotonHBT, processTriggerAnalysis, "pairing analysis on trigger data", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(PhotonHBT, processDummy, "Dummy function", true);
