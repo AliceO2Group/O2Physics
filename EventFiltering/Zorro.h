@@ -32,7 +32,7 @@ class BasicCCDBManager;
 }; // namespace o2
 
 struct ZorroHelper {
-  uint64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
+  ULong64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
   ClassDefNV(ZorroHelper, 1);
 };
 
