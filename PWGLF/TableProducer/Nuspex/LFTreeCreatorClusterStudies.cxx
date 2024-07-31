@@ -775,6 +775,7 @@ struct LfTreeCreatorClusterStudies {
       m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPi());
       m_hAnalysis.fill(HIST("pmatchingPr"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
       m_hAnalysis.fill(HIST("pmatchingPi"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
+
     } else if (TESTBIT(v0Bitmask, AntiLambda)) {
       massV0 = massAntiLambdaV0;
       m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massAntiLambdaV0);
@@ -784,6 +785,7 @@ struct LfTreeCreatorClusterStudies {
       m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPr());
       m_hAnalysis.fill(HIST("pmatchingPi"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
       m_hAnalysis.fill(HIST("pmatchingPr"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
+
     } else if (TESTBIT(v0Bitmask, Photon)) {
       massV0 = 0.f;
       m_hAnalysis.fill(HIST("nSigmaTPCEl"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaEl());
@@ -1097,7 +1099,7 @@ struct LfTreeCreatorClusterStudies {
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
-    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
+    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe())
     m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe(track));
     m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), (track.tpcInnerParam() - track.p()) / track.tpcInnerParam());
 
@@ -1207,6 +1209,7 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
 
+
     if (setting_smallTable) {
       m_ClusterStudiesTable(
         track.p() * track.sign(), // p_He3,
@@ -1261,6 +1264,7 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.p() * track.sign(), computeNSigmaHe3(track));
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
+
 
     if (setting_smallTable) {
       m_ClusterStudiesTableMc(
