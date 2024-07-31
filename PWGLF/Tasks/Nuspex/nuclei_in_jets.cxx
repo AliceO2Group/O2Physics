@@ -200,7 +200,7 @@ struct nuclei_in_jets {
       return false;
     if (track.pt() < 0.1)
       return false;
-    if (TMath::Abs(track.dcaXY()) > (0.0105 * 0.035 / TMath::Power(track.pt(),1.1)))
+    if (TMath::Abs(track.dcaXY()) > (0.0105 * 0.035 / TMath::Power(track.pt(), 1.1)))
       return false;
     if (TMath::Abs(track.dcaZ()) > 2.0)
       return false;
@@ -639,102 +639,102 @@ struct nuclei_in_jets {
     // Reconstructed Events
     for (const auto& collision : collisions) {
 
-        registryMC.fill(HIST("number_of_events_mc"), 1.5);
+      registryMC.fill(HIST("number_of_events_mc"), 1.5);
 
-        // Event Selection
-        if (!collision.sel8())
+      // Event Selection
+      if (!collision.sel8())
+        continue;
+
+      if (abs(collision.posZ()) > 10)
+        continue;
+
+      // Event Counter (after event sel)
+      registryMC.fill(HIST("number_of_events_mc"), 2.5);
+
+      auto tracks_per_coll = mcTracks.sliceBy(perCollision, collision.globalIndex());
+
+      // Reconstructed Tracks
+      for (auto track : tracks_per_coll) {
+
+        // Get MC Particle
+        if (!track.has_mcParticle())
           continue;
 
-        if (abs(collision.posZ()) > 10)
+        const auto particle = track.mcParticle();
+        if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
           continue;
 
-        // Event Counter (after event sel)
-        registryMC.fill(HIST("number_of_events_mc"), 2.5);
+        // Track Selection
+        if (!passedTrackSelection(track))
+          continue;
+        if (require_PV_contributor && !(track.isPVContributor()))
+          continue;
 
-        auto tracks_per_coll = mcTracks.sliceBy(perCollision, collision.globalIndex());
+        // Variables
+        float nsigmaTPCPr = track.tpcNSigmaPr();
+        float nsigmaTOFPr = track.tofNSigmaPr();
+        float nsigmaTPCDe = track.tpcNSigmaDe();
+        float nsigmaTOFDe = track.tofNSigmaDe();
+        float nsigmaTPCHe = track.tpcNSigmaHe();
+        float pt = track.pt();
 
-        // Reconstructed Tracks
-        for (auto track : tracks_per_coll) {
+        // DCA Templates
+        if (particle.pdgCode() == -2212 && particle.isPhysicalPrimary() && TMath::Abs(track.dcaZ()) < max_dcaz)
+          registryMC.fill(HIST("antiproton_dca_prim"), pt, track.dcaXY());
 
-          // Get MC Particle
-          if (!track.has_mcParticle())
-            continue;
+        if (particle.pdgCode() == -2212 && (!particle.isPhysicalPrimary()) && TMath::Abs(track.dcaZ()) < max_dcaz)
+          registryMC.fill(HIST("antiproton_dca_sec"), pt, track.dcaXY());
 
-          const auto particle = track.mcParticle();
-          if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
-            continue;
+        // DCA Cuts
+        if (TMath::Abs(track.dcaXY()) > max_dcaxy)
+          continue;
+        if (TMath::Abs(track.dcaZ()) > max_dcaz)
+          continue;
 
-          // Track Selection
-          if (!passedTrackSelection(track))
-            continue;
-          if (require_PV_contributor && !(track.isPVContributor()))
-            continue;
-
-          // Variables
-          float nsigmaTPCPr = track.tpcNSigmaPr();
-          float nsigmaTOFPr = track.tofNSigmaPr();
-          float nsigmaTPCDe = track.tpcNSigmaDe();
-          float nsigmaTOFDe = track.tofNSigmaDe();
-          float nsigmaTPCHe = track.tpcNSigmaHe();
-          float pt = track.pt();
-
-          // DCA Templates
-          if (particle.pdgCode() == -2212 && particle.isPhysicalPrimary() && TMath::Abs(track.dcaZ()) < max_dcaz)
-            registryMC.fill(HIST("antiproton_dca_prim"), pt, track.dcaXY());
-
-          if (particle.pdgCode() == -2212 && (!particle.isPhysicalPrimary()) && TMath::Abs(track.dcaZ()) < max_dcaz)
-            registryMC.fill(HIST("antiproton_dca_sec"), pt, track.dcaXY());
-
-          // DCA Cuts
-          if (TMath::Abs(track.dcaXY()) > max_dcaxy)
-            continue;
-          if (TMath::Abs(track.dcaZ()) > max_dcaz)
-            continue;
-
-          // Fraction of Primary Antiprotons
-          if (particle.pdgCode() == -2212) {
-            registryMC.fill(HIST("antiproton_all"), pt);
-            if (particle.isPhysicalPrimary()) {
-              registryMC.fill(HIST("antiproton_prim"), pt);
-            }
+        // Fraction of Primary Antiprotons
+        if (particle.pdgCode() == -2212) {
+          registryMC.fill(HIST("antiproton_all"), pt);
+          if (particle.isPhysicalPrimary()) {
+            registryMC.fill(HIST("antiproton_prim"), pt);
           }
+        }
 
-          if (!particle.isPhysicalPrimary())
-            continue;
+        if (!particle.isPhysicalPrimary())
+          continue;
 
-          // Antiproton
-          if (particle.pdgCode() == -2212) {
-            if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
-              registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt);
-              registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt);
-            }
-            if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
-              registryMC.fill(HIST("antiproton_jet_rec_tof"), pt);
-              registryMC.fill(HIST("antiproton_ue_rec_tof"), pt);
-            }
+        // Antiproton
+        if (particle.pdgCode() == -2212) {
+          if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
+            registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt);
+            registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt);
           }
-
-          // Antideuteron
-          if (particle.pdgCode() == -1000010020) {
-            if (pt < 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC) {
-              registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt);
-              registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt);
-            }
-            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF) {
-              registryMC.fill(HIST("antideuteron_jet_rec_tof"), pt);
-              registryMC.fill(HIST("antideuteron_ue_rec_tof"), pt);
-            }
+          if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
+            registryMC.fill(HIST("antiproton_jet_rec_tof"), pt);
+            registryMC.fill(HIST("antiproton_ue_rec_tof"), pt);
           }
+        }
 
-          // Antihelium-3
-          if (particle.pdgCode() == -1000020030) {
-            if (nsigmaTPCHe > min_nsigmaTPC && nsigmaTPCHe < max_nsigmaTPC) {
-              registryMC.fill(HIST("antihelium3_jet_rec_tpc"), 2.0 * pt);
-              registryMC.fill(HIST("antihelium3_ue_rec_tpc"), 2.0 * pt);
-            }
+        // Antideuteron
+        if (particle.pdgCode() == -1000010020) {
+          if (pt < 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC) {
+            registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt);
+            registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt);
+          }
+          if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF) {
+            registryMC.fill(HIST("antideuteron_jet_rec_tof"), pt);
+            registryMC.fill(HIST("antideuteron_ue_rec_tof"), pt);
+          }
+        }
+
+        // Antihelium-3
+        if (particle.pdgCode() == -1000020030) {
+          if (nsigmaTPCHe > min_nsigmaTPC && nsigmaTPCHe < max_nsigmaTPC) {
+            registryMC.fill(HIST("antihelium3_jet_rec_tpc"), 2.0 * pt);
+            registryMC.fill(HIST("antihelium3_ue_rec_tpc"), 2.0 * pt);
           }
         }
       }
+    }
   }
 
   void processSecAntiprotons(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&, const aod::McParticles&)
