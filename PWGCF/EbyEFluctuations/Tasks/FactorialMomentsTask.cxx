@@ -52,6 +52,9 @@ struct FactorialMoments {
   Configurable<bool> IsApplyVertexTRDmatched{"IsApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
   Configurable<bool> IsApplyExtraCorrCut{"IsApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
   Configurable<bool> IsApplyExtraPhiCut{"IsApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> includeGlobalTracks{"includeGlobalTracks", false, "Enable Global Tracks"};
+  Configurable<bool> includeTPCTracks{"includeTPCTracks", false, "TPC Tracks"};
+  Configurable<bool> includeITSTracks{"includeITSTracks", false, "ITS Tracks"};
 
   Filter filterTracks = (nabs(aod::track::eta) < confEta) && (aod::track::pt >= confPtMin) && (nabs(aod::track::dcaXY) < confDCAxy) && (nabs(aod::track::dcaZ) < confDCAz);
   Filter filterCollisions = (nabs(aod::collision::posZ) < confVertex.value[2]) && (nabs(aod::collision::posX) < confVertex.value[0]) && (nabs(aod::collision::posY) < confVertex.value[1]);
@@ -228,7 +231,18 @@ struct FactorialMoments {
     binConEvent = {{{0, 0, 0, 0, 0}}};
 
     for (auto const& track : tracks) {
-      if ((track.pt() < confPtMin) || ((!track.isGlobalTrack()) && (!track.hasITS())) || (track.tpcNClsFindable() < confMinTPCCls)) {
+      if (includeGlobalTracks && (!track.isGlobalTrack())) {
+        continue;
+      }
+      if (includeTPCTracks && (!track.hasTPC())) {
+        continue;
+      }
+
+      if (includeITSTracks && (!track.hasITS())) {
+        continue;
+      }
+
+      if ((track.pt() < confPtMin) || (track.tpcNClsFindable() < confMinTPCCls)) {
         continue;
       }
       histos.fill(HIST("mCollID"), track.collisionId());
