@@ -194,8 +194,8 @@ struct cascademcbuilder {
         thisInfo.label, thisInfo.motherLabel);
 
       // Mark mcParticle as recoed (no searching necessary afterwards)
-      if (thisInfo.motherLabel > -1) {
-        mcParticleIsReco[thisInfo.motherLabel] = true;
+      if (thisInfo.label > -1) {
+        mcParticleIsReco[thisInfo.label] = true;
       }
 
       if (populateCascMCCoresSymmetric) {
@@ -216,10 +216,7 @@ struct cascademcbuilder {
         // step 1: check if this element is already provided in the table
         //         using the packedIndices variable calculated above
         for (uint32_t ii = 0; ii < mcCascinfos.size(); ii++) {
-          if (
-            thisInfo.mcParticlePositive == mcCascinfos[ii].mcParticlePositive && mcCascinfos[ii].mcParticlePositive > 0 &&
-            thisInfo.mcParticleNegative == mcCascinfos[ii].mcParticleNegative && mcCascinfos[ii].mcParticleNegative > 0 &&
-            thisInfo.mcParticleBachelor == mcCascinfos[ii].mcParticleBachelor && mcCascinfos[ii].mcParticleBachelor > 0) {
+          if (thisInfo.label == mcCascinfos[ii].label && mcCascinfos[ii].label > -1) {
             thisCascMCCoreIndex = ii;
             break; // this exists already in list
           }

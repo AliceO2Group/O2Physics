@@ -72,7 +72,6 @@ struct strangederivedbuilder {
   Produces<aod::StraCollLabels> strangeCollLabels; // characterises collisions
   Produces<aod::StraMCCollisions> strangeMCColl;   // characterises collisions / MC
   Produces<aod::StraMCCollMults> strangeMCMults;   // characterises collisions / MC mults
-  Produces<aod::StraMCCollCents> strangeMCCents;   // characterises collisions / MC centrality
   Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality
   Produces<aod::StraRawCents> strangeRawCents;     // characterises collisions / centrality
   Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / sel8 selection
@@ -383,7 +382,6 @@ struct strangederivedbuilder {
                      mccollision.multMCNParticlesEta05(),
                      mccollision.multMCNParticlesEta08(),
                      mccollision.multMCNParticlesEta10());
-      strangeMCCents(mccollision.bestCollisionCentFT0C());
     }
 
     // ______________________________________________
