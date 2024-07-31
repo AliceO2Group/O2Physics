@@ -504,7 +504,7 @@ struct lnnRecoTask {
   void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     filledMothers.clear();
-    IsGoodCollision.clear()
+    isGoodCollision.clear()
     isGoodCollision.resize(mcCollisions.size(), false);
 
     for (const auto& collision : collisions) {
