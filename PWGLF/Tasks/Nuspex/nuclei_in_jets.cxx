@@ -604,7 +604,6 @@ struct nuclei_in_jets {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<MCTracks> perCollision = o2::aod::track::collisionId;
 
-    
   void processMC(o2::aod::McCollisions const& mcCollisions, SimCollisions const& collisions, MCTracks const& mcTracks, aod::McParticles const& mcParticles)
   {
     // Generated Events
@@ -636,7 +635,7 @@ struct nuclei_in_jets {
         }
       }
     }
-     
+
     // Reconstructed Events
     for (const auto& collision : collisions) {
 
