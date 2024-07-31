@@ -154,6 +154,19 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "IntercalibZNA_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -50.0, 50.0, VarManager::KIntercalibZNA);
       hm->AddHistogram(histClass, "IntercalibZNC_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -50.0, 50.0, VarManager::KIntercalibZNC);
 
+      hm->AddHistogram(histClass, "EnergyCommonZNA", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyCommonZNA);
+      hm->AddHistogram(histClass, "EnergyCommonZNC", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyCommonZNC);
+
+      hm->AddHistogram(histClass, "EnergyZNA1", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNA1);
+      hm->AddHistogram(histClass, "EnergyZNA2", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNA2);
+      hm->AddHistogram(histClass, "EnergyZNA3", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNA3);
+      hm->AddHistogram(histClass, "EnergyZNA4", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNA4);
+
+      hm->AddHistogram(histClass, "EnergyZNC1", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNC1);
+      hm->AddHistogram(histClass, "EnergyZNC2", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNC2);
+      hm->AddHistogram(histClass, "EnergyZNC3", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNC3);
+      hm->AddHistogram(histClass, "EnergyZNC4", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 2000, 0, 2000, VarManager::kEnergyZNC4);
+
       hm->AddHistogram(histClass, "Q2X0A", "", false, 500, -10.0, 10.0, VarManager::kQ2X0A);
       hm->AddHistogram(histClass, "Q2Y0A", "", false, 500, -10.0, 10.0, VarManager::kQ2Y0A);
       hm->AddHistogram(histClass, "Q2X0B", "", false, 500, -10.0, 10.0, VarManager::kQ2X0B);
@@ -997,6 +1010,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2", "", 6, varV2, bins, minBins, maxBins, 0, -1, kTRUE);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE);
       }
+      if (subGroupStr.Contains("cumulant")) {
+        int var[4] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C};
+        int bins[4] = {250, 60, 6, 18};
+        double minBins[4] = {0.0, 0.0, 2.5, 0.0};
+        double maxBins[4] = {5.0, 30.0, 4.0, 90.0};
+        hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var, bins, minBins, maxBins, 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REF", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2REF, VarManager::kM11REFoverMp);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4REF", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4REF, VarManager::kM1111REFoverMp);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2POI", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2POIMp, VarManager::kM01POIoverMp);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4POI", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4POIMp, VarManager::kM0111POIoverMp);
+      }
       if (subGroupStr.Contains("res-flow-dimuon")) {
         int varV2[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR2SP_AB, VarManager::kR2EP_AB};
         int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR3SP, VarManager::kR3EP};
@@ -1022,6 +1046,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass_Rapidity", "", false, 750, 0.0, 30.0, VarManager::kMass, 500, -1.0, 4.0, VarManager::kRap);
       hm->AddHistogram(histClass, "Mass_VtxZ", "", true, 30, -15.0, 15.0, VarManager::kVtxZ, 750, 0.0, 30.0, VarManager::kMass);
       hm->AddHistogram(histClass, "DeltaPhiPair", "", false, 130, -6.5, 6.5, VarManager::kDeltaPhiPair);
+    }
+    if (subGroupStr.Contains("correlation-emu")) {
+      hm->AddHistogram(histClass, "DeltaPhiPair2", "", false, 600, -0.5 * TMath::Pi(), 1.5 * TMath::Pi(), VarManager::kDeltaPhiPair2);
     }
     if (subGroupStr.Contains("dielectrons")) {
       if (subGroupStr.Contains("prefilter")) {

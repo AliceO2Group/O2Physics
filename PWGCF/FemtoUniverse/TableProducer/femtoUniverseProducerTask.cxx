@@ -224,6 +224,8 @@ struct femtoUniverseProducerTask {
     Configurable<std::vector<float>> ConfPhiChildDCAMin{"ConfPhiChildDCAMin", std::vector<float>{0.05f, 0.06f}, "Phi Child sel:  Max. DCA Daugh to PV (cm)"};
     Configurable<std::vector<float>> ConfPhiChildPIDnSigmaMax{"ConfPhiChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Phi Child sel: Max. PID nSigma TPC"};
     Configurable<std::vector<int>> ConfPhiChildPIDspecies{"ConfPhiChildPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Kaon}, "Phi Child sel: Particles species for PID"};
+    Configurable<bool> ConfLooseTPCNSigma{"ConfLooseTPCNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
+    Configurable<float> ConfLooseTPCNSigmaValue{"ConfLooseTPCNSigmaValue", 10, "Value for the loose TPC N Sigma for Kaon PID."};
   } ConfPhiChildSelection;
 
   struct : o2::framework::ConfigurableGroup {
@@ -259,38 +261,82 @@ struct femtoUniverseProducerTask {
     // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
     // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.4
     // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.4
+    // ConfLooseTPCNSigma -> use loose nsigmas for Phi meson daughters (bool)
+    // ConfLooseTPCNSigmaValue -> value of the loose cut (float)
 
     if (mom < 0.3) { // 0.0-0.3
-      if (TMath::Abs(nsigmaTPCK) < 3.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.45) { // 0.30 - 0.45
-      if (TMath::Abs(nsigmaTPCK) < 2.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.55) { // 0.45-0.55
-      if (TMath::Abs(nsigmaTPCK) < 1.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-        {
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
           return true;
+        } else {
+          return false;
         }
       } else {
-        return false;
+        if (TMath::Abs(nsigmaTPCK) < 3.0) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        if (TMath::Abs(nsigmaTPCK) < 2.0) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        if (TMath::Abs(nsigmaTPCK) < 1.0) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+          return true;
+        } else {
+          return false;
+        }
+
+      } else {
+        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+          {
+            return true;
+          }
+        } else {
+          return false;
+        }
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-        return true;
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+          return true;
+        } else {
+          return false;
+        }
+
       } else {
-        return false;
+        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+          return true;
+        } else {
+          return false;
+        }
       }
     } else {
       return false;
@@ -312,10 +358,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -483,13 +529,15 @@ struct femtoUniverseProducerTask {
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
       int particleOrigin = 99;
-      auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
+      auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (motherparticleMC.producedByGenerator()) {
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+        } else if (!motherparticlesMC.empty()) {
+          auto motherparticleMC = motherparticlesMC.front();
+          if (motherparticleMC.producedByGenerator())
+            particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
         } else {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kMaterial;
         }
@@ -503,6 +551,7 @@ struct femtoUniverseProducerTask {
       outputPartsMCLabels(-1);
     }
   }
+
   template <bool isMC, typename CollisionType, typename TrackType>
   void fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
@@ -996,7 +1045,7 @@ struct femtoUniverseProducerTask {
     }
   }
 
-  template <typename TrackType>
+  template <typename TrackType, bool transientLabels = false>
   void fillParticles(TrackType const& tracks)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
@@ -1054,6 +1103,12 @@ struct femtoUniverseProducerTask {
                   0);
       if (ConfIsDebug) {
         fillDebugParticle<false, true>(particle);
+      }
+
+      // Workaround to keep the FDParticles and MC label tables
+      // aligned, so that they can be joined in the task.
+      if constexpr (transientLabels) {
+        outputPartsMCLabels(-1);
       }
     }
   }
@@ -1207,6 +1262,36 @@ struct femtoUniverseProducerTask {
     fillParticles(mcParticles);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCTruth, "Provide MC data for MC truth track analysis", false);
+
+  Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> recoCollsPerMCColl = aod::mcparticle::mcCollisionId;
+  Preslice<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> perCollisionTracks = aod::track::collisionId;
+  Preslice<soa::Join<o2::aod::V0Datas, aod::McV0Labels>> perCollisionV0s = aod::track::collisionId;
+  void processTruthAndFullMC(
+    aod::McCollisions const& mccols,
+    aod::McParticles const& mcParticles,
+    soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
+    soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+    soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
+    aod::BCsWithTimestamps const&)
+  {
+    // truth
+    for (auto& mccol : mccols) {
+      auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
+      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);          // fills the reco collisions for mc collision
+      fillParticles<decltype(groupedMCParticles), true>(groupedMCParticles); // fills mc particles
+    }
+
+    // recos
+    for (auto& col : collisions) {
+      auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
+      auto groupedV0s = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());
+      getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+      fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedV0s);
+    }
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTruthAndFullMC, "Provide both MC truth and reco for tracks and V0s", false);
 
   void processTrackCentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
                                 aod::BCsWithTimestamps const&,

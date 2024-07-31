@@ -9,8 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(femtodream-pair-charm-hadrons
-                    SOURCES femtoDreamPairTaskCharmHadrons.cxx
+o2physics_add_dpl_workflow(task-charm-hadrons-femto-dream
+                    SOURCES taskCharmHadronsFemtoDream.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

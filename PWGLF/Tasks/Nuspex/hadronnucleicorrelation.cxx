@@ -181,7 +181,7 @@ struct hadronnucleicorrelation {
     AxisSpec etaBinnedAxis = {etaBins, "#eta"};
     AxisSpec phiBinnedAxis = {phiBins, "#phi"};
     AxisSpec etaAxis = {100, -1.5, 1.5, "#Delta#eta"};
-    AxisSpec phiAxis = {100, -TMath::Pi() / 2, 1.5 * TMath::Pi(), "#Delta#phi"};
+    AxisSpec phiAxis = {60, -TMath::Pi() / 2, 1.5 * TMath::Pi(), "#Delta#phi"};
     AxisSpec pTAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{3, 0.f, 3.f}}});

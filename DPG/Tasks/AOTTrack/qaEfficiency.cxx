@@ -925,24 +925,11 @@ struct QaEfficiency {
   }
   bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
   {
-    // Example conditions to determine if a particle is final (tertiary)
-    // Here, we assume that final state particles are those not originating from primary vertex
-    // and not further decaying into other particles
-    // Check if the particle has no daughters
-    if (!mcParticle.has_daughters()) {
-
-      // Check if the particle is not a primary particle
-      if (!mcParticle.isPhysicalPrimary()) {
-        // Check if the particle is produced in a secondary decay
-        if (mcParticle.getProcess() == 4) {
-          // Get the mother particle's index and the mother particle itself
-          auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
-          for (const auto& mother : mothers) {
-            // Check if the mother particle is not primary and produced in a weak decay
-            if (!mother.isPhysicalPrimary() && mother.getProcess() == 4) {
-              return true; // Consider it as a tertiary particle
-            }
-          }
+    if (!mcParticle.has_daughters() && !mcParticle.isPhysicalPrimary() && mcParticle.getProcess() == 4) {
+      auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+      for (const auto& mother : mothers) {
+        if (!mother.isPhysicalPrimary() && mother.getProcess() == 4) {
+          return true;
         }
       }
     }
