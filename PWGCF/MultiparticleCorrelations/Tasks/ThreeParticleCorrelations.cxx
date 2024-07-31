@@ -267,6 +267,8 @@ struct ThreePartCorr {
     } else if (TMath::Abs(V0.mLambda() - massLambda) > TMath::Abs(V0.mAntiLambda() - massLambda)) {
       return -1;
     }
+
+    return 0;
   }
 
   template <class V0Cand>
