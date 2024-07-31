@@ -1122,7 +1122,7 @@ struct phiInJets {
         // First we check for Forced BR
         // if we check for Phi
         if (!cfgIsKstar) {
-          if (mcParticle.has_daughters())
+          if (mcParticle.has_daughters()){
             for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()) {
               if (fabs(dgth.pdgCode()) != 321) {
                 skip = true;
@@ -1145,6 +1145,7 @@ struct phiInJets {
                 }
               }
             }
+	  }
         } else {
           if (mcParticle.has_daughters())
             for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
