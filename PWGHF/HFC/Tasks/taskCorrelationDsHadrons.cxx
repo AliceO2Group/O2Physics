@@ -764,28 +764,28 @@ struct HfTaskCorrelationDsHadrons {
       // generated track loop
       for (const auto& mcParticle : groupedMcParticles) {
         if (mcParticle.isPhysicalPrimary() && ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton))) {
-        }
-        if (mcParticle.pt() > ptTrackMin && mcParticle.pt() < ptTrackMax) {
-          hAssocTracks->Fill(kAssocTrackStepMcGen, mcParticle.eta(), mcParticle.pt(), multiplicityGen, posZGen);
-          if (std::abs(mcParticle.eta()) < etaTrackMax) {
-            hAssocTracks->Fill(kAssocTrackStepMcGenInAcceptance, mcParticle.eta(), mcParticle.pt(), multiplicityGen, posZGen);
-            registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt());
-            if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
-              registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt());
-            } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
-              registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt());
-            } else if (std::abs(mcParticle.pdgCode()) == kProton) {
-              registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt());
-            } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
-              registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt());
-            } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
-              registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt());
-            }
-            int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-            if (trackOrigin == 1) { // charm orgin
-              registry.fill(HIST("hPtPrmPromptPartMcGen"), mcParticle.pt());
-            } else if (trackOrigin == 2) { // beauty origin
-              registry.fill(HIST("hPtPrmNonPromptPartMcGen"), mcParticle.pt());
+          if (mcParticle.pt() > ptTrackMin && mcParticle.pt() < ptTrackMax) {
+            hAssocTracks->Fill(kAssocTrackStepMcGen, mcParticle.eta(), mcParticle.pt(), multiplicityGen, posZGen);
+            if (std::abs(mcParticle.eta()) < etaTrackMax) {
+              hAssocTracks->Fill(kAssocTrackStepMcGenInAcceptance, mcParticle.eta(), mcParticle.pt(), multiplicityGen, posZGen);
+              registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt());
+              if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt());
+              } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt());
+              } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt());
+              } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt());
+              } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt());
+              }
+              int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+              if (trackOrigin == 1) { // charm orgin
+                registry.fill(HIST("hPtPrmPromptPartMcGen"), mcParticle.pt());
+              } else if (trackOrigin == 2) { // beauty origin
+                registry.fill(HIST("hPtPrmNonPromptPartMcGen"), mcParticle.pt());
+              }
             }
           }
         }
