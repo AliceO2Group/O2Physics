@@ -1166,7 +1166,9 @@ struct phiInJets {
 	lDecayDaughter1_REC.SetXYZM(phi_dgth_px[0],phi_dgth_py[0],phi_dgth_pz[0], massKa);
 	lDecayDaughter2_REC.SetXYZM(phi_dgth_px[1],phi_dgth_py[1],phi_dgth_pz[1], massKa);
 	lResonance_REC = lDecayDaughter1_REC + lDecayDaughter2_REC;
-
+	if (cDebugLevel > 0)
+	  if(good_daughter[0] && good_daughter[1])
+	    std::cout<<"Reconstructed level phi pT: "<<lResonance_REC.Pt()<<std::endl;
 	
         bool jetFlag = false;
         for (int i = 0; i < mcp_pt.size(); i++) {
@@ -1183,16 +1185,17 @@ struct phiInJets {
         if (cfgSingleJet){
           if (goodjets > 1){
             jetpt_mcp = DistinguishJetsMC(mcp_pt, mcp_phi, mcp_eta, lResonance);
-	    jetpt_mcd = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
+	    jetpt_mcd = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance_REC);
 	  }
 	}
 	
-	JEhistos.fill(HIST("2DGenToRec"), lResonance.Pt(), jetpt_mcp);
-	// //check constrained eff
-	if(good_daughter[0] && good_daughter[1] && lResonance_REC.Pt()>0 && lResonance_REC.Pt()<20.0 && jetpt_mcd>8 && jetpt_mcd<200)
-	  JEhistos.fill(HIST("2DGenToRec_constrained"), lResonance.Pt(), jetpt_mcp);
-
         if (jetFlag) {
+
+	  JEhistos.fill(HIST("2DGenToRec"), lResonance.Pt(), jetpt_mcp);
+	  // //check constrained eff
+	  if(good_daughter[0] && good_daughter[1] && lResonance_REC.Pt()>0 && lResonance_REC.Pt()<20.0 && jetpt_mcd>8 && jetpt_mcd<200)
+	    JEhistos.fill(HIST("2DGenToRec_constrained"), lResonance.Pt(), jetpt_mcp);
+
           JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE_1D"), lResonance.M());
           if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
             JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE_1D_2_3"), lResonance.M());
@@ -1406,12 +1409,13 @@ struct phiInJets {
                 JEhistos.fill(HIST("Resp_Matrix_MATCHED_rand0"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
               else
                 JEhistos.fill(HIST("Resp_Matrix_MATCHED_rand1"), lResonance.Pt(), jetpt_mcd, mothers1Pt[0], jetpt_mcp);
-            }
+	      
+	      JEhistos.fill(HIST("2DRecToGen"), lResonance.Pt(), jetpt_mcd);
+	      //check constrained eff
+	      if(mothers1Pt[0]>0 && mothers1Pt[0]<20.0 && jetpt_mcp>8 && jetpt_mcp<200)
+		JEhistos.fill(HIST("2DRecToGen_constrained"), lResonance.Pt(), jetpt_mcd);	    
 
-	    JEhistos.fill(HIST("2DRecToGen"), lResonance.Pt(), jetpt_mcd);
-	    //check constrained eff
-	    if(mothers1Pt[0]>0 && mothers1Pt[0]<20.0 && jetpt_mcp>8 && jetpt_mcp<200)
-	      JEhistos.fill(HIST("2DRecToGen_constrained"), lResonance.Pt(), jetpt_mcd);	    
+            }
 	    
             //Fill 3D Invariant mass distributions
             if (jetFlag) {
