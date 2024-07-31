@@ -556,9 +556,7 @@ struct HfTaskCorrelationDsHadrons {
 
       // TODO: add correctly multiplicity and posZ dependence
       float multiplicityReco = collision.multFT0M();
-      float posZReco = collision.posZ();
       float multiplicityGen = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
-      float posZGen = mcCollision.posZ();
 
       const auto groupedMcParticles = mcParticles.sliceBy(perCollisionCandMc, mcCollision.globalIndex());
       const auto groupedCandidates = candidates.sliceBy(perCollisionCand, collision.globalIndex());
