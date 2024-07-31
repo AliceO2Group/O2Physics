@@ -43,9 +43,12 @@ struct ApplySmearing {
   Configurable<std::string> fConfigResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
   Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
   Configurable<std::string> fConfigEffHistName{"cfgEffHistName", "fhwEffpT", "name of efficiency histogram"};
+  Configurable<std::string> fConfigDCAFileName{"cfgDCAFileName", "", "name of DCA template file"};
+  Configurable<std::string> fConfigDCAHistName{"cfgDCAHistName", "fh_DCAtempaltes", "histogram name of the DCA templates"};
   Configurable<bool> fFromCcdb{"cfgFromCcdb", false, "get resolution and efficiency histos from CCDB"};
   Configurable<std::string> fConfigCcdbPathRes{"cfgCcdbPathRes", "", "path to the ccdb object for resolution"};
   Configurable<std::string> fConfigCcdbPathEff{"cfgCcdbPahtEff", "", "path to the ccdb object for efficiency"};
+  Configurable<std::string> fConfigCcdbPathDCA{"cfgCcdbPahtDCA", "", "path to the ccdb object for dca"};
   Configurable<std::string> fConfigCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigCcdbNoLaterThan{"cfgCcdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
@@ -61,6 +64,8 @@ struct ApplySmearing {
     smearer.setResPhiNegHistName(TString(fConfigResPhiNegHistName));
     smearer.setEffFileName(TString(fConfigEffFileName));
     smearer.setEffHistName(TString(fConfigEffHistName));
+    smearer.setDCAFileName(TString(fConfigDCAFileName));
+    smearer.setDCAHistName(TString(fConfigDCAHistName));
     if (fFromCcdb) {
       ccdb->setURL(fConfigCcdbUrl);
       ccdb->setCaching(true);
@@ -68,6 +73,7 @@ struct ApplySmearing {
       ccdb->setCreatedNotAfter(fConfigCcdbNoLaterThan);
       smearer.setCcdbPathRes(TString(fConfigCcdbPathRes));
       smearer.setCcdbPathEff(TString(fConfigCcdbPathEff));
+      smearer.setCcdbPathDCA(TString(fConfigCcdbPathDCA));
       smearer.setTimestamp(fConfigCcdbNoLaterThan);
       smearer.setCcdb(ccdb);
     }
@@ -82,6 +88,7 @@ struct ApplySmearing {
       float etagen = mctrack.eta();
       float phigen = mctrack.phi();
       float efficiency = 1.;
+      float dca = 0.;
 
       int pdgCode = mctrack.pdgCode();
       if (abs(pdgCode) == fPdgCode) {
@@ -94,10 +101,13 @@ struct ApplySmearing {
         smearer.applySmearing(ch, ptgen, etagen, phigen, ptsmeared, etasmeared, phismeared);
         // get the efficiency
         efficiency = smearer.getEfficiency(ptgen, etagen, phigen);
-        smearedtrack(ptsmeared, etasmeared, phismeared, efficiency);
+        // get DCA
+        dca = smearer.getDCA(ptsmeared);
+        // fill the table
+        smearedtrack(ptsmeared, etasmeared, phismeared, efficiency, dca);
       } else {
         // don't apply smearing
-        smearedtrack(ptgen, etagen, phigen, efficiency);
+        smearedtrack(ptgen, etagen, phigen, efficiency, dca);
       }
     }
   }

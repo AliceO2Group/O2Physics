@@ -28,6 +28,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/RecoDecay.h"
@@ -57,7 +58,7 @@ using namespace o2::framework::expressions;
 
 using Track = o2::track::TrackParCov;
 using TracksFullIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTOFDe, aod::TOFSignal, aod::TOFEvTime>;
-using TracksFullIUMc = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTOFDe, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+using TracksFullIUMc = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTOFDe, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 using CollisionsCustom = soa::Join<aod::Collisions, aod::EvSels>;
 
 namespace BetheBloch
@@ -626,12 +627,13 @@ struct LfTreeCreatorClusterStudies {
       m_hAnalysis.get<TH1>(HIST("v0_type"))->GetXaxis()->SetBinLabel(i + 1, V0Type_labels[i].c_str());
   }
 
-  bool fillV0Cand(const std::array<float, 3>& PV, const aod::V0s::iterator& v0, CandidateV0& candV0)
+  template <typename Track>
+  bool fillV0Cand(const std::array<float, 3>& PV, const aod::V0s::iterator& v0, CandidateV0& candV0, const Track&)
   {
     m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0NoCut);
 
-    auto posTrack = v0.posTrack_as<TracksFullIU>();
-    auto negTrack = v0.negTrack_as<TracksFullIU>();
+    auto posTrack = v0.posTrack_as<Track>();
+    auto negTrack = v0.negTrack_as<Track>();
     if (!qualitySelectionV0Daughter(posTrack) || !qualitySelectionV0Daughter(negTrack)) {
       return false;
     }
@@ -908,12 +910,13 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("isPositive"), false);
   }
 
-  bool fillKCand(const std::array<float, 3>& PV, const aod::Cascades::iterator& cascade, CandidateK& candK)
+  template <typename Track>
+  bool fillKCand(const std::array<float, 3>& PV, const aod::Cascades::iterator& cascade, CandidateK& candK, const Track&)
   {
     m_hAnalysis.fill(HIST("casc_selections"), CascSelections::kCascNoCut);
 
     auto v0Track = cascade.template v0_as<aod::V0s>();
-    auto bachelorTrack = cascade.template bachelor_as<TracksFullIU>();
+    auto bachelorTrack = cascade.template bachelor_as<Track>();
 
     auto itv0 = std::find_if(m_v0TrackParCovs.begin(), m_v0TrackParCovs.end(), [&](const V0TrackParCov& v0) { return v0.globalIndex == v0Track.globalIndex(); });
     if (itv0 == m_v0TrackParCovs.end()) {
@@ -1109,6 +1112,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     auto mcParticle = track.mcParticle();
+
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDeNoCut);
     if (track.itsNCls() < desetting_nClsIts) {
       return;
@@ -1178,7 +1182,6 @@ struct LfTreeCreatorClusterStudies {
     if (track.hasTOF() && (tofMass < he3setting_tofmasslow || tofMass > he3setting_tofmasshigh)) {
       return;
     }
-
     uint8_t partID = PartID::he;
     bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && he3setting_compensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
@@ -1238,7 +1241,6 @@ struct LfTreeCreatorClusterStudies {
     if (track.hasTOF() && (tofMass < he3setting_tofmasslow || tofMass > he3setting_tofmasshigh)) {
       return;
     }
-
     uint8_t partID = PartID::he;
     bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && he3setting_compensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
@@ -1302,14 +1304,14 @@ struct LfTreeCreatorClusterStudies {
         m_v0TrackParCovs.clear();
         for (auto& v0 : v0Table_thisCollision) {
           CandidateV0 candV0;
-          if (fillV0Cand(PV, v0, candV0))
+          if (fillV0Cand(PV, v0, candV0, tracks))
             fillV0Table(candV0);
         }
       }
       if (setting_fillK && setting_fillV0) { // the v0 loops are needed for the Ks
         for (auto& cascade : cascTable_thisCollision) {
           CandidateK candK;
-          if (fillKCand(PV, cascade, candK))
+          if (fillKCand(PV, cascade, candK, tracks))
             fillKTable(candK);
         }
       }
@@ -1344,7 +1346,7 @@ struct LfTreeCreatorClusterStudies {
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataNuclei, "process Data Nuclei", false);
 
-  void processMcV0Casc(CollisionsCustom const& collisions, TracksFullIUMc const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&)
+  void processMcV0Casc(CollisionsCustom const& collisions, TracksFullIUMc const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1372,22 +1374,28 @@ struct LfTreeCreatorClusterStudies {
         m_v0TrackParCovs.clear();
         for (auto& v0 : v0Table_thisCollision) {
           CandidateV0 candV0;
-          if (fillV0Cand(PV, v0, candV0) && fillV0CandMc(v0, candV0))
-            fillV0TableMc(candV0);
+          if (fillV0Cand(PV, v0, candV0, tracks)) {
+            if (fillV0CandMc(v0, candV0)) {
+              fillV0TableMc(candV0);
+            }
+          }
         }
       }
       if (setting_fillK && setting_fillV0) { // the v0 loops are needed for the Ks
         for (auto& cascade : cascTable_thisCollision) {
           CandidateK candK;
-          if (fillKCand(PV, cascade, candK) && fillKCandMc(cascade, candK))
-            fillKTableMc(candK);
+          if (fillKCand(PV, cascade, candK, tracks)) {
+            if (fillKCandMc(cascade, candK)) {
+              fillKTableMc(candK);
+            }
+          }
         }
       }
     }
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processMcV0Casc, "process Mc V0 and cascade", false);
 
-  void processMcNuclei(CollisionsCustom const& collisions, TracksFullIUMc const& tracks)
+  void processMcNuclei(CollisionsCustom const& collisions, TracksFullIUMc const& tracks, aod::BCs const&, aod::McParticles const&)
   {
     for (const auto& collision : collisions) {
       m_collisionCounter++;
@@ -1405,10 +1413,12 @@ struct LfTreeCreatorClusterStudies {
       TrackTable_thisCollision.bindExternalIndices(&tracks);
 
       for (auto track : TrackTable_thisCollision) {
-        if (setting_fillDe)
+        if (setting_fillDe) {
           fillDeTableMc(track);
-        if (setting_fillHe3)
+        }
+        if (setting_fillHe3) {
           fillHe3TableMc(track);
+        }
       }
     }
   }

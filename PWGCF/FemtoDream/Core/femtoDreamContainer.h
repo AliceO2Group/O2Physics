@@ -280,7 +280,21 @@ class FemtoDreamContainer
       setPair_base<o2::aod::femtodreamMCparticle::MCType::kRecon, isHF>(femtoObs, mT, part1, part2, mult, multPercentile, use4dplots, extendedplots);
 
       if constexpr (isMC) {
-        if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
+        if constexpr (isHF) {
+          // calculate the femto observable and the mT with MC truth information
+          if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
+            femtoObsMC = FemtoDreamMath::getkstar(part1.fdMCParticle(), mMassOne, part2, mMassTwo);
+          }
+          const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2, mMassTwo);
+
+          if (abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
+            setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth, isHF>(femtoObsMC, mTMC, part1.fdMCParticle(), part2, mult, multPercentile, use4dplots, extendedplots);
+            setPair_MC(femtoObsMC, femtoObs, mT, mult, part1.fdMCParticle().partOriginMCTruth(), part2.flagMc(), smearingByOrigin);
+          } else {
+            mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
+          }
+
+        } else if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
           // calculate the femto observable and the mT with MC truth information
           if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
             femtoObsMC = FemtoDreamMath::getkstar(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);

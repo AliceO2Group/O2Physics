@@ -34,9 +34,10 @@ namespace o2::aod
 namespace triggerTracks
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                       //!
+DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // true physical primary flag
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trigger"); //!
 } // namespace triggerTracks
-DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::TrackId);
+DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::MCPhysicalPrimary, triggerTracks::TrackId);
 /// _________________________________________
 /// Table for storing assoc track indices
 namespace assocPions
@@ -57,6 +58,7 @@ DECLARE_SOA_COLUMN(CompatibleAntiLambda, compatibleAntiLambda, bool); // compati
 DECLARE_SOA_COLUMN(MCTrueK0Short, mcTrueK0Short, bool);               // true K0Short in MC
 DECLARE_SOA_COLUMN(MCTrueLambda, mcTrueLambda, bool);                 // true Lambda in MC
 DECLARE_SOA_COLUMN(MCTrueAntiLambda, mcTrueAntiLambda, bool);         // true AntiLambda in MC
+DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // true physical primary flag
 DECLARE_SOA_COLUMN(MassRegionK0Short, massRegionK0Short, int);        //
 DECLARE_SOA_COLUMN(MassRegionLambda, massRegionLambda, int);          //
 DECLARE_SOA_COLUMN(MassRegionAntiLambda, massRegionAntiLambda, int);  //
@@ -109,6 +111,7 @@ DECLARE_SOA_TABLE(AssocV0s, "AOD", "ASSOCV0S", o2::soa::Index<>,
                   assocV0s::MCTrueK0Short,
                   assocV0s::MCTrueLambda,
                   assocV0s::MCTrueAntiLambda,
+                  assocV0s::MCPhysicalPrimary,
                   assocV0s::MassRegionK0Short,
                   assocV0s::MassRegionLambda,
                   assocV0s::MassRegionAntiLambda,
@@ -130,6 +133,7 @@ DECLARE_SOA_COLUMN(MCTrueXiMinus, mcTrueXiMinus, bool);               // true Xi
 DECLARE_SOA_COLUMN(MCTrueXiPlus, mcTrueXiPlus, bool);                 // true XiPlus in mc
 DECLARE_SOA_COLUMN(MCTrueOmegaMinus, mcTrueOmegaMinus, bool);         // true OmegaMinus in mc
 DECLARE_SOA_COLUMN(MCTrueOmegaPlus, mcTrueOmegaPlus, bool);           // true OmegaPlus in mc
+DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // physical primary in MC
 DECLARE_SOA_COLUMN(MassRegionXi, massRegionXi, int);                  //
 DECLARE_SOA_COLUMN(MassRegionOmega, massRegionOmega, int);            //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
@@ -186,6 +190,7 @@ DECLARE_SOA_TABLE(AssocCascades, "AOD", "ASSOCCASCADES", o2::soa::Index<>, assoc
                   assocCascades::MCTrueXiPlus,
                   assocCascades::MCTrueOmegaMinus,
                   assocCascades::MCTrueOmegaPlus,
+                  assocCascades::MCPhysicalPrimary,
                   assocCascades::MassRegionXi,
                   assocCascades::MassRegionOmega,
                   assocCascades::Compatible<assocCascades::CompatibleXiMinus, assocCascades::CompatibleXiPlus, assocCascades::CompatibleOmegaMinus, assocCascades::CompatibleOmegaPlus>,

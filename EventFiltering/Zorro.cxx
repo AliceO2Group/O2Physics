@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <map>
 
+#include <TList.h>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonDataFormat/InteractionRecord.h"
 
@@ -35,16 +37,25 @@ int findBin(TH1* hist, const std::string& label)
 
 void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix)
 {
-  if (mRunNumberHistos == runNumber) {
+  int runId{-1};
+  for (size_t i{0}; i < mRunNumberHistos.size(); ++i) {
+    if (mRunNumberHistos[i] == runNumber) {
+      runId = i;
+      break;
+    }
+  }
+  if (runId > -1) {
+    /// Support jobs running on non-continuous run numbers
+    mAnalysedTriggers = mAnalysedTriggersList[runId];
+    mAnalysedTriggersOfInterest = mAnalysedTriggersOfInterestList[runId];
     return;
   }
-  mRunNumberHistos = runNumber;
   if (mSelections) {
-    mAnalysedTriggers = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "AnalysedTriggers").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX() - 2, -0.5, mSelections->GetNbinsX() - 2.5}});
+    mAnalysedTriggers = histRegistry.add<TH1>((std::to_string(runNumber) + "/" + prefix + "AnalysedTriggers").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX() - 2, -0.5, mSelections->GetNbinsX() - 2.5}}).get();
     for (int iBin{2}; iBin < mSelections->GetNbinsX(); ++iBin) { // Exclude first and last bins as they are total number of analysed and selected events, respectively
       mAnalysedTriggers->GetXaxis()->SetBinLabel(iBin - 1, mSelections->GetXaxis()->GetBinLabel(iBin));
     }
-    std::shared_ptr<TH1> selections = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "Selections").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX(), -0.5, static_cast<double>(mSelections->GetNbinsX() - 0.5)}});
+    std::shared_ptr<TH1> selections = histRegistry.add<TH1>((std::to_string(runNumber) + "/" + prefix + "Selections").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX(), -0.5, static_cast<double>(mSelections->GetNbinsX() - 0.5)}});
     for (int iBin{1}; iBin <= mSelections->GetNbinsX(); ++iBin) {
       selections->GetXaxis()->SetBinLabel(iBin, mSelections->GetXaxis()->GetBinLabel(iBin));
       selections->SetBinContent(iBin, mSelections->GetBinContent(iBin));
@@ -52,7 +63,7 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
     }
   }
   if (mScalers) {
-    std::shared_ptr<TH1> scalers = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "Scalers").data(), "", o2::framework::HistType::kTH1D, {{mScalers->GetNbinsX(), -0.5, static_cast<double>(mScalers->GetNbinsX() - 0.5)}});
+    std::shared_ptr<TH1> scalers = histRegistry.add<TH1>((std::to_string(runNumber) + "/" + prefix + "Scalers").data(), "", o2::framework::HistType::kTH1D, {{mScalers->GetNbinsX(), -0.5, static_cast<double>(mScalers->GetNbinsX() - 0.5)}});
     for (int iBin{1}; iBin <= mScalers->GetNbinsX(); ++iBin) {
       scalers->GetXaxis()->SetBinLabel(iBin, mScalers->GetXaxis()->GetBinLabel(iBin));
       scalers->SetBinContent(iBin, mScalers->GetBinContent(iBin));
@@ -60,7 +71,7 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
     }
   }
   if (mInspectedTVX) {
-    std::shared_ptr<TH1> inspectedTVX = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "InspectedTVX").data(), "", o2::framework::HistType::kTH1D, {{mInspectedTVX->GetNbinsX(), -0.5, static_cast<double>(mInspectedTVX->GetNbinsX() - 0.5)}});
+    std::shared_ptr<TH1> inspectedTVX = histRegistry.add<TH1>((std::to_string(runNumber) + "/" + prefix + "InspectedTVX").data(), "", o2::framework::HistType::kTH1D, {{mInspectedTVX->GetNbinsX(), -0.5, static_cast<double>(mInspectedTVX->GetNbinsX() - 0.5)}});
     for (int iBin{1}; iBin <= mInspectedTVX->GetNbinsX(); ++iBin) {
       inspectedTVX->GetXaxis()->SetBinLabel(iBin, mInspectedTVX->GetXaxis()->GetBinLabel(iBin));
       inspectedTVX->SetBinContent(iBin, mInspectedTVX->GetBinContent(iBin));
@@ -68,11 +79,14 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
     }
   }
   if (mTOIs.size()) {
-    mAnalysedTriggersOfInterest = histRegistry.add<TH1>((std::to_string(mRunNumberHistos) + "/" + prefix + "AnalysedTriggersOfInterest").data(), "", o2::framework::HistType::kTH1D, {{static_cast<int>(mTOIs.size()), -0.5, static_cast<double>(mTOIs.size() - 0.5)}});
+    mAnalysedTriggersOfInterest = histRegistry.add<TH1>((std::to_string(runNumber) + "/" + prefix + "AnalysedTriggersOfInterest").data(), "", o2::framework::HistType::kTH1D, {{static_cast<int>(mTOIs.size()), -0.5, static_cast<double>(mTOIs.size() - 0.5)}}).get();
     for (size_t i{0}; i < mTOIs.size(); ++i) {
       mAnalysedTriggersOfInterest->GetXaxis()->SetBinLabel(i + 1, mTOIs[i].data());
     }
   }
+  mAnalysedTriggersList.push_back(mAnalysedTriggers);
+  mAnalysedTriggersOfInterestList.push_back(mAnalysedTriggersOfInterest);
+  mRunNumberHistos.push_back(runNumber);
 }
 
 std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, std::string tois, int bcRange)
@@ -91,9 +105,11 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   mZorroHelpers = mCCDB->getSpecific<std::vector<ZorroHelper>>(mBaseCCDBPath + "ZorroHelpers", timestamp, metadata);
   std::sort(mZorroHelpers->begin(), mZorroHelpers->end(), [](const auto& a, const auto& b) { return std::min(a.bcAOD, a.bcEvSel) < std::min(b.bcAOD, b.bcEvSel); });
   mBCranges.clear();
+  mAccountedBCranges.clear();
   for (auto helper : *mZorroHelpers) {
     mBCranges.emplace_back(InteractionRecord::long2IR(std::min(helper.bcAOD, helper.bcEvSel)), InteractionRecord::long2IR(std::max(helper.bcAOD, helper.bcEvSel)));
   }
+  mAccountedBCranges.resize(mBCranges.size(), false);
 
   mLastBCglobalId = 0;
   mLastSelectedIdx = 0;
@@ -123,9 +139,10 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
 {
   mLastResult.reset();
   o2::dataformats::IRFrame bcFrame{InteractionRecord::long2IR(bcGlobalId) - tolerance, InteractionRecord::long2IR(bcGlobalId) + tolerance};
-  if (bcGlobalId < mLastBCglobalId) {
+  if (bcGlobalId < mLastBCglobalId) { /// Handle the possible discontinuity in the BC processed by the analyses
     mLastSelectedIdx = 0;
   }
+  uint64_t lastSelectedIdx = mLastSelectedIdx;
   mLastBCglobalId = bcGlobalId;
   for (size_t i = mLastSelectedIdx; i < mBCranges.size(); i++) {
     if (!mBCranges[i].isOutside(bcFrame)) {
@@ -133,14 +150,14 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
         for (int iTOI{0}; iTOI < 64; ++iTOI) {
           if (mZorroHelpers->at(i).selMask[iMask] & (1ull << iTOI)) {
             mLastResult.set(iMask * 64 + iTOI, 1);
-            if (mAnalysedTriggers) {
+            if (mAnalysedTriggers && !mAccountedBCranges[i]) {
               mAnalysedTriggers->Fill(iMask * 64 + iTOI);
             }
           }
         }
       }
-      mLastSelectedIdx = i;
-      return mLastResult;
+      mAccountedBCranges[i] = true;
+      mLastSelectedIdx = mLastSelectedIdx == lastSelectedIdx-- ? i : mLastSelectedIdx; /// Decrease lastSelectedIdx to make sure this check is valid only in its first instance
     } else if (mBCranges[i].getMax() < bcFrame.getMin()) {
       mLastSelectedIdx = i;
     } else if (mBCranges[i].getMin() > bcFrame.getMax()) {

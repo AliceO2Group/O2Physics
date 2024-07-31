@@ -28,6 +28,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -35,8 +36,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoUniverse;
 using namespace o2::aod::pidutils;
+using namespace o2::track;
 
 struct femtoUniversePairTaskTrackV0Extended {
+
+  Service<o2::framework::O2DatabasePDG> pdgMC;
 
   SliceCache cache;
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
@@ -122,6 +126,11 @@ struct femtoUniversePairTaskTrackV0Extended {
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
   ConfigurableAxis ConfmultBins3D{"ConfMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
 
+  /// MC
+
+  Configurable<float> ConfHPtMC{"ConfHPtMC", 4.0f, "higher limit for pt"};
+  Configurable<float> ConfLPtMC{"ConfLPtMC", 0.3f, "lower limit for pt"};
+
   static constexpr UInt_t V0ChildTable[][2] = {{0, 1}, {1, 0}, {1, 1}}; // Table to select the V0 children
 
   FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
@@ -133,6 +142,8 @@ struct femtoUniversePairTaskTrackV0Extended {
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   bool IsNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
   {
@@ -205,6 +216,46 @@ struct femtoUniversePairTaskTrackV0Extended {
     trackHistoV0Type2.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfIsMC, ConfV0PDGCodePartTwo, true, "V0Type2");
     posChildV0Type2.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true, "posChildV0Type2");
     negChildV0Type2.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true, "negChildV0Type2");
+
+    // MC truth
+    registryMCtruth.add("plus/MCtruthLambda", "MC truth Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("minus/MCtruthLambda", "MC truth Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCtruth.add("plus/MCtruthAllPt", "MC truth all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("minus/MCtruthAllPt", "MC truth all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryMCtruth.add("plus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("plus/MCtruthPr", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCtruth.add("minus/MCtruthPi", "MC truth pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("minus/MCtruthPr", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCtruth.add("plus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("plus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("minus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("minus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    // MC reco
+    registryMCreco.add("plus/MCrecoLambda", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("plus/MCrecoLambdaChildPr", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("plus/MCrecoLambdaChildPi", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("minus/MCrecoLambda", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("minus/MCrecoLambdaChildPr", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("minus/MCrecoLambdaChildPi", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCreco.add("plus/MCrecoAllPt", "MC reco all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCreco.add("minus/MCrecoAllPt", "MC reco all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryMCreco.add("plus/MCrecoPi", "MC reco pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("plus/MCrecoPr", "MC reco protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCreco.add("minus/MCrecoPi", "MC reco pions;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("minus/MCrecoPr", "MC reco protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCreco.add("plus/MCrecoPiPt", "MC reco pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCreco.add("plus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCreco.add("minus/MCrecoPiPt", "MC reco pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCreco.add("minus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
     sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
     sameEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
@@ -459,6 +510,129 @@ struct femtoUniversePairTaskTrackV0Extended {
   }
 
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventV0, "Enable processing mixed events for V0 - V0", false);
+
+  ///--------------------------------------------MC-------------------------------------------------///
+
+  using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
+
+  /// This function fills MC truth particles from derived MC table
+  void processMCTruth(aod::FDParticles const& parts)
+  {
+    for (auto& part : parts) {
+      if (!(part.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)))
+        continue;
+      if (TMath::Abs(part.eta()) > ConfEta || part.pt() < ConfLPtMC || part.pt() > ConfHPtMC)
+        continue;
+
+      int pdgCode = static_cast<int>(part.pidcut());
+      const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
+      if (!pdgParticle) {
+        continue;
+      }
+
+      if (pdgCode == 3122) {
+        registryMCtruth.fill(HIST("plus/MCtruthLambda"), part.pt(), part.eta());
+        continue;
+      } else if (pdgCode == -3122) {
+        registryMCtruth.fill(HIST("minus/MCtruthLambda"), part.pt(), part.eta());
+        continue;
+      }
+
+      if (pdgParticle->Charge() > 0) {
+        registryMCtruth.fill(HIST("plus/MCtruthAllPt"), part.pt());
+      }
+      if (pdgCode == 211) {
+        registryMCtruth.fill(HIST("plus/MCtruthPi"), part.pt(), part.eta());
+        registryMCtruth.fill(HIST("plus/MCtruthPiPt"), part.pt());
+      }
+      if (pdgCode == 2212) {
+        registryMCtruth.fill(HIST("plus/MCtruthPr"), part.pt(), part.eta());
+        registryMCtruth.fill(HIST("plus/MCtruthPrPt"), part.pt());
+      }
+
+      if (pdgParticle->Charge() < 0) {
+        registryMCtruth.fill(HIST("minus/MCtruthAllPt"), part.pt());
+      }
+      if (pdgCode == -211) {
+        registryMCtruth.fill(HIST("minus/MCtruthPi"), part.pt(), part.eta());
+        registryMCtruth.fill(HIST("minus/MCtruthPiPt"), part.pt());
+      }
+      if (pdgCode == -2212) {
+        registryMCtruth.fill(HIST("minus/MCtruthPr"), part.pt(), part.eta());
+        registryMCtruth.fill(HIST("minus/MCtruthPrPt"), part.pt());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCTruth, "Process MC truth data", false);
+
+  void processMCReco(FemtoRecoParticles const& parts, aod::FDMCParticles const& mcparts)
+  {
+    for (auto& part : parts) {
+      auto mcPartId = part.fdMCParticleId();
+      if (mcPartId == -1)
+        continue; // no MC particle
+      const auto& mcpart = mcparts.iteratorAt(mcPartId);
+      //
+      if (part.partType() == aod::femtouniverseparticle::ParticleType::kV0) {
+        if (mcpart.pdgMCTruth() == 3122) {
+          const auto& posChild = parts.iteratorAt(part.globalIndex() - 2);
+          const auto& negChild = parts.iteratorAt(part.globalIndex() - 1);
+          /// Daughters that do not pass this condition are not selected
+          if (IsParticleTPC(posChild, 0) && IsParticleTPC(negChild, 1)) {
+            registryMCreco.fill(HIST("plus/MCrecoLambda"), mcpart.pt(), mcpart.eta()); // lambda
+            if (auto mcpartIdChild = posChild.fdMCParticleId(); mcpartIdChild != -1) {
+              const auto& mcpartChild = mcparts.iteratorAt(mcpartIdChild);
+              registryMCreco.fill(HIST("plus/MCrecoLambdaChildPr"), mcpartChild.pt(), mcpartChild.eta()); // lambda proton child
+            }
+            if (auto mcpartIdChild = negChild.fdMCParticleId(); mcpartIdChild != -1) {
+              const auto& mcpartChild = mcparts.iteratorAt(mcpartIdChild);
+              registryMCreco.fill(HIST("plus/MCrecoLambdaChildPi"), mcpartChild.pt(), mcpartChild.eta()); // lambda pion child
+            }
+          }
+        } else if (mcpart.pdgMCTruth() == -3122) {
+          const auto& posChild = parts.iteratorAt(part.globalIndex() - 2);
+          const auto& negChild = parts.iteratorAt(part.globalIndex() - 1);
+          /// Daughters that do not pass this condition are not selected
+          if (IsParticleTPC(posChild, 1) && IsParticleTPC(negChild, 0)) {
+            registryMCreco.fill(HIST("minus/MCrecoLambda"), mcpart.pt(), mcpart.eta()); // anti-lambda
+            if (auto mcpartIdChild = posChild.fdMCParticleId(); mcpartIdChild != -1) {
+              const auto& mcpartChild = mcparts.iteratorAt(mcpartIdChild);
+              registryMCreco.fill(HIST("minus/MCrecoLambdaChildPi"), mcpartChild.pt(), mcpartChild.eta()); // anti-lambda pion child
+            }
+            if (auto mcpartIdChild = negChild.fdMCParticleId(); mcpartIdChild != -1) {
+              const auto& mcpartChild = mcparts.iteratorAt(mcpartIdChild);
+              registryMCreco.fill(HIST("minus/MCrecoLambdaChildPr"), mcpartChild.pt(), mcpartChild.eta()); // anti-lambda proton child
+            }
+          }
+        }
+      } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {
+        if (part.sign() > 0) {
+          registryMCreco.fill(HIST("plus/MCrecoAllPt"), mcpart.pt());
+          if (mcpart.pdgMCTruth() == 211 && IsNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()))) {
+            registryMCreco.fill(HIST("plus/MCrecoPi"), mcpart.pt(), mcpart.eta());
+            registryMCreco.fill(HIST("plus/MCrecoPiPt"), mcpart.pt());
+          } else if (mcpart.pdgMCTruth() == 2212 && IsNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()))) {
+            registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
+            registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
+          }
+        }
+
+        if (part.sign() < 0) {
+          registryMCreco.fill(HIST("minus/MCrecoAllPt"), mcpart.pt());
+          if (mcpart.pdgMCTruth() == -211 && IsNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()))) {
+            registryMCreco.fill(HIST("minus/MCrecoPi"), mcpart.pt(), mcpart.eta());
+            registryMCreco.fill(HIST("minus/MCrecoPiPt"), mcpart.pt());
+          } else if (mcpart.pdgMCTruth() == -2212 && IsNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()))) {
+            registryMCreco.fill(HIST("minus/MCrecoPr"), mcpart.pt(), mcpart.eta());
+            registryMCreco.fill(HIST("minus/MCrecoPrPt"), mcpart.pt());
+          }
+        }
+      } // partType
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCReco, "Process MC reco data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
