@@ -1100,7 +1100,7 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
     m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe())
-    m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe(track));
+      m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe(track));
     m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), (track.tpcInnerParam() - track.p()) / track.tpcInnerParam());
 
     uint8_t partID = PartID::de;
@@ -1209,7 +1209,6 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
 
-
     if (setting_smallTable) {
       m_ClusterStudiesTable(
         track.p() * track.sign(), // p_He3,
@@ -1264,7 +1263,6 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.p() * track.sign(), computeNSigmaHe3(track));
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
-
 
     if (setting_smallTable) {
       m_ClusterStudiesTableMc(
