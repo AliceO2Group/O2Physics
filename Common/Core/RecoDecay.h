@@ -935,6 +935,16 @@ struct RecoDecay {
       for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
+
+          // we exit immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
+          if (!searchUpToQuark) {
+            auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
+            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            if (PDGParticleIMother < 9 || (PDGParticleIMother > 20 && PDGParticleIMother < 38)) {
+              return OriginType::Prompt;
+            }
+          }
+
           for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
             if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
               continue;

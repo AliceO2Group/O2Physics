@@ -619,13 +619,13 @@ struct femtoUniversePairTaskTrackV0Extended {
         }
 
         if (part.sign() < 0) {
-          registryMCreco.fill(HIST("minus/MCrecoAllPt"), part.pt());
+          registryMCreco.fill(HIST("minus/MCrecoAllPt"), mcpart.pt());
           if (mcpart.pdgMCTruth() == -211 && IsNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()))) {
-            registryMCreco.fill(HIST("plus/MCrecoPi"), mcpart.pt(), mcpart.eta());
-            registryMCreco.fill(HIST("plus/MCrecoPiPt"), mcpart.pt());
+            registryMCreco.fill(HIST("minus/MCrecoPi"), mcpart.pt(), mcpart.eta());
+            registryMCreco.fill(HIST("minus/MCrecoPiPt"), mcpart.pt());
           } else if (mcpart.pdgMCTruth() == -2212 && IsNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()))) {
-            registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
-            registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
+            registryMCreco.fill(HIST("minus/MCrecoPr"), mcpart.pt(), mcpart.eta());
+            registryMCreco.fill(HIST("minus/MCrecoPrPt"), mcpart.pt());
           }
         }
       } // partType
