@@ -553,6 +553,10 @@ struct SingleTrackQCMC {
           continue;
         }
 
+        if (mctrack.emmceventId() != collision.emmceventId()) {
+          continue;
+        }
+
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
             if (!cut.template IsSelectedTrack<true>(track, collision)) {
