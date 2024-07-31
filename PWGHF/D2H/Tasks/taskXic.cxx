@@ -357,8 +357,8 @@ struct HfTaskXic {
           }
         }
       } // thn for Xic
-    } // loop candidates
-  } // end process data
+    }   // loop candidates
+  }     // end process data
 
   void processDataStd(aod::Collision const& collision,
                       soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates,
@@ -514,7 +514,7 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/background/hDecLenErrBg"), candidate.errorDecayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hChi2PCARecBg"), candidate.chi2PCA(), ptCandidate);
       } // Xic background
-    } // candidate loop
+    }   // candidate loop
 
     // MC gen.
     for (const auto& particle : mcParticles) {
