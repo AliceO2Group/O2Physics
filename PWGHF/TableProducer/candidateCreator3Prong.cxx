@@ -171,7 +171,7 @@ struct HfCandidateCreator3Prong {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -403,7 +403,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask, centrality);
@@ -420,7 +420,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask, centrality);
@@ -437,7 +437,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask, centrality);
@@ -471,6 +471,7 @@ struct HfCandidateCreator3ProngExpressions {
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   void init(InitContext& initContext)
   {
@@ -513,7 +514,7 @@ struct HfCandidateCreator3ProngExpressions {
   void runCreator3ProngMc(aod::TracksWMc const& tracks,
                           aod::McParticles const& mcParticles,
                           CCs const& collInfos,
-                          aod::McCollisions const&,
+                          aod::McCollisions const& mcCollisions,
                           BCsInfo const&)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
@@ -647,21 +648,11 @@ struct HfCandidateCreator3ProngExpressions {
       }
     }
 
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      flag = 0;
-      origin = 0;
-      channel = 0;
-      arrDaughIndex.clear();
-      std::vector<int> idxBhadMothers{};
-      // Reject particles from background events
-      if (particle.fromBackgroundEvent() && rejectBackground) {
-        rowMcMatchGen(flag, origin, channel, -1);
-        continue;
-      }
+    for (const auto& mcCollision : mcCollisions) {
 
+      // Slice the particles table to get the particles for the current MC collision
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
-      auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
       uint16_t rejectionMask{0};
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
@@ -676,85 +667,101 @@ struct HfCandidateCreator3ProngExpressions {
       }
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
-        /// at least one event selection not satisfied --> reject the gen particle
-        rowMcMatchGen(flag, origin, channel, -1);
+        // at least one event selection not satisfied --> reject all gen particles from this collision
+        for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
+          rowMcMatchGen(0, 0, 0, -1);
+        }
         continue;
       }
 
-      // D± → π± K∓ π±
-      if (createDplus) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << DecayType::DplusToPiKPi);
+      // Match generated particles.
+      for (const auto& particle : mcParticlesPerMcColl) {
+        flag = 0;
+        origin = 0;
+        channel = 0;
+        arrDaughIndex.clear();
+        std::vector<int> idxBhadMothers{};
+        // Reject particles from background events
+        if (particle.fromBackgroundEvent() && rejectBackground) {
+          rowMcMatchGen(flag, origin, channel, -1);
+          continue;
         }
-      }
 
-      // Ds± → K± K∓ π± and D± → K± K∓ π±
-      if (flag == 0 && createDs) {
-        bool isDplus = false;
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
-          // TODO: move to different and explicit flags
-          flag = sign * (1 << DecayType::DsToKKPi);
-        } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
-          // TODO: move to different and explicit flags
-          flag = sign * (1 << DecayType::DsToKKPi);
-          isDplus = true;
+        // D± → π± K∓ π±
+        if (createDplus) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+            flag = sign * (1 << DecayType::DplusToPiKPi);
+          }
         }
+
+        // Ds± → K± K∓ π± and D± → K± K∓ π±
+        if (flag == 0 && createDs) {
+          bool isDplus = false;
+          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+            // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
+            // TODO: move to different and explicit flags
+            flag = sign * (1 << DecayType::DsToKKPi);
+          } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+            // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
+            // TODO: move to different and explicit flags
+            flag = sign * (1 << DecayType::DsToKKPi);
+            isDplus = true;
+          }
+          if (flag != 0) {
+            RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+            if (arrDaughIndex.size() == 2) {
+              for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
+                auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
+                arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+              }
+              if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
+                channel = isDplus ? DecayChannelDToKKPi::DplusToPhiPi : DecayChannelDToKKPi::DsToPhiPi;
+              } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
+                channel = isDplus ? DecayChannelDToKKPi::DplusToK0starK : DecayChannelDToKKPi::DsToK0starK;
+              }
+            }
+          }
+        }
+
+        // Λc± → p± K∓ π±
+        if (flag == 0 && createLc) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+            flag = sign * (1 << DecayType::LcToPKPi);
+
+            // Flagging the different Λc± → p± K∓ π± decay channels
+            RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+            if (arrDaughIndex.size() == 2) {
+              for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
+                auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
+                arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+              }
+              if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
+                channel = 1;
+              } else if ((arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) || (arrPDGDaugh[0] == arrPDGResonant2[1] && arrPDGDaugh[1] == arrPDGResonant2[0])) {
+                channel = 2;
+              } else if ((arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) || (arrPDGDaugh[0] == arrPDGResonant3[1] && arrPDGDaugh[1] == arrPDGResonant3[0])) {
+                channel = 3;
+              }
+            }
+          }
+        }
+
+        // Ξc± → p± K∓ π±
+        if (flag == 0 && createXic) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+            flag = sign * (1 << DecayType::XicToPKPi);
+          }
+        }
+
+        // Check whether the particle is non-prompt (from a b quark).
         if (flag != 0) {
-          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
-            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
-              arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
-            }
-            if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-              channel = isDplus ? DecayChannelDToKKPi::DplusToPhiPi : DecayChannelDToKKPi::DsToPhiPi;
-            } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-              channel = isDplus ? DecayChannelDToKKPi::DplusToK0starK : DecayChannelDToKKPi::DsToK0starK;
-            }
-          }
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-      }
-
-      // Λc± → p± K∓ π±
-      if (flag == 0 && createLc) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << DecayType::LcToPKPi);
-
-          // Flagging the different Λc± → p± K∓ π± decay channels
-          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
-            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
-              arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
-            }
-            if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
-              channel = 1;
-            } else if ((arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) || (arrPDGDaugh[0] == arrPDGResonant2[1] && arrPDGDaugh[1] == arrPDGResonant2[0])) {
-              channel = 2;
-            } else if ((arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) || (arrPDGDaugh[0] == arrPDGResonant3[1] && arrPDGDaugh[1] == arrPDGResonant3[0])) {
-              channel = 3;
-            }
-          }
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
+        } else {
+          rowMcMatchGen(flag, origin, channel, -1);
         }
-      }
-
-      // Ξc± → p± K∓ π±
-      if (flag == 0 && createXic) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << DecayType::XicToPKPi);
-        }
-      }
-
-      // Check whether the particle is non-prompt (from a b quark).
-      if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-      }
-      if (origin == RecoDecay::OriginType::NonPrompt) {
-        rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
-      } else {
-        rowMcMatchGen(flag, origin, channel, -1);
       }
     }
   }
