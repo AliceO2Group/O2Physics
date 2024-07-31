@@ -181,6 +181,9 @@ struct derivedlambdakzeroanalysis {
   // MC coll assoc QA axis
   ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
 
+  // For manual sliceBy
+  Preslice<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+
   enum selection : uint64_t { selCosPA = 0,
                               selRadius,
                               selRadiusMax,
@@ -544,6 +547,11 @@ struct derivedlambdakzeroanalysis {
 
     // Creation of histograms: MC generated
     if (doprocessGenerated) {
+      histos.add("hGenEvents", "hGenEvents", kTH1F, {{2, -0.5f, +1.5f}});
+      histos.get<TH1>(HIST("hGenEvents"))->GetXaxis()->SetBinLabel(1, "All gen. events");
+      histos.get<TH1>(HIST("hGenEvents"))->GetXaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
+      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisCentrality});
+
       histos.add("h2dGenK0Short", "h2dGenK0Short", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenLambda", "h2dGenLambda", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisCentrality, axisPt});
@@ -1352,116 +1360,303 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processGenerated(soa::Join<aod::StraMCCollisions, aod::StraMCCollCents>::iterator const& mcCollisions, aod::V0MCCores const& V0MCCores, aod::CascMCCores const& CascMCCores, soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>> const& collisions)
+  void processGenerated(aod::StraMCCollisions const& mcCollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels> const& collisions)
   {
-    // Check if there is at least one of the reconstructed collisions associated to this MC collision 
-    // If so, we consider it
-    // bool atLeastOne = true;
-    float centrality = mcCollisions.bestCollisionCentFT0C();
-    // for (auto& collision : collisions) {
-      // if (!collision.sel8()) {
-      //   continue;
-      // }
-      // if (std::abs(collision.posZ()) > 10.f) {
-      //   continue;
-      // }
-      // if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      //   continue;
-      // }
-      // if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      //   continue;
-      // }
-      // if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      //   continue;
-      // }
-      // if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      //   continue;
-      // }
-      // if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-      //   continue;
-      // }
-      // if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-      //   continue;
-      // }
-      // if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      //   continue;
-      // }
-      // if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
-      //   continue;
-      // }
-      // if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
-      //   continue;
-      // }
-      // if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
-      //   continue;
-      // }
-      // if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
-      //   continue;
-      // }
-      // if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
-      //   continue;
-      // }
-      // if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      //   continue;
-      // }
-      // if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
-      //   continue;
-      // }
-
-      // if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
-      //   continue;
-      // }
-      // if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
-      //   continue;
-      // }
-
-      // if (collision.has_straMCCollision())
-      //   continue;
-
-      // atLeastOne = true;
-    // }
-
-    // if (!atLeastOne)
-      // return;
+    fillGenEventHist(mcCollisions, collisions);
 
     for (auto const& v0MC : V0MCCores) {
+      if (!v0MC.has_straMCCollision())
+        continue;
+
+      if (!v0MC.isPhysicalPrimary())
+        continue;
+
       float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
-      float ymc = 1e-3;
+      float ymc = 1e3;
       if (v0MC.pdgCode() == 310)
         ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
       else if (TMath::Abs(v0MC.pdgCode()) == 3122)
         ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
 
-      if (v0MC.pdgCode() == 310 && TMath::Abs(ymc) < rapidityCut && v0MC.isPhysicalPrimary()) {
+      if (TMath::Abs(ymc) >= rapidityCut)
+        continue;
+
+      auto mcCollision = v0MC.straMCCollision_as<aod::StraMCCollisions>();
+      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      int biggestNContribs = -1;
+      float centrality = 100.5f;
+      // Check if there is at least one of the reconstructed collisions associated to this MC collision 
+      // If so, we consider it
+      bool atLeastOne = false;
+      for (auto const& collision : groupedCollisions) {
+        // if (!collision.sel8()) {
+          // continue;
+        // }
+        // if (std::abs(collision.posZ()) >= 10.f) {
+          // continue;
+        // }
+        // if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          // continue;
+        // }
+        // if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          // continue;
+        // }
+        // if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+          // continue;
+        // }
+        // if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          // continue;
+        // }
+        if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+          continue;
+        }
+        if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+          continue;
+        }
+        // if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+          // continue;
+        // }
+        if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
+          continue;
+        }
+        if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
+          continue;
+        }
+        if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
+          continue;
+        }
+        if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
+          continue;
+        }
+        if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
+          continue;
+        }
+        if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+          continue;
+        }
+        if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+          continue;
+        }
+
+        if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+          continue;
+        }
+        if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+          continue;
+        }
+
+        if (biggestNContribs < collision.multPVTotalContributors()) {
+          biggestNContribs = collision.multPVTotalContributors();
+          centrality = collision.centFT0C();
+        }
+
+        atLeastOne = true;
+      }
+
+      if (!atLeastOne)
+        continue;
+
+      if (v0MC.pdgCode() == 310) {
         histos.fill(HIST("h2dGenK0Short"), centrality, ptmc);
       }
-      if (v0MC.pdgCode() == 3122 && TMath::Abs(ymc) < rapidityCut && v0MC.isPhysicalPrimary()) {
+      if (v0MC.pdgCode() == 3122) {
         histos.fill(HIST("h2dGenLambda"), centrality, ptmc);
       }
-      if (v0MC.pdgCode() == -3122 && TMath::Abs(ymc) < rapidityCut && v0MC.isPhysicalPrimary()) {
+      if (v0MC.pdgCode() == -3122) {
         histos.fill(HIST("h2dGenAntiLambda"), centrality, ptmc);
       }
     }
 
     for (auto const& cascMC : CascMCCores) {
-      float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxPosMC() + cascMC.pxNegMC(), cascMC.pyPosMC() + cascMC.pyNegMC());
-      float ymc = 1e-3;
-      if (TMath::Abs(cascMC.pdgCode()) == 3312)
-        ymc = RecoDecay::y(std::array{cascMC.pxPosMC() + cascMC.pxNegMC(), cascMC.pyPosMC() + cascMC.pyNegMC(), cascMC.pzPosMC() + cascMC.pzNegMC()}, o2::constants::physics::MassXiMinus);
-      else if (TMath::Abs(cascMC.pdgCode()) == 3334)
-        ymc = RecoDecay::y(std::array{cascMC.pxPosMC() + cascMC.pxNegMC(), cascMC.pyPosMC() + cascMC.pyNegMC(), cascMC.pzPosMC() + cascMC.pzNegMC()}, o2::constants::physics::MassOmegaMinus);
+      if (!cascMC.has_straMCCollision())
+        continue;
 
-      if (cascMC.pdgCode() == 3312 && TMath::Abs(ymc) < rapidityCut && cascMC.isPhysicalPrimary()) {
+      if (!cascMC.isPhysicalPrimary())
+        continue;
+
+      float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
+      float ymc = 1e3;
+      if (TMath::Abs(cascMC.pdgCode()) == 3312)
+        ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassXiMinus);
+      else if (TMath::Abs(cascMC.pdgCode()) == 3334)
+        ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
+
+      if (TMath::Abs(ymc) > rapidityCut)
+        continue;
+
+      auto mcCollision = cascMC.straMCCollision_as<aod::StraMCCollisions>();
+      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      // Check if there is at least one of the reconstructed collisions associated to this MC collision 
+      // If so, we consider it
+      bool atLeastOne = false;
+      int biggestNContribs = -1;
+      float centrality = 100.5f;
+      for (auto const& collision : groupedCollisions) {
+        // if (!collision.sel8()) {
+        //   continue;
+        // }
+        // if (std::abs(collision.posZ()) > 10.f) {
+        //   continue;
+        // }
+        // if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        //   continue;
+        // }
+        // if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        //   continue;
+        // }
+        // if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        //   continue;
+        // }
+        // if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        //   continue;
+        // }
+        // if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+        //   continue;
+        // }
+        // if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+        //   continue;
+        // }
+        // if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        //   continue;
+        // }
+        // if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
+        //   continue;
+        // }
+        // if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
+        //   continue;
+        // }
+        // if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
+        //   continue;
+        // }
+        // if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
+        //   continue;
+        // }
+        // if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
+        //   continue;
+        // }
+        // if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        //   continue;
+        // }
+        // if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+        //   continue;
+        // }
+
+        // if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+        //   continue;
+        // }
+        // if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+        //   continue;
+        // }
+
+        if (biggestNContribs < collision.multPVTotalContributors()) {
+          biggestNContribs = collision.multPVTotalContributors();
+          centrality = collision.centFT0C();
+        }
+
+        atLeastOne = true;
+      }
+
+      if (!atLeastOne)
+        continue;
+
+      if (cascMC.pdgCode() == 3312) {
         histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
       }
-      if (cascMC.pdgCode() == -3312 && TMath::Abs(ymc) < rapidityCut && cascMC.isPhysicalPrimary()) {
+      if (cascMC.pdgCode() == -3312) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
       }
-      if (cascMC.pdgCode() == 3334 && TMath::Abs(ymc) < rapidityCut && cascMC.isPhysicalPrimary()) {
+      if (cascMC.pdgCode() == 3334) {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
       }
-      if (cascMC.pdgCode() == -3334 && TMath::Abs(ymc) < rapidityCut && cascMC.isPhysicalPrimary()) {
+      if (cascMC.pdgCode() == -3334) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
+      }
+    }
+  }
+
+  // ______________________________________________________
+  // Simulated processing (subscribes to MC information too)
+  void fillGenEventHist(aod::StraMCCollisions const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels> const& collisions)
+  {
+    for (auto const& mcCollision : mcCollisions) {
+      histos.fill(HIST("hGenEvents"), 0 /* all gen. events*/);
+
+      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      // centrality = mcCollision.bestCollisionCentFT0C();
+      // Check if there is at least one of the reconstructed collisions associated to this MC collision 
+      // If so, we consider it
+      bool atLeastOne = false;
+      int biggestNContribs = -1;
+      float centrality = 100.5f;
+      for (auto const& collision : groupedCollisions) {
+        if (!collision.sel8()) {
+          continue;
+        }
+        if (std::abs(collision.posZ()) > 10.f) {
+          continue;
+        }
+        if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue;
+        }
+        if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          continue;
+        }
+        if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+          continue;
+        }
+        if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          continue;
+        }
+        if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+          continue;
+        }
+        if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+          continue;
+        }
+        if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
+        if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
+          continue;
+        }
+        if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
+          continue;
+        }
+        if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
+          continue;
+        }
+        if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
+          continue;
+        }
+        if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
+          continue;
+        }
+        if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+          continue;
+        }
+        if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+          continue;
+        }
+
+        if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+          continue;
+        }
+        if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+          continue;
+        }
+
+        if (biggestNContribs < collision.multPVTotalContributors()) {
+          biggestNContribs = collision.multPVTotalContributors();
+          centrality = collision.centFT0C();
+        }
+
+        atLeastOne = true;
+      }
+
+      if (atLeastOne) {
+        histos.fill(HIST("hGenEvents"), 1 /* at least 1 rec. event*/);
+
+        histos.fill(HIST("hGenEventCentrality"), centrality);        
       }
     }
   }

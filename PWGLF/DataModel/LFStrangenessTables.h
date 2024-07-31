@@ -100,8 +100,6 @@ DECLARE_SOA_TABLE(StraMCCollisions, "AOD", "STRAMCCOLLISION", //! MC collision p
                   mccollision::ImpactParameter);
 DECLARE_SOA_TABLE(StraMCCollMults, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
                   mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
-DECLARE_SOA_TABLE(StraMCCollCents, "AOD", "STRAMCCOLLCENTS", //! MC collision centrality
-                  mccollisionprop::BestCollisionCentFT0C);
 
 using StraMCCollision = StraMCCollisions::iterator;
 
@@ -711,6 +709,7 @@ using V0fCDatas = soa::Join<V0fCIndices, V0fCTrackXs, V0fCCores>;
 using V0fCData = V0fCDatas::iterator;
 using V0MCDatas = soa::Join<V0MCCores, V0MCMothers>;
 using V0MCData = V0MCDatas::iterator;
+using V0MCCore = V0MCCores::iterator;
 
 // definitions of indices for interlink tables
 namespace v0data

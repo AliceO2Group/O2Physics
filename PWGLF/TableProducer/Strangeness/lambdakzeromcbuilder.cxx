@@ -82,14 +82,14 @@ struct lambdakzeromcbuilder {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // Helper struct to contain V0MCCore information prior to filling
   struct mcV0info {
-    int label;
-    int motherLabel;
-    int pdgCode;
-    int pdgCodeMother;
-    int pdgCodePositive;
-    int pdgCodeNegative;
-    int mcCollision;
-    bool isPhysicalPrimary;
+    int label = -1;
+    int motherLabel = -1;
+    int pdgCode = 0;
+    int pdgCodeMother = 0;
+    int pdgCodePositive = 0;
+    int pdgCodeNegative = 0 ;
+    int mcCollision = -1;
+    bool isPhysicalPrimary = false;
     std::array<float, 3> xyz;
     std::array<float, 3> posP;
     std::array<float, 3> negP;
@@ -130,9 +130,10 @@ struct lambdakzeromcbuilder {
       // Association check
       // There might be smarter ways of doing this in the future
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
-        thisInfo.packedMcParticleIndices = combineProngIndices(lPosTrack.mcParticleId(), lNegTrack.mcParticleId());
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
+
+        thisInfo.packedMcParticleIndices = combineProngIndices(lPosTrack.mcParticleId(), lNegTrack.mcParticleId());
         thisInfo.pdgCodePositive = lMCPosTrack.pdgCode();
         thisInfo.pdgCodeNegative = lMCNegTrack.pdgCode();
         thisInfo.posP[0] = lMCPosTrack.px();
@@ -173,8 +174,8 @@ struct lambdakzeromcbuilder {
         thisInfo.label, thisInfo.motherLabel);
 
       // Mark mcParticle as recoed (no searching necessary afterwards)
-      if (thisInfo.motherLabel > -1) {
-        mcParticleIsReco[thisInfo.motherLabel] = true;
+      if (thisInfo.label > -1) {
+        mcParticleIsReco[thisInfo.label] = true;
       }
 
       // ---] Symmetric populate [---
@@ -204,13 +205,13 @@ struct lambdakzeromcbuilder {
         // step 1: check if this element is already provided in the table
         //         using the packedIndices variable calculated above
         for (uint32_t ii = 0; ii < mcV0infos.size(); ii++) {
-          if (thisInfo.packedMcParticleIndices == mcV0infos[ii].packedMcParticleIndices && mcV0infos[ii].packedMcParticleIndices > 0) {
+          if (thisInfo.label == mcV0infos[ii].label && mcV0infos[ii].label > -1) {
             thisV0MCCoreIndex = ii;
             histos.fill(HIST("hBuildingStatistics"), 2.0f); // found
             break;                                          // this exists already in list
           }
         }
-        if (thisV0MCCoreIndex < 0) {
+        if (thisV0MCCoreIndex < 0 && thisInfo.label > -1) {
           // this V0MCCore does not exist yet. Create it and reference it
           histos.fill(HIST("hBuildingStatistics"), 3.0f); // new
           thisV0MCCoreIndex = mcV0infos.size();
@@ -269,12 +270,15 @@ struct lambdakzeromcbuilder {
           if (mcParticle.has_daughters()) {
             auto const& daughters = mcParticle.daughters_as<aod::McParticles>();
             if(daughters.size() > 2)
-              LOGF(info, "V0 candidates with more than 2 daughters!");
-            for (auto& dau : daughters) {
-              if(dau.pdgCode() > 0)
-                thisInfo.pdgCodePositive = dau.pdgCode();
-              if(dau.pdgCode() < 0)
-                thisInfo.pdgCodeNegative = dau.pdgCode();
+              LOGF(info, Form("V0 candidate with %d daughters!", daughters.size()));
+            else
+            {
+              for (auto& dau : daughters) {
+                if(dau.pdgCode() > 0)
+                  thisInfo.pdgCodePositive = dau.pdgCode();
+                if(dau.pdgCode() < 0)
+                  thisInfo.pdgCodeNegative = dau.pdgCode();
+              }
             }
           }
 
