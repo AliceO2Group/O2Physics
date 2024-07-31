@@ -14,12 +14,9 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 
-/// includes KFParticle
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFVertex.h"
+#ifndef HomogeneousField
+#define HomogeneousField
+#endif
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -41,6 +38,13 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Tools/KFparticle/KFUtilities.h"
+
+/// includes KFParticle
+#include "KFParticle.h"
+#include "KFParticleBase.h"
+#include "KFPTrack.h"
+#include "KFPVertex.h"
+#include "KFVertex.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -573,7 +577,7 @@ struct HfCandidateCreatorXic0Omegac0 {
 
   template <int decayChannel, typename Coll, typename Hist>
   void runKfOmegac0CreatorWithKFParticle(Coll const&,
-                                         aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                         aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
                                          MyKfTracks const&,
                                          MyKfCascTable const&, KFCascadesLinked const&,
                                          aod::HfCascLf2Prongs const& candidates,
