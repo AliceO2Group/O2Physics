@@ -37,12 +37,12 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<bool> fillHistoMcGen{"fillHistoMcGen", true, "Flag for filling histograms in MC Gen processes"};
   Configurable<bool> fillHistoMcEff{"fillHistoMcEff", true, "Flag for filling histograms in efficiency processes"};
   Configurable<bool> applyEfficiency{"applyEfficiency", false, "Flag for applying efficiency weights"};
-  Configurable<bool> useSel8ForTrackEff{"useSel8ForTrackEff", true, "Flag for applying sel8 for collision selection"};
+  Configurable<bool> useSel8ForEff{"useSel8ForEff", true, "Flag for applying sel8 for collision selection"};
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
-  //Configurable<bool> doMcCollisionCheck{"doMcCollisionCheck", false, "Flag for applying the collision check and selection based on MC collision info"};
+  // Configurable<bool> doMcCollisionCheck{"doMcCollisionCheck", false, "Flag for applying the collision check and selection based on MC collision info"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
-  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
+  // Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
   Configurable<int> decayChannel{"decayChannel", 1, "Decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<float> cutCollPosZMc{"cutCollPosZMc", 10., "max z-vertex position for collision acceptance"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
@@ -94,8 +94,6 @@ struct HfTaskCorrelationDsHadrons {
                         kAssocTrackStepRecoMcMatch,
                         kAssocTrackStepRecoPrimaries,
                         kAssocTrackStepRecoSpecies,
-                        kAssocTrackStepRecoCollMatch,
-                        kAssocTrackStepFake,
                         kAssocTrackNSteps };
 
   using DsHadronPairFull = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo, aod::DsHadronGenInfo>;
@@ -188,7 +186,6 @@ struct HfTaskCorrelationDsHadrons {
       registry.add("hPtParticleAssocMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
       registry.add("hPtParticleAssocSpecieMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
       registry.add("hPtMcParticleAssocSpecieMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtParticleAssocCollMatchMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
       registry.add("hPtPrmPionMcRec", "Primary pions - MC Rec", {HistType::kTH1F, {axisPtHadron}});
       registry.add("hPtPrmKaonMcRec", "Primary kaons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
       registry.add("hPtPrmProtonMcRec", "Primary protons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
@@ -204,6 +201,8 @@ struct HfTaskCorrelationDsHadrons {
       registry.add("hPtPrmMuonMcGen", "Primary muons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
       registry.add("hPtPrmPromptPartMcGen", "Primary prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
       registry.add("hPtPrmNonPromptPartMcGen", "Primary non-prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+      registry.add("hFakeCollision", "Fake collision counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake coll"}}});
+      registry.add("hFakeTracks", "Fake tracks counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake tracks"}}});
 
       auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPtD, axisMultFT0M, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kCandidateNSteps});
       hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
@@ -524,9 +523,9 @@ struct HfTaskCorrelationDsHadrons {
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcRecME, "Process MC Reco ME", false);
 
   SliceCache cache;
-  Preslice<TracksWithMc> perCollision = o2::aod::track::collisionId;
-  Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
-  
+  Preslice<CandDsMcReco> perCollisionCand = o2::aod::hf_cand::collisionId;
+  Preslice<CandDsMcGen> perCollisionCandMc = o2::aod::mcparticle::mcCollisionId;
+
   /// Ds-Hadron correlation - for calculating candidate reconstruction efficiency using MC reco-level analysis
   void processMcCandEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels> const& collisions,
                                soa::Join<aod::McCollisions, aod::MultsExtraMC> const&,
@@ -535,11 +534,11 @@ struct HfTaskCorrelationDsHadrons {
                                aod::TracksWMc const&)
   {
     auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
-    
+
     /// loop over reconstructed collisions
     for (const auto& collision : collisions) {
       // reco collision selection
-      if (useSel8ForTrackEff && !collision.sel8()) {
+      if (useSel8ForEff && !collision.sel8()) {
         continue;
       }
       if (std::abs(collision.posZ()) > cutCollPosZMc) {
@@ -549,7 +548,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
       if (!collision.has_mcCollision()) {
-        // TODO: add control histogram
+        registry.fill(HIST("hFakeCollision"), 0.);
         continue;
       }
 
@@ -561,82 +560,82 @@ struct HfTaskCorrelationDsHadrons {
       float multiplicityGen = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
       float posZGen = mcCollision.posZ();
 
-      const auto groupedMcParticles = mcParticles.sliceBy(perCollisionMc, mcCollision.globalIndex());
-      const auto groupedCandidates = candidates.sliceBy(perCollision, collision.globalIndex());
-      
+      const auto groupedMcParticles = mcParticles.sliceBy(perCollisionCandMc, mcCollision.globalIndex());
+      const auto groupedCandidates = candidates.sliceBy(perCollisionCand, collision.globalIndex());
+
       // generated candidate loop
       for (const auto& mcParticle : groupedMcParticles) {
-      if (std::abs(mcParticle.pdgCode()) == Pdg::kDS) {
-        //auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
-        //multiplicity = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
-        hCandidates->Fill(kCandidateStepMcGenAll, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
-        if ((std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
-          hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
-          auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
-          if (std::abs(yDs) <= yCandGenMax) {
-            hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
-            if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
-              registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == Pdg::kDS) {
+          // auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
+          // multiplicity = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
+          hCandidates->Fill(kCandidateStepMcGenAll, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
+          if ((std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
+            hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
+            auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
+            if (std::abs(yDs) <= yCandGenMax) {
+              hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
+              if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
+                registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
+              }
+              if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+                registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt());
+              }
             }
-            if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-              registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt());
+            bool isDaughterInAcceptance = true;
+            auto daughters = mcParticle.template daughters_as<CandDsMcGen>();
+            for (const auto& daughter : daughters) {
+              if (daughter.pt() < ptDaughterMin || std::abs(daughter.eta()) > etaTrackMax) {
+                isDaughterInAcceptance = false;
+              }
             }
-          }
-          bool isDaughterInAcceptance = true;
-          auto daughters = mcParticle.template daughters_as<CandDsMcGen>();
-          for (const auto& daughter : daughters) {
-            if (daughter.pt() < ptDaughterMin || std::abs(daughter.eta()) > etaTrackMax) {
-              isDaughterInAcceptance = false;
-            }
-          }
-          if (isDaughterInAcceptance) {
-            hCandidates->Fill(kCandidateStepMcDaughtersInAcceptance, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
-            registry.fill(HIST("hPtCandMcGenDaughterInAcc"), mcParticle.pt());
-          }
-        }
-      }
-    }
-    
-    // reconstructed candidate loop
-    for (const auto& candidate : groupedCandidates) {
-      if (candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
-        continue;
-      }
-      std::vector<float> outputMl = {-1., -1., -1.};
-      if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-          outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-        }
-      } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-          outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-        }
-      }
-      if (outputMl[0] < mlOutputPrompt->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
-        continue;
-      }
-      
-      if ((std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (candidate.flagMcDecayChanRec() == decayChannel)) {
-        auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
-        // DsToKKPi and DsToPiKK division
-        if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-          hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicityReco, candidate.originMcRec());
-          if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
-            hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicityReco, candidate.originMcRec());
-            if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-              registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
-            }
-            if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-              registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt());
+            if (isDaughterInAcceptance) {
+              hCandidates->Fill(kCandidateStepMcDaughtersInAcceptance, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
+              registry.fill(HIST("hPtCandMcGenDaughterInAcc"), mcParticle.pt());
             }
           }
         }
       }
-    }
+
+      // reconstructed candidate loop
+      for (const auto& candidate : groupedCandidates) {
+        if (candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
+          continue;
+        }
+        std::vector<float> outputMl = {-1., -1., -1.};
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
+          }
+        } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
+          }
+        }
+        if (outputMl[0] < mlOutputPrompt->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
+          continue;
+        }
+
+        if ((std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (candidate.flagMcDecayChanRec() == decayChannel)) {
+          auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
+          // DsToKKPi and DsToPiKK division
+          if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
+            hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicityReco, candidate.originMcRec());
+            if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
+              hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicityReco, candidate.originMcRec());
+              if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+                registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
+              }
+              if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+                registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt());
+              }
+            }
+          }
+        }
+      }
     } // end loop reconstructed collision
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcCandEfficiency, "Process MC for calculating candidate reconstruction efficiency", false);
-  
+
   void processMcCandEfficiencyWoColl(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels> const&,
                                      soa::Join<aod::McCollisions, aod::MultsExtraMC> const&,
                                      CandDsMcGen const& mcParticles,
@@ -723,6 +722,9 @@ struct HfTaskCorrelationDsHadrons {
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcCandEfficiencyWoColl, "Process MC for calculating candidate reconstruction efficiency", false);
 
+  Preslice<TracksWithMc> perCollision = o2::aod::track::collisionId;
+  Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
+
   /// Ds-Hadron correlation - for calculating associated particle tracking efficiency using MC reco-level analysis
   void processMcTrackEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels> const& collisions,
                                 soa::Join<aod::McCollisions, aod::MultsExtraMC> const&,
@@ -734,7 +736,7 @@ struct HfTaskCorrelationDsHadrons {
     /// loop over reconstructed collisions
     for (const auto& collision : collisions) {
       // reco collision selection
-      if (useSel8ForTrackEff && !collision.sel8()) {
+      if (useSel8ForEff && !collision.sel8()) {
         continue;
       }
       if (std::abs(collision.posZ()) > cutCollPosZMc) {
@@ -744,7 +746,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
       if (!collision.has_mcCollision()) {
-        // TODO: add control histogram
+        registry.fill(HIST("hFakeCollision"), 0.);
         continue;
       }
 
@@ -800,7 +802,7 @@ struct HfTaskCorrelationDsHadrons {
             if ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton)) {
               hAssocTracks->Fill(kAssocTrackStepRecoSpecies, track.eta(), track.pt(), multiplicityReco, posZReco);
               registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
-              // check the pt spectra of mcParticle 
+              // check the pt spectra of mcParticle
               registry.fill(HIST("hPtMcParticleAssocSpecieMcRec"), mcParticle.pt());
               if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
                 registry.fill(HIST("hPtPrmPionMcRec"), track.pt());
@@ -821,12 +823,12 @@ struct HfTaskCorrelationDsHadrons {
                 registry.fill(HIST("hPtPrmNonPromptPartMcRec"), track.pt());
               }
             }
-          }         
+          }
         } else {
-        // fake track
-        hAssocTracks->Fill(kAssocTrackStepFake, track.eta(), track.pt(), multiplicityReco, posZReco);
+          // fake track
+          registry.fill(HIST("hFakeTracks"), 0.);
         }
-      }    
+      }
     }
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcTrackEfficiency, "Process MC for calculating associated particle tracking efficiency", false);
