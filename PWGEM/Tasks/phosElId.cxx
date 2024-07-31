@@ -77,6 +77,9 @@ struct phosElId {
   Configurable<float> mEpmin{"mEpmin", -1., "Min for E/p histograms"};
   Configurable<float> mEpmax{"mEpmax", 3., "Max for E/p histograms"};
 
+  Configurable<float> lim_dcaXY{"lim_dcaXY", 0.06, "Limit set for absolute DCA XY cut"};
+  Configurable<float> lim_dcaZ{"lim_dcaZ", 0.065, "Limit set for absolute DCA Z cut"};
+
   Configurable<std::vector<float>> pSigma_dz{"pSigma_dz", {20., 0.76, 6.6, 3.6, 0.1}, "parameters for sigma dz function"};
   Configurable<std::vector<float>> pSigma_dx{"pSigma_dx", {3, 2.3, 3.1}, "parameters for sigma dx function"};
 
@@ -254,6 +257,8 @@ struct phosElId {
       LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       runNumber = bc.runNumber();
     }
+    if (fabs(collision.posZ()) > 10.f)
+      return;
     mHistManager.fill(HIST("eventCounter"), 0.5);
     if (!collision.alias_bit(mEvSelTrig))
       return;
@@ -266,17 +271,18 @@ struct phosElId {
 
       if (!track.has_collision())
         continue;
+
+      if (fabs(track.dcaXY()) > lim_dcaXY || fabs(track.dcaZ()) > lim_dcaZ)
+        continue; // to exclude secondaries
       mHistManager.fill(HIST("hTrackVX"), track.x());
       mHistManager.fill(HIST("hTrackVY"), track.y());
       mHistManager.fill(HIST("hTrackVZ"), track.z());
       mHistManager.fill(HIST("hColVX"), collision.posX());
       mHistManager.fill(HIST("hColVY"), collision.posY());
       mHistManager.fill(HIST("hColVZ"), collision.posZ());
-      if (std::abs(track.collision_as<SelCollisions>().posZ()) > 10.f)
-        continue;
 
       // calculate coordinate in PHOS plane
-      if (std::abs(track.eta()) > 0.3)
+      if (std::abs(track.eta()) > 0.15)
         continue;
       int16_t module;
       float trackX = 999., trackZ = 999.;
