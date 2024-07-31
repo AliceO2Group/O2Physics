@@ -52,32 +52,31 @@ using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
 
 using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::McTrackLabels>;
 
-struct nuclei_in_jets
-{
+struct nuclei_in_jets {
 
   // QC Histograms
   HistogramRegistry registryQC{
-      "registryQC",
-      {},
-      OutputObjHandlingPolicy::AnalysisObject,
-      true,
-      true};
+    "registryQC",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
 
   // Analysis Histograms: Data
   HistogramRegistry registryData{
-      "registryData",
-      {},
-      OutputObjHandlingPolicy::AnalysisObject,
-      true,
-      true};
+    "registryData",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
 
   // Analysis Histograms: MC
   HistogramRegistry registryMC{
-      "registryMC",
-      {},
-      OutputObjHandlingPolicy::AnalysisObject,
-      true,
-      true};
+    "registryMC",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
 
   // Global Parameters
   Configurable<double> min_pt_leading{"min_pt_leading", 5.0, "Minimum pt of leading particle"};
@@ -106,7 +105,7 @@ struct nuclei_in_jets
   Configurable<double> max_nsigmaTOF{"max_nsigmaTOF", +3.5, "Maximum nsigma TOF"};
   Configurable<bool> require_PV_contributor{"require_PV_contributor", true, "require that the track is a PV contributor"};
 
-  void init(InitContext const &)
+  void init(InitContext const&)
   {
     // QC Histograms
     registryQC.add("multiplicityJetPlusUE", "multiplicityJetPlusUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -183,7 +182,7 @@ struct nuclei_in_jets
 
   // Single-Track Selection for Particles inside Jets
   template <typename T1>
-  bool passedTrackSelectionForJetReconstruction(const T1 &track)
+  bool passedTrackSelectionForJetReconstruction(const T1& track)
   {
     if (!track.hasITS())
       return false;
@@ -201,7 +200,7 @@ struct nuclei_in_jets
       return false;
     if (track.pt() < 0.1)
       return false;
-    if (TMath::Abs(track.dcaXY()) > (0.0105 * 0.035 / TMath::Power(track.pt(), 1.1)))
+    if (TMath::Abs(track.dcaXY()) > (0.0105 * 0.035 / TMath::Power(track.pt(),1.1)))
       return false;
     if (TMath::Abs(track.dcaZ()) > 2.0)
       return false;
@@ -211,7 +210,7 @@ struct nuclei_in_jets
 
   // Single-Track Selection
   template <typename T2>
-  bool passedTrackSelection(const T2 &track)
+  bool passedTrackSelection(const T2& track)
   {
     if (!track.hasITS())
       return false;
@@ -236,7 +235,7 @@ struct nuclei_in_jets
   }
 
   template <typename T3>
-  bool isHighPurityAntiproton(const T3 &track)
+  bool isHighPurityAntiproton(const T3& track)
   {
     // Variables
     double nsigmaTPCPr = track.tpcNSigmaPr();
@@ -288,7 +287,7 @@ struct nuclei_in_jets
     return rap;
   }
 
-  void get_perpendicular_axis(TVector3 p, TVector3 &u, double sign)
+  void get_perpendicular_axis(TVector3 p, TVector3& u, double sign)
   {
     // Initialization
     double ux(0), uy(0), uz(0);
@@ -299,8 +298,7 @@ struct nuclei_in_jets
     double pz = p.Z();
 
     // Protection 1
-    if (px == 0 && py != 0)
-    {
+    if (px == 0 && py != 0) {
 
       uy = -(pz * pz) / py;
       ux = sign * sqrt(py * py - (pz * pz * pz * pz) / (py * py));
@@ -310,8 +308,7 @@ struct nuclei_in_jets
     }
 
     // Protection 2
-    if (py == 0 && px != 0)
-    {
+    if (py == 0 && px != 0) {
 
       ux = -(pz * pz) / px;
       uy = sign * sqrt(px * px - (pz * pz * pz * pz) / (px * px));
@@ -327,8 +324,7 @@ struct nuclei_in_jets
     double delta = b * b - 4.0 * a * c;
 
     // Protection agains delta<0
-    if (delta < 0)
-    {
+    if (delta < 0) {
       return;
     }
 
@@ -341,7 +337,7 @@ struct nuclei_in_jets
   }
 
   // Process Data
-  void processData(SelectedCollisions::iterator const &collision, FullTracks const &tracks)
+  void processData(SelectedCollisions::iterator const& collision, FullTracks const& tracks)
   {
     // Event Counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
@@ -371,15 +367,13 @@ struct nuclei_in_jets
     int i = -1;
 
     // Loop over Reconstructed Tracks
-    for (auto track : tracks)
-    {
+    for (auto track : tracks) {
 
       i++;
       if (!passedTrackSelectionForJetReconstruction(track))
         continue;
 
-      if (track.pt() > pt_max)
-      {
+      if (track.pt() > pt_max) {
         leading_ID = i;
         pt_max = track.pt();
       }
@@ -387,7 +381,7 @@ struct nuclei_in_jets
     }
 
     // Momentum of the Leading Particle
-    auto const &leading_track = tracks.iteratorAt(leading_ID);
+    auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
     TVector3 p_jet(leading_track.px(), leading_track.py(), leading_track.pz());
 
@@ -409,16 +403,14 @@ struct nuclei_in_jets
     Double_t jetPt(0);
 
     // Jet Finder
-    do
-    {
+    do {
       // Initialization
       double distance_jet_min(1e+08);
       double distance_bkg_min(1e+08);
       int label_jet_particle(0);
       int i_jet_particle(0);
 
-      for (int i = 0; i < nParticles; i++)
-      {
+      for (int i = 0; i < nParticles; i++) {
 
         // Skip Leading Particle & Elements already associated to the Jet
         if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
@@ -441,22 +433,19 @@ struct nuclei_in_jets
         double distance_bkg = one_over_pt2_part;
 
         // Find Minimum Distance Jet
-        if (distance_jet < distance_jet_min)
-        {
+        if (distance_jet < distance_jet_min) {
           distance_jet_min = distance_jet;
           label_jet_particle = particle_ID[i];
           i_jet_particle = i;
         }
 
         // Find Minimum Distance Bkg
-        if (distance_bkg < distance_bkg_min)
-        {
+        if (distance_bkg < distance_bkg_min) {
           distance_bkg_min = distance_bkg;
         }
       }
 
-      if (distance_jet_min <= distance_bkg_min)
-      {
+      if (distance_jet_min <= distance_bkg_min) {
 
         // Add Particle to Jet
         jet_particle_ID.push_back(label_jet_particle);
@@ -511,8 +500,7 @@ struct nuclei_in_jets
     registryData.fill(HIST("number_of_events_data"), 7.5);
 
     // Loop over Reconstructed Tracks
-    for (auto track : tracks)
-    {
+    for (auto track : tracks) {
 
       if (!passedTrackSelection(track))
         continue;
@@ -546,14 +534,11 @@ struct nuclei_in_jets
       double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
       // DCAxy Distributions of Antiprotons
-      if (isHighPurityAntiproton(track) && TMath::Abs(dcaz) < max_dcaz)
-      {
-        if (deltaR_jet < Rmax)
-        {
+      if (isHighPurityAntiproton(track) && TMath::Abs(dcaz) < max_dcaz) {
+        if (deltaR_jet < Rmax) {
           registryData.fill(HIST("antiproton_dca_jet"), pt, dcaxy);
         }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax)
-        {
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
           registryData.fill(HIST("antiproton_dca_ue"), pt, dcaxy);
         }
       }
@@ -565,12 +550,10 @@ struct nuclei_in_jets
         continue;
 
       // Jet
-      if (deltaR_jet < Rmax)
-      {
+      if (deltaR_jet < Rmax) {
 
         // Antiproton
-        if (y_proton > min_y && y_proton < max_y)
-        {
+        if (y_proton > min_y && y_proton < max_y) {
           if (pt < 1.0)
             registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
           if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
@@ -578,8 +561,7 @@ struct nuclei_in_jets
         }
 
         // Antideuteron
-        if (y_deuteron > min_y && y_deuteron < max_y)
-        {
+        if (y_deuteron > min_y && y_deuteron < max_y) {
           if (pt < 1.0)
             registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe);
           if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
@@ -587,19 +569,16 @@ struct nuclei_in_jets
         }
 
         // Antihelium3
-        if (y_helium3 > min_y && y_helium3 < max_y)
-        {
+        if (y_helium3 > min_y && y_helium3 < max_y) {
           registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
         }
       }
 
       // UE
-      if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax)
-      {
+      if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
 
         // Antiproton
-        if (y_proton > min_y && y_proton < max_y)
-        {
+        if (y_proton > min_y && y_proton < max_y) {
           if (pt < 1.0)
             registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
           if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
@@ -607,8 +586,7 @@ struct nuclei_in_jets
         }
 
         // Antideuteron
-        if (y_deuteron > min_y && y_deuteron < max_y)
-        {
+        if (y_deuteron > min_y && y_deuteron < max_y) {
           if (pt < 1.0)
             registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe);
           if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
@@ -616,8 +594,7 @@ struct nuclei_in_jets
         }
 
         // Antihelium3
-        if (y_helium3 > min_y && y_helium3 < max_y)
-        {
+        if (y_helium3 > min_y && y_helium3 < max_y) {
           registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
         }
       }
@@ -627,17 +604,16 @@ struct nuclei_in_jets
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<MCTracks> perCollision = o2::aod::track::collisionId;
 
-  void processMC(o2::aod::McCollisions const &mcCollisions, SimCollisions const &collisions, MCTracks const &mcTracks, aod::McParticles const &mcParticles)
+    
+  void processMC(o2::aod::McCollisions const& mcCollisions, SimCollisions const& collisions, MCTracks const& mcTracks, aod::McParticles const& mcParticles)
   {
     // Generated Events
-    for (const auto &mccollision : mcCollisions)
-    {
+    for (const auto& mccollision : mcCollisions) {
 
       registryMC.fill(HIST("number_of_events_mc"), 0.5);
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
 
-      for (auto &particle : mcParticles_per_coll)
-      {
+      for (auto& particle : mcParticles_per_coll) {
 
         if (!particle.isPhysicalPrimary())
           continue;
@@ -646,141 +622,125 @@ struct nuclei_in_jets
         if (particle.y() < min_y || particle.y() > max_y)
           continue;
 
-        if (particle.pdgCode() == -2212)
-        {
+        if (particle.pdgCode() == -2212) {
           registryMC.fill(HIST("antiproton_jet_gen"), particle.pt());
           registryMC.fill(HIST("antiproton_ue_gen"), particle.pt());
         }
-        if (particle.pdgCode() == -1000010020)
-        {
+        if (particle.pdgCode() == -1000010020) {
           registryMC.fill(HIST("antideuteron_jet_gen"), particle.pt());
           registryMC.fill(HIST("antideuteron_ue_gen"), particle.pt());
         }
-        if (particle.pdgCode() == -1000020030)
-        {
+        if (particle.pdgCode() == -1000020030) {
           registryMC.fill(HIST("antihelium3_jet_gen"), particle.pt());
           registryMC.fill(HIST("antihelium3_ue_gen"), particle.pt());
         }
       }
     }
-
+     
     // Reconstructed Events
-    for (const auto &collision : collisions)
-    {
+    for (const auto& collision : collisions) {
 
-      registryMC.fill(HIST("number_of_events_mc"), 1.5);
+        registryMC.fill(HIST("number_of_events_mc"), 1.5);
 
-      // Event Selection
-      if (!collision.sel8())
-        continue;
-
-      if (abs(collision.posZ()) > 10)
-        continue;
-
-      // Event Counter (after event sel)
-      registryMC.fill(HIST("number_of_events_mc"), 2.5);
-
-      auto tracks_per_coll = mcTracks.sliceBy(perCollision, collision.globalIndex());
-
-      // Reconstructed Tracks
-      for (auto track : tracks_per_coll)
-      {
-
-        // Get MC Particle
-        if (!track.has_mcParticle())
+        // Event Selection
+        if (!collision.sel8())
           continue;
 
-        const auto particle = track.mcParticle();
-        if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
+        if (abs(collision.posZ()) > 10)
           continue;
 
-        // Track Selection
-        if (!passedTrackSelection(track))
-          continue;
-        if (require_PV_contributor && !(track.isPVContributor()))
-          continue;
+        // Event Counter (after event sel)
+        registryMC.fill(HIST("number_of_events_mc"), 2.5);
 
-        // Variables
-        float nsigmaTPCPr = track.tpcNSigmaPr();
-        float nsigmaTOFPr = track.tofNSigmaPr();
-        float nsigmaTPCDe = track.tpcNSigmaDe();
-        float nsigmaTOFDe = track.tofNSigmaDe();
-        float nsigmaTPCHe = track.tpcNSigmaHe();
-        float pt = track.pt();
+        auto tracks_per_coll = mcTracks.sliceBy(perCollision, collision.globalIndex());
 
-        // DCA Templates
-        if (particle.pdgCode() == -2212 && particle.isPhysicalPrimary() && TMath::Abs(track.dcaZ()) < max_dcaz)
-          registryMC.fill(HIST("antiproton_dca_prim"), pt, track.dcaXY());
+        // Reconstructed Tracks
+        for (auto track : tracks_per_coll) {
 
-        if (particle.pdgCode() == -2212 && (!particle.isPhysicalPrimary()) && TMath::Abs(track.dcaZ()) < max_dcaz)
-          registryMC.fill(HIST("antiproton_dca_sec"), pt, track.dcaXY());
+          // Get MC Particle
+          if (!track.has_mcParticle())
+            continue;
 
-        // DCA Cuts
-        if (TMath::Abs(track.dcaXY()) > max_dcaxy)
-          continue;
-        if (TMath::Abs(track.dcaZ()) > max_dcaz)
-          continue;
+          const auto particle = track.mcParticle();
+          if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
+            continue;
 
-        // Fraction of Primary Antiprotons
-        if (particle.pdgCode() == -2212)
-        {
-          registryMC.fill(HIST("antiproton_all"), pt);
-          if (particle.isPhysicalPrimary())
-          {
-            registryMC.fill(HIST("antiproton_prim"), pt);
+          // Track Selection
+          if (!passedTrackSelection(track))
+            continue;
+          if (require_PV_contributor && !(track.isPVContributor()))
+            continue;
+
+          // Variables
+          float nsigmaTPCPr = track.tpcNSigmaPr();
+          float nsigmaTOFPr = track.tofNSigmaPr();
+          float nsigmaTPCDe = track.tpcNSigmaDe();
+          float nsigmaTOFDe = track.tofNSigmaDe();
+          float nsigmaTPCHe = track.tpcNSigmaHe();
+          float pt = track.pt();
+
+          // DCA Templates
+          if (particle.pdgCode() == -2212 && particle.isPhysicalPrimary() && TMath::Abs(track.dcaZ()) < max_dcaz)
+            registryMC.fill(HIST("antiproton_dca_prim"), pt, track.dcaXY());
+
+          if (particle.pdgCode() == -2212 && (!particle.isPhysicalPrimary()) && TMath::Abs(track.dcaZ()) < max_dcaz)
+            registryMC.fill(HIST("antiproton_dca_sec"), pt, track.dcaXY());
+
+          // DCA Cuts
+          if (TMath::Abs(track.dcaXY()) > max_dcaxy)
+            continue;
+          if (TMath::Abs(track.dcaZ()) > max_dcaz)
+            continue;
+
+          // Fraction of Primary Antiprotons
+          if (particle.pdgCode() == -2212) {
+            registryMC.fill(HIST("antiproton_all"), pt);
+            if (particle.isPhysicalPrimary()) {
+              registryMC.fill(HIST("antiproton_prim"), pt);
+            }
           }
-        }
 
-        if (!particle.isPhysicalPrimary())
-          continue;
+          if (!particle.isPhysicalPrimary())
+            continue;
 
-        // Antiproton
-        if (particle.pdgCode() == -2212)
-        {
-          if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC)
-          {
-            registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt);
-            registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt);
+          // Antiproton
+          if (particle.pdgCode() == -2212) {
+            if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
+              registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt);
+              registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt);
+            }
+            if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
+              registryMC.fill(HIST("antiproton_jet_rec_tof"), pt);
+              registryMC.fill(HIST("antiproton_ue_rec_tof"), pt);
+            }
           }
-          if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF)
-          {
-            registryMC.fill(HIST("antiproton_jet_rec_tof"), pt);
-            registryMC.fill(HIST("antiproton_ue_rec_tof"), pt);
-          }
-        }
 
-        // Antideuteron
-        if (particle.pdgCode() == -1000010020)
-        {
-          if (pt < 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC)
-          {
-            registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt);
-            registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt);
+          // Antideuteron
+          if (particle.pdgCode() == -1000010020) {
+            if (pt < 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC) {
+              registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt);
+              registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt);
+            }
+            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF) {
+              registryMC.fill(HIST("antideuteron_jet_rec_tof"), pt);
+              registryMC.fill(HIST("antideuteron_ue_rec_tof"), pt);
+            }
           }
-          if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF)
-          {
-            registryMC.fill(HIST("antideuteron_jet_rec_tof"), pt);
-            registryMC.fill(HIST("antideuteron_ue_rec_tof"), pt);
-          }
-        }
 
-        // Antihelium-3
-        if (particle.pdgCode() == -1000020030)
-        {
-          if (nsigmaTPCHe > min_nsigmaTPC && nsigmaTPCHe < max_nsigmaTPC)
-          {
-            registryMC.fill(HIST("antihelium3_jet_rec_tpc"), 2.0 * pt);
-            registryMC.fill(HIST("antihelium3_ue_rec_tpc"), 2.0 * pt);
+          // Antihelium-3
+          if (particle.pdgCode() == -1000020030) {
+            if (nsigmaTPCHe > min_nsigmaTPC && nsigmaTPCHe < max_nsigmaTPC) {
+              registryMC.fill(HIST("antihelium3_jet_rec_tpc"), 2.0 * pt);
+              registryMC.fill(HIST("antihelium3_ue_rec_tpc"), 2.0 * pt);
+            }
           }
         }
       }
-    }
   }
 
-  void processSecAntiprotons(SimCollisions const &collisions, MCTracks const &mcTracks, aod::McCollisions const &, const aod::McParticles &)
+  void processSecAntiprotons(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&, const aod::McParticles&)
   {
-    for (const auto &collision : collisions)
-    {
+    for (const auto& collision : collisions) {
 
       // Event Selection
       if (!collision.sel8())
@@ -798,15 +758,13 @@ struct nuclei_in_jets
       int i = -1;
 
       // Loop over Reconstructed Tracks
-      for (auto track : tracks_per_coll)
-      {
+      for (auto track : tracks_per_coll) {
 
         i++;
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
 
-        if (track.pt() > pt_max)
-        {
+        if (track.pt() > pt_max) {
           leading_ID = i;
           pt_max = track.pt();
         }
@@ -819,7 +777,7 @@ struct nuclei_in_jets
       int nParticles = static_cast<int>(particle_ID.size());
 
       // Momentum of the Leading Particle
-      auto const &leading_track = tracks_per_coll.iteratorAt(leading_ID);
+      auto const& leading_track = tracks_per_coll.iteratorAt(leading_ID);
       TVector3 p_jet(leading_track.px(), leading_track.py(), leading_track.pz());
 
       // Labels
@@ -829,16 +787,14 @@ struct nuclei_in_jets
       Double_t jetPt(0);
 
       // Jet Finder
-      do
-      {
+      do {
         // Initialization
         double distance_jet_min(1e+08);
         double distance_bkg_min(1e+08);
         int label_jet_particle(0);
         int i_jet_particle(0);
 
-        for (int i = 0; i < nParticles; i++)
-        {
+        for (int i = 0; i < nParticles; i++) {
 
           // Skip Leading Particle & Elements already associated to the Jet
           if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
@@ -861,22 +817,19 @@ struct nuclei_in_jets
           double distance_bkg = one_over_pt2_part;
 
           // Find Minimum Distance Jet
-          if (distance_jet < distance_jet_min)
-          {
+          if (distance_jet < distance_jet_min) {
             distance_jet_min = distance_jet;
             label_jet_particle = particle_ID[i];
             i_jet_particle = i;
           }
 
           // Find Minimum Distance Bkg
-          if (distance_bkg < distance_bkg_min)
-          {
+          if (distance_bkg < distance_bkg_min) {
             distance_bkg_min = distance_bkg;
           }
         }
 
-        if (distance_jet_min <= distance_bkg_min)
-        {
+        if (distance_jet_min <= distance_bkg_min) {
 
           // Add Particle to Jet
           jet_particle_ID.push_back(label_jet_particle);
@@ -921,8 +874,7 @@ struct nuclei_in_jets
       if (ue_axis1.Mag() == 0 || ue_axis2.Mag() == 0)
         continue;
 
-      for (auto track : tracks_per_coll)
-      {
+      for (auto track : tracks_per_coll) {
 
         if (!passedTrackSelection(track))
           continue;
@@ -951,14 +903,12 @@ struct nuclei_in_jets
         float deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
         float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-        if (deltaR_jet < Rmax)
-        {
+        if (deltaR_jet < Rmax) {
           registryMC.fill(HIST("antiproton_all_jet"), track.pt());
           if (particle.isPhysicalPrimary())
             registryMC.fill(HIST("antiproton_prim_jet"), track.pt());
         }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax)
-        {
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
           registryMC.fill(HIST("antiproton_all_ue"), track.pt());
           if (particle.isPhysicalPrimary())
             registryMC.fill(HIST("antiproton_prim_ue"), track.pt());
@@ -971,7 +921,7 @@ struct nuclei_in_jets
   PROCESS_SWITCH(nuclei_in_jets, processSecAntiprotons, "Process sec antip", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<nuclei_in_jets>(cfgc)};
 }
