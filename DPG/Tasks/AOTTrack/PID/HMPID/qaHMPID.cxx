@@ -14,7 +14,18 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "Common/Core/trackUtilities.h"
+#include "ReconstructionDataFormats/DCA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/ASoA.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <TTree.h>
@@ -23,7 +34,56 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace o2::aod
+{
+
+namespace variables_table // declaration of columns to create
+{
+DECLARE_SOA_COLUMN(ChAngle, chAngle, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(MomHMPID, momMPID, float);
+DECLARE_SOA_COLUMN(MomTrackX, momTrackX, float);
+DECLARE_SOA_COLUMN(MomTrackY, momTrackY, float);
+DECLARE_SOA_COLUMN(MomTrackZ, momTrackZ, float);
+DECLARE_SOA_COLUMN(Xtrack, xtrack, float);
+DECLARE_SOA_COLUMN(Ytrack, ytrack, float);
+DECLARE_SOA_COLUMN(Xmip, xmip, float);
+DECLARE_SOA_COLUMN(Ymip, ymip, float);
+DECLARE_SOA_COLUMN(Nphotons, nphotons, float);
+DECLARE_SOA_COLUMN(ChargeMIP, chargeMIP, float);
+DECLARE_SOA_COLUMN(ClusterSize, clustersize, float);
+DECLARE_SOA_COLUMN(Chamber, chamber, float);
+DECLARE_SOA_COLUMN(Photons_charge, photons_charge, float);
+
+DECLARE_SOA_COLUMN(EtaTrack, etatrack, float);
+DECLARE_SOA_COLUMN(PhiTrack, phitrack, float);
+
+DECLARE_SOA_COLUMN(ITSNcluster, itsNcluster, float);
+DECLARE_SOA_COLUMN(TPCNcluster, tpcNcluster, float);
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, float);
+DECLARE_SOA_COLUMN(TPCchi2, tpcChi2, float);
+DECLARE_SOA_COLUMN(ITSchi2, itsChi2, float);
+
+DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
+DECLARE_SOA_COLUMN(DCAz, dcaz, float);
+
+} // namespace variables_table
+
+DECLARE_SOA_TABLE(HMPID_analysis, "AOD", "HMPIDANALYSIS",
+                  variables_table::ChAngle, variables_table::Phi, variables_table::Eta, variables_table::MomHMPID,
+                  variables_table::MomTrackX, variables_table::MomTrackY, variables_table::MomTrackZ,
+                  variables_table::Xtrack, variables_table::Ytrack, variables_table::Xmip,
+                  variables_table::Ymip, variables_table::Nphotons, variables_table::ChargeMIP, variables_table::ClusterSize,
+                  variables_table::Chamber, variables_table::Photons_charge, variables_table::EtaTrack, variables_table::PhiTrack,
+                  variables_table::ITSNcluster, variables_table::TPCNcluster, variables_table::TPCNClsCrossedRows,
+                  variables_table::TPCchi2, variables_table::ITSchi2, variables_table::DCAxy, variables_table::DCAz);
+} // namespace o2::aod
+
 struct pidHmpidQa {
+
+  Produces<aod::HMPID_analysis> HMPID_analysis;
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsP{"nBinsP", 500, "Number of momentum bins"};
   Configurable<float> minP{"minP", 0.01f, "Minimum momentum plotted (GeV/c)"};
@@ -73,21 +133,31 @@ struct pidHmpidQa {
   void process(const aod::HMPIDs& hmpids,
                const TrackCandidates& /*tracks*/,
                const aod::Collisions& /*colls*/)
+
   {
 
     for (const auto& t : hmpids) {
       if (t.track_as<TrackCandidates>().isGlobalTrack() != (uint8_t) true) {
         continue;
       }
-      if (abs(t.track_as<TrackCandidates>().dcaXY()) > maxDCA) {
+
+      const auto& track = t.track_as<TrackCandidates>();
+
+      if (!track.hasITS() || !track.hasTPC() || !track.hasTOF()) {
         continue;
       }
+
+      HMPID_analysis(t.hmpidSignal(), t.track_as<TrackCandidates>().phi(), t.track_as<TrackCandidates>().eta(), t.hmpidMom(),
+                     track.px(), track.py(), track.pz(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
+                     t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000, t.hmpidClusSize() / 1000000,
+                     *t.hmpidPhotsCharge(), track.eta(), track.phi(), track.itsNCls(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                     track.tpcChi2NCl(), track.itsChi2NCl(), track.dcaXY(), track.dcaZ());
 
       histos.fill(HIST("hmpidSignal"), t.hmpidSignal());
       histos.fill(HIST("PhivsEta"), t.track_as<TrackCandidates>().eta(), t.track_as<TrackCandidates>().phi());
       histos.fill(HIST("hmpidMomvsTrackMom"), t.track_as<TrackCandidates>().p(), abs(t.hmpidMom()));
       histos.fill(HIST("hmpidCkovvsMom"), abs(t.hmpidMom()), t.hmpidSignal());
-      histos.fill(HIST("hmpidXTrack"), t.hmpidYTrack());
+      histos.fill(HIST("hmpidXTrack"), t.hmpidXTrack());
       histos.fill(HIST("hmpidYTrack"), t.hmpidYTrack());
       histos.fill(HIST("hmpidXMip"), t.hmpidXMip());
       histos.fill(HIST("hmpidYMip"), t.hmpidYMip());
