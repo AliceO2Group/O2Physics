@@ -92,6 +92,7 @@ struct tracked_cascade_properties {
     registryQC.add("decayXY", "decayXY", HistType::kTH2F, {{200, -50, 50, "x"}, {200, -50, 50, "y"}});
     registryQC.add("signBachelor", "signBachelor", HistType::kTH1F, {{4, -2, 2, "sign"}});
     registryQC.add("ITSclusterSizeTrkCasc", "ITSclusterSizeTrkCasc", HistType::kTH1F, {{200, 0, 20, "ITS cluster Size"}});
+    registryQC.add("DeltaLambda", "DeltaLambda", HistType::kTH1F, {{200, -0.1, 0.1, "#lambda - #lambda_{1}"}});
 
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{5, 0, 5, "Event Cuts"}});
     registryData.add("xi_pos_clustersize", "xi_pos_clustersize", HistType::kTH3F, {{100, 0.0, 100, "ITS cluster size"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
@@ -118,6 +119,17 @@ struct tracked_cascade_properties {
     registryData.add("xi_mass_neg", "xi_mass_neg", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("omega_mass_pos", "omega_mass_pos", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
     registryData.add("omega_mass_neg", "omega_mass_neg", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
+  }
+
+  double track_inclination(double eta)
+  {
+    double lambda(0);
+    double theta = 2.0 * atan(exp(-eta));
+    if (theta <= TMath::Pi()/2.0)
+      lambda = 0.5 * TMath::Pi() - theta;
+    if (theta > TMath::Pi()/2.0)
+      lambda = theta - 0.5 * TMath::Pi();
+    return lambda;
   }
 
   void processData(SelectedCollisions::iterator const& collision, aod::AssignedTrackedCascades const& trackedCascades,
@@ -163,9 +175,11 @@ struct tracked_cascade_properties {
 
       // Track Inclination
       registryQC.fill(HIST("tgl_Distr"), track.tgl());
-      double lambda = atan(track.tgl());
+      double lambda = track_inclination (track.eta());
+      double lambda1 = atan(track.tgl());
       double cosL = cos(lambda);
       double sinL = sin(lambda);
+      registryQC.fill(HIST("DeltaLambda"), lambda - lambda1);
 
       // Xi
       if (trackedCascade.xiMass() > mMin_xi && trackedCascade.xiMass() < mMax_xi) {
