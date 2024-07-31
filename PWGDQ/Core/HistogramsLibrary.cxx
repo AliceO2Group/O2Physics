@@ -1168,7 +1168,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int nbins_ptD0 = sizeof(ptD0_bins) / sizeof(*ptD0_bins) - 1;
         hm->AddHistogram(histClass, "MassD0region", "", false, nbins_mD0, mD0_bins, VarManager::kMass);
         hm->AddHistogram(histClass, "MassD0region_Pt", "", false, nbins_mD0, mD0_bins, VarManager::kMass, nbins_ptD0, ptD0_bins, VarManager::kPt);
-        hm->AddHistogram(histClass, "MassD0region_eta", "", false, 50, 1.7, 2.0, VarManager::kMass, 40, -2., 2., VarManager::kEta);
+        hm->AddHistogram(histClass, "MassD0region_eta", "", false, 50, 1.7, 2.0, VarManager::kMass, 20, -2., 2., VarManager::kEta);
+        hm->AddHistogram(histClass, "MassD0region_Rapidity", "", false, 50, 1.7, 2.0, VarManager::kMass, 40, -0.9, 0.9, VarManager::kRap);
         hm->AddHistogram(histClass, "MassD0region_TauxyzProj", "", false, 50, 1.7, 2.0, VarManager::kMass, 1000, -0.03, 0.03, VarManager::kVertexingTauxyzProjected);
       }
       if (subGroupStr.Contains("lambdac")) {
