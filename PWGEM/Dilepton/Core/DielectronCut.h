@@ -40,6 +40,7 @@ class DielectronCut : public TNamed
  public:
   DielectronCut() = default;
   DielectronCut(const char* name, const char* title) : TNamed(name, title) {}
+  ~DielectronCut() {}
 
   enum class DielectronCuts : int {
     // pair cut

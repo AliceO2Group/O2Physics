@@ -57,6 +57,7 @@ class EMFwdTrack
   float fwdDcaX() const { return fDCAx; }
   float fwdDcaY() const { return fDCAy; }
   float fwdDcaXY() const { return std::sqrt(std::pow(fDCAx, 2) + std::pow(fDCAy, 2)); }
+  float p() const { return fPt * std::cosh(fEta); }
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }

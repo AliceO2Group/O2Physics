@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(k892analysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(kstar892analysis
+    SOURCES kstar892analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(k892pmanalysis
     SOURCES k892pmanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -136,5 +141,10 @@ o2physics_add_dpl_workflow(highmasslambda
 
 o2physics_add_dpl_workflow(lambdav2
     SOURCES lambdav2.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(highmasslambdasvx
+    SOURCES highmasslambdasvx.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
