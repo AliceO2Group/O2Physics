@@ -182,7 +182,7 @@ struct SingleTrackQCMC {
       const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true charge"};
 
       // generated info
-      fRegistry.add("Generated/lf/hs", "gen. single electron", kTHnSparseF, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.add("Generated/lf/hs", "gen. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
       fRegistry.addClone("Generated/lf/", "Generated/PromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/NonPromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptPsi2S/");
@@ -192,7 +192,7 @@ struct SingleTrackQCMC {
       fRegistry.addClone("Generated/lf/", "Generated/b2c2l/");
 
       // track info
-      fRegistry.add("Track/lf/positive/hs", "rec. single electron", kTHnSparseF, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.add("Track/lf/positive/hs", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
       fRegistry.add("Track/lf/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
       fRegistry.add("Track/lf/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/lf/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
@@ -241,7 +241,7 @@ struct SingleTrackQCMC {
       const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true charge"};
 
       // generated info
-      fRegistry.add("Generated/lf/hs", "gen. single muon", kTHnSparseF, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.add("Generated/lf/hs", "gen. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
       fRegistry.addClone("Generated/lf/", "Generated/PromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/NonPromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptPsi2S/");
@@ -251,7 +251,7 @@ struct SingleTrackQCMC {
       fRegistry.addClone("Generated/lf/", "Generated/b2c2l/");
 
       // track info
-      fRegistry.add("Track/lf/positive/hs", "rec. single muon", kTHnSparseF, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.add("Track/lf/positive/hs", "rec. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
       fRegistry.add("Track/lf/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
       fRegistry.add("Track/lf/positive/hTrackType", "track type", kTH1F, {{6, -0.5f, 5.5}}, false);
       fRegistry.add("Track/lf/positive/hDCAxy", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
