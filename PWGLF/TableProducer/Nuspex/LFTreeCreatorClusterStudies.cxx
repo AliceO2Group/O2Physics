@@ -122,7 +122,6 @@ enum DeSelections {
 enum He3Selections {
   kHe3NoCut = 0,
   kHe3NClsIts,
-  kHe3PIDforTrk,
   kHe3PIDtpc,
   kHe3PIDtof,
   kHe3All
@@ -633,19 +632,19 @@ struct LfTreeCreatorClusterStudies {
     for (int i = 0; i < Selections::kAll; i++)
       m_hAnalysis.get<TH1>(HIST("collision_selections"))->GetXaxis()->SetBinLabel(i + 1, collision_selection_labels[i].c_str());
 
-    std::vector<std::string> V0_selection_labels = {"All", "daughter track quality", "V0 daughters dca", "V0 radius", "V0 dca to PV", "V0 cosPA", "V0 mass selection", "V0 daughter DCA to PV"};
+    std::vector<std::string> V0_selection_labels = {"All", "daughter track quality", "V0 daughters dca", "V0 radius", "V0 cosPA", "V0 mass selection", "V0 daughter DCA to PV"};
     for (int i = 0; i < V0Selections::kV0All; i++)
       m_hAnalysis.get<TH1>(HIST("v0_selections"))->GetXaxis()->SetBinLabel(i + 1, V0_selection_labels[i].c_str());
 
-    std::vector<std::string> Casc_selection_labels = {"All", "Casc DCA", "Casc CosPA", "Accepted Omega", "Rejected Xi"};
+    std::vector<std::string> Casc_selection_labels = {"All", "Casc DCA", "Casc CosPA", "Accepted Omega", "Veto Xi", "n#sigma_{TPC} K"};
     for (int i = 0; i < CascSelections::kCascAll; i++)
       m_hAnalysis.get<TH1>(HIST("casc_selections"))->GetXaxis()->SetBinLabel(i + 1, Casc_selection_labels[i].c_str());
 
-    std::vector<std::string> De_selection_labels = {"All", "n clusters ITS", "De PID for tracking", "n#sigma_{TPC} d", "n#sigma_{TOF} d"};
+    std::vector<std::string> De_selection_labels = {"All", "n clusters ITS", "n#sigma_{TPC} d", "n#sigma_{TOF} d"};
     for (int i = 0; i < DeSelections::kDeAll; i++)
       m_hAnalysis.get<TH1>(HIST("de_selections"))->GetXaxis()->SetBinLabel(i + 1, De_selection_labels[i].c_str());
 
-    std::vector<std::string> He3_selection_labels = {"All", "n clusters ITS", "He3 PID for tracking", "n#sigma_{TPC} ^{3}He", "n#sigma_{TOF} ^{3}He"};
+    std::vector<std::string> He3_selection_labels = {"All", "n clusters ITS", "n#sigma_{TPC} ^{3}He", "TOF mass ^{3}He"};
     for (int i = 0; i < He3Selections::kHe3All; i++)
       m_hAnalysis.get<TH1>(HIST("he3_selections"))->GetXaxis()->SetBinLabel(i + 1, He3_selection_labels[i].c_str());
 
@@ -1191,10 +1190,6 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3NClsIts);
-    if (track.pidForTracking() != o2::track::PID::Helium3) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDforTrk);
     if (!selectionPIDtpcHe3(track)) {
       return;
     }
@@ -1250,10 +1245,6 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3NClsIts);
-    if (track.pidForTracking() != o2::track::PID::Helium3) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDforTrk);
     if (!selectionPIDtpcHe3(track)) {
       return;
     }
