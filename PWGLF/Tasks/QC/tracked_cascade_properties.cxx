@@ -125,9 +125,9 @@ struct tracked_cascade_properties {
   {
     double lambda(0);
     double theta = 2.0 * atan(exp(-eta));
-    if (theta <= TMath::Pi()/2.0)
+    if (theta <= TMath::Pi() / 2.0)
       lambda = 0.5 * TMath::Pi() - theta;
-    if (theta > TMath::Pi()/2.0)
+    if (theta > TMath::Pi() / 2.0)
       lambda = theta - 0.5 * TMath::Pi();
     return lambda;
   }
@@ -175,7 +175,7 @@ struct tracked_cascade_properties {
 
       // Track Inclination
       registryQC.fill(HIST("tgl_Distr"), track.tgl());
-      double lambda = track_inclination (track.eta());
+      double lambda = track_inclination(track.eta());
       double lambda1 = atan(track.tgl());
       double cosL = cos(lambda);
       double sinL = sin(lambda);
