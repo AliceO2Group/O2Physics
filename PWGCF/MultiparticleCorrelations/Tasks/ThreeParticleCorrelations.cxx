@@ -177,6 +177,8 @@ struct ThreePartCorr {
   void processMixed(MyFilteredCollisions const& collisions, MyFilteredV0s const& v0s, MyFilteredTracks const& tracks)
   {
 
+    LOGF(info, "Input data Collisions %d, V0s %d, Tracks %d ", collisions.size(), v0s.size(), tracks.size());
+    
     // Start of the Mixed-events Correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pair) {
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(v0_1, track_2))) {
