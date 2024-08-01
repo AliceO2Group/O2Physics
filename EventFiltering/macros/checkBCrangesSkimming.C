@@ -235,9 +235,9 @@ void checkDuplicateTrigger(std::string AnaFileName = "AnalysisResults.root", std
     hOriginalDoubles.SetBinContent(i + 1, numOriginalDouble[i]);
     hOriginalMultiples.SetBinContent(i + 1, numOriginalMultiple[i]);
     if (numOriginal[i] > 0) {
-      hOriginalSinglesRatio.SetBinContent(i + 1, (double)numOriginalSingle[i] / numOriginal[i]);
-      hOriginalDoublesRatio.SetBinContent(i + 1, (double)numOriginalSingle[i] / numOriginal[i]);
-      hOriginalMultiplesRatio.SetBinContent(i + 1, (double)numOriginalMultiple[i] / numOriginal[i]);
+      hOriginalSinglesRatio.SetBinContent(i + 1, static_cast<double>(numOriginalSingle[i]) / numOriginal[i]);
+      hOriginalDoublesRatio.SetBinContent(i + 1, static_cast<double>(numOriginalSingle[i]) / numOriginal[i]);
+      hOriginalMultiplesRatio.SetBinContent(i + 1, static_cast<double>(numOriginalMultiple[i]) / numOriginal[i]);
     } else {
       hOriginalSinglesRatio.SetBinContent(i + 1, 0);
       hOriginalDoublesRatio.SetBinContent(i + 1, 0);
@@ -369,7 +369,7 @@ void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root
         hBCOriginal.Fill(4);
       }
       // std::cout << "------------------------------------------------" << std::endl;
-      if (frame.GetNum() = 1) {
+      if (frame.GetNum() == 1) {
         continue; // Only check singles
       }
       std::vector<bcTuple> skimmedbcs;
