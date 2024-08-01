@@ -447,7 +447,7 @@ struct HfCorrelatorDsHadrons {
       }
 
       auto prong0McPart = candidate.template prong0_as<TracksWithMc>().template mcParticle_as<aod::McParticles>();
-      isCorrectInvMassIpo = ((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs));
+      isCorrectInvMassHypo = ((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs));
 
       double efficiencyWeightD = 1.;
       if (applyEfficiency) {
