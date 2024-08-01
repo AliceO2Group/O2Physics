@@ -1124,6 +1124,7 @@ struct QaEfficiency {
 
     constexpr int histogramIndex = id + pdgSign * nSpecies;
     LOG(debug) << "fillMCParticleHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
+    float radius = std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy());
     if (!isPdgSelected<pdgSign, id>(mcParticle)) { // Selecting PDG code
       return;
     }
@@ -1320,8 +1321,8 @@ struct QaEfficiency {
     std::vector<std::pair<float, float>> radiusIntervals = {{0, 10}, {10, 20}, {20, 50}, {50, 70}, {70, 80}, {80, 100}};
     for (const auto& interval : radiusIntervals) {
       TString intervalName = Form("%g-%g", interval.first, interval.second);
-      fillEfficiencyRadius("ITS-TPC_vsPt_vsRadius_" + intervalName, hPtRadiusIts[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
-      fillEfficiencyRadius("ITS-TPC-TOF_vsPt_vsRadius_" + intervalName, hPtRadiusTof[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
+      fillEfficiencyRadius("ITS-TPC_vsPt_vsRadius_" + intervalName, hPtRadiusItsTpc[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
+      fillEfficiencyRadius("ITS-TPC-TOF_vsPt_vsRadius_" + intervalName, hPtRadiusItsTpcTof[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
     }
   }
   template <bool doFillHistograms, typename CollType>
