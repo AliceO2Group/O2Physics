@@ -24,7 +24,6 @@ using o2::InteractionRecord;
 using o2::dataformats::IRFrame;
 
 // Set the bit of trigger which need to be checked
-std::string runNumber = "";
 const ULong64_t trigger0Bit = BIT(54);
 const ULong64_t trigger1Bit = 0;
 const ULong64_t bcDiffTolerance = 100;
@@ -132,6 +131,13 @@ void checkNearbyBCs(std::vector<selectedFrames>& frames, ULong64_t bcDiffToleran
 // Calulate the ratio of duplicate triggers
 void checkDuplicateTrigger(std::string AnaFileName = "AnalysisResults.root", std::string originalFileName = "bcRanges_fullrun.root", std::string skimmedFileName = "bcRanges_fullrun_skimmed.root")
 {
+  std::string runNumber = "";
+  std::regex re("/5[0-9]*");
+  std::smatch match;
+  if (std::regex_search(originalFileName, match, re)) {
+    // Remove the leading '/'
+    runNumber = match.str().substr(1);
+  }
 
   // Readin labels
   TFile AnaFile(AnaFileName.c_str(), "READ");
@@ -287,13 +293,6 @@ void checkDuplicateTrigger(std::string AnaFileName = "AnalysisResults.root", std
 
 void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root", std::string skimmedFileName = "bcRanges_fullrun_skimmed.root")
 {
-  std::regex re("/5[0-9]*");
-  std::smatch match;
-  if (std::regex_search(originalFileName, match, re)) {
-    // Remove the leading '/'
-    runNumber = match.str().substr(1);
-  }
-
   TH1F hTriggerCounter("hTriggerCounter", "hTriggerCounter", 3, 0.5, 3.5);
   hTriggerCounter.GetXaxis()->SetBinLabel(1, "Original");
   hTriggerCounter.GetXaxis()->SetBinLabel(2, "Skimmed");
