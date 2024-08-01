@@ -1072,7 +1072,7 @@ struct ProbeThirdTrack {
     Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
   } mlConfig;
 
-  Filter tagMcFilter = aod::tagandprobe::isSignal > 0;
+  Filter tagMcFilter = aod::tagandprobe::isSignal > static_cast<uint8_t>(0);
 
   using TracksWithDca = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>;
   using TracksWithDcaMc = soa::Join<TracksWithDca, aod::McTrackLabels>;
