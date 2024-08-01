@@ -123,7 +123,7 @@ struct lnnRecoTask {
   Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  //Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
+  // Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
