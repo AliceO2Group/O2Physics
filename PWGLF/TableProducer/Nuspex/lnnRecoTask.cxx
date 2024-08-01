@@ -120,10 +120,10 @@ struct lnnRecoTask {
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 1, "Minimum rigidity of the triton candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
-  Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
+  Configurable<float> nSigmaMax3H{"nSigmaMax3H", 0.07, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  Configurable<bool> RMSMean{"RMS/Mean", 0.07, "RMS/Mean"};
+  //Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -163,6 +163,7 @@ struct lnnRecoTask {
   std::vector<unsigned int> filledMothers;
   // vector to keep track of the collisions passing the event selection in the MC
   std::vector<bool> isGoodCollision;
+  // vector to armazenade h3Track
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
@@ -525,7 +526,7 @@ struct lnnRecoTask {
 
       hEvents->Fill(0.);
 
-      if (std::abs(!collision.sel8()) || (collision.posZ()) > 10) {
+      if ((collision.posZ()) > 10) {
         continue;
       }
       hEvents->Fill(1.);
