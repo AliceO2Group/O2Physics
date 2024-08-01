@@ -24,7 +24,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "ZorroHelper.h"
 
-
 namespace o2
 {
 namespace ccdb
