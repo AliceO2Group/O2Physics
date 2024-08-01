@@ -136,7 +136,6 @@ struct highmasslambdasvx {
   Configurable<double> ConfDaughDCAMin{"ConfDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for KS0 daughters"};
   // SVX cut
-  Configurable<bool> useCPAlambdac{"useCPAlambdac", true, "use CPA lambdac"};
   Configurable<float> cutCPAlambdac{"cutCPAlambdac", 0.0, "cut CPA lambdac"};
   Configurable<float> cutmaxctaulambdac{"cutmaxctaulambdac", 0.06, "cut max ctau lambdac"};
   // Fill strategy
@@ -612,13 +611,10 @@ struct highmasslambdasvx {
           histos.fill(HIST("hsignCPALambdac"), TMath::Abs(CPAlambdac));
           histos.fill(HIST("hsignprotonDca"), signprotonimpactparameter);
         }
-        if (useCPAlambdac && TMath::Abs(CPAlambdac) < cutCPAlambdac) {
-          continue;
-        }
         firstprimarytrack = firstprimarytrack + 1;
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         v2 = TMath::Cos(2.0 * phiminuspsi);
-        if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
+        if (TMath::Abs(CPAlambdac) > cutCPAlambdac && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
           histos.fill(HIST("hSparseV2SASameEvent_V2_EP"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(protonimpactparameter), lambdaclifetime, occupancy);
           histos.fill(HIST("hSparseV2SASameEvent_V2_IOP"), Lambdac.M(), Lambdac.Pt(), phiminuspsi, TMath::Abs(protonimpactparameter), lambdaclifetime, occupancy);
         }
@@ -634,7 +630,8 @@ struct highmasslambdasvx {
           LambdacRot = ProtonRot + Kshort;
           auto phiminuspsiRot = GetPhiInRange(LambdacRot.Phi() - psiFT0C);
           v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
-          if (LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
+          double CPAlambdacRot = (decaylengthx * LambdacRot.Px() + decaylengthy * LambdacRot.Py() + decaylengthz * LambdacRot.Pz()) / (decaylength * LambdacRot.P());
+          if (TMath::Abs(CPAlambdacRot) > cutCPAlambdac && LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
             histos.fill(HIST("hSparseV2SASameEventRotational_V2_EP"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(protonimpactparameter), lambdaclifetime, occupancy);
             histos.fill(HIST("hSparseV2SASameEventRotational_V2_IOP"), LambdacRot.M(), LambdacRot.Pt(), phiminuspsiRot, TMath::Abs(protonimpactparameter), lambdaclifetime, occupancy);
           }
