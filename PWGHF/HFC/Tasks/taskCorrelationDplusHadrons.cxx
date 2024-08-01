@@ -12,7 +12,7 @@
 /// \file taskCorrelationDplusHadrons.cxx
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -110,11 +110,11 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<float> cutCollPosZMc{"cutCollPosZMc", 10., "max z-vertex position for collision acceptance"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> cfgAssociatedEffCCDBPath{"cfgAssociatedEffCCDBPath", "", "CCDB path for associated efficiency"};
-  Configurable<std::string> cfgPromptEffCCDBPath{"cfgPromptEffCCDBPath", "", "CCDB path for trigger efficiency"};
-  Configurable<std::string> cfgFDEffCCDBPath{"cfgFDEffCCDBPath", "", "CCDB path for trigger efficiency"};
+  Configurable<std::string> associatedEffCcdbPath{"associatedEffCcdbPath", "", "CCDB path for associated efficiency"};
+  Configurable<std::string> promptEffCcdbPath{"promptEffCcdbPath", "", "CCDB path for trigger efficiency"};
+  Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the efficiency files used to query in CCDB"};
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> noLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   // configurable axis definition
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
   ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
@@ -124,9 +124,9 @@ struct HfTaskCorrelationDplusHadrons {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
 
   Service<ccdb::BasicCCDBManager> ccdb;
-  TH1F* mEfficiencyPrompt = nullptr;
-  TH1F* mEfficiencyFD = nullptr;
-  TH1F* mEfficiencyAssociated = nullptr;
+  std::shared_ptr<TH1> mEfficiencyPrompt = nullptr;
+  std::shared_ptr<TH1> mEfficiencyFD = nullptr;
+  std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
 
   HfHelper hfHelper;
 
@@ -252,25 +252,25 @@ struct HfTaskCorrelationDplusHadrons {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
-      ccdb->setCreatedNotAfter(nolaterthan.value);
+      ccdb->setCreatedNotAfter(noLaterThan.value);
 
-      mEfficiencyPrompt = ccdb->getForTimeStamp<TH1F>(cfgPromptEffCCDBPath, timestampCCDB);
+      mEfficiencyPrompt = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(promptEffCcdbPath, timestampCCDB));
       if (mEfficiencyPrompt == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgPromptEffCCDBPath.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", promptEffCcdbPath.value.c_str());
       }
-      LOGF(info, "Loaded trigger efficiency (prompt D) histogram from %s (%p)", cfgPromptEffCCDBPath.value.c_str(), (void*)mEfficiencyPrompt);
+      LOGF(info, "Loaded trigger efficiency (prompt D) histogram from %s", promptEffCcdbPath.value.c_str());
 
-      mEfficiencyFD = ccdb->getForTimeStamp<TH1F>(cfgFDEffCCDBPath, timestampCCDB);
+      mEfficiencyFD = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(fdEffCcdbPath, timestampCCDB));
       if (mEfficiencyFD == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgFDEffCCDBPath.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", fdEffCcdbPath.value.c_str());
       }
-      LOGF(info, "Loaded feed-down D meson efficiency histogram from %s (%p)", cfgFDEffCCDBPath.value.c_str(), (void*)mEfficiencyFD);
+      LOGF(info, "Loaded feed-down D meson efficiency histogram from %s", fdEffCcdbPath.value.c_str());
 
-      mEfficiencyAssociated = ccdb->getForTimeStamp<TH1F>(cfgAssociatedEffCCDBPath, timestampCCDB);
+      mEfficiencyAssociated = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(associatedEffCcdbPath, timestampCCDB));
       if (mEfficiencyAssociated == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgAssociatedEffCCDBPath.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", associatedEffCcdbPath.value.c_str());
       }
-      LOGF(info, "Loaded associated efficiency histogram from %s (%p)", cfgAssociatedEffCCDBPath.value.c_str(), (void*)mEfficiencyAssociated);
+      LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
     }
 
     if (activateQA) {
