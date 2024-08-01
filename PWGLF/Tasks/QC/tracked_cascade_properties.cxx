@@ -134,6 +134,7 @@ struct tracked_cascade_properties {
     for (const auto& trackedCascade : trackedCascades) {
 
       const auto track = trackedCascade.track_as<FullTracks>();
+      const auto trackITS = trackedCascade.itsTrack_as<FullTracks>();
       const auto& casc = trackedCascade.cascade();
       const auto& btrack = casc.bachelor_as<FullTracks>();
       double dx = trackedCascade.decayX();
@@ -150,7 +151,7 @@ struct tracked_cascade_properties {
       double averageClusterSize(0);
       int nCls(0);
       for (int i = 0; i < 7; i++) {
-        int clusterSize = track.itsClsSizeInLayer(i);
+        int clusterSize = trackITS.itsClsSizeInLayer(i);
         averageClusterSize += static_cast<double>(clusterSize);
         if (clusterSize > 0)
           nCls++;
