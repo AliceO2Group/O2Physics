@@ -20,4 +20,4 @@ struct ZorroHelper {
   ClassDefNV(ZorroHelper, 1);
 };
 
-#endif  // EVENTFILTERING_ZORROHELPER_H_
+#endif // EVENTFILTERING_ZORROHELPER_H_
