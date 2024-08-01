@@ -114,7 +114,7 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<std::string> cfgPromptEffCCDBPath{"cfgPromptEffCCDBPath", "", "CCDB path for trigger efficiency"};
   Configurable<std::string> cfgFDEffCCDBPath{"cfgFDEffCCDBPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the efficiency files used to query in CCDB"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   // configurable axis definition
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
   ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
