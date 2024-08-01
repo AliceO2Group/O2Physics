@@ -153,6 +153,11 @@ std::array<std::shared_ptr<TH2>, nParticles> hPtEtaItsTpc;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaTrkItsTpc;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaItsTpcTof;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaGenerated;
+// 2D  Pt vs Radius
+std::array<std::shared_ptr<TH2>, nParticles> hPtRadiusItsTpc;
+std::array<std::shared_ptr<TH2>, nParticles> hPtRadiusTrkItsTpc;
+std::array<std::shared_ptr<TH2>, nParticles> hPtRadiusItsTpcTof;
+std::array<std::shared_ptr<TH2>, nParticles> hPtRadiusGenerated;
 
 struct QaEfficiency {
   // Track/particle selection
@@ -193,9 +198,11 @@ struct QaEfficiency {
   ConfigurableAxis etaBins{"etaBins", {200, -3.f, 3.f}, "Eta binning"};
   ConfigurableAxis phiBins{"phiBins", {200, 0.f, 6.284f}, "Phi binning"};
   ConfigurableAxis yBins{"yBins", {200, -0.5f, 0.5f}, "Y binning"};
+  ConfigurableAxis radiusBins{"radiusBins", {200, 0.f, 100.f}, "Radius binning"};
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
   Configurable<bool> doPtEta{"doPtEta", false, "Flag to produce the efficiency vs pT and Eta"};
+  Configurable<bool> doPtRadius{"doPtRadius", false, "Flag to produce the efficiency vs pT and Radius"}
   Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   // Custom track cuts for debug purposes
   TrackSelection customTrackCuts;
@@ -268,6 +275,7 @@ struct QaEfficiency {
     const AxisSpec axisEta{etaBins, "#it{#eta}"};
     const AxisSpec axisY{yBins, "#it{y}"};
     const AxisSpec axisPhi{phiBins, "#it{#varphi} (rad)"};
+    const AxisSpec axisRadius{radiusBins, "Radius (cm)"};
 
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
@@ -300,7 +308,7 @@ struct QaEfficiency {
                                   partName,
                                   phiMin, phiMax,
                                   yMin, yMax);
-
+ 
     const int histogramIndex = id + pdgSign * nSpecies;
 
     // Pt
@@ -383,6 +391,12 @@ struct QaEfficiency {
       hPtEtaTrkItsTpc[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/asd", PDGs[histogramIndex]), "ITS-TPC tracks (reco) " + tagPtEta, kTH2D, {axisPt, axisEta});
       hPtEtaItsTpcTof[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/asd", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
       hPtEtaGenerated[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/asd", PDGs[histogramIndex]), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
+    }
+
+    if (doPtRadius)  {
+      hPtRadiusItsTpc[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/radius/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
+      hPtRadiusItsTpcTof[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/radius/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
+      hPtRadiusGenerated[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/radius/generated", PDGs[histogramIndex]), "Generated " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
     }
 
     LOG(info) << "Done with making histograms for particle: " << partName;
@@ -499,6 +513,11 @@ struct QaEfficiency {
       makeEfficiency2D("ITS-TPC_vsPt_vsEta_Trk", hPtEtaTrkItsTpc[histogramIndex]);
       makeEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", hPtEtaItsTpcTof[histogramIndex]);
     }
+    if (doPtRadius) {
+      makeEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpc[histogramIndex]);
+      makeEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTof[histogramIndex]);
+    }
+
 
     LOG(info) << "Done with making histograms for particle: " << partName << " for efficiencies";
   }
@@ -956,6 +975,7 @@ struct QaEfficiency {
     LOG(debug) << "fillMCTrackHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
     const o2::aod::McParticles::iterator& mcParticle = track.mcParticle();
     const CollisionCandidatesMC::iterator& collision = track.collision_as<CollisionCandidatesMC>();
+    float radius = std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy());
     if (numSameCollision) {
       if (!collision.has_mcCollision()) {
         return;
@@ -995,6 +1015,12 @@ struct QaEfficiency {
         hPtEtaTrkItsTpc[histogramIndex]->Fill(track.pt(), track.eta());
         if (passedTOF) {
           hPtEtaItsTpcTof[histogramIndex]->Fill(mcParticle.pt(), mcParticle.eta());
+        }
+      }
+      if (doPtRadius) {
+        hPtRadiusItsTpc[histogramIndex]->Fill(mcParticle.pt(), radius);
+        if (passedTOF) {
+          hPtRadiusItsTpcTof[histogramIndex]->Fill(mcParticle.pt(), radius);
         }
       }
     }
@@ -1154,6 +1180,9 @@ struct QaEfficiency {
     if (doPtEta) {
       hPtEtaGenerated[histogramIndex]->Fill(mcParticle.pt(), mcParticle.eta());
     }
+    if (doPtRadius) {
+      hPtRadiusGenerated[histogramIndex]->Fill(mcParticle.pt(), radius);
+    }
   }
 
   template <int pdgSign, o2::track::PID::ID id>
@@ -1270,8 +1299,34 @@ struct QaEfficiency {
     fillEfficiency2D("ITS-TPC_vsPt_vsEta", hPtEtaItsTpc[histogramIndex], hPtEtaGenerated[histogramIndex]);
     fillEfficiency2D("ITS-TPC_vsPt_vsEta_Trk", hPtEtaTrkItsTpc[histogramIndex], hPtEtaGenerated[histogramIndex]);
     fillEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", hPtEtaItsTpcTof[histogramIndex], hPtEtaGenerated[histogramIndex]);
+    
+    if (!doPtRadius) {
+      return;
+    }
+    auto fillEfficiencyRadius = [&](const TString effname, auto num, auto den, float minRadius, float maxRadius) {
+    TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+    if (!eff) {
+      LOG(warning) << "Cannot find TEfficiency " << effname;
+      return;
+    }
+    // Set total and passed histograms only for the specified radius interval
+    for (int xbin = 1; xbin <= num->GetNbinsX(); ++xbin) {
+      for (int ybin = 1; ybin <= num->GetNbinsY(); ++ybin) {
+        float radius = num->GetYaxis()->GetBinCenter(ybin);
+        if (radius >= minRadius && radius < maxRadius) {
+          eff->SetTotalHistogram(*den, "f");
+          eff->SetPassedHistogram(*num, "f");
+        }
+      }
+    }
+  };
+  std::vector<std::pair<float, float>> radiusIntervals = {{0, 10}, {10, 20}, {20, 50}, {50, 70},  {70, 80},  {80, 100}};
+  for (const auto& interval : radiusIntervals) {
+  TString intervalName = Form("%g-%g", interval.first, interval.second);
+  fillEfficiencyRadius("ITS-TPC_vsPt_vsRadius_" + intervalName, hPtRadiusIts[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
+  fillEfficiencyRadius("ITS-TPC-TOF_vsPt_vsRadius_" + intervalName, hPtRadiusTof[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
   }
-
+  }
   template <bool doFillHistograms, typename CollType>
   bool isCollisionSelected(const CollType& collision)
   {
