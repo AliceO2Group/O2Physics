@@ -538,7 +538,7 @@ struct HfCorrelatorDsHadrons {
             }
           }
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
-        } else if (isCorrectInvMassIpo && candidate.isSelDsToPiKK() >= selectionFlagDs) {
+        } else if (isCorrectInvMassHypo && candidate.isSelDsToPiKK() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
                             candidate.pt(),
