@@ -1099,8 +1099,8 @@ struct LfTreeCreatorClusterStudies {
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
-    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe())
-      m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe(track));
+    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
+    m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe(track));
     m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), (track.tpcInnerParam() - track.p()) / track.tpcInnerParam());
 
     uint8_t partID = PartID::de;
