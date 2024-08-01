@@ -59,7 +59,7 @@ struct femtoUniverseEfficiencyBase {
   /// Configurables for both particles
   Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
   Configurable<bool> ConfOnlyTPCnSigma{"ConfOnlyTPCnSigma", false, "Higher limit for |Eta| (the same for both particles)"};
-  
+
   /// Particle 1
   Configurable<int32_t> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<uint8_t> ConfParticleTypePartOne{"ConfParticleTypePartOne", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 1 - particle type"};
@@ -212,19 +212,19 @@ struct femtoUniverseEfficiencyBase {
 
   bool IsPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
-      if (mom < 0.5) {
-        if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaTPCPion) {
-          return true;
-        } else {
-          return false;
-        }
-      } else if (mom > 0.5) {
-        if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
-          return true;
-        } else {
-          return false;
-        }
+    if (mom < 0.5) {
+      if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaTPCPion) {
+        return true;
+      } else {
+        return false;
       }
+    } else if (mom > 0.5) {
+      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
+        return true;
+      } else {
+        return false;
+      }
+    }
     return false;
   }
 
@@ -247,7 +247,6 @@ struct femtoUniverseEfficiencyBase {
         return false;
     }
   }
-
 
   bool invMLambda(float invMassLambda, float invMassAntiLambda)
   {
@@ -422,7 +421,7 @@ struct femtoUniverseEfficiencyBase {
       const auto& negChild = parts.iteratorAt(part.index() - 1);
 
       /// Daughters that do not pass this condition are not selected
-      if (!IsProtonNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !IsPionNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion))) //give momentum as 0 to only check TPC nSigma, not combined with TOF
+      if (!IsProtonNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !IsPionNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion))) // give momentum as 0 to only check TPC nSigma, not combined with TOF
         continue;
 
       trackHistoV0OneRec.fillQA<isMC, true>(part);
@@ -536,4 +535,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   };
   return workflow;
 }
-
