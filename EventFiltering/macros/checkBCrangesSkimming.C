@@ -24,8 +24,8 @@ using o2::InteractionRecord;
 using o2::dataformats::IRFrame;
 
 // Set the bit of trigger which need to be checked
-const ULong64_t trigger0Bit = BIT(54);
-const ULong64_t trigger1Bit = 0;
+const ULong64_t Trigger0BIT = BIT(54);
+const ULong64_t Trigger1BIT = 0;
 const ULong64_t bcDiffTolerance = 100;
 const char outputFileName[15] = "output.root";
 
@@ -330,8 +330,8 @@ void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root
   auto t1 = std::chrono::steady_clock::now();
   TFile originalFile(originalFileName.c_str(), "READ");
   TFile skimmedFile(skimmedFileName.c_str(), "READ");
-  auto originalFrames = getSelectedFrames(originalFile, trigger0Bit, trigger1Bit);
-  auto skimmedFrames = getSelectedFrames(skimmedFile, trigger0Bit, trigger1Bit);
+  auto originalFrames = getSelectedFrames(originalFile, Trigger0BIT, Trigger1BIT);
+  auto skimmedFrames = getSelectedFrames(skimmedFile, Trigger0BIT, Trigger1BIT);
   originalFile.Close();
   skimmedFile.Close();
   auto t2 = std::chrono::steady_clock::now();
@@ -348,7 +348,7 @@ void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root
   auto t5 = std::chrono::steady_clock::now();
   std::vector<bcTuple> bcSet;
   for (auto frame : originalFrames) {
-    if (frame.selMask[0] & trigger0Bit) {
+    if (frame.selMask[0] & Trigger0BIT || frame.selMask[1] & Trigger1BIT) {
       bool found = false;
       hTriggerCounter.Fill(1);
       hBCOriginal.Fill(1);
@@ -368,7 +368,7 @@ void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root
         hBCOriginal.Fill(4);
       }
       // std::cout << "------------------------------------------------" << std::endl;
-      if (frame.GetNum() == 1) {
+      if (frame.GetNum() != 1) {
         continue; // Only check singles
       }
       std::vector<bcTuple> skimmedbcs;
@@ -436,7 +436,7 @@ void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root
 
   bcSet.clear();
   for (auto& skimmedFrame : skimmedFrames) {
-    if (skimmedFrame.selMask[0] & trigger0Bit || skimmedFrame.selMask[1] & trigger1Bit) {
+    if (skimmedFrame.selMask[0] & Trigger0BIT || skimmedFrame.selMask[1] & Trigger1BIT) {
       hTriggerCounter.Fill(2);
       hBCSkimmed.Fill(1);
       auto p1 = std::find_if(bcSet.begin(), bcSet.end(), [&](const auto& val) { return val.bcAO2D == skimmedFrame.bcAO2D; });
