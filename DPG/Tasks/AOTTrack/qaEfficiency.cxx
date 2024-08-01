@@ -202,7 +202,7 @@ struct QaEfficiency {
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
   Configurable<bool> doPtEta{"doPtEta", false, "Flag to produce the efficiency vs pT and Eta"};
-  Configurable<bool> doPtRadius{"doPtRadius", false, "Flag to produce the efficiency vs pT and Radius"}
+  Configurable<bool> doPtRadius{"doPtRadius", false, "Flag to produce the efficiency vs pT and Radius"};
   Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   // Custom track cuts for debug purposes
   TrackSelection customTrackCuts;
@@ -308,7 +308,6 @@ struct QaEfficiency {
                                   partName,
                                   phiMin, phiMax,
                                   yMin, yMax);
- 
     const int histogramIndex = id + pdgSign * nSpecies;
 
     // Pt
@@ -393,7 +392,7 @@ struct QaEfficiency {
       hPtEtaGenerated[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/asd", PDGs[histogramIndex]), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
     }
 
-    if (doPtRadius)  {
+    if (doPtRadius) {
       hPtRadiusItsTpc[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/radius/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
       hPtRadiusItsTpcTof[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/radius/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
       hPtRadiusGenerated[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/radius/generated", PDGs[histogramIndex]), "Generated " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
@@ -517,7 +516,6 @@ struct QaEfficiency {
       makeEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpc[histogramIndex]);
       makeEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTof[histogramIndex]);
     }
-
 
     LOG(info) << "Done with making histograms for particle: " << partName << " for efficiencies";
   }
@@ -1304,27 +1302,27 @@ struct QaEfficiency {
       return;
     }
     auto fillEfficiencyRadius = [&](const TString effname, auto num, auto den, float minRadius, float maxRadius) {
-    TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
-    if (!eff) {
-      LOG(warning) << "Cannot find TEfficiency " << effname;
-      return;
-    }
-    // Set total and passed histograms only for the specified radius interval
-    for (int xbin = 1; xbin <= num->GetNbinsX(); ++xbin) {
-      for (int ybin = 1; ybin <= num->GetNbinsY(); ++ybin) {
-        float radius = num->GetYaxis()->GetBinCenter(ybin);
-        if (radius >= minRadius && radius < maxRadius) {
-          eff->SetTotalHistogram(*den, "f");
-          eff->SetPassedHistogram(*num, "f");
-        }
-      }
-    }
-  };
-  std::vector<std::pair<float, float>> radiusIntervals = {{0, 10}, {10, 20}, {20, 50}, {50, 70},  {70, 80},  {80, 100}};
-  for (const auto& interval : radiusIntervals) {
-  TString intervalName = Form("%g-%g", interval.first, interval.second);
-  fillEfficiencyRadius("ITS-TPC_vsPt_vsRadius_" + intervalName, hPtRadiusIts[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
-  fillEfficiencyRadius("ITS-TPC-TOF_vsPt_vsRadius_" + intervalName, hPtRadiusTof[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
+     TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+     if (!eff) {
+       LOG(warning) << "Cannot find TEfficiency " << effname;
+       return;
+     }
+     // Set total and passed histograms only for the specified radius interval
+     for (int xbin = 1; xbin <= num->GetNbinsX(); ++xbin) {
+       for (int ybin = 1; ybin <= num->GetNbinsY(); ++ybin) {
+         float radius = num->GetYaxis()->GetBinCenter(ybin);
+         if (radius >= minRadius && radius < maxRadius) {
+           eff->SetTotalHistogram(*den, "f");
+           eff->SetPassedHistogram(*num, "f");
+         }
+       }
+     }
+   };
+   std::vector<std::pair<float, float>> radiusIntervals = {{0, 10}, {10, 20}, {20, 50}, {50, 70},  {70, 80},  {80, 100}};
+   for (const auto& interval : radiusIntervals) {
+   TString intervalName = Form("%g-%g", interval.first, interval.second);
+   fillEfficiencyRadius("ITS-TPC_vsPt_vsRadius_" + intervalName, hPtRadiusIts[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
+   fillEfficiencyRadius("ITS-TPC-TOF_vsPt_vsRadius_" + intervalName, hPtRadiusTof[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
   }
   }
   template <bool doFillHistograms, typename CollType>
