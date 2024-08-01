@@ -513,7 +513,7 @@ struct HfCorrelatorDsHadrons {
         bool isPhysicalPrimary = false;
         int trackOrigin = -1;
         // DsToKKPi and DsToPiKK division
-        if (isCorrectInvMassIpo && candidate.isSelDsToKKPi() >= selectionFlagDs) {
+        if (isCorrectInvMassHypo && candidate.isSelDsToKKPi() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
                             candidate.pt(),
