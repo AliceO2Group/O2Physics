@@ -256,9 +256,9 @@ void checkDuplicateTrigger(std::string AnaFileName = "AnalysisResults.root", std
     hSkimmedDoubles.SetBinContent(i + 1, numSkimmedDouble[i]);
     hSkimmedMultiples.SetBinContent(i + 1, numSkimmedMultiple[i]);
     if (numSkimmed[i] > 0) {
-      hSkimmedSinglesRatio.SetBinContent(i + 1, (double)numSkimmedSingle[i] / numSkimmed[i]);
-      hSkimmedDoublesRatio.SetBinContent(i + 1, (double)numSkimmedDouble[i] / numSkimmed[i]);
-      hSkimmedMultiplesRatio.SetBinContent(i + 1, (double)numSkimmedMultiple[i] / numSkimmed[i]);
+      hSkimmedSinglesRatio.SetBinContent(i + 1, static_cast<double>(numSkimmedSingle[i]) / numSkimmed[i]);
+      hSkimmedDoublesRatio.SetBinContent(i + 1, static_cast<double>(numSkimmedDouble[i]) / numSkimmed[i]);
+      hSkimmedMultiplesRatio.SetBinContent(i + 1, static_cast<double>(numSkimmedMultiple[i]) / numSkimmed[i]);
     } else {
       hSkimmedSinglesRatio.SetBinContent(i + 1, 0);
       hSkimmedDoublesRatio.SetBinContent(i + 1, 0);
