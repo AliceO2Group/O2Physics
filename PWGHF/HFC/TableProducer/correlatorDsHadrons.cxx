@@ -431,7 +431,7 @@ struct HfCorrelatorDsHadrons {
     // MC reco level
     bool isDsPrompt = false;
     bool isDsSignal = false;
-    bool isCorrectInvMassIpo = false;
+    bool isCorrectInvMassHypo = false;
     bool isDecayChan = false;
     bool isAlreadyFilledEvent = false;
     float multiplicityFT0M = collision.multFT0M();
