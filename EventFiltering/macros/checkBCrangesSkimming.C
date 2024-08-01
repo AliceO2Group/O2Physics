@@ -152,7 +152,6 @@ void checkDuplicateTrigger(std::string AnaFileName = "AnalysisResults.root", std
   std::vector<std::string> sel_labels;
   std::vector<int> numOriginal, numSkimmed, numOriginalSingle, numSkimmedSingle, numOriginalDouble, numSkimmedDouble, numOriginalMultiple, numSkimmedMultiple;
   for (int i = 0; i < labels.size(); i++) {
-    std::cout << "i:" << i << std::endl;
     ULong64_t trigger0Bit = 0, trigger1Bit = 0;
     int triggerBit = binNum[i] - 2;
     if (triggerBit < 64) {
