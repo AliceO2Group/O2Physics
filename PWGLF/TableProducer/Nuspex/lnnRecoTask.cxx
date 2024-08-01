@@ -155,7 +155,7 @@ struct lnnRecoTask {
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
   ConfigurableAxis centBins{"centBins", {100, 0.f, 100.f}, "Binning for centrality"};
-  ConfigurableAxis TritMomBins {"TritMom", {100, 0.f, 20.f}, "Binning for Triton TPC momentum"};
+  ConfigurableAxis TritMomBins{"TritMom", {100, 0.f, 20.f}, "Binning for Triton TPC momentum"};
 
   // std vector of candidates
   std::vector<lnnCandidate> lnnCandidates;
