@@ -1297,33 +1297,33 @@ struct QaEfficiency {
     fillEfficiency2D("ITS-TPC_vsPt_vsEta", hPtEtaItsTpc[histogramIndex], hPtEtaGenerated[histogramIndex]);
     fillEfficiency2D("ITS-TPC_vsPt_vsEta_Trk", hPtEtaTrkItsTpc[histogramIndex], hPtEtaGenerated[histogramIndex]);
     fillEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", hPtEtaItsTpcTof[histogramIndex], hPtEtaGenerated[histogramIndex]);
-  
+    
     if (!doPtRadius) {
       return;
     }
     auto fillEfficiencyRadius = [&](const TString effname, auto num, auto den, float minRadius, float maxRadius) {
-    TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
-    if (!eff) {
-      LOG(warning) << "Cannot find TEfficiency " << effname;
-      return;
-     }
-     // Set total and passed histograms only for the specified radius interval
-     for (int xbin = 1; xbin <= num->GetNbinsX(); ++xbin) {
-       for (int ybin = 1; ybin <= num->GetNbinsY(); ++ybin) {
-         float radius = num->GetYaxis()->GetBinCenter(ybin);
-         if (radius >= minRadius && radius < maxRadius) {
-           eff->SetTotalHistogram(*den, "f");
-           eff->SetPassedHistogram(*num, "f");
-         }
+     TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+     if (!eff) {
+       LOG(warning) << "Cannot find TEfficiency " << effname;
+       return;
+      }
+      // Set total and passed histograms only for the specified radius interval
+      for (int xbin = 1; xbin <= num->GetNbinsX(); ++xbin) {
+        for (int ybin = 1; ybin <= num->GetNbinsY(); ++ybin) {
+          float radius = num->GetYaxis()->GetBinCenter(ybin);
+          if (radius >= minRadius && radius < maxRadius) {
+            eff->SetTotalHistogram(*den, "f");
+            eff->SetPassedHistogram(*num, "f");
+          }
         }
       }
     };
-    std::vector<std::pair<float, float>> radiusIntervals = {{0, 10}, {10, 20}, {20, 50}, {50, 70},  {70, 80},  {80, 100}};
+    std::vector<std::pair<float, float>> radiusIntervals = {{0, 10}, {10, 20}, {20, 50}, {50, 70}, {70, 80}, {80, 100}};
     for (const auto& interval : radiusIntervals) {
       TString intervalName = Form("%g-%g", interval.first, interval.second);
       fillEfficiencyRadius("ITS-TPC_vsPt_vsRadius_" + intervalName, hPtRadiusIts[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
       fillEfficiencyRadius("ITS-TPC-TOF_vsPt_vsRadius_" + intervalName, hPtRadiusTof[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
-   }
+    }
   }
   template <bool doFillHistograms, typename CollType>
   bool isCollisionSelected(const CollType& collision)
