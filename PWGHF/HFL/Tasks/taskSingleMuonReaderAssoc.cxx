@@ -90,7 +90,7 @@ struct HfTaskSingleMuonReader {
   void runMuonSelAssoc(ReducedMuonsAssoc const& assocs, TCollisions const& collisions, TMuons const&)
   {
     for (const auto& collision : collisions) {
-          registry.fill(HIST("hVtxZ"), collision.posZ());
+      registry.fill(HIST("hVtxZ"), collision.posZ());
     }
     for (const auto& assoc : assocs) {
       auto muon = assoc.template reducedmuon_as<TMuons>();
@@ -130,7 +130,7 @@ struct HfTaskSingleMuonReader {
   void runMuonSelMcAssoc(ReducedMuonsAssoc const& assocs, TCollisions const& collisions, TMuons const& muons)
   {
     for (const auto& collision : collisions) {
-          registry.fill(HIST("hVtxZ"), collision.posZ());
+      registry.fill(HIST("hVtxZ"), collision.posZ());
     }
     for (const auto& assoc : assocs) {
       auto muon = assoc.template reducedmuon_as<TMuons>();
