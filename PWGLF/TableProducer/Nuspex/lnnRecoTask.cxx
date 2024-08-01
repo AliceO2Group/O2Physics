@@ -120,7 +120,7 @@ struct lnnRecoTask {
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 1, "Minimum rigidity of the triton candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
-  Configurable<float> nSigmaMax3H{"nSigmaMax3H", 0.07, "triton dEdx cut (n sigma)"};
+  Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
   //Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
