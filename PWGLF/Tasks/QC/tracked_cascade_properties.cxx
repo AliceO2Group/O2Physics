@@ -82,38 +82,24 @@ struct tracked_cascade_properties {
 
   void init(InitContext const&)
   {
-    registryQC.add("matchingChi2", "matching Chi2", HistType::kTH1F, {{200, 0, 400, "#chi^{2}_{matching}"}});
-    registryQC.add("topologyChi2", "topology Chi2", HistType::kTH1F, {{200, 0, 20, "#chi^{2}_{topology}"}});
-    registryQC.add("nITS_Xi", "nITS Xi", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
-    registryQC.add("nITS_Omega", "nITS Omega", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
-    registryQC.add("tgl_Distr", "tgl_Distr", HistType::kTH1F, {{200, 0, 200, "tan (#lambda)"}});
-    registryQC.add("nITSclusters", "nITSclusters", HistType::kTH1F, {{7, 0, 7, "n_{cls}^{ITS}"}});
-    registryQC.add("clusterSize", "clusterSize", HistType::kTH1F, {{200, 0, 200, "cluster size ITS"}});
-    registryQC.add("decayXY", "decayXY", HistType::kTH2F, {{200, -50, 50, "x"}, {200, -50, 50, "y"}});
-    registryQC.add("signBachelor", "signBachelor", HistType::kTH1F, {{4, -2, 2, "sign"}});
-    registryQC.add("ITSclusterSizeTrkCasc", "ITSclusterSizeTrkCasc", HistType::kTH1F, {{200, 0, 20, "ITS cluster Size"}});
-    registryQC.add("DeltaLambda", "DeltaLambda", HistType::kTH1F, {{200, -0.1, 0.1, "#lambda - #lambda_{1}"}});
+    registryQC.add("matchingChi2", "matching Chi2", HistType::kTH1F, {{200, 0,1000, "#chi^{2}_{matching}"}});
+    registryQC.add("topologyChi2", "topology Chi2", HistType::kTH1F, {{500, 0, 0.5, "#chi^{2}_{topology}"}});
+    registryQC.add("nITScls_vs_p_xi", "nITS Xi", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
+    registryQC.add("nITScls_vs_p_omega", "nITS Omega", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
+    registryQC.add("decayXY", "decayXY", HistType::kTH2F, {{500, -50, 50, "x"}, {500, -50, 50, "y"}});
+    registryQC.add("deltaNclsITS", "deltaNclsITS", HistType::kTH1F, {{10, -10, 10, "#DeltaN"}});
 
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{5, 0, 5, "Event Cuts"}});
-    registryData.add("xi_pos_clustersize", "xi_pos_clustersize", HistType::kTH3F, {{100, 0.0, 100, "ITS cluster size"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
-    registryData.add("xi_neg_clustersize", "xi_neg_clustersize", HistType::kTH3F, {{100, 0.0, 100, "ITS cluster size"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
-    registryData.add("omega_pos_clustersize", "omega_pos_clustersize", HistType::kTH3F, {{100, 0.0, 100, "ITS cluster size"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
-    registryData.add("omega_neg_clustersize", "omega_neg_clustersize", HistType::kTH3F, {{100, 0.0, 100, "ITS cluster size"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
 
-    registryData.add("xi_pos_avgclustersize", "xi_pos_avgclustersize", HistType::kTH3F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
-    registryData.add("xi_neg_avgclustersize", "xi_neg_avgclustersize", HistType::kTH3F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
-    registryData.add("omega_pos_avgclustersize", "omega_pos_avgclustersize", HistType::kTH3F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
-    registryData.add("omega_neg_avgclustersize", "omega_neg_avgclustersize", HistType::kTH3F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
+    registryData.add("xi_pos_avgclustersize", "xi_pos_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
+    registryData.add("xi_neg_avgclustersize", "xi_neg_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
+    registryData.add("omega_pos_avgclustersize", "omega_pos_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
+    registryData.add("omega_neg_avgclustersize", "omega_neg_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
 
-    registryData.add("xi_pos_avgclustersize_cosL", "xi_pos_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}});
-    registryData.add("xi_neg_avgclustersize_cosL", "xi_neg_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}});
-    registryData.add("omega_pos_avgclustersize_cosL", "omega_pos_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}});
-    registryData.add("omega_neg_avgclustersize_cosL", "omega_neg_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}});
-
-    registryData.add("xi_pos_avgclustersize_sinL", "xi_pos_avgclustersize_sinL", HistType::kTH2F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT sin(#lambda)"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}});
-    registryData.add("xi_neg_avgclustersize_sinL", "xi_neg_avgclustersize_sinL", HistType::kTH2F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT sin(#lambda)"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}});
-    registryData.add("omega_pos_avgclustersize_sinL", "omega_pos_avgclustersize_sinL", HistType::kTH2F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT sin(#lambda)"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}});
-    registryData.add("omega_neg_avgclustersize_sinL", "omega_neg_avgclustersize_sinL", HistType::kTH2F, {{100, 0.0, 20.0, "#LT ITS cluster size #GT sin(#lambda)"}, {100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}});
+    registryData.add("xi_pos_avgclustersize_cosL", "xi_pos_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("xi_neg_avgclustersize_cosL", "xi_neg_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("omega_pos_avgclustersize_cosL", "omega_pos_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("omega_neg_avgclustersize_cosL", "omega_neg_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
 
     registryData.add("xi_mass_pos", "xi_mass_pos", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("xi_mass_neg", "xi_mass_neg", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
@@ -147,7 +133,7 @@ struct tracked_cascade_properties {
 
     for (const auto& trackedCascade : trackedCascades) {
 
-      const auto track = trackedCascade.itsTrack_as<FullTracks>();
+      const auto track = trackedCascade.track_as<FullTracks>();
       const auto& casc = trackedCascade.cascade();
       const auto& btrack = casc.bachelor_as<FullTracks>();
       double dx = trackedCascade.decayX();
@@ -158,71 +144,51 @@ struct tracked_cascade_properties {
 
       registryQC.fill(HIST("matchingChi2"), trackedCascade.matchingChi2());
       registryQC.fill(HIST("topologyChi2"), trackedCascade.topologyChi2());
-      registryQC.fill(HIST("nITSclusters"), track.itsNCls());
-      registryQC.fill(HIST("ITSclusterSizeTrkCasc"), trackedCascade.itsClsSize());
       registryQC.fill(HIST("decayXY"), dx, dy);
-      registryQC.fill(HIST("signBachelor"), btrack.sign());
 
       // Calculate (Average) Cluster Size
-      int clusterSize[7];
       double averageClusterSize(0);
+      int nCls(0);
       for (int i = 0; i < 7; i++) {
-        clusterSize[i] = track.itsClsSizeInLayer(i);
-        registryQC.fill(HIST("clusterSize"), clusterSize[i]);
-        averageClusterSize += static_cast<double>(clusterSize[i]);
+        int clusterSize = track.itsClsSizeInLayer(i);
+        averageClusterSize += static_cast<double>(clusterSize);
+        if (clusterSize > 0)
+          nCls++;
       }
       averageClusterSize = averageClusterSize / static_cast<double>(track.itsNCls());
 
+      registryQC.fill(HIST("deltaNclsITS"), nCls - track.itsNCls());
+
       // Track Inclination
-      registryQC.fill(HIST("tgl_Distr"), track.tgl());
       double lambda = track_inclination(track.eta());
-      double lambda1 = atan(track.tgl());
-      double cosL = cos(lambda);
-      double sinL = sin(lambda);
-      registryQC.fill(HIST("DeltaLambda"), lambda - lambda1);
 
       // Xi
       if (trackedCascade.xiMass() > mMin_xi && trackedCascade.xiMass() < mMax_xi) {
-        registryQC.fill(HIST("nITS_Xi"), track.p(), track.itsNCls());
+        registryQC.fill(HIST("nITScls_vs_p_xi"), track.p(), track.itsNCls());
         if (btrack.sign() > 0) {
-          for (int i = 0; i < 7; i++) {
-            registryData.fill(HIST("xi_pos_clustersize"), clusterSize[i], track.p(), track.eta());
-          }
-          registryData.fill(HIST("xi_pos_avgclustersize"), averageClusterSize, track.p(), track.eta());
-          registryData.fill(HIST("xi_pos_avgclustersize_cosL"), averageClusterSize * cosL, track.p());
-          registryData.fill(HIST("xi_pos_avgclustersize_sinL"), averageClusterSize * sinL, track.p());
+          registryData.fill(HIST("xi_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
+          registryData.fill(HIST("xi_pos_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
           registryData.fill(HIST("xi_mass_pos"), track.p(), trackedCascade.xiMass());
         }
         if (btrack.sign() < 0) {
-          for (int i = 0; i < 7; i++) {
-            registryData.fill(HIST("xi_neg_clustersize"), clusterSize[i], track.p(), track.eta());
-          }
-          registryData.fill(HIST("xi_neg_avgclustersize"), averageClusterSize, track.p(), track.eta());
-          registryData.fill(HIST("xi_neg_avgclustersize_cosL"), averageClusterSize * cosL, track.p());
-          registryData.fill(HIST("xi_neg_avgclustersize_sinL"), averageClusterSize * sinL, track.p());
+          registryData.fill(HIST("xi_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
+          registryData.fill(HIST("xi_neg_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
           registryData.fill(HIST("xi_mass_neg"), track.p(), trackedCascade.xiMass());
         }
+        continue;
       }
 
       // Omega
       if (trackedCascade.omegaMass() > mMin_omega && trackedCascade.omegaMass() < mMax_omega) {
-        registryQC.fill(HIST("nITS_Omega"), track.p(), track.itsNCls());
+        registryQC.fill(HIST("nITScls_vs_p_omega"), track.p(), track.itsNCls());
         if (btrack.sign() > 0) {
-          for (int i = 0; i < 7; i++) {
-            registryData.fill(HIST("omega_pos_clustersize"), clusterSize[i], track.p(), track.eta());
-          }
-          registryData.fill(HIST("omega_pos_avgclustersize"), averageClusterSize, track.p(), track.eta());
-          registryData.fill(HIST("omega_pos_avgclustersize_cosL"), averageClusterSize * cosL, track.p());
-          registryData.fill(HIST("omega_pos_avgclustersize_sinL"), averageClusterSize * sinL, track.p());
+          registryData.fill(HIST("omega_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
+          registryData.fill(HIST("omega_pos_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
           registryData.fill(HIST("omega_mass_pos"), track.p(), trackedCascade.omegaMass());
         }
         if (btrack.sign() < 0) {
-          for (int i = 0; i < 7; i++) {
-            registryData.fill(HIST("omega_neg_clustersize"), clusterSize[i], track.p(), track.eta());
-          }
-          registryData.fill(HIST("omega_neg_avgclustersize"), averageClusterSize, track.p(), track.eta());
-          registryData.fill(HIST("omega_neg_avgclustersize_cosL"), averageClusterSize * cosL, track.p());
-          registryData.fill(HIST("omega_neg_avgclustersize_sinL"), averageClusterSize * sinL, track.p());
+          registryData.fill(HIST("omega_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
+          registryData.fill(HIST("omega_neg_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
           registryData.fill(HIST("omega_mass_neg"), track.p(), trackedCascade.omegaMass());
         }
       }
