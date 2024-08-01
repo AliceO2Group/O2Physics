@@ -77,6 +77,9 @@ struct cascqaanalysis {
   // QA histograms for the multiplicity estimation
   Configurable<bool> multQA{"multQA", 0, "0 - not to do QA, 1 - do the QA"};
 
+  // QA histograms for cascade rec.
+  Configurable<bool> candidateQA{"candidateQA", 1, "0 - not to do QA, 1 - do the QA"};
+
   // Necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
@@ -108,6 +111,7 @@ struct cascqaanalysis {
     AxisSpec multNTracksAxis = {500, 0, 500, "N_{tracks}"};
     AxisSpec signalFT0MAxis = {10000, 0, 40000, "FT0M amplitude"};
     AxisSpec signalFV0AAxis = {10000, 0, 40000, "FV0A amplitude"};
+    AxisSpec nCandidates = {30, -0.5, 29.5, "N_{cand.}"};
 
     TString hCandidateCounterLabels[4] = {"All candidates", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
@@ -144,6 +148,10 @@ struct cascqaanalysis {
     }
 
     registry.add("hCentFT0M_rec", "hCentFT0M_rec", {HistType::kTH2F, {centFT0MAxis, eventTypeAxis}});
+
+    if (candidateQA) {
+      registry.add("hNcandidates", "hNcandidates", {HistType::kTH3F, {nCandidates, centFT0MAxis, {2, -0.5f, 1.5f}}});
+    }
 
     if (multQA) {
       if (isMC) {
@@ -362,12 +370,15 @@ struct cascqaanalysis {
     }
 
     float lEventScale = scalefactor;
+    int nCandSel = 0;
+    int nCandAll = 0;
 
     for (const auto& casc : Cascades) {              // loop over Cascades
       registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
-
+      nCandAll++;
       if (AcceptCascCandidate<DauTracks>(casc, collision.posX(), collision.posY(), collision.posZ())) {
         registry.fill(HIST("hCandidateCounter"), 1.5); // passed topo cuts
+        nCandSel++;
         // Fill table
         if (fRand->Rndm() < lEventScale) {
           auto posdau = casc.posTrack_as<DauTracks>();
@@ -419,6 +430,11 @@ struct cascqaanalysis {
                      posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), evFlag);
         }
       }
+    }
+
+    if (candidateQA) {
+      registry.fill(HIST("hNcandidates"), nCandAll, collision.centFT0M(), 0);
+      registry.fill(HIST("hNcandidates"), nCandSel, collision.centFT0M(), 1);
     }
   }
 
@@ -483,12 +499,15 @@ struct cascqaanalysis {
     }
 
     float lEventScale = scalefactor;
+    int nCandSel = 0;
+    int nCandAll = 0;
 
     for (const auto& casc : Cascades) {              // loop over Cascades
       registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
-
+      nCandAll++;
       if (AcceptCascCandidate<DauTracks>(casc, collision.posX(), collision.posY(), collision.posZ())) {
         registry.fill(HIST("hCandidateCounter"), 1.5); // passed topo cuts
+        nCandSel++;
         // Check mc association
         float lPDG = -1;
         float isPrimary = -1;
@@ -553,6 +572,11 @@ struct cascqaanalysis {
                      posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), evFlag);
         }
       }
+    }
+
+    if (candidateQA) {
+      registry.fill(HIST("hNcandidates"), nCandAll, collision.centFT0M(), 0);
+      registry.fill(HIST("hNcandidates"), nCandSel, collision.centFT0M(), 1);
     }
   }
 
