@@ -456,7 +456,7 @@ struct HfCorrelatorDsHadrons {
 
       std::vector<float> outputMl = {-1., -1., -1.};
 
-      if (isDsSignal && isDecayChan && isCorrectInvMassIpo) {
+      if (isDsSignal && isDecayChan && isCorrectInvMassHypo) {
         fillHistoMcRecSig(candidate, multiplicityFT0M);
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
