@@ -1150,9 +1150,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     }
     if (subGroupStr.Contains("opencharm")) {
       if (subGroupStr.Contains("dmeson")) {
-        double mD0_bins[51];
-        for (int i = 0; i <= 50; i++) {
-          mD0_bins[i] = 1.7 + i * 0.006;
+        double mD0_bins[141];
+        for (int i = 0; i <= 140; i++) {
+          mD0_bins[i] = 1.5 + i * 0.005;
         }
         int nbins_mD0 = sizeof(mD0_bins) / sizeof(*mD0_bins) - 1;
 
@@ -1168,9 +1168,10 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int nbins_ptD0 = sizeof(ptD0_bins) / sizeof(*ptD0_bins) - 1;
         hm->AddHistogram(histClass, "MassD0region", "", false, nbins_mD0, mD0_bins, VarManager::kMass);
         hm->AddHistogram(histClass, "MassD0region_Pt", "", false, nbins_mD0, mD0_bins, VarManager::kMass, nbins_ptD0, ptD0_bins, VarManager::kPt);
-        hm->AddHistogram(histClass, "MassD0region_eta", "", false, 50, 1.7, 2.0, VarManager::kMass, 20, -2., 2., VarManager::kEta);
-        hm->AddHistogram(histClass, "MassD0region_Rapidity", "", false, 50, 1.7, 2.0, VarManager::kMass, 40, -0.9, 0.9, VarManager::kRap);
-        hm->AddHistogram(histClass, "MassD0region_TauxyzProj", "", false, 50, 1.7, 2.0, VarManager::kMass, 1000, -0.03, 0.03, VarManager::kVertexingTauxyzProjected);
+        hm->AddHistogram(histClass, "MassD0region_Rapidity", "", false, 140, 1.5, 2.2, VarManager::kMass, 40, -0.9, 0.9, VarManager::kRap);
+        hm->AddHistogram(histClass, "MassD0region_eta", "", false, 140, 1.5, 2.2, VarManager::kMass, 40, -2., 2., VarManager::kEta);
+        hm->AddHistogram(histClass, "MassD0region_TauxyzProj", "", false, 140, 1.5, 2.2, VarManager::kMass, 1000, -0.03, 0.03, VarManager::kVertexingTauxyzProjected);
+        hm->AddHistogram(histClass, "MassD0region_VtxNContribReal", "", false, 140, 1.5, 2.2, VarManager::kMass, 50, 0, 50, VarManager::kVtxNcontribReal);
       }
       if (subGroupStr.Contains("lambdac")) {
         hm->AddHistogram(histClass, "MassLambdacRegion", "", false, 50, 2.15, 2.4, VarManager::kMass);
