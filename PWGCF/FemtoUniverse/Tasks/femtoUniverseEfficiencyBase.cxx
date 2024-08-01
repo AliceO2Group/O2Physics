@@ -39,17 +39,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-namespace
-{
-static constexpr int nPart = 2;
-static constexpr int nCuts = 5;
-static const std::vector<std::string> partNames{"PartOne", "PartTwo"};
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
-static const float cutsTable[nPart][nCuts]{
-  {4.05f, 1.f, 3.f, 3.f, 100.f},
-  {4.05f, 1.f, 3.f, 3.f, 100.f}};
-} // namespace
-
 struct femtoUniverseEfficiencyBase {
   SliceCache cache;
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
