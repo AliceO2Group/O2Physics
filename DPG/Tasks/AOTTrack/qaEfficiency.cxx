@@ -280,7 +280,7 @@ struct QaEfficiency {
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
 
-    const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
+    const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] #it{Radius}[%.2f,%.2f]",
                                partName,
                                etaMin, etaMax,
                                yMin, yMax,
@@ -1301,28 +1301,8 @@ struct QaEfficiency {
     if (!doPtRadius) {
       return;
     }
-    auto fillEfficiencyRadius = [&](const TString effname, auto num, auto den, float minRadius, float maxRadius) {
-      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
-      if (!eff) {
-        LOG(warning) << "Cannot find TEfficiency " << effname;
-        return;
-      }
-      // Set total and passed histograms only for the specified radius interval
-      for (int xbin = 1; xbin <= num->GetNbinsX(); ++xbin) {
-        for (int ybin = 1; ybin <= num->GetNbinsY(); ++ybin) {
-          float radius = num->GetYaxis()->GetBinCenter(ybin);
-          if (radius >= minRadius && radius < maxRadius) {
-            eff->SetTotalHistogram(*den, "f");
-            eff->SetPassedHistogram(*num, "f");
-          }
-        }
-      }
-    };
-    std::vector<std::pair<float, float>> radiusIntervals = {{0, 10}, {10, 20}, {20, 50}, {50, 70}, {70, 80}, {80, 100}};
-    for (const auto& interval : radiusIntervals) {
-      TString intervalName = Form("%g-%g", interval.first, interval.second);
-      fillEfficiencyRadius("ITS-TPC_vsPt_vsRadius_" + intervalName, hPtRadiusItsTpc[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
-      fillEfficiencyRadius("ITS-TPC-TOF_vsPt_vsRadius_" + intervalName, hPtRadiusItsTpcTof[histogramIndex], hPtGenerated[histogramIndex], interval.first, interval.second);
+      fillEfficiency2D("ITS-TPC_vsPt_vsRadius" , hPtRadiusItsTpc[histogramIndex], hPtGenerated[histogramIndex]);
+      fillEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius" , hPtRadiusItsTpcTof[histogramIndex], hPtGenerated[histogramIndex]);
     }
   }
   template <bool doFillHistograms, typename CollType>
