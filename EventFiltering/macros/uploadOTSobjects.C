@@ -25,9 +25,11 @@
 #include "TTree.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "EventFiltering/zorro.h"
+#include "EventFiltering/ZorroHelper.h"
 
+namespace {
 const std::string kBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
+}
 
 void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien)
 {
