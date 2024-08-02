@@ -27,7 +27,8 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "EventFiltering/ZorroHelper.h"
 
-namespace {
+namespace
+{
 const std::string kBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
 }
 
