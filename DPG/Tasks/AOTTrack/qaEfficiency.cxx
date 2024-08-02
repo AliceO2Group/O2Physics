@@ -280,11 +280,11 @@ struct QaEfficiency {
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
 
-    const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] #it{Radius}[%.2f,%.2f]",
+    const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] #it{Radius}[%.1f,%.1f]",
                                partName,
                                etaMin, etaMax,
                                yMin, yMax,
-                               phiMin, phiMax);
+                               phiMin, phiMax, radMin, radMax);
 
     const TString tagEta = Form("%s #it{p}_{T} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
                                 partName,
@@ -1303,7 +1303,6 @@ struct QaEfficiency {
     }
     fillEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpc[histogramIndex], hPtGenerated[histogramIndex]);
     fillEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTof[histogramIndex], hPtGenerated[histogramIndex]);
-  }
 } template <bool doFillHistograms, typename CollType>
 bool isCollisionSelected(const CollType& collision)
   {
