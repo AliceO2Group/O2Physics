@@ -183,5 +183,7 @@ struct HfTaskSingleMuonReaderAssoc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskSingleMuonReaderAssoc>(cfgc),};
+  return WorkflowSpec{
+    adaptAnalysisTask<HfTaskSingleMuonReaderAssoc>(cfgc),
+  };
 }
