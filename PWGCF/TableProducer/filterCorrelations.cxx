@@ -59,7 +59,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for particles")
   O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for particles")
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
-  O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8)")
+  O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8, 9 = sel8 + kNoSameBunchPileup + kIsGoodZvtxFT0vsPV, 10 = sel8 before April, 2024, 11 = sel8 for MC, 12 = sel8 with low occupancy cut)")
   O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)")
   O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs")
   O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics)")
@@ -98,6 +98,18 @@ struct FilterCF {
       return collision.alias_bit(kINT7) && collision.sel7();
     } else if (cfgTrigger == 8) {
       return collision.sel8();
+    } else if (cfgTrigger == 9) { // relevant only for Pb-Pb
+      return collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
+    } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024)
+      return collision.selection_bit(aod::evsel::kIsTriggerTVX);
+    } else if (cfgTrigger == 11) { // sel8 selection for MC
+      return collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
+    } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of the collisions which have other events nearby
+      int occupancy = collision.trackOccupancyInTimeRange();
+      if (occupancy >= 0 && occupancy < 500)
+        return collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard);
+      else
+        return false;
     }
     return false;
   }
@@ -265,6 +277,25 @@ struct FilterCF {
     delete[] mcParticleLabels;
   }
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
+
+  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles, aod::BCsWithTimestamps const&)
+  {
+    float multiplicity = 0.0f;
+    for (auto& particle : particles) {
+      if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > cfgCutMCEta || particle.pt() < cfgCutMCPt)
+        continue;
+      int8_t sign = 0;
+      if (TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode()))
+        if ((sign = pdgparticle->Charge()) != 0)
+          multiplicity += 1.0f;
+      outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), FLOAT_PRECISION),
+                        truncateFloatFraction(particle.eta(), FLOAT_PRECISION),
+                        truncateFloatFraction(particle.phi(), FLOAT_PRECISION),
+                        sign, particle.pdgCode(), particle.flags());
+    }
+    outputMcCollisions(mcCollision.posZ(), multiplicity);
+  }
+  PROCESS_SWITCH(FilterCF, processMCGen, "Process MCGen", false);
 };
 
 struct MultiplicitySelector {

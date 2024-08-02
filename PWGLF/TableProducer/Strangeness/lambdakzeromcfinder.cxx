@@ -83,7 +83,8 @@ struct lambdakzeromcfinder {
   Configurable<bool> requireTPC{"requireTPC", true, "require TPC"};
   Configurable<bool> skipTPConly{"skipTPConly", false, "skip tracks that are TPC-only"};
   Configurable<bool> storeSingleTPCOnlyProng{"storeSingleTPCOnlyProng", false, "in case a TPC-only track is found, do not allow another TPC-only for the same mcParticle. Works only in MC particle path."};
-  Configurable<bool> doUnassociatedV0s{"doUnassociatedV0s", true, "generate also unassociated V0s (for cascades!)"};
+  Configurable<bool> doAssociatedV0s{"doAssociatedV0s", true, "generate collision-associated V0s (for cascades!)"};
+  Configurable<bool> doUnassociatedV0s{"doUnassociatedV0s", true, "generate also unassociated V0s (for cascades, UPC)"};
   Configurable<bool> doSameCollisionOnly{"doSameCollisionOnly", false, "stick to decays in which tracks are assoc to same collision"};
   Configurable<int> qaNbins{"qaNbins", 200, "qa plots: binning"};
   Configurable<float> yPreFilter{"yPreFilter", 2.5, "broad y pre-filter for speed"};
@@ -108,6 +109,9 @@ struct lambdakzeromcfinder {
     const AxisSpec axisNTimesRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesRecoed});
+
+    // store number of recoed V0s and number of recoed V0s with no collision association
+    histos.add("hNCollisionAssociation", "hNCollisionAssociation", kTH1F, {axisNTimesRecoed});
 
     // warning: this stores (composite) number of copies of tracks
     histos.add("hNTimesRecoedGamma", "hNTimesRecoedGamma", kTH2F, {axisNTimesRecoed, axisPtQA});
@@ -178,8 +182,8 @@ struct lambdakzeromcfinder {
   {
     int nPosReco = 0;
     int nNegReco = 0;
-    int trackIndexPositive[20];
-    int trackIndexNegative[20];
+    std::vector<int> trackIndexPositive;
+    std::vector<int> trackIndexNegative;
 
     int positivePdg = 211;
     int negativePdg = -211;
@@ -220,7 +224,7 @@ struct lambdakzeromcfinder {
                 tpcOnlyFound = true;
               }
               if (track.sign() > 0 && (track.hasTPC() || !requireTPC)) {
-                trackIndexPositive[nPosReco] = track.globalIndex(); // assign only if TPC present
+                trackIndexPositive.push_back(track.globalIndex()); // assign only if TPC present
                 nPosReco++;
               }
             } // end track list loop
@@ -237,7 +241,7 @@ struct lambdakzeromcfinder {
                 tpcOnlyFound = true;
               }
               if (track.sign() < 0 && (track.hasTPC() || !requireTPC)) {
-                trackIndexNegative[nNegReco] = track.globalIndex(); // assign only if TPC present
+                trackIndexNegative.push_back(track.globalIndex()); // assign only if TPC present
                 nNegReco++;
               }
             } // end track list loop
@@ -302,7 +306,15 @@ struct lambdakzeromcfinder {
 
     // V0 list established, populate
     for (auto ic : sortedIndices) {
-      if (v0collisionId[ic] >= 0 || doUnassociatedV0s) {
+      histos.fill(HIST("hNCollisionAssociation"), 0.0f); // any correctly recoed
+      if (v0collisionId[ic] >= 0)
+        histos.fill(HIST("hNCollisionAssociation"), 1.0f); // reconstructed with a collision associated to it
+
+      if (v0collisionId[ic] < 0 && doUnassociatedV0s) {
+        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic], 1);
+        fullv0labels(v0mcLabel[ic]);
+      }
+      if (v0collisionId[ic] >= 0 && doAssociatedV0s) {
         v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic], 1);
         fullv0labels(v0mcLabel[ic]);
       }

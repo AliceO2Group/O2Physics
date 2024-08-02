@@ -103,3 +103,13 @@ o2physics_add_dpl_workflow(mcinelgt0
     SOURCES mcinelgt0.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tracked-cascade-properties
+    SOURCES tracked_cascade_properties.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mc-particle-predictions
+    SOURCES mcParticlePrediction.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

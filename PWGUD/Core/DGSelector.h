@@ -179,15 +179,15 @@ class DGSelector
     if (sels[3] && !udhelpers::cutIsGoodZvtxFT0vsPV(collision)) {
       return 16;
     }
-    // is ITS-TPC track
+    // at least one PV track with TPC hit
     if (sels[4] && !udhelpers::cutIsVertexITSTPC(collision)) {
       return 17;
     }
-    // is ITS-TPC track
+    // at least one PV track with TRD hit
     if (sels[5] && !udhelpers::cutIsVertexTRDmatched(collision)) {
       return 18;
     }
-    // is ITS-TPC track
+    // at least one PV track with TOF hit
     if (sels[6] && !udhelpers::cutIsVertexTOFmatched(collision)) {
       return 19;
     }

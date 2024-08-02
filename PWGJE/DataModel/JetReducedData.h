@@ -420,6 +420,19 @@ DECLARE_SOA_TABLE(StoredJClusterTracks, "AOD1", "JCLUSTERTRACK", //!
                   jcluster::JTrackIds,
                   o2::soa::Marker<1>);
 
+namespace jmcclusterlb
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(JMcParticle, mcParticle);
+DECLARE_SOA_COLUMN(AmplitudeA, amplitudeA, std::vector<float>);
+} // namespace jmcclusterlb
+
+DECLARE_SOA_TABLE(JMcClusterLbs, "AOD", "JMCCLUSTERLB", //!
+                  jmcclusterlb::JMcParticleIds, jmcclusterlb::AmplitudeA);
+
+DECLARE_SOA_TABLE(StoredJMcClusterLbs, "AOD1", "JMCCLUSTERLB", //!
+                  jmcclusterlb::JMcParticleIds, jmcclusterlb::AmplitudeA,
+                  o2::soa::Marker<1>);
+
 namespace jdummy
 {
 

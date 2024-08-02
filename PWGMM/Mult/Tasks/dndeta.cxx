@@ -21,6 +21,7 @@
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
 
+#include "Gencentralities.h"
 #include "Index.h"
 #include "bestCollisionTable.h"
 
@@ -52,33 +53,35 @@ struct MultiplicityCounter {
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
   ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 100}, ""};
 
-  Configurable<bool> fillResponse{"fillResponse", true, "Fill respons matrix"};
+  Configurable<bool> fillResponse{"fillResponse", true, "Fill response matrix"};
   Configurable<bool> useProcId{"use-process-id", true, "Use process ID from generator"};
   Configurable<bool> addFT0{"addFT0", false, "add FT0 estimators"};
   Configurable<bool> addFDD{"addFDD", false, "add FDD estimators"};
 
-  Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
-  Configurable<bool> checkTF{"checkTF", true, "check TF border"};
-  Configurable<bool> checkITSROF{"checkITSROF", true, "check ITS readout frame border"};
-  Configurable<bool> checkFT0PVcoincidence{"checkFT0PVcoincidence", true, "Check coincidence between FT0 and PV"};
-  Configurable<bool> rejectITSonly{"rejectITSonly", false, "Reject ITS-only vertex"};
+  Configurable<bool> useEvSel{"useEvSel", true, "Use event selection"};
+  Configurable<bool> excludeTFborder{"excludeTFborder", true, "Exclude TF border"};
+  Configurable<bool> excludeITSROFborder{"excludeITSROFborder", true, "Exclude ITS RO frame border"};
+  Configurable<bool> requireFT0PVcoincidence{"requireFT0PVcoincidence", true, "Require coincidence between FT0 and PV"};
+  Configurable<bool> rejectITSonly{"rejectITSonly", true, "Reject ITS-only vertex"};
+  Configurable<bool> requireVtxTOFMatched{"checkTOFMatch", true, "Consider only vertex with TOF match"};
 
   template <typename C>
   inline bool isCollisionSelected(C const& collision)
   {
     return collision.selection_bit(aod::evsel::kIsTriggerTVX) &&
-           (!checkTF || collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
-           (!checkITSROF || collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
-           (!checkFT0PVcoincidence || collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
-           (!rejectITSonly || collision.selection_bit(aod::evsel::kIsVertexITSTPC));
+           (!excludeTFborder || collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!excludeITSROFborder || collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+           (!requireFT0PVcoincidence || collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
+           (!rejectITSonly || collision.selection_bit(aod::evsel::kIsVertexITSTPC)) &&
+           (!requireVtxTOFMatched || collision.selection_bit(aod::evsel::kIsVertexTOFmatched));
   }
 
   template <typename B>
   inline bool isBCSelected(B const& bc)
   {
     return bc.selection_bit(aod::evsel::kIsTriggerTVX) &&
-           (!checkTF || bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
-           (!checkITSROF || bc.selection_bit(aod::evsel::kNoITSROFrameBorder));
+           (!excludeTFborder || bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!excludeITSROFborder || bc.selection_bit(aod::evsel::kNoITSROFrameBorder));
   }
 
   HistogramRegistry commonRegistry{
@@ -140,6 +143,7 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvSelBins::kRejected), EvSelBinLabels[static_cast<int>(EvSelBins::kRejected)].data());
 
       inclusiveRegistry.add({NtrkZvtx.data(), "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      inclusiveRegistry.add({NpvcZvtx.data(), "; N_{PVc}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtx.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtx_gt0.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtx_PVgt0.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
@@ -171,6 +175,7 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvSelBins::kRejected), EvSelBinLabels[static_cast<int>(EvSelBins::kRejected)].data());
 
       binnedRegistry.add({NtrkZvtx.data(), "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({NpvcZvtx.data(), "; N_{PVc}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtx.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtx_gt0.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtx_PVgt0.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
@@ -200,6 +205,7 @@ struct MultiplicityCounter {
       }
       inclusiveRegistry.add({NtrkZvtxGen.data(), "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       inclusiveRegistry.add({NtrkZvtxGen_t.data(), effLabels.c_str(), {HistType::kTHnSparseF, effAxes}});
+      inclusiveRegistry.add({NpvcZvxtGen.data(), "; N_{PVc}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtxGen.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtxGen_t.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtxGen_gt0.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
@@ -236,10 +242,18 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvEffBins::kSelectedPVgt0), EvEffBinLabels[static_cast<int>(EvEffBins::kSelectedPVgt0)].data());
     }
 
-    if (doprocessGenAmbiguousFT0C || doprocessGenAmbiguousFT0M || doprocessGenAmbiguousFT0Chi || doprocessGenAmbiguousFT0Mhi ||
-        doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi) {
+    if (doprocessGenAmbiguousFT0C || doprocessGenAmbiguousFT0M || doprocessGenAmbiguousFT0Cplus || doprocessGenAmbiguousFT0Mplus || doprocessGenAmbiguousFT0Chi || doprocessGenAmbiguousFT0Mhi ||
+        doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Cplus || doprocessGenFT0Mplus || doprocessGenFT0Chi || doprocessGenFT0Mhi || doprocessGenAmbiguousExFT0C || doprocessGenAmbiguousExFT0M ||
+        doprocessGenExFT0C || doprocessGenExFT0M) {
+      std::string effLabels{" ; N_{gen}; Z_{vtx} (cm); centrality"};
+      std::vector<AxisSpec> effAxes{MultAxis, ZAxis, CentAxis};
+      if ((doprocessGenAmbiguousExFT0C || doprocessGenAmbiguousExFT0M || doprocessGenExFT0C || doprocessGenExFT0M) && useProcId) {
+        effLabels += " ; process ID";
+        effAxes.push_back(ProcAxis);
+      }
       binnedRegistry.add({NtrkZvtxGen.data(), "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({NtrkZvtxGen_t.data(), "; N_{part}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({NpvcZvxtGen.data(), "; N_{PVc}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtxGen.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtxGen_t.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtxGen_gt0.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
@@ -252,7 +266,7 @@ struct MultiplicityCounter {
       binnedRegistry.add({NotFoundZvtx.data(), " ; Z_{vtx} (cm); centrality; events", {HistType::kTH2F, {ZAxis, CentAxis}}});
 
       if (fillResponse) {
-        binnedRegistry.add({EfficiencyMult.data(), " ; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+        binnedRegistry.add({EfficiencyMult.data(), effLabels.c_str(), {HistType::kTHnSparseF, effAxes}});
         binnedRegistry.add({SplitMult.data(), " ; N_{gen} ; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
         if (addFT0 && !addFDD) {
           binnedRegistry.add({Response.data(), " ; N_{rec}; N_{PV cont}; N_{gen}; N_{FT0A}; N_{FT0C}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0AAxis, FT0CAxis, ZAxis, CentAxis}}});
@@ -335,28 +349,30 @@ struct MultiplicityCounter {
   template <typename C>
   void processEventStatGeneral(FullBCs const& bcs, C const& collisions)
   {
-    std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
+    std::vector<int64_t> colids;
     for (auto& bc : bcs) {
       if (!useEvSel || isBCSelected(bc)) {
         commonRegistry.fill(HIST(BCSelection), 1.);
-        cols.clear();
+        colids.clear();
         for (auto& collision : collisions) {
           if (collision.has_foundBC()) {
             if (collision.foundBCId() == bc.globalIndex()) {
-              cols.emplace_back(collision);
+              colids.push_back(collision.globalIndex());
             }
           } else if (collision.bcId() == bc.globalIndex()) {
-            cols.emplace_back(collision);
+            colids.push_back(collision.globalIndex());
           }
         }
-        LOGP(debug, "BC {} has {} collisions", bc.globalBC(), cols.size());
-        if (!cols.empty()) {
+        LOGP(debug, "BC {} has {} collisions", bc.globalBC(), colids.size());
+        if (!colids.empty()) {
           commonRegistry.fill(HIST(BCSelection), 2.);
-          if (cols.size() > 1) {
+          if (colids.size() > 1) {
             commonRegistry.fill(HIST(BCSelection), 3.);
           }
         }
-        for (auto& col : cols) {
+        auto col = collisions.begin();
+        for (auto& colid : colids) {
+          col.moveByIndex(colid - col.globalIndex());
           if constexpr (hasRecoCent<C>()) {
             float c = -1;
             if constexpr (C::template contains<aod::CentFT0Cs>()) {
@@ -506,6 +522,7 @@ struct MultiplicityCounter {
           }
         }
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
+        binnedRegistry.fill(HIST(NpvcZvtx), groupPVContrib.size(), z, c);
       } else {
         if (Ntrks > 0 || INELgt0PV) {
           if (INELgt0PV) {
@@ -524,6 +541,7 @@ struct MultiplicityCounter {
           }
         }
         inclusiveRegistry.fill(HIST(NtrkZvtx), Ntrks, z);
+        inclusiveRegistry.fill(HIST(NpvcZvtx), groupPVContrib.size(), z);
       }
     } else {
       if constexpr (hasRecoCent<C>()) {
@@ -697,6 +715,7 @@ struct MultiplicityCounter {
           }
         }
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
+        binnedRegistry.fill(HIST(NpvcZvtx), groupPVContrib.size(), z, c);
       } else {
         if (Ntrks > 0 || INELgt0PV) {
           if (INELgt0PV) {
@@ -729,6 +748,7 @@ struct MultiplicityCounter {
           }
         }
         inclusiveRegistry.fill(HIST(NtrkZvtx), Ntrks, z);
+        inclusiveRegistry.fill(HIST(NpvcZvtx), groupPVContrib.size(), z);
       }
     } else {
       if constexpr (hasRecoCent<C>()) {
@@ -1454,6 +1474,14 @@ struct MultiplicityCounter {
     return nCharged;
   }
 
+  std::vector<int> NrecPerCol;
+  std::vector<float> c_recPerCol;
+  std::vector<int> NPVPerCol;
+  std::vector<float> NFT0APerCol;
+  std::vector<float> NFT0CPerCol;
+  std::vector<float> NFDDAPerCol;
+  std::vector<float> NFDDCPerCol;
+
   template <typename MC, typename C>
   void processGenGeneralAmbiguous(
     typename MC::iterator const& mcCollision,
@@ -1464,7 +1492,25 @@ struct MultiplicityCounter {
     // add generated centrality estimation
     if constexpr (hasSimCent<MC>()) {
       c_gen = mcCollision.centrality();
+    } else if constexpr (hasRecoCent<C>()) {
+      if constexpr (C::template contains<aod::CentFT0Cs>()) {
+        if constexpr (requires { mcCollision.gencentFT0C(); }) {
+          c_gen = mcCollision.gencentFT0C();
+        }
+      } else if (C::template contains<aod::CentFT0Ms>()) {
+        if constexpr (requires { mcCollision.gencentFT0M(); }) {
+          c_gen = mcCollision.gencentFT0M();
+        }
+      }
     }
+
+    NrecPerCol.clear();
+    c_recPerCol.clear();
+    NPVPerCol.clear();
+    NFT0APerCol.clear();
+    NFT0CPerCol.clear();
+    NFDDAPerCol.clear();
+    NFDDCPerCol.clear();
 
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
@@ -1472,13 +1518,27 @@ struct MultiplicityCounter {
     auto moreThanOne = 0;
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
 
-    std::vector<int> NrecPerCol;
-    std::vector<float> c_recPerCol;
-    std::vector<int> NPVPerCol;
-    std::vector<float> NFT0APerCol;
-    std::vector<float> NFT0CPerCol;
-    std::vector<float> NFDDAPerCol;
-    std::vector<float> NFDDCPerCol;
+    [[maybe_unused]] float min_c_rec = 2e2;
+    if constexpr (hasRecoCent<C>()) {
+      for (auto& collision : collisions) {
+        if (!useEvSel || isCollisionSelected(collision)) {
+          float c = -1;
+          if constexpr (C::template contains<aod::CentFT0Cs>()) {
+            c = collision.centFT0C();
+          } else if (C::template contains<aod::CentFT0Ms>()) {
+            c = collision.centFT0M();
+          }
+          if (c < min_c_rec) {
+            min_c_rec = c;
+          }
+        }
+      }
+    }
+    if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
+      if (std::abs(c_gen + 1) < 1e-6) {
+        c_gen = min_c_rec; // if there is no generator centrality info, fall back to reco (from the largest reco collision)
+      }
+    }
 
     for (auto& collision : collisions) {
       usedTracksIds.clear();
@@ -1489,19 +1549,14 @@ struct MultiplicityCounter {
         } else if (C::template contains<aod::CentFT0Ms>()) {
           c_rec = collision.centFT0M();
         }
-        c_recPerCol.emplace_back(c_rec);
         binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || isCollisionSelected(collision)) {
+        c_recPerCol.emplace_back(c_rec);
         auto z = collision.posZ();
         ++moreThanOne;
-        if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
-          if (!atLeastOne) {
-            c_gen = c_rec; // if there is no generator centrality info, fall back to reco (from the first reco collision)
-          }
-        }
         atLeastOne = true;
 
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1518,7 +1573,7 @@ struct MultiplicityCounter {
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
         auto Nrec = countTracksAmbiguous<C, false>(perCollisionSample, perCollisionASample, z, c_rec);
         NrecPerCol.emplace_back(Nrec);
-        NPVPerCol.emplace_back(collision.numContrib());
+        NPVPerCol.emplace_back(groupPVcontrib.size());
         fillFIT(collision, NFT0APerCol, NFT0CPerCol, NFDDAPerCol, NFDDCPerCol);
 
         if constexpr (hasRecoCent<C>()) {
@@ -1538,8 +1593,10 @@ struct MultiplicityCounter {
 
         if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ(), c_rec);
+          binnedRegistry.fill(HIST(NpvcZvxtGen), groupPVcontrib.size(), collision.posZ(), c_rec);
         } else {
           inclusiveRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ());
+          inclusiveRegistry.fill(HIST(NpvcZvxtGen), groupPVcontrib.size(), collision.posZ());
         }
       }
     }
@@ -1576,7 +1633,19 @@ struct MultiplicityCounter {
     if (fillResponse) {
       for (auto i = 0U; i < NrecPerCol.size(); ++i) {
         if constexpr (hasRecoCent<C>()) {
-          binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          if constexpr (soa::is_soa_join_v<MC>) {
+            if constexpr (MC::template contains<aod::HepMCXSections>()) {
+              if (useProcId) {
+                binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i], mcCollision.processId());
+              } else {
+                binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+              }
+            } else {
+              binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+            }
+          } else {
+            binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          }
           if (addFT0 && !addFDD) {
             binnedRegistry.fill(HIST(Response), NrecPerCol[i], NPVPerCol[i], nCharged, NFT0APerCol[i], NFT0CPerCol[i], mcCollision.posZ(), c_recPerCol[i]);
           } else if (addFDD && !addFT0) {
@@ -1642,6 +1711,16 @@ struct MultiplicityCounter {
     // add generated centrality estimation
     if constexpr (hasSimCent<MC>()) {
       c_gen = mcCollision.centrality();
+    } else if constexpr (hasRecoCent<C>()) {
+      if constexpr (C::template contains<aod::CentFT0Cs>()) {
+        if constexpr (requires { mcCollision.gencentFT0C(); }) {
+          c_gen = mcCollision.gencentFT0C();
+        }
+      } else if (C::template contains<aod::CentFT0Ms>()) {
+        if constexpr (requires { mcCollision.gencentFT0M(); }) {
+          c_gen = mcCollision.gencentFT0M();
+        }
+      }
     }
 
     bool atLeastOne = false;
@@ -1650,13 +1729,36 @@ struct MultiplicityCounter {
     auto moreThanOne = 0;
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
 
-    std::vector<int> NrecPerCol;
-    std::vector<float> c_recPerCol;
-    std::vector<int> NPVPerCol;
-    std::vector<float> NFT0APerCol;
-    std::vector<float> NFT0CPerCol;
-    std::vector<float> NFDDAPerCol;
-    std::vector<float> NFDDCPerCol;
+    NrecPerCol.clear();
+    c_recPerCol.clear();
+    NPVPerCol.clear();
+    NFT0APerCol.clear();
+    NFT0CPerCol.clear();
+    NFDDAPerCol.clear();
+    NFDDCPerCol.clear();
+
+    [[maybe_unused]] float min_c_rec = 2e2;
+    if constexpr (hasRecoCent<C>()) {
+      for (auto& collision : collisions) {
+        if (!useEvSel || isCollisionSelected(collision)) {
+          float c = -1;
+          if constexpr (C::template contains<aod::CentFT0Cs>()) {
+            c = collision.centFT0C();
+          } else if (C::template contains<aod::CentFT0Ms>()) {
+            c = collision.centFT0M();
+          }
+          if (c < min_c_rec) {
+            min_c_rec = c;
+          }
+        }
+      }
+    }
+
+    if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
+      if (std::abs(c_gen + 1) < 1e-6) {
+        c_gen = min_c_rec; // if there is no generator centrality info, fall back to reco (from the largest reco collision)
+      }
+    }
 
     for (auto& collision : collisions) {
       usedTracksIds.clear();
@@ -1667,19 +1769,14 @@ struct MultiplicityCounter {
         } else if (C::template contains<aod::CentFT0Ms>()) {
           c_rec = collision.centFT0M();
         }
-        c_recPerCol.emplace_back(c_rec);
         binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || isCollisionSelected(collision)) {
+        c_recPerCol.emplace_back(c_rec);
         auto z = collision.posZ();
         ++moreThanOne;
-        if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
-          if (!atLeastOne) {
-            c_gen = c_rec; // if there is no generator centrality info, fall back to reco (from the first reco collision)
-          }
-        }
         atLeastOne = true;
 
         auto groupPVcontrib = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1695,7 +1792,7 @@ struct MultiplicityCounter {
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
         auto Nrec = countTracks<C, false>(perCollisionSample, z, c_rec);
         NrecPerCol.emplace_back(Nrec);
-        NPVPerCol.emplace_back(collision.numContrib());
+        NPVPerCol.emplace_back(groupPVcontrib.size());
         fillFIT(collision, NFT0APerCol, NFT0CPerCol, NFDDAPerCol, NFDDCPerCol);
 
         if constexpr (hasRecoCent<C>()) {
@@ -1715,8 +1812,10 @@ struct MultiplicityCounter {
 
         if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ(), c_rec);
+          binnedRegistry.fill(HIST(NpvcZvxtGen), groupPVcontrib.size(), collision.posZ(), c_rec);
         } else {
           inclusiveRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ());
+          inclusiveRegistry.fill(HIST(NpvcZvxtGen), groupPVcontrib.size(), collision.posZ());
         }
       }
     }
@@ -1753,7 +1852,19 @@ struct MultiplicityCounter {
     if (fillResponse) {
       for (auto i = 0U; i < NrecPerCol.size(); ++i) {
         if constexpr (hasRecoCent<C>()) {
-          binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          if constexpr (soa::is_soa_join_v<MC>) {
+            if constexpr (MC::template contains<aod::HepMCXSections>()) {
+              if (useProcId) {
+                binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i], mcCollision.processId());
+              } else {
+                binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+              }
+            } else {
+              binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+            }
+          } else {
+            binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          }
           if (addFT0 && !addFDD) {
             binnedRegistry.fill(HIST(Response), NrecPerCol[i], NPVPerCol[i], nCharged, NFT0APerCol[i], NFT0CPerCol[i], mcCollision.posZ(), c_recPerCol[i]);
           } else if (addFDD && !addFT0) {
@@ -1870,6 +1981,46 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0C, "Process generator-level info (FT0C centrality) w/o ambiguous", false);
 
+  void processGenAmbiguousFT0Cplus(
+    soa::Join<MC, aod::GenCents>::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneralAmbiguous<soa::Join<MC, aod::GenCents>, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousFT0Cplus, "Process generator-level info (FT0C centrality + gen level)", false);
+
+  void processGenFT0Cplus(
+    soa::Join<MC, aod::GenCents>::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneral<soa::Join<MC, aod::GenCents>, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Cplus, "Process generator-level info (FT0C centrality + gen level) w/o ambiguous", false);
+
+  void processGenAmbiguousExFT0C(
+    MCex::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneralAmbiguous<MCex, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousExFT0C, "Process generator-level info (FT0C centrality)", false);
+
+  void processGenExFT0C(
+    MCex::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneral<MCex, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenExFT0C, "Process generator-level info (FT0C centrality) w/o ambiguous", false);
+
   void processGenAmbiguousFT0M(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
@@ -1889,6 +2040,46 @@ struct MultiplicityCounter {
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0M, "Process generator-level info (FT0M centrality) w/o ambiguous", false);
+
+  void processGenAmbiguousFT0Mplus(
+    soa::Join<MC, aod::GenCents>::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneralAmbiguous<soa::Join<MC, aod::GenCents>, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousFT0Mplus, "Process generator-level info (FT0M centrality + gen level)", false);
+
+  void processGenFT0Mplus(
+    soa::Join<MC, aod::GenCents>::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneral<soa::Join<MC, aod::GenCents>, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenFT0Mplus, "Process generator-level info (FT0M centrality + gen level) w/o ambiguous", false);
+
+  void processGenAmbiguousExFT0M(
+    MCex::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneralAmbiguous<MCex, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousExFT0M, "Process generator-level info (FT0M centrality)", false);
+
+  void processGenExFT0M(
+    MCex::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneral<MCex, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenExFT0M, "Process generator-level info (FT0M centrality) w/o ambiguous", false);
 
   using MChi = soa::Join<aod::McCollisions, aod::HepMCHeavyIons>;
 

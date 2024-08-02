@@ -8,22 +8,27 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "TableHelper.h"
-#include "iostream"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "TableHelper.h"
+#include "MetadataHelper.h"
+#include "TList.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+MetadataHelper metadataInfo; // Metadata helper
 
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;
@@ -106,6 +111,7 @@ struct MultiplicityTable {
 
   Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
   Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+  Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
 
   int mRunNumber;
   bool lCalibLoaded;
@@ -118,9 +124,21 @@ struct MultiplicityTable {
   TProfile* hVtxZNTracks;
   std::vector<int> mEnabledTables; // Vector of enabled tables
 
+  // Debug output
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  OutputObj<TList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
+
   unsigned int randomSeed = 0;
   void init(InitContext& context)
   {
+    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+      if (metadataInfo.isRun3()) {
+        doprocessRun3.value = true;
+      } else {
+        doprocessRun2.value = false;
+      }
+    }
+
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     if (doprocessRun2 == false && doprocessRun3 == false) {
       LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
@@ -138,6 +156,13 @@ struct MultiplicityTable {
         if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")) {
           LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
         }
+      }
+    }
+    // Handle the custom cases.
+    if (tEnabled[kMultsExtraMC]) {
+      if (enabledTables->get(tableNames[kMultsExtraMC].c_str(), "Enable") == -1) {
+        doprocessMC.value = true;
+        LOG(info) << "Enabling MC processing due to " << tableNames[kMultsExtraMC] << " table being enabled.";
       }
     }
 
@@ -174,7 +199,20 @@ struct MultiplicityTable {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
+
+    if (!produceHistograms.value) {
+      return;
+    }
+    histos.add("FT0A", "FT0A vs FT0A eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0A multiplicity"}, {1000, 0, 1000, "FT0A multiplicity eq."}});
+    histos.add("FT0C", "FT0C vs FT0C eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0C multiplicity"}, {1000, 0, 1000, "FT0C multiplicity eq."}});
+    histos.add("FT0CMultvsPV", "FT0C vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0AMultvsPV", "FT0A vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
+
+    listCalib.setObject(new TList);
   }
+
+  /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
+  void process(aod::BCs const&) {}
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision,
                    Run2Tracks const&,
@@ -292,8 +330,7 @@ struct MultiplicityTable {
         case kPVMultZeqs: // Equalized multiplicity for PV
           tablePVZeqs.reserve(collisions.size());
           break;
-        case kMultsExtraMC: // MC extra information
-          tableExtraMc.reserve(collisions.size());
+        case kMultsExtraMC: // MC extra information (nothing to do in the data)
           break;
         default:
           LOG(fatal) << "Unknown table requested: " << i;
@@ -337,6 +374,10 @@ struct MultiplicityTable {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
           lCalibObjects = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
           if (lCalibObjects) {
+            if (produceHistograms) {
+              listCalib->Add(lCalibObjects->Clone(Form("%i", bc.runNumber())));
+            }
+
             hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
             hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
             hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
@@ -364,7 +405,7 @@ struct MultiplicityTable {
             multFV0C = 0.f;
             // using FV0 row index from event selection task
             if (collision.has_foundFV0()) {
-              auto fv0 = collision.foundFV0();
+              const auto& fv0 = collision.foundFV0();
               for (auto amplitude : fv0.amplitude()) {
                 multFV0A += amplitude;
               }
@@ -507,7 +548,7 @@ struct MultiplicityTable {
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                        mRunNumber, collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
-                       nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber);
+                       nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber, collision.trackOccupancyInTimeRange());
           } break;
           case kMultSelections: // Multiplicity selections
           {
@@ -525,6 +566,12 @@ struct MultiplicityTable {
             if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
               multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+            }
+            if (produceHistograms.value) {
+              histos.fill(HIST("FT0A"), multFT0A, multZeqFT0A);
+              histos.fill(HIST("FT0C"), multFT0C, multZeqFT0C);
+              histos.fill(HIST("FT0AMultvsPV"), multZeqFT0A, multNContribs);
+              histos.fill(HIST("FT0CMultvsPV"), multZeqFT0C, multNContribs);
             }
             tableFT0Zeqs(multZeqFT0A, multZeqFT0C);
           } break;
@@ -569,8 +616,9 @@ struct MultiplicityTable {
     int multBarrelEta08 = 0;
     int multBarrelEta10 = 0;
     for (auto const& mcPart : mcParticles) {
-      if (!mcPart.isPhysicalPrimary())
+      if (!mcPart.isPhysicalPrimary()) {
         continue;
+      }
 
       auto charge = 0.;
       auto* p = pdg->GetParticle(mcPart.pdgCode());
@@ -621,4 +669,9 @@ struct MultiplicityTable {
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<MultiplicityTable>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
+  return WorkflowSpec{adaptAnalysisTask<MultiplicityTable>(cfgc)};
+}

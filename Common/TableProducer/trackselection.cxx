@@ -74,6 +74,7 @@ struct TrackSelectionTask {
           break;
         }
         LOG(warning) << "isRun3 == true and itsMatching == 0: not setting globalTracks = getGlobalTrackSelection();, but going to itsMatching == 1 and set getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny)";
+        [[fallthrough]];
       case 1:
         // Run 3 kAny on 3 IB layers of ITS
         if (isRun3) {
@@ -81,6 +82,7 @@ struct TrackSelectionTask {
           globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, dcaSetup.value);
           break;
         }
+        [[fallthrough]];
       case 2:
         // Run 3 kAny on all 7 layers of ITS
         if (isRun3) {
@@ -88,6 +90,7 @@ struct TrackSelectionTask {
           globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, dcaSetup.value);
           break;
         }
+        [[fallthrough]];
       case 3:
         // Run 3 kAll on all 7 layers of ITS
         if (isRun3) {
@@ -95,6 +98,7 @@ struct TrackSelectionTask {
           globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, dcaSetup.value);
           break;
         }
+        [[fallthrough]];
       case 4:
         // Run 3 kFirst, i.e. 1 hit in first layer of ITS
         if (isRun3) {
@@ -102,6 +106,7 @@ struct TrackSelectionTask {
           globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibFirst, dcaSetup.value);
           break;
         }
+        [[fallthrough]];
       default:
         LOG(fatal) << "TrackSelectionTask with undefined cuts. Fix it!";
         break;

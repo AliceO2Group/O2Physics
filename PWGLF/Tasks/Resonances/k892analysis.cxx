@@ -113,6 +113,10 @@ struct k892analysis {
   Configurable<bool> cfgCutsOnMother{"cfgCutsOnMother", false, "Enamble additional cuts on mother"};
   Configurable<double> cMaxPtMotherCut{"cMaxPtMotherCut", 15.0, "Maximum pt of mother cut"};
   Configurable<double> cMaxMinvMotherCut{"cMaxMinvMotherCut", 1.5, "Maximum Minv of mother cut"};
+  Configurable<bool> cfgCutsOnDaughters{"cfgCutsOnDaughters", false, "Enamble additional cuts on daughters"};
+  Configurable<int> cetaphiBins{"cetaphiBins", 400, "number of eta and phi bins"};
+  Configurable<double> cMaxDeltaEtaCut{"cMaxDeltaEtaCut", 0.7, "Maximum deltaEta between daughters"};
+  Configurable<double> cMaxDeltaPhiCut{"cMaxDeltaPhiCut", 1.5, "Maximum deltaPhi between daughters"};
 
   void init(o2::framework::InitContext&)
   {
@@ -203,6 +207,28 @@ struct k892analysis {
     histos.add("QAafter/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
     histos.add("QAafter/TOF_Nsigma_ka_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
     histos.add("QAafter/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+
+    // eta phi QA
+    if (cfgCutsOnDaughters) {
+      histos.add("QAbefore/deltaEta", "deltaEta of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAbefore/deltaPhi", "deltaPhi of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAbefore/Eta", "Eta of  tracks candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAbefore/Phi", "Phi of tracks candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+
+      histos.add("QAafter/deltaEta", "deltaEta of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAafter/deltaPhi", "deltaPhi of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAafter/EtaPi", "Eta of  pion candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAafter/PhiPi", "Phi of  pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+      histos.add("QAafter/EtaKa", "Eta of kaon  candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAafter/PhiKa", "Phi of kaon  candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+
+      histos.add("QAafter/deltaEtaafter", "deltaEta of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAafter/deltaPhiafter", "deltaPhi of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAafter/EtaPiafter", "Eta of  pion candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAafter/PhiPiafter", "Phi of  pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+      histos.add("QAafter/EtaKaafter", "Eta of kaon  candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAafter/PhiKaafter", "Phi of kaon  candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+    }
 
     // 3d histogram
     histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH3F, {centAxis, ptAxis, invMassAxis});
@@ -450,6 +476,10 @@ struct k892analysis {
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
+      auto deltaEta = TMath::Abs(trk1.eta() - trk2.eta());
+      auto deltaPhi = TMath::Abs(trk1.phi() - trk2.phi());
+      deltaPhi = (deltaPhi > TMath::Pi()) ? (2 * TMath::Pi() - deltaPhi) : deltaPhi;
+
       if constexpr (!IsMix) {
         //// QA plots before the selection
         //  --- PID QA Pion
@@ -470,6 +500,13 @@ struct k892analysis {
         histos.fill(HIST("QAbefore/trkDCAxy_ka"), trk2.dcaXY());
         histos.fill(HIST("QAbefore/trkDCAz_pi"), trk1.dcaZ());
         histos.fill(HIST("QAbefore/trkDCAz_ka"), trk2.dcaZ());
+
+        if (cfgCutsOnDaughters) {
+          histos.fill(HIST("QAbefore/Eta"), trk1.eta());
+          histos.fill(HIST("QAbefore/Phi"), trk1.phi());
+          histos.fill(HIST("QAbefore/deltaEta"), deltaEta);
+          histos.fill(HIST("QAbefore/deltaPhi"), deltaPhi);
+        }
       }
 
       // Apply the selection
@@ -508,6 +545,16 @@ struct k892analysis {
         histos.fill(HIST("QAafter/trkDCAxy_ka"), trk2.dcaXY());
         histos.fill(HIST("QAafter/trkDCAz_pi"), trk1.dcaZ());
         histos.fill(HIST("QAafter/trkDCAz_ka"), trk2.dcaZ());
+
+        if (cfgCutsOnDaughters) {
+          histos.fill(HIST("QAafter/EtaPi"), trk1.eta());
+          histos.fill(HIST("QAafter/PhiPi"), trk1.phi());
+          histos.fill(HIST("QAafter/EtaKa"), trk2.eta());
+          histos.fill(HIST("QAafter/PhiKa"), trk2.phi());
+
+          histos.fill(HIST("QAafter/deltaEta"), deltaEta);
+          histos.fill(HIST("QAafter/deltaPhi"), deltaPhi);
+        }
       }
 
       //// Resonance reconstruction
@@ -522,6 +569,22 @@ struct k892analysis {
           continue;
         if (lResonance.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
           continue;
+      }
+
+      if (cfgCutsOnDaughters) {
+        if (deltaEta >= cMaxDeltaEtaCut)
+          continue;
+        if (deltaPhi >= cMaxDeltaPhiCut)
+          continue;
+
+        if constexpr (!IsMix) {
+          histos.fill(HIST("QAafter/EtaPiafter"), trk1.eta());
+          histos.fill(HIST("QAafter/PhiPiafter"), trk1.phi());
+          histos.fill(HIST("QAafter/EtaKaafter"), trk2.eta());
+          histos.fill(HIST("QAafter/PhiKaafter"), trk2.phi());
+          histos.fill(HIST("QAafter/deltaEtaafter"), deltaEta);
+          histos.fill(HIST("QAafter/deltaPhiafter"), deltaPhi);
+        }
       }
 
       //// Un-like sign pair only

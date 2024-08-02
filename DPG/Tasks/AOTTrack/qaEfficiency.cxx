@@ -13,7 +13,7 @@
 /// \file   qaEfficiency.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to analyse both data and MC to produce efficiency vs pT, eta and phi.
-///         In MC the efficiency for particles is computed according to the PDG code (sign included and not charge)
+///         In MC the efficiency for particles is computed according to the PDG code (sign included and not charge).
 ///
 
 // O2 includes
@@ -28,6 +28,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "Common/Core/RecoDecay.h"
 
 // ROOT includes
 #include "TPDGCode.h"
@@ -58,358 +59,104 @@ static constexpr int trkCutIdxPassedITSPartial = 18;
 static constexpr int trkCutIdxPassedTPCPartial = 19;
 static constexpr int trkCutIdxPassedTOFPartial = 20;
 static constexpr int trkCutIdxPassedGlobal = 21;
-static constexpr int trkCutIdxN = 22;
+static constexpr int trkCutSameColl = 22;
+static constexpr int trkCutIdxN = 23;
 
 // Particle information
 static constexpr int nSpecies = o2::track::PID::NIDs; // One per PDG
-static constexpr const char* particleTitle[nSpecies] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
-static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040};
+static constexpr int nCharges = 2;
+static constexpr int nParticles = nSpecies * nCharges;
+static constexpr const char* particleTitle[nParticles] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha",
+                                                          "e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
+static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040,
+                                         -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
 // Histograms
-static constexpr int nHistograms = nSpecies * 2;
 
 // Pt
-static constexpr std::string_view hPtIts[nHistograms] = {"MC/el/pos_pdg/pt/its", "MC/mu/pos_pdg/pt/its", "MC/pi/pos_pdg/pt/its",
-                                                         "MC/ka/pos_pdg/pt/its", "MC/pr/pos_pdg/pt/its", "MC/de/pos_pdg/pt/its",
-                                                         "MC/tr/pos_pdg/pt/its", "MC/he/pos_pdg/pt/its", "MC/al/pos_pdg/pt/its",
-                                                         "MC/el/neg_pdg/pt/its", "MC/mu/neg_pdg/pt/its", "MC/pi/neg_pdg/pt/its",
-                                                         "MC/ka/neg_pdg/pt/its", "MC/pr/neg_pdg/pt/its", "MC/de/neg_pdg/pt/its",
-                                                         "MC/tr/neg_pdg/pt/its", "MC/he/neg_pdg/pt/its", "MC/al/neg_pdg/pt/its"};
-static constexpr std::string_view hPtTpc[nHistograms] = {"MC/el/pos_pdg/pt/tpc", "MC/mu/pos_pdg/pt/tpc", "MC/pi/pos_pdg/pt/tpc",
-                                                         "MC/ka/pos_pdg/pt/tpc", "MC/pr/pos_pdg/pt/tpc", "MC/de/pos_pdg/pt/tpc",
-                                                         "MC/tr/pos_pdg/pt/tpc", "MC/he/pos_pdg/pt/tpc", "MC/al/pos_pdg/pt/tpc",
-                                                         "MC/el/neg_pdg/pt/tpc", "MC/mu/neg_pdg/pt/tpc", "MC/pi/neg_pdg/pt/tpc",
-                                                         "MC/ka/neg_pdg/pt/tpc", "MC/pr/neg_pdg/pt/tpc", "MC/de/neg_pdg/pt/tpc",
-                                                         "MC/tr/neg_pdg/pt/tpc", "MC/he/neg_pdg/pt/tpc", "MC/al/neg_pdg/pt/tpc"};
-static constexpr std::string_view hPtItsTpc[nHistograms] = {"MC/el/pos_pdg/pt/its_tpc", "MC/mu/pos_pdg/pt/its_tpc", "MC/pi/pos_pdg/pt/its_tpc",
-                                                            "MC/ka/pos_pdg/pt/its_tpc", "MC/pr/pos_pdg/pt/its_tpc", "MC/de/pos_pdg/pt/its_tpc",
-                                                            "MC/tr/pos_pdg/pt/its_tpc", "MC/he/pos_pdg/pt/its_tpc", "MC/al/pos_pdg/pt/its_tpc",
-                                                            "MC/el/neg_pdg/pt/its_tpc", "MC/mu/neg_pdg/pt/its_tpc", "MC/pi/neg_pdg/pt/its_tpc",
-                                                            "MC/ka/neg_pdg/pt/its_tpc", "MC/pr/neg_pdg/pt/its_tpc", "MC/de/neg_pdg/pt/its_tpc",
-                                                            "MC/tr/neg_pdg/pt/its_tpc", "MC/he/neg_pdg/pt/its_tpc", "MC/al/neg_pdg/pt/its_tpc"};
-static constexpr std::string_view hPtItsTof[nHistograms] = {"MC/el/pos_pdg/pt/its_tof", "MC/mu/pos_pdg/pt/its_tof", "MC/pi/pos_pdg/pt/its_tof",
-                                                            "MC/ka/pos_pdg/pt/its_tof", "MC/pr/pos_pdg/pt/its_tof", "MC/de/pos_pdg/pt/its_tof",
-                                                            "MC/tr/pos_pdg/pt/its_tof", "MC/he/pos_pdg/pt/its_tof", "MC/al/pos_pdg/pt/its_tof",
-                                                            "MC/el/neg_pdg/pt/its_tof", "MC/mu/neg_pdg/pt/its_tof", "MC/pi/neg_pdg/pt/its_tof",
-                                                            "MC/ka/neg_pdg/pt/its_tof", "MC/pr/neg_pdg/pt/its_tof", "MC/de/neg_pdg/pt/its_tof",
-                                                            "MC/tr/neg_pdg/pt/its_tof", "MC/he/neg_pdg/pt/its_tof", "MC/al/neg_pdg/pt/its_tof"};
-static constexpr std::string_view hPtTpcTof[nHistograms] = {"MC/el/pos_pdg/pt/tpc_tof", "MC/mu/pos_pdg/pt/tpc_tof", "MC/pi/pos_pdg/pt/tpc_tof",
-                                                            "MC/ka/pos_pdg/pt/tpc_tof", "MC/pr/pos_pdg/pt/tpc_tof", "MC/de/pos_pdg/pt/tpc_tof",
-                                                            "MC/tr/pos_pdg/pt/tpc_tof", "MC/he/pos_pdg/pt/tpc_tof", "MC/al/pos_pdg/pt/tpc_tof",
-                                                            "MC/el/neg_pdg/pt/tpc_tof", "MC/mu/neg_pdg/pt/tpc_tof", "MC/pi/neg_pdg/pt/tpc_tof",
-                                                            "MC/ka/neg_pdg/pt/tpc_tof", "MC/pr/neg_pdg/pt/tpc_tof", "MC/de/neg_pdg/pt/tpc_tof",
-                                                            "MC/tr/neg_pdg/pt/tpc_tof", "MC/he/neg_pdg/pt/tpc_tof", "MC/al/neg_pdg/pt/tpc_tof"};
-static constexpr std::string_view hPtItsTpcTof[nHistograms] = {"MC/el/pos_pdg/pt/its_tpc_tof", "MC/mu/pos_pdg/pt/its_tpc_tof", "MC/pi/pos_pdg/pt/its_tpc_tof",
-                                                               "MC/ka/pos_pdg/pt/its_tpc_tof", "MC/pr/pos_pdg/pt/its_tpc_tof", "MC/de/pos_pdg/pt/its_tpc_tof",
-                                                               "MC/tr/pos_pdg/pt/its_tpc_tof", "MC/he/pos_pdg/pt/its_tpc_tof", "MC/al/pos_pdg/pt/its_tpc_tof",
-                                                               "MC/el/neg_pdg/pt/its_tpc_tof", "MC/mu/neg_pdg/pt/its_tpc_tof", "MC/pi/neg_pdg/pt/its_tpc_tof",
-                                                               "MC/ka/neg_pdg/pt/its_tpc_tof", "MC/pr/neg_pdg/pt/its_tpc_tof", "MC/de/neg_pdg/pt/its_tpc_tof",
-                                                               "MC/tr/neg_pdg/pt/its_tpc_tof", "MC/he/neg_pdg/pt/its_tpc_tof", "MC/al/neg_pdg/pt/its_tpc_tof"};
-static constexpr std::string_view hPtItsTpcTrdTof[nHistograms] = {"MC/el/pos_pdg/pt/its_tpc_trd_tof", "MC/mu/pos_pdg/pt/its_tpc_trd_tof", "MC/pi/pos_pdg/pt/its_tpc_trd_tof",
-                                                                  "MC/ka/pos_pdg/pt/its_tpc_trd_tof", "MC/pr/pos_pdg/pt/its_tpc_trd_tof", "MC/de/pos_pdg/pt/its_tpc_trd_tof",
-                                                                  "MC/tr/pos_pdg/pt/its_tpc_trd_tof", "MC/he/pos_pdg/pt/its_tpc_trd_tof", "MC/al/pos_pdg/pt/its_tpc_trd_tof",
-                                                                  "MC/el/neg_pdg/pt/its_tpc_trd_tof", "MC/mu/neg_pdg/pt/its_tpc_trd_tof", "MC/pi/neg_pdg/pt/its_tpc_trd_tof",
-                                                                  "MC/ka/neg_pdg/pt/its_tpc_trd_tof", "MC/pr/neg_pdg/pt/its_tpc_trd_tof", "MC/de/neg_pdg/pt/its_tpc_trd_tof",
-                                                                  "MC/tr/neg_pdg/pt/its_tpc_trd_tof", "MC/he/neg_pdg/pt/its_tpc_trd_tof", "MC/al/neg_pdg/pt/its_tpc_trd_tof"};
-static constexpr std::string_view hPtItsTpcTrd[nHistograms] = {"MC/el/pos_pdg/pt/its_tpc_trd", "MC/mu/pos_pdg/pt/its_tpc_trd", "MC/pi/pos_pdg/pt/its_tpc_trd",
-                                                               "MC/ka/pos_pdg/pt/its_tpc_trd", "MC/pr/pos_pdg/pt/its_tpc_trd", "MC/de/pos_pdg/pt/its_tpc_trd",
-                                                               "MC/tr/pos_pdg/pt/its_tpc_trd", "MC/he/pos_pdg/pt/its_tpc_trd", "MC/al/pos_pdg/pt/its_tpc_trd",
-                                                               "MC/el/neg_pdg/pt/its_tpc_trd", "MC/mu/neg_pdg/pt/its_tpc_trd", "MC/pi/neg_pdg/pt/its_tpc_trd",
-                                                               "MC/ka/neg_pdg/pt/its_tpc_trd", "MC/pr/neg_pdg/pt/its_tpc_trd", "MC/de/neg_pdg/pt/its_tpc_trd",
-                                                               "MC/tr/neg_pdg/pt/its_tpc_trd", "MC/he/neg_pdg/pt/its_tpc_trd", "MC/al/neg_pdg/pt/its_tpc_trd"};
-static constexpr std::string_view hPtTrkItsTpc[nHistograms] = {"MC/el/pos_pdg/pt/trk/its_tpc", "MC/mu/pos_pdg/pt/trk/its_tpc", "MC/pi/pos_pdg/pt/trk/its_tpc",
-                                                               "MC/ka/pos_pdg/pt/trk/its_tpc", "MC/pr/pos_pdg/pt/trk/its_tpc", "MC/de/pos_pdg/pt/trk/its_tpc",
-                                                               "MC/tr/pos_pdg/pt/trk/its_tpc", "MC/he/pos_pdg/pt/trk/its_tpc", "MC/al/pos_pdg/pt/trk/its_tpc",
-                                                               "MC/el/neg_pdg/pt/trk/its_tpc", "MC/mu/neg_pdg/pt/trk/its_tpc", "MC/pi/neg_pdg/pt/trk/its_tpc",
-                                                               "MC/ka/neg_pdg/pt/trk/its_tpc", "MC/pr/neg_pdg/pt/trk/its_tpc", "MC/de/neg_pdg/pt/trk/its_tpc",
-                                                               "MC/tr/neg_pdg/pt/trk/its_tpc", "MC/he/neg_pdg/pt/trk/its_tpc", "MC/al/neg_pdg/pt/trk/its_tpc"};
-static constexpr std::string_view hPtGenerated[nHistograms] = {"MC/el/pos_pdg/pt/generated", "MC/mu/pos_pdg/pt/generated", "MC/pi/pos_pdg/pt/generated",
-                                                               "MC/ka/pos_pdg/pt/generated", "MC/pr/pos_pdg/pt/generated", "MC/de/pos_pdg/pt/generated",
-                                                               "MC/tr/pos_pdg/pt/generated", "MC/he/pos_pdg/pt/generated", "MC/al/pos_pdg/pt/generated",
-                                                               "MC/el/neg_pdg/pt/generated", "MC/mu/neg_pdg/pt/generated", "MC/pi/neg_pdg/pt/generated",
-                                                               "MC/ka/neg_pdg/pt/generated", "MC/pr/neg_pdg/pt/generated", "MC/de/neg_pdg/pt/generated",
-                                                               "MC/tr/neg_pdg/pt/generated", "MC/he/neg_pdg/pt/generated", "MC/al/neg_pdg/pt/generated"};
-static constexpr std::string_view hPtGeneratedRecoEv[nHistograms] = {"MC/el/pos_pdg/pt/generated_reco_ev", "MC/mu/pos_pdg/pt/generated_reco_ev", "MC/pi/pos_pdg/pt/generated_reco_ev",
-                                                                     "MC/ka/pos_pdg/pt/generated_reco_ev", "MC/pr/pos_pdg/pt/generated_reco_ev", "MC/de/pos_pdg/pt/generated_reco_ev",
-                                                                     "MC/tr/pos_pdg/pt/generated_reco_ev", "MC/he/pos_pdg/pt/generated_reco_ev", "MC/al/pos_pdg/pt/generated_reco_ev",
-                                                                     "MC/el/neg_pdg/pt/generated_reco_ev", "MC/mu/neg_pdg/pt/generated_reco_ev", "MC/pi/neg_pdg/pt/generated_reco_ev",
-                                                                     "MC/ka/neg_pdg/pt/generated_reco_ev", "MC/pr/neg_pdg/pt/generated_reco_ev", "MC/de/neg_pdg/pt/generated_reco_ev",
-                                                                     "MC/tr/neg_pdg/pt/generated_reco_ev", "MC/he/neg_pdg/pt/generated_reco_ev", "MC/al/neg_pdg/pt/generated_reco_ev"};
+std::array<std::shared_ptr<TH1>, nParticles> hPtIts;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTof;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTpcTof;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTof;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTrdTof;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTrd;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hPtGenerated;
+std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedRecoEv;
 
 // Pt for primaries
-static constexpr std::string_view hPtItsPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/its", "MC/mu/pos_pdg/pt/prm/its", "MC/pi/pos_pdg/pt/prm/its",
-                                                            "MC/ka/pos_pdg/pt/prm/its", "MC/pr/pos_pdg/pt/prm/its", "MC/de/pos_pdg/pt/prm/its",
-                                                            "MC/tr/pos_pdg/pt/prm/its", "MC/he/pos_pdg/pt/prm/its", "MC/al/pos_pdg/pt/prm/its",
-                                                            "MC/el/neg_pdg/pt/prm/its", "MC/mu/neg_pdg/pt/prm/its", "MC/pi/neg_pdg/pt/prm/its",
-                                                            "MC/ka/neg_pdg/pt/prm/its", "MC/pr/neg_pdg/pt/prm/its", "MC/de/neg_pdg/pt/prm/its",
-                                                            "MC/tr/neg_pdg/pt/prm/its", "MC/he/neg_pdg/pt/prm/its", "MC/al/neg_pdg/pt/prm/its"};
-static constexpr std::string_view hPtItsTpcPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/its_tpc", "MC/mu/pos_pdg/pt/prm/its_tpc", "MC/pi/pos_pdg/pt/prm/its_tpc",
-                                                               "MC/ka/pos_pdg/pt/prm/its_tpc", "MC/pr/pos_pdg/pt/prm/its_tpc", "MC/de/pos_pdg/pt/prm/its_tpc",
-                                                               "MC/tr/pos_pdg/pt/prm/its_tpc", "MC/he/pos_pdg/pt/prm/its_tpc", "MC/al/pos_pdg/pt/prm/its_tpc",
-                                                               "MC/el/neg_pdg/pt/prm/its_tpc", "MC/mu/neg_pdg/pt/prm/its_tpc", "MC/pi/neg_pdg/pt/prm/its_tpc",
-                                                               "MC/ka/neg_pdg/pt/prm/its_tpc", "MC/pr/neg_pdg/pt/prm/its_tpc", "MC/de/neg_pdg/pt/prm/its_tpc",
-                                                               "MC/tr/neg_pdg/pt/prm/its_tpc", "MC/he/neg_pdg/pt/prm/its_tpc", "MC/al/neg_pdg/pt/prm/its_tpc"};
-static constexpr std::string_view hPtTrkItsTpcPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/trk/its_tpc", "MC/mu/pos_pdg/pt/prm/trk/its_tpc", "MC/pi/pos_pdg/pt/prm/trk/its_tpc",
-                                                                  "MC/ka/pos_pdg/pt/prm/trk/its_tpc", "MC/pr/pos_pdg/pt/prm/trk/its_tpc", "MC/de/pos_pdg/pt/prm/trk/its_tpc",
-                                                                  "MC/tr/pos_pdg/pt/prm/trk/its_tpc", "MC/he/pos_pdg/pt/prm/trk/its_tpc", "MC/al/pos_pdg/pt/prm/trk/its_tpc",
-                                                                  "MC/el/neg_pdg/pt/prm/trk/its_tpc", "MC/mu/neg_pdg/pt/prm/trk/its_tpc", "MC/pi/neg_pdg/pt/prm/trk/its_tpc",
-                                                                  "MC/ka/neg_pdg/pt/prm/trk/its_tpc", "MC/pr/neg_pdg/pt/prm/trk/its_tpc", "MC/de/neg_pdg/pt/prm/trk/its_tpc",
-                                                                  "MC/tr/neg_pdg/pt/prm/trk/its_tpc", "MC/he/neg_pdg/pt/prm/trk/its_tpc", "MC/al/neg_pdg/pt/prm/trk/its_tpc"};
-static constexpr std::string_view hPtItsTpcTofPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/its_tpc_tof", "MC/mu/pos_pdg/pt/prm/its_tpc_tof", "MC/pi/pos_pdg/pt/prm/its_tpc_tof",
-                                                                  "MC/ka/pos_pdg/pt/prm/its_tpc_tof", "MC/pr/pos_pdg/pt/prm/its_tpc_tof", "MC/de/pos_pdg/pt/prm/its_tpc_tof",
-                                                                  "MC/tr/pos_pdg/pt/prm/its_tpc_tof", "MC/he/pos_pdg/pt/prm/its_tpc_tof", "MC/al/pos_pdg/pt/prm/its_tpc_tof",
-                                                                  "MC/el/neg_pdg/pt/prm/its_tpc_tof", "MC/mu/neg_pdg/pt/prm/its_tpc_tof", "MC/pi/neg_pdg/pt/prm/its_tpc_tof",
-                                                                  "MC/ka/neg_pdg/pt/prm/its_tpc_tof", "MC/pr/neg_pdg/pt/prm/its_tpc_tof", "MC/de/neg_pdg/pt/prm/its_tpc_tof",
-                                                                  "MC/tr/neg_pdg/pt/prm/its_tpc_tof", "MC/he/neg_pdg/pt/prm/its_tpc_tof", "MC/al/neg_pdg/pt/prm/its_tpc_tof"};
-static constexpr std::string_view hPtTrkItsTpcTofPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/mu/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/pi/pos_pdg/pt/prm/trk/its_tpc_tof",
-                                                                     "MC/ka/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/pr/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/de/pos_pdg/pt/prm/trk/its_tpc_tof",
-                                                                     "MC/tr/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/he/pos_pdg/pt/prm/trk/its_tpc_tof", "MC/al/pos_pdg/pt/prm/trk/its_tpc_tof",
-                                                                     "MC/el/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/mu/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/pi/neg_pdg/pt/prm/trk/its_tpc_tof",
-                                                                     "MC/ka/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/pr/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/de/neg_pdg/pt/prm/trk/its_tpc_tof",
-                                                                     "MC/tr/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/he/neg_pdg/pt/prm/trk/its_tpc_tof", "MC/al/neg_pdg/pt/prm/trk/its_tpc_tof"};
-static constexpr std::string_view hPtGeneratedPrm[nHistograms] = {"MC/el/pos_pdg/pt/prm/generated", "MC/mu/pos_pdg/pt/prm/generated", "MC/pi/pos_pdg/pt/prm/generated",
-                                                                  "MC/ka/pos_pdg/pt/prm/generated", "MC/pr/pos_pdg/pt/prm/generated", "MC/de/pos_pdg/pt/prm/generated",
-                                                                  "MC/tr/pos_pdg/pt/prm/generated", "MC/he/pos_pdg/pt/prm/generated", "MC/al/pos_pdg/pt/prm/generated",
-                                                                  "MC/el/neg_pdg/pt/prm/generated", "MC/mu/neg_pdg/pt/prm/generated", "MC/pi/neg_pdg/pt/prm/generated",
-                                                                  "MC/ka/neg_pdg/pt/prm/generated", "MC/pr/neg_pdg/pt/prm/generated", "MC/de/neg_pdg/pt/prm/generated",
-                                                                  "MC/tr/neg_pdg/pt/prm/generated", "MC/he/neg_pdg/pt/prm/generated", "MC/al/neg_pdg/pt/prm/generated"};
-static constexpr std::string_view hPtGeneratedPrmRecoEv[nHistograms] = {"MC/el/pos_pdg/pt/prm/generated_reco_ev", "MC/mu/pos_pdg/pt/prm/generated_reco_ev", "MC/pi/pos_pdg/pt/prm/generated_reco_ev",
-                                                                        "MC/ka/pos_pdg/pt/prm/generated_reco_ev", "MC/pr/pos_pdg/pt/prm/generated_reco_ev", "MC/de/pos_pdg/pt/prm/generated_reco_ev",
-                                                                        "MC/tr/pos_pdg/pt/prm/generated_reco_ev", "MC/he/pos_pdg/pt/prm/generated_reco_ev", "MC/al/pos_pdg/pt/prm/generated_reco_ev",
-                                                                        "MC/el/neg_pdg/pt/prm/generated_reco_ev", "MC/mu/neg_pdg/pt/prm/generated_reco_ev", "MC/pi/neg_pdg/pt/prm/generated_reco_ev",
-                                                                        "MC/ka/neg_pdg/pt/prm/generated_reco_ev", "MC/pr/neg_pdg/pt/prm/generated_reco_ev", "MC/de/neg_pdg/pt/prm/generated_reco_ev",
-                                                                        "MC/tr/neg_pdg/pt/prm/generated_reco_ev", "MC/he/neg_pdg/pt/prm/generated_reco_ev", "MC/al/neg_pdg/pt/prm/generated_reco_ev"};
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcTofPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedPrmRecoEv;
 
 // Pt for secondaries from weak decay
-static constexpr std::string_view hPtItsTpcStr[nHistograms] = {"MC/el/pos_pdg/pt/str/its_tpc", "MC/mu/pos_pdg/pt/str/its_tpc", "MC/pi/pos_pdg/pt/str/its_tpc",
-                                                               "MC/ka/pos_pdg/pt/str/its_tpc", "MC/pr/pos_pdg/pt/str/its_tpc", "MC/de/pos_pdg/pt/str/its_tpc",
-                                                               "MC/tr/pos_pdg/pt/str/its_tpc", "MC/he/pos_pdg/pt/str/its_tpc", "MC/al/pos_pdg/pt/str/its_tpc",
-                                                               "MC/el/neg_pdg/pt/str/its_tpc", "MC/mu/neg_pdg/pt/str/its_tpc", "MC/pi/neg_pdg/pt/str/its_tpc",
-                                                               "MC/ka/neg_pdg/pt/str/its_tpc", "MC/pr/neg_pdg/pt/str/its_tpc", "MC/de/neg_pdg/pt/str/its_tpc",
-                                                               "MC/tr/neg_pdg/pt/str/its_tpc", "MC/he/neg_pdg/pt/str/its_tpc", "MC/al/neg_pdg/pt/str/its_tpc"};
-static constexpr std::string_view hPtTrkItsTpcStr[nHistograms] = {"MC/el/pos_pdg/pt/str/trk/its_tpc", "MC/mu/pos_pdg/pt/str/trk/its_tpc", "MC/pi/pos_pdg/pt/str/trk/its_tpc",
-                                                                  "MC/ka/pos_pdg/pt/str/trk/its_tpc", "MC/pr/pos_pdg/pt/str/trk/its_tpc", "MC/de/pos_pdg/pt/str/trk/its_tpc",
-                                                                  "MC/tr/pos_pdg/pt/str/trk/its_tpc", "MC/he/pos_pdg/pt/str/trk/its_tpc", "MC/al/pos_pdg/pt/str/trk/its_tpc",
-                                                                  "MC/el/neg_pdg/pt/str/trk/its_tpc", "MC/mu/neg_pdg/pt/str/trk/its_tpc", "MC/pi/neg_pdg/pt/str/trk/its_tpc",
-                                                                  "MC/ka/neg_pdg/pt/str/trk/its_tpc", "MC/pr/neg_pdg/pt/str/trk/its_tpc", "MC/de/neg_pdg/pt/str/trk/its_tpc",
-                                                                  "MC/tr/neg_pdg/pt/str/trk/its_tpc", "MC/he/neg_pdg/pt/str/trk/its_tpc", "MC/al/neg_pdg/pt/str/trk/its_tpc"};
-static constexpr std::string_view hPtItsTpcTofStr[nHistograms] = {"MC/el/pos_pdg/pt/str/its_tpc_tof", "MC/mu/pos_pdg/pt/str/its_tpc_tof", "MC/pi/pos_pdg/pt/str/its_tpc_tof",
-                                                                  "MC/ka/pos_pdg/pt/str/its_tpc_tof", "MC/pr/pos_pdg/pt/str/its_tpc_tof", "MC/de/pos_pdg/pt/str/its_tpc_tof",
-                                                                  "MC/tr/pos_pdg/pt/str/its_tpc_tof", "MC/he/pos_pdg/pt/str/its_tpc_tof", "MC/al/pos_pdg/pt/str/its_tpc_tof",
-                                                                  "MC/el/neg_pdg/pt/str/its_tpc_tof", "MC/mu/neg_pdg/pt/str/its_tpc_tof", "MC/pi/neg_pdg/pt/str/its_tpc_tof",
-                                                                  "MC/ka/neg_pdg/pt/str/its_tpc_tof", "MC/pr/neg_pdg/pt/str/its_tpc_tof", "MC/de/neg_pdg/pt/str/its_tpc_tof",
-                                                                  "MC/tr/neg_pdg/pt/str/its_tpc_tof", "MC/he/neg_pdg/pt/str/its_tpc_tof", "MC/al/neg_pdg/pt/str/its_tpc_tof"};
-static constexpr std::string_view hPtGeneratedStr[nHistograms] = {"MC/el/pos_pdg/pt/str/generated", "MC/mu/pos_pdg/pt/str/generated", "MC/pi/pos_pdg/pt/str/generated",
-                                                                  "MC/ka/pos_pdg/pt/str/generated", "MC/pr/pos_pdg/pt/str/generated", "MC/de/pos_pdg/pt/str/generated",
-                                                                  "MC/tr/pos_pdg/pt/str/generated", "MC/he/pos_pdg/pt/str/generated", "MC/al/pos_pdg/pt/str/generated",
-                                                                  "MC/el/neg_pdg/pt/str/generated", "MC/mu/neg_pdg/pt/str/generated", "MC/pi/neg_pdg/pt/str/generated",
-                                                                  "MC/ka/neg_pdg/pt/str/generated", "MC/pr/neg_pdg/pt/str/generated", "MC/de/neg_pdg/pt/str/generated",
-                                                                  "MC/tr/neg_pdg/pt/str/generated", "MC/he/neg_pdg/pt/str/generated", "MC/al/neg_pdg/pt/str/generated"};
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcStr;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcStr;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofStr;
+std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedStr;
 
 // Pt for secondaries from material
-static constexpr std::string_view hPtItsTpcMat[nHistograms] = {"MC/el/pos_pdg/pt/mat/its_tpc", "MC/mu/pos_pdg/pt/mat/its_tpc", "MC/pi/pos_pdg/pt/mat/its_tpc",
-                                                               "MC/ka/pos_pdg/pt/mat/its_tpc", "MC/pr/pos_pdg/pt/mat/its_tpc", "MC/de/pos_pdg/pt/mat/its_tpc",
-                                                               "MC/tr/pos_pdg/pt/mat/its_tpc", "MC/he/pos_pdg/pt/mat/its_tpc", "MC/al/pos_pdg/pt/mat/its_tpc",
-                                                               "MC/el/neg_pdg/pt/mat/its_tpc", "MC/mu/neg_pdg/pt/mat/its_tpc", "MC/pi/neg_pdg/pt/mat/its_tpc",
-                                                               "MC/ka/neg_pdg/pt/mat/its_tpc", "MC/pr/neg_pdg/pt/mat/its_tpc", "MC/de/neg_pdg/pt/mat/its_tpc",
-                                                               "MC/tr/neg_pdg/pt/mat/its_tpc", "MC/he/neg_pdg/pt/mat/its_tpc", "MC/al/neg_pdg/pt/mat/its_tpc"};
-static constexpr std::string_view hPtTrkItsTpcMat[nHistograms] = {"MC/el/pos_pdg/pt/mat/trk/its_tpc", "MC/mu/pos_pdg/pt/mat/trk/its_tpc", "MC/pi/pos_pdg/pt/mat/trk/its_tpc",
-                                                                  "MC/ka/pos_pdg/pt/mat/trk/its_tpc", "MC/pr/pos_pdg/pt/mat/trk/its_tpc", "MC/de/pos_pdg/pt/mat/trk/its_tpc",
-                                                                  "MC/tr/pos_pdg/pt/mat/trk/its_tpc", "MC/he/pos_pdg/pt/mat/trk/its_tpc", "MC/al/pos_pdg/pt/mat/trk/its_tpc",
-                                                                  "MC/el/neg_pdg/pt/mat/trk/its_tpc", "MC/mu/neg_pdg/pt/mat/trk/its_tpc", "MC/pi/neg_pdg/pt/mat/trk/its_tpc",
-                                                                  "MC/ka/neg_pdg/pt/mat/trk/its_tpc", "MC/pr/neg_pdg/pt/mat/trk/its_tpc", "MC/de/neg_pdg/pt/mat/trk/its_tpc",
-                                                                  "MC/tr/neg_pdg/pt/mat/trk/its_tpc", "MC/he/neg_pdg/pt/mat/trk/its_tpc", "MC/al/neg_pdg/pt/mat/trk/its_tpc"};
-static constexpr std::string_view hPtItsTpcTofMat[nHistograms] = {"MC/el/pos_pdg/pt/mat/its_tpc_tof", "MC/mu/pos_pdg/pt/mat/its_tpc_tof", "MC/pi/pos_pdg/pt/mat/its_tpc_tof",
-                                                                  "MC/ka/pos_pdg/pt/mat/its_tpc_tof", "MC/pr/pos_pdg/pt/mat/its_tpc_tof", "MC/de/pos_pdg/pt/mat/its_tpc_tof",
-                                                                  "MC/tr/pos_pdg/pt/mat/its_tpc_tof", "MC/he/pos_pdg/pt/mat/its_tpc_tof", "MC/al/pos_pdg/pt/mat/its_tpc_tof",
-                                                                  "MC/el/neg_pdg/pt/mat/its_tpc_tof", "MC/mu/neg_pdg/pt/mat/its_tpc_tof", "MC/pi/neg_pdg/pt/mat/its_tpc_tof",
-                                                                  "MC/ka/neg_pdg/pt/mat/its_tpc_tof", "MC/pr/neg_pdg/pt/mat/its_tpc_tof", "MC/de/neg_pdg/pt/mat/its_tpc_tof",
-                                                                  "MC/tr/neg_pdg/pt/mat/its_tpc_tof", "MC/he/neg_pdg/pt/mat/its_tpc_tof", "MC/al/neg_pdg/pt/mat/its_tpc_tof"};
-static constexpr std::string_view hPtGeneratedMat[nHistograms] = {"MC/el/pos_pdg/pt/mat/generated", "MC/mu/pos_pdg/pt/mat/generated", "MC/pi/pos_pdg/pt/mat/generated",
-                                                                  "MC/ka/pos_pdg/pt/mat/generated", "MC/pr/pos_pdg/pt/mat/generated", "MC/de/pos_pdg/pt/mat/generated",
-                                                                  "MC/tr/pos_pdg/pt/mat/generated", "MC/he/pos_pdg/pt/mat/generated", "MC/al/pos_pdg/pt/mat/generated",
-                                                                  "MC/el/neg_pdg/pt/mat/generated", "MC/mu/neg_pdg/pt/mat/generated", "MC/pi/neg_pdg/pt/mat/generated",
-                                                                  "MC/ka/neg_pdg/pt/mat/generated", "MC/pr/neg_pdg/pt/mat/generated", "MC/de/neg_pdg/pt/mat/generated",
-                                                                  "MC/tr/neg_pdg/pt/mat/generated", "MC/he/neg_pdg/pt/mat/generated", "MC/al/neg_pdg/pt/mat/generated"};
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcMat;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcMat;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofMat;
+std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedMat;
+
+// Pt for tertiaries from secondary weak decay
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTer;
+std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcTer;
+std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofTer;
+std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedTer;
 
 // P
-static constexpr std::string_view hPItsTpc[nHistograms] = {"MC/el/pos_pdg/p/its_tpc", "MC/mu/pos_pdg/p/its_tpc", "MC/pi/pos_pdg/p/its_tpc",
-                                                           "MC/ka/pos_pdg/p/its_tpc", "MC/pr/pos_pdg/p/its_tpc", "MC/de/pos_pdg/p/its_tpc",
-                                                           "MC/tr/pos_pdg/p/its_tpc", "MC/he/pos_pdg/p/its_tpc", "MC/al/pos_pdg/p/its_tpc",
-                                                           "MC/el/neg_pdg/p/its_tpc", "MC/mu/neg_pdg/p/its_tpc", "MC/pi/neg_pdg/p/its_tpc",
-                                                           "MC/ka/neg_pdg/p/its_tpc", "MC/pr/neg_pdg/p/its_tpc", "MC/de/neg_pdg/p/its_tpc",
-                                                           "MC/tr/neg_pdg/p/its_tpc", "MC/he/neg_pdg/p/its_tpc", "MC/al/neg_pdg/p/its_tpc"};
-static constexpr std::string_view hPTrkItsTpc[nHistograms] = {"MC/el/pos_pdg/p/trk/its_tpc", "MC/mu/pos_pdg/p/trk/its_tpc", "MC/pi/pos_pdg/p/trk/its_tpc",
-                                                              "MC/ka/pos_pdg/p/trk/its_tpc", "MC/pr/pos_pdg/p/trk/its_tpc", "MC/de/pos_pdg/p/trk/its_tpc",
-                                                              "MC/tr/pos_pdg/p/trk/its_tpc", "MC/he/pos_pdg/p/trk/its_tpc", "MC/al/pos_pdg/p/trk/its_tpc",
-                                                              "MC/el/neg_pdg/p/trk/its_tpc", "MC/mu/neg_pdg/p/trk/its_tpc", "MC/pi/neg_pdg/p/trk/its_tpc",
-                                                              "MC/ka/neg_pdg/p/trk/its_tpc", "MC/pr/neg_pdg/p/trk/its_tpc", "MC/de/neg_pdg/p/trk/its_tpc",
-                                                              "MC/tr/neg_pdg/p/trk/its_tpc", "MC/he/neg_pdg/p/trk/its_tpc", "MC/al/neg_pdg/p/trk/its_tpc"};
-static constexpr std::string_view hPItsTpcTof[nHistograms] = {"MC/el/pos_pdg/p/its_tpc_tof", "MC/mu/pos_pdg/p/its_tpc_tof", "MC/pi/pos_pdg/p/its_tpc_tof",
-                                                              "MC/ka/pos_pdg/p/its_tpc_tof", "MC/pr/pos_pdg/p/its_tpc_tof", "MC/de/pos_pdg/p/its_tpc_tof",
-                                                              "MC/tr/pos_pdg/p/its_tpc_tof", "MC/he/pos_pdg/p/its_tpc_tof", "MC/al/pos_pdg/p/its_tpc_tof",
-                                                              "MC/el/neg_pdg/p/its_tpc_tof", "MC/mu/neg_pdg/p/its_tpc_tof", "MC/pi/neg_pdg/p/its_tpc_tof",
-                                                              "MC/ka/neg_pdg/p/its_tpc_tof", "MC/pr/neg_pdg/p/its_tpc_tof", "MC/de/neg_pdg/p/its_tpc_tof",
-                                                              "MC/tr/neg_pdg/p/its_tpc_tof", "MC/he/neg_pdg/p/its_tpc_tof", "MC/al/neg_pdg/p/its_tpc_tof"};
-static constexpr std::string_view hPGenerated[nHistograms] = {"MC/el/pos_pdg/p/generated", "MC/mu/pos_pdg/p/generated", "MC/pi/pos_pdg/p/generated",
-                                                              "MC/ka/pos_pdg/p/generated", "MC/pr/pos_pdg/p/generated", "MC/de/pos_pdg/p/generated",
-                                                              "MC/tr/pos_pdg/p/generated", "MC/he/pos_pdg/p/generated", "MC/al/pos_pdg/p/generated",
-                                                              "MC/el/neg_pdg/p/generated", "MC/mu/neg_pdg/p/generated", "MC/pi/neg_pdg/p/generated",
-                                                              "MC/ka/neg_pdg/p/generated", "MC/pr/neg_pdg/p/generated", "MC/de/neg_pdg/p/generated",
-                                                              "MC/tr/neg_pdg/p/generated", "MC/he/neg_pdg/p/generated", "MC/al/neg_pdg/p/generated"};
+std::array<std::shared_ptr<TH1>, nParticles> hPItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hPTrkItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hPItsTpcTof;
+std::array<std::shared_ptr<TH1>, nParticles> hPGenerated;
 
 // Eta
-static constexpr std::string_view hEtaItsTpc[nHistograms] = {"MC/el/pos_pdg/eta/its_tpc", "MC/mu/pos_pdg/eta/its_tpc", "MC/pi/pos_pdg/eta/its_tpc",
-                                                             "MC/ka/pos_pdg/eta/its_tpc", "MC/pr/pos_pdg/eta/its_tpc", "MC/de/pos_pdg/eta/its_tpc",
-                                                             "MC/tr/pos_pdg/eta/its_tpc", "MC/he/pos_pdg/eta/its_tpc", "MC/al/pos_pdg/eta/its_tpc",
-                                                             "MC/el/neg_pdg/eta/its_tpc", "MC/mu/neg_pdg/eta/its_tpc", "MC/pi/neg_pdg/eta/its_tpc",
-                                                             "MC/ka/neg_pdg/eta/its_tpc", "MC/pr/neg_pdg/eta/its_tpc", "MC/de/neg_pdg/eta/its_tpc",
-                                                             "MC/tr/neg_pdg/eta/its_tpc", "MC/he/neg_pdg/eta/its_tpc", "MC/al/neg_pdg/eta/its_tpc"};
-static constexpr std::string_view hEtaTrkItsTpc[nHistograms] = {"MC/el/pos_pdg/eta/trk/its_tpc", "MC/mu/pos_pdg/eta/trk/its_tpc", "MC/pi/pos_pdg/eta/trk/its_tpc",
-                                                                "MC/ka/pos_pdg/eta/trk/its_tpc", "MC/pr/pos_pdg/eta/trk/its_tpc", "MC/de/pos_pdg/eta/trk/its_tpc",
-                                                                "MC/tr/pos_pdg/eta/trk/its_tpc", "MC/he/pos_pdg/eta/trk/its_tpc", "MC/al/pos_pdg/eta/trk/its_tpc",
-                                                                "MC/el/neg_pdg/eta/trk/its_tpc", "MC/mu/neg_pdg/eta/trk/its_tpc", "MC/pi/neg_pdg/eta/trk/its_tpc",
-                                                                "MC/ka/neg_pdg/eta/trk/its_tpc", "MC/pr/neg_pdg/eta/trk/its_tpc", "MC/de/neg_pdg/eta/trk/its_tpc",
-                                                                "MC/tr/neg_pdg/eta/trk/its_tpc", "MC/he/neg_pdg/eta/trk/its_tpc", "MC/al/neg_pdg/eta/trk/its_tpc"};
-static constexpr std::string_view hEtaItsTpcTof[nHistograms] = {"MC/el/pos_pdg/eta/its_tpc_tof", "MC/mu/pos_pdg/eta/its_tpc_tof", "MC/pi/pos_pdg/eta/its_tpc_tof",
-                                                                "MC/ka/pos_pdg/eta/its_tpc_tof", "MC/pr/pos_pdg/eta/its_tpc_tof", "MC/de/pos_pdg/eta/its_tpc_tof",
-                                                                "MC/tr/pos_pdg/eta/its_tpc_tof", "MC/he/pos_pdg/eta/its_tpc_tof", "MC/al/pos_pdg/eta/its_tpc_tof",
-                                                                "MC/el/neg_pdg/eta/its_tpc_tof", "MC/mu/neg_pdg/eta/its_tpc_tof", "MC/pi/neg_pdg/eta/its_tpc_tof",
-                                                                "MC/ka/neg_pdg/eta/its_tpc_tof", "MC/pr/neg_pdg/eta/its_tpc_tof", "MC/de/neg_pdg/eta/its_tpc_tof",
-                                                                "MC/tr/neg_pdg/eta/its_tpc_tof", "MC/he/neg_pdg/eta/its_tpc_tof", "MC/al/neg_pdg/eta/its_tpc_tof"};
-static constexpr std::string_view hEtaGenerated[nHistograms] = {"MC/el/pos_pdg/eta/generated", "MC/mu/pos_pdg/eta/generated", "MC/pi/pos_pdg/eta/generated",
-                                                                "MC/ka/pos_pdg/eta/generated", "MC/pr/pos_pdg/eta/generated", "MC/de/pos_pdg/eta/generated",
-                                                                "MC/tr/pos_pdg/eta/generated", "MC/he/pos_pdg/eta/generated", "MC/al/pos_pdg/eta/generated",
-                                                                "MC/el/neg_pdg/eta/generated", "MC/mu/neg_pdg/eta/generated", "MC/pi/neg_pdg/eta/generated",
-                                                                "MC/ka/neg_pdg/eta/generated", "MC/pr/neg_pdg/eta/generated", "MC/de/neg_pdg/eta/generated",
-                                                                "MC/tr/neg_pdg/eta/generated", "MC/he/neg_pdg/eta/generated", "MC/al/neg_pdg/eta/generated"};
+std::array<std::shared_ptr<TH1>, nParticles> hEtaItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hEtaTrkItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hEtaItsTpcTof;
+std::array<std::shared_ptr<TH1>, nParticles> hEtaGenerated;
 
 // Eta for primaries
-static constexpr std::string_view hEtaItsTpcPrm[nHistograms] = {"MC/el/pos_pdg/eta/prm/its_tpc", "MC/mu/pos_pdg/eta/prm/its_tpc", "MC/pi/pos_pdg/eta/prm/its_tpc",
-                                                                "MC/ka/pos_pdg/eta/prm/its_tpc", "MC/pr/pos_pdg/eta/prm/its_tpc", "MC/de/pos_pdg/eta/prm/its_tpc",
-                                                                "MC/tr/pos_pdg/eta/prm/its_tpc", "MC/he/pos_pdg/eta/prm/its_tpc", "MC/al/pos_pdg/eta/prm/its_tpc",
-                                                                "MC/el/neg_pdg/eta/prm/its_tpc", "MC/mu/neg_pdg/eta/prm/its_tpc", "MC/pi/neg_pdg/eta/prm/its_tpc",
-                                                                "MC/ka/neg_pdg/eta/prm/its_tpc", "MC/pr/neg_pdg/eta/prm/its_tpc", "MC/de/neg_pdg/eta/prm/its_tpc",
-                                                                "MC/tr/neg_pdg/eta/prm/its_tpc", "MC/he/neg_pdg/eta/prm/its_tpc", "MC/al/neg_pdg/eta/prm/its_tpc"};
-static constexpr std::string_view hEtaTrkItsTpcPrm[nHistograms] = {"MC/el/pos_pdg/eta/prm/trk/its_tpc", "MC/mu/pos_pdg/eta/prm/trk/its_tpc", "MC/pi/pos_pdg/eta/prm/trk/its_tpc",
-                                                                   "MC/ka/pos_pdg/eta/prm/trk/its_tpc", "MC/pr/pos_pdg/eta/prm/trk/its_tpc", "MC/de/pos_pdg/eta/prm/trk/its_tpc",
-                                                                   "MC/tr/pos_pdg/eta/prm/trk/its_tpc", "MC/he/pos_pdg/eta/prm/trk/its_tpc", "MC/al/pos_pdg/eta/prm/trk/its_tpc",
-                                                                   "MC/el/neg_pdg/eta/prm/trk/its_tpc", "MC/mu/neg_pdg/eta/prm/trk/its_tpc", "MC/pi/neg_pdg/eta/prm/trk/its_tpc",
-                                                                   "MC/ka/neg_pdg/eta/prm/trk/its_tpc", "MC/pr/neg_pdg/eta/prm/trk/its_tpc", "MC/de/neg_pdg/eta/prm/trk/its_tpc",
-                                                                   "MC/tr/neg_pdg/eta/prm/trk/its_tpc", "MC/he/neg_pdg/eta/prm/trk/its_tpc", "MC/al/neg_pdg/eta/prm/trk/its_tpc"};
-static constexpr std::string_view hEtaItsTpcTofPrm[nHistograms] = {"MC/el/pos_pdg/eta/prm/its_tpc_tof", "MC/mu/pos_pdg/eta/prm/its_tpc_tof", "MC/pi/pos_pdg/eta/prm/its_tpc_tof",
-                                                                   "MC/ka/pos_pdg/eta/prm/its_tpc_tof", "MC/pr/pos_pdg/eta/prm/its_tpc_tof", "MC/de/pos_pdg/eta/prm/its_tpc_tof",
-                                                                   "MC/tr/pos_pdg/eta/prm/its_tpc_tof", "MC/he/pos_pdg/eta/prm/its_tpc_tof", "MC/al/pos_pdg/eta/prm/its_tpc_tof",
-                                                                   "MC/el/neg_pdg/eta/prm/its_tpc_tof", "MC/mu/neg_pdg/eta/prm/its_tpc_tof", "MC/pi/neg_pdg/eta/prm/its_tpc_tof",
-                                                                   "MC/ka/neg_pdg/eta/prm/its_tpc_tof", "MC/pr/neg_pdg/eta/prm/its_tpc_tof", "MC/de/neg_pdg/eta/prm/its_tpc_tof",
-                                                                   "MC/tr/neg_pdg/eta/prm/its_tpc_tof", "MC/he/neg_pdg/eta/prm/its_tpc_tof", "MC/al/neg_pdg/eta/prm/its_tpc_tof"};
-static constexpr std::string_view hEtaGeneratedPrm[nHistograms] = {"MC/el/pos_pdg/eta/prm/generated", "MC/mu/pos_pdg/eta/prm/generated", "MC/pi/pos_pdg/eta/prm/generated",
-                                                                   "MC/ka/pos_pdg/eta/prm/generated", "MC/pr/pos_pdg/eta/prm/generated", "MC/de/pos_pdg/eta/prm/generated",
-                                                                   "MC/tr/pos_pdg/eta/prm/generated", "MC/he/pos_pdg/eta/prm/generated", "MC/al/pos_pdg/eta/prm/generated",
-                                                                   "MC/el/neg_pdg/eta/prm/generated", "MC/mu/neg_pdg/eta/prm/generated", "MC/pi/neg_pdg/eta/prm/generated",
-                                                                   "MC/ka/neg_pdg/eta/prm/generated", "MC/pr/neg_pdg/eta/prm/generated", "MC/de/neg_pdg/eta/prm/generated",
-                                                                   "MC/tr/neg_pdg/eta/prm/generated", "MC/he/neg_pdg/eta/prm/generated", "MC/al/neg_pdg/eta/prm/generated"};
+std::array<std::shared_ptr<TH1>, nParticles> hEtaItsTpcPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hEtaTrkItsTpcPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hEtaItsTpcTofPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hEtaGeneratedPrm;
 
 // Y
-static constexpr std::string_view hYItsTpc[nHistograms] = {"MC/el/pos_pdg/y/its_tpc", "MC/mu/pos_pdg/y/its_tpc", "MC/pi/pos_pdg/y/its_tpc",
-                                                           "MC/ka/pos_pdg/y/its_tpc", "MC/pr/pos_pdg/y/its_tpc", "MC/de/pos_pdg/y/its_tpc",
-                                                           "MC/tr/pos_pdg/y/its_tpc", "MC/he/pos_pdg/y/its_tpc", "MC/al/pos_pdg/y/its_tpc",
-                                                           "MC/el/neg_pdg/y/its_tpc", "MC/mu/neg_pdg/y/its_tpc", "MC/pi/neg_pdg/y/its_tpc",
-                                                           "MC/ka/neg_pdg/y/its_tpc", "MC/pr/neg_pdg/y/its_tpc", "MC/de/neg_pdg/y/its_tpc",
-                                                           "MC/tr/neg_pdg/y/its_tpc", "MC/he/neg_pdg/y/its_tpc", "MC/al/neg_pdg/y/its_tpc"};
-static constexpr std::string_view hYItsTpcTof[nHistograms] = {"MC/el/pos_pdg/y/its_tpc_tof", "MC/mu/pos_pdg/y/its_tpc_tof", "MC/pi/pos_pdg/y/its_tpc_tof",
-                                                              "MC/ka/pos_pdg/y/its_tpc_tof", "MC/pr/pos_pdg/y/its_tpc_tof", "MC/de/pos_pdg/y/its_tpc_tof",
-                                                              "MC/tr/pos_pdg/y/its_tpc_tof", "MC/he/pos_pdg/y/its_tpc_tof", "MC/al/pos_pdg/y/its_tpc_tof",
-                                                              "MC/el/neg_pdg/y/its_tpc_tof", "MC/mu/neg_pdg/y/its_tpc_tof", "MC/pi/neg_pdg/y/its_tpc_tof",
-                                                              "MC/ka/neg_pdg/y/its_tpc_tof", "MC/pr/neg_pdg/y/its_tpc_tof", "MC/de/neg_pdg/y/its_tpc_tof",
-                                                              "MC/tr/neg_pdg/y/its_tpc_tof", "MC/he/neg_pdg/y/its_tpc_tof", "MC/al/neg_pdg/y/its_tpc_tof"};
-static constexpr std::string_view hYGenerated[nHistograms] = {"MC/el/pos_pdg/y/generated", "MC/mu/pos_pdg/y/generated", "MC/pi/pos_pdg/y/generated",
-                                                              "MC/ka/pos_pdg/y/generated", "MC/pr/pos_pdg/y/generated", "MC/de/pos_pdg/y/generated",
-                                                              "MC/tr/pos_pdg/y/generated", "MC/he/pos_pdg/y/generated", "MC/al/pos_pdg/y/generated",
-                                                              "MC/el/neg_pdg/y/generated", "MC/mu/neg_pdg/y/generated", "MC/pi/neg_pdg/y/generated",
-                                                              "MC/ka/neg_pdg/y/generated", "MC/pr/neg_pdg/y/generated", "MC/de/neg_pdg/y/generated",
-                                                              "MC/tr/neg_pdg/y/generated", "MC/he/neg_pdg/y/generated", "MC/al/neg_pdg/y/generated"};
+std::array<std::shared_ptr<TH1>, nParticles> hYItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hYItsTpcTof;
+std::array<std::shared_ptr<TH1>, nParticles> hYGenerated;
 
 // Phi
-static constexpr std::string_view hPhiItsTpc[nHistograms] = {"MC/el/pos_pdg/phi/its_tpc", "MC/mu/pos_pdg/phi/its_tpc", "MC/pi/pos_pdg/phi/its_tpc",
-                                                             "MC/ka/pos_pdg/phi/its_tpc", "MC/pr/pos_pdg/phi/its_tpc", "MC/de/pos_pdg/phi/its_tpc",
-                                                             "MC/tr/pos_pdg/phi/its_tpc", "MC/he/pos_pdg/phi/its_tpc", "MC/al/pos_pdg/phi/its_tpc",
-                                                             "MC/el/neg_pdg/phi/its_tpc", "MC/mu/neg_pdg/phi/its_tpc", "MC/pi/neg_pdg/phi/its_tpc",
-                                                             "MC/ka/neg_pdg/phi/its_tpc", "MC/pr/neg_pdg/phi/its_tpc", "MC/de/neg_pdg/phi/its_tpc",
-                                                             "MC/tr/neg_pdg/phi/its_tpc", "MC/he/neg_pdg/phi/its_tpc", "MC/al/neg_pdg/phi/its_tpc"};
-static constexpr std::string_view hPhiTrkItsTpc[nHistograms] = {"MC/el/pos_pdg/phi/trk/its_tpc", "MC/mu/pos_pdg/phi/trk/its_tpc", "MC/pi/pos_pdg/phi/trk/its_tpc",
-                                                                "MC/ka/pos_pdg/phi/trk/its_tpc", "MC/pr/pos_pdg/phi/trk/its_tpc", "MC/de/pos_pdg/phi/trk/its_tpc",
-                                                                "MC/tr/pos_pdg/phi/trk/its_tpc", "MC/he/pos_pdg/phi/trk/its_tpc", "MC/al/pos_pdg/phi/trk/its_tpc",
-                                                                "MC/el/neg_pdg/phi/trk/its_tpc", "MC/mu/neg_pdg/phi/trk/its_tpc", "MC/pi/neg_pdg/phi/trk/its_tpc",
-                                                                "MC/ka/neg_pdg/phi/trk/its_tpc", "MC/pr/neg_pdg/phi/trk/its_tpc", "MC/de/neg_pdg/phi/trk/its_tpc",
-                                                                "MC/tr/neg_pdg/phi/trk/its_tpc", "MC/he/neg_pdg/phi/trk/its_tpc", "MC/al/neg_pdg/phi/trk/its_tpc"};
-static constexpr std::string_view hPhiItsTpcTof[nHistograms] = {"MC/el/pos_pdg/phi/its_tpc_tof", "MC/mu/pos_pdg/phi/its_tpc_tof", "MC/pi/pos_pdg/phi/its_tpc_tof",
-                                                                "MC/ka/pos_pdg/phi/its_tpc_tof", "MC/pr/pos_pdg/phi/its_tpc_tof", "MC/de/pos_pdg/phi/its_tpc_tof",
-                                                                "MC/tr/pos_pdg/phi/its_tpc_tof", "MC/he/pos_pdg/phi/its_tpc_tof", "MC/al/pos_pdg/phi/its_tpc_tof",
-                                                                "MC/el/neg_pdg/phi/its_tpc_tof", "MC/mu/neg_pdg/phi/its_tpc_tof", "MC/pi/neg_pdg/phi/its_tpc_tof",
-                                                                "MC/ka/neg_pdg/phi/its_tpc_tof", "MC/pr/neg_pdg/phi/its_tpc_tof", "MC/de/neg_pdg/phi/its_tpc_tof",
-                                                                "MC/tr/neg_pdg/phi/its_tpc_tof", "MC/he/neg_pdg/phi/its_tpc_tof", "MC/al/neg_pdg/phi/its_tpc_tof"};
-static constexpr std::string_view hPhiGenerated[nHistograms] = {"MC/el/pos_pdg/phi/generated", "MC/mu/pos_pdg/phi/generated", "MC/pi/pos_pdg/phi/generated",
-                                                                "MC/ka/pos_pdg/phi/generated", "MC/pr/pos_pdg/phi/generated", "MC/de/pos_pdg/phi/generated",
-                                                                "MC/tr/pos_pdg/phi/generated", "MC/he/pos_pdg/phi/generated", "MC/al/pos_pdg/phi/generated",
-                                                                "MC/el/neg_pdg/phi/generated", "MC/mu/neg_pdg/phi/generated", "MC/pi/neg_pdg/phi/generated",
-                                                                "MC/ka/neg_pdg/phi/generated", "MC/pr/neg_pdg/phi/generated", "MC/de/neg_pdg/phi/generated",
-                                                                "MC/tr/neg_pdg/phi/generated", "MC/he/neg_pdg/phi/generated", "MC/al/neg_pdg/phi/generated"};
+std::array<std::shared_ptr<TH1>, nParticles> hPhiItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hPhiTrkItsTpc;
+std::array<std::shared_ptr<TH1>, nParticles> hPhiItsTpcTof;
+std::array<std::shared_ptr<TH1>, nParticles> hPhiGenerated;
 
 // Phi for primaries
-static constexpr std::string_view hPhiItsTpcPrm[nHistograms] = {"MC/el/pos_pdg/phi/prm/its_tpc", "MC/mu/pos_pdg/phi/prm/its_tpc", "MC/pi/pos_pdg/phi/prm/its_tpc",
-                                                                "MC/ka/pos_pdg/phi/prm/its_tpc", "MC/pr/pos_pdg/phi/prm/its_tpc", "MC/de/pos_pdg/phi/prm/its_tpc",
-                                                                "MC/tr/pos_pdg/phi/prm/its_tpc", "MC/he/pos_pdg/phi/prm/its_tpc", "MC/al/pos_pdg/phi/prm/its_tpc",
-                                                                "MC/el/neg_pdg/phi/prm/its_tpc", "MC/mu/neg_pdg/phi/prm/its_tpc", "MC/pi/neg_pdg/phi/prm/its_tpc",
-                                                                "MC/ka/neg_pdg/phi/prm/its_tpc", "MC/pr/neg_pdg/phi/prm/its_tpc", "MC/de/neg_pdg/phi/prm/its_tpc",
-                                                                "MC/tr/neg_pdg/phi/prm/its_tpc", "MC/he/neg_pdg/phi/prm/its_tpc", "MC/al/neg_pdg/phi/prm/its_tpc"};
-static constexpr std::string_view hPhiTrkItsTpcPrm[nHistograms] = {"MC/el/pos_pdg/phi/prm/trk/its_tpc", "MC/mu/pos_pdg/phi/prm/trk/its_tpc", "MC/pi/pos_pdg/phi/prm/trk/its_tpc",
-                                                                   "MC/ka/pos_pdg/phi/prm/trk/its_tpc", "MC/pr/pos_pdg/phi/prm/trk/its_tpc", "MC/de/pos_pdg/phi/prm/trk/its_tpc",
-                                                                   "MC/tr/pos_pdg/phi/prm/trk/its_tpc", "MC/he/pos_pdg/phi/prm/trk/its_tpc", "MC/al/pos_pdg/phi/prm/trk/its_tpc",
-                                                                   "MC/el/neg_pdg/phi/prm/trk/its_tpc", "MC/mu/neg_pdg/phi/prm/trk/its_tpc", "MC/pi/neg_pdg/phi/prm/trk/its_tpc",
-                                                                   "MC/ka/neg_pdg/phi/prm/trk/its_tpc", "MC/pr/neg_pdg/phi/prm/trk/its_tpc", "MC/de/neg_pdg/phi/prm/trk/its_tpc",
-                                                                   "MC/tr/neg_pdg/phi/prm/trk/its_tpc", "MC/he/neg_pdg/phi/prm/trk/its_tpc", "MC/al/neg_pdg/phi/prm/trk/its_tpc"};
-static constexpr std::string_view hPhiItsTpcTofPrm[nHistograms] = {"MC/el/pos_pdg/phi/prm/its_tpc_tof", "MC/mu/pos_pdg/phi/prm/its_tpc_tof", "MC/pi/pos_pdg/phi/prm/its_tpc_tof",
-                                                                   "MC/ka/pos_pdg/phi/prm/its_tpc_tof", "MC/pr/pos_pdg/phi/prm/its_tpc_tof", "MC/de/pos_pdg/phi/prm/its_tpc_tof",
-                                                                   "MC/tr/pos_pdg/phi/prm/its_tpc_tof", "MC/he/pos_pdg/phi/prm/its_tpc_tof", "MC/al/pos_pdg/phi/prm/its_tpc_tof",
-                                                                   "MC/el/neg_pdg/phi/prm/its_tpc_tof", "MC/mu/neg_pdg/phi/prm/its_tpc_tof", "MC/pi/neg_pdg/phi/prm/its_tpc_tof",
-                                                                   "MC/ka/neg_pdg/phi/prm/its_tpc_tof", "MC/pr/neg_pdg/phi/prm/its_tpc_tof", "MC/de/neg_pdg/phi/prm/its_tpc_tof",
-                                                                   "MC/tr/neg_pdg/phi/prm/its_tpc_tof", "MC/he/neg_pdg/phi/prm/its_tpc_tof", "MC/al/neg_pdg/phi/prm/its_tpc_tof"};
-static constexpr std::string_view hPhiGeneratedPrm[nHistograms] = {"MC/el/pos_pdg/phi/prm/generated", "MC/mu/pos_pdg/phi/prm/generated", "MC/pi/pos_pdg/phi/prm/generated",
-                                                                   "MC/ka/pos_pdg/phi/prm/generated", "MC/pr/pos_pdg/phi/prm/generated", "MC/de/pos_pdg/phi/prm/generated",
-                                                                   "MC/tr/pos_pdg/phi/prm/generated", "MC/he/pos_pdg/phi/prm/generated", "MC/al/pos_pdg/phi/prm/generated",
-                                                                   "MC/el/neg_pdg/phi/prm/generated", "MC/mu/neg_pdg/phi/prm/generated", "MC/pi/neg_pdg/phi/prm/generated",
-                                                                   "MC/ka/neg_pdg/phi/prm/generated", "MC/pr/neg_pdg/phi/prm/generated", "MC/de/neg_pdg/phi/prm/generated",
-                                                                   "MC/tr/neg_pdg/phi/prm/generated", "MC/he/neg_pdg/phi/prm/generated", "MC/al/neg_pdg/phi/prm/generated"};
+std::array<std::shared_ptr<TH1>, nParticles> hPhiItsTpcPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPhiTrkItsTpcPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPhiItsTpcTofPrm;
+std::array<std::shared_ptr<TH1>, nParticles> hPhiGeneratedPrm;
 
-// Pt-Eta
-static constexpr std::string_view hPtEtaItsTpc[nHistograms] = {"MC/el/pos_pdg/pteta/its_tpc", "MC/mu/pos_pdg/pteta/its_tpc", "MC/pi/pos_pdg/pteta/its_tpc",
-                                                               "MC/ka/pos_pdg/pteta/its_tpc", "MC/pr/pos_pdg/pteta/its_tpc", "MC/de/pos_pdg/pteta/its_tpc",
-                                                               "MC/tr/pos_pdg/pteta/its_tpc", "MC/he/pos_pdg/pteta/its_tpc", "MC/al/pos_pdg/pteta/its_tpc",
-                                                               "MC/el/neg_pdg/pteta/its_tpc", "MC/mu/neg_pdg/pteta/its_tpc", "MC/pi/neg_pdg/pteta/its_tpc",
-                                                               "MC/ka/neg_pdg/pteta/its_tpc", "MC/pr/neg_pdg/pteta/its_tpc", "MC/de/neg_pdg/pteta/its_tpc",
-                                                               "MC/tr/neg_pdg/pteta/its_tpc", "MC/he/neg_pdg/pteta/its_tpc", "MC/al/neg_pdg/pteta/its_tpc"};
-static constexpr std::string_view hPtEtaTrkItsTpc[nHistograms] = {"MC/el/pos_pdg/pteta/trk/its_tpc", "MC/mu/pos_pdg/pteta/trk/its_tpc", "MC/pi/pos_pdg/pteta/trk/its_tpc",
-                                                                  "MC/ka/pos_pdg/pteta/trk/its_tpc", "MC/pr/pos_pdg/pteta/trk/its_tpc", "MC/de/pos_pdg/pteta/trk/its_tpc",
-                                                                  "MC/tr/pos_pdg/pteta/trk/its_tpc", "MC/he/pos_pdg/pteta/trk/its_tpc", "MC/al/pos_pdg/pteta/trk/its_tpc",
-                                                                  "MC/el/neg_pdg/pteta/trk/its_tpc", "MC/mu/neg_pdg/pteta/trk/its_tpc", "MC/pi/neg_pdg/pteta/trk/its_tpc",
-                                                                  "MC/ka/neg_pdg/pteta/trk/its_tpc", "MC/pr/neg_pdg/pteta/trk/its_tpc", "MC/de/neg_pdg/pteta/trk/its_tpc",
-                                                                  "MC/tr/neg_pdg/pteta/trk/its_tpc", "MC/he/neg_pdg/pteta/trk/its_tpc", "MC/al/neg_pdg/pteta/trk/its_tpc"};
-static constexpr std::string_view hPtEtaItsTpcTof[nHistograms] = {"MC/el/pos_pdg/pteta/its_tpc_tof", "MC/mu/pos_pdg/pteta/its_tpc_tof", "MC/pi/pos_pdg/pteta/its_tpc_tof",
-                                                                  "MC/ka/pos_pdg/pteta/its_tpc_tof", "MC/pr/pos_pdg/pteta/its_tpc_tof", "MC/de/pos_pdg/pteta/its_tpc_tof",
-                                                                  "MC/tr/pos_pdg/pteta/its_tpc_tof", "MC/he/pos_pdg/pteta/its_tpc_tof", "MC/al/pos_pdg/pteta/its_tpc_tof",
-                                                                  "MC/el/neg_pdg/pteta/its_tpc_tof", "MC/mu/neg_pdg/pteta/its_tpc_tof", "MC/pi/neg_pdg/pteta/its_tpc_tof",
-                                                                  "MC/ka/neg_pdg/pteta/its_tpc_tof", "MC/pr/neg_pdg/pteta/its_tpc_tof", "MC/de/neg_pdg/pteta/its_tpc_tof",
-                                                                  "MC/tr/neg_pdg/pteta/its_tpc_tof", "MC/he/neg_pdg/pteta/its_tpc_tof", "MC/al/neg_pdg/pteta/its_tpc_tof"};
-static constexpr std::string_view hPtEtaGenerated[nHistograms] = {"MC/el/pos_pdg/pteta/generated", "MC/mu/pos_pdg/pteta/generated", "MC/pi/pos_pdg/pteta/generated",
-                                                                  "MC/ka/pos_pdg/pteta/generated", "MC/pr/pos_pdg/pteta/generated", "MC/de/pos_pdg/pteta/generated",
-                                                                  "MC/tr/pos_pdg/pteta/generated", "MC/he/pos_pdg/pteta/generated", "MC/al/pos_pdg/pteta/generated",
-                                                                  "MC/el/neg_pdg/pteta/generated", "MC/mu/neg_pdg/pteta/generated", "MC/pi/neg_pdg/pteta/generated",
-                                                                  "MC/ka/neg_pdg/pteta/generated", "MC/pr/neg_pdg/pteta/generated", "MC/de/neg_pdg/pteta/generated",
-                                                                  "MC/tr/neg_pdg/pteta/generated", "MC/he/neg_pdg/pteta/generated", "MC/al/neg_pdg/pteta/generated"};
+// 2D
+std::array<std::shared_ptr<TH2>, nParticles> hPtEtaItsTpc;
+std::array<std::shared_ptr<TH2>, nParticles> hPtEtaTrkItsTpc;
+std::array<std::shared_ptr<TH2>, nParticles> hPtEtaItsTpcTof;
+std::array<std::shared_ptr<TH2>, nParticles> hPtEtaGenerated;
 
 struct QaEfficiency {
   // Track/particle selection
+  Configurable<bool> numSameCollision{"numSameCollision", false, "Flag to ask that the numerator is in the same collision as the denominator"};
   Configurable<bool> noFakesHits{"noFakesHits", false, "Flag to reject tracks that have fake hits"};
   Configurable<bool> skipEventsWithoutTPCTracks{"skipEventsWithoutTPCTracks", false, "Flag to reject events that have no tracks reconstructed in the TPC"};
   Configurable<float> maxProdRadius{"maxProdRadius", 9999.f, "Maximum production radius of the particle under study"};
@@ -427,14 +174,19 @@ struct QaEfficiency {
   Configurable<bool> doTr{"do-tr", false, "Flag to run with the PDG code of tritons"};
   Configurable<bool> doHe{"do-he", false, "Flag to run with the PDG code of helium 3"};
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
-  Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{}, "PDGs of origin of the particle under study"};
+  // Selection on mothers
+  Configurable<bool> checkForMothers{"checkForMothers", false, "Flag to use the array of mothers to check if the particle of interest come from any of those particles"};
+  Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{3312, -3312}, "PDGs of origin of the particle under study"};
+  Configurable<bool> keepOnlyHfParticles{"keepOnlyHfParticles", false, "Flag to decide wheter to consider only HF particles"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
   // Event selection
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
-  Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
-  Configurable<float> vertexZMax{"vertex-z-max", 10.f, "Maximum position of the generated vertez in Z (cm)"};
+  Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the primary vertez in Z (cm)"};
+  Configurable<float> vertexZMax{"vertex-z-max", 10.f, "Maximum position of the primary vertez in Z (cm)"};
+  Configurable<bool> applyPvZCutGenColl{"applyPvZCutGenColl", false, "Flag to enable the cut on the generated vertex z coordinate"};
+  Configurable<bool> applyPvZCutInProcessMcWoColl{"applyPvZCutInProcessMcWoColl", false, "Flag to enable the cut on the vertex z coordinate (reco. & gen.) also in processMCWithoutCollisions"};
   // Histogram configuration
   ConfigurableAxis ptBins{"ptBins", {200, 0.f, 5.f}, "Pt binning"};
   Configurable<int> logPt{"log-pt", 0, "Flag to use a logarithmic pT axis"};
@@ -448,6 +200,7 @@ struct QaEfficiency {
   // Custom track cuts for debug purposes
   TrackSelection customTrackCuts;
   struct : ConfigurableGroup {
+    Configurable<bool> tracksIU{"tracksIU", false, "Additional cut for IU tracks"};
     Configurable<int> itsPattern{"itsPattern", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
     Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
     Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
@@ -470,14 +223,21 @@ struct QaEfficiency {
   OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
   OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
 
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
+  using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
+
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histosPosPdg{"HistosPosPdg", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histosNegPdg{"HistosNegPdg", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   static const char* particleName(int pdgSign, o2::track::PID::ID id)
   {
-    return Form("%s %s", pdgSign == 0 ? "Positive PDG" : "Negative PDG", o2::track::PID::getName(id));
+    if (pdgSign == 0) { // Positive PDG
+      return particleTitle[id];
+    }
+    // Negative PDG
+    return particleTitle[id + o2::track::PID::NIDs];
   }
 
   template <int pdgSign, o2::track::PID::ID id>
@@ -542,75 +302,87 @@ struct QaEfficiency {
                                   yMin, yMax);
 
     const int histogramIndex = id + pdgSign * nSpecies;
-    HistogramRegistry* registry = &histosPosPdg;
-    if (pdgSign == 1) {
-      registry = &histosNegPdg;
-    }
 
-    registry->add(hPtIts[histogramIndex].data(), "ITS tracks " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtTpc[histogramIndex].data(), "TPC tracks " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTof[histogramIndex].data(), "ITS-TOF tracks " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtTpcTof[histogramIndex].data(), "TPC-TOF tracks " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTpcTrd[histogramIndex].data(), "ITS-TPC-TRD tracks " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTpcTrdTof[histogramIndex].data(), "ITS-TPC-TRD-TOF tracks " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtTrkItsTpc[histogramIndex].data(), "ITS-TPC track (reco) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtGenerated[histogramIndex].data(), "Generated " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtGeneratedRecoEv[histogramIndex].data(), "Generated Reco Ev. " + tagPt, kTH1D, {axisPt});
+    // Pt
+    hPtIts[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its", PDGs[histogramIndex]), "ITS tracks " + tagPt, kTH1D, {axisPt});
+    hPtTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/tpc", PDGs[histogramIndex]), "TPC tracks " + tagPt, kTH1D, {axisPt});
+    hPtItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPt, kTH1D, {axisPt});
+    hPtItsTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its_tof", PDGs[histogramIndex]), "ITS-TOF tracks " + tagPt, kTH1D, {axisPt});
+    hPtTpcTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/tpc_tof", PDGs[histogramIndex]), "TPC-TOF tracks " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcTrdTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its_tpc_trd_tof", PDGs[histogramIndex]), "ITS-TPC-TRD-TOF tracks " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcTrd[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its_tpc_trd", PDGs[histogramIndex]), "ITS-TPC-TRD tracks " + tagPt, kTH1D, {axisPt});
+    hPtTrkItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC track (reco) " + tagPt, kTH1D, {axisPt});
+    hPtGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/generated", PDGs[histogramIndex]), "Generated " + tagPt, kTH1D, {axisPt});
+    hPtGeneratedRecoEv[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/generated_reco_ev", PDGs[histogramIndex]), "Generated Reco Ev. " + tagPt, kTH1D, {axisPt});
 
-    registry->add(hPtItsPrm[histogramIndex].data(), "ITS tracks (primaries) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtTrkItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtGeneratedPrmRecoEv[histogramIndex].data(), "Generated Reco Ev. " + tagPt, kTH1D, {axisPt});
+    // Prm
+    hPtItsPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its", PDGs[histogramIndex]), "ITS tracks (primaries) " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (primaries) " + tagPt, kTH1D, {axisPt});
+    hPtTrkItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1D, {axisPt});
+    hPtTrkItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
+    hPtGeneratedPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/generated", PDGs[histogramIndex]), "Generated (primaries) " + tagPt, kTH1D, {axisPt});
+    hPtGeneratedPrmRecoEv[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/generated_reco_ev", PDGs[histogramIndex]), "Generated Reco Ev. " + tagPt, kTH1D, {axisPt});
 
-    registry->add(hPtItsTpcStr[histogramIndex].data(), "ITS-TPC tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtTrkItsTpcStr[histogramIndex].data(), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTpcTofStr[histogramIndex].data(), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtGeneratedStr[histogramIndex].data(), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
+    // Str
+    hPtItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
 
-    registry->add(hPtItsTpcMat[histogramIndex].data(), "ITS-TPC tracks (from material)" + tagPt, kTH1D, {axisPt});
-    registry->add(hPtTrkItsTpcMat[histogramIndex].data(), "ITS-TPC tracks (reco from material) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtItsTpcTofMat[histogramIndex].data(), "ITS-TPC-TOF tracks ( from material) " + tagPt, kTH1D, {axisPt});
-    registry->add(hPtGeneratedMat[histogramIndex].data(), "Generated ( from material) " + tagPt, kTH1D, {axisPt});
+    // Ter
+    hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtTrkItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from secondary weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcTofTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtGeneratedTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/generated", PDGs[histogramIndex]), "Generated (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
 
-    registry->add(hPItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPt, kTH1D, {axisP});
-    registry->add(hPTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPt, kTH1D, {axisP});
-    registry->add(hPItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPt, kTH1D, {axisP});
-    registry->add(hPGenerated[histogramIndex].data(), "Generated " + tagPt, kTH1D, {axisP});
+    // Mat
+    hPtItsTpcMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from material)" + tagPt, kTH1D, {axisPt});
+    hPtTrkItsTpcMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from material) " + tagPt, kTH1D, {axisPt});
+    hPtItsTpcTofMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from material) " + tagPt, kTH1D, {axisPt});
+    hPtGeneratedMat[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mat/generated", PDGs[histogramIndex]), "Generated ( from material) " + tagPt, kTH1D, {axisPt});
 
-    registry->add(hEtaItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagEta, kTH1D, {axisEta});
-    registry->add(hEtaTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagEta, kTH1D, {axisEta});
-    registry->add(hEtaItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagEta, kTH1D, {axisEta});
-    registry->add(hEtaGenerated[histogramIndex].data(), "Generated " + tagEta, kTH1D, {axisEta});
+    // P
+    hPItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPt, kTH1D, {axisP});
+    hPTrkItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco) " + tagPt, kTH1D, {axisP});
+    hPItsTpcTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPt, kTH1D, {axisP});
+    hPGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/p/generated", PDGs[histogramIndex]), "Generated " + tagPt, kTH1D, {axisP});
 
-    registry->add(hEtaItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagEta, kTH1D, {axisEta});
-    registry->add(hEtaTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagEta, kTH1D, {axisEta});
-    registry->add(hEtaItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagEta, kTH1D, {axisEta});
-    registry->add(hEtaGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagEta, kTH1D, {axisEta});
+    // Eta
+    hEtaItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/eta/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagEta, kTH1D, {axisEta});
+    hEtaTrkItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/eta/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco) " + tagEta, kTH1D, {axisEta});
+    hEtaItsTpcTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/eta/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagEta, kTH1D, {axisEta});
+    hEtaGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/eta/generated", PDGs[histogramIndex]), "Generated " + tagEta, kTH1D, {axisEta});
 
-    registry->add(hYItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagY, kTH1D, {axisY});
-    registry->add(hYItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagY, kTH1D, {axisY});
-    registry->add(hYGenerated[histogramIndex].data(), "Generated " + tagY, kTH1D, {axisY});
+    // Prm
+    hEtaItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/eta/prm/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (primaries) " + tagEta, kTH1D, {axisEta});
+    hEtaTrkItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/eta/prm/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco primaries) " + tagEta, kTH1D, {axisEta});
+    hEtaItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/eta/prm/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (primaries) " + tagEta, kTH1D, {axisEta});
+    hEtaGeneratedPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/eta/prm/generated", PDGs[histogramIndex]), "Generated (primaries) " + tagEta, kTH1D, {axisEta});
 
-    registry->add(hPhiItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPhi, kTH1D, {axisPhi});
-    registry->add(hPhiTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPhi, kTH1D, {axisPhi});
-    registry->add(hPhiItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPhi, kTH1D, {axisPhi});
-    registry->add(hPhiGenerated[histogramIndex].data(), "Generated " + tagPhi, kTH1D, {axisPhi});
+    // Y
+    hYItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/y/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagY, kTH1D, {axisY});
+    hYItsTpcTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/y/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagY, kTH1D, {axisY});
+    hYGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/y/generated", PDGs[histogramIndex]), "Generated " + tagY, kTH1D, {axisY});
 
-    registry->add(hPhiItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (primaries) " + tagPhi, kTH1D, {axisPhi});
-    registry->add(hPhiTrkItsTpcPrm[histogramIndex].data(), "ITS-TPC tracks (reco primaries) " + tagPhi, kTH1D, {axisPhi});
-    registry->add(hPhiItsTpcTofPrm[histogramIndex].data(), "ITS-TPC-TOF tracks (primaries) " + tagPhi, kTH1D, {axisPhi});
-    registry->add(hPhiGeneratedPrm[histogramIndex].data(), "Generated (primaries) " + tagPhi, kTH1D, {axisPhi});
+    // Phi
+    hPhiItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/phi/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPhi, kTH1D, {axisPhi});
+    hPhiTrkItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/phi/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco) " + tagPhi, kTH1D, {axisPhi});
+    hPhiItsTpcTof[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/phi/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPhi, kTH1D, {axisPhi});
+    hPhiGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/phi/generated", PDGs[histogramIndex]), "Generated " + tagPhi, kTH1D, {axisPhi});
+
+    // Phi prm
+    hPhiItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/phi/prm/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (primaries) " + tagPhi, kTH1D, {axisPhi});
+    hPhiTrkItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/phi/prm/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco primaries) " + tagPhi, kTH1D, {axisPhi});
+    hPhiItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/phi/prm/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (primaries) " + tagPhi, kTH1D, {axisPhi});
+    hPhiGeneratedPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/phi/prm/generated", PDGs[histogramIndex]), "Generated (primaries) " + tagPhi, kTH1D, {axisPhi});
 
     if (doPtEta) {
-      registry->add(hPtEtaItsTpc[histogramIndex].data(), "ITS-TPC tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
-      registry->add(hPtEtaTrkItsTpc[histogramIndex].data(), "ITS-TPC tracks (reco) " + tagPtEta, kTH2D, {axisPt, axisEta});
-      registry->add(hPtEtaItsTpcTof[histogramIndex].data(), "ITS-TPC-TOF tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
-      registry->add(hPtEtaGenerated[histogramIndex].data(), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
+      hPtEtaItsTpc[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/asd", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
+      hPtEtaTrkItsTpc[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/asd", PDGs[histogramIndex]), "ITS-TPC tracks (reco) " + tagPtEta, kTH2D, {axisPt, axisEta});
+      hPtEtaItsTpcTof[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/asd", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPtEta, kTH2D, {axisPt, axisEta});
+      hPtEtaGenerated[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/asd", PDGs[histogramIndex]), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
     }
 
     LOG(info) << "Done with making histograms for particle: " << partName;
@@ -645,13 +417,7 @@ struct QaEfficiency {
     subList->SetName(partName);
     listEfficiencyMC->Add(subList);
 
-    HistogramRegistry* registry = &histosPosPdg;
-    if (pdgSign == 1) {
-      registry = &histosNegPdg;
-    }
-
-    auto makeEfficiency = [&](const TString effname, auto templateHisto) { // 1D efficiencies
-      const auto h = registry->get<TH1>(templateHisto);
+    auto makeEfficiency = [&](const TString effname, auto h) { // 1D efficiencies
       LOG(debug) << " Making 1D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axis = h->GetXaxis();
       TString efftitle = h->GetTitle();
@@ -666,54 +432,55 @@ struct QaEfficiency {
 
     const int histogramIndex = id + pdgSign * nSpecies;
 
-    makeEfficiency("ITS_vsPt", HIST(hPtIts[histogramIndex]));
-    makeEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]));
-    makeEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]));
-    makeEfficiency("TPC-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]));
-    makeEfficiency("ITS-TPC-TRD_vsPt", HIST(hPtItsTpcTrd[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]));
-    makeEfficiency("ITS-TPC-TRD-TOF_vsPt", HIST(hPtItsTpcTrdTof[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPt_Trk", HIST(hPtTrkItsTpc[histogramIndex]));
+    makeEfficiency("ITS_vsPt", hPtIts[histogramIndex]);
+    makeEfficiency("TPC_vsPt", hPtTpc[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt", hPtItsTpc[histogramIndex]);
+    makeEfficiency("ITS-TOF_vsPt", hPtItsTof[histogramIndex]);
+    makeEfficiency("TPC-TOF_vsPt", hPtTpcTof[histogramIndex]);
+    makeEfficiency("ITS-TPC-TRD_vsPt", hPtItsTpcTrd[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPt", hPtItsTpcTof[histogramIndex]);
+    makeEfficiency("ITS-TPC-TRD-TOF_vsPt", hPtItsTpcTrdTof[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Trk", hPtTrkItsTpc[histogramIndex]);
 
-    makeEfficiency("ITS-TPC_vsPt_RecoEv", HIST(hPtItsTpc[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsPt_RecoEv", hPtItsTpc[histogramIndex]);
 
-    makeEfficiency("ITS_vsPt_Prm", HIST(hPtItsPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPt_Prm", HIST(hPtItsTpcPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPt_Prm_Trk", HIST(hPtTrkItsTpcPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsPt_Prm", HIST(hPtItsTpcTofPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", HIST(hPtTrkItsTpcTofPrm[histogramIndex]));
+    makeEfficiency("ITS_vsPt_Prm", hPtItsPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Prm", hPtItsTpcPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Prm_Trk", hPtTrkItsTpcPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPt_Prm", hPtItsTpcTofPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", hPtTrkItsTpcTofPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Prm_RecoEv", hPtItsTpcPrm[histogramIndex]);
 
-    makeEfficiency("ITS-TPC_vsPt_Prm_RecoEv", HIST(hPtItsTpcPrm[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsPt_Str", hPtItsTpcStr[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Str_Trk", hPtTrkItsTpcStr[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPt_Str", hPtItsTpcTofStr[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Mat", hPtItsTpcMat[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Mat_Trk", hPtTrkItsTpcMat[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPt_Mat", hPtItsTpcTofMat[histogramIndex]);
 
-    makeEfficiency("ITS-TPC_vsPt_Str", HIST(hPtItsTpcStr[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPt_Str_Trk", HIST(hPtTrkItsTpcStr[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsPt_Str", HIST(hPtItsTpcTofStr[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsPt_Ter", hPtItsTpcTer[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPt_Ter_Trk", hPtTrkItsTpcTer[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPt_Ter", hPtItsTpcTofTer[histogramIndex]);
 
-    makeEfficiency("ITS-TPC_vsPt_Mat", HIST(hPtItsTpcMat[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPt_Mat_Trk", HIST(hPtTrkItsTpcMat[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsPt_Mat", HIST(hPtItsTpcTofMat[histogramIndex]));
+    makeEfficiency("ITS-TPC_vsP", hPItsTpc[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsP_Trk", hPTrkItsTpc[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsP", hPItsTpcTof[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsEta", hEtaItsTpc[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsEta_Trk", hEtaTrkItsTpc[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsEta", hEtaItsTpcTof[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsEta_Prm", hEtaItsTpcPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsEta_Prm_Trk", hEtaTrkItsTpcPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsEta_Prm", hEtaItsTpcTofPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsY", hYItsTpc[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsY", hYItsTpcTof[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPhi", hPhiItsTpc[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPhi_Trk", hPhiTrkItsTpc[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPhi", hPhiItsTpcTof[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPhi_Prm", hPhiItsTpcPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC_vsPhi_Prm_Trk", hPhiTrkItsTpcPrm[histogramIndex]);
+    makeEfficiency("ITS-TPC-TOF_vsPhi_Prm", hPhiItsTpcTofPrm[histogramIndex]);
 
-    makeEfficiency("ITS-TPC_vsP", HIST(hPItsTpc[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsP_Trk", HIST(hPTrkItsTpc[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsP", HIST(hPItsTpcTof[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsEta", HIST(hEtaItsTpc[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsEta_Trk", HIST(hEtaTrkItsTpc[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsEta", HIST(hEtaItsTpcTof[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsEta_Prm", HIST(hEtaItsTpcPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsEta_Prm_Trk", HIST(hEtaTrkItsTpcPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsEta_Prm", HIST(hEtaItsTpcTofPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsY", HIST(hYItsTpc[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsY", HIST(hYItsTpcTof[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPhi", HIST(hPhiItsTpc[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPhi_Trk", HIST(hPhiTrkItsTpc[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsPhi", HIST(hPhiItsTpcTof[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPhi_Prm", HIST(hPhiItsTpcPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC_vsPhi_Prm_Trk", HIST(hPhiTrkItsTpcPrm[histogramIndex]));
-    makeEfficiency("ITS-TPC-TOF_vsPhi_Prm", HIST(hPhiItsTpcTofPrm[histogramIndex]));
-
-    auto makeEfficiency2D = [&](const TString effname, auto templateHisto) { // 2D efficiencies
-      const auto h = registry->get<TH2>(templateHisto);
+    auto makeEfficiency2D = [&](const TString effname, auto h) { // 2D efficiencies
       LOG(debug) << " Making 2D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axisX = h->GetXaxis();
       const TAxis* axisY = h->GetYaxis();
@@ -728,9 +495,9 @@ struct QaEfficiency {
     };
 
     if (doPtEta) {
-      makeEfficiency2D("ITS-TPC_vsPt_vsEta", HIST(hPtEtaItsTpc[histogramIndex]));
-      makeEfficiency2D("ITS-TPC_vsPt_vsEta_Trk", HIST(hPtEtaTrkItsTpc[histogramIndex]));
-      makeEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", HIST(hPtEtaItsTpcTof[histogramIndex]));
+      makeEfficiency2D("ITS-TPC_vsPt_vsEta", hPtEtaItsTpc[histogramIndex]);
+      makeEfficiency2D("ITS-TPC_vsPt_vsEta_Trk", hPtEtaTrkItsTpc[histogramIndex]);
+      makeEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", hPtEtaItsTpcTof[histogramIndex]);
     }
 
     LOG(info) << "Done with making histograms for particle: " << partName << " for efficiencies";
@@ -791,6 +558,7 @@ struct QaEfficiency {
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
+    h->GetXaxis()->SetBinLabel(trkCutSameColl, "passedSameColl");
 
     for (int i = 0; i < nSpecies; i++) {
       h->GetXaxis()->SetBinLabel(trkCutIdxN + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
@@ -1119,6 +887,9 @@ struct QaEfficiency {
     if (globalTrackSelection.value == 6) {
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(cfgCustomTrackCuts.itsPattern);
       LOG(info) << "Customizing track cuts:";
+      if (cfgCustomTrackCuts.tracksIU.value) {
+        customTrackCuts.SetTrackType(o2::aod::track::TrackTypeEnum::TrackIU);
+      }
       customTrackCuts.SetRequireITSRefit(cfgCustomTrackCuts.requireITS);
       customTrackCuts.SetRequireTPCRefit(cfgCustomTrackCuts.requireTPC);
       customTrackCuts.SetRequireGoldenChi2(cfgCustomTrackCuts.requireGoldenChi2);
@@ -1134,18 +905,13 @@ struct QaEfficiency {
     }
   }
 
-  template <int pdgSign, o2::track::PID::ID id>
-  bool isPdgSelected(const o2::aod::McParticles::iterator& mcParticle)
+  template <int pdgSign, o2::track::PID::ID id, typename particleType>
+  bool isPdgSelected(const particleType& mcParticle)
   {
     static_assert(pdgSign == 0 || pdgSign == 1);
     static_assert(id > 0 || id < nSpecies);
-
-    // Selecting a specific PDG
-    if constexpr (pdgSign == 0) {
-      return mcParticle.pdgCode() == PDGs[id];
-    } else {
-      return mcParticle.pdgCode() == -PDGs[id];
-    }
+    constexpr int index = id + pdgSign * nSpecies;
+    return mcParticle.pdgCode() == PDGs[index];
   }
 
   bool isPhysicalPrimary(const o2::aod::McParticles::iterator& mcParticle)
@@ -1157,9 +923,20 @@ struct QaEfficiency {
     }
     return mcParticle.isPhysicalPrimary();
   }
-
-  template <int pdgSign, o2::track::PID::ID id, typename trackType>
-  void fillMCTrackHistograms(const trackType& track, const bool doMakeHistograms)
+  bool isFinal(const o2::aod::McParticles::iterator& mcParticle)
+  {
+    if (!mcParticle.has_daughters() && !mcParticle.isPhysicalPrimary() && mcParticle.getProcess() == 4) {
+      auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+      for (const auto& mother : mothers) {
+        if (!mother.isPhysicalPrimary() && mother.getProcess() == 4) {
+          return true;
+        }
+      }
+    }
+    return false; // Otherwise, not considered a tertiary particle
+  }
+  template <int pdgSign, o2::track::PID::ID id>
+  void fillMCTrackHistograms(const TrackCandidatesMC::iterator& track, const bool doMakeHistograms)
   {
     static_assert(pdgSign == 0 || pdgSign == 1);
     if (!doMakeHistograms) {
@@ -1175,15 +952,19 @@ struct QaEfficiency {
         return;
       }
     }
-
-    HistogramRegistry* h = &histosPosPdg;
-    if constexpr (pdgSign == 1) {
-      h = &histosNegPdg;
-    }
-
     constexpr int histogramIndex = id + pdgSign * nSpecies;
     LOG(debug) << "fillMCTrackHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
     const o2::aod::McParticles::iterator& mcParticle = track.mcParticle();
+    const CollisionCandidatesMC::iterator& collision = track.collision_as<CollisionCandidatesMC>();
+    if (numSameCollision) {
+      if (!collision.has_mcCollision()) {
+        return;
+      }
+      if (mcParticle.mcCollision().globalIndex() != collision.mcCollision().globalIndex()) {
+        return;
+      }
+    }
+    histos.fill(HIST("MC/trackSelection"), trkCutSameColl);
 
     if (!isPdgSelected<pdgSign, id>(mcParticle)) { // Selecting PDG code
       return;
@@ -1192,72 +973,72 @@ struct QaEfficiency {
     histos.fill(HIST("MC/trackSelection"), trkCutIdxN + id);
 
     if (passedITS) {
-      h->fill(HIST(hPtIts[histogramIndex]), mcParticle.pt());
+      hPtIts[histogramIndex]->Fill(mcParticle.pt());
     }
     if (passedTPC) {
-      h->fill(HIST(hPtTpc[histogramIndex]), mcParticle.pt());
+      hPtTpc[histogramIndex]->Fill(mcParticle.pt());
     }
     if (passedITS && passedTPC) {
-      h->fill(HIST(hPItsTpc[histogramIndex]), mcParticle.p());
-      h->fill(HIST(hPtItsTpc[histogramIndex]), mcParticle.pt());
-      h->fill(HIST(hEtaItsTpc[histogramIndex]), mcParticle.eta());
-      h->fill(HIST(hYItsTpc[histogramIndex]), mcParticle.y());
-      h->fill(HIST(hPhiItsTpc[histogramIndex]), mcParticle.phi());
+      hPItsTpc[histogramIndex]->Fill(mcParticle.p());
+      hPtItsTpc[histogramIndex]->Fill(mcParticle.pt());
+      hEtaItsTpc[histogramIndex]->Fill(mcParticle.eta());
+      hYItsTpc[histogramIndex]->Fill(mcParticle.y());
+      hPhiItsTpc[histogramIndex]->Fill(mcParticle.phi());
 
-      h->fill(HIST(hPTrkItsTpc[histogramIndex]), track.p());
-      h->fill(HIST(hPtTrkItsTpc[histogramIndex]), track.pt());
-      h->fill(HIST(hEtaTrkItsTpc[histogramIndex]), track.eta());
-      h->fill(HIST(hPhiTrkItsTpc[histogramIndex]), track.phi());
+      hPTrkItsTpc[histogramIndex]->Fill(track.p());
+      hPtTrkItsTpc[histogramIndex]->Fill(track.pt());
+      hEtaTrkItsTpc[histogramIndex]->Fill(track.eta());
+      hPhiTrkItsTpc[histogramIndex]->Fill(track.phi());
 
       if (doPtEta) {
-        h->fill(HIST(hPtEtaItsTpc[histogramIndex]), mcParticle.pt(), mcParticle.eta());
-        h->fill(HIST(hPtEtaTrkItsTpc[histogramIndex]), track.pt(), track.eta());
+        hPtEtaItsTpc[histogramIndex]->Fill(mcParticle.pt(), mcParticle.eta());
+        hPtEtaTrkItsTpc[histogramIndex]->Fill(track.pt(), track.eta());
         if (passedTOF) {
-          h->fill(HIST(hPtEtaItsTpcTof[histogramIndex]), mcParticle.pt(), mcParticle.eta());
+          hPtEtaItsTpcTof[histogramIndex]->Fill(mcParticle.pt(), mcParticle.eta());
         }
       }
     }
     if (passedITS && passedTOF) {
-      h->fill(HIST(hPtItsTof[histogramIndex]), mcParticle.pt());
+      hPtItsTof[histogramIndex]->Fill(mcParticle.pt());
     }
     if (passedTPC && passedTOF) {
-      h->fill(HIST(hPtTpcTof[histogramIndex]), mcParticle.pt());
+      hPtTpcTof[histogramIndex]->Fill(mcParticle.pt());
     }
     if (passedITS && passedTPC && passedTRD) {
-      h->fill(HIST(hPtItsTpcTrd[histogramIndex]), mcParticle.p());
+      hPtItsTpcTrd[histogramIndex]->Fill(mcParticle.p());
     }
     if (passedITS && passedTPC && passedTOF) {
-      h->fill(HIST(hPItsTpcTof[histogramIndex]), mcParticle.p());
-      h->fill(HIST(hPtItsTpcTof[histogramIndex]), mcParticle.pt());
-      h->fill(HIST(hEtaItsTpcTof[histogramIndex]), mcParticle.eta());
-      h->fill(HIST(hYItsTpcTof[histogramIndex]), mcParticle.y());
-      h->fill(HIST(hPhiItsTpcTof[histogramIndex]), mcParticle.phi());
+      hPItsTpcTof[histogramIndex]->Fill(mcParticle.p());
+      hPtItsTpcTof[histogramIndex]->Fill(mcParticle.pt());
+      hEtaItsTpcTof[histogramIndex]->Fill(mcParticle.eta());
+      hYItsTpcTof[histogramIndex]->Fill(mcParticle.y());
+      hPhiItsTpcTof[histogramIndex]->Fill(mcParticle.phi());
     }
     if (passedITS && passedTPC && passedTRD && passedTOF) {
-      h->fill(HIST(hPtItsTpcTrdTof[histogramIndex]), mcParticle.p());
+      hPtItsTpcTrdTof[histogramIndex]->Fill(mcParticle.p());
     }
     if (isPhysicalPrimary(mcParticle)) {
       if (passedITS) {
-        h->fill(HIST(hPtItsPrm[histogramIndex]), mcParticle.pt());
+        hPtItsPrm[histogramIndex]->Fill(mcParticle.pt());
       }
       if (passedITS && passedTPC) {
-        h->fill(HIST(hPtItsTpcPrm[histogramIndex]), mcParticle.pt());
-        h->fill(HIST(hPtTrkItsTpcPrm[histogramIndex]), track.pt());
-        h->fill(HIST(hEtaItsTpcPrm[histogramIndex]), mcParticle.eta());
-        h->fill(HIST(hEtaTrkItsTpcPrm[histogramIndex]), track.eta());
-        h->fill(HIST(hPhiItsTpcPrm[histogramIndex]), mcParticle.phi());
-        h->fill(HIST(hPhiTrkItsTpcPrm[histogramIndex]), track.phi());
+        hPtItsTpcPrm[histogramIndex]->Fill(mcParticle.pt());
+        hPtTrkItsTpcPrm[histogramIndex]->Fill(track.pt());
+        hEtaItsTpcPrm[histogramIndex]->Fill(mcParticle.eta());
+        hEtaTrkItsTpcPrm[histogramIndex]->Fill(track.eta());
+        hPhiItsTpcPrm[histogramIndex]->Fill(mcParticle.phi());
+        hPhiTrkItsTpcPrm[histogramIndex]->Fill(track.phi());
         if (passedTOF) {
-          h->fill(HIST(hPtItsTpcTofPrm[histogramIndex]), mcParticle.pt());
-          h->fill(HIST(hPtTrkItsTpcTofPrm[histogramIndex]), track.pt());
-          h->fill(HIST(hEtaItsTpcTofPrm[histogramIndex]), mcParticle.eta());
-          h->fill(HIST(hPhiItsTpcTofPrm[histogramIndex]), mcParticle.phi());
+          hPtItsTpcTofPrm[histogramIndex]->Fill(mcParticle.pt());
+          hPtTrkItsTpcTofPrm[histogramIndex]->Fill(track.pt());
+          hEtaItsTpcTofPrm[histogramIndex]->Fill(mcParticle.eta());
+          hPhiItsTpcTofPrm[histogramIndex]->Fill(mcParticle.phi());
         }
       }
     } else if (mcParticle.getProcess() == 4) { // Particle decay
       // Checking mothers
       bool motherIsAccepted = true;
-      if (mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
+      if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
         motherIsAccepted = false;
         auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
         for (const auto& mother : mothers) {
@@ -1273,18 +1054,27 @@ struct QaEfficiency {
         }
       }
       if (passedITS && passedTPC && motherIsAccepted) {
-        h->fill(HIST(hPtItsTpcStr[histogramIndex]), mcParticle.pt());
-        h->fill(HIST(hPtTrkItsTpcStr[histogramIndex]), track.pt());
+        hPtItsTpcStr[histogramIndex]->Fill(mcParticle.pt());
+        hPtTrkItsTpcStr[histogramIndex]->Fill(track.pt());
         if (passedTOF) {
-          h->fill(HIST(hPtItsTpcTofStr[histogramIndex]), mcParticle.pt());
+          hPtItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt());
+        }
+      }
+      if (isFinal(mcParticle)) {
+        if (passedITS && passedTPC && motherIsAccepted) {
+          hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
+          hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
+          if (passedTOF) {
+            hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
+          }
         }
       }
     } else { // Material
       if (passedITS && passedTPC) {
-        h->fill(HIST(hPtItsTpcMat[histogramIndex]), mcParticle.pt());
-        h->fill(HIST(hPtTrkItsTpcMat[histogramIndex]), track.pt());
+        hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
+        hPtTrkItsTpcMat[histogramIndex]->Fill(track.pt());
         if (passedTOF) {
-          h->fill(HIST(hPtItsTpcTofMat[histogramIndex]), mcParticle.pt());
+          hPtItsTpcTofMat[histogramIndex]->Fill(mcParticle.pt());
         }
       }
     }
@@ -1308,37 +1098,32 @@ struct QaEfficiency {
       }
     }
 
-    HistogramRegistry* h = &histosPosPdg;
-    if (pdgSign == 1) {
-      h = &histosNegPdg;
-    }
-
     constexpr int histogramIndex = id + pdgSign * nSpecies;
     LOG(debug) << "fillMCParticleHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
     if (!isPdgSelected<pdgSign, id>(mcParticle)) { // Selecting PDG code
       return;
     }
     if constexpr (recoEv) {
-      h->fill(HIST(hPtGeneratedRecoEv[histogramIndex]), mcParticle.pt());
+      hPtGeneratedRecoEv[histogramIndex]->Fill(mcParticle.pt());
       if (isPhysicalPrimary(mcParticle)) {
-        h->fill(HIST(hPtGeneratedPrmRecoEv[histogramIndex]), mcParticle.pt());
+        hPtGeneratedPrmRecoEv[histogramIndex]->Fill(mcParticle.pt());
       }
       return;
     }
     histos.fill(HIST("MC/particleSelection"), 6 + id);
 
-    h->fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
-    h->fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
+    hPGenerated[histogramIndex]->Fill(mcParticle.p());
+    hPtGenerated[histogramIndex]->Fill(mcParticle.pt());
 
     if (isPhysicalPrimary(mcParticle)) {
-      h->fill(HIST(hPtGeneratedPrm[histogramIndex]), mcParticle.pt());
-      h->fill(HIST(hEtaGeneratedPrm[histogramIndex]), mcParticle.eta());
-      h->fill(HIST(hPhiGeneratedPrm[histogramIndex]), mcParticle.phi());
+      hPtGeneratedPrm[histogramIndex]->Fill(mcParticle.pt());
+      hEtaGeneratedPrm[histogramIndex]->Fill(mcParticle.eta());
+      hPhiGeneratedPrm[histogramIndex]->Fill(mcParticle.phi());
     } else {
       if (mcParticle.getProcess() == 4) { // Particle decay
         // Checking mothers
         bool motherIsAccepted = true;
-        if (mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
+        if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
           motherIsAccepted = false;
           auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
           for (const auto& mother : mothers) {
@@ -1354,18 +1139,20 @@ struct QaEfficiency {
           }
         }
         if (motherIsAccepted) {
-          h->fill(HIST(hPtGeneratedStr[histogramIndex]), mcParticle.pt());
+          hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
+          if (isFinal(mcParticle)) {
+            hPtGeneratedTer[histogramIndex]->Fill(mcParticle.pt());
+          }
         }
       } else { // Material
-        h->fill(HIST(hPtGeneratedMat[histogramIndex]), mcParticle.pt());
+        hPtGeneratedMat[histogramIndex]->Fill(mcParticle.pt());
       }
     }
-
-    h->fill(HIST(hEtaGenerated[histogramIndex]), mcParticle.eta());
-    h->fill(HIST(hYGenerated[histogramIndex]), mcParticle.y());
-    h->fill(HIST(hPhiGenerated[histogramIndex]), mcParticle.phi());
+    hEtaGenerated[histogramIndex]->Fill(mcParticle.eta());
+    hYGenerated[histogramIndex]->Fill(mcParticle.y());
+    hPhiGenerated[histogramIndex]->Fill(mcParticle.phi());
     if (doPtEta) {
-      h->fill(HIST(hPtEtaGenerated[histogramIndex]), mcParticle.pt(), mcParticle.eta());
+      hPtEtaGenerated[histogramIndex]->Fill(mcParticle.pt(), mcParticle.eta());
     }
   }
 
@@ -1390,11 +1177,6 @@ struct QaEfficiency {
       return;
     }
 
-    HistogramRegistry* registry = &histosPosPdg;
-    if (pdgSign == 1) {
-      registry = &histosNegPdg;
-    }
-
     constexpr int histogramIndex = id + pdgSign * nSpecies;
 
     const char* partName = particleName(pdgSign, id);
@@ -1412,60 +1194,64 @@ struct QaEfficiency {
         LOG(warning) << "Cannot find TEfficiency " << effname;
         return;
       }
-      eff->SetTotalHistogram(*registry->get<TH1>(den).get(), "f");
-      eff->SetPassedHistogram(*registry->get<TH1>(num).get(), "f");
+      eff->SetTotalHistogram(*den, "f");
+      eff->SetPassedHistogram(*num, "f");
     };
 
-    doFillEfficiency("ITS_vsPt", HIST(hPtIts[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("TPC_vsPt", HIST(hPtTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsPt", HIST(hPtItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TOF_vsPt", HIST(hPtItsTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("TPC-TOF_vsPt", HIST(hPtTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TRD_vsPt", HIST(hPtItsTpcTrd[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsPt", HIST(hPtItsTpcTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TRD-TOF_vsPt", HIST(hPtItsTpcTrdTof[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsPt_Trk", HIST(hPtTrkItsTpc[histogramIndex]), HIST(hPtGenerated[histogramIndex]));
+    doFillEfficiency("ITS_vsPt", hPtIts[histogramIndex], hPtGenerated[histogramIndex]);
+    doFillEfficiency("TPC_vsPt", hPtTpc[histogramIndex], hPtGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPt", hPtItsTpc[histogramIndex], hPtGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TOF_vsPt", hPtItsTof[histogramIndex], hPtGenerated[histogramIndex]);
+    doFillEfficiency("TPC-TOF_vsPt", hPtTpcTof[histogramIndex], hPtGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TRD_vsPt", hPtItsTpcTrd[histogramIndex], hPtGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPt", hPtItsTpcTof[histogramIndex], hPtGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TRD-TOF_vsPt", hPtItsTpcTrdTof[histogramIndex], hPtGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPt_Trk", hPtTrkItsTpc[histogramIndex], hPtGenerated[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsPt_RecoEv", HIST(hPtItsTpcPrm[histogramIndex]), HIST(hPtGeneratedRecoEv[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_RecoEv", hPtItsTpcPrm[histogramIndex], hPtGeneratedRecoEv[histogramIndex]);
 
-    doFillEfficiency("ITS_vsPt_Prm", HIST(hPtItsPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsPt_Prm", HIST(hPtItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsPt_Prm_Trk", HIST(hPtTrkItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsPt_Prm", HIST(hPtItsTpcTofPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", HIST(hPtTrkItsTpcTofPrm[histogramIndex]), HIST(hPtGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS_vsPt_Prm", hPtItsPrm[histogramIndex], hPtGeneratedPrm[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPt_Prm", hPtItsTpcPrm[histogramIndex], hPtGeneratedPrm[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPt_Prm_Trk", hPtTrkItsTpcPrm[histogramIndex], hPtGeneratedPrm[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Prm", hPtItsTpcTofPrm[histogramIndex], hPtGeneratedPrm[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Prm_Trk", hPtTrkItsTpcTofPrm[histogramIndex], hPtGeneratedPrm[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsPt_Prm_RecoEv", HIST(hPtItsTpcPrm[histogramIndex]), HIST(hPtGeneratedPrmRecoEv[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_Prm_RecoEv", hPtItsTpcPrm[histogramIndex], hPtGeneratedPrmRecoEv[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsPt_Str", HIST(hPtItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsPt_Str_Trk", HIST(hPtTrkItsTpcStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsPt_Str", HIST(hPtItsTpcTofStr[histogramIndex]), HIST(hPtGeneratedStr[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_Str", hPtItsTpcStr[histogramIndex], hPtGeneratedStr[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPt_Str_Trk", hPtTrkItsTpcStr[histogramIndex], hPtGeneratedStr[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Str", hPtItsTpcTofStr[histogramIndex], hPtGeneratedStr[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsPt_Mat", HIST(hPtItsTpcMat[histogramIndex]), HIST(hPtGeneratedMat[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsPt_Mat_Trk", HIST(hPtTrkItsTpcMat[histogramIndex]), HIST(hPtGeneratedMat[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsPt_Mat", HIST(hPtItsTpcTofMat[histogramIndex]), HIST(hPtGeneratedMat[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_Mat", hPtItsTpcMat[histogramIndex], hPtGeneratedMat[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPt_Mat_Trk", hPtTrkItsTpcMat[histogramIndex], hPtGeneratedMat[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Mat", hPtItsTpcTofMat[histogramIndex], hPtGeneratedMat[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsP", HIST(hPItsTpc[histogramIndex]), HIST(hPGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsP_Trk", HIST(hPTrkItsTpc[histogramIndex]), HIST(hPGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsP", HIST(hPItsTpcTof[histogramIndex]), HIST(hPGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPt_Ter", hPtItsTpcTer[histogramIndex], hPtGeneratedTer[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPt_Ter_Trk", hPtTrkItsTpcTer[histogramIndex], hPtGeneratedTer[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPt_Ter", hPtItsTpcTofTer[histogramIndex], hPtGeneratedTer[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsEta", HIST(hEtaItsTpc[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsEta_Trk", HIST(hEtaTrkItsTpc[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsEta", HIST(hEtaItsTpcTof[histogramIndex]), HIST(hEtaGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsP", hPItsTpc[histogramIndex], hPGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsP_Trk", hPTrkItsTpc[histogramIndex], hPGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsP", hPItsTpcTof[histogramIndex], hPGenerated[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsEta_Prm", HIST(hEtaItsTpcPrm[histogramIndex]), HIST(hEtaGeneratedPrm[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsEta_Prm_Trk", HIST(hEtaTrkItsTpcPrm[histogramIndex]), HIST(hEtaGeneratedPrm[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsEta_Prm", HIST(hEtaItsTpcTofPrm[histogramIndex]), HIST(hEtaGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsEta", hEtaItsTpc[histogramIndex], hEtaGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsEta_Trk", hEtaTrkItsTpc[histogramIndex], hEtaGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsEta", hEtaItsTpcTof[histogramIndex], hEtaGenerated[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsPhi_Prm", HIST(hPhiItsTpcPrm[histogramIndex]), HIST(hPhiGeneratedPrm[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsPhi_Prm_Trk", HIST(hPhiTrkItsTpcPrm[histogramIndex]), HIST(hPhiGeneratedPrm[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsPhi_Prm", HIST(hPhiItsTpcTofPrm[histogramIndex]), HIST(hPhiGeneratedPrm[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsEta_Prm", hEtaItsTpcPrm[histogramIndex], hEtaGeneratedPrm[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsEta_Prm_Trk", hEtaTrkItsTpcPrm[histogramIndex], hEtaGeneratedPrm[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsEta_Prm", hEtaItsTpcTofPrm[histogramIndex], hEtaGeneratedPrm[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsY", HIST(hYItsTpc[histogramIndex]), HIST(hYGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsY", HIST(hYItsTpcTof[histogramIndex]), HIST(hYGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsPhi_Prm", hPhiItsTpcPrm[histogramIndex], hPhiGeneratedPrm[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPhi_Prm_Trk", hPhiTrkItsTpcPrm[histogramIndex], hPhiGeneratedPrm[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPhi_Prm", hPhiItsTpcTofPrm[histogramIndex], hPhiGeneratedPrm[histogramIndex]);
 
-    doFillEfficiency("ITS-TPC_vsPhi", HIST(hPhiItsTpc[histogramIndex]), HIST(hPhiGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC_vsPhi_Trk", HIST(hPhiTrkItsTpc[histogramIndex]), HIST(hPhiGenerated[histogramIndex]));
-    doFillEfficiency("ITS-TPC-TOF_vsPhi", HIST(hPhiItsTpcTof[histogramIndex]), HIST(hPhiGenerated[histogramIndex]));
+    doFillEfficiency("ITS-TPC_vsY", hYItsTpc[histogramIndex], hYGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsY", hYItsTpcTof[histogramIndex], hYGenerated[histogramIndex]);
+
+    doFillEfficiency("ITS-TPC_vsPhi", hPhiItsTpc[histogramIndex], hPhiGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC_vsPhi_Trk", hPhiTrkItsTpc[histogramIndex], hPhiGenerated[histogramIndex]);
+    doFillEfficiency("ITS-TPC-TOF_vsPhi", hPhiItsTpcTof[histogramIndex], hPhiGenerated[histogramIndex]);
 
     if (!doPtEta) {
       return;
@@ -1478,12 +1264,12 @@ struct QaEfficiency {
         LOG(warning) << "Cannot find TEfficiency " << effname;
         return;
       }
-      eff->SetTotalHistogram(*registry->get<TH2>(den).get(), "f");
-      eff->SetPassedHistogram(*registry->get<TH2>(num).get(), "f");
+      eff->SetTotalHistogram(*den, "f");
+      eff->SetPassedHistogram(*num, "f");
     };
-    fillEfficiency2D("ITS-TPC_vsPt_vsEta", HIST(hPtEtaItsTpc[histogramIndex]), HIST(hPtEtaGenerated[histogramIndex]));
-    fillEfficiency2D("ITS-TPC_vsPt_vsEta_Trk", HIST(hPtEtaTrkItsTpc[histogramIndex]), HIST(hPtEtaGenerated[histogramIndex]));
-    fillEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", HIST(hPtEtaItsTpcTof[histogramIndex]), HIST(hPtEtaGenerated[histogramIndex]));
+    fillEfficiency2D("ITS-TPC_vsPt_vsEta", hPtEtaItsTpc[histogramIndex], hPtEtaGenerated[histogramIndex]);
+    fillEfficiency2D("ITS-TPC_vsPt_vsEta_Trk", hPtEtaTrkItsTpc[histogramIndex], hPtEtaGenerated[histogramIndex]);
+    fillEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", hPtEtaItsTpcTof[histogramIndex], hPtEtaGenerated[histogramIndex]);
   }
 
   template <bool doFillHistograms, typename CollType>
@@ -1516,11 +1302,7 @@ struct QaEfficiency {
   }
 
   // Global process
-  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
-  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision)
-  {
-    isCollisionSelected<true>(collision);
-  }
+  void process(CollisionCandidates::iterator const& collision) { isCollisionSelected<true>(collision); }
 
   // Function to apply particle selection
   template <bool isMC = true, bool doFillHisto = true, typename particleType, typename histoType = int>
@@ -1748,141 +1530,215 @@ struct QaEfficiency {
   }
 
   // MC process
+  // Single-track efficiency calculated only for MC collisions with at least 1 reco. collision
   SliceCache cache;
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
-  void processMC(o2::aod::McCollision const&,
-                 o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
-                 o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
+  PresliceUnsorted<CollisionCandidatesMC> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
+  void processMC(o2::aod::McCollisions const& mcCollisions,
+                 // o2::soa::SmallGroups<CollisionCandidatesMC> const& collisions,
+                 CollisionCandidatesMC const& collisions,
+                 TrackCandidatesMC const& tracks,
                  o2::aod::McParticles const& mcParticles)
   {
-    histos.fill(HIST("MC/generatedCollisions"), 1);
 
-    if (collisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
-      return;
-    }
-    histos.fill(HIST("MC/generatedCollisions"), 2);
-    if (skipEventsWithoutTPCTracks) {
-      int nTPCTracks = 0;
-      for (const auto& collision : collisions) {
-        const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-        for (const auto& track : groupedTracks) {
-          if (track.hasTPC()) {
-            nTPCTracks++;
-            break;
+    /// loop over generated collisions
+    for (const auto& mcCollision : mcCollisions) {
+      histos.fill(HIST("MC/generatedCollisions"), 1);
+
+      const auto groupedCollisions = collisions.sliceBy(collPerCollMc, mcCollision.globalIndex());
+      const auto groupedMcParticles = mcParticles.sliceBy(perCollisionMc, mcCollision.globalIndex());
+
+      // LOG(info) << "groupedCollisions.size() " << groupedCollisions.size();
+
+      if (groupedCollisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
+        continue;
+      }
+      histos.fill(HIST("MC/generatedCollisions"), 2);
+      if (skipEventsWithoutTPCTracks) {
+        int nTPCTracks = 0;
+        for (const auto& collision : groupedCollisions) {
+          const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+          for (const auto& track : groupedTracks) {
+            if (track.hasTPC()) {
+              nTPCTracks++;
+              break;
+            }
           }
         }
-      }
-      if (nTPCTracks == 0) {
-        LOG(info) << "Skipping event with no TPC tracks";
-        return;
-      }
-    }
-    histos.fill(HIST("MC/generatedCollisions"), 3);
-
-    for (const auto& collision : collisions) {
-      histos.fill(HIST("MC/generatedCollisions"), 4);
-      if (!isCollisionSelected<false>(collision)) {
-        continue;
-      }
-      histos.fill(HIST("MC/generatedCollisions"), 5);
-
-      const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-
-      // Track loop
-      for (const auto& track : groupedTracks) {
-        if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
+        if (nTPCTracks == 0) {
+          LOG(info) << "Skipping event with no TPC tracks";
           continue;
         }
-        // Filling variable histograms
-        histos.fill(HIST("MC/trackLength"), track.length());
-        static_for<0, 1>([&](auto pdgSign) {
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Pion>(track, doPi);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon>(track, doKa);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Proton>(track, doPr);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron>(track, doDe);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Triton>(track, doTr);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3>(track, doHe);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha>(track, doAl);
-        });
+      }
+      histos.fill(HIST("MC/generatedCollisions"), 3);
+
+      /// loop over reconstructed collisions
+      for (const auto& collision : groupedCollisions) {
+        histos.fill(HIST("MC/generatedCollisions"), 4);
+        if (!isCollisionSelected<false>(collision)) {
+          continue;
+        }
+        histos.fill(HIST("MC/generatedCollisions"), 5);
+
+        const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+
+        // Track loop
+        for (const auto& track : groupedTracks) {
+          if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
+            continue;
+          }
+
+          // search for particles from HF decays
+          // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
+          const auto& particle = track.mcParticle();
+          if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+            continue;
+          }
+
+          // Filling variable histograms
+          histos.fill(HIST("MC/trackLength"), track.length());
+          static_for<0, 1>([&](auto pdgSign) {
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Pion>(track, doPi);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon>(track, doKa);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Proton>(track, doPr);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron>(track, doDe);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Triton>(track, doTr);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3>(track, doHe);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha>(track, doAl);
+          });
+        }
+
+        // Skipping collisions without the generated collisions
+        // Actually this should never happen, since we group per MC collision
+        if (!collision.has_mcCollision()) {
+          continue;
+        } else {
+          // skip generated collisions outside the allowed vtx-z range
+          // putting this condition here avoids the particle loop a few lines below
+          if (applyPvZCutGenColl) {
+            const float genPvZ = mcCollision.posZ();
+            if (genPvZ < vertexZMin || genPvZ > vertexZMax) {
+              continue;
+            }
+          }
+        }
+
+        /// only to fill denominator of ITS-TPC matched primary tracks only in MC events with at least 1 reco. vtx
+        for (const auto& particle : groupedMcParticles) { // Particle loop
+
+          /// require generated particle in acceptance
+          if (!isInAcceptance<true, false>(particle, nullptr)) {
+            continue;
+          }
+
+          // search for particles from HF decays
+          if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+            continue;
+          }
+
+          static_for<0, 1>([&](auto pdgSign) {
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Electron, true>(particle, doEl);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Muon, true>(particle, doMu);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Pion, true>(particle, doPi);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Kaon, true>(particle, doKa);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Proton, true>(particle, doPr);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Deuteron, true>(particle, doDe);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Triton, true>(particle, doTr);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Helium3, true>(particle, doHe);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Alpha, true>(particle, doAl);
+          });
+        }
+      } /// end loop over reconstructed collisions
+
+      // skip generated collisions outside the allowed vtx-z range
+      // putting this condition here avoids the particle loop a few lines below
+      if (applyPvZCutGenColl) {
+        const float genPvZ = mcCollision.posZ();
+        if (genPvZ < vertexZMin || genPvZ > vertexZMax) {
+          continue;
+        }
       }
 
-      // Skipping collisions without the generated collisions
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
+      // Loop on particles to fill the denominator
+      float dNdEta = 0; // Multiplicity
+      for (const auto& mcParticle : groupedMcParticles) {
+        if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughters()) {
+          dNdEta += 1.f;
+        }
+        if (!isInAcceptance(mcParticle, HIST("MC/particleSelection"))) {
+          continue;
+        }
 
-      for (const auto& particle : mcParticles) { // Particle loop
-
-        /// require generated particle in acceptance
-        if (!isInAcceptance<true, false>(particle, nullptr)) {
+        // search for particles from HF decays
+        if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
           continue;
         }
 
         static_for<0, 1>([&](auto pdgSign) {
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Electron, true>(particle, doEl);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Muon, true>(particle, doMu);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Pion, true>(particle, doPi);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Kaon, true>(particle, doKa);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Proton, true>(particle, doPr);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Deuteron, true>(particle, doDe);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Triton, true>(particle, doTr);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Helium3, true>(particle, doHe);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Alpha, true>(particle, doAl);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Electron>(mcParticle, doEl);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Muon>(mcParticle, doMu);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Pion>(mcParticle, doPi);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Kaon>(mcParticle, doKa);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Proton>(mcParticle, doPr);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Deuteron>(mcParticle, doDe);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Triton>(mcParticle, doTr);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Helium3>(mcParticle, doHe);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Alpha>(mcParticle, doAl);
         });
       }
-    }
+      histos.fill(HIST("MC/eventMultiplicity"), dNdEta * 0.5f / 2.f);
 
-    // Loop on particles to fill the denominator
-    float dNdEta = 0; // Multiplicity
-    for (const auto& mcParticle : mcParticles) {
-      if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughters()) {
-        dNdEta += 1.f;
-      }
-      if (!isInAcceptance(mcParticle, HIST("MC/particleSelection"))) {
-        continue;
-      }
-
+      // Fill TEfficiencies
       static_for<0, 1>([&](auto pdgSign) {
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Electron>(mcParticle, doEl);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Muon>(mcParticle, doMu);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Pion>(mcParticle, doPi);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Kaon>(mcParticle, doKa);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Proton>(mcParticle, doPr);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Deuteron>(mcParticle, doDe);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Triton>(mcParticle, doTr);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Helium3>(mcParticle, doHe);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Alpha>(mcParticle, doAl);
+        fillMCEfficiency<pdgSign, o2::track::PID::Electron>(doEl);
+        fillMCEfficiency<pdgSign, o2::track::PID::Muon>(doMu);
+        fillMCEfficiency<pdgSign, o2::track::PID::Pion>(doPi);
+        fillMCEfficiency<pdgSign, o2::track::PID::Kaon>(doKa);
+        fillMCEfficiency<pdgSign, o2::track::PID::Proton>(doPr);
+        fillMCEfficiency<pdgSign, o2::track::PID::Deuteron>(doDe);
+        fillMCEfficiency<pdgSign, o2::track::PID::Triton>(doTr);
+        fillMCEfficiency<pdgSign, o2::track::PID::Helium3>(doHe);
+        fillMCEfficiency<pdgSign, o2::track::PID::Alpha>(doAl);
       });
-    }
-    histos.fill(HIST("MC/eventMultiplicity"), dNdEta * 0.5f / 2.f);
-
-    // Fill TEfficiencies
-    static_for<0, 1>([&](auto pdgSign) {
-      fillMCEfficiency<pdgSign, o2::track::PID::Electron>(doEl);
-      fillMCEfficiency<pdgSign, o2::track::PID::Muon>(doMu);
-      fillMCEfficiency<pdgSign, o2::track::PID::Pion>(doPi);
-      fillMCEfficiency<pdgSign, o2::track::PID::Kaon>(doKa);
-      fillMCEfficiency<pdgSign, o2::track::PID::Proton>(doPr);
-      fillMCEfficiency<pdgSign, o2::track::PID::Deuteron>(doDe);
-      fillMCEfficiency<pdgSign, o2::track::PID::Triton>(doTr);
-      fillMCEfficiency<pdgSign, o2::track::PID::Helium3>(doHe);
-      fillMCEfficiency<pdgSign, o2::track::PID::Alpha>(doAl);
-    });
+    } /// end loop over generated collisions
   }
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
 
   // MC process without the collision association
-  void processMCWithoutCollisions(o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
-                                  o2::aod::McParticles const& mcParticles)
+  // Single-track efficiency calculated:
+  //  - considering also MC collisions without any reco. collision
+  //  - considering also tracks not associated to any collision
+  //  - ignoring the track-to-collision association
+  void processMCWithoutCollisions(TrackCandidatesMC const& tracks,
+                                  o2::aod::Collisions const&,
+                                  o2::aod::McParticles const& mcParticles,
+                                  o2::aod::McCollisions const&)
   {
     // Track loop
     for (const auto& track : tracks) {
       if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
         continue;
       }
+
+      /// checking the PV z coordinate, if the track has been assigned to any collision
+      if (applyPvZCutInProcessMcWoColl && track.has_collision()) {
+        const auto collision = track.collision();
+        const float posZ = collision.posZ();
+        if (posZ < vertexZMin || posZ > vertexZMax) {
+          continue;
+        }
+      }
+
+      // search for particles from HF decays
+      // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
+      const auto& particle = track.mcParticle();
+      if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+        continue;
+      }
+
       // Filling variable histograms
       histos.fill(HIST("MC/trackLength"), track.length());
       static_for<0, 1>([&](auto pdgSign) {
@@ -1900,6 +1756,20 @@ struct QaEfficiency {
 
     for (const auto& mcParticle : mcParticles) {
       if (!isInAcceptance(mcParticle, HIST("MC/particleSelection"))) {
+        continue;
+      }
+
+      /// checking the PV z coordinate for the generated collision
+      if (applyPvZCutInProcessMcWoColl && applyPvZCutGenColl) {
+        const auto mcCollision = mcParticle.mcCollision();
+        const float posZ = mcCollision.posZ();
+        if (posZ < vertexZMin || posZ > vertexZMax) {
+          continue;
+        }
+      }
+
+      // search for particles from HF decays
+      if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
         continue;
       }
 
@@ -1931,7 +1801,7 @@ struct QaEfficiency {
   }
   PROCESS_SWITCH(QaEfficiency, processMCWithoutCollisions, "process MC without the collision association", false);
 
-  void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
+  void processData(CollisionCandidates::iterator const& collision,
                    TrackCandidates const& tracks)
   {
 
@@ -2022,7 +1892,7 @@ struct QaEfficiency {
   }
   PROCESS_SWITCH(QaEfficiency, processData, "process data", true);
 
-  void processDataWithPID(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
+  void processDataWithPID(CollisionCandidates::iterator const& collision,
                           o2::soa::Join<TrackCandidates, o2::aod::pidTPCLfFullDe> const& tracks)
   {
 
@@ -2115,8 +1985,7 @@ struct QaEfficiency {
   }
   PROCESS_SWITCH(QaEfficiency, processDataWithPID, "process data with PID", false);
 
-  void processHmpid(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-                    TrackCandidates const&,
+  void processHmpid(CollisionCandidates::iterator const& collision, TrackCandidates const&,
                     o2::aod::HMPIDs const& hmpids)
   {
 

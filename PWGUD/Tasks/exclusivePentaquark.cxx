@@ -87,7 +87,7 @@ struct ExclusivePentaquark {
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
@@ -140,7 +140,14 @@ struct ExclusivePentaquark {
       if (trk.itsNCls() < 7) {
         continue;
       }
-      if (trk.pt() < 0.3) {
+      if (trk.pt() < 0.1) {
+        continue;
+      }
+      if (!(std::abs(trk.dcaZ()) < 2.)) {
+        continue;
+      }
+      double dcaLimit = 0.0105 + 0.035 / pow(trk.pt(), 1.1);
+      if (!(std::abs(trk.dcaXY()) < dcaLimit)) {
         continue;
       }
       registry.fill(HIST("hSelectionCounter"), 3);
@@ -194,7 +201,7 @@ struct ExclusivePentaquark {
         registry.fill(HIST("hClusterSizeProtonsTPC"), averageClusterSize);
       }
 
-      if (trk.hasTOF() && (fabs(nSigmaElTOF) < 2. || fabs(nSigmaMuTOF) < 2.)) {
+      if (trk.hasTOF() && (fabs(nSigmaElTOF) < 2. || fabs(nSigmaMuTOF) < 2.) && trk.pt() > 0.5) {
         if (fabs(trk.tpcNSigmaEl()) < fabs(trk.tpcNSigmaMu())) {
           onlyLeptonTracks.push_back(electron);
         } else {
@@ -225,7 +232,7 @@ struct ExclusivePentaquark {
       pentaquark += resonance;
       if (onlyProtonTracksTOF.size() == 1) {
         pentaquark += onlyProtonTracksTOF[0];
-        if (resonance.M() > 2.9 && resonance.M() < 3.2) {
+        if (resonance.M() > 3. && resonance.M() < 3.13) {
           registry.fill(HIST("PP/hMassPtUnlikeSignProton"), pentaquark.M(), pentaquark.Pt());
           registry.fill(HIST("hSelectionCounter"), 8);
           registry.fill(HIST("PP/hUnlikePt"), pentaquark.Pt());

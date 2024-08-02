@@ -338,11 +338,13 @@ struct DptDptCorrelationsTask {
           /* checking the same track id condition */
           if (track1 == track2) {
             /* exclude autocorrelations */
+            index2++;
             continue;
           }
 
           if constexpr (doptorder) {
             if (track2.pt() >= track1.pt()) {
+              index2++;
               continue;
             }
           }

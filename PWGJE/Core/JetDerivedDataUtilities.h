@@ -29,8 +29,10 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 enum JCollisionSel {
   sel8 = 0,
   sel8Full = 1,
-  sel8ForUnanchoredMC = 2,
-  sel7 = 3
+  sel7 = 2,
+  selMC = 3,
+  selUnanchoredMC = 4,
+  sel7KINT7 = 5
 };
 
 template <typename T>
@@ -50,11 +52,17 @@ int initialiseEventSelection(std::string eventSelection)
   if (eventSelection == "sel8Full") {
     return JCollisionSel::sel8Full;
   }
-  if (eventSelection == "sel8ForUnanchoredMC") {
-    return JCollisionSel::sel8ForUnanchoredMC;
-  }
   if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
+  }
+  if (eventSelection == "selMC") {
+    return JCollisionSel::selMC;
+  }
+  if (eventSelection == "selUnanchoredMC") {
+    return JCollisionSel::selUnanchoredMC;
+  }
+  if (eventSelection == "sel7KINT7") {
+    return JCollisionSel::sel7KINT7;
   }
   return -1;
 }
@@ -69,11 +77,17 @@ uint8_t setEventSelectionBit(T const& collision)
       SETBIT(bit, JCollisionSel::sel8Full);
     }
   }
-  if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) { // we can look to add kNoSameBunchPileup and kIsGoodZvtxFT0vsPV if deemed suitable
-    SETBIT(bit, JCollisionSel::sel8ForUnanchoredMC);
-  }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
+    if (collision.alias_bit(kINT7)) {
+      SETBIT(bit, JCollisionSel::sel7KINT7);
+    }
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    SETBIT(bit, JCollisionSel::selUnanchoredMC);
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      SETBIT(bit, JCollisionSel::selMC);
+    }
   }
   return bit;
 }
@@ -306,7 +320,8 @@ enum JTrackSel {
   globalTrack = 1,
   qualityTrack = 2,
   hybridTrack = 3,
-  uniformTrack = 4
+  uniformTrack = 4,
+  uniformTrackWoDCA = 5
 };
 
 template <typename T>
@@ -337,6 +352,8 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::hybridTrack;
   } else if (trackSelection == "uniformTracks") {
     return JTrackSel::uniformTrack;
+  } else if (trackSelection == "uniformTracksWoDCA") {
+    return JTrackSel::uniformTrackWoDCA;
   }
   return -1;
 }
@@ -364,7 +381,11 @@ uint8_t setTrackSelectionBit(T const& track)
       (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
     SETBIT(bit, JTrackSel::uniformTrack);
   }
-
+  if (track.passedGoldenChi2() &&
+      (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) {
+    SETBIT(bit, JTrackSel::uniformTrackWoDCA);
+  }
   return bit;
 }
 

@@ -1628,6 +1628,7 @@ struct cascadeBuilder {
   template <class TTrackTo, typename TCascTable>
   void buildKFStrangenessTables(TCascTable const& cascades)
   {
+    statisticsRegistry.eventCounter++;
     for (auto& cascade : cascades) {
       bool validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade);
       if (!validCascadeCandidateKF)
@@ -1672,6 +1673,9 @@ struct cascadeBuilder {
         kfcasccovs(trackCovariance, trackCovarianceV0, trackCovariancePos, trackCovarianceNeg);
       }
     }
+    // En masse filling at end of process call
+    fillHistos();
+    resetHistos();
   }
 
   template <class TTrackTo, typename TCascTable, typename TStraTrack>
@@ -1995,6 +1999,7 @@ struct cascadePreselector {
                bitTrueXiMinus,
                bitTrueXiPlus,
                bitTrueOmegaMinus,
+               bitPhysicalPrimary,
                bitTrueOmegaPlus,
                bitdEdxXiMinus,
                bitdEdxXiPlus,
@@ -2094,6 +2099,7 @@ struct cascadePreselector {
   void checkPDG(TCascadeObject const& lCascadeCandidate, uint16_t& maskElement)
   {
     int lPDG = -1;
+    bool physicalPrimary = false;
 
     // Acquire all three daughter tracks, please
     auto lBachTrack = lCascadeCandidate.template bachelor_as<TTrackTo>();
@@ -2119,6 +2125,7 @@ struct cascadePreselector {
                 for (auto& lBachMother : lMCBachTrack.template mothers_as<aod::McParticles>()) {
                   if (lV0Mother == lBachMother) {
                     lPDG = lV0Mother.pdgCode();
+                    physicalPrimary = lV0Mother.isPhysicalPrimary();
 
                     // additionally check PDG of the mother particle if requested
                     if (dIfMCselectV0MotherPDG != 0) {
@@ -2148,6 +2155,8 @@ struct cascadePreselector {
       bitset(maskElement, bitTrueOmegaMinus);
     if (lPDG == -3334)
       bitset(maskElement, bitTrueOmegaPlus);
+    if (physicalPrimary)
+      bitset(maskElement, bitPhysicalPrimary);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check early dE/dx selection
@@ -2228,6 +2237,7 @@ struct cascadePreselector {
       casctags(validCascade,
                bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
                bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus),
+               bitcheck(selectionMask[ii], bitPhysicalPrimary),
                bitcheck(selectionMask[ii], bitdEdxXiMinus), bitcheck(selectionMask[ii], bitdEdxXiPlus),
                bitcheck(selectionMask[ii], bitdEdxOmegaMinus), bitcheck(selectionMask[ii], bitdEdxOmegaPlus));
     }
@@ -2235,7 +2245,7 @@ struct cascadePreselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all cascades are built. It will simply tag everything as true.
-  void processBuildAll(aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, aod::TracksExtra const&)
+  void processBuildAll(aod::Cascades const& cascades, aod::V0s const&, aod::TracksExtra const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -2246,7 +2256,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const& /*v0table*/, LabeledTracksExtra const&, aod::McParticles const&)
+  void processBuildMCAssociated(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, LabeledTracksExtra const&, aod::McParticles const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -2258,7 +2268,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, TracksExtraWithPID const&)
+  void processBuildValiddEdx(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, TracksExtraWithPID const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -2270,7 +2280,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -2285,7 +2295,7 @@ struct cascadePreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all findable cascades are built.
   /// Not to be used with processSkip.
-  void processBuildFindable(aod::FindableCascades const& cascades, aod::FindableV0s const&, aod::V0Datas const&, aod::TracksExtra const&)
+  void processBuildFindable(aod::FindableCascades const& cascades, aod::FindableV0s const&, aod::TracksExtra const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {

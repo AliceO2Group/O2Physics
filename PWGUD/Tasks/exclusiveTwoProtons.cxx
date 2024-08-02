@@ -138,6 +138,9 @@ struct ExclusiveTwoProtons {
     registry.add("PP/hMassHighPt1000", "#it{m_{pp}} [GeV/#it{c}^{2}]", kTH1F, {{2000, 0., 20.}});
     registry.add("PP/hUnlikePt", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hCoherentMass", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hCoherentMassWithoutDCAcuts", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hCoherentMassWithoutDCAxycut", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hCoherentMassWithoutDCAzcut", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
     registry.add("PP/hUnlikePtLowBand", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hUnlikePtLowBand24to275", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hUnlikePtLowBand275to300", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
@@ -152,11 +155,11 @@ struct ExclusiveTwoProtons {
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
+  // using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   //__________________________________________________________________________
   // Main process
-  void process(UDCollisions::iterator const& collision, udtracksfull const& tracks)
+  void process(UDCollisions::iterator const& /*collision*/, udtracksfull const& tracks)
   //  void process(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
   {
     registry.fill(HIST("hSelectionCounter"), 0);
@@ -187,6 +190,13 @@ struct ExclusiveTwoProtons {
         continue;
       }
       if (trk.itsNCls() < 7) {
+        continue;
+      }
+      if (!(std::abs(trk.dcaZ()) < 2.)) {
+        continue;
+      }
+      double dcaLimit = 0.0105 + 0.035 / pow(trk.pt(), 1.1);
+      if (!(std::abs(trk.dcaXY()) < dcaLimit)) {
         continue;
       }
       registry.fill(HIST("hSelectionCounter"), 3);
@@ -244,6 +254,10 @@ struct ExclusiveTwoProtons {
       double sigmaTotal = -999.;
       TLorentzVector a, b;
       int positiveFlag = -1;
+      // double dcaZ[2] = {-99., -99.};
+      // double dcaXY[2] = {-99., -99.};
+      int dcaZbool = -1;
+      int dcaXYbool = -1;
       if (onlyProtonTracksTOF.size() == 1) {
 
         if (!(fabs(onlyProtonTracks[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[0].Eta()) < 0.8)) {
@@ -269,6 +283,24 @@ struct ExclusiveTwoProtons {
           }
         }
 
+        // // DCA checks
+        // dcaZ[0] = rawProtonTracks[0].dcaZ();
+        // dcaZ[1] = rawProtonTracksTOF[0].dcaZ();
+        // dcaXY[0] = rawProtonTracks[0].dcaXY();
+        // dcaXY[1] = rawProtonTracksTOF[0].dcaXY();
+        // if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
+        //   dcaZbool = 1;
+        // } else {
+        //   dcaZbool = 0;
+        // }
+        // double dcaLimit[2] = {-99., -99.};
+        // dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
+        // dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
+        // if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
+        //   dcaXYbool = 1;
+        // } else {
+        //   dcaXYbool = 0;
+        // }
       } else if (onlyProtonTracksTOF.size() == 2) {
 
         if (!(fabs(onlyProtonTracksTOF[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[1].Eta()) < 0.8)) {
@@ -293,6 +325,25 @@ struct ExclusiveTwoProtons {
             positiveFlag = 2;
           }
         }
+
+        // // DCA checks
+        // dcaZ[0] = rawProtonTracksTOF[0].dcaZ();
+        // dcaZ[1] = rawProtonTracksTOF[1].dcaZ();
+        // dcaXY[0] = rawProtonTracksTOF[0].dcaXY();
+        // dcaXY[1] = rawProtonTracksTOF[1].dcaXY();
+        // if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
+        //   dcaZbool = 1;
+        // } else {
+        //   dcaZbool = 0;
+        // }
+        // double dcaLimit[2] = {-99., -99.};
+        // dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
+        // dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
+        // if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
+        //   dcaXYbool = 1;
+        // } else {
+        //   dcaXYbool = 0;
+        // }
       }
 
       if (sigmaTotal > 16.) {
@@ -316,6 +367,15 @@ struct ExclusiveTwoProtons {
         registry.fill(HIST("PP/hMassUnlike"), resonance.M());
         registry.fill(HIST("PP/hRapidity"), resonance.Rapidity());
         if (resonance.Pt() < 0.15) {
+          //   registry.fill(HIST("PP/hCoherentMassWithoutDCAcuts"), resonance.M());
+          //   if (dcaZbool == 1) {
+          //     registry.fill(HIST("PP/hCoherentMassWithoutDCAxycut"), resonance.M());
+          //   }
+          //   if (dcaXYbool == 1) {
+          //     registry.fill(HIST("PP/hCoherentMassWithoutDCAzcut"), resonance.M());
+          //   }
+          // }
+          // if (resonance.Pt() < 0.15 && dcaZbool == 1 && dcaXYbool == 1) {
           registry.fill(HIST("PP/hCoherentMass"), resonance.M());
           if (resonance.M() < 3.0) {
             registry.fill(HIST("PP/hAngularDstribLab"), a.Phi() + TMath::Pi(), a.CosTheta());
@@ -340,39 +400,43 @@ struct ExclusiveTwoProtons {
           }
         }
         // outside the hard pT cut, but with opposite charges
-        if (resonance.M() > 2.4 && resonance.M() < 2.75) {
-          registry.fill(HIST("PP/hUnlikePtLowBand24to275"), resonance.Pt());
-          registry.fill(HIST("PP/hUnlikePtLowBand"), resonance.Pt());
-        } else if (resonance.M() > 2.75 && resonance.M() < 3.) {
-          registry.fill(HIST("PP/hUnlikePtLowBand275to300"), resonance.Pt());
-          registry.fill(HIST("PP/hUnlikePtLowBand"), resonance.Pt());
-        } else if (resonance.M() > 3.0 && resonance.M() < 3.15) {
-          registry.fill(HIST("PP/hUnlikePtJpsi"), resonance.Pt());
-        } else if (resonance.M() > 3.15 && resonance.M() < 3.4) {
-          registry.fill(HIST("PP/hUnlikePtHighBand"), resonance.Pt());
-        }
+        dcaZbool = 1;
+        dcaXYbool = 1;
+        if (dcaZbool == 1 && dcaXYbool == 1) {
+          if (resonance.M() > 2.4 && resonance.M() < 2.75) {
+            registry.fill(HIST("PP/hUnlikePtLowBand24to275"), resonance.Pt());
+            registry.fill(HIST("PP/hUnlikePtLowBand"), resonance.Pt());
+          } else if (resonance.M() > 2.75 && resonance.M() < 3.) {
+            registry.fill(HIST("PP/hUnlikePtLowBand275to300"), resonance.Pt());
+            registry.fill(HIST("PP/hUnlikePtLowBand"), resonance.Pt());
+          } else if (resonance.M() > 3.0 && resonance.M() < 3.15) {
+            registry.fill(HIST("PP/hUnlikePtJpsi"), resonance.Pt());
+          } else if (resonance.M() > 3.15 && resonance.M() < 3.4) {
+            registry.fill(HIST("PP/hUnlikePtHighBand"), resonance.Pt());
+          }
 
-        // high mass states
-        if (resonance.M() > 4.) {
-          if (onlyProtonTracksTOF.size() == 1) {
-            registry.fill(HIST("hNsigEvsKa3"), onlyProtonSigma[0], onlyProtonSigmaTOF[0]);
-          } else if (onlyProtonTracksTOF.size() == 2) {
-            registry.fill(HIST("hNsigEvsKa3"), onlyProtonSigmaTOF[0], onlyProtonSigmaTOF[1]);
-          }
-          if (resonance.Pt() < 0.15) {
-            registry.fill(HIST("PP/hMassHighPt0150"), resonance.M());
-          }
-          if (resonance.Pt() < 0.20) {
-            registry.fill(HIST("PP/hMassHighPt0200"), resonance.M());
-          }
-          if (resonance.Pt() < 0.30) {
-            registry.fill(HIST("PP/hMassHighPt0300"), resonance.M());
-          }
-          if (resonance.Pt() < 0.50) {
-            registry.fill(HIST("PP/hMassHighPt0500"), resonance.M());
-          }
-          if (resonance.Pt() < 1.00) {
-            registry.fill(HIST("PP/hMassHighPt1000"), resonance.M());
+          // high mass states
+          if (resonance.M() > 4.) {
+            if (onlyProtonTracksTOF.size() == 1) {
+              registry.fill(HIST("hNsigEvsKa3"), onlyProtonSigma[0], onlyProtonSigmaTOF[0]);
+            } else if (onlyProtonTracksTOF.size() == 2) {
+              registry.fill(HIST("hNsigEvsKa3"), onlyProtonSigmaTOF[0], onlyProtonSigmaTOF[1]);
+            }
+            if (resonance.Pt() < 0.15) {
+              registry.fill(HIST("PP/hMassHighPt0150"), resonance.M());
+            }
+            if (resonance.Pt() < 0.20) {
+              registry.fill(HIST("PP/hMassHighPt0200"), resonance.M());
+            }
+            if (resonance.Pt() < 0.30) {
+              registry.fill(HIST("PP/hMassHighPt0300"), resonance.M());
+            }
+            if (resonance.Pt() < 0.50) {
+              registry.fill(HIST("PP/hMassHighPt0500"), resonance.M());
+            }
+            if (resonance.Pt() < 1.00) {
+              registry.fill(HIST("PP/hMassHighPt1000"), resonance.M());
+            }
           }
         }
       }

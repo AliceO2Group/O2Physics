@@ -38,6 +38,7 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetV0Utilities.h"
+#include "PWGJE/Core/JetDQUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -63,12 +64,26 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JClusters> jClustersTable;
   Produces<aod::JClusterPIs> jClustersParentIndexTable;
   Produces<aod::JClusterTracks> jClustersMatchedTracksTable;
+  Produces<aod::JMcClusterLbs> jMcClustersLabelTable;
+  Produces<aod::JD0CollisionIds> jD0CollisionIdsTable;
+  Produces<aod::JD0McCollisionIds> jD0McCollisionIdsTable;
   Produces<aod::JD0Ids> jD0IdsTable;
   Produces<aod::JD0PIds> jD0ParticleIdsTable;
+  Produces<aod::JLcCollisionIds> jLcCollisionIdsTable;
+  Produces<aod::JLcMcCollisionIds> jLcMcCollisionIdsTable;
   Produces<aod::JLcIds> jLcIdsTable;
   Produces<aod::JLcPIds> jLcParticleIdsTable;
   Produces<aod::JV0Ids> jV0IdsTable;
-  Produces<aod::JV0McParticles> jV0McParticlesTable;
+  Produces<aod::JV0McCollisions> jV0McCollisionsTable;
+  Produces<aod::JV0McCollisionIds> jV0McCollisionIdsTable;
+  Produces<aod::JV0Mcs> jV0McsTable;
+  Produces<aod::JV0McIds> jV0McIdsTable;
+  Produces<aod::JDielectronCollisionIds> jDielectronCollisionIdsTable;
+  Produces<aod::JDielectronIds> jDielectronIdsTable;
+  Produces<aod::JDielectronMcCollisions> jDielectronMcCollisionsTable;
+  Produces<aod::JDielectronMcCollisionIds> jDielectronMcCollisionIdsTable;
+  Produces<aod::JDielectronMcs> jDielectronMcsTable;
+  Produces<aod::JDielectronMcIds> jDielectronMcIdsTable;
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
@@ -109,6 +124,14 @@ struct JetDerivedDataProducerTask {
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsRun2, "produces derived collision tables for Run 2 data", false);
+
+  void processCollisionsALICE3(aod::Collision const& collision)
+  {
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, 0);
+    jCollisionsParentIndexTable(collision.globalIndex());
+    jCollisionsBunchCrossingIndexTable(-1);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsALICE3, "produces derived collision tables for ALICE 3 simulations", false);
 
   void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision)
   {
@@ -210,6 +233,31 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClusters, "produces derived cluster tables", false);
 
+  void processMcClusterLabels(aod::EMCALMCCluster const& cluster)
+  {
+    std::vector<int> particleIds;
+    for (auto particleId : cluster.mcParticleIds()) {
+      particleIds.push_back(particleId);
+    }
+    std::vector<float> amplitudeA;
+    auto amplitudeASpan = cluster.amplitudeA();
+    std::copy(amplitudeASpan.begin(), amplitudeASpan.end(), std::back_inserter(amplitudeA));
+    jMcClustersLabelTable(particleIds, amplitudeA);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processMcClusterLabels, "produces derived cluster particle label table", false);
+
+  void processD0Collisions(aod::HfD0CollIds::iterator const& D0Collision)
+  {
+    jD0CollisionIdsTable(D0Collision.collisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0Collisions, "produces derived index for D0 collisions", false);
+
+  void processD0McCollisions(aod::HfD0McCollIds::iterator const& D0McCollision)
+  {
+    jD0McCollisionIdsTable(D0McCollision.mcCollisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0McCollisions, "produces derived index for D0 MC collisions", false);
+
   void processD0(aod::HfD0Ids::iterator const& D0)
   {
     jD0IdsTable(D0.collisionId(), D0.prong0Id(), D0.prong1Id());
@@ -221,6 +269,18 @@ struct JetDerivedDataProducerTask {
     jD0ParticleIdsTable(D0.mcCollisionId(), D0.mcParticleId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived index for D0 particles", false);
+
+  void processLcCollisions(aod::Hf3PCollIds::iterator const& LcCollision)
+  {
+    jLcCollisionIdsTable(LcCollision.collisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processLcCollisions, "produces derived index for Lc collisions", false);
+
+  void processLcMcCollisions(aod::Hf3PMcCollIds::iterator const& LcMcCollision)
+  {
+    jLcMcCollisionIdsTable(LcMcCollision.mcCollisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMcCollisions, "produces derived index for Lc MC collisions", false);
 
   void processLc(aod::Hf3PIds::iterator const& Lc)
   {
@@ -240,32 +300,89 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processV0, "produces derived index for V0 candidates", false);
 
-  void processV0MC(aod::McParticle const& particle)
+  void processV0MC(aod::McCollision const& mcCollision, aod::McParticles const& particles)
   { // can loop over McV0Labels tables if we want to only store matched V0Particles
-    if (jetv0utilities::isV0Particle(particle)) {
-      std::vector<int> mothersId;
-      if (particle.has_mothers()) {
-        auto mothersIdTemps = particle.mothersIds();
-        for (auto mothersIdTemp : mothersIdTemps) {
-          mothersId.push_back(mothersIdTemp);
+    bool filledV0McCollisionTable = false;
+    for (auto const& particle : particles) {
+      if (jetv0utilities::isV0Particle(particles, particle)) {
+        if (!filledV0McCollisionTable) {
+          jV0McCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+          jV0McCollisionIdsTable(mcCollision.globalIndex());
+          filledV0McCollisionTable = true;
         }
-      }
-      int daughtersId[2] = {-1, -1};
-      auto i = 0;
-      if (particle.has_daughters()) {
-        for (auto daughterId : particle.daughtersIds()) {
-          if (i > 1) {
-            break;
+        std::vector<int> mothersId;
+        if (particle.has_mothers()) {
+          auto mothersIdTemps = particle.mothersIds();
+          for (auto mothersIdTemp : mothersIdTemps) {
+            mothersId.push_back(mothersIdTemp);
           }
-          daughtersId[i] = daughterId;
-          i++;
         }
+        int daughtersId[2] = {-1, -1};
+        auto i = 0;
+        if (particle.has_daughters()) {
+          for (auto daughterId : particle.daughtersIds()) {
+            if (i > 1) {
+              break;
+            }
+            daughtersId[i] = daughterId;
+            i++;
+          }
+        }
+        auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
+        jV0McsTable(jV0McCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetv0utilities::setV0ParticleDecayBit(particles, particle));
+        jV0McIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
       }
-      auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-      jV0McParticlesTable(particle.mcCollisionId(), particle.globalIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId, jetv0utilities::setV0ParticleDecayBit<aod::McParticles>(particle));
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processV0MC, "produces V0 particles", false);
+
+  void processDielectronCollisions(aod::ReducedEventsInfo::iterator const& DielectronCollision)
+  {
+    jDielectronCollisionIdsTable(DielectronCollision.collisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processDielectronCollisions, "produces derived index for Dielectron collisions", false);
+
+  void processDielectron(aod::DielectronInfo const& Dielectron)
+  {
+    jDielectronIdsTable(Dielectron.collisionId(), Dielectron.prong0Id(), Dielectron.prong1Id());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processDielectron, "produces derived index for Dielectron candidates", false);
+
+  void processDielectronMc(aod::McCollision const& mcCollision, aod::McParticles const& particles)
+  {
+    bool filledDielectronMcCollisionTable = false;
+    for (auto const& particle : particles) {
+      if (jetdqutilities::isDielectronParticle(particles, particle)) {
+        if (!filledDielectronMcCollisionTable) {
+          jDielectronMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+          jDielectronMcCollisionIdsTable(mcCollision.globalIndex());
+          filledDielectronMcCollisionTable = true;
+        }
+        std::vector<int> mothersId;
+        if (particle.has_mothers()) {
+          auto mothersIdTemps = particle.mothersIds();
+          for (auto mothersIdTemp : mothersIdTemps) {
+            mothersId.push_back(mothersIdTemp);
+          }
+        }
+        int daughtersId[2] = {-1, -1};
+        auto i = 0;
+        if (particle.has_daughters()) {
+          for (auto daughterId : particle.daughtersIds()) {
+            if (i > 1) {
+              break;
+            }
+            daughtersId[i] = daughterId;
+            i++;
+          }
+        }
+        auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
+        jDielectronMcsTable(jDielectronMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetdqutilities::setDielectronParticleDecayBit(particles, particle), RecoDecay::getCharmHadronOrigin(particles, particle, false)); // Todo: should the last thing be false?
+        jDielectronMcIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
+      }
+    }
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processDielectronMc, "produces Dielectron mccollisions and particles", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

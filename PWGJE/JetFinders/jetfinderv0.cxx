@@ -46,6 +46,7 @@ struct JetFinderV0Task {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  Configurable<double> trackingEfficiency{"trackingEfficiency", 1.0, "tracking efficiency applied to jet finding"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
@@ -55,7 +56,7 @@ struct JetFinderV0Task {
   Configurable<float> candPtMax{"candPtMax", 100.0, "maximum candidate pT"};
   Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate eta"};
   Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate eta"};
-  Configurable<float> candPDGMass{"candPDGMass", 310, "candidate PDG for mass in clustering"};
+  Configurable<float> candPDG{"candPDG", 310, "candidate PDG for mass in clustering"};
 
   // jet level configurables
   Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
@@ -102,10 +103,10 @@ struct JetFinderV0Task {
     jetFinder.ghostArea = jetGhostArea;
     jetFinder.ghostRepeatN = ghostRepeat;
 
-    if (candPDGMass == 310) {
+    if (candPDG == 310) {
       candIndex = 0;
     }
-    if (candPDGMass == 3122) {
+    if (candPDG == 3122) {
       candIndex = 1;
     }
 
@@ -152,7 +153,7 @@ struct JetFinderV0Task {
           }
         }
         */
-    jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, candidates);
+    jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, trackingEfficiency, candidates);
 
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, true);
   }

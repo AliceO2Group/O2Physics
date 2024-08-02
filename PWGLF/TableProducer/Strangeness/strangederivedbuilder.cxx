@@ -59,7 +59,7 @@ using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::Track
 using FullTracksExtIUTOF = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFEvTime, aod::TOFSignal>;
 using FullCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>;
 
-// simple checkers
+// simple bit checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
@@ -77,9 +77,7 @@ struct strangederivedbuilder {
   Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / sel8 selection
   Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
   Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
-  Produces<aod::V0MCCollRefs> v0mccollref;         // references collisions from V0s
   Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
-  Produces<aod::CascMCCollRefs> cascmccollref;     // references collisions from V0s
   Produces<aod::KFCascCollRefs> kfcasccollref;     // references collisions from KF cascades
   Produces<aod::TraCascCollRefs> tracasccollref;   // references collisions from tracked cascades
 
@@ -112,6 +110,7 @@ struct strangederivedbuilder {
   Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
   Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
   Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
+  Produces<aod::StraTPCQVs> StraTPCQVs;       // TPC Q-vector
   Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
 
   //__________________________________________________
@@ -281,7 +280,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -291,6 +291,12 @@ struct strangederivedbuilder {
 
   void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
+    // create collision indices beforehand
+    std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
+    std::vector<int> CascadeCollIndices(Cascades.size(), -1);       // index -1: no collision
+    std::vector<int> KFCascadeCollIndices(KFCascades.size(), -1);   // index -1: no collision
+    std::vector<int> TraCascadeCollIndices(TraCascades.size(), -1); // index -1: no collision
+
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
 
@@ -332,22 +338,42 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
-      for (int i = 0; i < V0Table_thisColl.size(); i++)
-        v0collref(strangeColl.lastIndex());
-      for (int i = 0; i < CascTable_thisColl.size(); i++)
-        casccollref(strangeColl.lastIndex());
-      for (int i = 0; i < KFCascTable_thisColl.size(); i++)
-        kfcasccollref(strangeColl.lastIndex());
-      for (int i = 0; i < TraCascTable_thisColl.size(); i++)
-        tracasccollref(strangeColl.lastIndex());
+
+      for (const auto& v0 : V0Table_thisColl)
+        V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : CascTable_thisColl)
+        CascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : KFCascTable_thisColl)
+        KFCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : TraCascTable_thisColl)
+        TraCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
     }
+
+    // populate references, including those that might not be assigned
+    for (const auto& v0 : V0s)
+      v0collref(V0CollIndices[v0.globalIndex()]);
+    for (const auto& casc : Cascades)
+      casccollref(CascadeCollIndices[casc.globalIndex()]);
+    for (const auto& casc : KFCascades)
+      kfcasccollref(KFCascadeCollIndices[casc.globalIndex()]);
+    for (const auto& casc : KFCascades)
+      tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
-  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::McV0Labels> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
+    // create collision indices beforehand
+    std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
+    std::vector<int> V0MCCollIndices(V0s.size(), -1);               // index -1: no collision
+    std::vector<int> CascadeCollIndices(Cascades.size(), -1);       // index -1: no collision
+    std::vector<int> CascadeMCCollIndices(Cascades.size(), -1);     // index -1: no collision
+    std::vector<int> KFCascadeCollIndices(KFCascades.size(), -1);   // index -1: no collision
+    std::vector<int> TraCascadeCollIndices(TraCascades.size(), -1); // index -1: no collision
+
     // ______________________________________________
     // fill all MC collisions, correlate via index later on
     for (const auto& mccollision : mcCollisions) {
@@ -401,36 +427,31 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
-      for (int i = 0; i < V0Table_thisColl.size(); i++)
-        v0collref(strangeColl.lastIndex());
-      for (int i = 0; i < CascTable_thisColl.size(); i++)
-        casccollref(strangeColl.lastIndex());
-      for (int i = 0; i < KFCascTable_thisColl.size(); i++)
-        kfcasccollref(strangeColl.lastIndex());
-      for (int i = 0; i < TraCascTable_thisColl.size(); i++)
-        tracasccollref(strangeColl.lastIndex());
-
-      // populate MC collision references
-      for (const auto& v0 : V0Table_thisColl) {
-        uint32_t indMCColl = -1;
-        if (v0.has_mcParticle()) {
-          auto mcParticle = v0.mcParticle();
-          indMCColl = mcParticle.mcCollisionId();
-        }
-        v0mccollref(indMCColl);
-      }
-      for (const auto& casc : CascTable_thisColl) {
-        uint32_t indMCColl = -1;
-        if (casc.has_mcParticle()) {
-          auto mcParticle = casc.mcParticle();
-          indMCColl = mcParticle.mcCollisionId();
-        }
-        cascmccollref(indMCColl);
-      }
+      for (const auto& v0 : V0Table_thisColl)
+        V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : CascTable_thisColl)
+        CascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : KFCascTable_thisColl)
+        KFCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : TraCascTable_thisColl)
+        TraCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
     }
+
+    // populate references, including those that might not be assigned
+    for (const auto& v0 : V0s) {
+      v0collref(V0CollIndices[v0.globalIndex()]);
+    }
+    for (const auto& casc : Cascades) {
+      casccollref(CascadeCollIndices[casc.globalIndex()]);
+    }
+    for (const auto& casc : KFCascades)
+      kfcasccollref(KFCascadeCollIndices[casc.globalIndex()]);
+    for (const auto& casc : KFCascades)
+      tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
   void processTrackExtrasV0sOnly(aod::V0Datas const& V0s, TracksWithExtra const& tracksExtra)
@@ -786,7 +807,7 @@ struct strangederivedbuilder {
   }
   void processFT0CQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
   {
-    StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), 1.f);
+    StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), collision.qFT0C());
     StraFT0CQVsEv(collision.triggereventep());
   }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
@@ -796,6 +817,14 @@ struct strangederivedbuilder {
   void processFV0AQVectors(soa::Join<aod::Collisions, aod::QvectorFV0As>::iterator const& collision)
   {
     StraFV0AQVs(collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A());
+  }
+  void processTPCQVectors(soa::Join<aod::Collisions, aod::QvectorBPoss, aod::QvectorBNegs>::iterator const& collision)
+  {
+    StraTPCQVs(collision.qvecBNegRe(), collision.qvecBNegIm(), collision.nTrkBNeg(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.nTrkBPos());
+  }
+  void processTPCQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
+  {
+    StraTPCQVs(collision.qTPCL() * std::cos(2 * collision.psiTPCL()), collision.qTPCL() * std::sin(2 * collision.psiTPCL()), collision.qTPCL(), collision.qTPCR() * std::cos(2 * collision.psiTPCR()), collision.qTPCR() * std::sin(2 * collision.psiTPCR()), collision.qTPCR());
   }
 
   uint64_t combineProngIndices(uint32_t low, uint32_t high)
@@ -871,6 +900,8 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectorsLF, "Produce FT0C Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0MQVectors, "Produce FT0M Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processTPCQVectors, "Produce TPC Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processTPCQVectorsLF, "Produce TPC Q-vectors table using LF temporary calibration", false);
 
   // dedicated findable functionality
   PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);
