@@ -1433,10 +1433,11 @@ struct ProbeThirdTrack {
             indexProbe = iDaughtIndex;
           }
         }
-        for (int i : listIndexDaughters) {
-          // Printf("listIndexDaughters, index: %d",i);
-          if (i == indexProbe)
+        for (auto const& idx : listIndexDaughters) {
+          // LOGP(info, "listIndexDaughters, index: {}", idx);
+          if (idx == indexProbe) {
             continue;
+          }
           auto mcpartDaught = mcParticles.rawIteratorAt(i - mcParticles.offset());
           ptminTagDaughers = std::min(mcpartDaught.pt(), ptminTagDaughers);
           etamaxTagDaugthers = std::max(std::abs(mcpartDaught.eta()), etamaxTagDaugthers);
