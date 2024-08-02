@@ -1350,15 +1350,27 @@ struct phik0shortanalysis {
     bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
 
     for (auto mcParticle1 : mcParticles) {
-      if (mcParticle1.y() > 0.8)
-        continue;
       if (mcParticle1.pdgCode() != 310)
+        continue;
+      if (mcParticle1.y() > 0.8)
         continue;
 
       for (auto mcParticle2 : mcParticles) {
-        if (mcParticle2.y() > 0.8)
-          continue;
         if (mcParticle2.pdgCode() != 333)
+          continue;
+        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != 2)
+          continue;
+        bool isPosKaon = false, isNegKaon = false;
+        for (auto kDaughter : kDaughters) {
+          if (kDaughter.pdgCode() == 321)
+            isPosKaon = true;
+          if (kDaughter.pdgCode() == -321)
+            isNegKaon = true;
+        }
+        if (!isPosKaon || !isNegKaon)
+          continue;
+        if (mcParticle2.y() > 0.8)
           continue;
 
         if (!isCountedPhiInclusive) {
@@ -1381,7 +1393,7 @@ struct phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiK0S, "Process GenMC for Phi-K0S Analysis", false);
 
   void processRecMCPhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
@@ -1543,15 +1555,27 @@ struct phik0shortanalysis {
     bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
 
     for (auto mcParticle1 : mcParticles) {
-      if (mcParticle1.y() > 0.8)
-        continue;
       if (std::abs(mcParticle1.pdgCode()) != 211)
+        continue;
+      if (mcParticle1.y() > 0.8)
         continue;
 
       for (auto mcParticle2 : mcParticles) {
-        if (mcParticle2.y() > 0.8)
-          continue;
         if (mcParticle2.pdgCode() != 333)
+          continue;
+        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != 2)
+          continue;
+        bool isPosKaon = false, isNegKaon = false;
+        for (auto kDaughter : kDaughters) {
+          if (kDaughter.pdgCode() == 321)
+            isPosKaon = true;
+          if (kDaughter.pdgCode() == -321)
+            isNegKaon = true;
+        }
+        if (!isPosKaon || !isNegKaon)
+          continue;
+        if (mcParticle2.y() > 0.8)
           continue;
 
         if (!isCountedPhiInclusive) {
@@ -1574,7 +1598,7 @@ struct phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiPion, "Process RecMC for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiPion, "Process GenMC for Phi-Pion Analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
