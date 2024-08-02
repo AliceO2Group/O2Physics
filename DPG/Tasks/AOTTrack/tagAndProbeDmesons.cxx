@@ -1101,6 +1101,7 @@ struct ProbeThirdTrack {
   std::array<bool, aod::tagandprobe::TagChannels::NTagChannels> applyMl{};
 
   std::array<std::array<std::shared_ptr<THnSparse>, aod::tagandprobe::TrackTypes::NTrackTypes>, aod::tagandprobe::TagChannels::NTagChannels> histos{};
+  std::array<std::shared_ptr<THnSparse>, aod::tagandprobe::TagChannels::NTagChannels> histosGen{};
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
@@ -1152,10 +1153,13 @@ struct ProbeThirdTrack {
     const AxisSpec axisPtProbe{{0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}};
     const AxisSpec axisPtTag{{0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}};
     const AxisSpec axisPtD{{0.f, 0.5f, 1.f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.f, 11.f, 12.f, 14.f, 16.f, 20.f, 24.f, 36.f, 50.f}};
+    const AxisSpec axisYD{20, -1.f, 1.f};
     const AxisSpec axisEtaProbe{20, -1.f, 1.f};
     const AxisSpec axisNumCrossRowTpc{51, 49.5f, 100.5f};
     const AxisSpec axisTpcChi2PerClus{8, 2.f, 10.f};
     const AxisSpec axisNumCluIts{5, 2.5f, 7.5f};
+    const AxisSpec axisPtMinTagdaught{10, 0.f, 1.f};
+    const AxisSpec axisAbsEtaMaxTagdaught{10, 0.f, 1.f};
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{225, 1.65f, 2.10f}, AxisSpec{225, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{125, 0.f, 2.5f}, AxisSpec{100, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
 
@@ -1169,7 +1173,9 @@ struct ProbeThirdTrack {
                                                                HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel], axisEtaProbe, axisNumCrossRowTpc, axisTpcChi2PerClus, axisNumCluIts});
       }
     }
-
+    for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
+      histosGen[iChannel] = registry.add<THnSparse>(Form("hGen%s", tagChannels[iChannel].data()), ";#it{p}_{T}(D_{parent}) (GeV/#it{c}); #it{y}(D_{parent});#it{p}_{T}(tag) (GeV/#it{c}); #it{y}(tag);#it{p}_{T}(probe) (GeV/#it{c}); #it{#eta}(probe);#it{p}_{T}^{min}(tag daughters);#it{#eta}_{max}(tag daughters)", HistType::kTHnSparseF, {axisPtD, axisYD, axisPtTag, axisYD, axisPtProbe, axisEtaProbe, axisPtMinTagdaught, axisAbsEtaMaxTagdaught});
+    }
     applyMl = {mlConfig.applyMlPiPiFromDplus, mlConfig.applyMlKaKaFromDsOrDplus, mlConfig.applyMlDzeroFromDstar};
   }
 
@@ -1393,6 +1399,57 @@ struct ProbeThirdTrack {
 
   void processDummy(aod::Collisions const&) {}
   PROCESS_SWITCH(ProbeThirdTrack, processDummy, "Dummy process function that does nothing", false);
+
+  void processGeneratedDstarToDzeroPi(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
+
+    if (std::abs(mcCollision.posZ()) > 10.)
+      return;
+    std::array<int, 3> arrDstar = {211, -321, 211};
+    int8_t* sign = nullptr;
+    std::vector<int> listIndexDaughters;
+    float ptDzero = -1, yDzero = -999, ptSoftPion = -1, etaSoftPion = -999, ptminTagDaughers = 9999., etamaxTagDaugthers = 0.;
+    int indexProbe;
+    for (auto& mcpart : mcParticles) {
+      //  Printf("particle id: %d",mcpart.pdgCode());
+      if (RecoDecay::isMatchedMCGen<true, true, 3>(mcParticles, mcpart, constants::physics::Pdg::kDStar, arrDstar, true, sign, -1, &listIndexDaughters)) {
+        //	Printf("Selected particle id: %d",mcpart.pdgCode());
+        ptDzero = -1;
+        yDzero = -999;
+        ptSoftPion = -1;
+        etaSoftPion = -999;
+        ptminTagDaughers = 9999.;
+        etamaxTagDaugthers = 0.;
+        indexProbe = -1;
+        for (int idaughtindex : mcpart.daughtersIds()) {
+          //  Printf("mcpart.daugthersIds, index: %d",idaughtindex);
+          auto mcpartDstarDaught = mcParticles.rawIteratorAt(idaughtindex - mcParticles.offset());
+          if (std::abs(mcpartDstarDaught.pdgCode()) == constants::physics::Pdg::kD0) {
+            ptDzero = mcpartDstarDaught.pt();
+            yDzero = mcpartDstarDaught.y();
+          } else if (std::abs(mcpartDstarDaught.pdgCode()) == 211) {
+            ptSoftPion = mcpartDstarDaught.pt();
+            etaSoftPion = mcpartDstarDaught.eta();
+            indexProbe = idaughtindex;
+          }
+        }
+        for (int i : listIndexDaughters) {
+          // Printf("listIndexDaughters, index: %d",i);
+          if (i == indexProbe)
+            continue;
+          auto mcpartDaught = mcParticles.rawIteratorAt(i - mcParticles.offset());
+          ptminTagDaughers = std::min(mcpartDaught.pt(), ptminTagDaughers);
+          etamaxTagDaugthers = std::max(std::abs(mcpartDaught.eta()), etamaxTagDaugthers);
+        }
+        //	registry.fill(HIST(Form("hGen%s",tagChannels[aod::tagandprobe::DstarPlusToDzeroPi].data())),
+        if (mcpart.pdgCode() > 0)
+          histosGen[aod::tagandprobe::DstarPlusToDzeroPi]->Fill(mcpart.pt(), mcpart.y(), ptDzero, yDzero, ptSoftPion, etaSoftPion, ptminTagDaughers, etamaxTagDaugthers);
+        else
+          histosGen[aod::tagandprobe::DstarMinusToDzeroBarPi]->Fill(mcpart.pt(), mcpart.y(), ptDzero, yDzero, ptSoftPion, etaSoftPion, ptminTagDaughers, etamaxTagDaugthers);
+      }
+    }
+  }
+  PROCESS_SWITCH(ProbeThirdTrack, processGeneratedDstarToDzeroPi, "Count generated particles", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
