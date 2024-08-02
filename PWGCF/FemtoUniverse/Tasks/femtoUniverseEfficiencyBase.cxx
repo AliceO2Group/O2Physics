@@ -477,23 +477,24 @@ struct femtoUniverseEfficiencyBase {
   /// @param grouppartsTwoGen partition for the second particle passed by the process function
   /// @param parts femtoUniverseParticles table (in case of Monte Carlo joined with FemtoUniverseMCLabels)
   template <bool isMC, typename PartitionType, typename ParticlesType>
-  void doMCRecTrackV0(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, ParticlesType const& parts)  { // part1 is track and part2 is V0
+  void doMCRecTrackV0(PartitionType grouppartsOneMCGen, PartitionType grouppartsTwoGen, ParticlesType const& parts)
+  { // part1 is track and part2 is V0
 
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
       if (part.partType() != ConfParticleTypePartOne)
         continue;
 
-      if (part.sign() !=  ConfChargePart1)
+      if (part.sign() != ConfChargePart1)
         continue;
-          
+
       if (!IsParticleNSigma(ConfPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon)))
         continue;
 
       trackHistoPartOneRec.fillQA<isMC, false>(part);
       if (!part.has_fdMCParticle())
         continue;
-      
+
       const auto mcParticle = part.fdMCParticle();
       registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
     }
@@ -501,18 +502,18 @@ struct femtoUniverseEfficiencyBase {
     if (!ConfIsSame) {
       for (auto& part : grouppartsTwoGen) {
 
-      if (part.partType() != ConfParticleTypePartTwo || !invMLambda(part.mLambda(), part.mAntiLambda())) {
-        continue;
-      }
+        if (part.partType() != ConfParticleTypePartTwo || !invMLambda(part.mLambda(), part.mAntiLambda())) {
+          continue;
+        }
         const auto& posChild = parts.iteratorAt(part.index() - 2);
         const auto& negChild = parts.iteratorAt(part.index() - 1);
 
-        if(ConfV0Type1==0){
+        if (ConfV0Type1 == 0) {
           if (!IsProtonNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !IsPionNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion))) // give momentum as 0 to only check TPC nSigma, not combined with TOF
-            continue;          
+            continue;
         }
 
-        else if (ConfV0Type1==1){
+        else if (ConfV0Type1 == 1) {
           if (!IsProtonNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Proton)) || !IsPionNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Pion))) // give momentum as 0 to only check TPC nSigma, not combined with TOF
             continue;
         }
@@ -594,8 +595,8 @@ struct femtoUniverseEfficiencyBase {
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
   void processTrackV0(o2::aod::FDCollision& col,
-                         FemtoFullParticles& parts, aod::FDMCParticles const&)
-  {    
+                      FemtoFullParticles& parts, aod::FDMCParticles const&)
+  {
     fillCollision(col);
     // MCGen
     auto thegrouppartsOneMCGen = partsOneMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
