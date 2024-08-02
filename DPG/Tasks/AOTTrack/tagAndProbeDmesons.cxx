@@ -1421,7 +1421,7 @@ struct ProbeThirdTrack {
         ptminTagDaughers = 9999.;
         etamaxTagDaugthers = 0.;
         indexProbe = -1;
-        for (int idaughtindex : mcpart.daughtersIds()) {
+        for (auto const& iDaughtIndex : mcPart.daughtersIds()) {
           //  Printf("mcpart.daugthersIds, index: %d",idaughtindex);
           auto mcpartDstarDaught = mcParticles.rawIteratorAt(idaughtindex - mcParticles.offset());
           if (std::abs(mcpartDstarDaught.pdgCode()) == constants::physics::Pdg::kD0) {
