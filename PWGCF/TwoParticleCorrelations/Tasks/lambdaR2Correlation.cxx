@@ -381,7 +381,7 @@ struct lambdaCorrTableProducer {
     }
   }
 
-  template <ParticleType v0part, PidType pos_prong, PidType neg_prong, typename C, typename V, typename T>
+  template <typename C, typename V, typename T>
   void selV0Particle(C const& collision, V const& v0track, T const& tracks)
   {
 
@@ -389,18 +389,27 @@ struct lambdaCorrTableProducer {
     auto postrack = v0track.template posTrack_as<T>();
     auto negtrack = v0track.template negTrack_as<T>();
 
-    // apply daughter particle id
-    if (!selPIDTrack<pos_prong>(postrack) || !selPIDTrack<neg_prong>(negtrack)) {
-      return;
-    }
-
+    bool lambdaFlag = false, antiLambdaFlag = false;
     float mass = 0.;
+    ParticleType v0part;
 
-    if (v0part == kLambda) {
+    // apply daughter particle id
+    // check for Lambda
+    if (selPIDTrack<kProton>(postrack) && selPIDTrack<kPion>(negtrack)) {
+      lambdaFlag = true;
       mass = v0track.mLambda();
+      v0part = kLambda;
     }
-    if (v0part == kAntiLambda) {
+    // check for AntiLambda
+    if (selPIDTrack<kPion>(postrack) && selPIDTrack<kProton>(negtrack)) {
+      antiLambdaFlag = true;
       mass = v0track.mAntiLambda();
+      v0part = kAntiLambda;
+    }
+
+    // neither Lambda nor AntiLambda
+    if (!lambdaFlag && !antiLambdaFlag) {
+      return;
     }
 
     // apply mass window selection [global]
@@ -424,13 +433,8 @@ struct lambdaCorrTableProducer {
       return;
     }
 
-    if (v0part == kLambda) {
-      histos.fill(HIST("QA_Checks/h1d_lambda_mass"), v0track.mLambda());
-    }
-
-    if (v0part == kAntiLambda) {
-      histos.fill(HIST("QA_Checks/h1d_lambda_mass"), v0track.mAntiLambda());
-    }
+    // fill mass histogram before mass window cuts
+    histos.fill(HIST("QA_Checks/h1d_lambda_mass"), mass);
 
     // loop over mass windows
     for (auto m = mass_win_map.begin(); m != mass_win_map.end(); ++m) {
@@ -439,7 +443,11 @@ struct lambdaCorrTableProducer {
       if (mass > m->second[0] && mass < m->second[1]) {
 
         if (m->first == kCentralWindow) {
-          fillQALambda<v0part>(collision, v0track, tracks);
+          if (lambdaFlag) {
+            fillQALambda<kLambda>(collision, v0track, tracks);
+          } else if (antiLambdaFlag) {
+            fillQALambda<kAntiLambda>(collision, v0track, tracks);
+          }
         }
 
         lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0track.pt(), rap, v0track.phi(), mass, postrack.index(), negtrack.index(), (int8_t)v0part, (int8_t)m->first);
@@ -469,8 +477,7 @@ struct lambdaCorrTableProducer {
         continue;
       }
 
-      selV0Particle<kLambda, kProton, kPion>(collision, v0, tracks);
-      selV0Particle<kAntiLambda, kPion, kProton>(collision, v0, tracks);
+      selV0Particle(collision, v0, tracks);
     }
   }
 };
