@@ -1174,7 +1174,7 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processMEPhiPion, "Process Mixed Event for Phi-Pion Analysis", false);
 
-  void processMCEffPhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullV0s const& V0s, V0DauMCTracks const&, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void processRecMCPhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullV0s const& V0s, V0DauMCTracks const&, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
     if (!acceptEventQA<true>(collision))
       return;
@@ -1341,7 +1341,12 @@ struct phik0shortanalysis {
           break;
       }
     }
+  }
 
+  PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
+
+  void processGenMCPhiK0S(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
     bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
 
     for (auto mcParticle1 : mcParticles) {
@@ -1376,9 +1381,9 @@ struct phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processMCEffPhiK0S, "Process MC Efficiency for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
 
-  void processMCEffPhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void processRecMCPhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
     if (!acceptEventQA<true>(collision))
       return;
@@ -1529,7 +1534,12 @@ struct phik0shortanalysis {
           break;
       }
     }
+  }
 
+  PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiPion, "Process RecMC for Phi-Pion Analysis", false);
+
+  void processGenMCPhiPion(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
     bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
 
     for (auto mcParticle1 : mcParticles) {
@@ -1563,6 +1573,8 @@ struct phik0shortanalysis {
       }
     }
   }
+
+  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiPion, "Process RecMC for Phi-Pion Analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
