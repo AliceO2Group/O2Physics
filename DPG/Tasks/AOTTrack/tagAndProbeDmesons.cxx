@@ -30,6 +30,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "Tools/ML/MlResponse.h"
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1412,7 +1413,7 @@ struct ProbeThirdTrack {
     int indexProbe;
     for (auto const& mcPart : mcParticles) {
       //  LOGP(info, "particle id: {}", mcPart.pdgCode());
-      if (RecoDecay::isMatchedMCGen<true, true, 3>(mcParticles, mcpart, constants::physics::Pdg::kDStar, arrDstar, true, sign, 2, &listIndexDaughters)) {
+      if (RecoDecay::isMatchedMCGen<true, true, 3>(mcParticles, mcPart, constants::physics::Pdg::kDStar, arrDstar, true, sign, 2, &listIndexDaughters)) {
         // LOGP(info, "Selected particle id: {}", mcPart.pdgCode());
         ptDzero = -1;
         yDzero = -999;
@@ -1438,9 +1439,9 @@ struct ProbeThirdTrack {
           if (idx == indexProbe) {
             continue;
           }
-          auto mcpartDaught = mcParticles.rawIteratorAt(i - mcParticles.offset());
-          ptminTagDaughers = std::min(mcpartDaught.pt(), ptminTagDaughers);
-          etamaxTagDaugthers = std::max(std::abs(mcpartDaught.eta()), etamaxTagDaugthers);
+          auto mcPartDaught = mcParticles.rawIteratorAt(idx - mcParticles.offset());
+          ptminTagDaughers = std::min(mcPartDaught.pt(), ptminTagDaughers);
+          etamaxTagDaugthers = std::max(std::abs(mcPartDaught.eta()), etamaxTagDaugthers);
         }
         // registry.fill(HIST(Form("hGen%s",tagChannels[aod::tagandprobe::DstarPlusToDzeroPi].data())),
         if (mcPart.pdgCode() > 0) {
