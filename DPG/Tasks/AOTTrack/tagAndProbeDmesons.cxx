@@ -1423,7 +1423,7 @@ struct ProbeThirdTrack {
         indexProbe = -1;
         for (auto const& iDaughtIndex : mcPart.daughtersIds()) {
           //  Printf("mcpart.daugthersIds, index: %d",idaughtindex);
-          auto mcpartDstarDaught = mcParticles.rawIteratorAt(idaughtindex - mcParticles.offset());
+          auto mcPartDstarDaught = mcParticles.rawIteratorAt(iDaughtIndex - mcParticles.offset());
           if (std::abs(mcpartDstarDaught.pdgCode()) == constants::physics::Pdg::kD0) {
             ptDzero = mcpartDstarDaught.pt();
             yDzero = mcpartDstarDaught.y();
