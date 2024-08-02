@@ -1405,7 +1405,7 @@ struct ProbeThirdTrack {
 
     if (std::abs(mcCollision.posZ()) > 10.)
       return;
-    std::array<int, 3> arrDstar = {211, -321, 211};
+    std::array<int, 3> arrDstar = {kPiPlus, kKMinus, kPiPlus};
     int8_t* sign = nullptr;
     std::vector<int> listIndexDaughters;
     float ptDzero = -1, yDzero = -999, ptSoftPion = -1, etaSoftPion = -999, ptminTagDaughers = 9999., etamaxTagDaugthers = 0.;
