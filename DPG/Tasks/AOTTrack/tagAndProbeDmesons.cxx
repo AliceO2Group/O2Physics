@@ -1410,7 +1410,7 @@ struct ProbeThirdTrack {
     std::vector<int> listIndexDaughters;
     float ptDzero = -1, yDzero = -999, ptSoftPion = -1, etaSoftPion = -999, ptminTagDaughers = 9999., etamaxTagDaugthers = 0.;
     int indexProbe;
-    for (auto& mcpart : mcParticles) {
+    for (auto const& mcPart : mcParticles) {
       //  LOGP(info, "particle id: {}", mcPart.pdgCode());
       if (RecoDecay::isMatchedMCGen<true, true, 3>(mcParticles, mcpart, constants::physics::Pdg::kDStar, arrDstar, true, sign, -1, &listIndexDaughters)) {
         // LOGP(info, "Selected particle id: {}", mcPart.pdgCode());
