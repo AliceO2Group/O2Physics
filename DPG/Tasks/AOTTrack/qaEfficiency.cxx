@@ -1301,11 +1301,11 @@ struct QaEfficiency {
     if (!doPtRadius) {
       return;
     }
-    fillEfficiency2D("ITS-TPC_vsPt_vsRadius" , hPtRadiusItsTpc[histogramIndex], hPtGenerated[histogramIndex]);
-    fillEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius" , hPtRadiusItsTpcTof[histogramIndex], hPtGenerated[histogramIndex]);
+    fillEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpc[histogramIndex], hPtGenerated[histogramIndex]);
+    fillEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTof[histogramIndex], hPtGenerated[histogramIndex]);
   }
- }template <bool doFillHistograms, typename CollType>
- bool isCollisionSelected(const CollType& collision)
+} template <bool doFillHistograms, typename CollType>
+bool isCollisionSelected(const CollType& collision)
   {
     if constexpr (doFillHistograms) {
       histos.fill(HIST("eventSelection"), 1);
