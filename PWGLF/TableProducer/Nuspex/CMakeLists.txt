@@ -26,7 +26,7 @@ o2physics_add_dpl_workflow(hyper-kink-reco-task
 
 o2physics_add_dpl_workflow(hypertriton-reco-task
     SOURCES hyperRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lnn-reco-task

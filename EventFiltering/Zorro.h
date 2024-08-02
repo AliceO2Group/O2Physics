@@ -15,12 +15,15 @@
 #define EVENTFILTERING_ZORRO_H_
 
 #include <bitset>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "TH1D.h"
 #include "CommonDataFormat/IRFrame.h"
+#include "Framework/HistogramRegistry.h"
+#include "ZorroHelper.h"
 
-class TH1D;
 namespace o2
 {
 namespace ccdb
@@ -28,11 +31,6 @@ namespace ccdb
 class BasicCCDBManager;
 };
 }; // namespace o2
-
-struct ZorroHelper {
-  uint64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
-  ClassDefNV(ZorroHelper, 1);
-};
 
 class Zorro
 {
@@ -42,6 +40,12 @@ class Zorro
   std::bitset<128> fetch(uint64_t bcGlobalId, uint64_t tolerance = 100);
   bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
+  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix = "");
+
+  TH1D* getScalers() const { return mScalers; }
+  TH1D* getSelections() const { return mSelections; }
+  TH1D* getInspectedTVX() const { return mInspectedTVX; }
+  std::bitset<128> getLastResult() const { return mLastResult; }
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
 
   void setCCDBpath(std::string path) { mBaseCCDBPath = path; }
@@ -51,12 +55,21 @@ class Zorro
  private:
   std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
   int mRunNumber = 0;
+  TH1* mAnalysedTriggers;           /// Accounting for all triggers in the current run
+  TH1* mAnalysedTriggersOfInterest; /// Accounting for triggers of interest in the current run
+
+  std::vector<int> mRunNumberHistos;
+  std::vector<TH1*> mAnalysedTriggersList;           /// Per run histograms
+  std::vector<TH1*> mAnalysedTriggersOfInterestList; /// Per run histograms
+
   int mBCtolerance = 100;
   uint64_t mLastBCglobalId = 0;
   uint64_t mLastSelectedIdx = 0;
   TH1D* mScalers = nullptr;
   TH1D* mSelections = nullptr;
   TH1D* mInspectedTVX = nullptr;
+  std::bitset<128> mLastResult;
+  std::vector<bool> mAccountedBCranges; /// Avoid double accounting of inspected BC ranges
   std::vector<o2::dataformats::IRFrame> mBCranges;
   std::vector<ZorroHelper>* mZorroHelpers = nullptr;
   std::vector<std::string> mTOIs;

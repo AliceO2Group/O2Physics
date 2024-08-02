@@ -1999,6 +1999,7 @@ struct cascadePreselector {
                bitTrueXiMinus,
                bitTrueXiPlus,
                bitTrueOmegaMinus,
+               bitPhysicalPrimary,
                bitTrueOmegaPlus,
                bitdEdxXiMinus,
                bitdEdxXiPlus,
@@ -2098,6 +2099,7 @@ struct cascadePreselector {
   void checkPDG(TCascadeObject const& lCascadeCandidate, uint16_t& maskElement)
   {
     int lPDG = -1;
+    bool physicalPrimary = false;
 
     // Acquire all three daughter tracks, please
     auto lBachTrack = lCascadeCandidate.template bachelor_as<TTrackTo>();
@@ -2123,6 +2125,7 @@ struct cascadePreselector {
                 for (auto& lBachMother : lMCBachTrack.template mothers_as<aod::McParticles>()) {
                   if (lV0Mother == lBachMother) {
                     lPDG = lV0Mother.pdgCode();
+                    physicalPrimary = lV0Mother.isPhysicalPrimary();
 
                     // additionally check PDG of the mother particle if requested
                     if (dIfMCselectV0MotherPDG != 0) {
@@ -2152,6 +2155,8 @@ struct cascadePreselector {
       bitset(maskElement, bitTrueOmegaMinus);
     if (lPDG == -3334)
       bitset(maskElement, bitTrueOmegaPlus);
+    if (physicalPrimary)
+      bitset(maskElement, bitPhysicalPrimary);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check early dE/dx selection
@@ -2232,6 +2237,7 @@ struct cascadePreselector {
       casctags(validCascade,
                bitcheck(selectionMask[ii], bitTrueXiMinus), bitcheck(selectionMask[ii], bitTrueXiPlus),
                bitcheck(selectionMask[ii], bitTrueOmegaMinus), bitcheck(selectionMask[ii], bitTrueOmegaPlus),
+               bitcheck(selectionMask[ii], bitPhysicalPrimary),
                bitcheck(selectionMask[ii], bitdEdxXiMinus), bitcheck(selectionMask[ii], bitdEdxXiPlus),
                bitcheck(selectionMask[ii], bitdEdxOmegaMinus), bitcheck(selectionMask[ii], bitdEdxOmegaPlus));
     }

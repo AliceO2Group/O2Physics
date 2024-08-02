@@ -27,6 +27,7 @@
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::pairutil
 {
+
 enum class DileptonPairType : int {
   kDielectron = 0,
   kDimuon = 1,
@@ -38,7 +39,8 @@ enum class DileptonAnalysisType : int {
   kFlowV3 = 3,
   kFlowV4 = 4,
   kPolarization = 5,
-  kHFll = 6,
+  kVM = 6,
+  kHFll = 7,
 };
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
