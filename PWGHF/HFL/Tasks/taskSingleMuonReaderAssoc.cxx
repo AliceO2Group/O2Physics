@@ -18,10 +18,11 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
 
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
