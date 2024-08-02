@@ -216,18 +216,17 @@ struct FactorialMoments {
     countTracks = {0, 0, 0, 0, 0};
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
-    for (auto const& track : tracks)
+    for (auto const& track : tracks) {
       if (includeGlobalTracks && (!track.isGlobalTrack())) {
         continue;
       }
-    if (includeTPCTracks && (!track.hasTPC())) {
-      continue;
-    }
-    if (includeITSTracks && (!track.hasITS())) {
-      continue;
-    }
-    if ((track.pt() < confPtMin) || (track.tpcNClsFindable() < confMinTPCCls)) {
-      if ((track.pt() < confPtMin) || ((!track.isGlobalTrack()) && (!track.hasITS())) || (track.tpcNClsFindable() < confMinTPCCls)) {
+      if (includeTPCTracks && (!track.hasTPC())) {
+        continue;
+      }
+      if (includeITSTracks && (!track.hasITS())) {
+        continue;
+      }
+      if ((track.pt() < confPtMin) || (track.tpcNClsFindable() < confMinTPCCls)) {
         continue;
       }
       histos.fill(HIST("mCollID"), track.collisionId());
