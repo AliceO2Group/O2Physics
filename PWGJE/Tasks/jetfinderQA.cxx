@@ -60,8 +60,7 @@ struct JetFinderQATask {
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
-  Configurable<float> jetPtMax{"jetPtMax", 200., "set jet pT bin max"};
-  Configurable<float> jetPtMaxRhoAreaSub{"jetPtMaxRhoAreaSub", 200., "set jet pT bin max for rho area subtraction"};
+  Configurable<double> jetPtMax{"jetPtMax", 200., "set jet pT bin max"};
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
@@ -97,35 +96,29 @@ struct JetFinderQATask {
     } else {
       jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
     }
-    if (jetPtMax <= 200) {
-      for (int i = 0; i <= jetPtMax; i++) {
-        jetPtBins.push_back(i);
-      }
-    } else {
-      for (int i = 0; i <= 200; i++) {
-        jetPtBins.push_back(i);
-      }
-      for (int j = 200 / 10; j <= std::ceil(jetPtMax / 10.0); j++) {
-        jetPtBins.push_back(10 * j);
+
+    auto jetPtTemp = 0.0;
+    jetPtBins.push_back(jetPtTemp);
+    jetPtBinsRhoAreaSub.push_back(jetPtTemp);
+    while (jetPtTemp < jetPtMax) {
+      if (jetPtTemp < 100.0) {
+        jetPtTemp += 1.0;
+        jetPtBins.push_back(jetPtTemp);
+        jetPtBinsRhoAreaSub.push_back(jetPtTemp);
+        jetPtBinsRhoAreaSub.push_back(-jetPtTemp);
+      } else if (jetPtTemp < 200.0) {
+        jetPtTemp += 5.0;
+        jetPtBins.push_back(jetPtTemp);
+        jetPtBinsRhoAreaSub.push_back(jetPtTemp);
+        jetPtBinsRhoAreaSub.push_back(-jetPtTemp);
+
+      } else {
+        jetPtTemp += 10.0;
+        jetPtBins.push_back(jetPtTemp);
+        jetPtBinsRhoAreaSub.push_back(jetPtTemp);
+        jetPtBinsRhoAreaSub.push_back(-jetPtTemp);
       }
     }
-
-    if (jetPtMaxRhoAreaSub <= 200) {
-      for (int i = -jetPtMaxRhoAreaSub; i <= jetPtMaxRhoAreaSub; i++) {
-        jetPtBinsRhoAreaSub.push_back(i);
-      }
-    } else {
-      for (int i = -jetPtMaxRhoAreaSub; i <= jetPtMaxRhoAreaSub; i++) {
-        if (i <= 200 && i >= -200) {
-          jetPtBinsRhoAreaSub.push_back(i);
-        }
-      }
-      for (int j = 200 / 10; j <= std::ceil(jetPtMaxRhoAreaSub / 10.0); j++) {
-        jetPtBinsRhoAreaSub.push_back(10 * j);
-        jetPtBinsRhoAreaSub.push_back(-10 * j);
-      }
-    }
-
     std::sort(jetPtBinsRhoAreaSub.begin(), jetPtBinsRhoAreaSub.end());
 
     AxisSpec jetPtAxis = {jetPtBins, "#it{p}_{T} (GeV/#it{c})"};
