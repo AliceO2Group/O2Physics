@@ -1443,10 +1443,11 @@ struct ProbeThirdTrack {
           etamaxTagDaugthers = std::max(std::abs(mcpartDaught.eta()), etamaxTagDaugthers);
         }
         // registry.fill(HIST(Form("hGen%s",tagChannels[aod::tagandprobe::DstarPlusToDzeroPi].data())),
-        if (mcpart.pdgCode() > 0)
-          histosGen[aod::tagandprobe::DstarPlusToDzeroPi]->Fill(mcpart.pt(), mcpart.y(), ptDzero, yDzero, ptSoftPion, etaSoftPion, ptminTagDaughers, etamaxTagDaugthers);
-        else
-          histosGen[aod::tagandprobe::DstarMinusToDzeroBarPi]->Fill(mcpart.pt(), mcpart.y(), ptDzero, yDzero, ptSoftPion, etaSoftPion, ptminTagDaughers, etamaxTagDaugthers);
+        if (mcPart.pdgCode() > 0) {
+          histosGen[aod::tagandprobe::DstarPlusToDzeroPi]->Fill(mcPart.pt(), mcPart.y(), ptDzero, yDzero, ptSoftPion, etaSoftPion, ptminTagDaughers, etamaxTagDaugthers);
+        } else {
+          histosGen[aod::tagandprobe::DstarMinusToDzeroBarPi]->Fill(mcPart.pt(), mcPart.y(), ptDzero, yDzero, ptSoftPion, etaSoftPion, ptminTagDaughers, etamaxTagDaugthers);
+        }
       }
     }
   }
