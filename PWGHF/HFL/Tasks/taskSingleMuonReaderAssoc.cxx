@@ -12,17 +12,19 @@
 /// \file taskSingleMuonReaderAssoc.cxx
 /// \brief Task used to read the derived table produced by the tableMaker-association of DQ framework and extract observables on single muons needed for the HF-muon analysis.
 /// \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
-#include <iostream>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -45,7 +47,7 @@ DECLARE_SOA_COLUMN(Chi2, chi2, float);
 DECLARE_SOA_TABLE(HfSingleMuon, "AOD", "SINGLEMUON", single_muon::Pt, single_muon::DcaXY, single_muon::DeltaPt, single_muon::Chi2);
 } // namespace o2::aod
 
-struct HfTaskSingleMuonReader {
+struct HfTaskSingleMuonReaderAssoc {
   Produces<aod::HfSingleMuon> singleMuon;
 
   Configurable<int> trkType{"trkType", 0, "Muon track type, valid values are 0, 1, 2, 3 and 4"};
@@ -54,15 +56,9 @@ struct HfTaskSingleMuonReader {
   Configurable<float> pDcaMax{"pDcaMax", 594., "p*DCA maximum value"};
   Configurable<float> rAbsMax{"rAbsMax", 89.5, "R at absorber end maximum value"};
   Configurable<float> rAbsMin{"rAbsMin", 26.5, "R at absorber end minimum value"};
-  Configurable<float> zVtx{"zVtx", 10., "Z edge of primary vertex [cm]"};
   Configurable<bool> fillMcHist{"fillMcHist", false, "fill MC-related histograms"};
 
-  o2::framework::HistogramRegistry registry{
-    "registry",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
@@ -108,7 +104,6 @@ struct HfTaskSingleMuonReader {
       if ((eta >= etaMax) || (eta < etaMin)) {
         continue;
       }
-
       if ((rAbs >= rAbsMax) || (rAbs < rAbsMin)) {
         continue;
       }
@@ -126,6 +121,7 @@ struct HfTaskSingleMuonReader {
       }
     }
   }
+
   template <typename TCollisions, typename TMuons>
   void runMuonSelMcAssoc(ReducedMuonsAssoc const& assocs, TCollisions const& collisions, TMuons const&)
   {
@@ -148,7 +144,6 @@ struct HfTaskSingleMuonReader {
       if ((eta >= etaMax) || (eta < etaMin)) {
         continue;
       }
-
       if ((rAbs >= rAbsMax) || (rAbs < rAbsMin)) {
         continue;
       }
@@ -172,22 +167,21 @@ struct HfTaskSingleMuonReader {
       }
     }
   }
+
   void processMuon(ReducedMuonsAssoc const& assocs, MyCollisions const& collisions, MyMuons const& muons)
   {
     runMuonSelAssoc(assocs, collisions, muons);
   }
+  PROCESS_SWITCH(HfTaskSingleMuonReader, processMuon, "run muon selection with real data", true);
+
   void processMuonMc(ReducedMuonsAssoc const& assocs, MyCollisions const& collisions, MyMcMuons const& muons)
   {
     runMuonSelMcAssoc(assocs, collisions, muons);
   }
-
-  PROCESS_SWITCH(HfTaskSingleMuonReader, processMuon, "run muon selection with real data", true);
   PROCESS_SWITCH(HfTaskSingleMuonReader, processMuonMc, "run muon selection with MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfTaskSingleMuonReader>(cfgc),
-  };
+  return WorkflowSpec{adaptAnalysisTask<HfTaskSingleMuonReaderAssoc>(cfgc),};
 }
