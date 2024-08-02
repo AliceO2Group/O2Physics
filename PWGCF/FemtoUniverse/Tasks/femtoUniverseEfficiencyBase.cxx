@@ -513,7 +513,8 @@ struct femtoUniverseEfficiencyBase {
             continue;
         }
 
-        else if (ConfV0Type1 == 1) {
+        else if (ConfV0Type1 == 1)
+        {
           if (!IsProtonNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Proton)) || !IsPionNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Pion))) // give momentum as 0 to only check TPC nSigma, not combined with TOF
             continue;
         }
