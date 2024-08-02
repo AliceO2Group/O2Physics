@@ -1413,7 +1413,7 @@ struct ProbeThirdTrack {
     for (auto& mcpart : mcParticles) {
       //  Printf("particle id: %d",mcpart.pdgCode());
       if (RecoDecay::isMatchedMCGen<true, true, 3>(mcParticles, mcpart, constants::physics::Pdg::kDStar, arrDstar, true, sign, -1, &listIndexDaughters)) {
-        // Printf("Selected particle id: %d",mcpart.pdgCode());
+        // LOGP(info, "Selected particle id: {}", mcPart.pdgCode());
         ptDzero = -1;
         yDzero = -999;
         ptSoftPion = -1;
