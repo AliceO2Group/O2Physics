@@ -308,7 +308,7 @@ struct femtoUniverseProducerTask {
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
       if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue)) {
           return true;
         } else {
           return false;
@@ -325,7 +325,7 @@ struct femtoUniverseProducerTask {
       }
     } else if (mom > 1.5) { // 1.5 -
       if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue)) {
           return true;
         } else {
           return false;
