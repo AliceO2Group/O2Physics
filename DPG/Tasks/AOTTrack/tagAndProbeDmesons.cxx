@@ -1411,7 +1411,7 @@ struct ProbeThirdTrack {
     float ptDzero = -1, yDzero = -999, ptSoftPion = -1, etaSoftPion = -999, ptminTagDaughers = 9999., etamaxTagDaugthers = 0.;
     int indexProbe;
     for (auto& mcpart : mcParticles) {
-      //  Printf("particle id: %d",mcpart.pdgCode());
+      //  LOGP(info, "particle id: {}", mcPart.pdgCode());
       if (RecoDecay::isMatchedMCGen<true, true, 3>(mcParticles, mcpart, constants::physics::Pdg::kDStar, arrDstar, true, sign, -1, &listIndexDaughters)) {
         // LOGP(info, "Selected particle id: {}", mcPart.pdgCode());
         ptDzero = -1;
