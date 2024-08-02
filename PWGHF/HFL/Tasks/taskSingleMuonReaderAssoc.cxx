@@ -127,7 +127,7 @@ struct HfTaskSingleMuonReader {
     }
   }
   template <typename TCollisions, typename TMuons>
-  void runMuonSelMcAssoc(ReducedMuonsAssoc const& assocs, TCollisions const& collisions, TMuons const& muons)
+  void runMuonSelMcAssoc(ReducedMuonsAssoc const& assocs, TCollisions const& collisions, TMuons const&)
   {
     for (const auto& collision : collisions) {
       registry.fill(HIST("hVtxZ"), collision.posZ());
