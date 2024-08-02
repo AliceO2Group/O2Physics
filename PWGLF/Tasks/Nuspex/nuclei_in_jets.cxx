@@ -538,7 +538,7 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("multiplicityJet"), NchJet);
     registryQC.fill(HIST("multiplicityUE"), 0.5 * NchUE);
     registryQC.fill(HIST("ptJetPlusUE"), ptJetPlusUE);
-    registryQC.fill(HIST("ptJet"), jetPt);
+    registryQC.fill(HIST("ptJet"), ptJet);
     registryQC.fill(HIST("ptUE"), 0.5 * ptUE);
 
     // Event Counter: Skip Events with n. particles in jet less than given value
