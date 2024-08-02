@@ -420,6 +420,7 @@ struct lnnRecoTask {
       lnnCandidates.push_back(lnnCand);
 
       if (is3H) {
+
         hdEdx3HTPCMom->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
       }
     }
@@ -526,7 +527,7 @@ struct lnnRecoTask {
 
       hEvents->Fill(0.);
 
-      if (std::abs(collision.posZ()) > 10) {
+      if ((collision.posZ()) > 10) {
         continue;
       }
       hEvents->Fill(1.);
