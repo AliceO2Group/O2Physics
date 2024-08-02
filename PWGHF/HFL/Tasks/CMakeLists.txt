@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(task-single-muon-reader
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-single-muon-reader-assoc
+                    SOURCES taskSingleMuonReaderAssoc.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-single-muon-source
                     SOURCES taskSingleMuonSource.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
