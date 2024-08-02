@@ -85,58 +85,58 @@ struct PidMlProducerData {
       {"plus/hDcaZ", "#it{DcaZ};#it{DcaZ}", {HistType::kTH1F, {{1000, -1., 1.}}}},
     }};
 
-
   template <typename T>
-  void fillHistos(const T& track) {
-     if (track.sign() < 0) {
-       registry.fill(HIST("minus/hTPCSigvsP"), track.p(), track.tpcSignal());
-       registry.fill(HIST("minus/hTOFBetavsP"), track.p(), track.beta());
-       registry.fill(HIST("minus/hTOFSigvsP"), track.p(), track.tofSignal());
-       if (TMath::Abs(track.beta() - kMissingBeta) >= kEps) {
-         registry.fill(HIST("minus/filtered/hTOFSigvsP"), track.p(), track.tofSignal());
-       } else {
-         registry.fill(HIST("minus/filtered/hTOFSigvsP"), track.p(), kMissingTOFSignal);
-       }
-       registry.fill(HIST("minus/hTRDPattvsP"), track.p(), track.trdPattern());
-       registry.fill(HIST("minus/hTRDSigvsP"), track.p(), track.trdSignal());
-       registry.fill(HIST("minus/hP"), track.p());
-       registry.fill(HIST("minus/hPt"), track.pt());
-       registry.fill(HIST("minus/hPx"), track.px());
-       registry.fill(HIST("minus/hPy"), track.py());
-       registry.fill(HIST("minus/hPz"), track.pz());
-       registry.fill(HIST("minus/hX"), track.x());
-       registry.fill(HIST("minus/hY"), track.y());
-       registry.fill(HIST("minus/hZ"), track.z());
-       registry.fill(HIST("minus/hAlpha"), track.alpha());
-       registry.fill(HIST("minus/hTrackType"), track.trackType());
-       registry.fill(HIST("minus/hTPCNClsShared"), track.tpcNClsShared());
-       registry.fill(HIST("minus/hDcaXY"), track.dcaXY());
-       registry.fill(HIST("minus/hDcaZ"), track.dcaZ());
-     } else {
-       registry.fill(HIST("plus/hTPCSigvsP"), track.p(), track.tpcSignal());
-       registry.fill(HIST("plus/hTOFBetavsP"), track.p(), track.beta());
-       registry.fill(HIST("plus/hTOFSigvsP"), track.p(), track.tofSignal());
-       if (TMath::Abs(track.beta() - kMissingBeta) >= kEps) {
-         registry.fill(HIST("plus/filtered/hTOFSigvsP"), track.p(), track.tofSignal());
-       } else {
-         registry.fill(HIST("plus/filtered/hTOFSigvsP"), track.p(), kMissingTOFSignal);
-       }
-       registry.fill(HIST("plus/hTRDPattvsP"), track.p(), track.trdPattern());
-       registry.fill(HIST("plus/hTRDSigvsP"), track.p(), track.trdSignal());
-       registry.fill(HIST("plus/hP"), track.p());
-       registry.fill(HIST("plus/hPt"), track.pt());
-       registry.fill(HIST("plus/hPx"), track.px());
-       registry.fill(HIST("plus/hPy"), track.py());
-       registry.fill(HIST("plus/hPz"), track.pz());
-       registry.fill(HIST("plus/hX"), track.x());
-       registry.fill(HIST("plus/hY"), track.y());
-       registry.fill(HIST("plus/hZ"), track.z());
-       registry.fill(HIST("plus/hAlpha"), track.alpha());
-       registry.fill(HIST("plus/hTrackType"), track.trackType());
-       registry.fill(HIST("plus/hTPCNClsShared"), track.tpcNClsShared());
-       registry.fill(HIST("plus/hDcaXY"), track.dcaXY());
-       registry.fill(HIST("plus/hDcaZ"), track.dcaZ());
-     }
+  void fillHistos(const T& track)
+  {
+    if (track.sign() < 0) {
+      registry.fill(HIST("minus/hTPCSigvsP"), track.p(), track.tpcSignal());
+      registry.fill(HIST("minus/hTOFBetavsP"), track.p(), track.beta());
+      registry.fill(HIST("minus/hTOFSigvsP"), track.p(), track.tofSignal());
+      if (TMath::Abs(track.beta() - kMissingBeta) >= kEps) {
+        registry.fill(HIST("minus/filtered/hTOFSigvsP"), track.p(), track.tofSignal());
+      } else {
+        registry.fill(HIST("minus/filtered/hTOFSigvsP"), track.p(), kMissingTOFSignal);
+      }
+      registry.fill(HIST("minus/hTRDPattvsP"), track.p(), track.trdPattern());
+      registry.fill(HIST("minus/hTRDSigvsP"), track.p(), track.trdSignal());
+      registry.fill(HIST("minus/hP"), track.p());
+      registry.fill(HIST("minus/hPt"), track.pt());
+      registry.fill(HIST("minus/hPx"), track.px());
+      registry.fill(HIST("minus/hPy"), track.py());
+      registry.fill(HIST("minus/hPz"), track.pz());
+      registry.fill(HIST("minus/hX"), track.x());
+      registry.fill(HIST("minus/hY"), track.y());
+      registry.fill(HIST("minus/hZ"), track.z());
+      registry.fill(HIST("minus/hAlpha"), track.alpha());
+      registry.fill(HIST("minus/hTrackType"), track.trackType());
+      registry.fill(HIST("minus/hTPCNClsShared"), track.tpcNClsShared());
+      registry.fill(HIST("minus/hDcaXY"), track.dcaXY());
+      registry.fill(HIST("minus/hDcaZ"), track.dcaZ());
+    } else {
+      registry.fill(HIST("plus/hTPCSigvsP"), track.p(), track.tpcSignal());
+      registry.fill(HIST("plus/hTOFBetavsP"), track.p(), track.beta());
+      registry.fill(HIST("plus/hTOFSigvsP"), track.p(), track.tofSignal());
+      if (TMath::Abs(track.beta() - kMissingBeta) >= kEps) {
+        registry.fill(HIST("plus/filtered/hTOFSigvsP"), track.p(), track.tofSignal());
+      } else {
+        registry.fill(HIST("plus/filtered/hTOFSigvsP"), track.p(), kMissingTOFSignal);
+      }
+      registry.fill(HIST("plus/hTRDPattvsP"), track.p(), track.trdPattern());
+      registry.fill(HIST("plus/hTRDSigvsP"), track.p(), track.trdSignal());
+      registry.fill(HIST("plus/hP"), track.p());
+      registry.fill(HIST("plus/hPt"), track.pt());
+      registry.fill(HIST("plus/hPx"), track.px());
+      registry.fill(HIST("plus/hPy"), track.py());
+      registry.fill(HIST("plus/hPz"), track.pz());
+      registry.fill(HIST("plus/hX"), track.x());
+      registry.fill(HIST("plus/hY"), track.y());
+      registry.fill(HIST("plus/hZ"), track.z());
+      registry.fill(HIST("plus/hAlpha"), track.alpha());
+      registry.fill(HIST("plus/hTrackType"), track.trackType());
+      registry.fill(HIST("plus/hTPCNClsShared"), track.tpcNClsShared());
+      registry.fill(HIST("plus/hDcaXY"), track.dcaXY());
+      registry.fill(HIST("plus/hDcaZ"), track.dcaZ());
+    }
   }
 
   void processML(MyCollisionML const& /*collision*/, BigTracksML const& tracks)
