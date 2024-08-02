@@ -497,7 +497,7 @@ struct nuclei_in_jets {
     double ptJet(0);
     double ptUE(0);
 
-    for (int i=0 ; i < nParticles ; i++) {
+    for (int i = 0; i < nParticles; i++) {
 
       auto track = tracks.iteratorAt(particle_ID[i]);
 
