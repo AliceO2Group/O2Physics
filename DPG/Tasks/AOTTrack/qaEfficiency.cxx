@@ -1301,7 +1301,7 @@ struct QaEfficiency {
     if (!doPtRadius) {
       return;
     }
-    auto fillEfficiencyRadius = [&](const TString effname, auto num, auto den,float minRadius, float maxRadius) {
+    auto fillEfficiencyRadius = [&](const TString effname, auto num, auto den, float minRadius, float maxRadius) {
       TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
