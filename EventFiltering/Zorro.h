@@ -40,7 +40,7 @@ class Zorro
   std::bitset<128> fetch(uint64_t bcGlobalId, uint64_t tolerance = 100);
   bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
-  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix = "");
+  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string folderName = "Zorro");
 
   TH1D* getScalers() const { return mScalers; }
   TH1D* getSelections() const { return mSelections; }
