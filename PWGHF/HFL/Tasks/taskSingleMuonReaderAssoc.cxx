@@ -18,7 +18,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -172,18 +171,16 @@ struct HfTaskSingleMuonReaderAssoc {
   {
     runMuonSelAssoc(assocs, collisions, muons);
   }
-  PROCESS_SWITCH(HfTaskSingleMuonReader, processMuon, "run muon selection with real data", true);
+  PROCESS_SWITCH(HfTaskSingleMuonReaderAssoc, processMuon, "run muon selection with real data", true);
 
   void processMuonMc(ReducedMuonsAssoc const& assocs, MyCollisions const& collisions, MyMcMuons const& muons)
   {
     runMuonSelMcAssoc(assocs, collisions, muons);
   }
-  PROCESS_SWITCH(HfTaskSingleMuonReader, processMuonMc, "run muon selection with MC data", false);
+  PROCESS_SWITCH(HfTaskSingleMuonReaderAssoc, processMuonMc, "run muon selection with MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfTaskSingleMuonReaderAssoc>(cfgc),
-  };
+  return WorkflowSpec{adaptAnalysisTask<HfTaskSingleMuonReaderAssoc>(cfgc)};
 }
