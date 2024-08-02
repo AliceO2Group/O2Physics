@@ -60,8 +60,8 @@ struct JetFinderQATask {
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
-  Configurable<int> jetPtMax{"jetPtMax", 200, "set jet pT bin max"};
-  Configurable<int> jetPtMaxRhoAreaSub{"jetPtMaxRhoAreaSub", 200, "set jet pT bin max for rho area subtraction"};
+  Configurable<float> jetPtMax{"jetPtMax", 200., "set jet pT bin max"};
+  Configurable<float> jetPtMaxRhoAreaSub{"jetPtMaxRhoAreaSub", 200., "set jet pT bin max for rho area subtraction"};
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
