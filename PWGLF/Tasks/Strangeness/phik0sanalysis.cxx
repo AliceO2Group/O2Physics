@@ -203,6 +203,9 @@ struct phik0shortanalysis {
   Partition<FullMCTracks> posMCTracks = aod::track::signed1Pt > cfgCutCharge;
   Partition<FullMCTracks> negMCTracks = aod::track::signed1Pt < cfgCutCharge;
 
+  // Necessary to flag INEL>0 events in GenMC
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   void init(InitContext const&)
   {
     // Axes
@@ -231,7 +234,7 @@ struct phik0shortanalysis {
     eventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi cand");
 
     // Event information
-    eventHist.add("hVertexZRec", "hVertexZRec", kTH1F, {vertexZAxis});
+    eventHist.add("hVertexZ", "hVertexZ", kTH1F, {vertexZAxis});
     eventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
 
     // Number of MC events per selection for Rec and Gen
@@ -252,10 +255,10 @@ struct phik0shortanalysis {
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi");
 
     // MC Event information for Rec and Gen
-    MCeventHist.add("hRecMCVertexZRec", "hRecMCVertexZRec", kTH1F, {vertexZAxis});
+    MCeventHist.add("hRecMCVertexZ", "hRecMCVertexZ", kTH1F, {vertexZAxis});
     MCeventHist.add("hRecMCMultiplicityPercent", "RecMC Multiplicity Percentile", kTH1F, {multAxis});
 
-    MCeventHist.add("hGenMCVertexZRec", "hGenMCVertexZRec", kTH1F, {vertexZAxis});
+    MCeventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     MCeventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {multAxis});
 
     // Phi tpological/PID cuts
@@ -329,38 +332,49 @@ struct phik0shortanalysis {
 
   // Event selection and QA filling
   template <bool isMC, typename T>
-  bool acceptEventQA(const T& collision)
+  bool acceptEventQA(const T& collision, bool QA)
   {
-    if constexpr (!isMC) {                        // data event
-      eventHist.fill(HIST("hEventSelection"), 0); // all collisions
+    if constexpr (!isMC) { // data event
+      if (QA)
+        eventHist.fill(HIST("hEventSelection"), 0); // all collisions
       if (!collision.sel8())
         return false;
-      eventHist.fill(HIST("hEventSelection"), 1); // sel8 collisions
+      if (QA)
+        eventHist.fill(HIST("hEventSelection"), 1); // sel8 collisions
       if (std::abs(collision.posZ()) > cutzvertex)
         return false;
-      eventHist.fill(HIST("hEventSelection"), 2); // vertex-Z selected
-      eventHist.fill(HIST("hVertexZRec"), collision.posZ());
+      if (QA) {
+        eventHist.fill(HIST("hEventSelection"), 2); // vertex-Z selected
+        eventHist.fill(HIST("hVertexZ"), collision.posZ());
+      }
       if (!collision.isInelGt0())
         return false;
-      eventHist.fill(HIST("hEventSelection"), 3); // INEL>0 collisions
+      if (QA)
+        eventHist.fill(HIST("hEventSelection"), 3); // INEL>0 collisions
       return true;
-    } else {                                             // RecMC event
-      MCeventHist.fill(HIST("hRecMCEventSelection"), 0); // all collisions
+    } else { // RecMC event
+      if (QA)
+        MCeventHist.fill(HIST("hRecMCEventSelection"), 0); // all collisions
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX))
         return false;
-      MCeventHist.fill(HIST("hRecMCEventSelection"), 1); // kIsTriggerTVX collisions
+      if (QA)
+        MCeventHist.fill(HIST("hRecMCEventSelection"), 1); // kIsTriggerTVX collisions
       if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         return false;
-      MCeventHist.fill(HIST("hRecMCEventSelection"), 2); // kNoTimeFrameBorder collisions
-      if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      if (QA)
+        MCeventHist.fill(HIST("hRecMCEventSelection"), 2); // kNoTimeFrameBorder collisions
+      if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && QA)
         MCeventHist.fill(HIST("hRecMCEventSelection"), 3); // kNoITSROFrameBorder collisions (not requested in the selection, but useful for QA)
       if (std::abs(collision.posZ()) > cutzvertex)
         return false;
-      MCeventHist.fill(HIST("hRecMCEventSelection"), 4); // vertex-Z selected
-      MCeventHist.fill(HIST("hRecMCVertexZRec"), collision.posZ());
+      if (QA) {
+        MCeventHist.fill(HIST("hRecMCEventSelection"), 4); // vertex-Z selected
+        MCeventHist.fill(HIST("hRecMCVertexZ"), collision.posZ());
+      }
       if (!collision.isInelGt0())
         return false;
-      MCeventHist.fill(HIST("hRecMCEventSelection"), 5); // INEL>0 collisions
+      if (QA)
+        MCeventHist.fill(HIST("hRecMCEventSelection"), 5); // INEL>0 collisions
       return true;
     }
   }
@@ -566,7 +580,7 @@ struct phik0shortanalysis {
   void processQAPurity(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
     // Check if the event selection is passed
-    if (!acceptEventQA<false>(collision))
+    if (!acceptEventQA<false>(collision, true))
       return;
 
     float multiplicity = collision.centFT0M();
@@ -1176,7 +1190,7 @@ struct phik0shortanalysis {
 
   void processRecMCPhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullV0s const& V0s, V0DauMCTracks const&, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-    if (!acceptEventQA<true>(collision))
+    if (!acceptEventQA<true>(collision, true))
       return;
 
     float multiplicity = collision.centFT0M();
@@ -1345,8 +1359,28 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
 
-  void processGenMCPhiK0S(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  void processGenMCPhiK0S(aod::McCollisions::iterator const& mcCollision, const soa::SmallGroups<SimCollisions> collisions, aod::McParticles const& mcParticles)
   {
+    MCeventHist.fill(HIST("hGenMCEventSelection"), 0); // all collisions
+    if (std::abs(mcCollision.posZ()) > cutzvertex)
+      return;
+    MCeventHist.fill(HIST("hGenMCEventSelection"), 1); // vertex-Z selected
+    MCeventHist.fill(HIST("hGenMCVertexZ"), collision.posZ());
+    if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
+      return;
+    MCeventHist.fill(HIST("hGenMCEventSelection"), 2); // INEL>0 collisions
+
+    bool is AssocColl = false;
+    for (auto collision : collisions) {
+      if (acceptEventQA<true>(collision, false)) {
+        isAssocColl = true;
+        break;
+      }
+    }
+    if (!isAssocColl)
+      return;
+    MCeventHist.fill(HIST("hGenMCEventSelection"), 3); // with at least a rec collision
+
     bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
 
     for (auto mcParticle1 : mcParticles) {
@@ -1397,7 +1431,7 @@ struct phik0shortanalysis {
 
   void processRecMCPhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-    if (!acceptEventQA<true>(collision))
+    if (!acceptEventQA<true>(collision, true))
       return;
 
     float multiplicity = collision.centFT0M();
@@ -1550,8 +1584,28 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiPion, "Process RecMC for Phi-Pion Analysis", false);
 
-  void processGenMCPhiPion(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  void processGenMCPhiPion(aod::McCollisions::iterator const& mcCollision, const soa::SmallGroups<SimCollisions> collisions, aod::McParticles const& mcParticles)
   {
+    MCeventHist.fill(HIST("hGenMCEventSelection"), 0); // all collisions
+    if (std::abs(mcCollision.posZ()) > cutzvertex)
+      return;
+    MCeventHist.fill(HIST("hGenMCEventSelection"), 1); // vertex-Z selected
+    MCeventHist.fill(HIST("hGenMCVertexZ"), collision.posZ());
+    if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
+      return;
+    MCeventHist.fill(HIST("hGenMCEventSelection"), 2); // INEL>0 collisions
+
+    bool is AssocColl = false;
+    for (auto collision : collisions) {
+      if (acceptEventQA<true>(collision, false)) {
+        isAssocColl = true;
+        break;
+      }
+    }
+    if (!isAssocColl)
+      return;
+    MCeventHist.fill(HIST("hGenMCEventSelection"), 3); // with at least a rec collision
+
     bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
 
     for (auto mcParticle1 : mcParticles) {
