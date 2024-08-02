@@ -419,7 +419,7 @@ struct lnnRecoTask {
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       lnnCandidates.push_back(lnnCand);
 
-      if (isAnti3H) {
+      if (is3H) {
         hdEdx3HTPCMom->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
       }
     }
@@ -526,7 +526,7 @@ struct lnnRecoTask {
 
       hEvents->Fill(0.);
 
-      if ((collision.posZ()) > 10) {
+      if (std::abs(collision.posZ()) > 10) {
         continue;
       }
       hEvents->Fill(1.);
