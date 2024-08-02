@@ -1424,13 +1424,13 @@ struct ProbeThirdTrack {
         for (auto const& iDaughtIndex : mcPart.daughtersIds()) {
           //  Printf("mcpart.daugthersIds, index: %d",idaughtindex);
           auto mcPartDstarDaught = mcParticles.rawIteratorAt(iDaughtIndex - mcParticles.offset());
-          if (std::abs(mcpartDstarDaught.pdgCode()) == constants::physics::Pdg::kD0) {
-            ptDzero = mcpartDstarDaught.pt();
-            yDzero = mcpartDstarDaught.y();
-          } else if (std::abs(mcpartDstarDaught.pdgCode()) == 211) {
-            ptSoftPion = mcpartDstarDaught.pt();
-            etaSoftPion = mcpartDstarDaught.eta();
-            indexProbe = idaughtindex;
+          if (std::abs(mcPartDstarDaught.pdgCode()) == constants::physics::Pdg::kD0) {
+            ptDzero = mcPartDstarDaught.pt();
+            yDzero = mcPartDstarDaught.y();
+          } else if (std::abs(mcPartDstarDaught.pdgCode()) == kPiPlus) {
+            ptSoftPion = mcPartDstarDaught.pt();
+            etaSoftPion = mcPartDstarDaught.eta();
+            indexProbe = iDaughtIndex;
           }
         }
         for (int i : listIndexDaughters) {
