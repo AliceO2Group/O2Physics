@@ -86,28 +86,31 @@ void computeFonllPlusPythiaPredictions(int nDecays = 10000000,
                                        std::string inFileFonllPromptDplus = "fonll_prompt_dplus_5dot5teV_y05.txt",
                                        std::string inFileFonllPromptDstarPlus = "fonll_prompt_dstar_5dot5teV_y05.txt",
                                        std::string outFileName = "fonll_pythia_beautyFFee_charmhadrons_5dot5tev_y0dot5.root");
-std::vector<std::string> splitString(const std::string &str, char delimiter);
+std::vector<std::string> splitString(const std::string& str, char delimiter);
 std::array<TH1D*, 3> readFonll(std::string inFile, std::string histName = "hFonllBhadron");
 
 // FUNCTION IMPLEMENTATIONS
 //__________________________________________________________________________________________________
-std::vector<std::string> splitString(const std::string &str, char delimiter) {
-    std::vector<std::string> tokens;
-    std::stringstream ss(str);
-    std::string token;
+std::vector<std::string> splitString(const std::string& str, char delimiter)
+{
+  std::vector<std::string> tokens;
+  std::stringstream ss(str);
+  std::string token;
 
-    while (std::getline(ss, token, delimiter)) {
-      tokens.push_back(token);
-    }
-    tokens.erase(std::remove_if(tokens.begin(), tokens.end(), [](const std::string& str) {
-        return str.find_first_not_of(' ') == std::string::npos; // Check if the string contains only spaces
-    }), tokens.end());
+  while (std::getline(ss, token, delimiter)) {
+    tokens.push_back(token);
+  }
+  tokens.erase(std::remove_if(tokens.begin(), tokens.end(), [](const std::string& str) {
+                 return str.find_first_not_of(' ') == std::string::npos; // Check if the string contains only spaces
+               }),
+               tokens.end());
 
-    return tokens;
+  return tokens;
 }
 
 //__________________________________________________________________________________________________
-std::array<TH1D*, 3> readFonll(std::string inFile, std::string histName) {
+std::array<TH1D*, 3> readFonll(std::string inFile, std::string histName)
+{
 
   std::array<TH1D*, 3> hFonll{nullptr, nullptr, nullptr};
 
@@ -148,16 +151,17 @@ std::array<TH1D*, 3> readFonll(std::string inFile, std::string histName) {
   hFonll[1] = new TH1D(Form("%sMin", histName.data()), ";#it{p}_{T} (GeV/#it{c});d#sigma/d#it{p}_{T} (#it{c}/GeV)", ptCent.size(), ptMin, ptMax);
   hFonll[2] = new TH1D(Form("%sMax", histName.data()), ";#it{p}_{T} (GeV/#it{c});d#sigma/d#it{p}_{T} (#it{c}/GeV)", ptCent.size(), ptMin, ptMax);
   for (auto iPt{0u}; iPt < ptCent.size(); ++iPt) {
-    hFonll[0]->SetBinContent(iPt+1, crossSecCent[iPt]);
-    hFonll[1]->SetBinContent(iPt+1, crossSecMin[iPt]);
-    hFonll[2]->SetBinContent(iPt+1, crossSecMax[iPt]);
+    hFonll[0]->SetBinContent(iPt + 1, crossSecCent[iPt]);
+    hFonll[1]->SetBinContent(iPt + 1, crossSecMin[iPt]);
+    hFonll[2]->SetBinContent(iPt + 1, crossSecMax[iPt]);
   }
 
   return hFonll;
 }
 
 //__________________________________________________________________________________________________
-void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFileFonllBhad, int fragFracOpt, bool addPromptCharmHadrons, std::string inFileFonllPromptDzero, std::string inFileFonllPromptDplus, std::string inFileFonllPromptDstarPlus, std::string outFileName) {
+void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFileFonllBhad, int fragFracOpt, bool addPromptCharmHadrons, std::string inFileFonllPromptDzero, std::string inFileFonllPromptDplus, std::string inFileFonllPromptDstarPlus, std::string outFileName)
+{
 
   gROOT->SetBatch(true);
   gRandom->SetSeed(seed);
@@ -188,7 +192,7 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
     // TODO: cook something for Ds and Lc
     hFonllPromptChad[431] = {nullptr, nullptr, nullptr};
     hFonllPromptChad[4122] = {nullptr, nullptr, nullptr};
-    for (auto iChad{0}; iChad<NCharmHadrons; ++iChad) {
+    for (auto iChad{0}; iChad < NCharmHadrons; ++iChad) {
       if (charmHadPdgs[iChad] == 431 || charmHadPdgs[iChad] == 4122) {
         continue;
       }
@@ -200,8 +204,8 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
 
   // initialise histograms for non-prompt charm hadrons
   std::map<int, std::array<std::array<TH1D*, 3>, NBeautyHadrons + 1>> hFonllPythiaNonPromptChad{};
-  for (auto iChad{0}; iChad<NCharmHadrons; ++iChad) {
-    for (auto iBhad{0}; iBhad<NBeautyHadrons; ++iBhad) {
+  for (auto iChad{0}; iChad < NCharmHadrons; ++iChad) {
+    for (auto iBhad{0}; iBhad < NBeautyHadrons; ++iBhad) {
       for (auto iFonll{0}; iFonll < 3; ++iFonll) {
         hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][iBhad][iFonll] = new TH1D(
           Form("hFonll%sFrom%s%s", charmHadNames[iChad].data(), beautyHadNames[iBhad].data(), namesFonll[iFonll].data()),
@@ -216,13 +220,13 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
   std::array<std::array<TF1*, 15>, NBeautyHadrons> fragFracFuncs{}; // used in case of LHCb due to the pT dependence
   if (fragFracOpt == EpEm) {
     fragFracs = beautyFragFracEpEm;
-  } else if(fragFracOpt == PPbar) {
+  } else if (fragFracOpt == PPbar) {
     fragFracs = beautyFragFracPPbar;
   } else { // LHCb
-    for(int iPar{0}; iPar < 15; ++iPar) {
-      fragFracFuncs[0][iPar] = new TF1(Form("fracBz_%d", iPar), "1 /  (2 * (([0] * ([1] + [2] * (x - [3])))  + ([4] * ([5] + exp([6] + [7] * x))) + 1) )", 0.f, 300.f); // B0
-      fragFracFuncs[1][iPar] = new TF1(Form("fracBp_%d", iPar), "1 /  (2 * (([0] * ([1] + [2] * (x - [3])))  + ([4] * ([5] + exp([6] + [7] * x))) + 1) )", 0.f, 300.f); // B+
-      fragFracFuncs[2][iPar] = new TF1(Form("fracBs_%d", iPar), "([0] * ([1] + [2] * (x - [3]))) /  (([0] * [1] + [2] * (x - [3]))  + ([4] * ([5] + exp([6] + [7] * x))) + 1)", 0.f, 300.f); // Bs0
+    for (int iPar{0}; iPar < 15; ++iPar) {
+      fragFracFuncs[0][iPar] = new TF1(Form("fracBz_%d", iPar), "1 /  (2 * (([0] * ([1] + [2] * (x - [3])))  + ([4] * ([5] + exp([6] + [7] * x))) + 1) )", 0.f, 300.f);                           // B0
+      fragFracFuncs[1][iPar] = new TF1(Form("fracBp_%d", iPar), "1 /  (2 * (([0] * ([1] + [2] * (x - [3])))  + ([4] * ([5] + exp([6] + [7] * x))) + 1) )", 0.f, 300.f);                           // B+
+      fragFracFuncs[2][iPar] = new TF1(Form("fracBs_%d", iPar), "([0] * ([1] + [2] * (x - [3]))) /  (([0] * [1] + [2] * (x - [3]))  + ([4] * ([5] + exp([6] + [7] * x))) + 1)", 0.f, 300.f);      // Bs0
       fragFracFuncs[3][iPar] = new TF1(Form("fracLb_%d", iPar), "([4] * ([5] + exp([6] + [7] * x))) /  (([0] * ([1] + [2] * (x - [3])))  + ([4] * ([5] + exp([6] + [7] * x))) + 1)", 0.f, 300.f); // Lb
 
       // parameters from https://arxiv.org/pdf/1902.06794.pdf
@@ -244,7 +248,7 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
 
   std::array<float, NBeautyHadrons> beautyHadMasses{};
   for (auto iFonll{0}; iFonll < 3; ++iFonll) {
-    for (auto iBhad{0}; iBhad<NBeautyHadrons; ++iBhad) {
+    for (auto iBhad{0}; iBhad < NBeautyHadrons; ++iBhad) {
       beautyHadMasses[iBhad] = TDatabasePDG::Instance()->GetParticle(beautyHadPdgs[iBhad])->Mass();
       for (auto iDecay{0}; iDecay < nDecays; ++iDecay) {
         auto ptB = hFonllBhad[iFonll]->GetRandom();
@@ -297,8 +301,7 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
           }
         }
 
-        for (int iPart{1}; iPart < pythia.event.size(); ++iPart)
-        {
+        for (int iPart{1}; iPart < pythia.event.size(); ++iPart) {
           if (std::abs(pythia.event[iPart].y()) > 0.5) {
             continue;
           }
@@ -317,7 +320,7 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
     for (auto iChad{0}; iChad < NCharmHadrons; ++iChad) {
       hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][NBeautyHadrons][iFonll] = (TH1D*)hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][0][iFonll]->Clone(Form("hFonllNonPrompt%s%s", charmHadNames[iChad].data(), namesFonll[iFonll].data()));
       hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][NBeautyHadrons][iFonll]->Reset();
-      for (auto iBhad{0}; iBhad<NBeautyHadrons; ++iBhad) {
+      for (auto iBhad{0}; iBhad < NBeautyHadrons; ++iBhad) {
         hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][iBhad][iFonll]->Scale(normCrossSec[iFonll] / nDecays);
         hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][NBeautyHadrons][iFonll]->Add(hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][iBhad][iFonll]);
       }
@@ -335,7 +338,7 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
     auto dirCharmHad = new TDirectoryFile(charmHadNames[iChad].data(), charmHadNames[iChad].data());
     dirCharmHad->Write();
     dirCharmHad->cd();
-    for (auto iBhad{0}; iBhad<NBeautyHadrons + 1; ++iBhad) {
+    for (auto iBhad{0}; iBhad < NBeautyHadrons + 1; ++iBhad) {
       for (auto iFonll{0}; iFonll < 3; ++iFonll) {
         hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][iBhad][iFonll]->Write();
       }
