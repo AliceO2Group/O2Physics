@@ -277,6 +277,25 @@ struct FilterCF {
     delete[] mcParticleLabels;
   }
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
+
+  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles, aod::BCsWithTimestamps const&)
+  {
+    float multiplicity = 0.0f;
+    for (auto& particle : particles) {
+      if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > cfgCutMCEta || particle.pt() < cfgCutMCPt)
+        continue;
+      int8_t sign = 0;
+      if (TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode()))
+        if ((sign = pdgparticle->Charge()) != 0)
+          multiplicity += 1.0f;
+      outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), FLOAT_PRECISION),
+                        truncateFloatFraction(particle.eta(), FLOAT_PRECISION),
+                        truncateFloatFraction(particle.phi(), FLOAT_PRECISION),
+                        sign, particle.pdgCode(), particle.flags());
+    }
+    outputMcCollisions(mcCollision.posZ(), multiplicity);
+  }
+  PROCESS_SWITCH(FilterCF, processMCGen, "Process MCGen", false);
 };
 
 struct MultiplicitySelector {
