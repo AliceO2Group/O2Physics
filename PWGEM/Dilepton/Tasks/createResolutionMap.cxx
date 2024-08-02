@@ -117,10 +117,10 @@ struct CreateResolutionMap {
     const AxisSpec axis_deta{500, -0.5, +0.5, "#eta_{l}^{gen.} - #eta_{l}^{rec.}"};
     const AxisSpec axis_dphi{500, -0.5, +0.5, "#varphi_{l}^{gen.} - #varphi_{l}^{rec.} (rad.)"};
 
-    registry.add("Electron/Ptgen_RelDeltaPt", "correlation", kTH2F, {{axis_pt_gen}, {axis_dpt}}, false);
-    registry.add("Electron/Ptgen_DeltaEta", "correlation", kTH2F, {{axis_pt_gen}, {axis_deta}}, false);
-    registry.add("Electron/Ptgen_DeltaPhi_Pos", "correlation", kTH2F, {{axis_pt_gen}, {axis_dphi}}, false);
-    registry.add("Electron/Ptgen_DeltaPhi_Neg", "correlation", kTH2F, {{axis_pt_gen}, {axis_dphi}}, false);
+    registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
+    registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
+    registry.add("Electron/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
+    registry.add("Electron/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
     registry.addClone("Electron/", "StandaloneMuon/");
     registry.addClone("Electron/", "GlobalMuon/");
   }
