@@ -25,12 +25,11 @@
 #include "TTree.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "EventFiltering/zorro.h"
-
-const std::string kBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
+#include "EventFiltering/ZorroHelper.h"
 
 void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien)
 {
+  const std::string kBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
   std::string baseCCDBpath = passName.empty() ? kBaseCCDBPath : kBaseCCDBPath + passName + "/";
   if (useAlien) {
     TGrid::Connect("alien://");
@@ -53,18 +52,18 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
     std::cout << ">>> Begin - end timestamps for the upload: " << duration.first << " - " << duration.second << std::endl;
     path = useAlien ? "alien://" + path : path;
     std::unique_ptr<TFile> scalersFile{TFile::Open((path + "/AnalysisResults_fullrun.root").data(), "READ")};
-    TH1* scalers = (TH1*)scalersFile->Get("central-event-filter-task/scalers/mScalers");
-    TH1* filters = (TH1*)scalersFile->Get("central-event-filter-task/scalers/mFiltered");
+    TH1* scalers = static_cast<TH1*>(scalersFile->Get("central-event-filter-task/scalers/mScalers"));
+    TH1* filters = static_cast<TH1*>(scalersFile->Get("central-event-filter-task/scalers/mFiltered"));
     api.storeAsTFile(scalers, baseCCDBpath + "FilterCounters", metadata, duration.first, duration.second);
     api.storeAsTFile(filters, baseCCDBpath + "SelectionCounters", metadata, duration.first, duration.second);
-    TH1* hCounterTVX = (TH1*)scalersFile->Get("bc-selection-task/hCounterTVX");
+    TH1* hCounterTVX = static_cast<TH1*>(scalersFile->Get("bc-selection-task/hCounterTVX"));
     api.storeAsTFile(hCounterTVX, baseCCDBpath + "InspectedTVX", metadata, duration.first, duration.second);
 
     std::vector<ZorroHelper> zorroHelpers;
     std::unique_ptr<TFile> bcRangesFile{TFile::Open((path + "/bcRanges_fullrun.root").data(), "READ")};
     int Nmax = 0;
     for (auto key : *(bcRangesFile->GetListOfKeys())) {
-      TTree* cefpTree = (TTree*)bcRangesFile->Get(Form("%s/selectedBC", key->GetName()));
+      TTree* cefpTree = static_cast<TTree*>(bcRangesFile->Get(Form("%s/selectedBC", key->GetName())));
       if (!cefpTree)
         continue;
       ZorroHelper bci;
