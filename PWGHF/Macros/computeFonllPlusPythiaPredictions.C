@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file 
-/// \brief macro for the calculation of FONLL+PYTHIA predictions for non-prompt charm hadrons 
+/// \file
+/// \brief macro for the calculation of FONLL+PYTHIA predictions for non-prompt charm hadrons
 ///
 /// \author Fabrizio Grosa <fgrosa@cern.ch>, CERN
 
