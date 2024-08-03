@@ -88,7 +88,6 @@ struct DileptonMC {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
-  Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kFlowV4:4, kPolarization:5, kVM:6, kHFll:7"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
@@ -649,6 +648,7 @@ struct DileptonMC {
 
     float cos_thetaCS = 999, phiCS = 999.f;
     o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, leptonM1, leptonM2, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+    o2::math_utils::bringToPMPi(phiCS);
 
     auto t1mc = mcparticles.iteratorAt(t1.emmcparticleId());
     auto t2mc = mcparticles.iteratorAt(t2.emmcparticleId());
@@ -974,11 +974,52 @@ struct DileptonMC {
         if (mother_id < 0 && hfee_type < 0) {
           continue;
         }
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-        // LOGF(info, "t1.e() = %f, v1.E() = %f, t2.e() = %f, v2.E() = %f", t1.e(), v1.E(), t2.e(), v2.E());//OK
+        float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
+        if constexpr (isSmeared) {
+          if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+            pt1 = t1.ptSmeared();
+            eta1 = t1.etaSmeared();
+            phi1 = t1.phiSmeared();
+            pt2 = t2.ptSmeared();
+            eta2 = t2.etaSmeared();
+            phi2 = t2.phiSmeared();
+          } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+            if (dimuoncuts.cfg_track_type == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+              pt1 = t1.ptSmeared_sa_muon();
+              eta1 = t1.etaSmeared_sa_muon();
+              phi1 = t1.phiSmeared_sa_muon();
+              pt2 = t2.ptSmeared_sa_muon();
+              eta2 = t2.etaSmeared_sa_muon();
+              phi2 = t2.phiSmeared_sa_muon();
+            } else if (dimuoncuts.cfg_track_type == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+              pt1 = t1.ptSmeared_gl_muon();
+              eta1 = t1.etaSmeared_gl_muon();
+              phi1 = t1.phiSmeared_gl_muon();
+              pt2 = t2.ptSmeared_gl_muon();
+              eta2 = t2.etaSmeared_gl_muon();
+              phi2 = t2.phiSmeared_gl_muon();
+            } else {
+              pt1 = t1.pt();
+              eta1 = t1.eta();
+              phi1 = t1.phi();
+              pt2 = t2.pt();
+              eta2 = t2.eta();
+              phi2 = t2.phi();
+            }
+          }
+        } else {
+          pt1 = t1.pt();
+          eta1 = t1.eta();
+          phi1 = t1.phi();
+          pt2 = t2.pt();
+          eta2 = t2.eta();
+          phi2 = t2.phi();
+        }
+
+        ROOT::Math::PtEtaPhiMVector v1(pt1, eta1, phi1, leptonM1);
+        ROOT::Math::PtEtaPhiMVector v2(pt2, eta2, phi2, leptonM2);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
           if (v12.Rapidity() < dielectroncuts.cfg_min_pair_y || dielectroncuts.cfg_max_pair_y < v12.Rapidity()) {
@@ -999,6 +1040,7 @@ struct DileptonMC {
 
         float cos_thetaCS = 999, phiCS = 999.f;
         o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<true>(t1, t2, leptonM1, leptonM2, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+        o2::math_utils::bringToPMPi(phiCS);
 
         if (mother_id > -1) {
           auto mcmother = mcparticles.iteratorAt(mother_id);
@@ -1124,8 +1166,51 @@ struct DileptonMC {
         if (hfee_type < 0) {
           continue;
         }
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
+
+        float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
+        if constexpr (isSmeared) {
+          if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+            pt1 = t1.ptSmeared();
+            eta1 = t1.etaSmeared();
+            phi1 = t1.phiSmeared();
+            pt2 = t2.ptSmeared();
+            eta2 = t2.etaSmeared();
+            phi2 = t2.phiSmeared();
+          } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+            if (dimuoncuts.cfg_track_type == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+              pt1 = t1.ptSmeared_sa_muon();
+              eta1 = t1.etaSmeared_sa_muon();
+              phi1 = t1.phiSmeared_sa_muon();
+              pt2 = t2.ptSmeared_sa_muon();
+              eta2 = t2.etaSmeared_sa_muon();
+              phi2 = t2.phiSmeared_sa_muon();
+            } else if (dimuoncuts.cfg_track_type == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+              pt1 = t1.ptSmeared_gl_muon();
+              eta1 = t1.etaSmeared_gl_muon();
+              phi1 = t1.phiSmeared_gl_muon();
+              pt2 = t2.ptSmeared_gl_muon();
+              eta2 = t2.etaSmeared_gl_muon();
+              phi2 = t2.phiSmeared_gl_muon();
+            } else {
+              pt1 = t1.pt();
+              eta1 = t1.eta();
+              phi1 = t1.phi();
+              pt2 = t2.pt();
+              eta2 = t2.eta();
+              phi2 = t2.phi();
+            }
+          }
+        } else {
+          pt1 = t1.pt();
+          eta1 = t1.eta();
+          phi1 = t1.phi();
+          pt2 = t2.pt();
+          eta2 = t2.eta();
+          phi2 = t2.phi();
+        }
+
+        ROOT::Math::PtEtaPhiMVector v1(pt1, eta1, phi1, leptonM1);
+        ROOT::Math::PtEtaPhiMVector v2(pt2, eta2, phi2, leptonM2);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -1147,6 +1232,7 @@ struct DileptonMC {
 
         float cos_thetaCS = 999, phiCS = 999.f;
         o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<true>(t1, t2, leptonM1, leptonM2, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+        o2::math_utils::bringToPMPi(phiCS);
 
         if (hfee_type > -1) {
           auto mp1 = mcparticles.iteratorAt(t1.mothersIds()[0]);
@@ -1199,8 +1285,51 @@ struct DileptonMC {
         if (hfee_type < 0) {
           continue;
         }
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
+
+        float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
+        if constexpr (isSmeared) {
+          if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+            pt1 = t1.ptSmeared();
+            eta1 = t1.etaSmeared();
+            phi1 = t1.phiSmeared();
+            pt2 = t2.ptSmeared();
+            eta2 = t2.etaSmeared();
+            phi2 = t2.phiSmeared();
+          } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+            if (dimuoncuts.cfg_track_type == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+              pt1 = t1.ptSmeared_sa_muon();
+              eta1 = t1.etaSmeared_sa_muon();
+              phi1 = t1.phiSmeared_sa_muon();
+              pt2 = t2.ptSmeared_sa_muon();
+              eta2 = t2.etaSmeared_sa_muon();
+              phi2 = t2.phiSmeared_sa_muon();
+            } else if (dimuoncuts.cfg_track_type == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+              pt1 = t1.ptSmeared_gl_muon();
+              eta1 = t1.etaSmeared_gl_muon();
+              phi1 = t1.phiSmeared_gl_muon();
+              pt2 = t2.ptSmeared_gl_muon();
+              eta2 = t2.etaSmeared_gl_muon();
+              phi2 = t2.phiSmeared_gl_muon();
+            } else {
+              pt1 = t1.pt();
+              eta1 = t1.eta();
+              phi1 = t1.phi();
+              pt2 = t2.pt();
+              eta2 = t2.eta();
+              phi2 = t2.phi();
+            }
+          }
+        } else {
+          pt1 = t1.pt();
+          eta1 = t1.eta();
+          phi1 = t1.phi();
+          pt2 = t2.pt();
+          eta2 = t2.eta();
+          phi2 = t2.phi();
+        }
+
+        ROOT::Math::PtEtaPhiMVector v1(pt1, eta1, phi1, leptonM1);
+        ROOT::Math::PtEtaPhiMVector v2(pt2, eta2, phi2, leptonM2);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -1222,6 +1351,8 @@ struct DileptonMC {
 
         float cos_thetaCS = 999, phiCS = 999.f;
         o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<true>(t1, t2, leptonM1, leptonM2, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+        o2::math_utils::bringToPMPi(phiCS);
+
         if (hfee_type > -1) {
           auto mp1 = mcparticles.iteratorAt(t1.mothersIds()[0]);
           auto mp2 = mcparticles.iteratorAt(t2.mothersIds()[0]);
