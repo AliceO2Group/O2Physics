@@ -335,6 +335,9 @@ struct CreateResolutionMap {
           continue;
         }
         auto mctrack = track.template mcParticle_as<aod::McParticles>();
+        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+          continue;
+        }
         if (abs(mctrack.pdgCode()) != 11 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           continue;
         }
@@ -360,6 +363,9 @@ struct CreateResolutionMap {
           continue;
         }
         auto mctrack = muon.template mcParticle_as<aod::McParticles>();
+        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+          continue;
+        }
         if (abs(mctrack.pdgCode()) != 13 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           continue;
         }
@@ -373,6 +379,9 @@ struct CreateResolutionMap {
           continue;
         }
         auto mctrack = muon.template mcParticle_as<aod::McParticles>();
+        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+          continue;
+        }
         if (abs(mctrack.pdgCode()) != 13 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           continue;
         }
