@@ -46,6 +46,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 using std::cout;
 using std::endl;
@@ -88,7 +89,7 @@ using MyBarrelTracksSelectedNoSkimmed = soa::Join<aod::Tracks, aod::TracksExtra,
                                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                   aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                                   aod::BarrelTrackCuts, aod::McTrackLabels>;
-using MyMCTrackNoSkimmed = soa::Join<aod::McParticles, aod::SmearedTracks>;
+using MyMCTrackNoSkimmed = soa::Join<aod::McParticles, aod::SmearedElectrons>;
 
 constexpr static uint32_t gkEventFillMapNoSkimmed = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkMCEventFillMapNoSkimmed = VarManager::ObjTypes::CollisionMC;
@@ -101,7 +102,7 @@ using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtende
 using MyMCEventsSelected = soa::Join<aod::ReducedMCEvents, aod::EventMCCuts>;
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
-using MyMCReducedTracks = soa::Join<ReducedMCTracks, aod::SmearedTracks>;
+using MyMCReducedTracks = soa::Join<ReducedMCTracks, aod::SmearedElectrons>;
 //
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkMCEventFillMap = VarManager::ObjTypes::ReducedEventMC;
@@ -135,7 +136,7 @@ struct AnalysisEventSelection {
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
       DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;", fConfigAddEventHistogram); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                 // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                           // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -610,7 +611,7 @@ struct AnalysisTrackSelection {
       fHistManQA->SetUseDefaultVariableNames(kTRUE);
       fHistManQA->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
       DefineHistograms(fHistManQA, histClassesQA.Data(), fConfigAddTrackHistogram); // define all histograms
-      VarManager::SetUseVars(fHistManQA->GetUsedVars());  // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistManQA->GetUsedVars());                            // provide the list of required variables so that VarManager knows what to fill
       fQASingleElectronList = fHistManQA->GetMainHistogramList();
     }
     fOutputQA.setObject(fQASingleElectronList);
