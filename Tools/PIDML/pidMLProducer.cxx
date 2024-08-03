@@ -16,6 +16,7 @@
 
 #include <string_view>
 #include "Framework/AnalysisTask.h"
+#include "Framework/StaticFor.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/Centrality.h"
@@ -55,82 +56,108 @@ struct PidMlProducer {
   static constexpr float kEps = 1e-10f;
   static constexpr float kMissingBeta = -999.0f;
   static constexpr float kMissingTOFSignal = -999.0f;
+  static constexpr uint32_t nCharges = 2;
 
-  static constexpr std::string_view histPrefixes = {"minus", "plus"};
+  static constexpr std::string_view histPrefixes[nCharges] = {"minus", "plus"};
 
-  HistogramRegistry registry{"registry", {}};
+  // 2D
+  std::array<std::shared_ptr<TH2>, nCharges> hTPCSigvsP;
+  std::array<std::shared_ptr<TH2>, nCharges> hTOFBetavsP;
+  std::array<std::shared_ptr<TH2>, nCharges> hTOFSigvsP;
+  std::array<std::shared_ptr<TH2>, nCharges> hFilteredTOFSigvsP;
+  std::array<std::shared_ptr<TH2>, nCharges> hTRDPattvsP;
+  std::array<std::shared_ptr<TH2>, nCharges> hTRDSigvsP;
+
+  // 1D
+  std::array<std::shared_ptr<TH1>, nCharges> hP;
+  std::array<std::shared_ptr<TH1>, nCharges> hPt;
+  std::array<std::shared_ptr<TH1>, nCharges> hPx;
+  std::array<std::shared_ptr<TH1>, nCharges> hPy;
+  std::array<std::shared_ptr<TH1>, nCharges> hPz;
+  std::array<std::shared_ptr<TH1>, nCharges> hX;
+  std::array<std::shared_ptr<TH1>, nCharges> hY;
+  std::array<std::shared_ptr<TH1>, nCharges> hZ;
+  std::array<std::shared_ptr<TH1>, nCharges> hAlpha;
+  std::array<std::shared_ptr<TH1>, nCharges> hTrackType;
+  std::array<std::shared_ptr<TH1>, nCharges> hTPCNClsShared;
+  std::array<std::shared_ptr<TH1>, nCharges> hDcaXY;
+  std::array<std::shared_ptr<TH1>, nCharges> hDcaZ;
+  std::array<std::shared_ptr<TH1>, nCharges> hPdgCode;
+  std::array<std::shared_ptr<TH1>, nCharges> hIsPrimary;
+
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   static const char* genTagvsP(const char* name)
   {
     return Form("%s vs  #it{p};#it{p} (GeV/#it{c});%s", name, name);
   }
 
-  template <int32_t prefixInd>
+  template <uint32_t prefixInd>
   void initHistSign()
   {
-    registry.add<TH2F>(Form("%s/hTPCSigvsP", histPrefixes[prefixInd]), genTagvsP("TPC Signal"), {HistType::kTH2F, {{500, 0., 10.}, {1000, 0., 600.}}});
-    registry.add<TH2F>(Form("%s/hTOFBetavsP", histPrefixes[prefixInd]), genTagvsP("TOF beta"), {HistType::kTH2F, {{500, 0., 10.}, {6000, -3., 3.}}});
-    registry.add<TH2F>(Form("%s/hTOFSigvsP", histPrefixes[prefixInd]), genTagvsP("TOF signal"), {HistType::kTH2F, {{500, 0., 10.}, {10000, -5000., 80000.}}});
-    registry.add<TH2F>(Form("%s/filtered/hTOFSigvsP", histPrefixes[prefixInd]), genTagvsP("TOF signal (filtered)"), {HistType::kTH2F, {{500, 0., 10.}, {10000, -5000., 80000.}}});
-    registry.add<TH2F>(Form("%s/hTRDPattvsP", histPrefixes[prefixInd]), genTagvsP("TRD pattern"), {HistType::kTH2F, {{500, 0., 10.}, {110, -10., 100.}}});
-    registry.add<TH2F>(Form("%s/hTRDSigvsP", histPrefixes[prefixInd]), genTagvsP("TRD signal"), {HistType::kTH2F, {{500, 0., 10.}, {2500, -2., 100.}}});
-    registry.add<TH1F>(Form("%s/hP", histPrefixes[prefixInd]), "#it{p};#it{p} (GeV/#it{c})", {HistType::kTH1F, {{500, 0., 6.}}});
-    registry.add<TH1F>(Form("%s/hPt", histPrefixes[prefixInd]), "#it{p}_{t};#it{p}_{t} (GeV/#it{c})", {HistType::kTH1F, {{500, 0., 6.}}});
-    registry.add<TH1F>(Form("%s/hPx", histPrefixes[prefixInd]), "#it{p}_{x};#it{p}_{x} (GeV/#it{c})", {HistType::kTH1F, {{1000, -6., 6.}}});
-    registry.add<TH1F>(Form("%s/hPy", histPrefixes[prefixInd]), "#it{p}_{y};#it{p}_{y} (GeV/#it{c})", {HistType::kTH1F, {{1000, -6., 6.}}});
-    registry.add<TH1F>(Form("%s/hPz", histPrefixes[prefixInd]), "#it{p}_{z};#it{p}_{z} (GeV/#it{c})", {HistType::kTH1F, {{1000, -6., 6.}}});
-    registry.add<TH1F>(Form("%s/hX", histPrefixes[prefixInd]), "#it{x};#it{x}", {HistType::kTH1F, {{1000, -2., 2.}}});
-    registry.add<TH1F>(Form("%s/hY", histPrefixes[prefixInd]), "#it{y};#it{y}", {HistType::kTH1F, {{1000, -2., 2.}}});
-    registry.add<TH1F>(Form("%s/hZ", histPrefixes[prefixInd]), "#it{z};#it{z}", {HistType::kTH1F, {{1000, -10., 10.}}});
-    registry.add<TH1F>(Form("%s/hAlpha", histPrefixes[prefixInd]), "#{alpha};#{alpha}", {HistType::kTH1F, {{1000, -5., 5.}}});
-    registry.add<TH1F>(Form("%s/hTrackType", histPrefixes[prefixInd]), "Track Type;Track Type", {HistType::kTH1F, {{300, 0., 300.}}});
-    registry.add<TH1F>(Form("%s/hTPCNClsShared", histPrefixes[prefixInd]), "hTPCNClsShared;hTPCNClsShared", {HistType::kTH1F, {{100, 0., 100.}}});
-    registry.add<TH1F>(Form("%s/hDcaXY", histPrefixes[prefixInd]), "#it{DcaXY};#it{DcaXY}", {HistType::kTH1F, {{1000, -1., 1.}}});
-    registry.add<TH1F>(Form("%s/hDcaZ", histPrefixes[prefixInd]), "#it{DcaZ};#it{DcaZ}", {HistType::kTH1F, {{1000, -1., 1.}}});
+    hTPCSigvsP[prefixInd] = registry.add<TH2>(Form("%s/hTPCSigvsP", histPrefixes[prefixInd].data()), genTagvsP("TPC Signal"), HistType::kTH2F, {{500, 0., 10.}, {1000, 0., 600.}});
+    hTOFBetavsP[prefixInd] = registry.add<TH2>(Form("%s/hTOFBetavsP", histPrefixes[prefixInd].data()), genTagvsP("TOF beta"), HistType::kTH2F, {{500, 0., 10.}, {6000, -3., 3.}});
+    hTOFSigvsP[prefixInd] = registry.add<TH2>(Form("%s/hTOFSigvsP", histPrefixes[prefixInd].data()), genTagvsP("TOF signal"), HistType::kTH2F, {{500, 0., 10.}, {10000, -5000., 80000.}});
+    hFilteredTOFSigvsP[prefixInd] = registry.add<TH2>(Form("%s/filtered/hTOFSigvsP", histPrefixes[prefixInd].data()), genTagvsP("TOF signal (filtered)"), HistType::kTH2F, {{500, 0., 10.}, {10000, -5000., 80000.}});
+    hTRDPattvsP[prefixInd] = registry.add<TH2>(Form("%s/hTRDPattvsP", histPrefixes[prefixInd].data()), genTagvsP("TRD pattern"), HistType::kTH2F, {{500, 0., 10.}, {110, -10., 100.}});
+    hTRDSigvsP[prefixInd] = registry.add<TH2>(Form("%s/hTRDSigvsP", histPrefixes[prefixInd].data()), genTagvsP("TRD signal"), HistType::kTH2F, {{500, 0., 10.}, {2500, -2., 100.}});
+    hP[prefixInd] = registry.add<TH1>(Form("%s/hP", histPrefixes[prefixInd].data()), "#it{p};#it{p} (GeV/#it{c})", HistType::kTH1F, {{500, 0., 6.}});
+    hPt[prefixInd] = registry.add<TH1>(Form("%s/hPt", histPrefixes[prefixInd].data()), "#it{p}_{t};#it{p}_{t} (GeV/#it{c})", HistType::kTH1F, {{500, 0., 6.}});
+    hPx[prefixInd] = registry.add<TH1>(Form("%s/hPx", histPrefixes[prefixInd].data()), "#it{p}_{x};#it{p}_{x} (GeV/#it{c})", HistType::kTH1F, {{1000, -6., 6.}});
+    hPy[prefixInd] = registry.add<TH1>(Form("%s/hPy", histPrefixes[prefixInd].data()), "#it{p}_{y};#it{p}_{y} (GeV/#it{c})", HistType::kTH1F, {{1000, -6., 6.}});
+    hPz[prefixInd] = registry.add<TH1>(Form("%s/hPz", histPrefixes[prefixInd].data()), "#it{p}_{z};#it{p}_{z} (GeV/#it{c})", HistType::kTH1F, {{1000, -6., 6.}});
+    hX[prefixInd] = registry.add<TH1>(Form("%s/hX", histPrefixes[prefixInd].data()), "#it{x};#it{x}", HistType::kTH1F, {{1000, -2., 2.}});
+    hY[prefixInd] = registry.add<TH1>(Form("%s/hY", histPrefixes[prefixInd].data()), "#it{y};#it{y}", HistType::kTH1F, {{1000, -2., 2.}});
+    hZ[prefixInd] = registry.add<TH1>(Form("%s/hZ", histPrefixes[prefixInd].data()), "#it{z};#it{z}", HistType::kTH1F, {{1000, -10., 10.}});
+    hAlpha[prefixInd] = registry.add<TH1>(Form("%s/hAlpha", histPrefixes[prefixInd].data()), "#{alpha};#{alpha}", HistType::kTH1F, {{1000, -5., 5.}});
+    hTrackType[prefixInd] = registry.add<TH1>(Form("%s/hTrackType", histPrefixes[prefixInd].data()), "Track Type;Track Type", HistType::kTH1F, {{300, 0., 300.}});
+    hTPCNClsShared[prefixInd] = registry.add<TH1>(Form("%s/hTPCNClsShared", histPrefixes[prefixInd].data()), "hTPCNClsShared;hTPCNClsShared", HistType::kTH1F, {{100, 0., 100.}});
+    hDcaXY[prefixInd] = registry.add<TH1>(Form("%s/hDcaXY", histPrefixes[prefixInd].data()), "#it{DcaXY};#it{DcaXY}", HistType::kTH1F, {{1000, -1., 1.}});
+    hDcaZ[prefixInd] = registry.add<TH1>(Form("%s/hDcaZ", histPrefixes[prefixInd].data()), "#it{DcaZ};#it{DcaZ}", HistType::kTH1F, {{1000, -1., 1.}});
   }
 
-  template <int32_t prefixInd>
+  template <uint32_t prefixInd>
   void initHistSignMC()
   {
     initHistSign<prefixInd>();
-    registry.add<TH1F>(Form("%s/hPdgCode", histPrefixes[prefixInd]), "#it{PdgCode};#it{PdgCode}", {HistType::kTH1F, {{2500, 0., 2500.}}});
-    registry.add<TH1F>(Form("%s/hIsPrimary", histPrefixes[prefixInd]), "#it{IsPrimary};#it{IsPrimary}", {HistType::kTH1F, {{4, -0.5, 1.5}}});
+    hPdgCode[prefixInd] = registry.add<TH1>(Form("%s/hPdgCode", histPrefixes[prefixInd].data()), "#it{PdgCode};#it{PdgCode}", HistType::kTH1F, {{2500, 0., 2500.}});
+    hIsPrimary[prefixInd] = registry.add<TH1>(Form("%s/hIsPrimary", histPrefixes[prefixInd].data()), "#it{IsPrimary};#it{IsPrimary}", HistType::kTH1F, {{4, -0.5, 1.5}});
   }
 
-  template <int32_t prefixInd, typename T>
+  template <uint32_t prefixInd, typename T>
   void fillHistSign(const T& track)
   {
-    registry.fill(HIST(Form("%s/hTPCSigvsP", histPrefixes[prefixInd])), track.p(), track.tpcSignal());
-    registry.fill(HIST(Form("%s/hTOFBetavsP", histPrefixes[prefixInd])), track.p(), track.beta());
-    registry.fill(HIST(Form("%s/hTOFSigvsP", histPrefixes[prefixInd])), track.p(), track.tofSignal());
+    hTPCSigvsP[prefixInd]->Fill(track.p(), track.tpcSignal());
+    hTOFBetavsP[prefixInd]->Fill(track.p(), track.beta());
+    hTOFSigvsP[prefixInd]->Fill(track.p(), track.tofSignal());
     if (TMath::Abs(track.beta() - kMissingBeta) >= kEps) {
-      registry.fill(HIST(Form("%s/filtered/hTOFSigvsP", histPrefixes[prefixInd])), track.p(), track.tofSignal());
+      hFilteredTOFSigvsP[prefixInd]->Fill(track.p(), track.tofSignal());
     } else {
-      registry.fill(HIST(Form("%s/filtered/hTOFSigvsP", histPrefixes[prefixInd])), track.p(), kMissingTOFSignal);
+      hFilteredTOFSigvsP[prefixInd]->Fill(track.p(), kMissingTOFSignal);
     }
-    registry.fill(HIST(Form("%s/hTRDPattvsP", histPrefixes[prefixInd])), track.p(), track.trdPattern());
-    registry.fill(HIST(Form("%s/hTRDSigvsP", histPrefixes[prefixInd])), track.p(), track.trdSignal());
-    registry.fill(HIST(Form("%s/hP", histPrefixes[prefixInd])), track.p());
-    registry.fill(HIST(Form("%s/hPt", histPrefixes[prefixInd])), track.pt());
-    registry.fill(HIST(Form("%s/hPx", histPrefixes[prefixInd])), track.px());
-    registry.fill(HIST(Form("%s/hPy", histPrefixes[prefixInd])), track.py());
-    registry.fill(HIST(Form("%s/hPz", histPrefixes[prefixInd])), track.pz());
-    registry.fill(HIST(Form("%s/hX", histPrefixes[prefixInd])), track.x());
-    registry.fill(HIST(Form("%s/hY", histPrefixes[prefixInd])), track.y());
-    registry.fill(HIST(Form("%s/hZ", histPrefixes[prefixInd])), track.z());
-    registry.fill(HIST(Form("%s/hAlpha", histPrefixes[prefixInd])), track.alpha());
-    registry.fill(HIST(Form("%s/hTrackType", histPrefixes[prefixInd])), track.trackType());
-    registry.fill(HIST(Form("%s/hTPCNClsShared", histPrefixes[prefixInd])), track.tpcNClsShared());
-    registry.fill(HIST(Form("%s/hDcaXY", histPrefixes[prefixInd])), track.dcaXY());
-    registry.fill(HIST(Form("%s/hDcaZ", histPrefixes[prefixInd])), track.dcaZ());
+    hTRDPattvsP[prefixInd]->Fill(track.p(), track.trdPattern());
+    hTRDSigvsP[prefixInd]->Fill(track.p(), track.trdSignal());
+    hP[prefixInd]->Fill(track.p());
+    hPt[prefixInd]->Fill(track.pt());
+    hPx[prefixInd]->Fill(track.px());
+    hPy[prefixInd]->Fill(track.py());
+    hPz[prefixInd]->Fill(track.pz());
+    hX[prefixInd]->Fill(track.x());
+    hY[prefixInd]->Fill(track.y());
+    hZ[prefixInd]->Fill(track.z());
+    hAlpha[prefixInd]->Fill(track.alpha());
+    hTrackType[prefixInd]->Fill(track.trackType());
+    hTPCNClsShared[prefixInd]->Fill(track.tpcNClsShared());
+    hDcaXY[prefixInd]->Fill(track.dcaXY());
+    hDcaZ[prefixInd]->Fill(track.dcaZ());
   }
 
-  template <int32_t prefixInd, typename T>
+  template <uint32_t prefixInd, typename T>
   void fillHistSignMC(const T& track, uint32_t pdgCode, uint8_t isPrimary)
   {
-    fillHistSign<prefixInd>(const T& track);
-    registry.fill(HIST(Form("%s/hPdgCode", histPrefixes[prefixInd])), pdgCode);
-    registry.fill(HIST(Form("%s/hIsPrimary", histPrefixes[prefixInd])), isPrimary);
+    fillHistSign<prefixInd>(track);
+    hPdgCode[prefixInd]->Fill(pdgCode);
+    hIsPrimary[prefixInd]->Fill(isPrimary);
   }
 
   template <typename T>
@@ -153,27 +180,18 @@ struct PidMlProducer {
     }
   }
 
-  void initHistosMC()
-  {
-    static_for<0, 1>([&](auto prefixInd) {
-      initHistSignMC<prefixInd>();
-    })
-  }
-
   void init(InitContext&)
   {
-    if (doProcessMcMl || doProcessMcAll) {
-      static_for<0, 1>([&](auto prefixInd) {
-        initHistSignMC<prefixInd>();
-      });
+    if (doprocessMcMl || doprocessMcAll) {
+      initHistSignMC<0>();
+      initHistSignMC<1>();
     } else {
-      static_for<0, 1>([&](auto prefixInd) {
-        initHistSign<prefixInd>();
-      });
+      initHistSign<0>();
+      initHistSign<1>();
     }
   }
 
-  void processDataML(MyCollisionML const& /*collision*/, BigTracksML const& tracks)
+  void processDataML(MyCollisionML const& /*collision*/, BigTracksDataML const& tracks)
   {
     for (const auto& track : tracks) {
       pidTracksTableDataML(track.tpcSignal(), track.trdSignal(), track.trdPattern(),
@@ -189,9 +207,9 @@ struct PidMlProducer {
       fillHist(track);
     }
   }
-  PROCESS_SWITCH(PidMlProducerData, processDataML, "Produce only ML real data", true);
+  PROCESS_SWITCH(PidMlProducer, processDataML, "Produce only ML real data", true);
 
-  void processDataAll(MyCollision const& collision, BigTracks const& tracks)
+  void processDataAll(MyCollision const& collision, BigTracksData const& tracks)
   {
     for (const auto& track : tracks) {
       pidTracksTableData(collision.centRun2V0M(),
@@ -223,7 +241,7 @@ struct PidMlProducer {
       fillHist(track);
     }
   }
-  PROCESS_SWITCH(PidMlProducerData, processDataAll, "Produce all real data", false);
+  PROCESS_SWITCH(PidMlProducer, processDataAll, "Produce all real data", false);
 
   void processMcMl(MyCollisionML const& /*collision*/, BigTracksMCML const& tracks, aod::McParticles const& /*mctracks*/)
   {
