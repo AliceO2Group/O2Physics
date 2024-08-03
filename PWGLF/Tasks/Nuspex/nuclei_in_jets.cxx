@@ -179,7 +179,7 @@ struct nuclei_in_jets {
     registryMC.add("antiproton_all_jet", "antiproton_all_jet", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("antiproton_prim_ue", "antiproton_prim_ue", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("antiproton_all_ue", "antiproton_all_ue", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
-      
+
     // Antiproton Reweighting
     registryMC.add("antiproton_incl", "antiproton_incl", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("antiproton_jet", "antiproton_jet", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
@@ -957,7 +957,7 @@ struct nuclei_in_jets {
 
       NchJet = NchJetPlusUE - 0.5 * NchUE;
       ptJet = ptJetPlusUE - 0.5 * ptUE;
-        
+
       // Skip Events with n. particles in jet less than given value
       if (NchJetPlusUE < min_nPartInJet)
         continue;
