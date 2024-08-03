@@ -920,8 +920,8 @@ struct nuclei_in_jets {
         continue;
 
       double NchJetPlusUE(0);
-      double NchJet(0);
-      double NchUE(0);
+      // double NchJet(0);
+      // double NchUE(0);
       double ptJetPlusUE(0);
       double ptJet(0);
       double ptUE(0);
@@ -946,16 +946,16 @@ struct nuclei_in_jets {
           ptJetPlusUE = ptJetPlusUE + track.pt();
         }
         if (deltaR_ue1 < Rmax) {
-          NchUE++;
+          // NchUE++;
           ptUE = ptUE + track.pt();
         }
         if (deltaR_ue2 < Rmax) {
-          NchUE++;
+          // NchUE++;
           ptUE = ptUE + track.pt();
         }
       }
 
-      NchJet = NchJetPlusUE - 0.5 * NchUE;
+      // NchJet = NchJetPlusUE - 0.5 * NchUE;
       ptJet = ptJetPlusUE - 0.5 * ptUE;
 
       // Skip Events with n. particles in jet less than given value
