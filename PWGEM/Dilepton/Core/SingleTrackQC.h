@@ -78,6 +78,7 @@ struct SingleTrackQC {
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
+  Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", true, "flag to apply weighting by 1/N"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
 
@@ -362,9 +363,13 @@ struct SingleTrackQC {
   template <typename TTrack>
   void fillElectronInfo(TTrack const& track)
   {
+    float weight = map_weight[track.globalIndex()];
+    if (!cfgApplyWeightTTCA) {
+      weight = 1.f;
+    }
     float dca_3d = dca3DinSigma(track);
     if (track.sign() > 0) {
-      fRegistry.fill(HIST("Track/positive/hs"), track.pt(), track.eta(), track.phi(), dca_3d, map_weight[track.globalIndex()]);
+      fRegistry.fill(HIST("Track/positive/hs"), track.pt(), track.eta(), track.phi(), dca_3d, weight);
       fRegistry.fill(HIST("Track/positive/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/positive/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
@@ -393,7 +398,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
       fRegistry.fill(HIST("Track/positive/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
     } else {
-      fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_3d, map_weight[track.globalIndex()]);
+      fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_3d, weight);
       fRegistry.fill(HIST("Track/negative/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/negative/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
@@ -427,9 +432,13 @@ struct SingleTrackQC {
   template <typename TTrack>
   void fillMuonInfo(TTrack const& track)
   {
+    float weight = map_weight[track.globalIndex()];
+    if (!cfgApplyWeightTTCA) {
+      weight = 1.f;
+    }
     float dca_xy = fwdDcaXYinSigma(track);
     if (track.sign() > 0) {
-      fRegistry.fill(HIST("Track/positive/hs"), track.pt(), track.eta(), track.phi(), dca_xy, map_weight[track.globalIndex()]);
+      fRegistry.fill(HIST("Track/positive/hs"), track.pt(), track.eta(), track.phi(), dca_xy, weight);
       fRegistry.fill(HIST("Track/positive/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/positive/hTrackType"), track.trackType());
       fRegistry.fill(HIST("Track/positive/hDCAxy"), track.fwdDcaX(), track.fwdDcaY());
@@ -444,7 +453,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
       fRegistry.fill(HIST("Track/positive/hMFTClusterMap"), track.mftClusterMap());
     } else {
-      fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_xy, map_weight[track.globalIndex()]);
+      fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_xy, weight);
       fRegistry.fill(HIST("Track/negative/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/negative/hTrackType"), track.trackType());
       fRegistry.fill(HIST("Track/negative/hDCAxy"), track.fwdDcaX(), track.fwdDcaY());
@@ -605,11 +614,15 @@ struct SingleTrackQC {
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
-      fillTrackWeightMap<false>(collisions, electrons, perCollision_electron, fDielectronCut);
+      if (cfgApplyWeightTTCA) {
+        fillTrackWeightMap<false>(collisions, electrons, perCollision_electron, fDielectronCut);
+      }
       runQC<false>(collisions, electrons, perCollision_electron, fDielectronCut);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       auto muons = std::get<0>(std::tie(args...));
-      fillTrackWeightMap<false>(collisions, muons, perCollision_muon, fDimuonCut);
+      if (cfgApplyWeightTTCA) {
+        fillTrackWeightMap<false>(collisions, muons, perCollision_muon, fDimuonCut);
+      }
       runQC<false>(collisions, muons, perCollision_muon, fDimuonCut);
     }
 
@@ -622,11 +635,15 @@ struct SingleTrackQC {
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
-      fillTrackWeightMap<true>(collisions, electrons, perCollision_electron, fDielectronCut);
+      if (cfgApplyWeightTTCA) {
+        fillTrackWeightMap<true>(collisions, electrons, perCollision_electron, fDielectronCut);
+      }
       runQC<true>(collisions, electrons, perCollision_electron, fDielectronCut);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       auto muons = std::get<0>(std::tie(args...));
-      fillTrackWeightMap<true>(collisions, muons, perCollision_muon, fDimuonCut);
+      if (cfgApplyWeightTTCA) {
+        fillTrackWeightMap<true>(collisions, muons, perCollision_muon, fDimuonCut);
+      }
       runQC<true>(collisions, muons, perCollision_muon, fDimuonCut);
     }
 
