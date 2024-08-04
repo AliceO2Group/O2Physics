@@ -108,6 +108,7 @@ struct PhotonHBT {
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
+  Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", true, "flag to apply weighting by 1/N"};
 
   ConfigurableAxis ConfKtBins{"ConfKtBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}, "kT bins for output histograms"};
 
@@ -470,7 +471,7 @@ struct PhotonHBT {
   }
 
   template <int ev_id, typename TCollision>
-  void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2)
+  void fillPairHistogram(TCollision const& /*collision*/, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float weight = 1.f)
   {
     // if constexpr (ev_id == 1 && pairtype == ggHBTPairType::kEEEE) {
     //   if (t1.has_ambiguousElectrons() && t2.has_ambiguousElectrons()) {
@@ -527,9 +528,9 @@ struct PhotonHBT {
     float deta = v1.Eta() - v2.Eta();
     float dphi = v1.Phi() - v2.Phi();
     o2::math_utils::bringToPMPi(dphi);
-    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hDeltaEtaDeltaPhi"), dphi, deta);
-    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), kt, qinv, qabs_lcms);
-    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), kt, qout_lcms, qside_lcms, qlong_lcms);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hDeltaEtaDeltaPhi"), dphi, deta, weight);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), kt, qinv, qabs_lcms, weight);
+    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), kt, qout_lcms, qside_lcms, qlong_lcms, weight);
   }
 
   template <bool isTriggerAnalysis, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
@@ -622,7 +623,8 @@ struct PhotonHBT {
           if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
             continue;
           }
-          fillPairHistogram<0>(collision, v1, v2);
+
+          fillPairHistogram<0>(collision, v1, v2, 1.f);
           ndiphoton++;
 
           std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
@@ -665,6 +667,10 @@ struct PhotonHBT {
           float dca_pos1_3d = dca3DinSigma(pos1);
           float dca_ele1_3d = dca3DinSigma(ele1);
           float dca1_3d = std::sqrt((dca_pos1_3d * dca_pos1_3d + dca_ele1_3d * dca_ele1_3d) / 2.);
+          float weight1 = 1.f;
+          if (cfgApplyWeightTTCA) {
+            weight1 = map_weight[std::make_pair(pos1.globalIndex(), ele1.globalIndex())];
+          }
 
           for (auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
             if (pos2.trackId() == ele2.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
@@ -687,6 +693,11 @@ struct PhotonHBT {
               continue;
             }
 
+            float weight2 = 1.f;
+            if (cfgApplyWeightTTCA) {
+              weight2 = map_weight[std::make_pair(pos2.globalIndex(), ele2.globalIndex())];
+            }
+
             float dca_pos2_3d = dca3DinSigma(pos2);
             float dca_ele2_3d = dca3DinSigma(ele2);
             float dca2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
@@ -703,7 +714,8 @@ struct PhotonHBT {
               if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              fillPairHistogram<0>(collision, v1_ee, v2_ee);
+
+              fillPairHistogram<0>(collision, v1_ee, v2_ee, weight1 * weight2);
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.first, pair_tmp.second));
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.second, pair_tmp.first));
               ndiphoton++;
@@ -761,6 +773,12 @@ struct PhotonHBT {
               continue;
             }
 
+            float weight = 1.f;
+            if (cfgApplyWeightTTCA) {
+              weight = map_weight[std::make_pair(pos2.globalIndex(), ele2.globalIndex())];
+            }
+            // LOGF(info, "g1.globalIndex() = %d, map_weight[std::make_pair(%d, %d)] = %f", g1.globalIndex(), pos2.globalIndex(), ele2.globalIndex(), weight);
+
             float dca_pos2_3d = dca3DinSigma(pos2);
             float dca_ele2_3d = dca3DinSigma(ele2);
             float dca2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
@@ -774,7 +792,8 @@ struct PhotonHBT {
             if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
               continue;
             }
-            fillPairHistogram<0>(collision, v1_gamma, v2_ee);
+
+            fillPairHistogram<0>(collision, v1_gamma, v2_ee, weight);
             ndiphoton++;
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
             std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
@@ -826,7 +845,7 @@ struct PhotonHBT {
               if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              fillPairHistogram<1>(collision, v1, v2);
+              fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }
         } // end of loop over mixed event pool
@@ -852,7 +871,7 @@ struct PhotonHBT {
               if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              fillPairHistogram<1>(collision, v1, v2);
+              fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }
         }                                                       // end of loop over mixed event pool
@@ -878,7 +897,7 @@ struct PhotonHBT {
               if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              fillPairHistogram<1>(collision, v1, v2);
+              fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }
         } // end of loop over mixed event pool2
@@ -904,7 +923,7 @@ struct PhotonHBT {
               if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              fillPairHistogram<1>(collision, v1, v2);
+              fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }
         } // end of loop over mixed event pool1
@@ -915,6 +934,76 @@ struct PhotonHBT {
         emh2->AddCollisionIdAtLast(key_bin, key_df_collision);
       }
     } // end of collision loop
+  }
+
+  std::map<std::pair<int, int>, float> map_weight; // <posId, negId> -> float
+  template <bool isTriggerAnalysis, typename TCollisions, typename TTracks, typename TCut>
+  void fillDileptonPairWeightMap(TCollisions const& collisions, TTracks const& tracks, TCut const& cut)
+  {
+    std::vector<std::pair<int, int>> passed_pairIds;
+    passed_pairIds.reserve(positrons.size() * electrons.size());
+
+    for (auto& collision : collisions) {
+      initCCDB<isTriggerAnalysis>(collision);
+      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+      if constexpr (isTriggerAnalysis) {
+        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
+          continue;
+        }
+        if (collision.spherocity_ptunweighted() < cfgSpherocityMin || cfgSpherocityMax < collision.spherocity_ptunweighted()) {
+          continue;
+        }
+      }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+
+      auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+      auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+
+      for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
+        if (pos.trackId() == ele.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
+          continue;
+        }
+        if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
+          if (!cut.template IsSelectedTrack<true>(pos, collision) || !cut.template IsSelectedTrack<true>(ele, collision)) {
+            continue;
+          }
+        } else { // cut-based
+          if (!cut.template IsSelectedTrack<false>(pos, collision) || !cut.template IsSelectedTrack<false>(ele, collision)) {
+            continue;
+          }
+        }
+        if (!cut.IsSelectedPair(pos, ele, d_bz)) {
+          continue;
+        }
+        passed_pairIds.emplace_back(std::make_pair(pos.globalIndex(), ele.globalIndex()));
+      } // end of dielectron pairing loop
+    }   // end of collision loop
+
+    for (auto& pairId : passed_pairIds) {
+      auto t1 = tracks.rawIteratorAt(std::get<0>(pairId));
+      auto t2 = tracks.rawIteratorAt(std::get<1>(pairId));
+      // LOGF(info, "std::get<0>(pairId) = %d, std::get<1>(pairId) = %d, t1.globalIndex() = %d, t2.globalIndex() = %d", std::get<0>(pairId), std::get<1>(pairId), t1.globalIndex(), t2.globalIndex());
+
+      float n = 1.f; // include myself.
+      for (auto& ambId1 : t1.ambiguousElectronsIds()) {
+        for (auto& ambId2 : t2.ambiguousElectronsIds()) {
+          if (std::find(passed_pairIds.begin(), passed_pairIds.end(), std::make_pair(ambId1, ambId2)) != passed_pairIds.end()) {
+            // LOGF(info, "repeated pair is found. t1.globalIndex() = %d, t2.globalIndex() = %d, ambId1 = %d, ambId2 = %d", t1.globalIndex(), t2.globalIndex(), ambId1, ambId2);
+            n += 1.f;
+          }
+        }
+      }
+      map_weight[pairId] = 1.f / n;
+
+    } // end of passed_pairIds loop
+
+    passed_pairIds.clear();
+    passed_pairIds.shrink_to_fit();
   }
 
   Filter trackFilter = dielectroncuts.cfg_min_pt_track < o2::aod::track::pt && dielectroncuts.cfg_min_eta_track < o2::aod::track::eta && o2::aod::track::eta < dielectroncuts.cfg_max_eta_track && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
@@ -949,9 +1038,15 @@ struct PhotonHBT {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
       auto emprimaryelectrons = std::get<2>(std::tie(args...));
+      if (cfgApplyWeightTTCA) {
+        fillDileptonPairWeightMap<false>(collisions, emprimaryelectrons, fDielectronCut);
+      }
       runPairing<false>(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDielectronCut);
     } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
       auto emprimaryelectrons = std::get<0>(std::tie(args...));
+      if (cfgApplyWeightTTCA) {
+        fillDileptonPairWeightMap<false>(collisions, emprimaryelectrons, fDielectronCut);
+      }
       runPairing<false>(collisions, nullptr, nullptr, emprimaryelectrons, emprimaryelectrons, perCollision_electron, perCollision_electron, fDielectronCut, fDielectronCut);
     }
     ndf++;
@@ -969,9 +1064,15 @@ struct PhotonHBT {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
       auto emprimaryelectrons = std::get<2>(std::tie(args...));
+      if (cfgApplyWeightTTCA) {
+        fillDileptonPairWeightMap<true>(collisions, emprimaryelectrons, fDielectronCut);
+      }
       runPairing<true>(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDielectronCut);
     } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
       auto emprimaryelectrons = std::get<0>(std::tie(args...));
+      if (cfgApplyWeightTTCA) {
+        fillDileptonPairWeightMap<true>(collisions, emprimaryelectrons, fDielectronCut);
+      }
       runPairing<true>(collisions, nullptr, nullptr, emprimaryelectrons, emprimaryelectrons, perCollision_electron, perCollision_electron, fDielectronCut, fDielectronCut);
     }
     ndf++;
