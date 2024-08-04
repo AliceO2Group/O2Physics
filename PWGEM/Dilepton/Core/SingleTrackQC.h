@@ -78,7 +78,7 @@ struct SingleTrackQC {
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
-  Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", true, "flag to apply weighting by 1/N"};
+  Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
 
@@ -363,9 +363,9 @@ struct SingleTrackQC {
   template <typename TTrack>
   void fillElectronInfo(TTrack const& track)
   {
-    float weight = map_weight[track.globalIndex()];
-    if (!cfgApplyWeightTTCA) {
-      weight = 1.f;
+    float weight = 1.f;
+    if (cfgApplyWeightTTCA) {
+      weight = map_weight[track.globalIndex()];
     }
     float dca_3d = dca3DinSigma(track);
     if (track.sign() > 0) {
@@ -432,9 +432,9 @@ struct SingleTrackQC {
   template <typename TTrack>
   void fillMuonInfo(TTrack const& track)
   {
-    float weight = map_weight[track.globalIndex()];
-    if (!cfgApplyWeightTTCA) {
-      weight = 1.f;
+    float weight = 1.f;
+    if (cfgApplyWeightTTCA) {
+      weight = map_weight[track.globalIndex()];
     }
     float dca_xy = fwdDcaXYinSigma(track);
     if (track.sign() > 0) {
