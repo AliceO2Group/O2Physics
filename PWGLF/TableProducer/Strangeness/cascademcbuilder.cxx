@@ -76,6 +76,9 @@ struct cascademcbuilder {
     int pdgCodeNegative;
     int pdgCodeBachelor;
     bool isPhysicalPrimary;
+    int processPositive = -1;
+    int processNegative = -1;
+    int processBachelor = -1;
     std::array<float, 3> xyz;
     std::array<float, 3> lxyz;
     std::array<float, 3> posP;
@@ -142,6 +145,9 @@ struct cascademcbuilder {
         thisInfo.bachP[0] = lMCBachTrack.px();
         thisInfo.bachP[1] = lMCBachTrack.py();
         thisInfo.bachP[2] = lMCBachTrack.pz();
+        thisInfo.processPositive = lMCPosTrack.getProcess();
+        thisInfo.processNegative = lMCNegTrack.getProcess();
+        thisInfo.processBachelor = lMCBachTrack.getProcess();
 
         // Step 1: check if the mother is the same, go up a level
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
@@ -153,6 +159,36 @@ struct cascademcbuilder {
                 thisInfo.lxyz[1] = lMCPosTrack.vy();
                 thisInfo.lxyz[2] = lMCPosTrack.vz();
                 thisInfo.pdgCodeV0 = lNegMother.pdgCode();
+
+                // MC pos. and neg. daughters are the same! Looking for replacement...
+                if (lMCPosTrack.globalIndex() == lMCNegTrack.globalIndex())
+                {
+                  auto const& daughters = lNegMother.template daughters_as<aod::McParticles>();
+                  for (auto& ldau : daughters) {
+                    // check if the candidate originate from a decay
+                    // if not, this is not a suitable candidate for one of the decay daughters
+                    if (ldau.getProcess() != 4) // see TMCProcess.h
+                      continue;
+                    
+                    if (lMCPosTrack.pdgCode() < 0 && ldau.pdgCode() > 0) { // the positive track needs to be changed
+                      thisInfo.pdgCodePositive = ldau.pdgCode();
+                      thisInfo.processPositive = ldau.getProcess();
+                      thisInfo.posP[0] = ldau.px();
+                      thisInfo.posP[1] = ldau.py();
+                      thisInfo.posP[2] = ldau.pz();
+                      thisInfo.xyz[0] = ldau.vx();
+                      thisInfo.xyz[1] = ldau.vy();
+                      thisInfo.xyz[2] = ldau.vz();
+                    }
+                    if (lMCNegTrack.pdgCode() > 0 && ldau.pdgCode() < 0) { // the negative track needs to be changed
+                      thisInfo.pdgCodeNegative = ldau.pdgCode();
+                      thisInfo.processNegative = ldau.getProcess();
+                      thisInfo.negP[0] = ldau.px();
+                      thisInfo.negP[1] = ldau.py();
+                      thisInfo.negP[2] = ldau.pz();
+                    }
+                  }
+                }
 
                 // if we got to this level, it means the mother particle exists and is the same
                 // now we have to go one level up and compare to the bachelor mother too
