@@ -575,8 +575,8 @@ struct cascqaanalysis {
     }
 
     if (candidateQA) {
-      registry.fill(HIST("hNcandidates"), nCandAll, collision.centFT0M(), 0);
-      registry.fill(HIST("hNcandidates"), nCandSel, collision.centFT0M(), 1);
+      registry.fill(HIST("hNcandidates"), nCandAll, mcCollision.centFT0M(), 0);
+      registry.fill(HIST("hNcandidates"), nCandSel, mcCollision.centFT0M(), 1);
     }
   }
 
