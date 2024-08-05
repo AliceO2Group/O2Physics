@@ -121,7 +121,7 @@ struct correlateStrangeness {
     Configurable<float> casc_v0masswindow{"casc_v0masswindow", 0.01, "casc_v0masswindow"};
     Configurable<float> casc_mindcav0topv{"casc_mindcav0topv", 0.01, "casc_mindcav0topv"};
 
-    // dE/dx for associated daughters 
+    // dE/dx for associated daughters
     Configurable<int> dEdxCompatibility{"dEdxCompatibility", 1, "0: loose, 1: normal, 2: tight. Defined in hStrangeCorrelationFilter"};
 
     // (N.B.: sources that can be investigated in post are not listed!)

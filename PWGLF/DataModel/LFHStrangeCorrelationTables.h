@@ -57,9 +57,9 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                       //!
 DECLARE_SOA_INDEX_COLUMN(V0Core, v0Core);                             //!
 
 // dEdx compatibility is done via encoded integer: 0: passes loose; 1: passes normal, 2: passes tight; definition of loose/normal/tight is in hStrangeCorrelationFilter
-DECLARE_SOA_COLUMN(CompatibleK0Short, compatibleK0Short, int);        // compatible with K0Short dEdx, encoded syst checks
-DECLARE_SOA_COLUMN(CompatibleLambda, compatibleLambda, int);          // compatible with Lambda dEdx, encoded syst checks
-DECLARE_SOA_COLUMN(CompatibleAntiLambda, compatibleAntiLambda, int);  // compatible with AntiLambda dEdx, encoded syst checks
+DECLARE_SOA_COLUMN(CompatibleK0Short, compatibleK0Short, int);       // compatible with K0Short dEdx, encoded syst checks
+DECLARE_SOA_COLUMN(CompatibleLambda, compatibleLambda, int);         // compatible with Lambda dEdx, encoded syst checks
+DECLARE_SOA_COLUMN(CompatibleAntiLambda, compatibleAntiLambda, int); // compatible with AntiLambda dEdx, encoded syst checks
 
 DECLARE_SOA_COLUMN(MCTrueK0Short, mcTrueK0Short, bool);               // true K0Short in MC
 DECLARE_SOA_COLUMN(MCTrueLambda, mcTrueLambda, bool);                 // true Lambda in MC

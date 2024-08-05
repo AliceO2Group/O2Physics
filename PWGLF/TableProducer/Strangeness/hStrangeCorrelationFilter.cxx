@@ -346,31 +346,31 @@ struct hstrangecorrelationfilter {
         continue;
 
       if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose)
-        bitset(compatibleK0Short,0);
+        bitset(compatibleK0Short, 0);
       if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma)
-        bitset(compatibleK0Short,1);
+        bitset(compatibleK0Short, 1);
       if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight)
-        bitset(compatibleK0Short,2);
+        bitset(compatibleK0Short, 2);
 
       if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose)
-        if (v0.v0cosPA() > lambdaCospa) 
-          bitset(compatibleLambda,0);
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleLambda, 0);
       if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma)
-        if (v0.v0cosPA() > lambdaCospa) 
-          bitset(compatibleLambda,1);
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleLambda, 1);
       if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight)
-        if (v0.v0cosPA() > lambdaCospa) 
-          bitset(compatibleLambda,2);
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleLambda, 2);
 
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose) 
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleAntiLambda,0);
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) 
+          bitset(compatibleAntiLambda, 0);
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleAntiLambda,1);
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight) 
+          bitset(compatibleAntiLambda, 1);
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleAntiLambda,2);
+          bitset(compatibleAntiLambda, 2);
 
       // check whether V0s are in the regin
       int massRegK0Short = -1;
@@ -433,9 +433,9 @@ struct hstrangecorrelationfilter {
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
-            (compatibleK0Short>0 && massRegK0Short > 0 && massRegK0Short < 4) ||
-            (compatibleLambda>0 && massRegLambda > 0 && massRegLambda < 4) ||
-            (compatibleAntiLambda>0 && massRegAntiLambda > 0 && massRegAntiLambda < 4)) // end major condition check
+            (compatibleK0Short > 0 && massRegK0Short > 0 && massRegK0Short < 4) ||
+            (compatibleLambda > 0 && massRegLambda > 0 && massRegLambda < 4) ||
+            (compatibleAntiLambda > 0 && massRegAntiLambda > 0 && massRegAntiLambda < 4)) // end major condition check
       ) {
         assocV0(v0.collisionId(), v0.globalIndex(),
                 compatibleK0Short, compatibleLambda, compatibleAntiLambda,
@@ -476,33 +476,33 @@ struct hstrangecorrelationfilter {
       int compatibleOmegaMinus = 0;
       int compatibleOmegaPlus = 0;
 
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() < 0) 
-        bitset(compatibleXiMinus,0);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0) 
-        bitset(compatibleXiMinus,1);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() < 0) 
-        bitset(compatibleXiMinus,2);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() < 0)
+        bitset(compatibleXiMinus, 0);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0)
+        bitset(compatibleXiMinus, 1);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() < 0)
+        bitset(compatibleXiMinus, 2);
 
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() > 0) 
-        bitset(compatibleXiPlus,0);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0) 
-        bitset(compatibleXiPlus,1);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() > 0) 
-        bitset(compatibleXiPlus,2);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() > 0)
+        bitset(compatibleXiPlus, 0);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0)
+        bitset(compatibleXiPlus, 1);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() > 0)
+        bitset(compatibleXiPlus, 2);
 
       if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() < 0)
-        bitset(compatibleOmegaMinus,0);
+        bitset(compatibleOmegaMinus, 0);
       if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() < 0)
-        bitset(compatibleOmegaMinus,1);
+        bitset(compatibleOmegaMinus, 1);
       if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() < 0)
-        bitset(compatibleOmegaMinus,2);
+        bitset(compatibleOmegaMinus, 2);
 
       if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() > 0)
-        bitset(compatibleOmegaPlus,0);
+        bitset(compatibleOmegaPlus, 0);
       if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() > 0)
-        bitset(compatibleOmegaPlus,1);
+        bitset(compatibleOmegaPlus, 1);
       if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() > 0)
-        bitset(compatibleOmegaPlus,2);
+        bitset(compatibleOmegaPlus, 2);
 
       int massRegXi = -1;
       if (TMath::Abs(casc.mXi() - fXiMean->Eval(casc.pt()) < peakNsigma * fXiWidth->Eval(casc.pt()))) {
@@ -549,8 +549,8 @@ struct hstrangecorrelationfilter {
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
-            ((compatibleXiMinus>0 || compatibleXiPlus>0) && massRegXi > 0 && massRegXi < 4) ||
-            ((compatibleOmegaMinus>0 || compatibleOmegaPlus>0) && massRegOmega > 0 && massRegOmega < 4)) // end major condition check
+            ((compatibleXiMinus > 0 || compatibleXiPlus > 0) && massRegXi > 0 && massRegXi < 4) ||
+            ((compatibleOmegaMinus > 0 || compatibleOmegaPlus > 0) && massRegOmega > 0 && massRegOmega < 4)) // end major condition check
       ) {
         assocCascades(casc.collisionId(), casc.globalIndex(),
                       compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,
