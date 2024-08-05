@@ -1292,12 +1292,12 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTruthAndFullMC, "Provide both MC truth and reco for tracks and V0s", false);
 
- void processFullMCCent(aod::FemtoFullCollisionCentRun3 const& col,
-                     aod::BCsWithTimestamps const&,
-                     soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                     aod::McCollisions const&,
-                     aod::McParticles const&,
-                     soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s)
+  void processFullMCCent(aod::FemtoFullCollisionCentRun3 const& col,
+                         aod::BCsWithTimestamps const&,
+                         soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                         aod::McCollisions const&,
+                         aod::McParticles const&,
+                         soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
