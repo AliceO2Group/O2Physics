@@ -506,8 +506,8 @@ struct cascadeFlow {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
-    ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
-    ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecTPCposRe(), coll.qvecTPCposIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecTPCnegRe(), coll.qvecTPCnegIm(), 0};
 
     const float PsiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     histos.fill(HIST("hPsiT0C"), PsiT0C);
@@ -617,7 +617,7 @@ struct cascadeFlow {
 
     // select only events used for the calibration of the event plane
     if (isGoodEventEP) {
-      if (abs(coll.qvecFT0CRe()) > 990 || abs(coll.qvecFT0CIm()) > 990 || abs(coll.qvecBNegRe()) > 990 || abs(coll.qvecBNegIm()) > 990 || abs(coll.qvecBPosRe()) > 990 || abs(coll.qvecBPosIm()) > 990) {
+      if (abs(coll.qvecFT0CRe()) > 990 || abs(coll.qvecFT0CIm()) > 990 || abs(coll.qvecTPCnegRe()) > 990 || abs(coll.qvecTPCnegIm()) > 990 || abs(coll.qvecTPCposRe()) > 990 || abs(coll.qvecTPCposIm()) > 990) {
         return;
       }
     }
@@ -631,8 +631,8 @@ struct cascadeFlow {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
-    ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
-    ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecTPCposRe(), coll.qvecTPCposIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecTPCnegRe(), coll.qvecTPCnegIm(), 0};
     float NormQvT0C = sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
     float NormQvTPCA = sqrt(eventplaneVecTPCA.Dot(eventplaneVecTPCA));
     float NormQvTPCC = sqrt(eventplaneVecTPCC.Dot(eventplaneVecTPCC));

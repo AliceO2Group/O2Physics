@@ -74,15 +74,15 @@ struct evtPlanesResolution {
     histosQA.add("Centrality_0-5/histEvtPlTwist", "", {HistType::kTH1F, {axisEvtPl}});
     histosQA.add("Centrality_0-5/histEvtPlFinal", "", {HistType::kTH1F, {axisEvtPl}});
 
-    histosQA.add("Centrality_0-5/histEvtPlBPosUncor", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlBPosRectr", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlBPosTwist", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlBPosFinal", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlTPCposUncor", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlTPCposRectr", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlTPCposTwist", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlTPCposFinal", "", {HistType::kTH1F, {axisEvtPl}});
 
-    histosQA.add("Centrality_0-5/histEvtPlBNegUncor", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlBNegRectr", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlBNegTwist", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlBNegFinal", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlTPCnegUncor", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlTPCnegRectr", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlTPCnegTwist", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlTPCnegFinal", "", {HistType::kTH1F, {axisEvtPl}});
 
     histosQA.add("Centrality_0-5/histEvtPlResolution", "", {HistType::kTH1F, {axisEvtPl}});
 
@@ -99,22 +99,22 @@ struct evtPlanesResolution {
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTwist"), vec.evtPlTwist());
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlFinal"), vec.evtPlFinal());
 
-    if (vec.nTrkBPos() < cfgMinTPCTracks || vec.nTrkBNeg() < cfgMinTPCTracks)
+    if (vec.nTrkTPCpos() < cfgMinTPCTracks || vec.nTrkTPCneg() < cfgMinTPCTracks)
       return;
 
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBPosUncor"), vec.evtPlBPosUncor());
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBPosRectr"), vec.evtPlBPosRectr());
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBPosTwist"), vec.evtPlBPosTwist());
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBPosFinal"), vec.evtPlBPosFinal());
+    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTPCposUncor"), vec.evtPlTPCposUncor());
+    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTPCposRectr"), vec.evtPlTPCposRectr());
+    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTPCposTwist"), vec.evtPlTPCposTwist());
+    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTPCposFinal"), vec.evtPlTPCposFinal());
 
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBNegUncor"), vec.evtPlBNegUncor());
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBNegRectr"), vec.evtPlBNegRectr());
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBNegTwist"), vec.evtPlBNegTwist());
-    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlBNegFinal"), vec.evtPlBNegFinal());
+    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTPCnegUncor"), vec.evtPlTPCnegUncor());
+    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTPCnegRectr"), vec.evtPlTPCnegRectr());
+    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTPCnegTwist"), vec.evtPlTPCnegTwist());
+    histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlTPCnegFinal"), vec.evtPlTPCnegFinal());
 
     histosQA.fill(HIST(ep::centClasses[cBin]) + HIST("histEvtPlResolution"),
-                  std::sqrt(std::cos((vec.evtPlFinal() - vec.evtPlBPosFinal()) * cfgnMod) * std::cos((vec.evtPlFinal() - vec.evtPlBNegFinal()) * cfgnMod) /
-                            std::cos((vec.evtPlBPosFinal() - vec.evtPlBNegFinal()) * cfgnMod)));
+                  std::sqrt(std::cos((vec.evtPlFinal() - vec.evtPlTPCposFinal()) * cfgnMod) * std::cos((vec.evtPlFinal() - vec.evtPlTPCnegFinal()) * cfgnMod) /
+                            std::cos((vec.evtPlTPCposFinal() - vec.evtPlTPCnegFinal()) * cfgnMod)));
   }
 
   void process(aod::EvtPlane const& evPl)

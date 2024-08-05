@@ -92,7 +92,7 @@ struct PhotonHBT {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
-  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
+  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, TPCall:3, TPCpos:4, TPCneg:5"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
@@ -325,7 +325,7 @@ struct PhotonHBT {
   void addhistograms()
   {
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
-    std::string_view qvec_det_names[6] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
+    std::string_view qvec_det_names[6] = {"FT0M", "FT0A", "FT0C", "TPCall", "TPCpos", "TPCneg"};
     fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
     fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
 

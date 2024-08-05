@@ -95,8 +95,8 @@ struct Dilepton {
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kVM:5, kHFll:6"};
-  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
-  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
+  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, TPCall:3, TPCpos:4, TPCneg:5"};
+  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, TPCall:3, TPCpos:4, TPCneg:5"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
@@ -377,7 +377,7 @@ struct Dilepton {
 
   void addhistograms()
   {
-    std::string_view qvec_det_names[6] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
+    std::string_view qvec_det_names[6] = {"FT0M", "FT0A", "FT0C", "TPCall", "TPCpos", "TPCneg"};
 
     std::string mass_axis_title = "m_{ll} (GeV/c^{2})";
     std::string pair_pt_axis_title = "p_{T,ll} (GeV/c)";

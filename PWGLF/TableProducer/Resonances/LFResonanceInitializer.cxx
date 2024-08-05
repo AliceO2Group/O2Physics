@@ -104,7 +104,7 @@ struct reso2initializer {
 
   // Qvector configuration
   Configurable<bool> ConfBypassQvec{"ConfBypassQvec", true, "Bypass for qvector task"};
-  Configurable<int> cfgEvtPl{"cfgEvtPl", 40500, "Configuration of three subsystems for the event plane and its resolution, 10000*RefA + 100*RefB + S, where FT0C:0, FT0A:1, FT0M:2, FV0A:3, BPos:5, BNeg:6"};
+  Configurable<int> cfgEvtPl{"cfgEvtPl", 40500, "Configuration of three subsystems for the event plane and its resolution, 10000*RefA + 100*RefB + S, where FT0C:0, FT0A:1, FT0M:2, FV0A:3, TPCpos:5, TPCneg:6"};
 
   // Pre-selection cuts
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};

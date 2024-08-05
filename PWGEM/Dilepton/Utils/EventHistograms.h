@@ -60,29 +60,29 @@ void addEventHistograms(HistogramRegistry* fRegistry)
     fRegistry->add("Event/before/hQ2yFT0A_CentFT0C", "hQ2yFT0A_CentFT0C;centrality FT0C (%);Q_{2,y}^{FT0A}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ2xFT0C_CentFT0C", "hQ2xFT0C_CentFT0C;centrality FT0C (%);Q_{2,x}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ2yFT0C_CentFT0C", "hQ2yFT0C_CentFT0C;centrality FT0C (%);Q_{2,y}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ2xBPos_CentFT0C", "hQ2xBPos_CentFT0C;centrality FT0C (%);Q_{2,x}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ2yBPos_CentFT0C", "hQ2yBPos_CentFT0C;centrality FT0C (%);Q_{2,y}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ2xBNeg_CentFT0C", "hQ2xBNeg_CentFT0C;centrality FT0C (%);Q_{2,x}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ2yBNeg_CentFT0C", "hQ2yBNeg_CentFT0C;centrality FT0C (%);Q_{2,y}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ2xBTot_CentFT0C", "hQ2xBTot_CentFT0C;centrality FT0C (%);Q_{2,x}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ2yBTot_CentFT0C", "hQ2yBTot_CentFT0C;centrality FT0C (%);Q_{2,y}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ2xTPCpos_CentFT0C", "hQ2xTPCpos_CentFT0C;centrality FT0C (%);Q_{2,x}^{TPCpos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ2yTPCpos_CentFT0C", "hQ2yTPCpos_CentFT0C;centrality FT0C (%);Q_{2,y}^{TPCpos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ2xTPCneg_CentFT0C", "hQ2xTPCneg_CentFT0C;centrality FT0C (%);Q_{2,x}^{TPCneg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ2yTPCneg_CentFT0C", "hQ2yTPCneg_CentFT0C;centrality FT0C (%);Q_{2,y}^{TPCneg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ2xTPCall_CentFT0C", "hQ2xTPCall_CentFT0C;centrality FT0C (%);Q_{2,x}^{TPCall}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ2yTPCall_CentFT0C", "hQ2yTPCall_CentFT0C;centrality FT0C (%);Q_{2,y}^{TPCall}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
 
     fRegistry->add("Event/before/hEP2FT0M_CentFT0C", "2nd harmonics event plane FT0M;centrality FT0C (%);#Psi_{2}^{FT0M} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
     fRegistry->add("Event/before/hEP2FT0A_CentFT0C", "2nd harmonics event plane FT0A;centrality FT0C (%);#Psi_{2}^{FT0A} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
     fRegistry->add("Event/before/hEP2FT0C_CentFT0C", "2nd harmonics event plane FT0C;centrality FT0C (%);#Psi_{2}^{FT0C} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP2BPos_CentFT0C", "2nd harmonics event plane BPos;centrality FT0C (%);#Psi_{2}^{BPos} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP2BNeg_CentFT0C", "2nd harmonics event plane BNeg;centrality FT0C (%);#Psi_{2}^{BNeg} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP2BTot_CentFT0C", "2nd harmonics event plane BTot;centrality FT0C (%);#Psi_{2}^{BTot} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP2TPCpos_CentFT0C", "2nd harmonics event plane TPCpos;centrality FT0C (%);#Psi_{2}^{TPCpos} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP2TPCneg_CentFT0C", "2nd harmonics event plane TPCneg;centrality FT0C (%);#Psi_{2}^{TPCneg} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP2TPCall_CentFT0C", "2nd harmonics event plane TPCall;centrality FT0C (%);#Psi_{2}^{TPCall} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
 
-    fRegistry->add("Event/before/hPrfQ2FT0MQ2BPos_CentFT0C", "Q_{2}^{FT0M} #upoint Q_{2}^{BPos};centrality FT0C (%);Q_{2}^{FT0M} #upoint Q_{2}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ2FT0MQ2BNeg_CentFT0C", "Q_{2}^{FT0M} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FT0M} #upoint Q_{2}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ2BPosQ2BNeg_CentFT0C", "Q_{2}^{BPos} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{BPos} #upoint Q_{2}^{BNeg}", kTProfile, {{110, 0, 110}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
-    fRegistry->add("Event/before/hPrfQ2FT0CQ2BPos_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{BPos};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ2FT0CQ2BNeg_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ2FT0CQ2BTot_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{BTot};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{BTot}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ2FT0AQ2BPos_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{BPos};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ2FT0AQ2BNeg_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ2FT0AQ2BTot_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{BTot};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{BTot}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ2FT0MQ2TPCpos_CentFT0C", "Q_{2}^{FT0M} #upoint Q_{2}^{TPCpos};centrality FT0C (%);Q_{2}^{FT0M} #upoint Q_{2}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ2FT0MQ2TPCneg_CentFT0C", "Q_{2}^{FT0M} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{FT0M} #upoint Q_{2}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ2TPCposQ2TPCneg_CentFT0C", "Q_{2}^{TPCpos} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{TPCpos} #upoint Q_{2}^{TPCneg}", kTProfile, {{110, 0, 110}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
+    fRegistry->add("Event/before/hPrfQ2FT0CQ2TPCpos_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{TPCpos};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ2FT0CQ2TPCneg_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ2FT0CQ2TPCall_CentFT0C", "Q_{2}^{FT0C} #upoint Q_{2}^{TPCall};centrality FT0C (%);Q_{2}^{FT0C} #upoint Q_{2}^{TPCall}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ2FT0AQ2TPCpos_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{TPCpos};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ2FT0AQ2TPCneg_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{TPCneg};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ2FT0AQ2TPCall_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{TPCall};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{TPCall}", kTProfile, {{110, 0, 110}}, false);
     fRegistry->add("Event/before/hPrfQ2FT0AQ2FT0C_CentFT0C", "Q_{2}^{FT0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);Q_{2}^{FT0A} #upoint Q_{2}^{FT0C}", kTProfile, {{110, 0, 110}}, false); // this is necessary for dimuons
   } else if constexpr (nmod == 3) {                                                                                                                                                         // Q3
     fRegistry->add("Event/before/hQ3xFT0M_CentFT0C", "hQ3xFT0M_CentFT0C;centrality FT0C (%);Q_{3,x}^{FT0M}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
@@ -91,29 +91,29 @@ void addEventHistograms(HistogramRegistry* fRegistry)
     fRegistry->add("Event/before/hQ3yFT0A_CentFT0C", "hQ3yFT0A_CentFT0C;centrality FT0C (%);Q_{3,y}^{FT0A}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ3xFT0C_CentFT0C", "hQ3xFT0C_CentFT0C;centrality FT0C (%);Q_{3,x}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ3yFT0C_CentFT0C", "hQ3yFT0C_CentFT0C;centrality FT0C (%);Q_{3,y}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ3xBPos_CentFT0C", "hQ3xBPos_CentFT0C;centrality FT0C (%);Q_{3,x}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ3yBPos_CentFT0C", "hQ3yBPos_CentFT0C;centrality FT0C (%);Q_{3,y}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ3xBNeg_CentFT0C", "hQ3xBNeg_CentFT0C;centrality FT0C (%);Q_{3,x}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ3yBNeg_CentFT0C", "hQ3yBNeg_CentFT0C;centrality FT0C (%);Q_{3,y}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ3xBTot_CentFT0C", "hQ3xBTot_CentFT0C;centrality FT0C (%);Q_{3,x}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ3yBTot_CentFT0C", "hQ3yBTot_CentFT0C;centrality FT0C (%);Q_{3,y}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ3xTPCpos_CentFT0C", "hQ3xTPCpos_CentFT0C;centrality FT0C (%);Q_{3,x}^{TPCpos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ3yTPCpos_CentFT0C", "hQ3yTPCpos_CentFT0C;centrality FT0C (%);Q_{3,y}^{TPCpos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ3xTPCneg_CentFT0C", "hQ3xTPCneg_CentFT0C;centrality FT0C (%);Q_{3,x}^{TPCneg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ3yTPCneg_CentFT0C", "hQ3yTPCneg_CentFT0C;centrality FT0C (%);Q_{3,y}^{TPCneg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ3xTPCall_CentFT0C", "hQ3xTPCall_CentFT0C;centrality FT0C (%);Q_{3,x}^{TPCall}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ3yTPCall_CentFT0C", "hQ3yTPCall_CentFT0C;centrality FT0C (%);Q_{3,y}^{TPCall}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
 
     fRegistry->add("Event/before/hEP3FT0M_CentFT0C", "3rd harmonics event plane FT0M;centrality FT0C (%);#Psi_{3}^{FT0M} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
     fRegistry->add("Event/before/hEP3FT0A_CentFT0C", "3rd harmonics event plane FT0A;centrality FT0C (%);#Psi_{3}^{FT0A} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
     fRegistry->add("Event/before/hEP3FT0C_CentFT0C", "3rd harmonics event plane FT0C;centrality FT0C (%);#Psi_{3}^{FT0C} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP3BPos_CentFT0C", "3rd harmonics event plane BPos;centrality FT0C (%);#Psi_{3}^{BPos} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP3BNeg_CentFT0C", "3rd harmonics event plane BNeg;centrality FT0C (%);#Psi_{3}^{BNeg} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP3BTot_CentFT0C", "3rd harmonics event plane BTot;centrality FT0C (%);#Psi_{3}^{BTot} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP3TPCpos_CentFT0C", "3rd harmonics event plane TPCpos;centrality FT0C (%);#Psi_{3}^{TPCpos} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP3TPCneg_CentFT0C", "3rd harmonics event plane TPCneg;centrality FT0C (%);#Psi_{3}^{TPCneg} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP3TPCall_CentFT0C", "3rd harmonics event plane TPCall;centrality FT0C (%);#Psi_{3}^{TPCall} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
 
-    fRegistry->add("Event/before/hPrfQ3FT0MQ3BPos_CentFT0C", "Q_{3}^{FT0M} #upoint Q_{3}^{BPos};centrality FT0C (%);Q_{3}^{FT0M} #upoint Q_{3}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ3FT0MQ3BNeg_CentFT0C", "Q_{3}^{FT0M} #upoint Q_{3}^{BNeg};centrality FT0C (%);Q_{3}^{FT0M} #upoint Q_{3}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ3BPosQ3BNeg_CentFT0C", "Q_{3}^{BPos} #upoint Q_{3}^{BNeg};centrality FT0C (%);Q_{3}^{BPos} #upoint Q_{3}^{BNeg}", kTProfile, {{110, 0, 110}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
-    fRegistry->add("Event/before/hPrfQ3FT0CQ3BPos_CentFT0C", "Q_{3}^{FT0C} #upoint Q_{3}^{BPos};centrality FT0C (%);Q_{3}^{FT0C} #upoint Q_{3}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ3FT0CQ3BNeg_CentFT0C", "Q_{3}^{FT0C} #upoint Q_{3}^{BNeg};centrality FT0C (%);Q_{3}^{FT0C} #upoint Q_{3}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ3FT0CQ3BTot_CentFT0C", "Q_{3}^{FT0C} #upoint Q_{3}^{BTot};centrality FT0C (%);Q_{3}^{FT0C} #upoint Q_{3}^{BTot}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ3FT0AQ3BPos_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{BPos};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ3FT0AQ3BNeg_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{BNeg};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ3FT0AQ3BTot_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{BTot};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{BTot}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ3FT0MQ3TPCpos_CentFT0C", "Q_{3}^{FT0M} #upoint Q_{3}^{TPCpos};centrality FT0C (%);Q_{3}^{FT0M} #upoint Q_{3}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ3FT0MQ3TPCneg_CentFT0C", "Q_{3}^{FT0M} #upoint Q_{3}^{TPCneg};centrality FT0C (%);Q_{3}^{FT0M} #upoint Q_{3}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ3TPCposQ3TPCneg_CentFT0C", "Q_{3}^{TPCpos} #upoint Q_{3}^{TPCneg};centrality FT0C (%);Q_{3}^{TPCpos} #upoint Q_{3}^{TPCneg}", kTProfile, {{110, 0, 110}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
+    fRegistry->add("Event/before/hPrfQ3FT0CQ3TPCpos_CentFT0C", "Q_{3}^{FT0C} #upoint Q_{3}^{TPCpos};centrality FT0C (%);Q_{3}^{FT0C} #upoint Q_{3}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ3FT0CQ3TPCneg_CentFT0C", "Q_{3}^{FT0C} #upoint Q_{3}^{TPCneg};centrality FT0C (%);Q_{3}^{FT0C} #upoint Q_{3}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ3FT0CQ3TPCall_CentFT0C", "Q_{3}^{FT0C} #upoint Q_{3}^{TPCall};centrality FT0C (%);Q_{3}^{FT0C} #upoint Q_{3}^{TPCall}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ3FT0AQ3TPCpos_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{TPCpos};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ3FT0AQ3TPCneg_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{TPCneg};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ3FT0AQ3TPCall_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{TPCall};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{TPCall}", kTProfile, {{110, 0, 110}}, false);
     fRegistry->add("Event/before/hPrfQ3FT0AQ3FT0C_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{FT0C};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{FT0C}", kTProfile, {{110, 0, 110}}, false); // this is necessary for dimuons
   } else if constexpr (nmod == 4) {                                                                                                                                                         // Q4
     fRegistry->add("Event/before/hQ4xFT0M_CentFT0C", "hQ4xFT0M_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0M}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
@@ -122,29 +122,29 @@ void addEventHistograms(HistogramRegistry* fRegistry)
     fRegistry->add("Event/before/hQ4yFT0A_CentFT0C", "hQ4yFT0A_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0A}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ4xFT0C_CentFT0C", "hQ4xFT0C_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ4yFT0C_CentFT0C", "hQ4yFT0C_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0C}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4xBPos_CentFT0C", "hQ4xBPos_CentFT0C;centrality FT0C (%);Q_{4,x}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yBPos_CentFT0C", "hQ4yBPos_CentFT0C;centrality FT0C (%);Q_{4,y}^{BPos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4xBNeg_CentFT0C", "hQ4xBNeg_CentFT0C;centrality FT0C (%);Q_{4,x}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yBNeg_CentFT0C", "hQ4yBNeg_CentFT0C;centrality FT0C (%);Q_{4,y}^{BNeg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4xBTot_CentFT0C", "hQ4xBTot_CentFT0C;centrality FT0C (%);Q_{4,x}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yBTot_CentFT0C", "hQ4yBTot_CentFT0C;centrality FT0C (%);Q_{4,y}^{BTot}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4xTPCpos_CentFT0C", "hQ4xTPCpos_CentFT0C;centrality FT0C (%);Q_{4,x}^{TPCpos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yTPCpos_CentFT0C", "hQ4yTPCpos_CentFT0C;centrality FT0C (%);Q_{4,y}^{TPCpos}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4xTPCneg_CentFT0C", "hQ4xTPCneg_CentFT0C;centrality FT0C (%);Q_{4,x}^{TPCneg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yTPCneg_CentFT0C", "hQ4yTPCneg_CentFT0C;centrality FT0C (%);Q_{4,y}^{TPCneg}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4xTPCall_CentFT0C", "hQ4xTPCall_CentFT0C;centrality FT0C (%);Q_{4,x}^{TPCall}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
+    fRegistry->add("Event/before/hQ4yTPCall_CentFT0C", "hQ4yTPCall_CentFT0C;centrality FT0C (%);Q_{4,y}^{TPCall}", kTH2F, {{110, 0, 110}, {200, -10, +10}}, false);
 
     fRegistry->add("Event/before/hEP4FT0M_CentFT0C", "4rd harmonics event plane FT0M;centrality FT0C (%);#Psi_{4}^{FT0M} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
     fRegistry->add("Event/before/hEP4FT0A_CentFT0C", "4rd harmonics event plane FT0A;centrality FT0C (%);#Psi_{4}^{FT0A} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
     fRegistry->add("Event/before/hEP4FT0C_CentFT0C", "4rd harmonics event plane FT0C;centrality FT0C (%);#Psi_{4}^{FT0C} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP4BPos_CentFT0C", "4rd harmonics event plane BPos;centrality FT0C (%);#Psi_{4}^{BPos} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP4BNeg_CentFT0C", "4rd harmonics event plane BNeg;centrality FT0C (%);#Psi_{4}^{BNeg} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP4BTot_CentFT0C", "4rd harmonics event plane BTot;centrality FT0C (%);#Psi_{4}^{BTot} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP4TPCpos_CentFT0C", "4rd harmonics event plane TPCpos;centrality FT0C (%);#Psi_{4}^{TPCpos} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP4TPCneg_CentFT0C", "4rd harmonics event plane TPCneg;centrality FT0C (%);#Psi_{4}^{TPCneg} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry->add("Event/before/hEP4TPCall_CentFT0C", "4rd harmonics event plane TPCall;centrality FT0C (%);#Psi_{4}^{TPCall} (rad.)", kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
 
-    fRegistry->add("Event/before/hPrfQ4FT0MQ4BPos_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0MQ4BNeg_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ4BPosQ4BNeg_CentFT0C", "Q_{4}^{BPos} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{BPos} #upoint Q_{4}^{BNeg}", kTProfile, {{110, 0, 110}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
-    fRegistry->add("Event/before/hPrfQ4FT0CQ4BPos_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0CQ4BNeg_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0CQ4BTot_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BTot};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BTot}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0AQ4BPos_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BPos}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0AQ4BNeg_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BNeg}", kTProfile, {{110, 0, 110}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0AQ4BTot_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BTot};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BTot}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ4FT0MQ4TPCpos_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{TPCpos};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ4FT0MQ4TPCneg_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{TPCneg};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ4TPCposQ4TPCneg_CentFT0C", "Q_{4}^{TPCpos} #upoint Q_{4}^{TPCneg};centrality FT0C (%);Q_{4}^{TPCpos} #upoint Q_{4}^{TPCneg}", kTProfile, {{110, 0, 110}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
+    fRegistry->add("Event/before/hPrfQ4FT0CQ4TPCpos_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{TPCpos};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ4FT0CQ4TPCneg_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{TPCneg};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ4FT0CQ4TPCall_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{TPCall};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{TPCall}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ4FT0AQ4TPCpos_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{TPCpos};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{TPCpos}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ4FT0AQ4TPCneg_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{TPCneg};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{TPCneg}", kTProfile, {{110, 0, 110}}, false);
+    fRegistry->add("Event/before/hPrfQ4FT0AQ4TPCall_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{TPCall};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{TPCall}", kTProfile, {{110, 0, 110}}, false);
     fRegistry->add("Event/before/hPrfQ4FT0AQ4FT0C_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{FT0C};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{FT0C}", kTProfile, {{110, 0, 110}}, false); // this is necessary for dimuons
   }
   fRegistry->addClone("Event/before/", "Event/after/");
@@ -214,29 +214,29 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yFT0A_CentFT0C"), collision.centFT0C(), collision.q2yft0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xFT0C_CentFT0C"), collision.centFT0C(), collision.q2xft0c());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yFT0C_CentFT0C"), collision.centFT0C(), collision.q2yft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xBPos_CentFT0C"), collision.centFT0C(), collision.q2xbpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yBPos_CentFT0C"), collision.centFT0C(), collision.q2ybpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xBNeg_CentFT0C"), collision.centFT0C(), collision.q2xbneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yBNeg_CentFT0C"), collision.centFT0C(), collision.q2ybneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xBTot_CentFT0C"), collision.centFT0C(), collision.q2xbtot());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yBTot_CentFT0C"), collision.centFT0C(), collision.q2ybtot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xTPCpos_CentFT0C"), collision.centFT0C(), collision.q2xbpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yTPCpos_CentFT0C"), collision.centFT0C(), collision.q2ybpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xTPCneg_CentFT0C"), collision.centFT0C(), collision.q2xbneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yTPCneg_CentFT0C"), collision.centFT0C(), collision.q2ybneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2xTPCall_CentFT0C"), collision.centFT0C(), collision.q2xbtot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ2yTPCall_CentFT0C"), collision.centFT0C(), collision.q2ybtot());
 
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2FT0M_CentFT0C"), collision.centFT0C(), collision.ep2ft0m());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2FT0A_CentFT0C"), collision.centFT0C(), collision.ep2ft0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2FT0C_CentFT0C"), collision.centFT0C(), collision.ep2ft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2BPos_CentFT0C"), collision.centFT0C(), collision.ep2bpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2BNeg_CentFT0C"), collision.centFT0C(), collision.ep2bneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2BTot_CentFT0C"), collision.centFT0C(), collision.ep2btot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2TPCpos_CentFT0C"), collision.centFT0C(), collision.ep2bpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2TPCneg_CentFT0C"), collision.centFT0C(), collision.ep2bneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP2TPCall_CentFT0C"), collision.centFT0C(), collision.ep2btot());
 
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0MQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0m, q2bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0MQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0m, q2bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2BPosQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2bpos, q2bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0AQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0AQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0AQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2btot));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0CQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0CQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0CQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2btot));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0MQ2TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0m, q2bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0MQ2TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0m, q2bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2TPCposQ2TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2bpos, q2bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0AQ2TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0AQ2TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0AQ2TPCall_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2btot));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0CQ2TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0CQ2TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0CQ2TPCall_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0c, q2btot));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FT0AQ2FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2ft0a, q2ft0c));
   } else if constexpr (nmod == 3) { // Q3
     std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
@@ -252,29 +252,29 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3yFT0A_CentFT0C"), collision.centFT0C(), collision.q3yft0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3xFT0C_CentFT0C"), collision.centFT0C(), collision.q3xft0c());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3yFT0C_CentFT0C"), collision.centFT0C(), collision.q3yft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3xBPos_CentFT0C"), collision.centFT0C(), collision.q3xbpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3yBPos_CentFT0C"), collision.centFT0C(), collision.q3ybpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3xBNeg_CentFT0C"), collision.centFT0C(), collision.q3xbneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3yBNeg_CentFT0C"), collision.centFT0C(), collision.q3ybneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3xBTot_CentFT0C"), collision.centFT0C(), collision.q3xbtot());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3yBTot_CentFT0C"), collision.centFT0C(), collision.q3ybtot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3xTPCpos_CentFT0C"), collision.centFT0C(), collision.q3xbpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3yTPCpos_CentFT0C"), collision.centFT0C(), collision.q3ybpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3xTPCneg_CentFT0C"), collision.centFT0C(), collision.q3xbneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3yTPCneg_CentFT0C"), collision.centFT0C(), collision.q3ybneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3xTPCall_CentFT0C"), collision.centFT0C(), collision.q3xbtot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ3yTPCall_CentFT0C"), collision.centFT0C(), collision.q3ybtot());
 
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3FT0M_CentFT0C"), collision.centFT0C(), collision.ep3ft0m());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3FT0A_CentFT0C"), collision.centFT0C(), collision.ep3ft0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3FT0C_CentFT0C"), collision.centFT0C(), collision.ep3ft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3BPos_CentFT0C"), collision.centFT0C(), collision.ep3bpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3BNeg_CentFT0C"), collision.centFT0C(), collision.ep3bneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3BTot_CentFT0C"), collision.centFT0C(), collision.ep3btot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3TPCpos_CentFT0C"), collision.centFT0C(), collision.ep3bpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3TPCneg_CentFT0C"), collision.centFT0C(), collision.ep3bneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP3TPCall_CentFT0C"), collision.centFT0C(), collision.ep3btot());
 
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0MQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0m, q3bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0MQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0m, q3bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3BPosQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3bpos, q3bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0AQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0a, q3bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0AQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0a, q3bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0AQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0a, q3btot));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0CQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0c, q3bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0CQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0c, q3bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0CQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0c, q3btot));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0MQ3TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0m, q3bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0MQ3TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0m, q3bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3TPCposQ3TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3bpos, q3bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0AQ3TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0a, q3bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0AQ3TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0a, q3bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0AQ3TPCall_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0a, q3btot));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0CQ3TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0c, q3bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0CQ3TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0c, q3bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0CQ3TPCall_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0c, q3btot));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0AQ3FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0a, q3ft0c));
   } else if constexpr (nmod == 4) { // Q4
     std::array<float, 2> q4ft0m = {collision.q4xft0m(), collision.q4yft0m()};
@@ -290,29 +290,29 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yFT0A_CentFT0C"), collision.centFT0C(), collision.q4yft0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xFT0C_CentFT0C"), collision.centFT0C(), collision.q4xft0c());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yFT0C_CentFT0C"), collision.centFT0C(), collision.q4yft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBPos_CentFT0C"), collision.centFT0C(), collision.q4xbpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBPos_CentFT0C"), collision.centFT0C(), collision.q4ybpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBNeg_CentFT0C"), collision.centFT0C(), collision.q4xbneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBNeg_CentFT0C"), collision.centFT0C(), collision.q4ybneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBTot_CentFT0C"), collision.centFT0C(), collision.q4xbtot());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBTot_CentFT0C"), collision.centFT0C(), collision.q4ybtot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xTPCpos_CentFT0C"), collision.centFT0C(), collision.q4xbpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yTPCpos_CentFT0C"), collision.centFT0C(), collision.q4ybpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xTPCneg_CentFT0C"), collision.centFT0C(), collision.q4xbneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yTPCneg_CentFT0C"), collision.centFT0C(), collision.q4ybneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xTPCall_CentFT0C"), collision.centFT0C(), collision.q4xbtot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yTPCall_CentFT0C"), collision.centFT0C(), collision.q4ybtot());
 
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0M_CentFT0C"), collision.centFT0C(), collision.ep4ft0m());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0A_CentFT0C"), collision.centFT0C(), collision.ep4ft0a());
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0C_CentFT0C"), collision.centFT0C(), collision.ep4ft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BPos_CentFT0C"), collision.centFT0C(), collision.ep4bpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BNeg_CentFT0C"), collision.centFT0C(), collision.ep4bneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BTot_CentFT0C"), collision.centFT0C(), collision.ep4btot());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4TPCpos_CentFT0C"), collision.centFT0C(), collision.ep4bpos());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4TPCneg_CentFT0C"), collision.centFT0C(), collision.ep4bneg());
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4TPCall_CentFT0C"), collision.centFT0C(), collision.ep4btot());
 
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0MQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0m, q4bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0MQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0m, q4bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4BPosQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4bpos, q4bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4btot));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4btot));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0MQ4TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0m, q4bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0MQ4TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0m, q4bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4TPCposQ4TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4bpos, q4bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4TPCall_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4btot));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4TPCpos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4bpos));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4TPCneg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4bneg));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4TPCall_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4btot));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4ft0c));
   }
 }

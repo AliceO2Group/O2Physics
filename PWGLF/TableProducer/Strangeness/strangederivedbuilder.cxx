@@ -818,9 +818,9 @@ struct strangederivedbuilder {
   {
     StraFV0AQVs(collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A());
   }
-  void processTPCQVectors(soa::Join<aod::Collisions, aod::QvectorBPoss, aod::QvectorBNegs>::iterator const& collision)
+  void processTPCQVectors(soa::Join<aod::Collisions, aod::QvectorTPCposs, aod::QvectorTPCnegs>::iterator const& collision)
   {
-    StraTPCQVs(collision.qvecBNegRe(), collision.qvecBNegIm(), collision.nTrkBNeg(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.nTrkBPos());
+    StraTPCQVs(collision.qvecTPCnegRe(), collision.qvecTPCnegIm(), collision.nTrkTPCneg(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.nTrkTPCpos());
   }
   void processTPCQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
   {

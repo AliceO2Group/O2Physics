@@ -74,8 +74,8 @@ struct epvector {
   o2::ccdb::CcdbApi ccdbApi;
   std::vector<o2::detectors::AlignParam>* offsetFT0;
   std::vector<o2::detectors::AlignParam>* offsetFV0;
-  std::vector<int> TrkBPosLabel;
-  std::vector<int> TrkBNegLabel;
+  std::vector<int> TrkTPCposLabel;
+  std::vector<int> TrkTPCnegLabel;
   std::vector<float> qvecRe;
   std::vector<float> qvecIm;
   std::vector<float> qvecAmp;

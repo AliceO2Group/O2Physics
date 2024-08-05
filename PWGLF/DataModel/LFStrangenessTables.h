@@ -80,8 +80,8 @@ DECLARE_SOA_TABLE(StraFT0MQVs, "AOD", "STRAFT0MQVS", //! t0m Qvec
 DECLARE_SOA_TABLE(StraFV0AQVs, "AOD", "STRAFV0AQVS", //! v0a Qvec
                   qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
 DECLARE_SOA_TABLE(StraTPCQVs, "AOD", "STRATPCQVS", //! tpc Qvec
-                  qvec::QvecBNegRe, qvec::QvecBNegIm, epcalibrationtable::QTPCL,
-                  qvec::QvecBPosRe, qvec::QvecBPosIm, epcalibrationtable::QTPCR);
+                  qvec::QvecTPCnegRe, qvec::QvecTPCnegIm, epcalibrationtable::QTPCL,
+                  qvec::QvecTPCposRe, qvec::QvecTPCposIm, epcalibrationtable::QTPCR);
 DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to compute t0c Qvec
                   epcalibrationtable::TriggerEventEP);
 DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed

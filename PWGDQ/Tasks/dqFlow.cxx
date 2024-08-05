@@ -65,7 +65,7 @@ using MyBcs = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -293,8 +293,8 @@ struct DQEventQvector {
 
     // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
+      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
     }
   }
 
@@ -479,8 +479,8 @@ struct DQEventQvector {
         }
       }
       if (fEventCut->IsSelected(VarManager::fgValues)) {
-        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
+        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
         if (bc.has_zdc()) {
           eventQvectorZN(VarManager::fgValues[VarManager::kQ1ZNAX], VarManager::fgValues[VarManager::kQ1ZNAY], VarManager::fgValues[VarManager::kQ1ZNCX], VarManager::fgValues[VarManager::kQ1ZNCY]);
           eventReducedZdc(VarManager::fgValues[VarManager::kEnergyCommonZNA], VarManager::fgValues[VarManager::kEnergyCommonZNC], VarManager::fgValues[VarManager::kEnergyCommonZPA], VarManager::fgValues[VarManager::kEnergyCommonZPC],

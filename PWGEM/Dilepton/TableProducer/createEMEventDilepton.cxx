@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
+using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QvectorTPCallVecs>;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
@@ -220,20 +220,20 @@ struct CreateEMEventDilepton {
         float q4xft0m = 999.f, q4yft0m = 999.f, q4xft0a = 999.f, q4yft0a = 999.f, q4xft0c = 999.f, q4yft0c = 999.f, q4xbpos = 999.f, q4ybpos = 999.f, q4xbneg = 999.f, q4ybneg = 999.f, q4xbtot = 999.f, q4ybtot = 999.f;
 
         if (collision.qvecFT0CReVec().size() >= 3) { // harmonics 2,3,4
-          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
-          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecBPosImVec()[0], q2ybneg = collision.qvecBNegImVec()[0], q2ybtot = collision.qvecBTotImVec()[0];
-          q3xft0m = collision.qvecFT0MReVec()[1], q3xft0a = collision.qvecFT0AReVec()[1], q3xft0c = collision.qvecFT0CReVec()[1], q3xbpos = collision.qvecBPosReVec()[1], q3xbneg = collision.qvecBNegReVec()[1], q3xbtot = collision.qvecBTotReVec()[1];
-          q3yft0m = collision.qvecFT0MImVec()[1], q3yft0a = collision.qvecFT0AImVec()[1], q3yft0c = collision.qvecFT0CImVec()[1], q3ybpos = collision.qvecBPosImVec()[1], q3ybneg = collision.qvecBNegImVec()[1], q3ybtot = collision.qvecBTotImVec()[1];
-          q4xft0m = collision.qvecFT0MReVec()[2], q4xft0a = collision.qvecFT0AReVec()[2], q4xft0c = collision.qvecFT0CReVec()[2], q4xbpos = collision.qvecBPosReVec()[2], q4xbneg = collision.qvecBNegReVec()[2], q4xbtot = collision.qvecBTotReVec()[2];
-          q4yft0m = collision.qvecFT0MImVec()[2], q4yft0a = collision.qvecFT0AImVec()[2], q4yft0c = collision.qvecFT0CImVec()[2], q4ybpos = collision.qvecBPosImVec()[2], q4ybneg = collision.qvecBNegImVec()[2], q4ybtot = collision.qvecBTotImVec()[2];
+          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecTPCposReVec()[0], q2xbneg = collision.qvecTPCnegReVec()[0], q2xbtot = collision.qvecTPCallReVec()[0];
+          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecTPCposImVec()[0], q2ybneg = collision.qvecTPCnegImVec()[0], q2ybtot = collision.qvecTPCallImVec()[0];
+          q3xft0m = collision.qvecFT0MReVec()[1], q3xft0a = collision.qvecFT0AReVec()[1], q3xft0c = collision.qvecFT0CReVec()[1], q3xbpos = collision.qvecTPCposReVec()[1], q3xbneg = collision.qvecTPCnegReVec()[1], q3xbtot = collision.qvecTPCallReVec()[1];
+          q3yft0m = collision.qvecFT0MImVec()[1], q3yft0a = collision.qvecFT0AImVec()[1], q3yft0c = collision.qvecFT0CImVec()[1], q3ybpos = collision.qvecTPCposImVec()[1], q3ybneg = collision.qvecTPCnegImVec()[1], q3ybtot = collision.qvecTPCallImVec()[1];
+          q4xft0m = collision.qvecFT0MReVec()[2], q4xft0a = collision.qvecFT0AReVec()[2], q4xft0c = collision.qvecFT0CReVec()[2], q4xbpos = collision.qvecTPCposReVec()[2], q4xbneg = collision.qvecTPCnegReVec()[2], q4xbtot = collision.qvecTPCallReVec()[2];
+          q4yft0m = collision.qvecFT0MImVec()[2], q4yft0a = collision.qvecFT0AImVec()[2], q4yft0c = collision.qvecFT0CImVec()[2], q4ybpos = collision.qvecTPCposImVec()[2], q4ybneg = collision.qvecTPCnegImVec()[2], q4ybtot = collision.qvecTPCallImVec()[2];
         } else if (collision.qvecFT0CReVec().size() >= 2) { // harmonics 2,3
-          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
-          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecBPosImVec()[0], q2ybneg = collision.qvecBNegImVec()[0], q2ybtot = collision.qvecBTotImVec()[0];
-          q3xft0m = collision.qvecFT0MReVec()[1], q3xft0a = collision.qvecFT0AReVec()[1], q3xft0c = collision.qvecFT0CReVec()[1], q3xbpos = collision.qvecBPosReVec()[1], q3xbneg = collision.qvecBNegReVec()[1], q3xbtot = collision.qvecBTotReVec()[1];
-          q3yft0m = collision.qvecFT0MImVec()[1], q3yft0a = collision.qvecFT0AImVec()[1], q3yft0c = collision.qvecFT0CImVec()[1], q3ybpos = collision.qvecBPosImVec()[1], q3ybneg = collision.qvecBNegImVec()[1], q3ybtot = collision.qvecBTotImVec()[1];
+          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecTPCposReVec()[0], q2xbneg = collision.qvecTPCnegReVec()[0], q2xbtot = collision.qvecTPCallReVec()[0];
+          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecTPCposImVec()[0], q2ybneg = collision.qvecTPCnegImVec()[0], q2ybtot = collision.qvecTPCallImVec()[0];
+          q3xft0m = collision.qvecFT0MReVec()[1], q3xft0a = collision.qvecFT0AReVec()[1], q3xft0c = collision.qvecFT0CReVec()[1], q3xbpos = collision.qvecTPCposReVec()[1], q3xbneg = collision.qvecTPCnegReVec()[1], q3xbtot = collision.qvecTPCallReVec()[1];
+          q3yft0m = collision.qvecFT0MImVec()[1], q3yft0a = collision.qvecFT0AImVec()[1], q3yft0c = collision.qvecFT0CImVec()[1], q3ybpos = collision.qvecTPCposImVec()[1], q3ybneg = collision.qvecTPCnegImVec()[1], q3ybtot = collision.qvecTPCallImVec()[1];
         } else if (collision.qvecFT0CReVec().size() >= 1) { // harmonics 2
-          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
-          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecBPosImVec()[0], q2ybneg = collision.qvecBNegImVec()[0], q2ybtot = collision.qvecBTotImVec()[0];
+          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecTPCposReVec()[0], q2xbneg = collision.qvecTPCnegReVec()[0], q2xbtot = collision.qvecTPCallReVec()[0];
+          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecTPCposImVec()[0], q2ybneg = collision.qvecTPCnegImVec()[0], q2ybtot = collision.qvecTPCallImVec()[0];
         }
         event_qvec(
           q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
