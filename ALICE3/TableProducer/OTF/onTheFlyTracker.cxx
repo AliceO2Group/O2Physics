@@ -402,7 +402,7 @@ struct OnTheFlyTracker {
     std::vector<double> l0Velocity(3);
     std::vector<double> xiMomentum = {particle.px(), particle.py(), particle.pz()};
     std::vector<double> xiProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
-    double bz = magneticField * 0.1; // To tesla (sign?!)
+    double bz = magneticField * 0.1; // To tesla
     TRandom3 rand;
     rand.SetSeed(seed);
     double u = rand.Uniform(0, 1);
