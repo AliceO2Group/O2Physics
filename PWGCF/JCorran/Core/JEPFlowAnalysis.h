@@ -19,7 +19,6 @@
 
 // O2 headers. //
 #include "Framework/HistogramRegistry.h"
-#include "Common/Core/EventPlaneHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,8 +31,8 @@ public:
   void SetHistRegistry(HistogramRegistry* histReg) { mHistRegistry = histReg; }
 
   void FillHistograms(const Int_t fCentBin, Float_t det, Float_t v2, Float_t v3, Float_t v4);
-  void FillVnHistograms(const Int_t harmN, Float_t fCent, Float_t det, Float_t pT, Float_t vn);
-  void FillResolutionHistograms(Float_t fCent, Float_t det, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom);
+  void FillVnHistograms(const Int_t harmN, Float_t fCent, Float_t det, Float_t pT, Float_t vn, Float_t vn_sin);
+  void FillResolutionHistograms(Float_t fCent, Float_t harmN, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom);
   TComplex Q(const Int_t harmN, const Int_t p);
 
   void CreateHistograms() {
@@ -41,37 +40,22 @@ public:
       LOGF(error, "Histogram registry missing. Quitting...");
       return;
     }
-    
+
     mHistRegistry->add("FullCentrality", "FullCentrality", HistType::kTH1D, {{100, 0., 100.}}, true);
-    mHistRegistry->add("fV2EP", "", {HistType::kTHnD, {{100, -0.15, 0.15}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true);
-    mHistRegistry->add("fV3EP", "", {HistType::kTHnD, {{100, -0.15, 0.15}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true);
-    mHistRegistry->add("fV4EP", "", {HistType::kTHnD, {{100, -0.15, 0.15}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true);
-    mHistRegistry->add("fResNumA", "", {HistType::kTHnD, {{100, -1.05, 1.05}, {3,1.5,4.5}, {3,0.5,3.5}, {100, 0., 100.}}}, true);
-    mHistRegistry->add("fResNumB", "", {HistType::kTHnD, {{100, -1.05, 1.05}, {3,1.5,4.5}, {3,0.5,3.5}, {100, 0., 100.}}}, true);
-    mHistRegistry->add("fResDenom", "", {HistType::kTHnD, {{100, -1.05, 1.05}, {3,1.5,4.5}, {3,0.5,3.5}, {100, 0., 100.}}}, true);
+    mHistRegistry->add("fV2EP", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true); // x: v2_cos, y: detector, z: pT, t: centrality 
+    mHistRegistry->add("fV3EP", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true); // x: v2_cos, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV4EP", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true); // x: v2_cos, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV2EP_sin", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV3EP_sin", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV4EP_sin", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3,0.5,3.5}, {200,0.2,12.}, {100, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fResNumA", "", {HistType::kTH3D, {{100, -1.05, 1.05}, {3,1.5,4.5}, {100, 0., 100.}}}, true); // x: resolution, y: harmonic, t: centrality
+    mHistRegistry->add("fResNumB", "", {HistType::kTH3D, {{100, -1.05, 1.05}, {3,1.5,4.5}, {100, 0., 100.}}}, true); // x: resolution, y: harmonic, t: centrality
+    mHistRegistry->add("fResDenom", "", {HistType::kTH3D, {{100, -1.05, 1.05}, {3,1.5,4.5}, {100, 0., 100.}}}, true); // x: resolution, y: harmonic, t: centrality
     mHistRegistry->add("phi", "Phi", {HistType::kTH1D, {{100, 0., TMath::TwoPi()}}}, true);
-
-    // for (UInt_t i = 1; i < 8; i++) {
-    //   mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
-    // }
   }
-
-  EventPlaneHelper *epHelp;
 
 private:
   HistogramRegistry* mHistRegistry;
-
-  static constexpr std::string_view mCentClasses[] = {
-    "Centrality_0/",
-    "Centrality_1/",
-    "Centrality_2/",
-    "Centrality_3/",
-    "Centrality_4/",
-    "Centrality_5/",
-    "Centrality_6/",
-    "Centrality_7/",
-    "Centrality_8/",
-    "Centrality_9/"};
 
   ClassDefNV(JEPFlowAnalysis, 1);
 };

@@ -19,10 +19,6 @@
 #include "Common/Core/TrackSelection.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-// #include "Common/DataModel/Centrality.h"
-// #include "ReconstructionDataFormats/V0.h"
-
-// #include "CCDB/BasicCCDBManager.h"
 
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/EventSelection.h"
@@ -115,32 +111,27 @@ struct jEPFlowAnalysis {
         || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))) return;
     
     Float_t cent = coll.cent();
+    EPFlowHistograms.fill(HIST("FullCentrality"), cent);
     Float_t EPs[3] = {0.};
     Float_t vn[3][3] = {{0.}};
     for (uint i = 0; i<3; i++) {
-      EPs[0] = helperEP.GetEventPlane(coll.qvecRe()[DetId+3], coll.qvecRe()[DetId+3], i+2); 
-      EPs[1] = helperEP.GetEventPlane(coll.qvecRe()[RefAId+3], coll.qvecRe()[RefAId+3], i+2);
-      EPs[2] = helperEP.GetEventPlane(coll.qvecRe()[RefBId+3], coll.qvecRe()[RefBId+3], i+2);
+      EPs[0] = helperEP.GetEventPlane(coll.qvecRe()[DetId+3], coll.qvecIm()[DetId+3], i+2); 
+      EPs[1] = helperEP.GetEventPlane(coll.qvecRe()[RefAId+3], coll.qvecIm()[RefAId+3], i+2);
+      EPs[2] = helperEP.GetEventPlane(coll.qvecRe()[RefBId+3], coll.qvecIm()[RefBId+3], i+2);
 
+      Float_t resNumA = helperEP.GetResolution(EPs[0], EPs[1], i+2);
+      Float_t resNumB = helperEP.GetResolution(EPs[0], EPs[2], i+2);
+      Float_t resDenom = helperEP.GetResolution(EPs[1], EPs[2], i+2);
+      epAnalysis.FillResolutionHistograms(cent, float(i+2), resNumA, resNumB,resDenom);
       for (uint j=0; j<3; j++) {
-        Float_t resNumA = helperEP.GetResolution(EPs[j%3], EPs[(j+1)%3], i+1);
-        Float_t resNumB = helperEP.GetResolution(EPs[j%3], EPs[(j+2)%3], i+2);
-        Float_t resDenom = helperEP.GetResolution(EPs[(j+1)%3], EPs[(j+2)%3], i+1);
-        epAnalysis.FillResolutionHistograms(cent, float(j+1), float(i+2), resNumA, resNumB,resDenom)
-        // Float_t resolution = ResolutionByEP(EPs[j%3],EPs[(j+1)%3],EPs[(j+2)%3], i+2);
-      
-        if (debug) printf("Ind: %u, Res: %.5f\n", j, resolution);
         Float_t sumCos=0;
         for (auto& track: tracks) {
           Float_t vn = TMath::Cos((i+2)*(track.phi()-EPs[j]));
-          epAnalysis.FillHistograms(i+2, cent, float(j+1), track.pT(), vn );
+          Float_t vn_sin = TMath::Sin((i+2)*(track.phi()-EPs[j]));
+          epAnalysis.FillVnHistograms(i+2, cent, float(j+1), track.pt(), vn, vn_sin);
         }
-
-        // vn[i][j] = sumCos/(float(tracks.size())*resolution);
       }
-
     }
-    // for (uint j=0; j<3; j++) epAnalysis.FillHistograms(cBin, float(j+1), vn[0][j], vn[1][j], vn[2][j]);
   }
 };
 

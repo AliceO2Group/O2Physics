@@ -15,62 +15,27 @@ using namespace o2;
 using namespace o2::framework;
 using namespace std;
 
-void JEPFlowAnalysis::FillHistograms(const Int_t cBin, Float_t det, Float_t v2, Float_t v3, Float_t v4) {
-  switch (cBin) {
-    case 0: {
-      mHistRegistry->fill(HIST(mCentClasses[0]) + HIST("fV2EP"), v2, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[0]) + HIST("fV3EP"), v3, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[0]) + HIST("fV4EP"), v4, det, 1.);
-    } break;
-    case 1: {
-      mHistRegistry->fill(HIST(mCentClasses[1]) + HIST("fV2EP"), v2, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[1]) + HIST("fV3EP"), v3, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[1]) + HIST("fV4EP"), v4, det, 1.);
-    } break;
+void JEPFlowAnalysis::FillVnHistograms(const Int_t harmN, Float_t cent, Float_t det, Float_t pT, Float_t vn, Float_t vn_sin) {
+  switch (harmN) {
     case 2: {
-      mHistRegistry->fill(HIST(mCentClasses[2]) + HIST("fV2EP"), v2, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[2]) + HIST("fV3EP"), v3, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[2]) + HIST("fV4EP"), v4, det, 1.);
-    } break;
+       mHistRegistry->fill(HIST("fV2EP"), vn, det, pT, cent, 1.);
+       mHistRegistry->fill(HIST("fV2EP_sin"), vn_sin, det, pT, cent, 1.);
+    }  break;
     case 3: {
-      mHistRegistry->fill(HIST(mCentClasses[3]) + HIST("fV2EP"), v2, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[3]) + HIST("fV3EP"), v3, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[3]) + HIST("fV4EP"), v4, det, 1.);
+      mHistRegistry->fill(HIST("fV3EP"), vn, det, pT, cent, 1.);
+      mHistRegistry->fill(HIST("fV3EP_sin"), vn_sin, det, pT, cent, 1.);
     } break;
     case 4: {
-      mHistRegistry->fill(HIST(mCentClasses[4]) + HIST("fV2EP"), v2, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[4]) + HIST("fV3EP"), v3, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[4]) + HIST("fV4EP"), v4, det, 1.);
-    } break;
-    case 5: {
-      mHistRegistry->fill(HIST(mCentClasses[5]) + HIST("fV2EP"), v2, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[5]) + HIST("fV3EP"), v3, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[5]) + HIST("fV4EP"), v4, det, 1.);
-    } break;
-    case 6: {
-      mHistRegistry->fill(HIST(mCentClasses[6]) + HIST("fV2EP"), v2, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[6]) + HIST("fV3EP"), v3, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[6]) + HIST("fV4EP"), v4, det, 1.);
-    } break;
-    case 7: {
-      mHistRegistry->fill(HIST(mCentClasses[7]) + HIST("fV2EP"), v2, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[7]) + HIST("fV3EP"), v3, det, 1.);
-      mHistRegistry->fill(HIST(mCentClasses[7]) + HIST("fV4EP"), v4, det, 1.);
+      mHistRegistry->fill(HIST("fV4EP"), vn, det, pT, cent, 1.);
+      mHistRegistry->fill(HIST("fV4EP_sin"), vn_sin, det, pT, cent, 1.);
     } break;
     default:
-      return;
+      break;
   }
 }
 
-
-void JEPFlowAnalysis::FillVnHistograms(Float_t cent, Float_t det, Float_t pT, Float_t v2, Float_t v3, Float_t v4) {
-  mHistRegistry->fill(HIST("fV2EP"), v2, det, pT, cent, 1.);
-  mHistRegistry->fill(HIST("fV3EP"), v3, det, pT, cent, 1.);
-  mHistRegistry->fill(HIST("fV4EP"), v4, det, pT, cent, 1.);
-}
-
-void JEPFlowAnalysis::FillResolutionHistograms(Float_t cent, Float_t det, Float_t harmN, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom) {
-  mHistRegistry->fill(HIST("fResNumA"), ResNumA, det, harmN, cent, 1.);
-  mHistRegistry->fill(HIST("fResNumB"), ResNumB, det, harmN, cent, 1.);
-  mHistRegistry->fill(HIST("fResDenom"), ResDenom, det, harmN, cent, 1.);
+void JEPFlowAnalysis::FillResolutionHistograms(Float_t cent, Float_t harmN, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom) {
+  mHistRegistry->fill(HIST("fResNumA"), ResNumA, harmN, cent, 1.);
+  mHistRegistry->fill(HIST("fResNumB"), ResNumB, harmN, cent, 1.);
+  mHistRegistry->fill(HIST("fResDenom"), ResDenom, harmN, cent, 1.);
 }
