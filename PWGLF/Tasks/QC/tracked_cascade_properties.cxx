@@ -87,10 +87,14 @@ struct tracked_cascade_properties {
     registryQC.add("nITScls_vs_p_xi", "nITS Xi", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
     registryQC.add("nITScls_vs_p_omega", "nITS Omega", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
     registryQC.add("decayXY", "decayXY", HistType::kTH2F, {{500, -50, 50, "x"}, {500, -50, 50, "y"}});
-    registryQC.add("deltaNclsITS", "deltaNclsITS", HistType::kTH1F, {{10, -10, 10, "#DeltaN"}});
+    registryQC.add("deltaClsSize", "deltaClsSize", HistType::kTH1F, {{40, -20, 20, "#DeltaClsSize"}});
+    registryQC.add("deltaP", "deltaP", HistType::kTH1F, {{1000, -1, 1, "#Deltap"}});
+    registryQC.add("deltaEta", "deltaEta", HistType::kTH1F, {{200, -0.5, 0.5, "#Delta#eta"}});
+    registryQC.add("deltaNclsITS", "deltaNclsITS", HistType::kTH1F, {{20, -10, 10, "#DeltaN"}});
+    registryQC.add("deltaNclsITS_track", "deltaNclsITS_track", HistType::kTH1F, {{20, -10, 10, "#DeltaN"}});
+    registryQC.add("deltaNclsITS_itstrack", "deltaNclsITS_itstrack", HistType::kTH1F, {{20, -10, 10, "#DeltaN"}});
 
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{5, 0, 5, "Event Cuts"}});
-
     registryData.add("xi_pos_avgclustersize", "xi_pos_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
     registryData.add("xi_neg_avgclustersize", "xi_neg_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
     registryData.add("omega_pos_avgclustersize", "omega_pos_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
@@ -135,6 +139,15 @@ struct tracked_cascade_properties {
 
       const auto track = trackedCascade.track_as<FullTracks>();
       const auto trackITS = trackedCascade.itsTrack_as<FullTracks>();
+
+      // Comparison between track and ITStrack
+      registryQC.fill(HIST("deltaP"), track.p() - trackITS.p());
+      registryQC.fill(HIST("deltaEta"), track.eta() - trackITS.eta());
+      registryQC.fill(HIST("deltaNclsITS"), track.itsNCls() - trackITS.itsNCls());
+      for (int i = 0; i < 7; i++) {
+        registryQC.fill(HIST("deltaClsSize"), track.itsClsSizeInLayer(i) - trackITS.itsClsSizeInLayer(i));
+      }
+
       const auto& casc = trackedCascade.cascade();
       const auto& btrack = casc.bachelor_as<FullTracks>();
       double dx = trackedCascade.decayX();
@@ -156,9 +169,10 @@ struct tracked_cascade_properties {
         if (clusterSize > 0)
           nCls++;
       }
-      averageClusterSize = averageClusterSize / static_cast<double>(track.itsNCls());
+      averageClusterSize = averageClusterSize / static_cast<double>(nCls);
 
-      registryQC.fill(HIST("deltaNclsITS"), nCls - track.itsNCls());
+      registryQC.fill(HIST("deltaNclsITS_track"), nCls - track.itsNCls());
+      registryQC.fill(HIST("deltaNclsITS_itstrack"), nCls - trackITS.itsNCls());
 
       // Track Inclination
       double lambda = track_inclination(track.eta());
