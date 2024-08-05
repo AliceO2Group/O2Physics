@@ -48,6 +48,7 @@
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "ALICE3/DataModel/OTFMcTrackExtra.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,6 +65,7 @@ struct OnTheFlyTracker {
   Produces<aod::TracksDCACov> tracksDCACov;
   Produces<aod::CollisionsAlice3> collisionsAlice3;
   Produces<aod::TracksAlice3> TracksAlice3;
+  Produces<aod::OTFMcExtra> OTFMcExtra;
 
   // optionally produced, empty (to be tuned later)
   Produces<aod::StoredTracksExtra> tracksExtra; // base table, extend later
@@ -89,7 +91,6 @@ struct OnTheFlyTracker {
   Configurable<bool> processUnreconstructedTracks{"processUnreconstructedTracks", false, "process (smear) unreco-ed tracks"};
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
-  Configurable<bool> doXiQA{"doXiQA", false, "QA plots for when treating Xi"};
 
   Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
   Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
@@ -161,6 +162,12 @@ struct OnTheFlyTracker {
   // For processing and vertexing
   std::vector<TrackAlice3> tracksAlice3;
   std::vector<TrackAlice3> ghostTracksAlice3;
+  std::vector<int> trackPdg;
+  std::vector<bool> trackIsFromXi;
+  std::vector<bool> trackIsFromL0;
+  std::vector<int> ghostTrackPdg;
+  std::vector<bool> ghostTrackIsFromXi;
+  std::vector<bool> ghostTrackIsFromL0;
   std::vector<o2::InteractionRecord> bcData;
   o2::steer::InteractionSampler irSampler;
   o2::vertexing::PVertexer vertexer;
@@ -332,7 +339,7 @@ struct OnTheFlyTracker {
       histos.add("hTrackXatDCA", "hTrackXatDCA", kTH1F, {axisX});
     }
 
-    if (doXiQA) {
+    if (treatXi) {
       histos.add("hGenXi", "hGenXi", kTH2F, {axisRadius, axisMomentum});
       histos.add("hRecoXi", "hRecoXi", kTH2F, {axisRadius, axisMomentum});
 
@@ -342,6 +349,13 @@ struct OnTheFlyTracker {
       histos.add("hRecoPiFromXi", "hRecoPiFromXi", kTH2F, {axisRadius, axisMomentum});
       histos.add("hRecoPiFromL0", "hRecoPiFromL0", kTH2F, {axisRadius, axisMomentum});
       histos.add("hRecoPrFromL0", "hRecoPrFromL0", kTH2F, {axisRadius, axisMomentum});
+
+      histos.add("hPiFromXiDCAxy", "hPiFromXiDCAxy", kTH1F, {axisDCA});
+      histos.add("hPiFromL0DCAxy", "hPiFromL0DCAxy", kTH1F, {axisDCA});
+      histos.add("hPrFromL0DCAxy", "hPrFromL0DCAxy", kTH1F, {axisDCA});
+      histos.add("hPiFromXiDCAxyVsPt", "hPiFromXiDCAxyVsPt", kTH2F, {axisMomentum, axisDCA});
+      histos.add("hPiFromL0DCAxyVsPt", "hPiFromL0DCAxyVsPt", kTH2F, {axisMomentum, axisDCA});
+      histos.add("hPrFromL0DCAxyVsPt", "hPrFromL0DCAxyVsPt", kTH2F, {axisMomentum, axisDCA});
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -388,7 +402,7 @@ struct OnTheFlyTracker {
     std::vector<double> l0Velocity(3);
     std::vector<double> xiMomentum = {particle.px(), particle.py(), particle.pz()};
     std::vector<double> xiProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
-    double bz = magneticField * (-0.1); // To tesla (sign?!)
+    double bz = magneticField * 0.1; // To tesla (sign?!)
     TRandom3 rand;
     rand.SetSeed(seed);
     double u = rand.Uniform(0, 1);
@@ -396,7 +410,7 @@ struct OnTheFlyTracker {
       xiVelocity[i] = xiMomentum[i] / particle.e();
     }
     double xi_v_tot = particle.p() / particle.e();
-    double xi_ctau = 4.91 / 100; // xi
+    double xi_ctau = 4.91; // xi
     double xi_charge = -1.6022e-19;
     double speedOfLight = 3e+8;
     double xi_v_xy = speedOfLight * sqrt(xiVelocity[0] * xiVelocity[0] + xiVelocity[1] * xiVelocity[1]);
@@ -418,7 +432,7 @@ struct OnTheFlyTracker {
     xiDecay.Generate();
     decayDaughters.push_back(*xiDecay.GetDecay(1));
 
-    double l0_ctau = 7.89 / 100; // lambda
+    double l0_ctau = 7.89; // lambda
     double l0_v_tot = xiDecay.GetDecay(0)->P() / xiDecay.GetDecay(0)->E();
     std::vector<double> l0Daughters = {0.139, 0.938};
     l0Velocity[0] = xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->E();
@@ -495,6 +509,12 @@ struct OnTheFlyTracker {
   {
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
+    trackPdg.clear();
+    trackIsFromXi.clear();
+    trackIsFromL0.clear();
+    ghostTrackPdg.clear();
+    ghostTrackIsFromXi.clear();
+    ghostTrackIsFromL0.clear();
     bcData.clear();
 
     o2::dataformats::DCA dcaInfo;
@@ -545,8 +565,8 @@ struct OnTheFlyTracker {
       if (treatXi) {
         if (mcParticle.pdgCode() == 3312) {
           decayParticle(mcParticle, decayProducts, xiDecayVertex, l0DecayVertex);
-          xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]) * 100;
-          l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]) * 100;
+          xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]);
+          l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]);
         }
       }
 
@@ -579,7 +599,7 @@ struct OnTheFlyTracker {
       if (TMath::Abs(mcParticle.pdgCode()) == 2212)
         histos.fill(HIST("hPtGeneratedPr"), mcParticle.pt());
 
-      if (doXiQA && mcParticle.pdgCode() == 3312) {
+      if (treatXi && mcParticle.pdgCode() == 3312) {
         histos.fill(HIST("hGenXi"), xiDecayRadius2D, mcParticle.pt());
         histos.fill(HIST("hGenPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
         histos.fill(HIST("hGenPiFromL0"), l0DecayRadius2D, decayProducts[1].Pt());
@@ -598,6 +618,9 @@ struct OnTheFlyTracker {
       const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovs(3);
       std::vector<bool> isReco(3);
+      std::vector<int> dauPdg = {-211, -211, 2212};
+      std::vector<bool> fromXi = {true, false, false};
+      std::vector<bool> fromL0 = {false, true, true};
       std::vector<o2::delphes::DelphesO2TrackSmearer> smearer = {mSmearer0, mSmearer1, mSmearer2, mSmearer3, mSmearer4, mSmearer5};
       if (treatXi && mcParticle.pdgCode() == 3312) {
         if (xiDecayRadius2D > 20) {
@@ -648,12 +671,18 @@ struct OnTheFlyTracker {
           }
           if (isReco[i]) {
             tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+            trackPdg.push_back(dauPdg[i]);
+            trackIsFromXi.push_back(fromXi[i]);
+            trackIsFromL0.push_back(fromL0[i]);
           } else {
             ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+            ghostTrackPdg.push_back(dauPdg[i]);
+            ghostTrackIsFromXi.push_back(fromXi[i]);
+            ghostTrackIsFromL0.push_back(fromL0[i]);
           }
         }
 
-        if (doXiQA && mcParticle.pdgCode() == 3312) {
+        if (treatXi && mcParticle.pdgCode() == 3312) {
           if (isReco[0] && isReco[1] && isReco[2])
             histos.fill(HIST("hRecoXi"), xiDecayRadius2D, mcParticle.pt());
           if (isReco[0])
@@ -700,8 +729,14 @@ struct OnTheFlyTracker {
       // populate vector with track if we reco-ed it
       if (reconstructed) {
         tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
+        trackPdg.push_back(mcParticle.pdgCode());
+        trackIsFromXi.push_back(false);
+        trackIsFromL0.push_back(false);
       } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), t, 100.f * 1e-3, isDecayDaughter});
+        ghostTrackPdg.push_back(mcParticle.pdgCode());
+        ghostTrackIsFromXi.push_back(false);
+        ghostTrackIsFromL0.push_back(false);
       }
     }
 
@@ -778,6 +813,7 @@ struct OnTheFlyTracker {
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
     // populate tracks
+    unsigned trackCounter = 0;
     for (const auto& trackParCov : tracksAlice3) {
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
@@ -792,6 +828,20 @@ struct OnTheFlyTracker {
         if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
+        }
+        if (treatXi) {
+          if (trackPdg[trackCounter] == -211 && trackIsFromXi[trackCounter]) {
+            histos.fill(HIST("hPiFromXiDCAxy"), dcaXY);
+            histos.fill(HIST("hPiFromXiDCAxyVsPt"), trackParametrization.getPt(), dcaXY);
+          }
+          if (trackPdg[trackCounter] == -211 && trackIsFromL0[trackCounter]) {
+            histos.fill(HIST("hPiFromL0DCAxy"), dcaXY);
+            histos.fill(HIST("hPiFromL0DCAxyVsPt"), trackParametrization.getPt(), dcaXY);
+          }
+          if (trackPdg[trackCounter] == 2212 && trackIsFromL0[trackCounter]) {
+            histos.fill(HIST("hPrFromL0DCAxy"), dcaXY);
+            histos.fill(HIST("hPrFromL0DCAxyVsPt"), trackParametrization.getPt(), dcaXY);
+          }
         }
         tracksDCA(dcaXY, dcaZ);
         if (populateTracksDCACov) {
@@ -822,8 +872,14 @@ struct OnTheFlyTracker {
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
       TracksAlice3(true);
+
+      // populate with xi daughter info
+      OTFMcExtra(trackPdg[trackCounter], trackIsFromXi[trackCounter], trackIsFromL0[trackCounter]);
+      trackCounter++;
     }
+
     // populate ghost tracks
+    unsigned ghostTrackCounter = 0;
     for (const auto& trackParCov : ghostTracksAlice3) {
       // Fixme: collision index could be changeable
       aod::track::TrackTypeEnum trackType = aod::track::Track;
@@ -869,6 +925,10 @@ struct OnTheFlyTracker {
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
       TracksAlice3(false);
+
+      // populate table with xi daughter info
+      OTFMcExtra(ghostTrackPdg[ghostTrackCounter], ghostTrackIsFromXi[trackCounter], ghostTrackIsFromL0[trackCounter]);
+      ghostTrackCounter++;
     }
   }
 };
