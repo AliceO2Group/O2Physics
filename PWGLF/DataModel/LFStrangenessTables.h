@@ -762,6 +762,7 @@ DECLARE_SOA_COLUMN(IsTrueLambda, isTrueLambda, bool);                   //! PDG 
 DECLARE_SOA_COLUMN(IsTrueAntiLambda, isTrueAntiLambda, bool);           //! PDG checked correctly in MC
 DECLARE_SOA_COLUMN(IsTrueHypertriton, isTrueHypertriton, bool);         //! PDG checked correctly in MC
 DECLARE_SOA_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, bool); //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);         //! physical primary
 
 // dE/dx compatibility bools
 DECLARE_SOA_COLUMN(IsdEdxGamma, isdEdxGamma, bool);                     //! compatible with dE/dx hypotheses
@@ -783,6 +784,7 @@ DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsTrueAntiLambda,
                   v0tag::IsTrueHypertriton,
                   v0tag::IsTrueAntiHypertriton,
+                  v0tag::IsPhysicalPrimary,
                   v0tag::IsdEdxGamma,
                   v0tag::IsdEdxK0Short,
                   v0tag::IsdEdxLambda,
@@ -1312,10 +1314,11 @@ namespace casctag
 DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
 
 // MC association bools
-DECLARE_SOA_COLUMN(IsTrueXiMinus, isTrueXiMinus, bool);       //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueXiPlus, isTrueXiPlus, bool);         //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueOmegaMinus, isTrueOmegaMinus, bool); //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueOmegaPlus, isTrueOmegaPlus, bool);   //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueXiMinus, isTrueXiMinus, bool);         //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueXiPlus, isTrueXiPlus, bool);           //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueOmegaMinus, isTrueOmegaMinus, bool);   //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsTrueOmegaPlus, isTrueOmegaPlus, bool);     //! PDG checked correctly in MC
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! physical primary
 
 // dE/dx compatibility bools
 DECLARE_SOA_COLUMN(IsdEdxXiMinus, isdEdxXiMinus, bool);       //! compatible with dE/dx hypotheses
@@ -1329,6 +1332,7 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
                   casctag::IsTrueXiPlus,
                   casctag::IsTrueOmegaMinus,
                   casctag::IsTrueOmegaPlus,
+                  casctag::IsPhysicalPrimary,
                   casctag::IsdEdxXiMinus,
                   casctag::IsdEdxXiPlus,
                   casctag::IsdEdxOmegaMinus,

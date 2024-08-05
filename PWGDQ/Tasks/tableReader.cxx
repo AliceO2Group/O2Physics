@@ -168,6 +168,7 @@ struct AnalysisEventSelection {
   Configurable<string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   Configurable<string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
   Configurable<int> fConfigITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<int> fConfigITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
@@ -237,13 +238,25 @@ struct AnalysisEventSelection {
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
     }
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
-      if (fConfigQA) {
-        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+
+    if (!fConfigRunZorro) {
+      if (fEventCut->IsSelected(VarManager::fgValues)) {
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        }
+        eventSel(1);
+      } else {
+        eventSel(0);
       }
-      eventSel(1);
     } else {
-      eventSel(0);
+      if (fEventCut->IsSelected(VarManager::fgValues) && event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        }
+        eventSel(1);
+      } else {
+        eventSel(0);
+      }
     }
 
     if (fMixHandler != nullptr) {

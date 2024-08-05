@@ -1377,7 +1377,7 @@ struct lambdakzeroPreselector {
   Configurable<int> minITSCluITSOnly{"minITSCluITSOnly", 0, "minimum number of ITS clusters to ask for if daughter track does not have TPC"};
 
   // for bit-packed maps
-  std::vector<uint16_t> selectionMask;
+  std::vector<uint32_t> selectionMask;
   enum v0bit { bitInteresting = 0,
                bitTrackQuality,
                bitTrueGamma,
@@ -1386,6 +1386,7 @@ struct lambdakzeroPreselector {
                bitTrueAntiLambda,
                bitTrueHypertriton,
                bitTrueAntiHypertriton,
+               bitPhysicalPrimary,
                bitdEdxGamma,
                bitdEdxK0Short,
                bitdEdxLambda,
@@ -1419,7 +1420,7 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TV0Object>
-  void checkTrackQuality(TV0Object const& lV0Candidate, uint16_t& maskElement, bool passdEdx = false)
+  void checkTrackQuality(TV0Object const& lV0Candidate, uint32_t& maskElement, bool passdEdx = false)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1462,9 +1463,10 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TV0Object>
-  void checkPDG(TV0Object const& lV0Candidate, uint16_t& maskElement)
+  void checkPDG(TV0Object const& lV0Candidate, uint32_t& maskElement)
   {
     int lPDG = -1;
+    bool physicalPrimary = false;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
@@ -1478,6 +1480,7 @@ struct lambdakzeroPreselector {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
             if (lNegMother.globalIndex() == lPosMother.globalIndex() && (!dIfMCselectPhysicalPrimary || lNegMother.isPhysicalPrimary())) {
               lPDG = lNegMother.pdgCode();
+              physicalPrimary = lNegMother.isPhysicalPrimary();
 
               // additionally check PDG of the mother particle if requested
               if (dIfMCselectV0MotherPDG != 0) {
@@ -1507,10 +1510,12 @@ struct lambdakzeroPreselector {
       bitset(maskElement, bitTrueHypertriton);
     if (lPDG == -1010010030)
       bitset(maskElement, bitTrueAntiHypertriton);
+    if (physicalPrimary)
+      bitset(maskElement, bitPhysicalPrimary);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   template <class TTrackTo, typename TV0Object>
-  void checkdEdx(TV0Object const& lV0Candidate, uint16_t& maskElement)
+  void checkdEdx(TV0Object const& lV0Candidate, uint32_t& maskElement)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1593,7 +1598,8 @@ struct lambdakzeroPreselector {
       }
       v0tags(validV0,
              bitcheck(selectionMask[ii], bitTrueGamma), bitcheck(selectionMask[ii], bitTrueK0Short), bitcheck(selectionMask[ii], bitTrueLambda),
-             bitcheck(selectionMask[ii], bitTrueAntiLambda), bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton),
+             bitcheck(selectionMask[ii], bitTrueAntiLambda),
+             bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton), bitcheck(selectionMask[ii], bitPhysicalPrimary),
              bitcheck(selectionMask[ii], bitdEdxGamma), bitcheck(selectionMask[ii], bitdEdxK0Short), bitcheck(selectionMask[ii], bitdEdxLambda),
              bitcheck(selectionMask[ii], bitdEdxAntiLambda), bitcheck(selectionMask[ii], bitdEdxHypertriton), bitcheck(selectionMask[ii], bitdEdxAntiHypertriton),
              bitcheck(selectionMask[ii], bitUsedInCascade), bitcheck(selectionMask[ii], bitUsedInTrackedCascade));

@@ -224,6 +224,8 @@ struct femtoUniverseProducerTask {
     Configurable<std::vector<float>> ConfPhiChildDCAMin{"ConfPhiChildDCAMin", std::vector<float>{0.05f, 0.06f}, "Phi Child sel:  Max. DCA Daugh to PV (cm)"};
     Configurable<std::vector<float>> ConfPhiChildPIDnSigmaMax{"ConfPhiChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Phi Child sel: Max. PID nSigma TPC"};
     Configurable<std::vector<int>> ConfPhiChildPIDspecies{"ConfPhiChildPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Kaon}, "Phi Child sel: Particles species for PID"};
+    Configurable<bool> ConfLooseTPCNSigma{"ConfLooseTPCNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
+    Configurable<float> ConfLooseTPCNSigmaValue{"ConfLooseTPCNSigmaValue", 10, "Value for the loose TPC N Sigma for Kaon PID."};
   } ConfPhiChildSelection;
 
   struct : o2::framework::ConfigurableGroup {
@@ -259,38 +261,82 @@ struct femtoUniverseProducerTask {
     // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
     // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.4
     // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.4
+    // ConfLooseTPCNSigma -> use loose nsigmas for Phi meson daughters (bool)
+    // ConfLooseTPCNSigmaValue -> value of the loose cut (float)
 
     if (mom < 0.3) { // 0.0-0.3
-      if (TMath::Abs(nsigmaTPCK) < 3.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.45) { // 0.30 - 0.45
-      if (TMath::Abs(nsigmaTPCK) < 2.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.55) { // 0.45-0.55
-      if (TMath::Abs(nsigmaTPCK) < 1.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-        {
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
           return true;
+        } else {
+          return false;
         }
       } else {
-        return false;
+        if (TMath::Abs(nsigmaTPCK) < 3.0) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        if (TMath::Abs(nsigmaTPCK) < 2.0) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        if (TMath::Abs(nsigmaTPCK) < 1.0) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue)) {
+          return true;
+        } else {
+          return false;
+        }
+
+      } else {
+        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+          {
+            return true;
+          }
+        } else {
+          return false;
+        }
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-        return true;
+      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
+        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue)) {
+          return true;
+        } else {
+          return false;
+        }
+
       } else {
-        return false;
+        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+          return true;
+        } else {
+          return false;
+        }
       }
     } else {
       return false;
@@ -1020,7 +1066,7 @@ struct femtoUniverseProducerTask {
         std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            if (pdgCode == 333 || pdgCode == 3122) { // ATTENTION: workaround for now, because all Phi mesons and lambda baryons are NOT primary particles for now.
+            if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
               pass = true;
             } else {
               if (particle.isPhysicalPrimary())
