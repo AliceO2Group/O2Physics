@@ -91,11 +91,11 @@ struct correlateStrangeness {
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
   Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "GLO/Config/GeometryAligned", "Path of the efficiency corrections"};
 
-  // Configurables for doing subwagon systematics 
+  // Configurables for doing subwagon systematics
   // Group all settings necessary for systematics in a specific ConfigurableGroup
   struct : ConfigurableGroup {
     std::string prefix = "systematics";
-    // --- Track quality variations (single track, both trigger and assoc daughters) 
+    // --- Track quality variations (single track, both trigger and assoc daughters)
     Configurable<int> minTPCNCrossedRows{"minTPCNCrossedRows", 70, "Minimum TPC crossed rows"};
     Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
     Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
@@ -205,8 +205,8 @@ struct correlateStrangeness {
       auto trigg = triggerTrack.track_as<TracksComplete>();
 
       // systematic variations: track quality
-      if(trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-        continue; 
+      if (trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
+        continue;
       if (!trigg.hasITS() && systCuts.triggerRequireITS)
         continue;
       if (trigg.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
@@ -214,8 +214,8 @@ struct correlateStrangeness {
       if (!(bitcheck(trigg.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
         continue;
       // systematic variations: trigger DCAxy
-      if(std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
-        continue; 
+      if (std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
+        continue;
 
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult);
@@ -223,10 +223,10 @@ struct correlateStrangeness {
         auto assoc = assocCandidate.v0Core_as<V0DatasWithoutTrackX>();
 
         //---] syst cuts [---
-        if (assoc.v0radius() < systCuts.v0RadiusMin || assoc.v0radius() > systCuts.v0RadiusMax || 
-            assoc.dcapostopv() > systCuts.dcapostopv ||  assoc.dcanegtopv() < systCuts.dcanegtopv || 
+        if (assoc.v0radius() < systCuts.v0RadiusMin || assoc.v0radius() > systCuts.v0RadiusMax ||
+            assoc.dcapostopv() > systCuts.dcapostopv || assoc.dcanegtopv() < systCuts.dcanegtopv ||
             assoc.v0cosPA() < systCuts.v0cospa)
-        continue;
+          continue;
 
         //---] removing autocorrelations [---
         auto postrack = assoc.posTrack_as<TracksComplete>();
@@ -297,8 +297,8 @@ struct correlateStrangeness {
       auto trigg = triggerTrack.track_as<TracksComplete>();
 
       // systematic variations: track quality
-      if(trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-        continue; 
+      if (trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
+        continue;
       if (!trigg.hasITS() && systCuts.triggerRequireITS)
         continue;
       if (trigg.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
@@ -306,8 +306,8 @@ struct correlateStrangeness {
       if (!(bitcheck(trigg.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
         continue;
       // systematic variations: trigger DCAxy
-      if(std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
-        continue; 
+      if (std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
+        continue;
 
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt(), mult);
@@ -315,17 +315,16 @@ struct correlateStrangeness {
         auto assoc = assocCandidate.cascData();
 
         //---] syst cuts [---
-        if(assoc.dcapostopv()<systCuts.dcapostopv ||
-           assoc.dcanegtopv()<systCuts.dcanegtopv ||
-           assoc.dcabachtopv()<systCuts.casc_dcabachtopv ||
-           assoc.dcaV0daughters()>systCuts.dcaV0dau ||
-           assoc.dcacascdaughters()>systCuts.casc_dcacascdau ||
-           assoc.v0cosPA(pvx, pvy, pvz)<systCuts.v0cospa ||
-           assoc.casccosPA(pvx, pvy, pvz)<systCuts.v0cospa ||
-           assoc.cascradius()<systCuts.casc_cascradius ||
-           std::abs(assoc.dcav0topv(pvx, pvy, pvz))<systCuts.casc_mindcav0topv ||
-           std::abs(assoc.mLambda() - pdgDB->Mass(3122))>systCuts.casc_v0masswindow
-        )
+        if (assoc.dcapostopv() < systCuts.dcapostopv ||
+            assoc.dcanegtopv() < systCuts.dcanegtopv ||
+            assoc.dcabachtopv() < systCuts.casc_dcabachtopv ||
+            assoc.dcaV0daughters() > systCuts.dcaV0dau ||
+            assoc.dcacascdaughters() > systCuts.casc_dcacascdau ||
+            assoc.v0cosPA(pvx, pvy, pvz) < systCuts.v0cospa ||
+            assoc.casccosPA(pvx, pvy, pvz) < systCuts.v0cospa ||
+            assoc.cascradius() < systCuts.casc_cascradius ||
+            std::abs(assoc.dcav0topv(pvx, pvy, pvz)) < systCuts.casc_mindcav0topv ||
+            std::abs(assoc.mLambda() - pdgDB->Mass(3122)) > systCuts.casc_v0masswindow)
           continue;
 
         //---] removing autocorrelations [---
@@ -405,8 +404,8 @@ struct correlateStrangeness {
       auto trigg = triggerTrack.track_as<TracksComplete>();
 
       // systematic variations: track quality
-      if(trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-        continue; 
+      if (trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
+        continue;
       if (!trigg.hasITS() && systCuts.triggerRequireITS)
         continue;
       if (trigg.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
@@ -414,8 +413,8 @@ struct correlateStrangeness {
       if (!(bitcheck(trigg.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
         continue;
       // systematic variations: trigger DCAxy
-      if(std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
-        continue; 
+      if (std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
+        continue;
 
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesPion"), trigg.pt(), mult);
@@ -825,10 +824,10 @@ struct correlateStrangeness {
       auto v0Data = v0.v0Core_as<V0DatasWithoutTrackX>();
 
       //---] syst cuts [---
-      if (v0Data.v0radius() < systCuts.v0RadiusMin || v0Data.v0radius() > systCuts.v0RadiusMax || 
-          v0Data.dcapostopv() > systCuts.dcapostopv ||  v0Data.dcanegtopv() < systCuts.dcanegtopv || 
+      if (v0Data.v0radius() < systCuts.v0RadiusMin || v0Data.v0radius() > systCuts.v0RadiusMax ||
+          v0Data.dcapostopv() > systCuts.dcapostopv || v0Data.dcanegtopv() < systCuts.dcanegtopv ||
           v0Data.v0cosPA() < systCuts.v0cospa)
-      continue;
+        continue;
 
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
@@ -854,8 +853,8 @@ struct correlateStrangeness {
         auto track = triggerTrack.track_as<TracksComplete>();
 
         // systematic variations: track quality
-        if(track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-          continue; 
+        if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
+          continue;
         if (!track.hasITS() && systCuts.triggerRequireITS)
           continue;
         if (track.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
@@ -863,8 +862,8 @@ struct correlateStrangeness {
         if (!(bitcheck(track.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
           continue;
         // systematic variations: trigger DCAxy
-        if(std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
-          continue; 
+        if (std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
+          continue;
 
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
         if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
@@ -916,17 +915,16 @@ struct correlateStrangeness {
       auto cascData = casc.cascData();
 
       //---] syst cuts [---
-      if(cascData.dcapostopv()<systCuts.dcapostopv ||
-          cascData.dcanegtopv()<systCuts.dcanegtopv ||
-          cascData.dcabachtopv()<systCuts.casc_dcabachtopv ||
-          cascData.dcaV0daughters()>systCuts.dcaV0dau ||
-          cascData.dcacascdaughters()>systCuts.casc_dcacascdau ||
-          cascData.v0cosPA(collision.posX(), collision.posY(), collision.posZ())<systCuts.v0cospa ||
-          cascData.casccosPA(collision.posX(), collision.posY(), collision.posZ())<systCuts.v0cospa ||
-          cascData.cascradius()<systCuts.casc_cascradius ||
-          std::abs(cascData.dcav0topv(collision.posX(), collision.posY(), collision.posZ()))<systCuts.casc_mindcav0topv ||
-          std::abs(cascData.mLambda() - pdgDB->Mass(3122))>systCuts.casc_v0masswindow
-      )
+      if (cascData.dcapostopv() < systCuts.dcapostopv ||
+          cascData.dcanegtopv() < systCuts.dcanegtopv ||
+          cascData.dcabachtopv() < systCuts.casc_dcabachtopv ||
+          cascData.dcaV0daughters() > systCuts.dcaV0dau ||
+          cascData.dcacascdaughters() > systCuts.casc_dcacascdau ||
+          cascData.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.v0cospa ||
+          cascData.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.v0cospa ||
+          cascData.cascradius() < systCuts.casc_cascradius ||
+          std::abs(cascData.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < systCuts.casc_mindcav0topv ||
+          std::abs(cascData.mLambda() - pdgDB->Mass(3122)) > systCuts.casc_v0masswindow)
         continue;
 
       static_for<0, 3>([&](auto i) {
@@ -954,8 +952,8 @@ struct correlateStrangeness {
       auto track = triggerTrack.track_as<TracksComplete>();
 
       // systematic variations: track quality
-      if(track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-        continue; 
+      if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
+        continue;
       if (!track.hasITS() && systCuts.triggerRequireITS)
         continue;
       if (track.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
@@ -963,8 +961,8 @@ struct correlateStrangeness {
       if (!(bitcheck(track.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
         continue;
       // systematic variations: trigger DCAxy
-      if(std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
-        continue; 
+      if (std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
+        continue;
 
       histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
     }
@@ -1009,8 +1007,8 @@ struct correlateStrangeness {
         auto track = triggerTrack.track_as<TracksComplete>();
 
         // systematic variations: track quality
-        if(track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-          continue; 
+        if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
+          continue;
         if (!track.hasITS() && systCuts.triggerRequireITS)
           continue;
         if (track.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
@@ -1018,8 +1016,8 @@ struct correlateStrangeness {
         if (!(bitcheck(track.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
           continue;
         // systematic variations: trigger DCAxy
-        if(std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
-          continue; 
+        if (std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
+          continue;
 
         histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
       }
