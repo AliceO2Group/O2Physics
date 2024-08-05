@@ -32,7 +32,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace std;
 
-
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 
 using MyTracks = aod::Tracks;
@@ -86,8 +85,8 @@ struct jEPFlowAnalysis {
     }
   }
 
-
-  void init(InitContext const&) {
+  void init(InitContext const&)
+  {
     DetId = GetDetId(cfgDetName);
     RefAId = GetDetId(cfgRefAName);
     RefBId = GetDetId(cfgRefBName);
@@ -96,39 +95,41 @@ struct jEPFlowAnalysis {
     epAnalysis.CreateHistograms();
   }
 
-  Float_t ResolutionByEP(const Float_t EP_A, const Float_t EP_B, const Float_t EP_C, const Int_t ind) {
+  Float_t ResolutionByEP(const Float_t EP_A, const Float_t EP_B, const Float_t EP_C, const Int_t ind)
+  {
     Float_t resNumA = helperEP.GetResolution(EP_A, EP_B, ind);
     Float_t resNumB = helperEP.GetResolution(EP_A, EP_C, ind);
     Float_t resDen = helperEP.GetResolution(EP_B, EP_C, ind);
-    if (debug) printf("EP_A: %.5f, EP_B: %.5f, ResAB: %.5f, Ind: %d\n", EP_A, EP_B, resNumA, ind);
-    Float_t resolution = TMath::Sqrt(resNumA*resNumB/resDen);
+    if (debug)
+      printf("EP_A: %.5f, EP_B: %.5f, ResAB: %.5f, Ind: %d\n", EP_A, EP_B, resNumA, ind);
+    Float_t resolution = TMath::Sqrt(resNumA * resNumB / resDen);
     return resolution;
   }
 
   void process(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks)
   {
-    if (cfgAddEvtSel && (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)
-        || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))) return;
-    
+    if (cfgAddEvtSel && (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup)))
+      return;
+
     Float_t cent = coll.cent();
     EPFlowHistograms.fill(HIST("FullCentrality"), cent);
     Float_t EPs[3] = {0.};
     Float_t vn[3][3] = {{0.}};
-    for (uint i = 0; i<3; i++) {
-      EPs[0] = helperEP.GetEventPlane(coll.qvecRe()[DetId+3], coll.qvecIm()[DetId+3], i+2); 
-      EPs[1] = helperEP.GetEventPlane(coll.qvecRe()[RefAId+3], coll.qvecIm()[RefAId+3], i+2);
-      EPs[2] = helperEP.GetEventPlane(coll.qvecRe()[RefBId+3], coll.qvecIm()[RefBId+3], i+2);
+    for (uint i = 0; i < 3; i++) {
+      EPs[0] = helperEP.GetEventPlane(coll.qvecRe()[DetId + 3], coll.qvecIm()[DetId + 3], i + 2);
+      EPs[1] = helperEP.GetEventPlane(coll.qvecRe()[RefAId + 3], coll.qvecIm()[RefAId + 3], i + 2);
+      EPs[2] = helperEP.GetEventPlane(coll.qvecRe()[RefBId + 3], coll.qvecIm()[RefBId + 3], i + 2);
 
-      Float_t resNumA = helperEP.GetResolution(EPs[0], EPs[1], i+2);
-      Float_t resNumB = helperEP.GetResolution(EPs[0], EPs[2], i+2);
-      Float_t resDenom = helperEP.GetResolution(EPs[1], EPs[2], i+2);
-      epAnalysis.FillResolutionHistograms(cent, float(i+2), resNumA, resNumB,resDenom);
-      for (uint j=0; j<3; j++) {
-        Float_t sumCos=0;
-        for (auto& track: tracks) {
-          Float_t vn = TMath::Cos((i+2)*(track.phi()-EPs[j]));
-          Float_t vn_sin = TMath::Sin((i+2)*(track.phi()-EPs[j]));
-          epAnalysis.FillVnHistograms(i+2, cent, float(j+1), track.pt(), vn, vn_sin);
+      Float_t resNumA = helperEP.GetResolution(EPs[0], EPs[1], i + 2);
+      Float_t resNumB = helperEP.GetResolution(EPs[0], EPs[2], i + 2);
+      Float_t resDenom = helperEP.GetResolution(EPs[1], EPs[2], i + 2);
+      epAnalysis.FillResolutionHistograms(cent, float(i + 2), resNumA, resNumB, resDenom);
+      for (uint j = 0; j < 3; j++) {
+        Float_t sumCos = 0;
+        for (auto& track : tracks) {
+          Float_t vn = TMath::Cos((i + 2) * (track.phi() - EPs[j]));
+          Float_t vn_sin = TMath::Sin((i + 2) * (track.phi() - EPs[j]));
+          epAnalysis.FillVnHistograms(i + 2, cent, float(j + 1), track.pt(), vn, vn_sin);
         }
       }
     }

@@ -15,12 +15,13 @@ using namespace o2;
 using namespace o2::framework;
 using namespace std;
 
-void JEPFlowAnalysis::FillVnHistograms(const Int_t harmN, Float_t cent, Float_t det, Float_t pT, Float_t vn, Float_t vn_sin) {
+void JEPFlowAnalysis::FillVnHistograms(const Int_t harmN, Float_t cent, Float_t det, Float_t pT, Float_t vn, Float_t vn_sin)
+{
   switch (harmN) {
     case 2: {
-       mHistRegistry->fill(HIST("fV2EP"), vn, det, pT, cent, 1.);
-       mHistRegistry->fill(HIST("fV2EP_sin"), vn_sin, det, pT, cent, 1.);
-    }  break;
+      mHistRegistry->fill(HIST("fV2EP"), vn, det, pT, cent, 1.);
+      mHistRegistry->fill(HIST("fV2EP_sin"), vn_sin, det, pT, cent, 1.);
+    } break;
     case 3: {
       mHistRegistry->fill(HIST("fV3EP"), vn, det, pT, cent, 1.);
       mHistRegistry->fill(HIST("fV3EP_sin"), vn_sin, det, pT, cent, 1.);
@@ -34,7 +35,8 @@ void JEPFlowAnalysis::FillVnHistograms(const Int_t harmN, Float_t cent, Float_t 
   }
 }
 
-void JEPFlowAnalysis::FillResolutionHistograms(Float_t cent, Float_t harmN, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom) {
+void JEPFlowAnalysis::FillResolutionHistograms(Float_t cent, Float_t harmN, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom)
+{
   mHistRegistry->fill(HIST("fResNumA"), ResNumA, harmN, cent, 1.);
   mHistRegistry->fill(HIST("fResNumB"), ResNumB, harmN, cent, 1.);
   mHistRegistry->fill(HIST("fResDenom"), ResDenom, harmN, cent, 1.);
