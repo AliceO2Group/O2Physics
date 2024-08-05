@@ -146,7 +146,7 @@ DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // physica
 DECLARE_SOA_COLUMN(MassRegionXi, massRegionXi, int);                  //
 DECLARE_SOA_COLUMN(MassRegionOmega, massRegionOmega, int);            //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
-                           [](bool cXiMinus, bool cXiPlus, bool cOmegaMinus, bool cOmegaPlus, int value, int compatibilityLevel) -> bool {
+                           [](int cXiMinus, int cXiPlus, int cOmegaMinus, int cOmegaPlus, int value, int compatibilityLevel) -> bool {
                              if (value == 0 && bitcheck(cXiMinus, compatibilityLevel))
                                return true;
                              if (value == 1 && bitcheck(cXiPlus, compatibilityLevel))
