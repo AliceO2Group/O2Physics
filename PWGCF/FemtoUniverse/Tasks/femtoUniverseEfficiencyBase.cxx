@@ -54,7 +54,7 @@ struct femtoUniverseEfficiencyBase {
   Configurable<bool> ConfNoPDGPartOne{"ConfNoPDGPartOne", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> ConfPtLowPart1{"ConfPtLowPart1", 0.2, "Lower limit for Pt for the first particle"};
   Configurable<float> ConfPtHighPart1{"ConfPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
-  Configurable<int> ConfChargePart1{"ConfChargePart1", 1, "sign of particle 1"};
+  Configurable<int> ConfChargePart1{"ConfChargePart1", 1, "Charge of the first particle"};
 
   /// Partition for particle 1
   Partition<FemtoFullParticles> partsOneMCGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
@@ -74,6 +74,7 @@ struct femtoUniverseEfficiencyBase {
   Configurable<uint8_t> ConfParticleTypePartTwo{"ConfParticleTypePartTwo", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 2 - particle type"};
   Configurable<float> ConfPtLowPart2{"ConfPtLowPart2", 0.2, "Lower limit for Pt for the second particle"};
   Configurable<float> ConfPtHighPart2{"ConfPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
+  Configurable<int> ConfChargePart2{"ConfChargePart2", 1, "Charge of the second particle"};
 
   /// Partition for particle 2
   Partition<FemtoFullParticles> partsTwoGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
@@ -300,11 +301,7 @@ struct femtoUniverseEfficiencyBase {
   {
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
-      if (part.partType() != ConfParticleTypePartOne) {
-        continue;
-      }
-
-      if (!IsParticleNSigma(ConfPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+      if (part.partType() != ConfParticleTypePartOne || part.sign() != ConfChargePart1 || !IsParticleNSigma(ConfPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
         continue;
       }
       trackHistoPartOneRec.fillQA<isMC, false>(part);
@@ -320,11 +317,7 @@ struct femtoUniverseEfficiencyBase {
 
     if (!ConfIsSame) {
       for (auto& part : grouppartsTwoGen) {
-        if (part.partType() != ConfParticleTypePartTwo) {
-          continue;
-        }
-
-        if (!IsParticleNSigma(ConfPDGCodePartTwo, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+        if (part.partType() != ConfParticleTypePartTwo || part.sign() != ConfChargePart2 || !IsParticleNSigma(ConfPDGCodePartTwo, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
           continue;
         }
 
@@ -357,11 +350,7 @@ struct femtoUniverseEfficiencyBase {
 
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
-      if (part.partType() != ConfParticleTypePartOne) {
-        continue;
-      }
-
-      if (!IsParticleNSigma(ConfPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+      if (part.partType() != ConfParticleTypePartOne || part.sign() != ConfChargePart1 || !IsParticleNSigma(ConfPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
         continue;
       }
       trackHistoPartOneRec.fillQA<isMC, false>(part);
@@ -377,9 +366,10 @@ struct femtoUniverseEfficiencyBase {
 
     if (!ConfIsSame) {
       for (auto& part : grouppartsTwoGen) {
-        if (part.partType() != ConfParticleTypePartTwo) {
+        if (part.partType() != ConfParticleTypePartTwo || part.sign() != ConfChargePart2) {
           continue;
         }
+
         trackHistoPartTwoRec.fillQA<isMC, false>(part);
 
         if (!part.has_fdMCParticle()) {
@@ -490,14 +480,9 @@ struct femtoUniverseEfficiencyBase {
 
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
-      if (part.partType() != ConfParticleTypePartOne)
+      if (part.partType() != ConfParticleTypePartOne || part.sign() != ConfChargePart1 || !IsParticleNSigma(ConfPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
         continue;
-
-      if (part.sign() != ConfChargePart1)
-        continue;
-
-      if (!IsParticleNSigma(ConfPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon)))
-        continue;
+      }
 
       trackHistoPartOneRec.fillQA<isMC, false>(part);
       if (!part.has_fdMCParticle())
