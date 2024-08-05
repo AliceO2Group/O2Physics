@@ -21,7 +21,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/EventPlaneHelper.h"
 
 #include "FlowJHistManager.h"
@@ -123,13 +122,13 @@ struct jEPFlowAnalysis {
       Float_t resNumA = helperEP.GetResolution(EPs[0], EPs[1], i + 2);
       Float_t resNumB = helperEP.GetResolution(EPs[0], EPs[2], i + 2);
       Float_t resDenom = helperEP.GetResolution(EPs[1], EPs[2], i + 2);
-      epAnalysis.FillResolutionHistograms(cent, float(i + 2), resNumA, resNumB, resDenom);
+      epAnalysis.FillResolutionHistograms(cent, static_cast<float>(i + 2), resNumA, resNumB, resDenom);
       for (uint j = 0; j < 3; j++) {
         Float_t sumCos = 0;
         for (auto& track : tracks) {
           Float_t vn = TMath::Cos((i + 2) * (track.phi() - EPs[j]));
           Float_t vn_sin = TMath::Sin((i + 2) * (track.phi() - EPs[j]));
-          epAnalysis.FillVnHistograms(i + 2, cent, float(j + 1), track.pt(), vn, vn_sin);
+          epAnalysis.FillVnHistograms(i + 2, cent, static_cast<float>(j + 1), track.pt(), vn, vn_sin);
         }
       }
     }
