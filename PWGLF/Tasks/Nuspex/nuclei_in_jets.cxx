@@ -124,6 +124,12 @@ struct nuclei_in_jets {
     registryQC.add("deltaEtadeltaPhiUE", "deltaEtadeltaPhiUE", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
     registryQC.add("deltaEtadeltaPhi_leading_jet", "deltaEtadeltaPhi_leading_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
 
+    // QC Histograms for ptJet < pt_leading
+    registryQC.add("nParticlesClusteredInJet", "nParticlesClusteredInJet", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
+    registryQC.add("ptParticlesClusteredInJet", "ptParticlesClusteredInJet", HistType::kTH1F, {{200, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQC.add("dEtadPhi_jetaxis", "dEtadPhi_jetaxis", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("dEtadPhi_jetaxis_leadTrk", "dEtadPhi_jetaxis_leadTrk", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
@@ -545,6 +551,27 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("ptJetPlusUE"), ptJetPlusUE);
     registryQC.fill(HIST("ptJet"), ptJet);
     registryQC.fill(HIST("ptUE"), 0.5 * ptUE);
+
+    // Fill QA Histograms
+    if (ptJetPlusUE < min_pt_leading) {
+          
+      int nPartClustered_Jet = static_cast<int>(jet_particle_ID.size());
+      registryQC.fill(HIST("nParticlesClusteredInJet"), nPartClustered_Jet);
+
+      double dEta = p_leading.Eta() - p_jet.Eta();
+      double dPhi = GetDeltaPhi(p_leading.Phi(), p_jet.Phi());
+      registryQC.fill(HIST("dEtadPhi_jetaxis_leadTrk"), dEta, dPhi);
+
+      for (int i = 0; i < nPartClustered_Jet; i++) {
+
+        auto track = tracks.iteratorAt(jet_particle_ID[i]);
+        TVector3 particle_dir(track.px(), track.py(), track.pz());
+        double dEta = particle_dir.Eta() - p_jet.Eta();
+        double dPhi = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
+        registryQC.fill(HIST("ptParticlesClusteredInJet"), track.pt());
+        registryQC.fill(HIST("dEtadPhi_jetaxis"), dEta, dPhi);
+      }
+    }
 
     // Event Counter: Skip Events with n. particles in jet less than given value
     if (NchJetPlusUE < min_nPartInJet)
