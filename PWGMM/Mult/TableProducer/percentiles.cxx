@@ -14,6 +14,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Common/DataModel/EventSelection.h>
+#include "Common/DataModel/Centrality.h"
 #include <Common/DataModel/TrackSelectionTables.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <CCDB/BasicCCDBManager.h>
@@ -42,6 +43,7 @@ struct Binner {
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
+  ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100}, ""};
   AxisSpec SmallMultAxis = {100, 0.5, 100.5};
 
   // The objects are uploaded with https://alimonitor.cern.ch/ccdb/upload.jsp
@@ -59,9 +61,20 @@ struct Binner {
   }
 
   template <typename C>
-  inline bool isCollisionSelectedMC(C const& collision)
+  static inline bool isCollisionSelectedMC(C const& collision)
   {
     return collision.selection_bit(aod::evsel::kIsTriggerTVX) &&
+           collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+           collision.selection_bit(aod::evsel::kIsVertexITSTPC) &&
+           collision.selection_bit(aod::evsel::kIsVertexTOFmatched);
+  }
+
+  template <typename C>
+  static inline bool isCollisionSelected(C const& collision)
+  {
+    return collision.selection_bit(aod::evsel::kIsTriggerTVX) &&
+           collision.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
+           collision.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
            collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
            collision.selection_bit(aod::evsel::kIsVertexITSTPC) &&
            collision.selection_bit(aod::evsel::kIsVertexTOFmatched);
@@ -73,6 +86,7 @@ struct Binner {
   void init(InitContext const&)
   {
     AxisSpec MultAxis = {multBinning};
+    AxisSpec CentAxis = {centBinning};
     h.add({"hFT0M", "; N_{part} in FT0M acc", {HistType::kTH1F, {MultAxis}}});
     h.add({"hFT0C", "; N_{part} in FT0C acc", {HistType::kTH1F, {MultAxis}}});
     if (dobin) {
@@ -80,10 +94,11 @@ struct Binner {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
     }
-    if (docalibrate) {
-    }
     if (docalibrateAdvanced) {
-      h.add({"hCorrelate", " ; N_{part}^{FT0M}; N_{part}^{FT0C}; dN/d#eta|_{#eta = 0}", {HistType::kTHnSparseF, {MultAxis, MultAxis, SmallMultAxis}}});
+      h.add({"hCorrelate", " ; N_{part}^{FT0M}; N_{part}^{FT0C}; N_{trk}^{#eta = 0}", {HistType::kTHnSparseF, {MultAxis, MultAxis, SmallMultAxis}}});
+    }
+    if (dogetData) {
+      h.add({"hTrkAt0vsFT0M", " ; N_{trk}^{#eta = 0}; FT0M percentile", {HistType::kTH2F, {SmallMultAxis, CentAxis}}});
     }
   }
 
@@ -115,7 +130,8 @@ struct Binner {
 
   PROCESS_SWITCH(Binner, calibrate, "Create binnings", true);
 
-  using ExCols = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using ExColsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using ExColsCentFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   // require a mix of ITS+TPC and ITS-only tracks (filters on the same table are automatically combined with &&)
   Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
@@ -126,7 +142,7 @@ struct Binner {
   Filter fTracksEta = nabs(aod::track::eta) < 0.5f;
 
   void calibrateAdvanced(aod::McCollision const& mcc,
-                         soa::SmallGroups<ExCols> const& collisions,
+                         soa::SmallGroups<ExColsMC> const& collisions,
                          Particles const&,
                          soa::Filtered<Trks> const& tracks)
   {
@@ -163,6 +179,16 @@ struct Binner {
   }
 
   PROCESS_SWITCH(Binner, calibrateAdvanced, "Create binning matched to dN/deta", false);
+
+  void getData(ExColsCentFT0M::iterator const& collision,
+               soa::Filtered<Trks> const& tracks)
+  {
+    if (isCollisionSelected(collision)) {
+      h.fill(HIST("hTrkAt0vsFT0M"), tracks.size(), collision.centFT0M());
+    }
+  }
+
+  PROCESS_SWITCH(Binner, getData, "Get data distribution to match to", false);
 
   void bin(aod::BCsWithTimestamps const& bcs, aod::McCollisions const& mccollisions, Particles const&)
   {
