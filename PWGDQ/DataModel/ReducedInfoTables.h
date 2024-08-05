@@ -506,19 +506,6 @@ DECLARE_SOA_TABLE(ReducedMFTAssoc, "AOD", "RMFTASSOC", //! Table for reducemft-t
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedMFTId);
 
-namespace smearedtrack
-{
-DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
-DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
-DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
-DECLARE_SOA_COLUMN(Efficiency, efficiency, float);
-DECLARE_SOA_COLUMN(DCA, dca, float);
-} // namespace smearedtrack
-
-DECLARE_SOA_TABLE(SmearedTracks, "AOD", "SMEAREDTRACK", // use like this Join<ReducedMCTracks, SmearedTracks>
-                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared, smearedtrack::Efficiency, smearedtrack::DCA);
-using SmearedTrack = SmearedTracks::iterator;
-
 namespace dilepton_track_index
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedMuons, "_0"); //! Index to first prong

@@ -308,7 +308,7 @@ struct femtoUniverseProducerTask {
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
       if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue)) {
           return true;
         } else {
           return false;
@@ -325,7 +325,7 @@ struct femtoUniverseProducerTask {
       }
     } else if (mom > 1.5) { // 1.5 -
       if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue)) {
           return true;
         } else {
           return false;
@@ -1066,7 +1066,7 @@ struct femtoUniverseProducerTask {
         std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            if (pdgCode == 333 || pdgCode == 3122) { // ATTENTION: workaround for now, because all Phi mesons and lambda baryons are NOT primary particles for now.
+            if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
               pass = true;
             } else {
               if (particle.isPhysicalPrimary())
