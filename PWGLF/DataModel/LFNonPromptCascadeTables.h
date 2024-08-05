@@ -25,7 +25,7 @@ namespace o2::aod
 namespace NPCascadeTable
 {
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float);
-DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, int);
+DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
 DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
 DECLARE_SOA_COLUMN(IsGoodCascade, isGoodCascade, bool);
 DECLARE_SOA_COLUMN(PdgCodePrimary, pdgCodePrimary, int);
