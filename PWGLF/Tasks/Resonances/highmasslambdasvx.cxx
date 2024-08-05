@@ -317,7 +317,7 @@ struct highmasslambdasvx {
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    const float pT = candidate.pt();
+    // const float pT = candidate.pt();
     const std::vector<float> decVtx = {candidate.x(), candidate.y(), candidate.z()};
     const float tranRad = candidate.v0radius();
     const double dcaDaughv0 = TMath::Abs(candidate.dcaV0daughters());
