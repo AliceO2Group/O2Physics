@@ -357,10 +357,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
