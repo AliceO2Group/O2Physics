@@ -23,5 +23,5 @@
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DileptonMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, FilteredMyMCMuons>>(cfgc, TaskName{"dimuon-mc"})};
+    adaptAnalysisTask<DileptonMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, FilteredMyMCMuons, MySmearedMuons>>(cfgc, TaskName{"dimuon-mc"})};
 }
