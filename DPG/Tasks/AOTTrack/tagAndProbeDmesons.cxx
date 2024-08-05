@@ -330,13 +330,13 @@ struct TagTwoProngDisplacedVertices {
 
     if (mlConfig.applyMlPiPiFromDplus || mlConfig.applyMlDzeroFromDstar || mlConfig.applyMlKaKaFromDsOrDplus || mlConfig.applyMlDzeroKaKaFromDstar) {
       if (doprocessPiPiFromDplusMc || doprocessKaKaFromDsOrDplusMc || doprocessKaPiFromDstarMc) {
-        for (int iScore{0}; iScore<mlConfig.numMlClasses; ++iScore) {
+        for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
           hBkgMlScore.push_back(registry.add<TH2>(Form("hBkgMlScore%d"), Form(";#it{p}_{T}(tag) (GeV/#it{c});ML score %d; counts", iScore), HistType::kTH2D, {axisPt, axisMlScore}));
           hPromptMlScore.push_back(registry.add<TH2>(Form("hPromptMlScore%d"), Form(";#it{p}_{T}(tag) (GeV/#it{c});ML score %d; counts", iScore), HistType::kTH2D, {axisPt, axisMlScore}));
           hNonPromptMlScore.push_back(registry.add<TH2>(Form("hNonPromptMlScore%d"), Form(";#it{p}_{T}(tag) (GeV/#it{c});ML score %d; counts", iScore), HistType::kTH2D, {axisPt, axisMlScore}));
         }
       } else {
-        for (int iScore{0}; iScore<mlConfig.numMlClasses; ++iScore) {
+        for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
           hDataMlScore.push_back(registry.add<TH2>(Form("hMlScore%d"), Form(";#it{p}_{T}(tag) (GeV/#it{c});ML score %d; counts", iScore), HistType::kTH2D, {axisPt, axisMlScore}));
         }
       }
