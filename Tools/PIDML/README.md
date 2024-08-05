@@ -54,7 +54,7 @@ Currently, only models for run 285064 (timestamp interval: 1524176895000 - 15242
 
 Both model and interface analysis examples can be run with a script:
 
-### Script for Run2 Converted to Run3 data:
+### Script for Run2 Converted to Run3 data
 ```bash
 #!/bin/bash
 
@@ -77,7 +77,7 @@ o2-analysis-tracks-extra-converter --configuration json://$config_file -b |
 ```
 Remember to set every setting, which states that helper task should process Run2 data to `true`.
 
-### Script for Run3 data:
+### Script for Run3 data
 ```bash
 #!/bin/bash
 
