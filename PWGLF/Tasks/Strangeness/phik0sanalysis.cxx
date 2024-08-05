@@ -911,13 +911,13 @@ struct phik0shortanalysis {
       }
 
       float nsigmaTPC, nsigmaTOF;
-      if (track.hasTPC()) 
+      if (track.hasTPC())
         nsigmaTPC = track.tpcNSigmaPi();
-      else 
+      else
         nsigmaTPC = -9.99;
-      if (track.hasTOF()) 
+      if (track.hasTOF())
         nsigmaTOF = track.tofNSigmaPi();
-      else 
+      else
         nsigmaTOF = -9.99;
 
       float weightInclusive = 1. / static_cast<float>(countInclusive);
@@ -1149,13 +1149,13 @@ struct phik0shortanalysis {
         }
 
         float nsigmaTPC, nsigmaTOF;
-        if (track.hasTPC()) 
+        if (track.hasTPC())
           nsigmaTPC = track.tpcNSigmaPi();
-        else 
+        else
           nsigmaTPC = -9.99;
-        if (track.hasTOF()) 
+        if (track.hasTOF())
           nsigmaTOF = track.tofNSigmaPi();
-        else 
+        else
           nsigmaTOF = -9.99;
 
         float weightInclusive = 1. / static_cast<float>(countInclusive);
@@ -1484,13 +1484,13 @@ struct phik0shortanalysis {
       }
 
       float nsigmaTPC, nsigmaTOF;
-      if (track.hasTPC()) 
+      if (track.hasTPC())
         nsigmaTPC = track.tpcNSigmaPi();
-      else 
+      else
         nsigmaTPC = -9.99;
-      if (track.hasTOF()) 
+      if (track.hasTOF())
         nsigmaTOF = track.tofNSigmaPi();
-      else 
+      else
         nsigmaTOF = -9.99;
 
       float weightInclusive = 1. / static_cast<float>(countInclusive);
