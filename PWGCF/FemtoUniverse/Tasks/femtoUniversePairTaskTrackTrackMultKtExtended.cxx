@@ -342,26 +342,17 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   /// Linear cut for clearer TPC Deuteron Sigma
   bool IsDeuteronNSigmaLinearCut(float mom, float nsigmaTPCDe, float nsigmaTOFDe, float tpcSignal)
   {
-    if (lincut.ConfIsLine == true)
-    {
-      if (mom > 0.8 && mom < 1.4)
-      {
-        if (tpcSignal > lincut.a * mom + lincut.b)
-        {
+    if (lincut.ConfIsLine == true) {
+      if (mom > 0.8 && mom < 1.4) {
+        if (tpcSignal > lincut.a * mom + lincut.b) {
           return IsDeuteronNSigma(mom, nsigmaTPCDe, nsigmaTOFDe);
-        }
-        else
-        {
+        } else {
           return false;
         }
-      }
-      else
-      {
+      } else {
         return IsDeuteronNSigma(mom, nsigmaTPCDe, nsigmaTOFDe);
       }
-    }
-    else
-    {
+    } else {
       return IsDeuteronNSigma(mom, nsigmaTPCDe, nsigmaTOFDe);
     }
   }
