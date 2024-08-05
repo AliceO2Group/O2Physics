@@ -278,7 +278,7 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
 
-  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles, aod::BCsWithTimestamps const&)
+  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles)
   {
     float multiplicity = 0.0f;
     for (auto& particle : particles) {
@@ -325,6 +325,9 @@ struct MultiplicitySelector {
     if (doprocessFT0A) {
       enabledFunctions++;
     }
+    if (doprocessMCGen) {
+      enabledFunctions++;
+    }
 
     if (enabledFunctions != 1) {
       LOGP(fatal, "{} multiplicity selectors enabled but we need exactly 1.", enabledFunctions);
@@ -368,6 +371,12 @@ struct MultiplicitySelector {
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processRun2V0M, "Select V0M centrality as multiplicity", true);
+
+  void processMCGen(aod::McCollision const&, aod::McParticles const& particles)
+  {
+    output(particles.size());
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processMCGen, "Select MC particle count as multiplicity", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
