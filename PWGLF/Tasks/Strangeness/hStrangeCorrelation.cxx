@@ -324,7 +324,7 @@ struct correlateStrangeness {
             assoc.dcaV0daughters() > systCuts.dcaV0dau ||
             assoc.dcacascdaughters() > systCuts.casc_dcacascdau ||
             assoc.v0cosPA(pvx, pvy, pvz) < systCuts.v0cospa ||
-            assoc.casccosPA(pvx, pvy, pvz) < systCuts.v0cospa ||
+            assoc.casccosPA(pvx, pvy, pvz) < systCuts.casc_cospa ||
             assoc.cascradius() < systCuts.casc_cascradius ||
             std::abs(assoc.dcav0topv(pvx, pvy, pvz)) < systCuts.casc_mindcav0topv ||
             std::abs(assoc.mLambda() - pdgDB->Mass(3122)) > systCuts.casc_v0masswindow)
@@ -924,7 +924,7 @@ struct correlateStrangeness {
           cascData.dcaV0daughters() > systCuts.dcaV0dau ||
           cascData.dcacascdaughters() > systCuts.casc_dcacascdau ||
           cascData.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.v0cospa ||
-          cascData.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.v0cospa ||
+          cascData.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.casc_cospa ||
           cascData.cascradius() < systCuts.casc_cascradius ||
           std::abs(cascData.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < systCuts.casc_mindcav0topv ||
           std::abs(cascData.mLambda() - pdgDB->Mass(3122)) > systCuts.casc_v0masswindow)
