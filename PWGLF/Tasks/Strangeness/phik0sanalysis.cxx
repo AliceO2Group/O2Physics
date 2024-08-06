@@ -1273,7 +1273,7 @@ struct phik0shortanalysis {
       return;
 
     float multiplicity = collision.centFT0M();
-    eventHist.fill(HIST("hRecMCMultiplicityPercent"), multiplicity);
+    MCeventHist.fill(HIST("hRecMCMultiplicityPercent"), multiplicity);
 
     int iBin = 0;
     for (int i = 0; i < nMultBin; i++) {
@@ -1459,7 +1459,7 @@ struct phik0shortanalysis {
       return;
 
     float multiplicity = collision.centFT0M();
-    eventHist.fill(HIST("hRecMCMultiplicityPercent"), multiplicity);
+    MCeventHist.fill(HIST("hRecMCMultiplicityPercent"), multiplicity);
 
     int iBin = 0;
     for (int i = 0; i < nMultBin; i++) {
@@ -1659,7 +1659,7 @@ struct phik0shortanalysis {
     MCeventHist.fill(HIST("hGenMCEventSelection"), 3); // with at least a rec collision
 
     float multiplicity = mcCollision.centFT0M();
-    eventHist.fill(HIST("hGenMCMultiplicityPercent"), multiplicity);
+    MCeventHist.fill(HIST("hGenMCMultiplicityPercent"), multiplicity);
 
     int iBin = 0;
     for (int i = 0; i < nMultBin; i++) {
@@ -1744,7 +1744,7 @@ struct phik0shortanalysis {
     MCeventHist.fill(HIST("hGenMCEventSelection"), 3); // with at least a rec collision
 
     float multiplicity = mcCollision.centFT0M();
-    eventHist.fill(HIST("hGenMCMultiplicityPercent"), multiplicity);
+    MCeventHist.fill(HIST("hGenMCMultiplicityPercent"), multiplicity);
 
     int iBin = 0;
     for (int i = 0; i < nMultBin; i++) {
