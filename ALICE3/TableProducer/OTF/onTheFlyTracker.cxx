@@ -214,6 +214,7 @@ struct OnTheFlyTracker {
   std::vector<o2::InteractionRecord> bcData;
   o2::steer::InteractionSampler irSampler;
   o2::vertexing::PVertexer vertexer;
+  std::vector<cascadecandidate> cascadesAlice3;
 
   void init(o2::framework::InitContext&)
   {
@@ -903,21 +904,8 @@ struct OnTheFlyTracker {
                 histos.fill(HIST("hFoundVsFindable"), thisCascade.findableClusters, thisCascade.foundClusters);
               }
 
-              // fill table
-              upgradeCascades(
-                thisCascade.cascadeTrackId,
-                thisCascade.positiveId,
-                thisCascade.negativeId,
-                thisCascade.bachelorId,
-                thisCascade.dcaV0dau,
-                thisCascade.dcacascdau,
-                thisCascade.v0radius,
-                thisCascade.cascradius,
-                thisCascade.cascradiusMC,
-                thisCascade.mLambda,
-                thisCascade.mXi,
-                thisCascade.findableClusters,
-                thisCascade.foundClusters);
+              // add this cascade to vector (will fill cursor later with collision ID)
+              cascadesAlice3.push_back(thisCascade);
             }
           }
         } // end cascade building
@@ -1136,6 +1124,24 @@ struct OnTheFlyTracker {
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
       TracksAlice3(false);
+    }
+
+    for(const auto& cascade : cascadesAlice3){ 
+      upgradeCascades(
+        collisions.lastIndex(), // now we know the collision index -> populate table
+        cascade.cascadeTrackId,
+        cascade.positiveId,
+        cascade.negativeId,
+        cascade.bachelorId,
+        cascade.dcaV0dau,
+        cascade.dcacascdau,
+        cascade.v0radius,
+        cascade.cascradius,
+        cascade.cascradiusMC,
+        cascade.mLambda,
+        cascade.mXi,
+        cascade.findableClusters,
+        cascade.foundClusters);
     }
   }
 };

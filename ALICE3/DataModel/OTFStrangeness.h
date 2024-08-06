@@ -26,6 +26,7 @@ namespace o2::aod
 {
 namespace otfcascade
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                     //!
 DECLARE_SOA_INDEX_COLUMN_FULL(CascadeTrack, cascadeTrack, int, Tracks, "_Cascade"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg");             //!
@@ -47,6 +48,7 @@ DECLARE_SOA_COLUMN(FoundClusters, foundClusters, int);
 } // namespace otfcascade
 DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
                   o2::soa::Index<>,
+                  otfcascade::CollisionId,
                   otfcascade::CascadeTrackId,
                   otfcascade::PosTrackId,
                   otfcascade::NegTrackId,
