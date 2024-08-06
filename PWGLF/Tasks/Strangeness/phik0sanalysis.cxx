@@ -168,8 +168,7 @@ struct phik0shortanalysis {
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
-  ConfigurableAxis axisBinnedpT{"binned pT axis", {VARIABLE_WIDTH, 0.0, 0.5, 1.2, 10.0}, "pT axis for bin"};
-
+  Configurable<std::vector<float>> binspT{"binspT", std::vector<float>{0.0, 0.5, 1.2, 10.0}, "pT bin limits for pions"};
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiPlus;
@@ -220,7 +219,7 @@ struct phik0shortanalysis {
     AxisSpec deltayAxis = {16, 0.0f, 0.8f, "|#it{#Deltay}|"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedptAxis = {axisBinnedpT, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedptAxis{{0.0, 0.5, 1.2, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
     std::vector<AxisSpec> cfgPhimassAxisInc;
     std::vector<AxisSpec> cfgPhimassAxisFCut;
     std::vector<AxisSpec> cfgPhimassAxisSCut;
