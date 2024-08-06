@@ -385,17 +385,17 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra_000, "AOD", "UDFWDTRACKEXTRA",
 
 // Version with global tracks
 DECLARE_SOA_TABLE_VERSIONED(UDFwdTracksExtra_001, "AOD", "UDFWDTRACKEXTRA", 1,
-                  fwdtrack::TrackType,
-                  fwdtrack::NClusters,
-                  fwdtrack::PDca,
-                  fwdtrack::RAtAbsorberEnd,
-                  fwdtrack::Chi2,
-                  fwdtrack::Chi2MatchMCHMID,
-                  fwdtrack::Chi2MatchMCHMFT,
-                  fwdtrack::MCHBitMap,
-                  fwdtrack::MIDBitMap,
-                  fwdtrack::MIDBoards);
-                  
+                            fwdtrack::TrackType,
+                            fwdtrack::NClusters,
+                            fwdtrack::PDca,
+                            fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2,
+                            fwdtrack::Chi2MatchMCHMID,
+                            fwdtrack::Chi2MatchMCHMFT,
+                            fwdtrack::MCHBitMap,
+                            fwdtrack::MIDBitMap,
+                            fwdtrack::MIDBoards);
+
 using UDFwdTracksExtra = UDFwdTracksExtra_001;
 
 using UDFwdTrack = UDFwdTracks::iterator;
