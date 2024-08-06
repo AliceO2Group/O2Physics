@@ -550,10 +550,7 @@ struct nucleiSpectra {
         if (hasMcParticle) {
           hTrackTunedTracks->Fill(1); // all tracks
           auto mcParticle = track.mcParticle();
-          std::cout << " ======================= tuning track! ======================= " << std::endl;
-          // TODO: segfault here!
           trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov, hTrackTunedTracks);
-          std::cout << " ======================= track is tuned! ======================= " << std::endl;
         }
       }
 
