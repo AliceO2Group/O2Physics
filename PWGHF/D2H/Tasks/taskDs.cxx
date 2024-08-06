@@ -58,6 +58,11 @@ struct HfTaskDs {
   Configurable<std::vector<int>> classMl{"classMl", {0, 2, 3}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
+  Configurable<double> minMassDsSignal{"minMassDsSignal", 1.934, "min mass for Ds signal"};
+  Configurable<double> maxMassDsSignal{"maxMassDsSignal", 1.994, "max mass for Ds signal"};
+  Configurable<double> minMassDplusSignal{"minMassDplusSignal", 1.866, "min mass for Dplus signal"};
+  Configurable<double> maxMassDplusSignal{"maxMassDplusSignal", 1.906, "max mass for Dplus signal"};
+
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f}, "axis for pT"};
   ConfigurableAxis axisNPvContributors{"axisNPvContributors", {200, -0.5f, 199.5f}, "axis for NPvContributors"};
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
@@ -728,9 +733,9 @@ struct HfTaskDs {
   {
     bool isKKPi = candidate.isSelDsToKKPi() >= selectionFlagDs;
     float invMass = isKKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
-    if (isDs && (invMass < 1.934f || invMass > 1.994f))
+    if (isDs && (invMass < minMassDsSignal || invMass > minMassDsSignal))
       return false;
-    if (!isDs && (invMass < 1.866f || invMass > 1.906f))
+    if (!isDs && (invMass < minMassDplusSignal || invMass > maxMassDplusSignal))
       return false;
     return true;
   }
