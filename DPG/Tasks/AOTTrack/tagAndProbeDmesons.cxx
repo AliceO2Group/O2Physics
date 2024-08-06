@@ -1161,6 +1161,8 @@ struct ProbeThirdTrack {
 
   std::array<TrackSelection, aod::tagandprobe::TrackTypes::NTrackTypes> trackSelector{}; // define the track selectors
   std::array<bool, aod::tagandprobe::TagChannels::NTagChannels> applyMl{};
+  std::array<float, aod::tagandprobe::TagChannels::NTagChannels> minInvMass{};
+  std::array<float, aod::tagandprobe::TagChannels::NTagChannels> maxInvMass{};
 
   std::array<std::array<std::shared_ptr<THnSparse>, aod::tagandprobe::TrackTypes::NTrackTypes>, aod::tagandprobe::TagChannels::NTagChannels> histos{};
   std::array<std::shared_ptr<THnSparse>, aod::tagandprobe::TagChannels::NTagChannels> histosGen{};
@@ -1233,6 +1235,9 @@ struct ProbeThirdTrack {
         histos[iChannel][iTrackType] = registry.add<THnSparse>(Form("h%sVsPtProbeTag_%s", tagChannels[iChannel].data(), trackTypes[iTrackType].data()),
                                                                "; #it{p}_{T}(D) (GeV/#it{c}); #it{p}_{T}(tag) (GeV/#it{c}); #it{p}_{T}(probe) (GeV/#it{c}); #it{p}_{T}^{TPC in}(probe) (GeV/#it{c}); #it{M}(D) (GeV/#it{c}^{2}); #it{M}(tag) (GeV/#it{c}^{2}); #it{#eta}(probe); #it{N}_{cross rows}^{TPC}(probe); #chi^{2}/#it{N}_{clusters}^{TPC}(probe); #it{N}_{clusters}^{ITS}(probe);",
                                                                HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel], axisEtaProbe, axisNumCrossRowTpc, axisTpcChi2PerClus, axisNumCluIts});
+        auto invMassBins = axisMass[iChannel].binEdges;
+        minInvMass[iChannel] = invMassBins.front();
+        maxInvMass[iChannel] = invMassBins.back();
       }
     }
     for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
@@ -1315,14 +1320,8 @@ struct ProbeThirdTrack {
       auto numItsCluTrackThird = trackThird.itsNCls();
       float invMass{-1.f}, invMassTag{-1.f}, ptTag{-1.f}, ptD{-1.f};
       computeInvariantMass(trackFirst, trackSecond, trackThird, channel, ptTag, invMassTag, ptD, invMass);
-      if constexpr (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
-        if (invMass > 0.17f) {
-          continue;
-        }
-      } else if constexpr (channel == aod::tagandprobe::TagChannels::DplusToKPiPi || channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
-        if ((invMass < 1.65f || invMass > 2.10f)) {
-          continue;
-        }
+      if (invMass < minInvMass[channel] || invMass > maxInvMass[channel]) {
+        continue;
       }
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
         if (trackSelector[iTrackType].IsSelected(trackThird)) {
