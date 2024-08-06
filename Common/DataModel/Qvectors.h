@@ -93,9 +93,9 @@ DECLARE_SOA_TABLE(QvectorFT0CVecs, "AOD", "QVECTORSFT0CVEC", qvec::IsCalibrated,
 DECLARE_SOA_TABLE(QvectorFT0AVecs, "AOD", "QVECTORSFT0AVEC", qvec::IsCalibrated, qvec::QvecFT0AReVec, qvec::QvecFT0AImVec, qvec::SumAmplFT0A);
 DECLARE_SOA_TABLE(QvectorFT0MVecs, "AOD", "QVECTORSFT0MVEC", qvec::IsCalibrated, qvec::QvecFT0MReVec, qvec::QvecFT0MImVec, qvec::SumAmplFT0M);
 DECLARE_SOA_TABLE(QvectorFV0AVecs, "AOD", "QVECTORSFV0AVEC", qvec::IsCalibrated, qvec::QvecFV0AReVec, qvec::QvecFV0AImVec, qvec::SumAmplFV0A);
-DECLARE_SOA_TABLE(QvectorTPCposVecs, "AOD", "QVECTORSTPCPOSVEC", qvec::IsCalibrated, qvec::QvecTPCposReVec, qvec::QvecTPCposImVec, qvec::NTrkTPCpos, qvec::LabelsTPCpos);
-DECLARE_SOA_TABLE(QvectorTPCnegVecs, "AOD", "QVECTORSTPCNEGVEC", qvec::IsCalibrated, qvec::QvecTPCnegReVec, qvec::QvecTPCnegImVec, qvec::NTrkTPCneg, qvec::LabelsTPCneg);
-DECLARE_SOA_TABLE(QvectorTPCallVecs, "AOD", "QVECTORSTPCTOTVEC", qvec::IsCalibrated, qvec::QvecTPCallReVec, qvec::QvecTPCallImVec, qvec::NTrkTPCall, qvec::LabelsTPCall);
+DECLARE_SOA_TABLE(QvectorTPCposVecs, "AOD", "QVECTORSTPCPOVEC", qvec::IsCalibrated, qvec::QvecTPCposReVec, qvec::QvecTPCposImVec, qvec::NTrkTPCpos, qvec::LabelsTPCpos);
+DECLARE_SOA_TABLE(QvectorTPCnegVecs, "AOD", "QVECTORSTPCNEVEC", qvec::IsCalibrated, qvec::QvecTPCnegReVec, qvec::QvecTPCnegImVec, qvec::NTrkTPCneg, qvec::LabelsTPCneg);
+DECLARE_SOA_TABLE(QvectorTPCallVecs, "AOD", "QVECTORSTPCTOVEC", qvec::IsCalibrated, qvec::QvecTPCallReVec, qvec::QvecTPCallImVec, qvec::NTrkTPCall, qvec::LabelsTPCall);
 
 using QvectorFT0C = QvectorFT0Cs::iterator;
 using QvectorFT0A = QvectorFT0As::iterator;
