@@ -113,7 +113,6 @@ struct jEPFlowAnalysis {
     Float_t cent = coll.cent();
     EPFlowHistograms.fill(HIST("FullCentrality"), cent);
     Float_t EPs[3] = {0.};
-    Float_t vn[3][3] = {{0.}};
     for (uint i = 0; i < 3; i++) {
       EPs[0] = helperEP.GetEventPlane(coll.qvecRe()[DetId + 3], coll.qvecIm()[DetId + 3], i + 2);
       EPs[1] = helperEP.GetEventPlane(coll.qvecRe()[RefAId + 3], coll.qvecIm()[RefAId + 3], i + 2);
@@ -124,7 +123,6 @@ struct jEPFlowAnalysis {
       Float_t resDenom = helperEP.GetResolution(EPs[1], EPs[2], i + 2);
       epAnalysis.FillResolutionHistograms(cent, static_cast<float>(i + 2), resNumA, resNumB, resDenom);
       for (uint j = 0; j < 3; j++) {
-        Float_t sumCos = 0;
         for (auto& track : tracks) {
           Float_t vn = TMath::Cos((i + 2) * (track.phi() - EPs[j]));
           Float_t vn_sin = TMath::Sin((i + 2) * (track.phi() - EPs[j]));
