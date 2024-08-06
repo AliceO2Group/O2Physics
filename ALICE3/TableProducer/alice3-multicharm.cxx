@@ -117,10 +117,15 @@ struct alice3multicharm {
     float mass;
     float pt;
     float eta;
+    std::array<float, 3> xyz;
+    std::array<float, 3> prong0mom;
+    std::array<float, 3> prong1mom;
+    std::array<float, 3> prong2mom;
+    std::array<float, 21> parentTrackCovMatrix = {0};
   } thisCandidate;
 
   template <typename TTrackType>
-  bool buildDecayCandidateTwoBody(TTrackType const& t0, TTrackType const& t1, float mass0, float mass1, o2::track::TrackParCov& parentTrack)
+  bool buildDecayCandidateTwoBody(TTrackType const& t0, TTrackType const& t1, float mass0, float mass1)
   {
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
     // Move close to minima
@@ -137,22 +142,48 @@ struct alice3multicharm {
 
     o2::track::TrackParCov t0new = fitter.getTrack(0);
     o2::track::TrackParCov t1new = fitter.getTrack(1);
-    std::array<float, 3> P0;
-    std::array<float, 3> P1;
-    t0new.getPxPyPzGlo(P0);
-    t1new.getPxPyPzGlo(P1);
+    t0new.getPxPyPzGlo(thisCandidate.prong0mom);
+    t1new.getPxPyPzGlo(thisCandidate.prong1mom);
+
+    // get decay vertex coordinates
+    const auto& vtx = fitter.getPCACandidate();
+    for (int i = 0; i < 3; i++) {
+      thisCandidate.xyz[i] = vtx[i];
+    }
+
+    // compute cov mat 
+    for (int ii=0; ii<21; ii++) 
+      thisCandidate.parentTrackCovMatrix[ii] = 0.0f; 
+
+    std::array<float, 21> covA = {0};
+    std::array<float, 21> covB = {0};
+    fitter.getTrack(0).getCovXYZPxPyPzGlo(covA);
+    fitter.getTrack(1).getCovXYZPxPyPzGlo(covB);
+
+    const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+    for (int i = 0; i < 6; i++) {
+      int j = momInd[i];
+      thisCandidate.parentTrackCovMatrix[j] = covA[j]+covB[j];
+    }
+
+    auto covVtx = fitter.calcPCACovMatrix();
+    thisCandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
+    thisCandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
+    thisCandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
+    thisCandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
+    thisCandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
+    thisCandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
 
     // set relevant values
     thisCandidate.dca = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    thisCandidate.mass = RecoDecay::m(array{array{P0[0], P0[1], P0[2]}, array{P1[0], P1[1], P1[2]}}, array{mass0, mass1});
-    thisCandidate.pt = std::hypot(P0[0] + P1[0], P0[1] + P1[1]);
-    thisCandidate.eta = RecoDecay::eta(array{P0[0] + P1[0], P0[1] + P1[1], P0[2] + P1[2]});
-    parentTrack = fitter.createParentTrackParCov();
+    thisCandidate.mass = RecoDecay::m(array{array{thisCandidate.prong0mom[0], thisCandidate.prong0mom[1], thisCandidate.prong0mom[2]}, array{thisCandidate.prong1mom[0], thisCandidate.prong1mom[1], thisCandidate.prong1mom[2]}}, array{mass0, mass1});
+    thisCandidate.pt = std::hypot(thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0], thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1]);
+    thisCandidate.eta = RecoDecay::eta(array{thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0], thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1], thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2]});
     return true;
   }
 
   template <typename TTrackType1, typename TTrackType2, typename TTrackType3>
-  bool buildDecayCandidateThreeBody(TTrackType1 const& prong0, TTrackType2 const& prong1, TTrackType3 const& prong2, float p0mass, float p1mass, float p2mass, o2::track::TrackParCov& parentTrack)
+  bool buildDecayCandidateThreeBody(TTrackType1 const& prong0, TTrackType2 const& prong1, TTrackType3 const& prong2, float p0mass, float p1mass, float p2mass)
   {
     o2::track::TrackParCov t0 = getTrackParCov(prong0);
     o2::track::TrackParCov t1 = getTrackParCov(prong1);
@@ -171,22 +202,49 @@ struct alice3multicharm {
     }
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
 
-    t0 = fitter.getTrack(0);
-    t1 = fitter.getTrack(1);
-    t2 = fitter.getTrack(2);
-    std::array<float, 3> P0;
-    std::array<float, 3> P1;
-    std::array<float, 3> P2;
-    t0.getPxPyPzGlo(P0);
-    t1.getPxPyPzGlo(P1);
-    t2.getPxPyPzGlo(P2);
+    t0 = fitter3.getTrack(0);
+    t1 = fitter3.getTrack(1);
+    t2 = fitter3.getTrack(2);
+    t0.getPxPyPzGlo(thisCandidate.prong0mom);
+    t1.getPxPyPzGlo(thisCandidate.prong1mom);
+    t2.getPxPyPzGlo(thisCandidate.prong2mom);
+
+    // get decay vertex coordinates
+    const auto& vtx = fitter3.getPCACandidate();
+    for (int i = 0; i < 3; i++) {
+      thisCandidate.xyz[i] = vtx[i];
+    }
+
+    // compute cov mat 
+    for (int ii=0; ii<21; ii++) 
+      thisCandidate.parentTrackCovMatrix[ii] = 0.0f; 
+
+    std::array<float, 21> covA = {0};
+    std::array<float, 21> covB = {0};
+    std::array<float, 21> covC = {0};
+    fitter3.getTrack(0).getCovXYZPxPyPzGlo(covA);
+    fitter3.getTrack(1).getCovXYZPxPyPzGlo(covB);
+    fitter3.getTrack(2).getCovXYZPxPyPzGlo(covC);
+
+    const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+    for (int i = 0; i < 6; i++) {
+      int j = momInd[i];
+      thisCandidate.parentTrackCovMatrix[j] = covA[j]+covB[j]+covC[j];
+    }
+
+    auto covVtx = fitter3.calcPCACovMatrix();
+    thisCandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
+    thisCandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
+    thisCandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
+    thisCandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
+    thisCandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
+    thisCandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
 
     // set relevant values
     thisCandidate.dca = TMath::Sqrt(fitter3.getChi2AtPCACandidate());
-    thisCandidate.mass = RecoDecay::m(array{array{P0[0], P0[1], P0[2]}, array{P1[0], P1[1], P1[2]}, array{P2[0], P2[1], P2[2]}}, array{p0mass, p1mass, p2mass});
-    thisCandidate.pt = std::hypot(P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1]);
-    thisCandidate.eta = RecoDecay::eta(array{P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1], P0[2] + P1[2] + P2[2]});
-    parentTrack = fitter3.createParentTrackParCov();
+    thisCandidate.mass = RecoDecay::m(array{array{thisCandidate.prong0mom[0], thisCandidate.prong0mom[1], thisCandidate.prong0mom[2]}, array{thisCandidate.prong1mom[0], thisCandidate.prong1mom[1], thisCandidate.prong1mom[2]}, array{thisCandidate.prong2mom[0], thisCandidate.prong2mom[1], thisCandidate.prong2mom[2]}}, array{p0mass, p1mass, p2mass});
+    thisCandidate.pt = std::hypot(thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0], thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1]);
+    thisCandidate.eta = RecoDecay::eta(array{thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0], thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1], thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2] + thisCandidate.prong2mom[2]});
     return true;
   }
 
@@ -295,18 +353,22 @@ struct alice3multicharm {
             continue;
           // if I am here, it means this is a triplet to be considered for XiC vertexing. 
           // will now attempt to build a three-body decay candidate with these three track rows. 
-          o2::track::TrackParCov xicTrack;
-          if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570, xicTrack))
+          if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
             continue; // failed at building candidate
+
+          const std::array<float, 3> momentumC = {
+            thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0],
+            thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1],
+            thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2] + thisCandidate.prong2mom[2]};
+
+          o2::track::TrackParCov xicTrack(thisCandidate.xyz, momentumC, thisCandidate.parentTrackCovMatrix, +1);
 
           histos.fill(HIST("hMassXiC"), thisCandidate.mass);
 
           // attempt XiCC finding 
           for (auto const& picc : tracksPiFromXiCCgrouped) {
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
-
-            o2::track::TrackParCov xiccTrack;
-            if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570, xiccTrack))
+            if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
               continue; // failed at building candidate
 
             histos.fill(HIST("hMassXiCC"), thisCandidate.mass);

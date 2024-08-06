@@ -212,9 +212,9 @@ struct alice3decayFinder {
     }
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
 
-    t0 = fitter.getTrack(0);
-    t1 = fitter.getTrack(1);
-    t2 = fitter.getTrack(2);
+    t0 = fitter3.getTrack(0);
+    t1 = fitter3.getTrack(1);
+    t2 = fitter3.getTrack(2);
     std::array<float, 3> P0;
     std::array<float, 3> P1;
     std::array<float, 3> P2;

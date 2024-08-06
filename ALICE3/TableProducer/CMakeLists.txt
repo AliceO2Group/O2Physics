@@ -32,7 +32,7 @@ o2physics_add_dpl_workflow(alice3-centrality
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-decaypreselector
-                    SOURCES alice3-decayfinder.cxx
+                    SOURCES alice3-decaypreselector.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
