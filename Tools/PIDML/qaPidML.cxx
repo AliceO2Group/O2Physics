@@ -48,6 +48,10 @@ struct pidml {
   // available particles: 211, 2212, 321
   static constexpr int particlesPdgCode[numParticles] = {211, 2212, 321};
 
+  // values of track momentum when to switch from only TPC signal to combined TPC and TOF signal and to TPC+TOF+TRD
+  // i-th momentum corresponds to the i-th particle
+  static constexpr double pSwitchValue[numParticles][kNDetectors] = {{0.0, 0.5, 0.8}, {0.0, 0.8, 0.8}, {0.0, 0.5, 0.8}};
+
   HistogramRegistry histReg{
     "allHistograms",
     {{"MC/211", "MC #pi^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
@@ -324,9 +328,9 @@ struct pidml {
   void pidML(const T& track, const int pdgCodeMC)
   {
     float pidCertainties[3];
-    pidCertainties[0] = model211All.applyModel(track);
-    pidCertainties[1] = model2212All.applyModel(track);
-    pidCertainties[2] = model321All.applyModel(track);
+    pidCertainties[0] = model211.applyModel(track);
+    pidCertainties[1] = model2212.applyModel(track);
+    pidCertainties[2] = model321.applyModel(track);
     int pid = getParticlePdg(pidCertainties);
     // condition for sign: we want to work only with pi, p and K, without antiparticles
     if (pid == particlesPdgCode[i] && track.sign() == 1) {
@@ -338,14 +342,10 @@ struct pidml {
     }
   }
 
-  // one model for one particle; Model with all TPC and TOF signal
-  PidONNXModel model211All;
-  PidONNXModel model2212All;
-  PidONNXModel model321All;
-  // Model with only TPC signal model
-  PidONNXModel model211TPC;
-  PidONNXModel model2212TPC;
-  PidONNXModel model321TPC;
+  // one model for one particle
+  PidONNXModel model211;
+  PidONNXModel model2212;
+  PidONNXModel model321;
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
@@ -360,9 +360,9 @@ struct pidml {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL);
     } else {
-      model211All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, 0.5f);
-      model2212All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, 0.5f);
-      model321All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, 0.5f);
+      model211 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, 0.5f, pSwitchValue[0]);
+      model2212 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, 0.5f, pSwitchValue[1]);
+      model321 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, 0.5f, pSwitchValue[2]);
     }
   }
 
@@ -372,9 +372,9 @@ struct pidml {
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      model211All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, 0.5f);
-      model2212All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, 0.5f);
-      model321All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, 0.5f);
+      model211 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, 0.5f, pSwitchValue[0]);
+      model2212 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, 0.5f, pSwitchValue[1]);
+      model321 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, 0.5f, pSwitchValue[2]);
     }
 
     for (auto& track : tracks) {
