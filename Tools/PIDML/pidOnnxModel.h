@@ -44,11 +44,12 @@ enum PidMLDetector {
   kNDetectors ///< number of available detectors configurations
 };
 
-namespace pidml_pt_cuts {
-  // TODO: for now first limit wouldn't be used,
-  // network needs TPC, so we can either do not cut it by p or return 0.0f as prediction
-  constexpr double defaultModelPLimits[kNDetectors] = {0.0, 0.5, 0.8};
-}
+namespace pidml_pt_cuts
+{
+// TODO: for now first limit wouldn't be used,
+// network needs TPC, so we can either do not cut it by p or return 0.0f as prediction
+constexpr double defaultModelPLimits[kNDetectors] = {0.0, 0.5, 0.8};
+} // namespace pidml_pt_cuts
 
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
 namespace
