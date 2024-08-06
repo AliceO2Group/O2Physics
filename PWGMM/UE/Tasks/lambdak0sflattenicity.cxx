@@ -63,6 +63,13 @@ struct lambdak0sflattenicity {
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<bool> IsINELgt0{"isINELgt0", true, "is INEL gt 0"};
+  Configurable<bool> IsNoTimeFrameBorder{"IsNoTimeFrameBorder", true, "cut branch crossing at the beginning/end of TF"};
+  Configurable<bool> IsNoITSROFrameBorder{"IsNoITSROFrameBorder", true, "cut branch crossing at the beginning/end of ITS ROF"};
+  Configurable<bool> IsVertexITSTPC{"IsVertexITSTPC", false, "Is Vertex ITSTPC"};
+  Configurable<bool> IsNoSameBunchPileup{"IsNoSameBunchPileup", false, "Is No Same Bunch Pileup"};
+  Configurable<bool> IsGoodZvtxFT0vsPV{"IsGoodZvtxFT0vsPV", false, "Is Good Zvtx FT0 vs PV"};
+  Configurable<bool> IsTriggerTVX{"IsTriggerTVX", true, "coincidence of a signal in FT0A and FT0C"};
 
   // Configurables for Flattenicity
   Configurable<bool> applyCalibCh{"applyCalibCh", false, "equalize FV0"};
@@ -432,41 +439,47 @@ struct lambdak0sflattenicity {
   {
     rEventSelection.fill(HIST("hEventsSelected"), 0);
 
-    if (collision.isInelGt0() == false) {
+    if (IsINELgt0 && (collision.isInelGt0() == false)) {
       rEventSelection.fill(HIST("hEventsRejected"), 1);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 1);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (IsNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       rEventSelection.fill(HIST("hEventsRejected"), 2);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 2);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (IsNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       rEventSelection.fill(HIST("hEventsRejected"), 3);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 3);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    if (IsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       rEventSelection.fill(HIST("hEventsRejected"), 4);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 4);
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (IsNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       rEventSelection.fill(HIST("hEventsRejected"), 5);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 5);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (IsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       rEventSelection.fill(HIST("hEventsRejected"), 6);
       return false;
     }
     rEventSelection.fill(HIST("hEventsSelected"), 6);
+
+    if (IsTriggerTVX && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      rEventSelection.fill(HIST("hEventsRejected"), 7);
+      return false;
+    }
+    rEventSelection.fill(HIST("hEventsSelected"), 7);
 
     return true;
   }
