@@ -595,16 +595,22 @@ struct femtoUniverseProducerTask {
   }
 
   template <typename CollisionType, typename TrackType>
-  void fillMCTruthCollisions(CollisionType const& col, TrackType const&)
+  void fillMCTruthCollisions(CollisionType const& col, TrackType const& tracks)
   {
     for (auto& c : col) {
       const auto vtxZ = c.posZ();
-      const auto spher = 0; // colCuts.computeSphericity(col, tracks);
       int mult = 0;
       int multNtr = 0;
 
-      // colCuts.fillQA(c); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-      outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+      if (std::abs(vtxZ) > ConfEvtZvtx) {
+        continue;
+      }
+
+      if (ConfDoSpher) {
+        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      } else {
+        outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+      }
     }
   }
 
