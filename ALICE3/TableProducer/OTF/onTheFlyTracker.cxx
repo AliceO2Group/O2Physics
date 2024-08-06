@@ -463,7 +463,7 @@ struct OnTheFlyTracker {
     std::vector<double> l0Velocity(3);
     std::vector<double> xiMomentum = {particle.px(), particle.py(), particle.pz()};
     std::vector<double> xiProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
-    double bz = magneticField * (-0.1); // To tesla (sign?!)
+    double bz = magneticField * 0.1; // To tesla
     TRandom3 rand;
     rand.SetSeed(seed);
     double u = rand.Uniform(0, 1);
@@ -471,7 +471,7 @@ struct OnTheFlyTracker {
       xiVelocity[i] = xiMomentum[i] / particle.e();
     }
     double xi_v_tot = particle.p() / particle.e();
-    double xi_ctau = 4.91 / 100; // xi
+    double xi_ctau = 4.91; // xi
     double xi_charge = -1.6022e-19;
     double speedOfLight = 3e+8;
     double xi_v_xy = speedOfLight * sqrt(xiVelocity[0] * xiVelocity[0] + xiVelocity[1] * xiVelocity[1]);
@@ -493,7 +493,7 @@ struct OnTheFlyTracker {
     xiDecay.Generate();
     decayDaughters.push_back(*xiDecay.GetDecay(1));
 
-    double l0_ctau = 7.89 / 100; // lambda
+    double l0_ctau = 7.89; // lambda
     double l0_v_tot = xiDecay.GetDecay(0)->P() / xiDecay.GetDecay(0)->E();
     std::vector<double> l0Daughters = {0.139, 0.938};
     l0Velocity[0] = xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->E();
@@ -620,8 +620,8 @@ struct OnTheFlyTracker {
       if (treatXi) {
         if (mcParticle.pdgCode() == 3312) {
           decayParticle(mcParticle, decayProducts, xiDecayVertex, l0DecayVertex);
-          xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]) * 100;
-          l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]) * 100;
+          xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]);
+          l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]);
         }
       }
 
