@@ -272,6 +272,10 @@ struct TagTwoProngDisplacedVertices {
 
   std::array<LabeledArray<double>, aod::tagandprobe::TagChannels::NTagChannels> topologicalCuts{};
   std::array<std::vector<double>, aod::tagandprobe::TagChannels::NTagChannels> ptBinsForTopologicalCuts{};
+  std::vector<std::shared_ptr<TH2>> hBkgMlScore{};
+  std::vector<std::shared_ptr<TH2>> hPromptMlScore{};
+  std::vector<std::shared_ptr<TH2>> hNonPromptMlScore{};
+  std::vector<std::shared_ptr<TH2>> hDataMlScore{};
 
   HistogramRegistry registry{"registry"};
 
@@ -305,6 +309,7 @@ struct TagTwoProngDisplacedVertices {
     const AxisSpec axisReflFlag{3, 0.5f, 3.5f};
     const AxisSpec axisMassKaKa{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f};
     const AxisSpec axisMassKaPi{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f};
+    const AxisSpec axisMlScore{1000, 0.f, 1.f};
 
     if (doprocessPiPiFromDplus || doprocessPiPiFromDplusMc) {
       registry.add<TH2>("hMassPiPiVsPt", ";#it{p}_{T}(#pi#pi) (GeV/#it{c}); #it{M}(#pi#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassPiPi});
@@ -321,6 +326,20 @@ struct TagTwoProngDisplacedVertices {
     }
     if (doprocessKaKaFromDzero) {
       registry.add<TH2>("hMassDzeroKaKaVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
+    }
+
+    if (mlConfig.applyMlPiPiFromDplus || mlConfig.applyMlDzeroFromDstar || mlConfig.applyMlKaKaFromDsOrDplus || mlConfig.applyMlDzeroKaKaFromDstar) {
+      if (doprocessPiPiFromDplusMc || doprocessKaKaFromDsOrDplusMc || doprocessKaPiFromDstarMc) {
+        for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+          hBkgMlScore.push_back(registry.add<TH2>(Form("hBkgMlScore%d", iScore), Form(";#it{p}_{T}(tag) (GeV/#it{c});ML score %d; counts", iScore), HistType::kTH2D, {axisPt, axisMlScore}));
+          hPromptMlScore.push_back(registry.add<TH2>(Form("hPromptMlScore%d", iScore), Form(";#it{p}_{T}(tag) (GeV/#it{c});ML score %d; counts", iScore), HistType::kTH2D, {axisPt, axisMlScore}));
+          hNonPromptMlScore.push_back(registry.add<TH2>(Form("hNonPromptMlScore%d", iScore), Form(";#it{p}_{T}(tag) (GeV/#it{c});ML score %d; counts", iScore), HistType::kTH2D, {axisPt, axisMlScore}));
+        }
+      } else {
+        for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+          hDataMlScore.push_back(registry.add<TH2>(Form("hMlScore%d", iScore), Form(";#it{p}_{T}(tag) (GeV/#it{c});ML score %d; counts", iScore), HistType::kTH2D, {axisPt, axisMlScore}));
+        }
+      }
     }
 
     const std::array<LabeledArray<double>, aod::tagandprobe::TagChannels::NTagChannels> mlCuts = {mlConfig.mlCutsPiPiFromDplus, mlConfig.mlCutsKaKaFromDsOrDplus, mlConfig.mlCutsDzeroFromDstar, mlConfig.mlCutsDzeroFromDstar, mlConfig.mlCutsDzeroKaKaFromDstar};
@@ -657,21 +676,42 @@ struct TagTwoProngDisplacedVertices {
           continue;
         }
 
+        uint8_t isSignal{0u};
+        int motherIdx{-1};
+        if constexpr (doMc) {
+          isSignal = getTagOrigin(trackFirst, trackSecond, mcParticles, channel, pdgDecayMothers, pdgResonances, motherIdx);
+        }
+
         std::vector<float> mlScoresTag{};
         if (applyMl[channel]) {
-          if (!mlResponse[channel].isSelectedMl(topoVars, ptTag, mlScoresTag)) { // for the time being all the topological variables used for all channels (decLen, decLenXy, normDecLen, normDecLenXy, cosp, cospXy, dcaXyTrack0, dcaXyTrack1, dcaProd)
+          bool isMlSelected = mlResponse[channel].isSelectedMl(topoVars, ptTag, mlScoresTag);
+          // we fill control histograms
+          if constexpr (doMc) {
+            if (TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) {
+              for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+                hBkgMlScore.at(iScore)->Fill(ptTag, mlScoresTag.at(iScore));
+              }
+            } else if (TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt)) {
+              for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+                hPromptMlScore.at(iScore)->Fill(ptTag, mlScoresTag.at(iScore));
+              }
+            } else if (TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt)) {
+              for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+                hNonPromptMlScore.at(iScore)->Fill(ptTag, mlScoresTag.at(iScore));
+              }
+            }
+          } else {
+            for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+              hDataMlScore.at(iScore)->Fill(ptTag, mlScoresTag.at(iScore));
+            }
+          }
+          if (!isMlSelected) { // for the time being all the topological variables used for all channels (decLen, decLenXy, normDecLen, normDecLenXy, cosp, cospXy, dcaXyTrack0, dcaXyTrack1, dcaProd)
             continue;
           }
         }
 
         float invMass{std::sqrt(invMass2)};
         registry.fill(HIST("hMassPiPiVsPt"), ptTag, invMass); // only channel with same sign tracks for the moment
-
-        uint8_t isSignal{0u};
-        int motherIdx{-1};
-        if constexpr (doMc) {
-          isSignal = getTagOrigin(trackFirst, trackSecond, mcParticles, channel, pdgDecayMothers, pdgResonances, motherIdx);
-        }
 
         if (fillTopoVarsTable) {
           bool fillTable{true};
@@ -757,9 +797,36 @@ struct TagTwoProngDisplacedVertices {
           continue;
         }
 
+        uint8_t isSignal{0u};
+        int motherIdx{-1};
+        if constexpr (doMc) {
+          isSignal = getTagOrigin(trackPos, trackNeg, mcParticles, channel, pdgDecayMothers, pdgResonances, motherIdx);
+        }
+
         std::vector<float> mlScoresTag{};
         if (applyMl[channel]) {
-          if (!mlResponse[channel].isSelectedMl(topoVars, ptTag, mlScoresTag)) { // for the time being all the topological variables used for all channels (decLen, decLenXy, normDecLen, normDecLenXy, cosp, cospXy, dcaXyTrack0, dcaXyTrack1, dcaProd)
+          bool isMlSelected = mlResponse[channel].isSelectedMl(topoVars, ptTag, mlScoresTag);
+          // we fill control histograms
+          if constexpr (doMc) {
+            if (TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) {
+              for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+                hBkgMlScore.at(iScore)->Fill(ptTag, mlScoresTag.at(iScore));
+              }
+            } else if (TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt)) {
+              for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+                hPromptMlScore.at(iScore)->Fill(ptTag, mlScoresTag.at(iScore));
+              }
+            } else if (TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt)) {
+              for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+                hNonPromptMlScore.at(iScore)->Fill(ptTag, mlScoresTag.at(iScore));
+              }
+            }
+          } else {
+            for (int iScore{0}; iScore < mlConfig.numMlClasses; ++iScore) {
+              hDataMlScore.at(iScore)->Fill(ptTag, mlScoresTag.at(iScore));
+            }
+          }
+          if (!isMlSelected) { // for the time being all the topological variables used for all channels (decLen, decLenXy, normDecLen, normDecLenXy, cosp, cospXy, dcaXyTrack0, dcaXyTrack1, dcaProd)
             continue;
           }
         }
@@ -807,12 +874,6 @@ struct TagTwoProngDisplacedVertices {
           }
         } else if (channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
           registry.fill(HIST("hMassDzeroKaKaVsPt"), ptTag, invMass);
-        }
-
-        uint8_t isSignal{0u};
-        int motherIdx{-1};
-        if constexpr (doMc) {
-          isSignal = getTagOrigin(trackPos, trackNeg, mcParticles, channel, pdgDecayMothers, pdgResonances, motherIdx);
         }
 
         if (fillTopoVarsTable) {
