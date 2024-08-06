@@ -57,9 +57,9 @@ struct HfTaskFlowCharmHadrons {
   Configurable<int> qvecDetector{"qvecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
-  Configurable<bool> storeTrackFlow{"storeTrackFlow", false, "Flag to store track flow"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
 
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
@@ -162,7 +162,7 @@ struct HfTaskFlowCharmHadrons {
     }
 
     hfEvSel.addHistograms(registry); // collision monitoring
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }; // end init
@@ -281,12 +281,7 @@ struct HfTaskFlowCharmHadrons {
 
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(collision, rejectionMask, centrality);
-
-    if (rejectionMask != 0) {
-      /// at least one event selection not satisfied --> reject the candidate
-      return false;
-    }
-    return true;
+    return rejectionMask == 0;
   }
 
   /// Get the Q vector
