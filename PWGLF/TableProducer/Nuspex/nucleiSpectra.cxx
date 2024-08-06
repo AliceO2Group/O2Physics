@@ -36,6 +36,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/Tools/TrackTuner.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -227,6 +228,7 @@ struct nucleiSpectra {
   Produces<o2::aod::NucleiTableFlow> nucleiTableFlow;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
+  TrackTuner trackTunerObj;
 
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
 
@@ -273,6 +275,16 @@ struct nucleiSpectra {
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
 
+  // configurables for track tuner
+  Configurable<bool> cfgUseTrackTuner{"cfgUseTrackTuner", false, "Apply track tuner corrections to MC tracks"};
+  Configurable<std::string> cfgTrackTunerParams{"cfgTrackTunerParams", "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=0|updatePulls=1|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/pp2023/smoothHighPtMC|nameInputFile=trackTuner_DataLHC23fPass1_McLHC23k4b_run535085.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=-1.|qOverPtData=-1.", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  OutputObj<TH1D> hTrackTunedTracks{TH1D("hTrackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
+  // running variables for track tuner
+  o2::dataformats::DCA mDcaInfoCov;
+  o2::dataformats::VertexBase mVtx;
+  o2::track::TrackParametrizationWithError<float> mTrackParCov;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
   // CCDB options
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -281,7 +293,7 @@ struct nucleiSpectra {
 
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta && aod::track::tpcInnerParam > cfgCutTpcMom;
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>>;
 
   // Collisions with chentrality
   using CollWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
@@ -433,6 +445,14 @@ struct nucleiSpectra {
 
     nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
     o2::base::Propagator::Instance(true)->setMatLUT(nuclei::lut);
+
+    // TrackTuner initialization
+    if (cfgUseTrackTuner) {
+      std::string outputStringParams = trackTunerObj.configParams(cfgTrackTunerParams);
+      trackTunerObj.getDcaGraphs();
+      hTrackTunedTracks->SetTitle(outputStringParams.c_str());
+      hTrackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
+    }
   }
 
   template <typename Tcoll>
@@ -521,6 +541,21 @@ struct nucleiSpectra {
       }
       if (!goodToAnalyse) {
         continue;
+      }
+
+      mDcaInfoCov.set(999, 999, 999, 999, 999);
+      setTrackParCov(track, mTrackParCov);
+      mTrackParCov.setPID(track.pidForTracking());
+      if (cfgUseTrackTuner) {
+        bool hasMcParticle = track.has_mcParticle();  
+        if (hasMcParticle) {
+          hTrackTunedTracks->Fill(1); // all tracks
+          auto mcParticle = track.mcParticle();
+          std::cout << " ======================= tuning track! ======================= " << std::endl;
+          // TODO: segfault here!
+          trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov, hTrackTunedTracks);
+          std::cout << " ======================= track is tuned! ======================= " << std::endl;
+        }
       }
 
       auto trackParCov = getTrackParCov(track); // should we set the charge according to the nucleus?
@@ -650,7 +685,7 @@ struct nucleiSpectra {
     nuclei::hGloTOFtracks[1]->Fill(nGloTracks[1], nTOFTracks[1]);
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     nuclei::candidates.clear();
     if (!eventSelection(collision)) {
