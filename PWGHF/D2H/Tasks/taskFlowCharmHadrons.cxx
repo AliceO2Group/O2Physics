@@ -18,7 +18,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/AnalysisTask.h"
 
 #include "CCDB/BasicCCDBManager.h"
