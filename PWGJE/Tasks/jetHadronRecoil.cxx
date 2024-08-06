@@ -424,7 +424,7 @@ struct hJetAnalysis {
   }
   PROCESS_SWITCH(hJetAnalysis, processMCD, "process MC detector level", false);
 
-  void processMCDWeighted(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processMCDWeighted(soa::Join<JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                           soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
                           soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
                           soa::Filtered<JetTracks> const& tracks)
@@ -445,7 +445,7 @@ struct hJetAnalysis {
   }
   PROCESS_SWITCH(hJetAnalysis, processMCP, "process MC particle level", false);
 
-  void processMCPWeighted(JetMcCollision const& /*collision*/,
+  void processMCPWeighted(JetMcCollision const& collision,
                           soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets>> const& jets,
                           soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                           JetParticles const& particles)
