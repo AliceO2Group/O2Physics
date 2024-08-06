@@ -60,13 +60,13 @@ struct TrackEfficiencyJets {
   Configurable<float> centralityMax{"centralityMax", 999, ""};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackDcaZmax{"trackDcaZmax", 99, "additional cut on dcaZ to PV for tracks; uniformTracks in particular don't cut on this at all"};
-  Configurable<int> nBinsLowPt{"nBinsLowPt", 200, "number of pt bins for low pt efficiency histograms"};
+  Configurable<int> nBinsLowPt{"nBinsLowPt", 200, "number of pt bins for low pt (below 10GeV) efficiency histograms"};
 
   // Track QA process function configurables:
-  Configurable<float> trackQAEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks in the processTracks QA"};
-  Configurable<float> trackQAEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks in the processTracks QA"};
-  Configurable<float> trackQAPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks in the processTracks QA"};
-  Configurable<float> trackQAPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks in the processTracks QA"};
+  Configurable<float> trackQAEtaMin{"trackQAEtaMin", -0.9, "minimum eta acceptance for tracks in the processTracks QA"};
+  Configurable<float> trackQAEtaMax{"trackQAEtaMax", 0.9, "maximum eta acceptance for tracks in the processTracks QA"};
+  Configurable<float> trackQAPtMin{"trackQAPtMin", 0.15, "minimum pT acceptance for tracks in the processTracks QA"};
+  Configurable<float> trackQAPtMax{"trackQAPtMax", 100.0, "maximum pT acceptance for tracks in the processTracks QA"};
 
   int eventSelection = -1;
   int trackSelection = -1;
@@ -96,6 +96,17 @@ struct TrackEfficiencyJets {
       registry.fill(HIST("h2_track_pt_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), weight);
       registry.fill(HIST("h2_track_pt_high_track_sigma1overpt"), track.pt(), track.sigma1Pt(), weight);
       registry.fill(HIST("h2_track_pt_high_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), weight);
+    }
+  }
+
+  template <typename T, typename U>
+  void fillTrackGenHistograms(T const& collision, U const& mcparticles, float weight = 1.0)
+  {
+    for (auto const& mcparticle : mcparticles) {
+      registry.fill(HIST("h2_centrality_particle_pt"), collision.centrality(), mcparticle.pt(), weight);
+      registry.fill(HIST("h2_centrality_particle_eta"), collision.centrality(), mcparticle.eta(), weight);
+      registry.fill(HIST("h2_centrality_particle_phi"), collision.centrality(), mcparticle.phi(), weight);
+      registry.fill(HIST("h2_centrality_particle_energy"), collision.centrality(), mcparticle.energy(), weight);
     }
   }
 
@@ -167,9 +178,7 @@ struct TrackEfficiencyJets {
     }
 
     if (doprocessTracks || doprocessTracksWeighted) {
-      AxisSpec centAxis = {101, 0., 101., "centrality (%)"};
-      registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
-      registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
+      AxisSpec centAxis = {121, -10., 111., "centrality (%)"};
       registry.add("h2_centrality_track_pt", "centrality vs track pT; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {centAxis, {200, 0., 200.}}});
       registry.add("h2_centrality_track_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {centAxis, {100, -1.0, 1.0}}});
       registry.add("h2_centrality_track_phi", "centrality vs track #varphi; centrality; #varphi_{track}", {HistType::kTH2F, {centAxis, {160, -1.0, 7.}}});
@@ -178,9 +187,29 @@ struct TrackEfficiencyJets {
       registry.add("h2_track_pt_high_track_sigmapt", "#sigma(#it{p}_{T})/#it{p}_{T}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {100000, 0.0, 100.0}}});
       registry.add("h2_track_pt_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 10.}, {1000, 0.0, 10.0}}});
       registry.add("h2_track_pt_high_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {1000, 0.0, 10.0}}});
-      if (doprocessTracksWeighted) {
-        registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
-      }
+    }
+
+    if (doprocessTracksGen || doprocessTracksGenWeighted) {
+      AxisSpec centAxis = {121, -10., 111., "centrality (%)"};
+      registry.add("h2_centrality_particle_pt", "centrality vs track pT; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {centAxis, {200, 0., 200.}}});
+      registry.add("h2_centrality_particle_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {centAxis, {100, -1.0, 1.0}}});
+      registry.add("h2_centrality_particle_phi", "centrality vs track #varphi; centrality; #varphi_{track}", {HistType::kTH2F, {centAxis, {160, -1.0, 7.}}});
+      registry.add("h2_centrality_particle_energy", "centrality vs track energy; centrality; Energy GeV", {HistType::kTH2F, {centAxis, {100, 0.0, 100.0}}});
+    }
+
+    if (doprocessTracks || doprocessTracksWeighted) {
+      AxisSpec centAxis = {121, -10., 111., "centrality (%)"};
+      registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+      registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
+    }
+    if (doprocessTracksGen || doprocessTracksGenWeighted) {
+      registry.add("h_mccollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+    }
+    if (doprocessTracksWeighted) {
+      registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+    }
+    if (doprocessTracksGenWeighted) {
+      registry.add("h_mccollisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     }
   }
 
@@ -188,6 +217,7 @@ struct TrackEfficiencyJets {
 
   // filters for processTracks QA functions only:
   Filter trackCuts = (aod::jtrack::pt >= trackQAPtMin && aod::jtrack::pt < trackQAPtMax && aod::jtrack::eta > trackQAEtaMin && aod::jtrack::eta < trackQAEtaMax);
+  Filter particleCuts = (aod::jmcparticle::pt >= trackQAPtMin && aod::jmcparticle::pt < trackQAPtMax && aod::jmcparticle::eta > trackQAEtaMin && aod::jmcparticle::eta < trackQAEtaMax);
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
 
   void processEFficiencyPurity(JetMcCollision const& mcCollision,
@@ -379,6 +409,105 @@ struct TrackEfficiencyJets {
     fillTrackHistograms(collision, tracks, eventWeight);
   }
   PROCESS_SWITCH(TrackEfficiencyJets, processTracksWeighted, "QA for charged tracks weighted", false);
+
+  void processTracksGen(JetMcCollision const& mcCollision,
+                             soa::SmallGroups<JetCollisionsMCD> const& collisions,
+                             soa::Filtered<JetParticles> const& mcparticles)
+  {
+    registry.fill(HIST("h_mccollisions"), 0.5);
+    registry.fill(HIST("h2_centrality_mccollisions"), collisions.begin().centrality(), 0.5);
+  
+    if (!(abs(mcCollision.posZ()) < vertexZCut)) {
+      return;
+    }
+    if (collisions.size() < 1) {
+      return;
+    }
+    if (acceptSplitCollisions == 0 && collisions.size() > 1) {
+      return;
+    }
+
+    bool hasSel8Coll = false;
+    bool centralityCheck = false;
+    if (acceptSplitCollisions == 2) {                                                     // check only that the first reconstructed collision passes the check
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        hasSel8Coll = true;
+      }
+      if (!checkCentrality || ((centralityMin < collisions.begin().centrality()) && (collisions.begin().centrality() < centralityMax))) { // effect unclear if mcColl is split
+        centralityCheck = true;
+      }
+    } else { // check that at least one of the reconstructed collisions passes the checks
+      for (auto& collision : collisions) {
+        if (jetderiveddatautilities::selectCollision(collision, eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+          hasSel8Coll = true;
+        }
+        if (!checkCentrality || ((centralityMin < collision.centrality()) && (collision.centrality() < centralityMax))) { // effect unclear if mcColl is split
+          centralityCheck = true;
+        }
+      }
+    }
+    if (!hasSel8Coll) {
+      return;
+    }
+    if (!centralityCheck) {
+      return;
+    }
+
+    registry.fill(HIST("h_mccollisions"), 1.5);
+    registry.fill(HIST("h2_centrality_mccollisions"), collisions.begin().centrality(), 1.5);
+    fillTrackGenHistograms(collisions.begin(), mcparticles);
+  }
+  PROCESS_SWITCH(TrackEfficiencyJets, processTracksGen, "QA for charged particles", false);
+
+  void processTracksGenWeighted(JetMcCollision const& mcCollision,
+                             soa::SmallGroups<JetCollisionsMCD> const& collisions,
+                             soa::Filtered<JetParticles> const& mcparticles)
+  {
+    float eventWeight = mcCollision.weight();
+    registry.fill(HIST("h_mccollisions"), 0.5);
+    registry.fill(HIST("h_mccollisions_weighted"), 0.5, eventWeight);
+
+    if (!(abs(mcCollision.posZ()) < vertexZCut)) {
+      return;
+    }
+    if (collisions.size() < 1) {
+      return;
+    }
+    if (acceptSplitCollisions == 0 && collisions.size() > 1) {
+      return;
+    }
+
+    bool hasSel8Coll = false;
+    bool centralityCheck = false;
+    if (acceptSplitCollisions == 2) {                                                     // check only that the first reconstructed collision passes the check
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        hasSel8Coll = true;
+      }
+      if (!checkCentrality || ((centralityMin < collisions.begin().centrality()) && (collisions.begin().centrality() < centralityMax))) { // effect unclear if mcColl is split
+        centralityCheck = true;
+      }
+    } else { // check that at least one of the reconstructed collisions passes the checks
+      for (auto& collision : collisions) {
+        if (jetderiveddatautilities::selectCollision(collision, eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+          hasSel8Coll = true;
+        }
+        if (!checkCentrality || ((centralityMin < collision.centrality()) && (collision.centrality() < centralityMax))) { // effect unclear if mcColl is split
+          centralityCheck = true;
+        }
+      }
+    }
+    if (!hasSel8Coll) {
+      return;
+    }
+    if (!centralityCheck) {
+      return;
+    }
+
+    registry.fill(HIST("h_mccollisions"), 1.5);
+    registry.fill(HIST("h_mccollisions_weighted"), 1.5, eventWeight);
+    fillTrackGenHistograms(collisions.begin(), mcparticles, eventWeight);
+  }
+  PROCESS_SWITCH(TrackEfficiencyJets, processTracksGenWeighted, "QA for charged particles weighted", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<TrackEfficiencyJets>(cfgc, TaskName{"track-efficiency"})}; }
