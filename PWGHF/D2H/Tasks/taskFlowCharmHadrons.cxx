@@ -102,7 +102,7 @@ struct HfTaskFlowCharmHadrons {
   SliceCache cache;
   HfHelper hfHelper;
   EventPlaneHelper epHelper;
-  HfEventSelection hfEvSel;        // event selection and monitoring
+  HfEventSelection hfEvSel; // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry registry{"registry", {}};
@@ -288,7 +288,6 @@ struct HfTaskFlowCharmHadrons {
     }
     return true;
   }
-
 
   /// Get the Q vector
   /// \param collision is the collision with the Q vector information
