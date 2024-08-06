@@ -809,21 +809,21 @@ struct phik0shortanalysis {
       }
 
       float weightInclusive, weightLtFirstCut, weightLtSecondCut;
-      if (countInclusive > 0)
+      if (countInclusive > 0) {
         weightInclusive = 1. / static_cast<float>(countInclusive);
-      else {
+      } else {
         weightInclusive = 0;
         eventHist.fill(HIST("thereisnoPhiwK0S"), 0);
       }
-      if (countLtFirstCut > 0)
+      if (countLtFirstCut > 0) {
         weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
-      else {
+      } else {
         weightLtFirstCut = 0;
         eventHist.fill(HIST("thereisnoPhiwK0S"), 1);
       }
-      if (countLtSecondCut > 0)
+      if (countLtSecondCut > 0) {
         weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
-      else {
+      } else {
         weightLtSecondCut = 0;
         eventHist.fill(HIST("thereisnoPhiwK0S"), 2);
       }
@@ -960,21 +960,21 @@ struct phik0shortanalysis {
         nsigmaTOF = -9.99;
 
       float weightInclusive, weightLtFirstCut, weightLtSecondCut;
-      if (countInclusive > 0)
+      if (countInclusive > 0) {
         weightInclusive = 1. / static_cast<float>(countInclusive);
-      else {
+      } else {
         weightInclusive = 0;
         eventHist.fill(HIST("thereisnoPhiwPi"), 0);
       }
-      if (countLtFirstCut > 0)
+      if (countLtFirstCut > 0) {
         weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
-      else {
+      } else {
         weightLtFirstCut = 0;
         eventHist.fill(HIST("thereisnoPhiwPi"), 1);
       }
-      if (countLtSecondCut > 0)
+      if (countLtSecondCut > 0) {
         weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
-      else {
+      } else {
         weightLtSecondCut = 0;
         eventHist.fill(HIST("thereisnoPhiwPi"), 2);
       }
@@ -1385,21 +1385,21 @@ struct phik0shortanalysis {
       }
 
       float weightInclusive, weightLtFirstCut, weightLtSecondCut;
-      if (countInclusive > 0)
+      if (countInclusive > 0) {
         weightInclusive = 1. / static_cast<float>(countInclusive);
-      else {
+      } else {
         weightInclusive = 0;
         MCeventHist.fill(HIST("thereisnoPhiwK0SMC"), 0);
       }
-      if (countLtFirstCut > 0)
+      if (countLtFirstCut > 0) {
         weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
-      else {
+      } else {
         weightLtFirstCut = 0;
         MCeventHist.fill(HIST("thereisnoPhiwK0SMC"), 1);
       }
-      if (countLtSecondCut > 0)
+      if (countLtSecondCut > 0) {
         weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
-      else {
+      } else {
         weightLtSecondCut = 0;
         MCeventHist.fill(HIST("thereisnoPhiwK0SMC"), 2);
       }
@@ -1565,21 +1565,21 @@ struct phik0shortanalysis {
         nsigmaTOF = -9.99;
 
       float weightInclusive, weightLtFirstCut, weightLtSecondCut;
-      if (countInclusive > 0)
+      if (countInclusive > 0) {
         weightInclusive = 1. / static_cast<float>(countInclusive);
-      else {
+      } else {
         weightInclusive = 0;
         MCeventHist.fill(HIST("thereisnoPhiwPiMC"), 0);
       }
-      if (countLtFirstCut > 0)
+      if (countLtFirstCut > 0) {
         weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
-      else {
+      } else {
         weightLtFirstCut = 0;
         MCeventHist.fill(HIST("thereisnoPhiwPiMC"), 1);
       }
-      if (countLtSecondCut > 0)
+      if (countLtSecondCut > 0) {
         weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
-      else {
+      } else {
         weightLtSecondCut = 0;
         MCeventHist.fill(HIST("thereisnoPhiwPiMC"), 2);
       }
