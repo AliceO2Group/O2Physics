@@ -10,10 +10,12 @@
 // or submit itself to any jurisdiction.
 
 /// \file UDFwdTracksExtraConverter.cxx
-/// \brief Converts TracksExtra table from version 000 to 001
+/// \brief Converts UDFwdTracksExtra table from version 000 to 001
 
-/// This task allows for the conversion of the udFwdTracksExtra table from the version before
-/// including global tracks
+/// This task allows for the conversion of the UDFwdTracksExtra table from the version 000,
+/// that is before the introduction of global tracks (and so contains only MCH-MID tracks),
+/// to the version 001, that includes global tracks
+/// Global tracks introduced here: https://github.com/AliceO2Group/O2Physics/commit/72f673611ddcd7c39978787dbed9f77e6e7c3d6a)
 
 /// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
 
