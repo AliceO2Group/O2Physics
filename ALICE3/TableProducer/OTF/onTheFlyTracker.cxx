@@ -1126,7 +1126,7 @@ struct OnTheFlyTracker {
       TracksAlice3(false);
     }
 
-    for(const auto& cascade : cascadesAlice3){ 
+    for (const auto& cascade : cascadesAlice3) {
       upgradeCascades(
         collisions.lastIndex(), // now we know the collision index -> populate table
         cascade.cascadeTrackId,

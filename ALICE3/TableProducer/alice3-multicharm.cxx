@@ -151,9 +151,9 @@ struct alice3multicharm {
       thisCandidate.xyz[i] = vtx[i];
     }
 
-    // compute cov mat 
-    for (int ii=0; ii<21; ii++) 
-      thisCandidate.parentTrackCovMatrix[ii] = 0.0f; 
+    // compute cov mat
+    for (int ii = 0; ii < 21; ii++)
+      thisCandidate.parentTrackCovMatrix[ii] = 0.0f;
 
     std::array<float, 21> covA = {0};
     std::array<float, 21> covB = {0};
@@ -163,7 +163,7 @@ struct alice3multicharm {
     const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
     for (int i = 0; i < 6; i++) {
       int j = momInd[i];
-      thisCandidate.parentTrackCovMatrix[j] = covA[j]+covB[j];
+      thisCandidate.parentTrackCovMatrix[j] = covA[j] + covB[j];
     }
 
     auto covVtx = fitter.calcPCACovMatrix();
@@ -215,9 +215,9 @@ struct alice3multicharm {
       thisCandidate.xyz[i] = vtx[i];
     }
 
-    // compute cov mat 
-    for (int ii=0; ii<21; ii++) 
-      thisCandidate.parentTrackCovMatrix[ii] = 0.0f; 
+    // compute cov mat
+    for (int ii = 0; ii < 21; ii++)
+      thisCandidate.parentTrackCovMatrix[ii] = 0.0f;
 
     std::array<float, 21> covA = {0};
     std::array<float, 21> covB = {0};
@@ -229,7 +229,7 @@ struct alice3multicharm {
     const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
     for (int i = 0; i < 6; i++) {
       int j = momInd[i];
-      thisCandidate.parentTrackCovMatrix[j] = covA[j]+covB[j]+covC[j];
+      thisCandidate.parentTrackCovMatrix[j] = covA[j] + covB[j] + covC[j];
     }
 
     auto covVtx = fitter3.calcPCACovMatrix();
@@ -331,7 +331,7 @@ struct alice3multicharm {
     auto tracksPiFromXiCCgrouped = tracksPiFromXiCC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     if (doDCAplots) {
-      for (auto const& cascade : cascades){
+      for (auto const& cascade : cascades) {
         auto track = cascade.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
         histos.fill(HIST("h2dDCAxyVsPtXiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
       }
@@ -351,9 +351,9 @@ struct alice3multicharm {
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
           if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
             continue;
-          // if I am here, it means this is a triplet to be considered for XiC vertexing. 
-          // will now attempt to build a three-body decay candidate with these three track rows. 
-          if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
+          // if I am here, it means this is a triplet to be considered for XiC vertexing.
+          // will now attempt to build a three-body decay candidate with these three track rows.
+          if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
             continue; // failed at building candidate
 
           const std::array<float, 3> momentumC = {
@@ -365,10 +365,10 @@ struct alice3multicharm {
 
           histos.fill(HIST("hMassXiC"), thisCandidate.mass);
 
-          // attempt XiCC finding 
+          // attempt XiCC finding
           for (auto const& picc : tracksPiFromXiCCgrouped) {
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
-            if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
+            if (!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
               continue; // failed at building candidate
 
             histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
@@ -378,7 +378,6 @@ struct alice3multicharm {
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-
 
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
   PROCESS_SWITCH(alice3multicharm, processGenerated, "fill MC-only histograms", true);

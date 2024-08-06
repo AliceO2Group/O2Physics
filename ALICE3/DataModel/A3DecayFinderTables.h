@@ -44,8 +44,8 @@ enum a3selectionBit : uint32_t { kDCAxy = 0,
                                  kTruePiMinusFromLc,
                                  kTrueKaMinusFromLc,
                                  kTruePrMinusFromLc,
-                                 kTrueXiFromXiC, 
-                                 kTruePiFromXiC, 
+                                 kTrueXiFromXiC,
+                                 kTruePiFromXiC,
                                  kTruePiFromXiCC };
 
 namespace o2::aod
