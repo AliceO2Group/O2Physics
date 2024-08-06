@@ -1782,19 +1782,19 @@ struct phik0shortanalysis {
           continue;
 
         if (!isCountedPhiInclusive) {
-          MCPhiPionHist.fill(HIST("h1PhiPionGenMCInclusive"), iCenter);
+          MCPhiPionHist.fill(HIST("h1PhiPiGenMCInclusive"), iCenter);
           isCountedPhiInclusive = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
           continue;
         if (!isCountedPhiFirstCut) {
-          MCPhiPionHist.fill(HIST("h1PhiPionGenMCFirstCut"), iCenter);
+          MCPhiPionHist.fill(HIST("h1PhiPiGenMCFirstCut"), iCenter);
           isCountedPhiFirstCut = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
           continue;
         if (!isCountedPhiSecondCut) {
-          MCPhiPionHist.fill(HIST("h1PhiPionGenMCSecondCut"), iCenter);
+          MCPhiPionHist.fill(HIST("h1PhiPiGenMCSecondCut"), iCenter);
           isCountedPhiSecondCut = true;
         }
       }
