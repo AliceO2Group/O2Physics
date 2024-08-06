@@ -362,6 +362,7 @@ struct nucleiSpectra {
 
     o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
     o2::base::Propagator::initFieldFromGRP(grpmag);
+    o2::base::Propagator::Instance()->setMatLUT(nuclei::lut);
     mBz = static_cast<float>(grpmag->getNominalL3Field());
     LOGF(info, "Retrieved GRP for timestamp %ull (%i) with magnetic field of %1.2f kZG", timestamp, mRunNumber, mBz);
   }
@@ -444,8 +445,6 @@ struct nucleiSpectra {
     }
 
     nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-    o2::base::Propagator::Instance(true)->setMatLUT(nuclei::lut);
-
     // TrackTuner initialization
     if (cfgUseTrackTuner) {
       std::string outputStringParams = trackTunerObj.configParams(cfgTrackTunerParams);
