@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <vector>
 #include <string>
 #include <unordered_map>
 #include "Common/Core/RecoDecay.h"
@@ -132,7 +133,7 @@ DECLARE_SOA_TABLE(EMEvents, "AOD", "EMEVENT", //!   Main event information table
 using EMEvent = EMEvents::iterator;
 
 DECLARE_SOA_TABLE(EMEventsCov, "AOD", "EMEVENTCOV", //! joinable to EMEvents
-                  collision::CovXX, collision::CovXY, collision::CovXZ, collision::CovYY, collision::CovYZ, collision::CovZZ, collision::Chi2);
+                  collision::CovXX, collision::CovXY, collision::CovXZ, collision::CovYY, collision::CovYZ, collision::CovZZ, collision::Chi2, o2::soa::Marker<1>);
 using EMEventCov = EMEventsCov::iterator;
 
 DECLARE_SOA_TABLE(EMEventsBz, "AOD", "EMEVENTBZ", emevent::Bz); // joinable to EMEvents
@@ -254,6 +255,35 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using EMMCParticle = EMMCParticles::iterator;
+
+namespace smearedtrack
+{
+DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
+DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
+DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
+DECLARE_SOA_COLUMN(Efficiency, efficiency, float);
+DECLARE_SOA_COLUMN(DCA, dca, float);
+
+DECLARE_SOA_COLUMN(PtSmearedSAMuon, ptSmeared_sa_muon, float);
+DECLARE_SOA_COLUMN(EtaSmearedSAMuon, etaSmeared_sa_muon, float);
+DECLARE_SOA_COLUMN(PhiSmearedSAMuon, phiSmeared_sa_muon, float);
+DECLARE_SOA_COLUMN(EfficiencySAMuon, efficiency_sa_muon, float);
+DECLARE_SOA_COLUMN(DCASAMuon, dca_sa_muon, float);
+DECLARE_SOA_COLUMN(PtSmearedGLMuon, ptSmeared_gl_muon, float);
+DECLARE_SOA_COLUMN(EtaSmearedGLMuon, etaSmeared_gl_muon, float);
+DECLARE_SOA_COLUMN(PhiSmearedGLMuon, phiSmeared_gl_muon, float);
+DECLARE_SOA_COLUMN(EfficiencyGLMuon, efficiency_gl_muon, float);
+DECLARE_SOA_COLUMN(DCAGLMuon, dca_gl_muon, float);
+} // namespace smearedtrack
+
+DECLARE_SOA_TABLE(SmearedElectrons, "AOD", "SMEAREDEL", // usage Join<aod::EMMCParitlces, aod::SmearedElectrons>
+                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared, smearedtrack::Efficiency, smearedtrack::DCA);
+using SmearedElectron = SmearedElectrons::iterator;
+
+DECLARE_SOA_TABLE(SmearedMuons, "AOD", "SMEAREDMU", // usage Join<aod::EMMCParitlces, aod::SmearedSAMuons>
+                  smearedtrack::PtSmearedSAMuon, smearedtrack::EtaSmearedSAMuon, smearedtrack::PhiSmearedSAMuon, smearedtrack::EfficiencySAMuon, smearedtrack::DCASAMuon,
+                  smearedtrack::PtSmearedGLMuon, smearedtrack::EtaSmearedGLMuon, smearedtrack::PhiSmearedGLMuon, smearedtrack::EfficiencyGLMuon, smearedtrack::DCAGLMuon);
+using SmearedMuon = SmearedMuons::iterator;
 
 namespace emprimaryelectronmclabel
 {
@@ -382,7 +412,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectronsCov, "AOD", "EMPRIMARYELCOV", //!
                   aod::track::C1PtZ,
                   aod::track::C1PtSnp,
                   aod::track::C1PtTgl,
-                  aod::track::C1Pt21Pt2);
+                  aod::track::C1Pt21Pt2, o2::soa::Marker<1>);
 // iterators
 using EMPrimaryElectronCov = EMPrimaryElectronsCov::iterator;
 
