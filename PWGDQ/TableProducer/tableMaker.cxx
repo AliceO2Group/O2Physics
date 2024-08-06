@@ -65,20 +65,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
-// DQ triggers
-enum DQTriggers {
-  kSingleE = 1 << 0,      // 0000001
-  kLMeeIMR = 1 << 1,      // 0000010
-  kLMeeHMR = 1 << 2,      // 0000100
-  kDiElectron = 1 << 3,   // 0001000
-  kSingleMuLow = 1 << 4,  // 0010000
-  kSingleMuHigh = 1 << 5, // 0100000
-  kDiMuon = 1 << 6,       // 1000000
-  kNTriggersDQ
-};
-
 Zorro zorro;
-std::string zorroTriggerMask[7] = {"fSingleE", "fLMeeIMR", "fLMeeHMR", "fDiElectron", "fSingleMuLow", "fSingleMuHigh", "fDiMuon"};
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -186,8 +173,10 @@ struct TableMaker {
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
   Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
+  Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+  Configurable<string> fConfigCcdbPathZorro{"ccdb-path-zorro", "Users/r/rlietava/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
@@ -397,7 +386,9 @@ struct TableMaker {
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
-      tag |= (collision.eventFilter() << 56);
+      if (!fConfigRunZorro) {
+        tag |= (collision.eventFilter() << 56);
+      }
     }
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -422,11 +413,10 @@ struct TableMaker {
     (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
     if (fConfigRunZorro) {
-      for (int i = 0; i < kNTriggersDQ; ++i) {
-        zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), zorroTriggerMask[i]);
-        if (!zorro.isSelected(bc.globalBC())) {
-          tag |= static_cast<uint64_t>(1 << i);
-        }
+      zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
+      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
+      if (zorro.isSelected(bc.globalBC())) {
+        tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
     } else {
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
@@ -846,7 +836,9 @@ struct TableMaker {
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
-      tag |= (collision.eventFilter() << 56);
+      if (!fConfigRunZorro) {
+        tag |= (collision.eventFilter() << 56);
+      }
     }
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -870,11 +862,10 @@ struct TableMaker {
     (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
     if (fConfigRunZorro) {
-      for (int i = 0; i < kNTriggersDQ; ++i) {
-        zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), zorroTriggerMask[i]);
-        if (!zorro.isSelected(bc.globalBC())) {
-          tag |= static_cast<uint64_t>(1 << i);
-        }
+      zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
+      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
+      if (zorro.isSelected(bc.globalBC())) {
+        tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
     } else {
       if (!fEventCut->IsSelected(VarManager::fgValues)) {

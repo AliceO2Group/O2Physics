@@ -49,30 +49,32 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// General options
   struct : ConfigurableGroup {
-    Configurable<bool> IsMC{"Option.IsMC", false, "Enable additional Histogramms in the case of runninger over Monte Carlo"};
-    Configurable<bool> Use4D{"Option.Use4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
-    Configurable<bool> ExtendedPlots{"Option.ExtendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
-    Configurable<float> HighkstarCut{"Option.HighkstarCut", -1., "Set a cut for high k*, above which the pairs are rejected. Set it to -1 to deactivate it"};
-    Configurable<bool> SameSpecies{"Option.SameSpecies", false, "Set to true if particle 1 and particle 2 are the same species"};
-    Configurable<bool> MixEventWithPairs{"Option.MixEventWithPairs", false, "Only use events that contain particle 1 and partile 2 for the event mixing"};
-    Configurable<bool> RandomizePair{"Option.RandomizePair", true, "Randomly mix particle 1 and particle 2 in case both are identical"};
-    Configurable<bool> CPROn{"Option.CPROn", true, "Close Pair Rejection"};
-    Configurable<bool> CPROld{"Option.CPROld", false, "Set to FALSE to use fixed version of CPR (for testing now, will be default soon)"};
-    Configurable<bool> CPRSepMeSe{"Option.CPRSepMESE", true, "Use seperated plots for same and mixed event for CPR plots"};
-    Configurable<bool> CPRPlotPerRadii{"Option.CPRPlotPerRadii", false, "Plot CPR per radii"};
-    Configurable<float> CPRdeltaPhiMax{"Option.CPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-    Configurable<float> CPRdeltaEtaMax{"Option.CPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
-    Configurable<bool> DCACutPtDep{"Option.DCACutPtDep", false, "Use pt dependent dca cut"};
-    ConfigurableAxis Dummy{"Option.Dummy", {1, 0, 1}, "Dummy axis"};
-    Configurable<bool> SmearingByOrigin{"Option.SmearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption"};
+    std::string prefix = std::string("Option");
+    Configurable<bool> IsMC{"IsMC", false, "Enable additional Histogramms in the case of runninger over Monte Carlo"};
+    Configurable<bool> Use4D{"Use4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
+    Configurable<bool> ExtendedPlots{"ExtendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
+    Configurable<float> HighkstarCut{"HighkstarCut", -1., "Set a cut for high k*, above which the pairs are rejected. Set it to -1 to deactivate it"};
+    Configurable<bool> SameSpecies{"SameSpecies", false, "Set to true if particle 1 and particle 2 are the same species"};
+    Configurable<bool> MixEventWithPairs{"MixEventWithPairs", false, "Only use events that contain particle 1 and partile 2 for the event mixing"};
+    Configurable<bool> RandomizePair{"RandomizePair", true, "Randomly mix particle 1 and particle 2 in case both are identical"};
+    Configurable<bool> CPROn{"CPROn", true, "Close Pair Rejection"};
+    Configurable<bool> CPROld{"CPROld", false, "Set to FALSE to use fixed version of CPR (for testing now, will be default soon)"};
+    Configurable<bool> CPRSepMeSe{"CPRSepMESE", true, "Use seperated plots for same and mixed event for CPR plots"};
+    Configurable<bool> CPRPlotPerRadii{"CPRPlotPerRadii", false, "Plot CPR per radii"};
+    Configurable<float> CPRdeltaPhiMax{"CPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
+    Configurable<float> CPRdeltaEtaMax{"CPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+    Configurable<bool> DCACutPtDep{"DCACutPtDep", false, "Use pt dependent dca cut"};
+    Configurable<bool> SmearingByOrigin{"SmearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption"};
+    ConfigurableAxis Dummy{"Dummy", {1, 0, 1}, "Dummy axis"};
   } Option;
 
   /// Event selection
   struct : ConfigurableGroup {
-    Configurable<int> MultMin{"EventSel.MultMin", 0, "Minimum Multiplicity (MultNtr)"};
-    Configurable<int> MultMax{"EventSel.MultMax", 99999, "Maximum Multiplicity (MultNtr)"};
-    Configurable<float> MultPercentileMin{"EventSel.MultPercentileMin", 0, "Maximum Multiplicity Percentile"};
-    Configurable<float> MultPercentileMax{"EventSel.MultPercentileMax", 100, "Minimum Multiplicity Percentile"};
+    std::string prefix = std::string("EventSel");
+    Configurable<int> MultMin{"MultMin", 0, "Minimum Multiplicity (MultNtr)"};
+    Configurable<int> MultMax{"MultMax", 99999, "Maximum Multiplicity (MultNtr)"};
+    Configurable<float> MultPercentileMin{"MultPercentileMin", 0, "Maximum Multiplicity Percentile"};
+    Configurable<float> MultPercentileMax{"MultPercentileMax", 100, "Minimum Multiplicity Percentile"};
   } EventSel;
 
   Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
@@ -92,18 +94,19 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Track 1
   struct : ConfigurableGroup {
-    Configurable<int> PDGCode{"Track1.PDGCode", 2212, "PDG code of particle 1 (Track)"};
-    Configurable<femtodreamparticle::cutContainerType> CutBit{"Track1.CutBit", 3191978, "Selection bit from cutCulator for particle 1 (Track)"};
-    Configurable<femtodreamparticle::cutContainerType> TPCBit{"Track1.TPCBit", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
-    Configurable<femtodreamparticle::cutContainerType> TPCBit_Reject{"Track1.TPCBit_Reject", 0, "PID TPC bit from cutCulator to reject a particle hypothesis for particle 1 (set to 0 to ignore)"};
-    Configurable<femtodreamparticle::cutContainerType> TPCTOFBit{"Track1.TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
-    Configurable<float> PIDThres{"Track1.PIDThres", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
-    Configurable<float> PtMin{"Track1.PtMin", 0., "Minimum pT of partricle 1 (Track)"};
-    Configurable<float> PtMax{"Track1.PtMax", 999., "Maximum pT of partricle 1 (Track)"};
-    Configurable<float> EtaMin{"Track1.EtaMin", -10., "Minimum eta of partricle 1 (Track)"};
-    Configurable<float> EtaMax{"Track1.EtaMax", 10., "Maximum eta of partricle 1 (Track)"};
-    Configurable<float> TempFitVarMin{"Track1.TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
-    Configurable<float> TempFitVarMax{"Track1.TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
+    std::string prefix = std::string("Track1");
+    Configurable<int> PDGCode{"PDGCode", 2212, "PDG code of particle 1 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> CutBit{"CutBit", 3191978, "Selection bit from cutCulator for particle 1 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCBit{"TPCBit", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCBit_Reject{"TPCBit_Reject", 0, "PID TPC bit from cutCulator to reject a particle hypothesis for particle 1 (set to 0 to ignore)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCTOFBit{"TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
+    Configurable<float> PIDThres{"PIDThres", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
+    Configurable<float> PtMin{"PtMin", 0., "Minimum pT of partricle 1 (Track)"};
+    Configurable<float> PtMax{"PtMax", 999., "Maximum pT of partricle 1 (Track)"};
+    Configurable<float> EtaMin{"EtaMin", -10., "Minimum eta of partricle 1 (Track)"};
+    Configurable<float> EtaMax{"EtaMax", 10., "Maximum eta of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMin{"TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMax{"TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
   } Track1;
 
   /// Partition for particle 1
@@ -136,18 +139,19 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Track 2
   struct : ConfigurableGroup {
-    Configurable<int> PDGCode{"Track2.PDGCode", 2212, "PDG code of particle 2 (Track)"};
-    Configurable<femtodreamparticle::cutContainerType> CutBit{"Track2.CutBit", 3191978, "Selection bit from cutCulator for particle 2 (Track)"};
-    Configurable<femtodreamparticle::cutContainerType> TPCBit{"Track2.TPCBit", 4, "PID TPC bit from cutCulator for particle 2 (Track)"};
-    Configurable<femtodreamparticle::cutContainerType> TPCBit_Reject{"Track2.TPCBit_Reject", 0, "PID TPC bit from cutCulator to reject a particle hypothesis for particle 2 (set to 0 to ignore)"};
-    Configurable<femtodreamparticle::cutContainerType> TPCTOFBit{"Track2.TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 2 (Track)"};
-    Configurable<float> PIDThres{"Track2.PIDThres", 0.75, "Momentum threshold for PID selection for particle 2 (Track)"};
-    Configurable<float> PtMin{"Track2.PtMin", 0., "Minimum pT of particle 2 (Track)"};
-    Configurable<float> PtMax{"Track2.PtMax", 999., "Maximum pT of particle 2 (Track)"};
-    Configurable<float> EtaMin{"Track2.EtaMin", -10., "Minimum eta of particle 2 (Track)"};
-    Configurable<float> EtaMax{"Track2.EtaMax", 10., "Maximum eta of particle 2 (Track)"};
-    Configurable<float> TempFitVarMin{"Track2.TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
-    Configurable<float> TempFitVarMax{"Track2.TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
+    std::string prefix = std::string("Track2");
+    Configurable<int> PDGCode{"PDGCode", 2212, "PDG code of particle 2 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> CutBit{"CutBit", 3191978, "Selection bit from cutCulator for particle 2 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCBit{"TPCBit", 4, "PID TPC bit from cutCulator for particle 2 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCBit_Reject{"TPCBit_Reject", 0, "PID TPC bit from cutCulator to reject a particle hypothesis for particle 2 (set to 0 to ignore)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCTOFBit{"TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 2 (Track)"};
+    Configurable<float> PIDThres{"PIDThres", 0.75, "Momentum threshold for PID selection for particle 2 (Track)"};
+    Configurable<float> PtMin{"PtMin", 0., "Minimum pT of particle 2 (Track)"};
+    Configurable<float> PtMax{"PtMax", 999., "Maximum pT of particle 2 (Track)"};
+    Configurable<float> EtaMin{"EtaMin", -10., "Minimum eta of particle 2 (Track)"};
+    Configurable<float> EtaMax{"EtaMax", 10., "Maximum eta of particle 2 (Track)"};
+    Configurable<float> TempFitVarMin{"TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMax{"TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
   } Track2;
 
   /// Partition for track 2
@@ -221,8 +225,7 @@ struct femtoDreamPairTaskTrackTrack {
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionSE;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionME;
   /// Histogram output
-  HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry Registry{"Output", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   TRandom3* random;
 
@@ -231,19 +234,19 @@ struct femtoDreamPairTaskTrackTrack {
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);
     }
-    eventHisto.init(&qaRegistry, Option.IsMC);
-    trackHistoPartOne.init(&qaRegistry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
+    eventHisto.init(&Registry, Option.IsMC);
+    trackHistoPartOne.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
     if (!Option.SameSpecies) {
-      trackHistoPartTwo.init(&qaRegistry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track2.PDGCode);
+      trackHistoPartTwo.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track2.PDGCode);
     }
 
-    sameEventCont.init(&resultRegistry,
+    sameEventCont.init(&Registry,
                        Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.MultMixBins, Mixing.MultPercentileMixBins,
                        Binning4D.kstar, Binning4D.mT, Binning4D.mult, Binning4D.multPercentile,
                        Option.IsMC, Option.Use4D, Option.ExtendedPlots,
                        Option.HighkstarCut,
                        Option.SmearingByOrigin);
-    mixedEventCont.init(&resultRegistry,
+    mixedEventCont.init(&Registry,
                         Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.MultMixBins, Mixing.MultPercentileMixBins,
                         Binning4D.kstar, Binning4D.mT, Binning4D.mult, Binning4D.multPercentile,
                         Option.IsMC, Option.Use4D, Option.ExtendedPlots,
@@ -251,10 +254,10 @@ struct femtoDreamPairTaskTrackTrack {
                         Option.SmearingByOrigin);
     sameEventCont.setPDGCodes(Track1.PDGCode, Track2.PDGCode);
     mixedEventCont.setPDGCodes(Track1.PDGCode, Track2.PDGCode);
-    pairCleaner.init(&qaRegistry);
+    pairCleaner.init(&Registry);
     if (Option.CPROn.value) {
-      pairCloseRejectionSE.init(&resultRegistry, &qaRegistry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 1, Option.CPROld.value);
-      pairCloseRejectionME.init(&resultRegistry, &qaRegistry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 2, Option.CPROld.value);
+      pairCloseRejectionSE.init(&Registry, &Registry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 1, Option.CPROld.value);
+      pairCloseRejectionME.init(&Registry, &Registry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 2, Option.CPROld.value);
     }
 
     // get bit for the collision mask

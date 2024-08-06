@@ -116,8 +116,8 @@ struct hJetAnalysis {
                               {"hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{160, -1.0, 7.0}, {160, -1.0, 7.0}}}},
                               {"hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {{50, 0.0, 0.15}, {50, 0.0, 0.15}}}},
                               {"hPtResolution", "p_{T} resolution;p_{T,part};Relative Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -5.0, 5.0}}}},
-                              {"hPhiResolution", "#phi resolution;#phi_{part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -7.0, 7.0}}}},
-                              {"hDeltaRResolution", "#DeltaR Resolution;#DeltaR_{part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -0.15, 0.15}}}},
+                              {"hPhiResolution", "#phi resolution;#p{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -7.0, 7.0}}}},
+                              {"hDeltaRResolution", "#DeltaR Resolution;p_{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -0.15, 0.15}}}},
                               {"hFullMatching", "Full 6D matching;p_{T,det};p_{T,part};#phi_{det};#phi_{part};#DeltaR_{det};#DeltaR_{part}", {HistType::kTHnSparseD, {{200, 0, 200}, {200, 0, 200}, {160, -1.0, 7.0}, {160, -1.0, 7.0}, {50, 0.0, 0.15}, {50, 0.0, 0.15}}}}}};
 
   int eventSelection = -1;
@@ -223,8 +223,10 @@ struct hJetAnalysis {
             double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
-            registry.fill(HIST("hDeltaRReference"), dR);
-            registry.fill(HIST("hDeltaRpTReference"), jet.pt(), dR);
+            if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
+              registry.fill(HIST("hDeltaRpTReference"), jet.pt(), dR);
+              registry.fill(HIST("hDeltaRReference"), dR);
+            }
             registry.fill(HIST("hDeltaRpTDPhiReference"), jet.pt(), dphi, dR);
           }
           registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt());

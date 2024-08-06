@@ -56,6 +56,7 @@ class EMTrack
   int8_t sign() const { return fCharge; }
   float dcaXY() const { return fDCAxy; }
   float dcaZ() const { return fDCAz; }
+  float p() const { return fPt * std::cosh(fEta); }
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }
