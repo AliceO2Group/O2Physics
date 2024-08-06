@@ -17,6 +17,8 @@
 /// to the version 001, that includes global tracks
 /// Global tracks introduced here: https://github.com/AliceO2Group/O2Physics/commit/72f673611ddcd7c39978787dbed9f77e6e7c3d6a)
 
+/// executable name o2-analysis-ud-fwd-tracks-extra-converter
+
 /// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
 
 #include "Framework/runDataProcessing.h"
