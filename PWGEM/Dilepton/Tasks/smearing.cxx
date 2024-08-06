@@ -316,13 +316,15 @@ struct CheckSmearing {
     Check(tracksMC);
   }
 
-  void processDummyMCanalysis(ReducedMCTracks const&) {}
+  void processDummyMCanalysisEM(aod::EMMCParticles const&) {}
+  void processDummyMCanalysisDQ(ReducedMCTracks const&) {}
   void processDummyCocktail(aod::McParticles const&) {}
 
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisEM, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisDQ, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckCocktail, "Run for cocktail analysis", false);
-  PROCESS_SWITCH(CheckSmearing, processDummyMCanalysis, "Dummy process function", false);
+  PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisEM, "Dummy process function", false);
+  PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisDQ, "Dummy process function", false);
   PROCESS_SWITCH(CheckSmearing, processDummyCocktail, "Dummy process function", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -278,15 +278,16 @@ struct DileptonMC {
       nbin_asym_pt = 10;
       nbin_dphi_e_ee = 18;
     }
+
     const AxisSpec axis_dphi_ee{nbin_dphi_ee, 0, M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"};                 // for kHFll
-    const AxisSpec axis_cos_theta_cs{nbin_cos_theta_cs, 0.f, 1.f, "|cos(#theta_{CS})|"};                                      // for kPolarization
+    const AxisSpec axis_cos_theta_cs{nbin_cos_theta_cs, 0.f, 1.f, "|cos(#theta_{CS})|"};                                      // for kPolarization, kUPC
     const AxisSpec axis_phi_cs{nbin_phi_cs, 0.f, M_PI, "|#varphi_{CS}| (rad.)"};                                              // for kPolarization
     const AxisSpec axis_aco{nbin_aco, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};                // for kUPC
     const AxisSpec axis_asym_pt{nbin_asym_pt, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"}; // for kUPC
     const AxisSpec axis_dphi_e_ee{nbin_dphi_e_ee, 0, M_PI, "#Delta#varphi = #varphi_{l} - #varphi_{ll} (rad.)"};              // for kUPC
 
     // generated info
-    fRegistry.add("Generated/sm/Pi0/hs", "gen. dilepton signal", kTHnSparseF, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
+    fRegistry.add("Generated/sm/Pi0/hs", "gen. dilepton signal", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Eta/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/EtaPrime/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/Rho/");
@@ -298,12 +299,10 @@ struct DileptonMC {
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/NonPromptJPsi/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/PromptPsi2S/");
     fRegistry.addClone("Generated/sm/Pi0/", "Generated/sm/NonPromptPsi2S/");
-    fRegistry.add("Generated/sm/Omega2ll/hPt", "pT of #omega meson", kTH1F, {axis_pt_meson}, true);
-    fRegistry.add("Generated/sm/Omega2ll/hY", "rapidity of #omega meson", kTH1F, {axis_y_meson}, true);
-    fRegistry.add("Generated/sm/Phi2ll/hPt", "pT of #phi meson", kTH1F, {axis_pt_meson}, true);
-    fRegistry.add("Generated/sm/Phi2ll/hY", "rapidity of #phi meson", kTH1F, {axis_y_meson}, true);
+    fRegistry.add("Generated/sm/Omega2ll/hPtY", "pT of #omega meson", kTH2F, {axis_y_meson, axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Phi2ll/hPtY", "pT of #phi meson", kTH2F, {axis_y_meson, axis_pt_meson}, true);
 
-    fRegistry.add("Generated/ccbar/c2l_c2l/hadron_hadron/hs", "generated dilepton signal", kTHnSparseF, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
+    fRegistry.add("Generated/ccbar/c2l_c2l/hadron_hadron/hs", "generated dilepton signal", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/ccbar/c2l_c2l/hadron_hadron/", "Generated/ccbar/c2l_c2l/meson_meson/");
     fRegistry.addClone("Generated/ccbar/c2l_c2l/hadron_hadron/", "Generated/ccbar/c2l_c2l/baryon_baryon/");
     fRegistry.addClone("Generated/ccbar/c2l_c2l/hadron_hadron/", "Generated/ccbar/c2l_c2l/meson_baryon/");
@@ -313,10 +312,7 @@ struct DileptonMC {
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2c2l_b2l_diffb/"); // LS
 
     // reconstructed pair info
-    fRegistry.add("Pair/sm/Photon/hs", "rec. dilepton signal", kTHnSparseF, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
-    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
-    }
+    fRegistry.add("Pair/sm/Photon/hs", "rec. dilepton signal", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Pi0/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Eta/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/EtaPrime/");
@@ -329,8 +325,12 @@ struct DileptonMC {
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/NonPromptJPsi/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/PromptPsi2S/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/NonPromptPsi2S/");
+    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+      fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
+      fRegistry.add("Pair/sm/Pi0/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
+    }
 
-    fRegistry.add("Pair/ccbar/c2l_c2l/hadron_hadron/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.add("Pair/ccbar/c2l_c2l/hadron_hadron/hs", "hs pair", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.addClone("Pair/ccbar/c2l_c2l/hadron_hadron/", "Pair/ccbar/c2l_c2l/meson_meson/");
     fRegistry.addClone("Pair/ccbar/c2l_c2l/hadron_hadron/", "Pair/ccbar/c2l_c2l/baryon_baryon/");
     fRegistry.addClone("Pair/ccbar/c2l_c2l/hadron_hadron/", "Pair/ccbar/c2l_c2l/meson_baryon/");
@@ -340,7 +340,7 @@ struct DileptonMC {
     fRegistry.addClone("Pair/ccbar/c2l_c2l/", "Pair/bbbar/b2c2l_b2l_diffb/"); // LS
 
     // for correlated bkg due to mis-identified hadrons, and true combinatorial bkg
-    fRegistry.add("Pair/corr_bkg_eh/uls/hs", "rec. bkg", kTHnSparseF, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.add("Pair/corr_bkg_eh/uls/hs", "rec. bkg", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lspp/");
     fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lsmm/");
     fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/corr_bkg_hh/");
@@ -730,71 +730,38 @@ struct DileptonMC {
               break;
             case 221:
               fRegistry.fill(HIST("Pair/sm/Eta/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-              if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                fRegistry.fill(HIST("Pair/sm/Eta/hMvsPhiV"), phiv, v12.M());
-              }
               break;
             case 331:
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-              if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                fRegistry.fill(HIST("Pair/sm/EtaPrime/hMvsPhiV"), phiv, v12.M());
-              }
               break;
             case 113:
               fRegistry.fill(HIST("Pair/sm/Rho/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-              if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                fRegistry.fill(HIST("Pair/sm/Rho/hMvsPhiV"), phiv, v12.M());
-              }
               break;
             case 223:
               fRegistry.fill(HIST("Pair/sm/Omega/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-              if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                fRegistry.fill(HIST("Pair/sm/Omega/hMvsPhiV"), phiv, v12.M());
-              }
               if (mcmother.daughtersIds().size() == 2) { // omeag->ee
                 fRegistry.fill(HIST("Pair/sm/Omega2ll/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-                if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                  fRegistry.fill(HIST("Pair/sm/Omega2ll/hMvsPhiV"), phiv, v12.M());
-                }
               }
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-              if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                fRegistry.fill(HIST("Pair/sm/Phi/hMvsPhiV"), phiv, v12.M());
-              }
               if (mcmother.daughtersIds().size() == 2) { // phi->ee
                 fRegistry.fill(HIST("Pair/sm/Phi2ll/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-                if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                  fRegistry.fill(HIST("Pair/sm/Phi2ll/hMvsPhiV"), phiv, v12.M());
-                }
               }
               break;
             case 443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-                if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                  fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hMvsPhiV"), phiv, v12.M());
-                }
               } else {
                 fRegistry.fill(HIST("Pair/sm/PromptJPsi/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-                if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                  fRegistry.fill(HIST("Pair/sm/PromptJPsi/hMvsPhiV"), phiv, v12.M());
-                }
               }
               break;
             }
             case 100443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fRegistry.fill(HIST("Pair/sm/NonPromptPsi2S/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-                if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                  fRegistry.fill(HIST("Pair/sm/NonPromptPsi2S/hMvsPhiV"), phiv, v12.M());
-                }
               } else {
                 fRegistry.fill(HIST("Pair/sm/PromptPsi2S/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca);
-                if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-                  fRegistry.fill(HIST("Pair/sm/PromptPsi2S/hMvsPhiV"), phiv, v12.M());
-                }
               }
               break;
             }
@@ -1440,12 +1407,10 @@ struct DileptonMC {
 
         switch (abs(mctrack.pdgCode())) {
           case 223:
-            fRegistry.fill(HIST("Generated/sm/Omega2ll/hPt"), mctrack.pt());
-            fRegistry.fill(HIST("Generated/sm/Omega2ll/hY"), mctrack.y());
+            fRegistry.fill(HIST("Generated/sm/Omega2ll/hPtY"), mctrack.y(), mctrack.pt());
             break;
           case 333:
-            fRegistry.fill(HIST("Generated/sm/Phi2ll/hPt"), mctrack.pt());
-            fRegistry.fill(HIST("Generated/sm/Phi2ll/hY"), mctrack.y());
+            fRegistry.fill(HIST("Generated/sm/Phi2ll/hPtY"), mctrack.y(), mctrack.pt());
             break;
           default:
             break;
