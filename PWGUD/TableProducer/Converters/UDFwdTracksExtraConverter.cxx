@@ -32,27 +32,27 @@ using namespace o2::framework;
 // Converts UDFwdTracksExtra for version 000 to 001
 // v_000 only MID-MCH tracks
 // v_001 global tracks
-struct UDFwdTracksExtraConverter{
+struct UDFwdTracksExtraConverter {
   Produces<o2::aod::UDFwdTracksExtra_001> udFwdTracksExtra_001;
 
-  void process(o2::aod::UDFwdTracksExtra_000 const & tracks){
-        
-    for(const auto &track : tracks){
-      
+  void process(o2::aod::UDFwdTracksExtra_000 const& tracks)
+  {
+
+    for (const auto& track : tracks) {
+
       udFwdTracksExtra_001(3, // trackType of MCH-MID trakcs is 3
-                           track.nClusters(), 
-                           track.pDca(), 
-                           track.rAtAbsorberEnd(), 
-                           track.chi2(), 
-                           track.chi2MatchMCHMID(), 
+                           track.nClusters(),
+                           track.pDca(),
+                           track.rAtAbsorberEnd(),
+                           track.chi2(),
+                           track.chi2MatchMCHMID(),
                            0.0f, // dummy mchmftChi2, not available in version 000
-                           track.mchBitMap(), 
-                           track.midBitMap(), 
+                           track.mchBitMap(),
+                           track.midBitMap(),
                            track.midBoards());
     }
   }
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
