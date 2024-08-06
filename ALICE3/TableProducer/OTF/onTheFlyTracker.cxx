@@ -153,11 +153,18 @@ struct OnTheFlyTracker {
     TrackAlice3() = default;
     ~TrackAlice3() = default;
     TrackAlice3(const TrackAlice3& src) = default;
-    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1, bool decayDauInput = false) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te}, isDecayDau(decayDauInput) {}
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1, bool decayDauInput = false, bool weakDecayDauInput = false, int isUsedInCascadingInput = 0) : o2::track::TrackParCov(src), 
+      mcLabel{label}, 
+      timeEst{t, te}, 
+      isDecayDau(decayDauInput), 
+      isWeakDecayDau(weakDecayDauInput),
+      isUsedInCascading(isUsedInCascadingInput) {}
     const TimeEst& getTimeMUS() const { return timeEst; }
     int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
     bool isDecayDau;
+    bool isWeakDecayDau;
+    int isUsedInCascading; //0: not at all, 1: is a cascade, 2: is a bachelor, 3: is a pion, 4: is a proton
   };
 
     // Helper struct to pass cascade information
@@ -392,6 +399,11 @@ struct OnTheFlyTracker {
 
       // OTF strangeness tracking QA
       histos.add("hFoundVsFindable", "hFoundVsFindable", kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}});
+
+      histos.add("h2dDCAxyCascade", "h2dDCAxyCascade", kTH2F, {axisMomentum, axisDCA});
+      histos.add("h2dDCAxyCascadeBachelor", "h2dDCAxyCascadeBachelor", kTH2F, {axisMomentum, axisDCA});
+      histos.add("h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative", kTH2F, {axisMomentum, axisDCA});
+      histos.add("h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive", kTH2F, {axisMomentum, axisDCA});
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -712,9 +724,9 @@ struct OnTheFlyTracker {
             continue;
           }
           if (isReco[i]) {
-            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i+2});
           } else {
-            ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+            ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i+2});
           }
         }
 
@@ -882,7 +894,7 @@ struct OnTheFlyTracker {
 
               // add cascade track
               thisCascade.cascadeTrackId = tracksAlice3.size(); // this is the next index to be filled -> should be it
-              tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+              tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, false, false, 1});
 
               if(doXiQA){
                 histos.fill(HIST("hMassLambda"), thisCascade.mLambda);
@@ -1037,6 +1049,16 @@ struct OnTheFlyTracker {
         if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
+        }
+        if (doXiQA){ 
+          if(trackParCov.isUsedInCascading==1)
+            histos.fill(HIST("h2dDCAxyCascade"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          if(trackParCov.isUsedInCascading==2)
+            histos.fill(HIST("h2dDCAxyCascadeBachelor"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          if(trackParCov.isUsedInCascading==3)
+            histos.fill(HIST("h2dDCAxyCascadeNegative"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          if(trackParCov.isUsedInCascading==4)
+            histos.fill(HIST("h2dDCAxyCascadePositive"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
         }
         tracksDCA(dcaXY, dcaZ);
         if (populateTracksDCACov) {
