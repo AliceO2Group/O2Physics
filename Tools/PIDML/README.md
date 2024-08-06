@@ -14,6 +14,7 @@ This class represents a single ML model from an ONNX file. It requires the follo
 - timestamp of the input analysis data -- neded to choose appropriate model
 - PID to be checked
 - minimum certainty for accepting a track to be of given PID
+- *p* limits array - specifiying p limits for each detector configuration (TPC, TPC+TOF, TPC+TOF+TRD)
 
 Let's assume your `PidONNXModel` instance is named `pidModel`.
 Then, inside your analysis task `process()` function, you can iterate over tracks and call: `pidModel.applyModel(track);` to get the certainty of the model.
@@ -36,10 +37,10 @@ This is a wrapper around PidONNXModel that contains several models. It has the p
 
 Then, obligatory parameters for the interface:
 - a vector of int output PIDs
-- a vector of *p*T cuts for each PID.
+- a 2-dimensional LabeledArray of *p* limits for each PID, for each detector configuration. It describes the minimum *p* values at which each next detector should be included for predicting given PID
 - a vector of minimum certainties for each PID for accepting a track to be of this PID
 - boolean flag: whether to switch on auto mode. If true, then *p*T limits and minimum certainties can be passed as an empty array and an empty vector, and the interface will fill them with default configuration:
-  - *p*T limits: 0.5 for all PIDs
+  - *p* limits: same values for all PIDs: 0.0 (TPC), 0.5 (TPC + TOF), 0.8 (TPC + TOF + TRD)
   - minimum certainties: 0.5 for all PIDs
 
 You can use the interface in the same way as the model, by calling `applyModel(track)` or `applyModelBoolean(track)`. The interface will then call the respective method of the model selected with the aforementioned interface parameters.

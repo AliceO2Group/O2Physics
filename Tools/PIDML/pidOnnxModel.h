@@ -17,6 +17,7 @@
 #ifndef TOOLS_PIDML_PIDONNXMODEL_H_
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
+#include <array>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -35,6 +36,19 @@
 #include "rapidjson/filereadstream.h"
 
 #include "CCDB/CcdbApi.h"
+
+enum PidMLDetector {
+  kTPCOnly = 0,
+  kTPCTOF,
+  kTPCTOFTRD,
+  kNDetectors ///< number of available detectors configurations
+};
+
+namespace pidml_pt_cuts {
+  // TODO: for now first limit wouldn't be used,
+  // network needs TPC, so we can either do not cut it by p or return 0.0f as prediction
+  constexpr double defaultModelPLimits[kNDetectors] = {0.0, 0.5, 0.8};
+}
 
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
 namespace
@@ -58,8 +72,10 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, double minCertainty) : mUseCCDB(useCCDB), mPid(pid), mMinCertainty(minCertainty)
+  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, double minCertainty, const double* pLimits = &pidml_pt_cuts::defaultModelPLimits[0]) : mPid(pid), mMinCertainty(minCertainty), mPLimits(pLimits, pLimits + kNDetectors)
   {
+    assert(mPLimits.size() == kNDetectors);
+
     std::string modelFile;
     loadInputFiles(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pid, modelFile);
 
@@ -126,7 +142,6 @@ struct PidONNXModel {
     return getModelOutput(track) >= mMinCertainty;
   }
 
-  bool mUseCCDB;
   int mPid;
   double mMinCertainty;
 
@@ -193,10 +208,35 @@ struct PidONNXModel {
     }
   }
 
-  static constexpr float kTOFMissingSignal = -999.0f;
-  static constexpr float kTOFPCut = 0.5f;
-  static constexpr float kTRDMissingSignal = 0.0f;
-  static constexpr float kEpsilon = 1e-10f;
+  bool almostEqual(float a, float b, float eps = 1e-6f)
+  {
+    return std::abs(a - b) <= eps;
+  }
+
+  template <typename T>
+  bool trdMissing(const T& track)
+  {
+    static constexpr float kTRDMissingSignal = 0.0f;
+
+    return almostEqual(track.trdSignal(), kTRDMissingSignal);
+  }
+
+  template <typename T>
+  bool tofMissing(const T& track)
+  {
+    static constexpr float kEpsilon = 1e-4f;
+    static constexpr float kTOFMissingSignal = -999.0f;
+    static constexpr float kTOFMissingBeta = -999.0f;
+
+    // Because of run3 data we use also TOF beta value to determine if signal is present
+    return almostEqual(track.tofSignal(), kTOFMissingSignal, kEpsilon) || almostEqual(track.beta(), kTOFMissingBeta, kEpsilon);
+  }
+
+  template <typename T>
+  bool inPLimit(const T& track, PidMLDetector detector)
+  {
+    return track.p() >= mPLimits[detector];
+  }
 
   template <typename T>
   std::vector<float> createInputsSingle(const T& track)
@@ -208,23 +248,25 @@ struct PidONNXModel {
 
     std::vector<float> inputValues{scaledTPCSignal};
 
-    if (TMath::Abs(track.trdSignal() - kTRDMissingSignal) >= kEpsilon) {
+    // When TRD Signal shouldn't be used we pass quiet_NaNs to the network
+    if (!inPLimit(track, kTPCTOFTRD) || trdMissing(track)) {
+      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+    } else {
       float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
       inputValues.push_back(scaledTRDSignal);
       inputValues.push_back(track.trdPattern());
-    } else {
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
     }
 
-    if (track.p() >= kTOFPCut && TMath::Abs(track.tofSignal() - kTOFMissingSignal) >= kEpsilon) {
+    // When TOF Signal shouldn't be used we pass quiet_NaNs to the network
+    if (!inPLimit(track, kTPCTOF) || tofMissing(track)) {
+      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
+    } else {
       float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
       float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
       inputValues.push_back(scaledTOFSignal);
       inputValues.push_back(scaledBeta);
-    } else {
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
     }
 
     float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
@@ -316,6 +358,7 @@ struct PidONNXModel {
   std::shared_ptr<Ort::Session> mSession = nullptr;
 #endif
 
+  std::vector<double> mPLimits;
   std::vector<std::string> mInputNames;
   std::vector<std::vector<int64_t>> mInputShapes;
   std::vector<std::string> mOutputNames;
