@@ -88,6 +88,7 @@ struct DileptonMC {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
+  Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kVM:5, kHFll:6"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
@@ -259,12 +260,30 @@ struct DileptonMC {
     const AxisSpec axis_pt_meson{ConfPtllBins, "p_{T} (GeV/c)"}; // for omega, phi meson pT spectra
     const AxisSpec axis_y_meson{nbin_y, min_y, max_y, "y"};      // rapidity of meson
 
-    const AxisSpec axis_dphi_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"};                 // for kHFll
-    const AxisSpec axis_cos_theta_cs{10, 0.f, 1.f, "|cos(#theta_{CS})|"};                                           // for kPolarization
-    const AxisSpec axis_phi_cs{18, 0.f, M_PI, "|#varphi_{CS}| (rad.)"};                                             // for kPolarization
-    const AxisSpec axis_aco{10, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};            // for kUPC
-    const AxisSpec axis_asym_pt{10, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"}; // for kUPC
-    const AxisSpec axis_dphi_e_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{l} - #varphi_{ll} (rad.)"};                // for kUPC
+    int nbin_dphi_ee = 1;      // for kHFll
+    int nbin_cos_theta_cs = 1; // for kPolarization, kUPC
+    int nbin_phi_cs = 1;       // for kPolarization
+    int nbin_aco = 1;          // for kUPC
+    int nbin_asym_pt = 1;      // for kUPC
+    int nbin_dphi_e_ee = 1;    // for kUPC
+
+    if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kHFll)) {
+      nbin_dphi_ee = 18;
+    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) {
+      nbin_cos_theta_cs = 10;
+      nbin_phi_cs = 18;
+    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kUPC)) {
+      nbin_cos_theta_cs = 10;
+      nbin_aco = 10;
+      nbin_asym_pt = 10;
+      nbin_dphi_e_ee = 18;
+    }
+    const AxisSpec axis_dphi_ee{nbin_dphi_ee, 0, M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"};                 // for kHFll
+    const AxisSpec axis_cos_theta_cs{nbin_cos_theta_cs, 0.f, 1.f, "|cos(#theta_{CS})|"};                                      // for kPolarization
+    const AxisSpec axis_phi_cs{nbin_phi_cs, 0.f, M_PI, "|#varphi_{CS}| (rad.)"};                                              // for kPolarization
+    const AxisSpec axis_aco{nbin_aco, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};                // for kUPC
+    const AxisSpec axis_asym_pt{nbin_asym_pt, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"}; // for kUPC
+    const AxisSpec axis_dphi_e_ee{nbin_dphi_e_ee, 0, M_PI, "#Delta#varphi = #varphi_{l} - #varphi_{ll} (rad.)"};              // for kUPC
 
     // generated info
     fRegistry.add("Generated/sm/Pi0/hs", "gen. dilepton signal", kTHnSparseF, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
