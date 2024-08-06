@@ -60,7 +60,7 @@ struct strangeness_tutorial {
   HistogramRegistry hglue{"hglueball", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Configurable<bool> QAv0{"QAv0", false, "QAv0"};
-  Configurable<bool> QAPID{"QAPID", false, "QAPID"};
+  Configurable<bool> QAPID{"QAPID", true, "QAPID"};
   Configurable<bool> QAv0_daughters{"QAv0_daughters", false, "QA of v0 daughters"};
   Configurable<bool> QAevents{"QAevents", false, "QA of events"};
   Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
@@ -419,7 +419,7 @@ struct strangeness_tutorial {
       // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
       // }
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.pt(), track.tpcSignal());
+      rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.p(), track.tpcSignal());
     }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
