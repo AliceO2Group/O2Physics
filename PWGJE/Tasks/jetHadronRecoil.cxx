@@ -432,7 +432,7 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    fillHistograms(jets, jetsWTA, tracks, jets.eventWeight());
+    fillHistograms(jets, jetsWTA, tracks, collision.mcCollision().weight());
   }
   PROCESS_SWITCH(hJetAnalysis, processMCDWeighted, "process MC detector level with event weights", false);
 
@@ -450,12 +450,12 @@ struct hJetAnalysis {
                           soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                           JetParticles const& particles)
   {
-    fillMCPHistograms(jets, jetsWTA, particles, jets.eventWeight());
+    fillMCPHistograms(jets, jetsWTA, particles, collision.mcCollision().weight());
   }
   PROCESS_SWITCH(hJetAnalysis, processMCPWeighted, "process MC particle level with event weights", false);
 
   void processJetsMCPMCDMatched(soa::Filtered<JetCollisionsMCD>::iterator const& collision,
-                                soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::CharzgedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
+                                soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                 soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
                                 soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
                                 JetTracks const&,
@@ -542,7 +542,7 @@ struct hJetAnalysis {
     }
     if (ishJetEvent) {
       for (const auto& mcdjet : mcdjets) {
-        fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets, mcdjets.eventWeight());
+        fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets, mcdjet.eventWeight());
       }
     }
   }
