@@ -331,11 +331,11 @@ struct alice3multicharm {
     auto tracksPiFromXiCCgrouped = tracksPiFromXiCC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     if (doDCAplots) {
-      for (auto const& cascade : cascades){
-        if(cascade.has_cascadeTrack()){
+      for (auto const& cascade : cascades) {
+        if (cascade.has_cascadeTrack()) {
           auto track = cascade.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
           histos.fill(HIST("h2dDCAxyVsPtXiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
-        }else{ 
+        } else {
           LOGF(info, "Damn, something is wrong");
         }
       }
@@ -354,8 +354,8 @@ struct alice3multicharm {
     //     for (auto const& pi2c : tracksPiFromXiCgrouped) {
     //       if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
     //         continue;
-    //       // // if I am here, it means this is a triplet to be considered for XiC vertexing. 
-    //       // // will now attempt to build a three-body decay candidate with these three track rows. 
+    //       // // if I am here, it means this is a triplet to be considered for XiC vertexing.
+    //       // // will now attempt to build a three-body decay candidate with these three track rows.
     //       // if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
     //       //   continue; // failed at building candidate
 
@@ -368,7 +368,7 @@ struct alice3multicharm {
 
     //       // histos.fill(HIST("hMassXiC"), thisCandidate.mass);
 
-    //       // // attempt XiCC finding 
+    //       // // attempt XiCC finding
     //       // for (auto const& picc : tracksPiFromXiCCgrouped) {
     //       //   o2::track::TrackParCov piccTrack = getTrackParCov(picc);
     //       //   if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
