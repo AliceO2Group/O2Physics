@@ -1582,50 +1582,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
         return cut;
       }
 
-      if (!nameStr.compare(Form("lmee%s_eNSigmaRun3%s_TOFreq", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data()))) {
-        cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
-        cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
-        cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
-        cut->AddCut(GetAnalysisCut(Form("electronPID_TPC_TOFnsigma%s", vecPIDcase.at(icase).Data())));
-        return cut;
-      }
-
-      if (!nameStr.compare(Form("lmee%s_lowB_eNSigmaRun3%s_strongNSigE", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data()))) {
-        cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
-        cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
-        cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz")); // to reject looper using DCAz
-
-        AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
-        cut_tpc_nSigma->AddCut(GetAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
-
-        AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
-        cut_tof_nSigma->AddCut(GetAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
-
-        AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
-        cut_pid_OR->AddCut(cut_tpc_nSigma);
-        cut_pid_OR->AddCut(cut_tof_nSigma);
-        cut->AddCut(cut_pid_OR);
-        return cut;
-      }
-
-      if (!nameStr.compare(Form("lmee%s_lowB_eNSigmaRun3%s_strongNSigE_rejBadTOF", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data()))) {
-        cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
-        cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
-        cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz")); // to reject looper using DCAz
-
-        AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
-        cut_tpc_nSigma->AddCut(GetAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
-
-        AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
-        cut_tof_nSigma->AddCut(GetAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
-
-        AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
-        cut_pid_OR->AddCut(cut_tpc_nSigma);
-        cut_pid_OR->AddCut(cut_tof_nSigma);
-        cut->AddCut(cut_pid_OR);
-        return cut;
-      }
-
       if (!nameStr.compare(Form("lmee%s_eNSigmaRun3%s_strongNSigE_rejBadTOF", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data()))) {
         cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
         cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
@@ -1636,6 +1592,32 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
         AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
         cut_tof_nSigma->AddCut(GetAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
+
+        AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        cut_pid_OR->AddCut(cut_tpc_nSigma);
+        cut_pid_OR->AddCut(cut_tof_nSigma);
+        cut->AddCut(cut_pid_OR);
+        return cut;
+      }
+
+      if (!nameStr.compare(Form("lmee%s_eNSigmaRun3%s_TOFreq", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data()))) {
+        cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+        cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
+        cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+        cut->AddCut(GetAnalysisCut(Form("electronPID_TPC_TOFnsigma%s", vecPIDcase.at(icase).Data())));
+        return cut;
+      }
+
+      if (!nameStr.compare(Form("lmee%s_eNSigmaRun3%s_Resol", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data()))) {
+        cut->AddCut(GetAnalysisCut("openEtaSel")); // No pt cut and wider eta cut to produce resolution maps
+        cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
+        cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+
+        AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        cut_tpc_nSigma->AddCut(GetAnalysisCut(Form("electronPID_TPCnsigma%s", vecPIDcase.at(icase).Data())));
+
+        AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        cut_tof_nSigma->AddCut(GetAnalysisCut(Form("electronPID_TOFnsigma%s", vecPIDcase.at(icase).Data())));
 
         AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
         cut_pid_OR->AddCut(cut_tpc_nSigma);
@@ -1708,6 +1690,42 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
         AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
         cut_tof_nSigma->AddCut(GetAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
+
+        AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        cut_pid_OR->AddCut(cut_tpc_nSigma);
+        cut_pid_OR->AddCut(cut_tof_nSigma);
+        cut->AddCut(cut_pid_OR);
+        return cut;
+      }
+
+      if (!nameStr.compare(Form("lmee%s_lowB_eNSigmaRun3%s_strongNSigE", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data()))) {
+        cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
+        cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
+        cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz")); // to reject looper using DCAz
+
+        AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        cut_tpc_nSigma->AddCut(GetAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
+
+        AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        cut_tof_nSigma->AddCut(GetAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
+
+        AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        cut_pid_OR->AddCut(cut_tpc_nSigma);
+        cut_pid_OR->AddCut(cut_tof_nSigma);
+        cut->AddCut(cut_pid_OR);
+        return cut;
+      }
+
+      if (!nameStr.compare(Form("lmee%s_lowB_eNSigmaRun3%s_strongNSigE_rejBadTOF", vecTypetrackWithPID.at(jcase).Data(), vecPIDcase.at(icase).Data()))) {
+        cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
+        cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
+        cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz")); // to reject looper using DCAz
+
+        AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        cut_tpc_nSigma->AddCut(GetAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
+
+        AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        cut_tof_nSigma->AddCut(GetAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
         AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
         cut_pid_OR->AddCut(cut_tpc_nSigma);
