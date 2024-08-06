@@ -430,8 +430,7 @@ struct fwdMuonsUPC {
 
       if (zdcPerCand.count(candID) != 0)
         zdc = zdcPerCand.at(candID);
-      else
-      {
+      else {
         zdc.timeA = -999;
         zdc.timeC = -999;
         zdc.enA = -999;
