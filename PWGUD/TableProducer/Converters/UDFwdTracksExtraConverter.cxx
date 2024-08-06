@@ -1,0 +1,58 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file UDFwdTracksExtraConverter.cxx
+/// \brief Converts TracksExtra table from version 000 to 001
+
+/// This task allows for the conversion of the udFwdTracksExtra table from the version before
+/// including global tracks
+
+/// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
+
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+using namespace o2;
+using namespace o2::framework;
+
+// Converts UDFwdTracksExtra for version 000 to 001
+// v_000 only MID-MCH tracks
+// v_001 global tracks
+struct UDFwdTracksExtraConverter{
+  Produces<o2::aod::UDFwdTracksExtra_001> udFwdTracksExtra_001;
+
+  void process(o2::aod::UDFwdTracksExtra_000 const & tracks){
+        
+    for(const auto &track : tracks){
+      
+      udFwdTracksExtra_001(3, // trackType of MCH-MID trakcs is 3
+                           track.nClusters(), 
+                           track.pDca(), 
+                           track.rAtAbsorberEnd(), 
+                           track.chi2(), 
+                           track.chi2MatchMCHMID(), 
+                           0.0f, // dummy mchmftChi2, not available in version 000
+                           track.mchBitMap(), 
+                           track.midBitMap(), 
+                           track.midBoards());
+    }
+  }
+};
+
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<UDFwdTracksExtraConverter>(cfgc),
+  };
+}
