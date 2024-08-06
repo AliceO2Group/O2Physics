@@ -124,21 +124,6 @@ struct qaMatchEff {
   } kineCuts;
   //
   //
-  AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
-  //
-  AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
-  //
-  AxisSpec axisX{XBins, "track x (cm)"};
-  //
-  AxisSpec axisZ{ZBins, "track z (cm)"};
-  //
-  AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
-  //
-  AxisSpec axisEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "#eta"};
-  AxisSpec axisPhi{phiBins, 0.f, TwoPI, "#it{#varphi} (rad)"};
-  AxisSpec axisDEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "D#eta"};
-  AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
-  //
   // DCA and PID cuts
   Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
   Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
@@ -318,6 +303,16 @@ struct qaMatchEff {
       LOGF(info, "*********************************************************** DATA  ***************************************************");
 
     //
+    const AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
+    const AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisX{XBins, "track x (cm)"};
+    const AxisSpec axisZ{ZBins, "track z (cm)"};
+    const AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
+    const AxisSpec axisEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "#eta"};
+    const AxisSpec axisPhi{phiBins, 0.f, TwoPI, "#it{#varphi} (rad)"};
+    const AxisSpec axisDEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "D#eta"};
+    const AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
+    //
     // configuration for THnSparse's
     //
     const AxisSpec thnd0Axis{thnd0, "#it{d}_{r#it{#varphi}} [cm]"};
@@ -328,9 +323,9 @@ struct qaMatchEff {
     const AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
     const AxisSpec thnSpecAxis{thnSpec, "particle ID"};
     const AxisSpec thnSignAxis{thnSign, "track sign"};
+    const AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF, TRD"};
     // const AxisSpec thnITSclumapAxis{thnITSclumap, "ITS cluster map"};
     // const AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
-    const AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF, TRD"};
     //
     //
     // data histos
@@ -816,6 +811,16 @@ struct qaMatchEff {
   {
     if (doDebug)
       LOGF(info, " +++++++++++++++++++++++  MC  ++++++++++++++++++++++++");
+    //
+    const AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
+    const AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisX{XBins, "track x (cm)"};
+    const AxisSpec axisZ{ZBins, "track z (cm)"};
+    const AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
+    const AxisSpec axisEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "#eta"};
+    const AxisSpec axisPhi{phiBins, 0.f, TwoPI, "#it{#varphi} (rad)"};
+    const AxisSpec axisDEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "D#eta"};
+    const AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
     //
     //
     // configuration for THnSparse's
