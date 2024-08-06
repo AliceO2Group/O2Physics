@@ -1016,9 +1016,9 @@ struct QaEfficiency {
         }
       }
       if (doPtRadius) {
-        hPtRadiusItsTpc[histogramIndex]->Fill(mcParticle.pt(), radius);
+        hPtRadiusItsTpc[histogramIndex]->Fill(mcParticle.pt(), mcParticle.radius());
         if (passedTOF) {
-          hPtRadiusItsTpcTof[histogramIndex]->Fill(mcParticle.pt(), radius);
+          hPtRadiusItsTpcTof[histogramIndex]->Fill(mcParticle.pt(), mcParticle.radius());
         }
       }
     }
@@ -1180,7 +1180,7 @@ struct QaEfficiency {
       hPtEtaGenerated[histogramIndex]->Fill(mcParticle.pt(), mcParticle.eta());
     }
     if (doPtRadius) {
-      hPtRadiusGenerated[histogramIndex]->Fill(mcParticle.pt(), radius);
+      hPtRadiusGenerated[histogramIndex]->Fill(mcParticle.pt(), mcParticle.radius());
     }
   }
 
