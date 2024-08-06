@@ -345,9 +345,7 @@ struct fwdMuonsUPC {
       reg0n0n.fill(HIST("hPtFit"), p.Pt());
       reg0n0n.fill(HIST("hEta"), p.Eta());
       reg0n0n.fill(HIST("hRapidity"), p.Rapidity());
-    }
-    
-    else if (neutron_A ^ neutron_C) // Xn0n + 0nXn
+    }else if (neutron_A ^ neutron_C) // Xn0n + 0nXn
     {
       if (neutron_A)
         znClass = 1;
@@ -358,10 +356,8 @@ struct fwdMuonsUPC {
       regXn0n.fill(HIST("hPtFit"), p.Pt());
       regXn0n.fill(HIST("hEta"), p.Eta());
       regXn0n.fill(HIST("hRapidity"), p.Rapidity());
-    }
-    
-    else if (neutron_A && neutron_C) // XnXn
-    { 
+    }else if (neutron_A && neutron_C) // XnXn
+    {
       znClass = 3;
       regXnXn.fill(HIST("hMass"), p.M());
       regXnXn.fill(HIST("hPt"), p.Pt());
@@ -436,7 +432,7 @@ struct fwdMuonsUPC {
 
       if (zdcPerCand.count(candID) != 0)
         zdc = zdcPerCand.at(candID);
-      else 
+      else
       {
         zdc.timeA = -999;
         zdc.timeC = -999;
