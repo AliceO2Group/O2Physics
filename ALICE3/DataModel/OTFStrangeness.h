@@ -31,7 +31,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos");         
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(BachTrack, bachTrack, int, Tracks, "_Bach");          //!
 
-//topo vars
+// topo vars
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0Daughters, float);
 DECLARE_SOA_COLUMN(DCACascadeDaughters, dcaCascadeDaughters, float);
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
@@ -46,7 +46,7 @@ DECLARE_SOA_COLUMN(FoundClusters, foundClusters, int);
 
 } // namespace otfcascade
 DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
-                  o2::soa::Index<>, 
+                  o2::soa::Index<>,
                   otfcascade::CascadeTrackId,
                   otfcascade::PosTrackId,
                   otfcascade::NegTrackId,
@@ -57,7 +57,7 @@ DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
                   otfcascade::CascRadius,
                   otfcascade::CascRadiusMC,
                   otfcascade::MLambda,
-                  otfcascade::MXi, 
+                  otfcascade::MXi,
                   otfcascade::FindableClusters,
                   otfcascade::FoundClusters);
 
