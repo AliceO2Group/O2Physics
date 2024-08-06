@@ -136,7 +136,6 @@ struct femtoUniverseProducerTask {
   //     "ConfRejectITSHitandTOFMissing", false,
   //     "True: reject if neither ITS hit nor TOF timing satisfied"};
 
-  Configurable<int> ConfTrkPDGCode{"ConfTrkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"}; // only for checking the particle origin (particles for which PDG does not match are marked as "Fake")
   FemtoUniverseTrackSelection trackCuts;
 
   struct : o2::framework::ConfigurableGroup {
@@ -358,10 +357,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -531,7 +530,7 @@ struct femtoUniverseProducerTask {
       int particleOrigin = 99;
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
-      if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
+      if (abs(pdgCode) == abs(ConfPhiChildOne.ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPhiChildTwo.ConfPDGCodePartTwo.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
@@ -1298,6 +1297,22 @@ struct femtoUniverseProducerTask {
     }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTruthAndFullMC, "Provide both MC truth and reco for tracks and V0s", false);
+
+  void processFullMCCent(aod::FemtoFullCollisionCentRun3 const& col,
+                         aod::BCsWithTimestamps const&,
+                         soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                         aod::McCollisions const&,
+                         aod::McParticles const&,
+                         soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsCentRun3<true>(col, tracks);
+    fillTracks<true>(tracks);
+    fillV0<true>(col, fullV0s, tracks);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processFullMCCent, "Provide MC data with centrality bins", false);
 
   void processTrackCentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
                                 aod::BCsWithTimestamps const&,
