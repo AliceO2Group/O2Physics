@@ -121,7 +121,7 @@ struct alice3multicharm {
     std::array<float, 3> prong0mom;
     std::array<float, 3> prong1mom;
     std::array<float, 3> prong2mom;
-    std::array<float, 21> parentTrackCovMatrix = {0};
+    std::array<float, 21> parentTrackCovMatrix;
   } thisCandidate;
 
   template <typename TTrackType>
@@ -331,9 +331,13 @@ struct alice3multicharm {
     auto tracksPiFromXiCCgrouped = tracksPiFromXiCC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     if (doDCAplots) {
-      for (auto const& cascade : cascades) {
-        auto track = cascade.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
-        histos.fill(HIST("h2dDCAxyVsPtXiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
+      for (auto const& cascade : cascades){
+        if(cascade.has_cascadeTrack()){
+          auto track = cascade.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
+          histos.fill(HIST("h2dDCAxyVsPtXiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
+        }else{ 
+          LOGF(info, "Damn, something is wrong");
+        }
       }
       for (auto const& track : tracksPiFromXiCgrouped)
         histos.fill(HIST("h2dDCAxyVsPtPiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
@@ -341,41 +345,40 @@ struct alice3multicharm {
         histos.fill(HIST("h2dDCAxyVsPtPiFromXiCC"), track.pt(), track.dcaXY() * 1e+4);
     }
 
-    // D mesons
-    for (auto const& xiCand : cascades) {
-      histos.fill(HIST("hMassXi"), xiCand.mXi());
-      auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
-      for (auto const& pi1c : tracksPiFromXiCgrouped) {
-        if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
-          continue;
-        for (auto const& pi2c : tracksPiFromXiCgrouped) {
-          if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
-            continue;
-          // if I am here, it means this is a triplet to be considered for XiC vertexing.
-          // will now attempt to build a three-body decay candidate with these three track rows.
-          if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
-            continue; // failed at building candidate
+    // for (auto const& xiCand : cascades) {
+    //   histos.fill(HIST("hMassXi"), xiCand.mXi());
+    //   auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
+    //   for (auto const& pi1c : tracksPiFromXiCgrouped) {
+    //     if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
+    //       continue;
+    //     for (auto const& pi2c : tracksPiFromXiCgrouped) {
+    //       if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
+    //         continue;
+    //       // // if I am here, it means this is a triplet to be considered for XiC vertexing. 
+    //       // // will now attempt to build a three-body decay candidate with these three track rows. 
+    //       // if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
+    //       //   continue; // failed at building candidate
 
-          const std::array<float, 3> momentumC = {
-            thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0],
-            thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1],
-            thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2] + thisCandidate.prong2mom[2]};
+    //       // const std::array<float, 3> momentumC = {
+    //       //   thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0],
+    //       //   thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1],
+    //       //   thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2] + thisCandidate.prong2mom[2]};
 
-          o2::track::TrackParCov xicTrack(thisCandidate.xyz, momentumC, thisCandidate.parentTrackCovMatrix, +1);
+    //       // o2::track::TrackParCov xicTrack(thisCandidate.xyz, momentumC, thisCandidate.parentTrackCovMatrix, +1);
 
-          histos.fill(HIST("hMassXiC"), thisCandidate.mass);
+    //       // histos.fill(HIST("hMassXiC"), thisCandidate.mass);
 
-          // attempt XiCC finding
-          for (auto const& picc : tracksPiFromXiCCgrouped) {
-            o2::track::TrackParCov piccTrack = getTrackParCov(picc);
-            if (!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
-              continue; // failed at building candidate
+    //       // // attempt XiCC finding 
+    //       // for (auto const& picc : tracksPiFromXiCCgrouped) {
+    //       //   o2::track::TrackParCov piccTrack = getTrackParCov(picc);
+    //       //   if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
+    //       //     continue; // failed at building candidate
 
-            histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
-          }
-        }
-      }
-    }
+    //       //   histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
+    //       // }
+    //     }
+    //   }
+    // }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
