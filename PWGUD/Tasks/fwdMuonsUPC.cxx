@@ -19,7 +19,7 @@
 
 #include "TLorentzVector.h"
 #include "TSystem.h"
-#include "math.h"
+#include "TMath.h"
 
 namespace dimu
 {
@@ -346,8 +346,9 @@ struct fwdMuonsUPC {
       reg0n0n.fill(HIST("hEta"), p.Eta());
       reg0n0n.fill(HIST("hRapidity"), p.Rapidity());
     }
-    // Xn0n + 0nXn
-    else if (neutron_A ^ neutron_C) {
+    
+    else if (neutron_A ^ neutron_C) // Xn0n + 0nXn
+    {
       if (neutron_A)
         znClass = 1;
       else if (neutron_C)
@@ -358,8 +359,9 @@ struct fwdMuonsUPC {
       regXn0n.fill(HIST("hEta"), p.Eta());
       regXn0n.fill(HIST("hRapidity"), p.Rapidity());
     }
-    // XnXn
-    else if (neutron_A && neutron_C) {
+    
+    else if (neutron_A && neutron_C) // XnXn
+    { 
       znClass = 3;
       regXnXn.fill(HIST("hMass"), p.M());
       regXnXn.fill(HIST("hPt"), p.Pt());
@@ -397,7 +399,7 @@ struct fwdMuonsUPC {
               p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
               p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
-    };
+    }
   }
 
   // PROCESS FUNCTION
@@ -434,7 +436,8 @@ struct fwdMuonsUPC {
 
       if (zdcPerCand.count(candID) != 0)
         zdc = zdcPerCand.at(candID);
-      else {
+      else 
+      {
         zdc.timeA = -999;
         zdc.timeC = -999;
         zdc.enA = -999;
