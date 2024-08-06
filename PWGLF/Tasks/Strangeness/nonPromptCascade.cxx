@@ -41,7 +41,7 @@ struct NPCascCandidate {
   int64_t trackGlobID;
   int64_t trackITSID;
   float matchingChi2;
-  int itsClusSize;
+  float itsClusSize;
   bool isGoodMatch;
   bool isGoodCascade;
   int pdgCodePrimary;
