@@ -91,6 +91,8 @@ struct alice3multicharm {
   ConfigurableAxis axisXiCMass{"axisXiCMass", {200, 2.368f, 2.568f}, "XiC Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCCMass{"axisXiCCMass", {200, 3.521f, 3.721f}, "XiCC Inv Mass (GeV/c^{2})"};
 
+  ConfigurableAxis axisNConsidered{"axisNConsidered", {200, -0.5f, 199.5f}, "Number of considered track combinations"};
+
   o2::vertexing::DCAFitterN<2> fitter;
   o2::vertexing::DCAFitterN<3> fitter3;
 
@@ -101,7 +103,6 @@ struct alice3multicharm {
   Partition<aod::McParticles> trueXiCC = aod::mcparticle::pdgCode == 4422;
 
   // filter expressions for D mesons
-  static constexpr uint32_t trackSelectionXiFromXiC = 1 << kTrueXiFromXiC;
   static constexpr uint32_t trackSelectionPiFromXiC = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiFromXiC;
   static constexpr uint32_t trackSelectionPiFromXiCC = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiFromXiCC;
 
@@ -304,6 +305,9 @@ struct alice3multicharm {
     histos.add("hMassXiC", "hMassXiC", kTH1F, {axisXiCMass});
     histos.add("hMassXiCC", "hMassXiCC", kTH1F, {axisXiCCMass});
 
+    histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1F, {axisNConsidered});
+    histos.add("hCombinationsXiCC", "hCombinationsXiCC", kTH1F, {axisNConsidered});
+
     if (doDCAplots) {
       histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2F, {axisPt, axisDCA});
       histos.add("h2dDCAxyVsPtPiFromXiC", "h2dDCAxyVsPtPiFromXiC", kTH2F, {axisPt, axisDCA});
@@ -348,14 +352,20 @@ struct alice3multicharm {
     for (auto const& xiCand : cascades) {
       histos.fill(HIST("hMassXi"), xiCand.mXi());
       auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
+      long nCombinationsC = 0;
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
           continue;
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
           if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
-            continue;
+            continue; // keep only if same mother
+          if (pi1c.globalIndex() >= pi2c.globalIndex()) 
+            continue; // avoid same-mother, avoid double-counting
+
           // if I am here, it means this is a triplet to be considered for XiC vertexing. 
           // will now attempt to build a three-body decay candidate with these three track rows. 
+
+          nCombinationsC++;
           if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
             continue; // failed at building candidate
 
@@ -369,18 +379,21 @@ struct alice3multicharm {
           histos.fill(HIST("hMassXiC"), thisCandidate.mass);
 
           // attempt XiCC finding 
+          long nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
-            if (mcSameMotherCheck && !checkSameMother(xi, picc))
-              continue;
+            // to-do: check same mother here
 
+            nCombinationsCC++;
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
             if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
               continue; // failed at building candidate
 
             histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
           }
+          histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
         }
       }
+      histos.fill(HIST("hCombinationsXiC"), nCombinationsC);
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
