@@ -199,25 +199,34 @@ struct correlateStrangeness {
     hEfficiencyOmegaPlus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaPlus"));
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
   }
-
+  template <class TTrack>
+  bool isValidTrigger(TTrack track)
+  {
+    if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows) {
+      return false; // crossed rows
+    }
+    if (!track.hasITS() && systCuts.triggerRequireITS) {
+      return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+    }
+    if (track.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters) {
+      return false; // skip, has shared clusters
+    }
+    if (!(bitcheck(track.itsClusterMap(), 0)) && systCuts.triggerRequireL0) {
+      return false; // skip, doesn't have cluster in ITS L0
+    }
+    // systematic variations: trigger DCAxy
+    if (std::abs(track.dcaXY()) > systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt())) {
+      return false;
+    }
+    return true;
+  }
   void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvz, float mult)
   {
     for (auto& triggerTrack : triggers) {
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
       auto trigg = triggerTrack.track_as<TracksComplete>();
-
-      // systematic variations: track quality
-      if (trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-        continue;
-      if (!trigg.hasITS() && systCuts.triggerRequireITS)
-        continue;
-      if (trigg.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
-        continue;
-      if (!(bitcheck(trigg.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
-        continue;
-      // systematic variations: trigger DCAxy
-      if (std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
+      if (!isValidTrigger(trigg))
         continue;
 
       if (!mixing)
@@ -227,7 +236,7 @@ struct correlateStrangeness {
 
         //---] syst cuts [---
         if (assoc.v0radius() < systCuts.v0RadiusMin || assoc.v0radius() > systCuts.v0RadiusMax ||
-            assoc.dcapostopv() > systCuts.dcapostopv || assoc.dcanegtopv() < systCuts.dcanegtopv ||
+            assoc.dcapostopv() < systCuts.dcapostopv || assoc.dcanegtopv() < systCuts.dcanegtopv ||
             assoc.v0cosPA() < systCuts.v0cospa)
           continue;
 
@@ -298,18 +307,7 @@ struct correlateStrangeness {
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
       auto trigg = triggerTrack.track_as<TracksComplete>();
-
-      // systematic variations: track quality
-      if (trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-        continue;
-      if (!trigg.hasITS() && systCuts.triggerRequireITS)
-        continue;
-      if (trigg.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
-        continue;
-      if (!(bitcheck(trigg.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
-        continue;
-      // systematic variations: trigger DCAxy
-      if (std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
+      if (!isValidTrigger(trigg))
         continue;
 
       if (!mixing)
@@ -405,18 +403,7 @@ struct correlateStrangeness {
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
       auto trigg = triggerTrack.track_as<TracksComplete>();
-
-      // systematic variations: track quality
-      if (trigg.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-        continue;
-      if (!trigg.hasITS() && systCuts.triggerRequireITS)
-        continue;
-      if (trigg.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
-        continue;
-      if (!(bitcheck(trigg.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
-        continue;
-      // systematic variations: trigger DCAxy
-      if (std::abs(trigg.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(trigg.signed1Pt()))
+      if (!isValidTrigger(trigg))
         continue;
 
       if (!mixing)
@@ -759,23 +746,39 @@ struct correlateStrangeness {
       histos.add("GeneratedWithPV/hOmegaPlus_MidYVsMult_TwoPVsOrMore", "", kTH2F, {axisPtQA, axisMult});
     }
     if (doprocessClosureTest) {
-      histos.add("ClosureTest/sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
-      histos.add("ClosureTest/sameEvent/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
-      histos.add("ClosureTest/sameEvent/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
-      histos.add("ClosureTest/sameEvent/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
-      histos.add("ClosureTest/sameEvent/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
-      histos.add("ClosureTest/sameEvent/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
-      histos.add("ClosureTest/sameEvent/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
-      histos.add("ClosureTest/sameEvent/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+      if (doCorrelationPion) {
+        histos.add("ClosureTest/sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/hPion", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      }
+      if (doCorrelationK0Short) {
+        histos.add("ClosureTest/sameEvent/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/hK0Short", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      }
+      if (doCorrelationLambda) {
+        histos.add("ClosureTest/sameEvent/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/hLambda", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      }
+      if (doCorrelationAntiLambda) {
+        histos.add("ClosureTest/sameEvent/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/hAntiLambda", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      }
+      if (doCorrelationXiMinus) {
+        histos.add("ClosureTest/sameEvent/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/hXiMinus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      }
+      if (doCorrelationXiPlus) {
+        histos.add("ClosureTest/sameEvent/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/XiPlus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      }
+      if (doCorrelationOmegaMinus) {
+        histos.add("ClosureTest/sameEvent/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/hOmegaMinus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      }
+      if (doCorrelationOmegaPlus) {
+        histos.add("ClosureTest/sameEvent/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/hOmegaPlus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      }
       histos.add("ClosureTest/hTrigger", "Trigger Tracks", kTH3F, {axisPtQA, axisEta, axisMult});
-      histos.add("ClosureTest/hPion", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("ClosureTest/hK0Short", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("ClosureTest/hLambda", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("ClosureTest/hAntiLambda", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("ClosureTest/hXiMinus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("ClosureTest/hXiPlus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("ClosureTest/hOmegaMinus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("ClosureTest/hOmegaPlus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
     }
     // initialize CCDB *only* if efficiency correction requested
     // skip if not requested, saves a bit of time
@@ -828,7 +831,7 @@ struct correlateStrangeness {
 
       //---] syst cuts [---
       if (v0Data.v0radius() < systCuts.v0RadiusMin || v0Data.v0radius() > systCuts.v0RadiusMax ||
-          v0Data.dcapostopv() > systCuts.dcapostopv || v0Data.dcanegtopv() < systCuts.dcanegtopv ||
+          v0Data.dcapostopv() < systCuts.dcapostopv || v0Data.dcanegtopv() < systCuts.dcanegtopv ||
           v0Data.v0cosPA() < systCuts.v0cospa)
         continue;
 
@@ -856,20 +859,8 @@ struct correlateStrangeness {
     if (!doprocessSameEventHCascades) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
-
-        // systematic variations: track quality
-        if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
+        if (!isValidTrigger(track))
           continue;
-        if (!track.hasITS() && systCuts.triggerRequireITS)
-          continue;
-        if (track.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
-          continue;
-        if (!(bitcheck(track.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
-          continue;
-        // systematic variations: trigger DCAxy
-        if (std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
-          continue;
-
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
         if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
           continue;
@@ -954,23 +945,13 @@ struct correlateStrangeness {
       });
     }
     for (auto const& triggerTrack : triggerTracks) {
+      auto track = triggerTrack.track_as<TracksComplete>();
+      if (!isValidTrigger(track))
+        continue;
+      histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
-      auto track = triggerTrack.track_as<TracksComplete>();
-
-      // systematic variations: track quality
-      if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-        continue;
-      if (!track.hasITS() && systCuts.triggerRequireITS)
-        continue;
-      if (track.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
-        continue;
-      if (!(bitcheck(track.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
-        continue;
-      // systematic variations: trigger DCAxy
-      if (std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
-        continue;
-
+      histos.fill(HIST("hTriggerPrimaryEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
       histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
     }
 
@@ -1009,23 +990,13 @@ struct correlateStrangeness {
     }
     if (!doprocessSameEventHCascades && !doprocessSameEventHV0s) {
       for (auto const& triggerTrack : triggerTracks) {
+        auto track = triggerTrack.track_as<TracksComplete>();
+        if (!isValidTrigger(track))
+          continue;
+        histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
         if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
           continue;
-        auto track = triggerTrack.track_as<TracksComplete>();
-
-        // systematic variations: track quality
-        if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRows)
-          continue;
-        if (!track.hasITS() && systCuts.triggerRequireITS)
-          continue;
-        if (track.tpcNClsShared() > systCuts.triggerMaxTPCSharedClusters)
-          continue;
-        if (!(bitcheck(track.itsClusterMap(), 0)) && systCuts.triggerRequireL0)
-          continue;
-        // systematic variations: trigger DCAxy
-        if (std::abs(track.dcaXY()) < systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt()))
-          continue;
-
+        histos.fill(HIST("hTriggerPrimaryEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
         histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
       }
     }
@@ -1321,35 +1292,35 @@ struct correlateStrangeness {
         }
       }
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (abs(mcParticle.pdgCode()) == 211) {
+        if (abs(mcParticle.pdgCode()) == 211 && doCorrelationPion) {
           piIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hPion"), gpt, geta, gphi);
         }
-        if (abs(mcParticle.pdgCode()) == 310) {
+        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
           k0ShortIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hK0Short"), gpt, geta, gphi);
         }
-        if (mcParticle.pdgCode() == 3122) {
+        if (mcParticle.pdgCode() == 3122 && doCorrelationLambda) {
           lambdaIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hLambda"), gpt, geta, gphi);
         }
-        if (mcParticle.pdgCode() == -3122) {
+        if (mcParticle.pdgCode() == -3122 && doCorrelationAntiLambda) {
           antiLambdaIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hAntiLambda"), gpt, geta, gphi);
         }
-        if (mcParticle.pdgCode() == 3312) {
+        if (mcParticle.pdgCode() == 3312 && doCorrelationXiMinus) {
           xiMinusIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hXiMinus"), gpt, geta, gphi);
         }
-        if (mcParticle.pdgCode() == -3312) {
+        if (mcParticle.pdgCode() == -3312 && doCorrelationXiPlus) {
           xiPlusIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hXiPlus"), gpt, geta, gphi);
         }
-        if (mcParticle.pdgCode() == 3334) {
+        if (mcParticle.pdgCode() == 3334 && doCorrelationOmegaMinus) {
           omegaMinusIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hOmegaMinus"), gpt, geta, gphi);
         }
-        if (mcParticle.pdgCode() == -3334) {
+        if (mcParticle.pdgCode() == -3334 && doCorrelationOmegaPlus) {
           omegaPlusIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hOmegaPlus"), gpt, geta, gphi);
         }
