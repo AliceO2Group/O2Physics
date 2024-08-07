@@ -192,7 +192,7 @@ struct hypertriton3bodyTrackMcinfo {
         {"hWrongDeuteronNewTOFNSigmaVsP_v2", "hWrongDeuteronNewTOFNSigmaVsP_v2", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
 
         {"hDiffTrackTOFSignal", "hDiffTrackTOFSignal", {HistType::kTH1F, {{2000, -1000.0f, 1000.0f}}}},
-        //{"hDiffDeuteronTOFSignal", "hDiffDeuteronTOFSignal", {HistType::kTH1F, {{200, -100.0f, 100.0f}}}},
+        {"hDiffDeuteronTOFSignal", "hDiffDeuteronTOFSignal", {HistType::kTH1F, {{2000, -1000.0f, 1000.0f}}}},
         {"hDiffColTime", "hDiffColTime", {HistType::kTH1F, {{200, -100.0f, 100.0f}}}},
         {"hDiffColTimeErr", "hDiffColTimeErr", {HistType::kTH1F, {{200, -100.0f, 100.0f}}}},
       },
@@ -520,6 +520,11 @@ struct hypertriton3bodyTrackMcinfo {
           auto responseDe = o2::pid::tof::ExpTimes<MCLabeledTracksIU::iterator, o2::track::PID::Deuteron>();
           double bachExpTime = track.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
           double tofsignal = track.trackTime() * 1000 + bachExpTime;                                                                                                                                           // in ps
+
+          float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
+          double bachExpTimeTest = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
+          double tofsignalTest = track.trackTime() * 1000 + bachExpTimeTest;                                                                                                                                    // in ps
+
           double expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignal, collision.collisionTimeRes());
           //tofNsigmaDe = (tofsignal - collision.collisionTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
           //double expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, track.tofSignal(), track.tofEvTimeErr());
@@ -529,13 +534,9 @@ struct hypertriton3bodyTrackMcinfo {
           registry.fill(HIST("hDiffColTime"), track.tofEvTime() - collision.collisionTime());
           registry.fill(HIST("hDiffColTimeErr"), track.tofEvTimeErr() - collision.collisionTimeRes());
 
-          float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
-          double bachExpTimeTest = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
-          double tofsignalTest = track.trackTime() * 1000 + bachExpTimeTest;                                                                                                                                           // in ps
           if ( (mcparticle.pdgCode() == 1000010020 || mcparticle.pdgCode() == -1000010020) && track.p() > 1) {
             registry.fill(HIST("hDiffTrackTOFSignal"), track.tofSignal() - tofsignalTest);
             //registry.fill(HIST("hDiffTrackTOFSignal"), track.tofSignal() - tofsignal);
-            //registry.fill(HIST("hDiffDeuteronTOFSignal"), track.tofExpSignalDe() - tofsignal);
           }
         }
 
@@ -684,7 +685,7 @@ struct hypertriton3bodyTrackMcinfo {
           continue;
         }
         auto collision = collisions.iteratorAt(evtReconstructed - SelectedEvents.begin());
-        // auto collision = track.collision_as<aod::Collisions>();
+        auto originalcollision = track.collision_as<aod::Collisions>();
 
         for (auto& particleMother : mcparticle.mothers_as<aod::McParticles>()) {
           bool flag_H3L = is3bodyDecayedH3L<aod::McParticles>(particleMother);
@@ -700,12 +701,20 @@ struct hypertriton3bodyTrackMcinfo {
             auto responseDe = o2::pid::tof::ExpTimes<MCLabeledTracksIU::iterator, o2::track::PID::Deuteron>();
             double bachExpTime = track.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
             double tofsignal = track.trackTime() * 1000.f + bachExpTime;                                                                                                                                           // in ps
+
+            float mMassHyp = o2::track::pid_constants::sMasses2Z[o2::track::PID::Deuteron];
+            double bachExpTimeTest = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
+            double tofsignalTest = track.trackTime() * 1000 + bachExpTimeTest;                                                                                                                                    // in ps
+
             double expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignal, collision.collisionTimeRes());
-            tofNsigmaDe = (tofsignal - collision.collisionTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-            std::cout << "col.bc:" << timestamp.value << std::endl;
+            tofNsigmaDe = (tofsignal - collision.collisionTime() - ( originalcollision.bc() + collision.bc() ) - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+            std::cout << "col.bc:" << collision.bc() << std::endl;
+            std::cout << "col.bctimestamp:" << timestamp.value << std::endl;
             std::cout << "col.time:" << collision.collisionTime() << std::endl;
+
+            registry.fill(HIST("hDiffDeuteronTOFSignal"), tofsignalTest - track.tofSignal());
+            registry.fill(HIST("hDauDeuteronNewTOFNSigmaVsP"), track.sign() * track.p(), tofNsigmaDe);
           }
-          registry.fill(HIST("hDauDeuteronNewTOFNSigmaVsP"), track.sign() * track.p(), tofNsigmaDe);
         }
       }
     }
