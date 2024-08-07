@@ -571,6 +571,7 @@ struct OnTheFlyTracker {
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
     bcData.clear();
+    cascadesAlice3.clear();
 
     o2::dataformats::DCA dcaInfo;
     o2::dataformats::VertexBase vtx;

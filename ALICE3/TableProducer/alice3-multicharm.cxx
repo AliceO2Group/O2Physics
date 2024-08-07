@@ -345,46 +345,49 @@ struct alice3multicharm {
         histos.fill(HIST("h2dDCAxyVsPtPiFromXiCC"), track.pt(), track.dcaXY() * 1e+4);
     }
 
-    // for (auto const& xiCand : cascades) {
-    //   histos.fill(HIST("hMassXi"), xiCand.mXi());
-    //   auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
-    //   for (auto const& pi1c : tracksPiFromXiCgrouped) {
-    //     if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
-    //       continue;
-    //     for (auto const& pi2c : tracksPiFromXiCgrouped) {
-    //       if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
-    //         continue;
-    //       // // if I am here, it means this is a triplet to be considered for XiC vertexing.
-    //       // // will now attempt to build a three-body decay candidate with these three track rows.
-    //       // if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
-    //       //   continue; // failed at building candidate
+    for (auto const& xiCand : cascades) {
+      histos.fill(HIST("hMassXi"), xiCand.mXi());
+      auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
+      for (auto const& pi1c : tracksPiFromXiCgrouped) {
+        if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
+          continue;
+        for (auto const& pi2c : tracksPiFromXiCgrouped) {
+          if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
+            continue;
+          // if I am here, it means this is a triplet to be considered for XiC vertexing. 
+          // will now attempt to build a three-body decay candidate with these three track rows. 
+          if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
+            continue; // failed at building candidate
 
-    //       // const std::array<float, 3> momentumC = {
-    //       //   thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0],
-    //       //   thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1],
-    //       //   thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2] + thisCandidate.prong2mom[2]};
+          const std::array<float, 3> momentumC = {
+            thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0],
+            thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1],
+            thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2] + thisCandidate.prong2mom[2]};
 
-    //       // o2::track::TrackParCov xicTrack(thisCandidate.xyz, momentumC, thisCandidate.parentTrackCovMatrix, +1);
+          o2::track::TrackParCov xicTrack(thisCandidate.xyz, momentumC, thisCandidate.parentTrackCovMatrix, +1);
 
-    //       // histos.fill(HIST("hMassXiC"), thisCandidate.mass);
+          histos.fill(HIST("hMassXiC"), thisCandidate.mass);
 
-    //       // // attempt XiCC finding
-    //       // for (auto const& picc : tracksPiFromXiCCgrouped) {
-    //       //   o2::track::TrackParCov piccTrack = getTrackParCov(picc);
-    //       //   if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
-    //       //     continue; // failed at building candidate
+          // attempt XiCC finding 
+          for (auto const& picc : tracksPiFromXiCCgrouped) {
+            if (mcSameMotherCheck && !checkSameMother(xi, picc))
+              continue;
 
-    //       //   histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
-    //       // }
-    //     }
-    //   }
-    // }
+            o2::track::TrackParCov piccTrack = getTrackParCov(picc);
+            if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
+              continue; // failed at building candidate
+
+            histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
+          }
+        }
+      }
+    }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
   PROCESS_SWITCH(alice3multicharm, processGenerated, "fill MC-only histograms", true);
-  PROCESS_SWITCH(alice3multicharm, processFindXiCC, "find XiCC mesons", true);
+  PROCESS_SWITCH(alice3multicharm, processFindXiCC, "find XiCC baryons", true);
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
