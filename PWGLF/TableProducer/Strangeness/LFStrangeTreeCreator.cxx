@@ -342,9 +342,9 @@ struct LFStrangeTreeCreator {
       auto nSigmaTPCPos = matter ? posTrack.tpcNSigmaPr() : posTrack.tpcNSigmaPi();
       auto nSigmaTPCNeg = matter ? negTrack.tpcNSigmaPi() : negTrack.tpcNSigmaPr();
       // change for k0
-      if (k0short){
+      if (k0short) {
         nSigmaTPCPos = posTrack.tpcNSigmaPi();
-        nSigmaTPCNeg = negTrack.tpcNSigmaPi(); 
+        nSigmaTPCNeg = negTrack.tpcNSigmaPi();
       }
 
       if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
@@ -388,10 +388,10 @@ struct LFStrangeTreeCreator {
       auto lengthTraveled = RecoDecay::sqrtSumOfSquares(vtx[0] - primVtx[0], vtx[1] - primVtx[1], vtx[2] - primVtx[2]);
       // change calculation of ML2P for k0 and lambda
       float particlemass;
-      if (k0short){
-        particlemass=o2::constants::physics::MassK0;
-      }else{
-        particlemass=o2::constants::physics::MassLambda;
+      if (k0short) {
+        particlemass = o2::constants::physics::MassK0;
+      } else {
+        particlemass = o2::constants::physics::MassLambda;
       }
       float ML2P = particlemass * lengthTraveled / ptotal;
       if (ML2P > v0setting_lifetime) {
@@ -544,20 +544,20 @@ struct LFStrangeTreeCreator {
                 candidateV0.pdgcode = posMother.pdgCode();
                 pdgCodeMotherDauPos = posMother.pdgCode();
                 pdgCodeMotherDauNeg = negMother.pdgCode();
-                // build  conditions for mother/daughter for k0short or lambda 
+                // build  conditions for mother/daughter for k0short or lambda
                 boolean_t mother;
                 boolean_t daughter;
-                if (k0short){
+                if (k0short) {
                   // mother is k0short (310) and daughters are pions (211/-211)
                   mother = posMother.pdgCode() == 310;
                   daughter = (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -211);
-                }else{
+                } else {
                   // mother is lambda (3122) and daughters are proton (2212) and pion(211)
                   mother = posMother.pdgCode() == 3122;
                   daughter = ((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212));
                 }
                 // check conditions
-                if (!mother || !daughter){
+                if (!mother || !daughter) {
                   continue;
                 }
 
@@ -627,18 +627,19 @@ struct LFStrangeTreeCreator {
       std::array<float, 3> secVtx;
 
       // look for lambda (3122) or k0short (310)
-      int pdg_test=3122;
-      if (k0short) pdg_test=310;
+      int pdg_test = 3122;
+      if (k0short)
+        pdg_test = 310;
 
       if (std::abs(pdgCode) == pdg_test) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
         // check if its the right decay containing proton (2122) for lambda and charged pion (211) for k0short
         int pdg_particle;
-        if (k0short){
-          pdg_particle=211;
-        } else{
-          pdg_particle=2212;
+        if (k0short) {
+          pdg_particle = 211;
+        } else {
+          pdg_particle = 2212;
         }
         bool foundParticle = false;
         for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
@@ -657,7 +658,7 @@ struct LFStrangeTreeCreator {
         } else if (mcPart.has_mothers()) {
           for (auto& mcMother : mcPart.mothers_as<aod::McParticles>()) {
             // feed-down: xi and omega decaying to lambda, ignore for k0
-            if (!k0short &&(std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334)) {
+            if (!k0short && (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334)) {
               pdgCodeMother = mcMother.pdgCode();
               break;
             }
@@ -719,7 +720,6 @@ struct LFStrangeTreeCreator {
       auto multiplicity = collision.multFT0C();
       auto centrality = collision.centFT0C();
       fillRecoEvent(collision, tracks, V0Table_thisCollision, V0s, CascTable_thisCollision, centrality);
-
 
       for (auto& candidateV0 : candidateV0s) {
         lambdaTableML(
