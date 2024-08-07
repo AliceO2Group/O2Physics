@@ -751,7 +751,7 @@ struct nucleiWithFastJet {
           } // pikEnd
         }
       } // anti-particle
-    } ////////////////////////////////////////
+    }   ////////////////////////////////////////
       // within jet end
     //////////////////////////////////////////
     else {
@@ -1048,7 +1048,7 @@ struct nucleiWithFastJet {
         }
       }
     } // track
-  } // process mc
+  }   // process mc
 
   void processMCRec(o2::aod::JCollision const& collisionJet, soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels> const& tracks,
                     soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, TrackCandidatesMC const& fulltracks)
@@ -1336,7 +1336,7 @@ struct nucleiWithFastJet {
         }
 
       } // DetJet
-    } // jet constituents
+    }   // jet constituents
 
   } // process
 
@@ -1395,7 +1395,7 @@ struct nucleiWithFastJet {
         jetHist.fill(HIST("genmatched/hRecMatchedJetEta"), mcpjet.eta(), mcpjet.eta() - mcdjet.eta());
 
       } // mcdJet
-    } // mcpJet
+    }   // mcpJet
 
     for (const auto& mcParticle : mcParticles) {
       if (fabs(mcParticle.eta()) > cfgtrkMaxEta)
