@@ -352,7 +352,7 @@ struct alice3multicharm {
     for (auto const& xiCand : cascades) {
       histos.fill(HIST("hMassXi"), xiCand.mXi());
       auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
-      long nCombinationsC = 0;
+      uint32_t nCombinationsC = 0;
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
           continue;
@@ -379,7 +379,7 @@ struct alice3multicharm {
           histos.fill(HIST("hMassXiC"), thisCandidate.mass);
 
           // attempt XiCC finding
-          long nCombinationsCC = 0;
+          uint32_t nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
             // to-do: check same mother here
 
