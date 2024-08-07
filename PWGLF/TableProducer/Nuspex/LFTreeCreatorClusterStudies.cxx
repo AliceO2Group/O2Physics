@@ -1380,7 +1380,7 @@ struct LfTreeCreatorClusterStudies {
         }
       }
 
-      if (setting_fillK && setting_fillV0) { // the v0 loops are needed for the Ks
+      if (setting_fillK) { // the v0 loops are needed for the Ks
         for (auto& cascade : cascTable_thisCollision) {
           CandidateK candK;
           if (fillKCand(PV, cascade, candK, tracks)) {
