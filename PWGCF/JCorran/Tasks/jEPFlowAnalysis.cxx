@@ -104,8 +104,8 @@ struct jEPFlowAnalysis {
     Float_t cent = coll.cent();
     EPFlowHistograms.fill(HIST("FullCentrality"), cent);
     Float_t EPs[3] = {0.};
-    for (int i = 2; i < 5; i++) { // loop over different harmonic orders
-      harmInd = cfgnTotalSystem * 4 * (i-2) + 3; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
+    for (int i = 2; i < 5; i++) {                  // loop over different harmonic orders
+      harmInd = cfgnTotalSystem * 4 * (i - 2) + 3; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
       EPs[0] = helperEP.GetEventPlane(coll.qvecRe()[DetId + harmInd], coll.qvecIm()[DetId + harmInd], i);
       EPs[1] = helperEP.GetEventPlane(coll.qvecRe()[RefAId + harmInd], coll.qvecIm()[RefAId + harmInd], i);
       EPs[2] = helperEP.GetEventPlane(coll.qvecRe()[RefBId + harmInd], coll.qvecIm()[RefBId + harmInd], i);
