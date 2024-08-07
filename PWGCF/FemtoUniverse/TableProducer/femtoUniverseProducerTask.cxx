@@ -105,7 +105,7 @@ struct femtoUniverseProducerTask {
   // Choose if filtering or skimming version is run
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
   // Choose if running on converted data or Run3  / Pilot
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", true, "Running on Run3 or pilot"};
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
@@ -137,15 +137,6 @@ struct femtoUniverseProducerTask {
   //     "True: reject if neither ITS hit nor TOF timing satisfied"};
 
   FemtoUniverseTrackSelection trackCuts;
-
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfPtLowFilterCut{"ConfPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
-    Configurable<float> ConfPtHighFilterCut{"ConfPtHighFilterCut", 5.0, "Higher limit for Pt for the global track"}; // pT high
-    Configurable<float> ConfEtaFilterCut{"ConfEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
-    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"};      // max dca to vertex XY
-    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};         // max dca to vertex Z
-  } ConfFilterCuts;
-
   Configurable<std::vector<float>> ConfTrkCharge{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kSign, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmin{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.5f, 0.4f, 0.6f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kpTMax, "ConfTrk"), std::vector<float>{5.4f, 5.6f, 5.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kpTMax, "Track selection: ")};
@@ -194,6 +185,16 @@ struct femtoUniverseProducerTask {
   Configurable<float> ConfV0InvKaonMassLowLimit{"ConfV0InvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfV0InvKaonMassUpLimit{"ConfV0InvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
 
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> ConfPtLowFilterCut{"ConfPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
+    Configurable<float> ConfPtHighFilterCut{"ConfPtHighFilterCut", 5.0, "Higher limit for Pt for the global track"}; // pT high
+    Configurable<float> ConfEtaFilterCut{"ConfEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
+    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"};      // max dca to vertex XY
+    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};         // max dca to vertex Z
+    Configurable<uint8_t> ConfITSNCls{"ConfITSNCls", 5, "Value for the number of ITS clusters."};
+    Configurable<int16_t> ConfTPCNClsCrossedRows{"ConfTPCNClsCrossedRows", 89, "Value for the number of TPC crossed rows clusters."};
+  } ConfFilterCuts;
+
   Filter GlobalCutFilter = requireGlobalTrackInFilter();
 
   Filter CustomTrackFilter = (aod::track::pt > ConfFilterCuts.ConfPtLowFilterCut) &&
@@ -205,43 +206,13 @@ struct femtoUniverseProducerTask {
   // PHI
   FemtoUniversePhiSelection phiCuts;
   struct : o2::framework::ConfigurableGroup {
-    Configurable<std::vector<float>> ConfPhiSign{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiSign, "ConfPhi"), std::vector<float>{-1, 1}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiSign, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiPtMin{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhipTMin, "ConfPhi"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhipTMin, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiPtMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhipTMax, "ConfPhi"), std::vector<float>{3.3f, 3.4f, 3.5f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhipTMax, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiEtaMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhietaMax, "ConfPhi"), std::vector<float>{0.8f, 0.7f, 0.9f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhietaMax, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiDCADaughMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiDCADaughMax, "ConfPhi"), std::vector<float>{1.2f, 1.5f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiDCADaughMax, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiCPAMin{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiCPAMin, "ConfPhi"), std::vector<float>{0.99f, 0.995f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiCPAMin, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiTranRadMin{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiTranRadMin, "ConfPhi"), std::vector<float>{0.2f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiTranRadMin, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiTranRadMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiTranRadMax, "ConfPhi"), std::vector<float>{100.f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiTranRadMax, "Phi selection: ")};
-    Configurable<std::vector<float>> ConfPhiDecVtxMax{FemtoUniversePhiSelection::getSelectionName(femtoUniversePhiSelection::kPhiDecVtxMax, "ConfPhi"), std::vector<float>{100.f}, FemtoUniversePhiSelection::getSelectionHelper(femtoUniversePhiSelection::kPhiDecVtxMax, "Phi selection: ")};
-  } ConfPhiSelection;
-
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<std::vector<float>> ConfPhiChildCharge{"ConfPhiChildSign", std::vector<float>{-1, 1}, "Phi Child sel: Charge"};
-    Configurable<std::vector<float>> ConfPhiChildEtaMax{"ConfPhiChildEtaMax", std::vector<float>{0.8f}, "Phi Child sel: max eta"};
-    Configurable<std::vector<float>> ConfPhiChildTPCnClsMin{"ConfPhiChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "Phi Child sel: Min. nCls TPC"};
-    Configurable<std::vector<float>> ConfPhiChildDCAMin{"ConfPhiChildDCAMin", std::vector<float>{0.05f, 0.06f}, "Phi Child sel:  Max. DCA Daugh to PV (cm)"};
-    Configurable<std::vector<float>> ConfPhiChildPIDnSigmaMax{"ConfPhiChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Phi Child sel: Max. PID nSigma TPC"};
-    Configurable<std::vector<int>> ConfPhiChildPIDspecies{"ConfPhiChildPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Kaon}, "Phi Child sel: Particles species for PID"};
     Configurable<bool> ConfLooseTPCNSigma{"ConfLooseTPCNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
     Configurable<float> ConfLooseTPCNSigmaValue{"ConfLooseTPCNSigmaValue", 10, "Value for the loose TPC N Sigma for Kaon PID."};
-  } ConfPhiChildSelection;
-
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfNsigmaCombinedKaon{"ConfNsigmaCombinedKaon", 3.0, "TPC and TOF Kaon Sigma (combined) for momentum > 0.4"};
-    Configurable<float> ConfNsigmaTPCKaon{"ConfNsigmaTPCKaon", 3.0, "TPC Kaon Sigma for momentum < 0.4"};
-    Configurable<bool> ConfNsigmaTPCTOFKaon{"ConfNsigmaTPCTOFKaon", true, "Use TPC and TOF for PID of Kaons"};
     Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
     Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
-  } ConfPhiCommon;
-  // PHI child one
-  struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
-  } ConfPhiChildOne;
-  // PHI child two
-  struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
-  } ConfPhiChildTwo;
+  } ConfPhiSelection;
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
@@ -253,19 +224,10 @@ struct femtoUniverseProducerTask {
 
   bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
-    //|nsigma_TPC| < 5 for p < 0.4 GeV/c
-    //|nsigma_combined| < 5 for p > 0.4
-
-    // using configurables:
-    // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
-    // ConfNsigmaTPCKaon -> TPC Kaon Sigma for momentum < 0.4
-    // ConfNsigmaCombinedKaon -> TPC and TOF Kaon Sigma (combined) for momentum > 0.4
-    // ConfLooseTPCNSigma -> use loose nsigmas for Phi meson daughters (bool)
-    // ConfLooseTPCNSigmaValue -> value of the loose cut (float)
 
     if (mom < 0.3) { // 0.0-0.3
-      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+      if (ConfPhiSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
           return true;
         } else {
           return false;
@@ -278,8 +240,8 @@ struct femtoUniverseProducerTask {
         }
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+      if (ConfPhiSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
           return true;
         } else {
           return false;
@@ -292,8 +254,8 @@ struct femtoUniverseProducerTask {
         }
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue) {
+      if (ConfPhiSelection.ConfLooseTPCNSigma) {
+        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
           return true;
         } else {
           return false;
@@ -306,8 +268,8 @@ struct femtoUniverseProducerTask {
         }
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue)) {
+      if (ConfPhiSelection.ConfLooseTPCNSigma) {
+        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
           return true;
         } else {
           return false;
@@ -323,8 +285,8 @@ struct femtoUniverseProducerTask {
         }
       }
     } else if (mom > 1.5) { // 1.5 -
-      if (ConfPhiChildSelection.ConfLooseTPCNSigma) {
-        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiChildSelection.ConfLooseTPCNSigmaValue)) {
+      if (ConfPhiSelection.ConfLooseTPCNSigma) {
+        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
           return true;
         } else {
           return false;
@@ -530,7 +492,7 @@ struct femtoUniverseProducerTask {
       int particleOrigin = 99;
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
-      if (abs(pdgCode) == abs(ConfPhiChildOne.ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPhiChildTwo.ConfPDGCodePartTwo.value)) {
+      if (abs(pdgCode) == abs(ConfPhiSelection.ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPhiSelection.ConfPDGCodePartTwo.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
@@ -953,8 +915,8 @@ struct femtoUniverseProducerTask {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiChildOne.ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiChildTwo.ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiSelection.ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiSelection.ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -980,11 +942,11 @@ struct femtoUniverseProducerTask {
       }
       float phiM = sumVec.M();
 
-      if (((phiM < ConfPhiCommon.ConfInvMassLowLimitPhi) || (phiM > ConfPhiCommon.ConfInvMassUpLimitPhi))) {
+      if (((phiM < ConfPhiSelection.ConfInvMassLowLimitPhi) || (phiM > ConfPhiSelection.ConfInvMassUpLimitPhi))) {
         continue;
       }
 
-      phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiChildOne.ConfPDGCodePartOne, ConfPhiChildTwo.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
+      phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiSelection.ConfPDGCodePartOne, ConfPhiSelection.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
 
       int postrackID = p1.globalIndex();
       int rowInPrimaryTrackTablePos = -1; // does it do anything?
