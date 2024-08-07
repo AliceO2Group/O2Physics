@@ -51,10 +51,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   Configurable<float> ConfCascInvMassLowLimit{"ConfCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
   Configurable<float> ConfCascInvMassUpLimit{"ConfCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
   Configurable<float> ConfCascTranRad{"ConfCascTranRad", 0.5, "Cascade transverse radius"};
- 
+
   Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
   Configurable<float> NSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"};
-
 
   /// Partition for cascades
   Partition<FemtoFullParticles> cascs = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade));
@@ -65,7 +64,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
+
   bool invMCascade(float invMassCascade, float invMassAntiCascade)
   {
     if ((invMassCascade < ConfCascInvMassLowLimit || invMassCascade > ConfCascInvMassUpLimit) && (invMassAntiCascade < ConfCascInvMassLowLimit || invMassAntiCascade > ConfCascInvMassUpLimit)) {
@@ -91,7 +90,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     rXiQA.add("hEtaXi", "hEtaXi", {HistType::kTH1F, {{etaAxis}}});
     rXiQA.add("hPhiXi", "hPhiXi", {HistType::kTH1F, {{phiAxis}}});
     rXiQA.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.9f, 1.f}}});
-    //rXiQA.add("hCascDCAV0Daughters", "hCascDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
+    // rXiQA.add("hCascDCAV0Daughters", "hCascDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
 
     posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true);
     negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true);
@@ -101,25 +100,25 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   void processCascades(FilteredFDCollision& col, FemtoFullParticles& parts)
   {
     auto groupCascs = cascs->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    //const int multCol = col.multNtr();
+    // const int multCol = col.multNtr();
 
     for (auto& casc : groupCascs) {
       rXiQA.fill(HIST("hMassXiMinus"), casc.mLambda());
       rXiQA.fill(HIST("hMassXiPlus"), casc.mAntiLambda());
 
-      //if (!invMCascade(casc.mLambda(), casc.mAntiLambda()))
-      //  continue;
+      // if (!invMCascade(casc.mLambda(), casc.mAntiLambda()))
+      //   continue;
 
       const auto& posChild = parts.iteratorAt(casc.index() - 3);
       const auto& negChild = parts.iteratorAt(casc.index() - 2);
       const auto& bachelor = parts.iteratorAt(casc.index() - 1);
 
-      //if (casc.transRadius() < ConfCascTranRad)
-      //  continue;
-      //std::cout<<std::endl;
-      //std::cout<<"TYPE:"<<std::endl;
-      //std::cout<<casc.partType()<<std::endl;
-      // nSigma selection for daughter and bachelor tracks
+      // if (casc.transRadius() < ConfCascTranRad)
+      //   continue;
+      // std::cout<<std::endl;
+      // std::cout<<"TYPE:"<<std::endl;
+      // std::cout<<casc.partType()<<std::endl;
+      //  nSigma selection for daughter and bachelor tracks
       if (casc.sign() < 0) {
         if (TMath::Abs(posChild.tpcNSigmaPr()) > NSigmaTPCProton) {
           continue;
@@ -145,7 +144,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       rXiQA.fill(HIST("hMassXiMinusSelected"), casc.mLambda());
       rXiQA.fill(HIST("hMassXiPlusSelected"), casc.mAntiLambda());
       rXiQA.fill(HIST("hCascCosPA"), casc.tempFitVar());
-      //rXiQA.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters()); // nie ma miejsca na to w FemtoDerived
+      // rXiQA.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters()); // nie ma miejsca na to w FemtoDerived
 
       posChildHistos.fillQA<false, true>(posChild);
       negChildHistos.fillQA<false, true>(negChild);

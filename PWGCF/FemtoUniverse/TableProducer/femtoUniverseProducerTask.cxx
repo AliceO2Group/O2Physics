@@ -241,7 +241,7 @@ struct femtoUniverseProducerTask {
     Configurable<float> ConfCascInvOmegaMassUpLimit{"ConfCascInvOmegaMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for Omega rejection"};
 
     // for cutculator
-    //Configurable<std::vector<int>> ConfCascChildPIDspecies{"ConfCascChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton, o2::track::PID::Pion}, "Cascade Child sel: Particles species for PID"};
+    // Configurable<std::vector<int>> ConfCascChildPIDspecies{"ConfCascChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton, o2::track::PID::Pion}, "Cascade Child sel: Particles species for PID"};
   } ConfCascadeSelection;
 
   // PHI
@@ -442,13 +442,13 @@ struct femtoUniverseProducerTask {
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascPtMin, femtoUniverseCascadeSelection::kCascadepTMin, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascPtMax, femtoUniverseCascadeSelection::kCascadepTMax, femtoUniverseSelection::kUpperLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascEtaMax, femtoUniverseCascadeSelection::kCascadeetaMax, femtoUniverseSelection::kAbsUpperLimit);
-        // v0 child cuts
+      // v0 child cuts
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0DCADaughMax, femtoUniverseCascadeSelection::kCascadeV0DCADaughMax, femtoUniverseSelection::kUpperLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0CPAMin, femtoUniverseCascadeSelection::kCascadeV0CPAMin, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0TranRadMin, femtoUniverseCascadeSelection::kCascadeV0TranRadMin, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0TranRadMax, femtoUniverseCascadeSelection::kCascadeV0TranRadMax, femtoUniverseSelection::kUpperLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0DecVtxMax, femtoUniverseCascadeSelection::kCascadeV0DecVtxMax, femtoUniverseSelection::kUpperLimit);
-        // cascade cuts
+      // cascade cuts
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascDCADaughMax, femtoUniverseCascadeSelection::kCascadeDCADaughMax, femtoUniverseSelection::kUpperLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascCPAMin, femtoUniverseCascadeSelection::kCascadeCPAMin, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascTranRadMin, femtoUniverseCascadeSelection::kCascadeTranRadMin, femtoUniverseSelection::kLowerLimit);
@@ -460,7 +460,7 @@ struct femtoUniverseProducerTask {
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascDCAV0ToPV, femtoUniverseCascadeSelection::kCascadeDCAV0ToPV, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0MassLowLimit, femtoUniverseCascadeSelection::kCascadeV0MassMin, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0MassUpLimit, femtoUniverseCascadeSelection::kCascadeV0MassMax, femtoUniverseSelection::kUpperLimit);
-        // children cuts, using V0 configurables
+      // children cuts, using V0 configurables
       cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
       cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
       cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
@@ -476,17 +476,17 @@ struct femtoUniverseProducerTask {
       cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
       cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
-      
+
       // TODO
-      //cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildPIDspecies);
-      //cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildPIDspecies);
-      //cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildPIDspecies);
+      // cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildPIDspecies);
+      // cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildPIDspecies);
+      // cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildPIDspecies);
 
       // check if works correctly for bachelor track
       cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
-      //invmass cuts
+      // invmass cuts
       cascadeCuts.setInvMassLimits(ConfCascadeSelection.ConfCascInvMassLowLimit, ConfCascadeSelection.ConfCascInvMassUpLimit);
-      
+
       if (ConfCascadeSelection.ConfCascRejectOmegas) {
         cascadeCuts.setOmegaInvMassLimits(ConfCascadeSelection.ConfCascInvOmegaMassLowLimit, ConfCascadeSelection.ConfCascInvOmegaMassUpLimit);
       }
@@ -888,8 +888,8 @@ struct femtoUniverseProducerTask {
   template <bool isMC, typename CollisionType, typename CascadeType, typename TrackType>
   void fillCascade(CollisionType const& col, CascadeType const& fullCascades, TrackType const&)
   {
-     std::vector<int> childIDs = {0, 0, 0}; // child1, child2, bachelor; these IDs are necessary to keep track of the children
-     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+    std::vector<int> childIDs = {0, 0, 0}; // child1, child2, bachelor; these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack;           // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
 
     for (const auto& casc : fullCascades) {
       const auto& posTrackCasc = casc.template posTrack_as<TrackType>();
@@ -899,31 +899,31 @@ struct femtoUniverseProducerTask {
       if (!cascadeCuts.isSelectedMinimal(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc)) {
         continue;
       }
-      
+
       cascadeCuts.fillCascadeQA(col, casc, posTrackCasc, negTrackCasc);
       cascadeCuts.fillQA(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc); // fill QA for daughters
-      
+
       int postrackID = casc.posTrackId();
       int rowInPrimaryTrackTablePos = -1;
       rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
       childIDs[0] = rowInPrimaryTrackTablePos; // pos
       childIDs[1] = 0;                         // neg
       childIDs[2] = 0;                         // bachelor
-      outputParts(outputCollision.lastIndex(), 
+      outputParts(outputCollision.lastIndex(),
                   casc.positivept(),
-                  casc.positiveeta(), 
+                  casc.positiveeta(),
                   casc.positivephi(),
                   aod::femtouniverseparticle::ParticleType::kV0Child,
-                  0, //cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosCuts),
-                  0, //cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
+                  0, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosCuts),
+                  0, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
                   0.,
                   childIDs,
                   0,
                   0);
       const int rowOfPosTrack = outputParts.lastIndex();
-      //if constexpr (isMC) {
-      //  fillMCParticle(postrack, o2::aod::femtouniverseparticle::ParticleType::kV0Child);
-      //}
+      // if constexpr (isMC) {
+      //   fillMCParticle(postrack, o2::aod::femtouniverseparticle::ParticleType::kV0Child);
+      // }
       int negtrackID = casc.negTrackId();
       int rowInPrimaryTrackTableNeg = -1;
       rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
@@ -935,30 +935,30 @@ struct femtoUniverseProducerTask {
                   casc.negativeeta(),
                   casc.negativephi(),
                   aod::femtouniverseparticle::ParticleType::kV0Child,
-                  0, //cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
-                  0, //cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
+                  0, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
+                  0, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
                   0.,
                   childIDs,
                   0,
                   0);
       const int rowOfNegTrack = outputParts.lastIndex();
-      //if constexpr (isMC) {
-      //  fillMCParticle(negtrack, o2::aod::femtouniverseparticle::ParticleType::kV0Child);
-      //}
-      // bachelor 
+      // if constexpr (isMC) {
+      //   fillMCParticle(negtrack, o2::aod::femtouniverseparticle::ParticleType::kV0Child);
+      // }
+      //  bachelor
       int bachtrackID = casc.bachelorId();
       int rowInPrimaryTrackTableBach = -1;
       rowInPrimaryTrackTableBach = getRowDaughters(bachtrackID, tmpIDtrack);
-      childIDs[0] = 0;                            // pos
-      childIDs[1] = 0;                            // neg
-      childIDs[2] = rowInPrimaryTrackTableBach;   // bachelor
+      childIDs[0] = 0;                          // pos
+      childIDs[1] = 0;                          // neg
+      childIDs[2] = rowInPrimaryTrackTableBach; // bachelor
       outputParts(outputCollision.lastIndex(),
                   casc.bachelorpt(),
                   casc.bacheloreta(),
                   casc.bachelorphi(),
                   aod::femtouniverseparticle::ParticleType::kCascadeBachelor,
-                  0, //cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
-                  0, //cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
+                  0, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
+                  0, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
                   0.,
                   childIDs,
                   0,
@@ -971,19 +971,19 @@ struct femtoUniverseProducerTask {
                   casc.eta(),
                   casc.phi(),
                   aod::femtouniverseparticle::ParticleType::kCascade,
-                  0, //cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kV0), // zmienic
+                  0, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kV0), // zmienic
                   0,
-                  casc.casccosPA(col.posX(), col.posY(), col.posZ()), 
+                  casc.casccosPA(col.posX(), col.posY(), col.posZ()),
                   indexCascChildID,
                   casc.mXi(),
                   casc.mXi());
       if (ConfIsDebug) {
-        fillDebugParticle<true, false, false>(posTrackCasc); // QA for positive daughter
-        fillDebugParticle<true, false, false>(negTrackCasc); // QA for negative daughter
+        fillDebugParticle<true, false, false>(posTrackCasc);  // QA for positive daughter
+        fillDebugParticle<true, false, false>(negTrackCasc);  // QA for negative daughter
         fillDebugParticle<true, false, false>(bachTrackCasc); // QA for negative daughter
-        fillDebugParticle<false, false, true>(casc);      // QA for cascade
+        fillDebugParticle<false, false, true>(casc);          // QA for cascade
       }
-    } 
+    }
   }
 
   template <bool isMC, typename HfCandidate, typename TrackType, typename CollisionType>
@@ -1297,9 +1297,9 @@ struct femtoUniverseProducerTask {
     if (ConfIsActivatePhi) {
       fillPhi<isMC>(col, tracks);
     }
-    //if (ConfIsActivateCascade) {
-    //  fillCascade<false>(col, fullCascades, tracks);
-    //}
+    // if (ConfIsActivateCascade) {
+    //   fillCascade<false>(col, fullCascades, tracks);
+    // }
   }
 
   void processFullData(aod::FemtoFullCollision const& col,
@@ -1327,9 +1327,9 @@ struct femtoUniverseProducerTask {
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0, "Provide experimental data for track v0", false);
 
   void processTrackCascadeData(aod::FemtoFullCollision const& col,
-                              aod::BCsWithTimestamps const&,
-                              soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                              o2::aod::CascDatas const& fullCascades)
+                               aod::BCsWithTimestamps const&,
+                               soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                               o2::aod::CascDatas const& fullCascades)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
