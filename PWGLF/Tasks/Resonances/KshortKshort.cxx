@@ -410,7 +410,6 @@ struct strangeness_tutorial {
     if (QAv0) {
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
       rKzeroShort.fill(HIST("mass_lambda_kshort_after"), candidate.mK0Short(), candidate.mLambda());
-
     }
 
     if (candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
