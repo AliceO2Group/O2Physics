@@ -93,7 +93,7 @@ class FemtoUniverseCascadeSelection
   }
 
   /// Initializes histograms for the task
-  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, typename cutContainerType>
+  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename cutContainerType>
   void init(HistogramRegistry* registry);
 
   template <typename Col, typename Casc, typename Track>
@@ -288,14 +288,15 @@ class FemtoUniverseCascadeSelection
 
 }; // namespace femtoUniverse
 
-template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, typename cutContainerType>
+template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename cutContainerType>
 void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
 {
 
   if (registry) {
     mHistogramRegistry = registry;
-    fillSelectionHistogram<part>();  // cascade
-    fillSelectionHistogram<daugh>(); // pos, neg, bach
+    fillSelectionHistogram<part>();  // cascade - moze tego nie trzeba ?
+    fillSelectionHistogram<daugh>(); // pos, neg
+    fillSelectionHistogram<bach>();  // bach
 
     AxisSpec massAxisCascade = {600, 1.25f, 1.4f, "m_{#Cascade} (GeV/#it{c}^{2})"};
     AxisSpec massAxisV0 = {600, 0.0f, 3.0f, "m_{#V0} (GeV/#it{c}^{2})"};
@@ -314,6 +315,7 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
       LOG(fatal) << "FemtoUniverseCascadeCuts: Number of selections to large for your "
                     "container - quitting!";
     }
+    // SPRAWDZIC czy to jest potrzebne:
     // std::string folderName = static_cast<std::string>(
     //   o2::aod::femtouniverseparticle::ParticleTypeName[part]);
 
@@ -372,6 +374,7 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
   nDCANegToPV = getNSelections(femtoUniverseCascadeSelection::kCascadeDCANegToPV);
   nDCABachToPV = getNSelections(femtoUniverseCascadeSelection::kCascadeDCABachToPV);
   nDCAV0ToPV = getNSelections(femtoUniverseCascadeSelection::kCascadeDCAV0ToPV);
+  // dodac V0 mass min i max
 
   pTCascadeMin = getMinimalSelection(femtoUniverseCascadeSelection::kCascadepTMin,
                                      femtoUniverseSelection::kLowerLimit);
@@ -407,10 +410,11 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
                                     femtoUniverseSelection::kLowerLimit);
   DCAV0ToPV = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeDCAV0ToPV,
                                   femtoUniverseSelection::kLowerLimit);
+  // dodac V0 mass min i max
 }
 
 template <typename Col, typename Casc, typename Track>
-bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
+bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& /*bachTrack*/)
 {
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
@@ -461,11 +465,25 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
   if (nTranRadV0Max > 0 && cascade.v0radius() > TranRadV0Max) {
     return false;
   }
+  if (nDCACascadeDaughMax > 0 && cascade.dcacascdaughters() > DCACascadeDaughMax) {
+    return false;
+  }
+  if (nCPACascadeMin > 0 && cpaCasc < CPACascadeMin) {
+    return false;
+  }
+  if (nTranRadCascadeMin > 0 && cascade.cascradius() < TranRadCascadeMin) {
+    return false;
+  }
+  if (nTranRadCascadeMax > 0 && cascade.cascradius() > TranRadCascadeMax) {
+    return false;
+  }
   for (size_t i = 0; i < decVtx.size(); i++) {
     if (nDecVtxMax > 0 && decVtx.at(i) > DecVtxMax) { // for cascades
       return false;
     }
   }
+  // DCA pos neg bach v0
+  
   // FIX ME: isSelectedMinimal for daughters desn't work yet
   /*
   if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
@@ -512,7 +530,6 @@ void FemtoUniverseCascadeSelection::fillCascadeQA(Col const& col, Casc const& ca
 
   const float invMassLambda = cascade.mLambda();
   const float invMassXi = cascade.mXi();
-  const float invMassOmega = cascade.mOmega();
 
   mHistogramRegistry->fill(HIST("CascadeQA/hInvMassV0Cut"), invMassLambda);
   mHistogramRegistry->fill(HIST("CascadeQA/hInvMassCascadeCut"), invMassXi);
@@ -544,7 +561,7 @@ void FemtoUniverseCascadeSelection::fillCascadeQA(Col const& col, Casc const& ca
 }
 
 template <typename Col, typename Casc, typename Track>
-void FemtoUniverseCascadeSelection::fillQA(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
+void FemtoUniverseCascadeSelection::fillQA(Col const& /*col*/, Casc const& /*cascade*/, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
 {
   PosDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild>(posTrack);
