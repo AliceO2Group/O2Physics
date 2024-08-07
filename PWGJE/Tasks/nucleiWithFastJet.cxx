@@ -33,7 +33,6 @@
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/JetFinders/jetfinder.cxx"
 
 using namespace o2;
 using namespace o2::framework;
@@ -754,7 +753,7 @@ struct nucleiWithFastJet {
     }   ////////////////////////////////////////
       // within jet end
     //////////////////////////////////////////
-    else {
+    else { 
       jetHist.fill(HIST("tracks/h2TPCsignVsTPCmomentum_OutJet"), trk.tpcInnerParam() / (1.f * trk.sign()), trk.tpcSignal());
       if (addTOFplots && trk.hasTOF()) {
         jetHist.fill(HIST("tracks/h2TOFbetaVsP_OutJet"), trk.p() / (1.f * trk.sign()), trk.beta());
