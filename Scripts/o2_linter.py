@@ -95,7 +95,7 @@ def camel_case_to_kebab_case(line: str) -> str:
 
 def print_error(path: str, line: Union[int, None], title: str, message: str):
     """Format and print error message."""
-    # return # Use to suppress error message when counting speed.
+    # return # Use to suppress error messages.
     str_line = "" if line is None else f"{line}:"
     print(f"{path}:{str_line} {message} [{title}]")  # terminal format
     if github_mode:
@@ -1206,6 +1206,7 @@ class TestHfStructMembers(TestSpec):
         "using ",
         "Filter ",
         "Preslice<",
+        "PresliceUnsorted<",
         "Partition<",
         "ConfigurableAxis ",
         "AxisSpec ",
