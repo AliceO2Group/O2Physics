@@ -555,12 +555,12 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("ptJet"), ptJet);
     registryQC.fill(HIST("ptUE"), 0.5 * ptUE);
 
+    int nPartClustered_Jet = static_cast<int>(jet_particle_ID.size());
+
     // Fill QA Histograms
     if (ptJetPlusUE < min_pt_leading) {
 
-      int nPartClustered_Jet = static_cast<int>(jet_particle_ID.size());
       registryQC.fill(HIST("nParticlesClusteredInJet"), nPartClustered_Jet);
-
       double dEta = p_leading.Eta() - p_jet.Eta();
       double dPhi = GetDeltaPhi(p_leading.Phi(), p_jet.Phi());
       registryQC.fill(HIST("dEtadPhi_jetaxis_leadTrk"), dEta, dPhi);
