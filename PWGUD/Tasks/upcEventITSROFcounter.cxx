@@ -12,39 +12,118 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+#include "CCDB/BasicCCDBManager.h"
+
+#include "Common/DataModel/EventSelection.h"
 
 #include <TH1D.h>
-#include <TH2D.h>
-#include "TLorentzVector.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+using CCs = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct UpcEventITSROFcounter {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  Configurable<int> nTracksForUPCevent{"nTracksForUPCevent", 16, {"Maximum of tracks defining a UPC collision"}};
+
   void init(InitContext&)
   {
 
-    const AxisSpec axisNtracks{30, -0.5, 29.5};
-
-    histos.add("Events/hCountCollisions", ";;Number of collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
-    histos.add("Events/hCountUPCcollisions", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
-
+    histos.add("Events/hCountCollisionsExactMatching", ";;Number of collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
+    histos.add("Events/hCountUPCcollisionsExactMatching", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
+    histos.add("Events/hCountCollisionsInROFborderMatching", ";;Number of collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
+    histos.add("Events/hCountUPCcollisionsInROFborderMatching", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
 
   } // end init
 
-
-  void process(aod::BC const& bc, aod::Collisions const& collisions)
+  void process(BCsWithRun3Matchings const& bcs, CCs const& collisions)
   {
+    int nAllColls = 0;
+    int nUPCcolls = 0;
+    uint16_t previousBCinITSROF = 0;
+    std::vector<std::pair<uint16_t,uint16_t>> vecITSROFborders;
+    bool isFirst = true;
+    uint16_t firstBCglobalIndex = 0;
+    uint16_t previousBCglobalIndex = 0;
+    int ientry = 0;
 
-    LOGF(info,"BC number %i, numContrib %i",bc.globalBC(),collisions.numContrib());
+    // extract ITS time frame parameters
+    int64_t ts = bcs.iteratorAt(0).timestamp();
+    auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
 
+    for (auto bc : bcs) {
+      uint64_t globalBC = bc.globalBC();
+      uint64_t globalIndex = bc.globalIndex();
+      if (isFirst) {
+        firstBCglobalIndex = globalIndex;
+        isFirst = false;
+      }
+      uint64_t orbitBC = globalBC % o2::constants::lhc::LHCMaxBunches;
+      uint16_t bcInITSROF = (globalBC + o2::constants::lhc::LHCMaxBunches - alppar->roFrameBiasInBC) % alppar->roFrameLengthInBC;
+
+      if (bcInITSROF - previousBCinITSROF < 0){
+        histos.get<TH1>(HIST("Events/hCountCollisionsExactMatching"))->Fill(nAllColls);
+        histos.get<TH1>(HIST("Events/hCountUPCcollisionsExactMatching"))->Fill(nUPCcolls);
+        nAllColls = 0;
+        nUPCcolls = 0;
+        vecITSROFborders.push_back(std::make_pair(firstBCglobalIndex, previousBCglobalIndex));
+        ientry++;
+        firstBCglobalIndex = globalIndex;
+      }
+      previousBCinITSROF = bcInITSROF;
+      previousBCglobalIndex = globalIndex;
+      // next is based on exact matching of bc and collision
+      for (auto& collision : collisions) {
+        if (collision.has_foundBC()) {
+          if (collision.foundBCId() == bc.globalIndex()) {
+            nAllColls++;
+            if (collision.numContrib() < nTracksForUPCevent + 1) {
+              nUPCcolls++;
+            }
+          }
+        } else if (collision.bcId() == bc.globalIndex()) {
+          nAllColls++;
+          if (collision.numContrib() < nTracksForUPCevent + 1) {
+            nUPCcolls++;
+          }
+        }
+      }// end loop over collisions
+    }// end loop over bcs
+
+    LOGF(info,"size %i",vecITSROFborders.size());
+
+    int arrAllColls[1000] = {0};
+    int arrUPCcolls[1000] = {0};
+
+    // next is based on matching of collision bc within ITSROF range in bcs
+    for (auto& collision : collisions) {
+      int index = 0;
+      for (auto& itsrofBorder : vecITSROFborders) {
+        if ((itsrofBorder.first < collision.bcId()) && (collision.bcId() < itsrofBorder.second)){
+          break;
+        }
+        index++;
+      }
+      arrAllColls[index]++;
+      if (collision.numContrib() < nTracksForUPCevent + 1) {
+        arrUPCcolls[index]++;
+      }
+    }// end loop over collisions
+
+    for (int i = 0; i < vecITSROFborders.size(); i++){
+      histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(arrAllColls[i]);
+      histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(arrUPCcolls[i]);
+    }
   }
 
-  PROCESS_SWITCH(UpcEventITSROFcounter, process, "Runs over BCs and count collisions in ITSROF (594 BCs)", true);
+  PROCESS_SWITCH(UpcEventITSROFcounter, process, "Counts number of collisions within ITSROF", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
