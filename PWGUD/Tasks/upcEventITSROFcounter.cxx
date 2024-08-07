@@ -48,7 +48,7 @@ struct UpcEventITSROFcounter {
     int nAllColls = 0;
     int nUPCcolls = 0;
     uint16_t previousBCinITSROF = 0;
-    std::vector<std::pair<uint16_t,uint16_t>> vecITSROFborders;
+    std::vector<std::pair<uint16_t, uint16_t>> vecITSROFborders;
     bool isFirst = true;
     uint16_t firstBCglobalIndex = 0;
     uint16_t previousBCglobalIndex = 0;
@@ -68,7 +68,7 @@ struct UpcEventITSROFcounter {
       uint64_t orbitBC = globalBC % o2::constants::lhc::LHCMaxBunches;
       uint16_t bcInITSROF = (globalBC + o2::constants::lhc::LHCMaxBunches - alppar->roFrameBiasInBC) % alppar->roFrameLengthInBC;
 
-      if (bcInITSROF - previousBCinITSROF < 0){
+      if (bcInITSROF - previousBCinITSROF < 0) {
         histos.get<TH1>(HIST("Events/hCountCollisionsExactMatching"))->Fill(nAllColls);
         histos.get<TH1>(HIST("Events/hCountUPCcollisionsExactMatching"))->Fill(nUPCcolls);
         nAllColls = 0;
@@ -94,10 +94,10 @@ struct UpcEventITSROFcounter {
             nUPCcolls++;
           }
         }
-      }// end loop over collisions
-    }// end loop over bcs
+      } // end loop over collisions
+    }   // end loop over bcs
 
-    LOGF(info,"size %i",vecITSROFborders.size());
+    LOGF(info, "size %i", vecITSROFborders.size());
 
     int arrAllColls[1000] = {0};
     int arrUPCcolls[1000] = {0};
@@ -106,7 +106,7 @@ struct UpcEventITSROFcounter {
     for (auto& collision : collisions) {
       int index = 0;
       for (auto& itsrofBorder : vecITSROFborders) {
-        if ((itsrofBorder.first < collision.bcId()) && (collision.bcId() < itsrofBorder.second)){
+        if ((itsrofBorder.first < collision.bcId()) && (collision.bcId() < itsrofBorder.second)) {
           break;
         }
         index++;
@@ -115,9 +115,9 @@ struct UpcEventITSROFcounter {
       if (collision.numContrib() < nTracksForUPCevent + 1) {
         arrUPCcolls[index]++;
       }
-    }// end loop over collisions
+    } // end loop over collisions
 
-    for (int i = 0; i < vecITSROFborders.size(); i++){
+    for (int i = 0; i < vecITSROFborders.size(); i++) {
       histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(arrAllColls[i]);
       histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(arrUPCcolls[i]);
     }
