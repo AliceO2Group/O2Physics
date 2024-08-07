@@ -939,7 +939,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     // lorentz vectors and filling the tables
-    for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
+    for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
       // implementing PID cuts for phi children
       if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
         continue;
