@@ -1051,7 +1051,7 @@ struct femtoUniverseProducerTask {
   }
 
   template <typename TrackType, bool transientLabels = false>
-  void fillParticles(TrackType const& tracks, std::set<int>* recoMcIds = 0)
+  void fillParticles(TrackType const& tracks, std::optional<std::reference_wrapper<const std::set<int>>> recoMcIds = std::nullopt)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
 
@@ -1074,7 +1074,7 @@ struct femtoUniverseProducerTask {
             if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary() || (recoMcIds && recoMcIds->contains(particle.globalIndex())))
+              if (particle.isPhysicalPrimary() || (recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1296,7 +1296,7 @@ struct femtoUniverseProducerTask {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
       fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                      // fills the reco collisions for mc collision
-      fillParticles<decltype(groupedMCParticles), true>(groupedMCParticles, &recoMcIds); // fills mc particles
+      fillParticles<decltype(groupedMCParticles), true>(groupedMCParticles, recoMcIds); // fills mc particles
     }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTruthAndFullMC, "Provide both MC truth and reco for tracks and V0s", false);
