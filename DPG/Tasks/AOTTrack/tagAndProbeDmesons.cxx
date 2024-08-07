@@ -1133,6 +1133,16 @@ struct ProbeThirdTrack {
     Configurable<LabeledArray<double>> mlCutsKaKaFromDsOrDplus{"mlCutsKaKaFromDsOrDplus", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from Ds or D+ decays"};
     Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
   } mlConfig;
+  ConfigurableAxis axisPtProbe{"axisPtProbe", {VARIABLE_WIDTH, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Probe"};
+  ConfigurableAxis axisPtTag{"axisPtTag", {VARIABLE_WIDTH, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Tag"};
+  ConfigurableAxis axisPtD{"axisPtD", {VARIABLE_WIDTH, 0.f, 0.5f, 1.f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.f, 11.f, 12.f, 14.f, 16.f, 20.f, 24.f, 36.f, 50.f}, "Axis for pt D"};
+  ConfigurableAxis axisYD{"axisYD", {20, -1.f, 1.f}, "Axis for YD"};
+  ConfigurableAxis axisEtaProbe{"axisEtaProbe", {20, -1.f, 1.f}, "Axis for Eta Probe"};
+  ConfigurableAxis axisNumCrossRowTpc{"axisNumCrossRowTpc", {51, 49.5f, 100.5f}, "Axis for Number of CrossRowTpc"};
+  ConfigurableAxis axisTpcChi2PerClus{"axisTpcChi2PerClus", {8, 2.f, 10.f}, "Axis for TpcChi2 Per Cluster"};
+  ConfigurableAxis axisNumCluIts{"axisNumCluIts", {5, 2.5f, 7.5f}, "Axis for Number of Cluster ITS"};
+  ConfigurableAxis axisPtMinTagdaught{"axisPtMinTagdaught", {10, 0.f, 1.f}, "Axis for Pt Min of Tag daughter"};
+  ConfigurableAxis axisAbsEtaMaxTagdaught{"axisAbsEtaMaxTagdaught", {10, 0.f, 1.f}, "Axis for AbsEtaMax for Tag daughter"};
 
   Filter tagMcFilter = aod::tagandprobe::isSignal > static_cast<uint8_t>(0);
 
@@ -1214,16 +1224,6 @@ struct ProbeThirdTrack {
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetMaxChi2PerClusterITS(36.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetMaxDcaZ(2.f);
 
-    ConfigurableAxis axisPtProbe{"axisPtProbe", {0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Probe"};
-    ConfigurableAxis axisPtTag{"axisPtTag", {0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Tag"};
-    ConfigurableAxis axisPtD{"axisPtD", {0.f, 0.5f, 1.f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.f, 11.f, 12.f, 14.f, 16.f, 20.f, 24.f, 36.f, 50.f}, "Axis for pt D"};
-    ConfigurableAxis axisYD{"axisYD", {20, -1.f, 1.f}, "Axis for YD"};
-    ConfigurableAxis axisEtaProbe{"axisEtaProbe", {20, -1.f, 1.f}, "Axis for Eta Probe"};
-    ConfigurableAxis axisNumCrossRowTpc{"axisNumCrossRowTpc", {51, 49.5f, 100.5f}, "Axis for Number of CrossRowTpc"};
-    ConfigurableAxis axisTpcChi2PerClus{"axisTpcChi2PerClus", {8, 2.f, 10.f}, "Axis for TpcChi2 Per Cluster"};
-    ConfigurableAxis axisNumCluIts{"axisNumCluIts", {5, 2.5f, 7.5f}, "Axis for Number of Cluster ITS"};
-    ConfigurableAxis axisPtMinTagdaught{"axisPtMinTagdaught", {10, 0.f, 1.f}, "Axis for Pt Min of Tag daughter"};
-    ConfigurableAxis axisAbsEtaMaxTagdaught{"axisAbsEtaMaxTagdaught", {10, 0.f, 1.f}, "Axis for AbsEtaMax for Tag daughter"};
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{225, 1.65f, 2.10f}, AxisSpec{225, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{125, 0.f, 2.5f}, AxisSpec{100, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
 
