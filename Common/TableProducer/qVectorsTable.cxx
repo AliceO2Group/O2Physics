@@ -134,7 +134,6 @@ struct qVectorsTable {
 
   std::vector<TH3F*> objQvec{};
 
-
   // Deprecated, will be removed in future after transition time //
   Configurable<bool> cfgUseBPos{"cfgUseBPos", false, "Initial value for using BPos. By default obtained from DataModel."};
   Configurable<bool> cfgUseBNeg{"cfgUseBNeg", false, "Initial value for using BNeg. By default obtained from DataModel."};

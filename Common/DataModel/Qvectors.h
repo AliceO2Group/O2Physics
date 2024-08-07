@@ -50,7 +50,6 @@ DECLARE_SOA_COLUMN(QvecTPCnegImVec, qvecTPCnegImVec, std::vector<float>);
 DECLARE_SOA_COLUMN(QvecTPCallReVec, qvecTPCallReVec, std::vector<float>);
 DECLARE_SOA_COLUMN(QvecTPCallImVec, qvecTPCallImVec, std::vector<float>);
 
-
 DECLARE_SOA_COLUMN(QvecFT0CRe, qvecFT0CRe, float);
 DECLARE_SOA_COLUMN(QvecFT0CIm, qvecFT0CIm, float);
 DECLARE_SOA_COLUMN(QvecFT0ARe, qvecFT0ARe, float);
