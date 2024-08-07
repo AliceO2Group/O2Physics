@@ -359,14 +359,14 @@ struct alice3multicharm {
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
           if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
             continue; // keep only if same mother
-          if (pi1c.globalIndex() >= pi2c.globalIndex()) 
+          if (pi1c.globalIndex() >= pi2c.globalIndex())
             continue; // avoid same-mother, avoid double-counting
 
-          // if I am here, it means this is a triplet to be considered for XiC vertexing. 
-          // will now attempt to build a three-body decay candidate with these three track rows. 
+          // if I am here, it means this is a triplet to be considered for XiC vertexing.
+          // will now attempt to build a three-body decay candidate with these three track rows.
 
           nCombinationsC++;
-          if(!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
+          if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
             continue; // failed at building candidate
 
           const std::array<float, 3> momentumC = {
@@ -378,14 +378,14 @@ struct alice3multicharm {
 
           histos.fill(HIST("hMassXiC"), thisCandidate.mass);
 
-          // attempt XiCC finding 
+          // attempt XiCC finding
           long nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
             // to-do: check same mother here
 
             nCombinationsCC++;
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
-            if(!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
+            if (!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
               continue; // failed at building candidate
 
             histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
