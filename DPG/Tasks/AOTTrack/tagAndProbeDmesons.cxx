@@ -896,6 +896,8 @@ struct TagTwoProngDisplacedVertices {
             fillTable = false;
           } else if (fillTopoVarsTable == 2 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
             fillTable = false;
+          } else if (fillTopoVarsTable == 3 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::BkgFromNoHf)) { // only background excluding tracks from other HF decays
+            fillTable = false;
           }
           float pseudoRndm = trackPos.pt() * 1000. - (int64_t)(trackPos.pt() * 1000);
           if (ptTag < ptTagMaxForDownsampling && pseudoRndm >= downsamplingForTopoVarTable) {
