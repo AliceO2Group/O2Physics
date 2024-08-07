@@ -81,14 +81,24 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     }
     if (subGroupStr.Contains("mult")) {
       if (subGroupStr.Contains("pp")) {
-        hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 300, 0.0, 500.0, VarManager::kMultTPC);
-        hm->AddHistogram(histClass, "MultFV0A", "MultFV0A", false, 300, 0.0, 500.0, VarManager::kMultFV0A);
-        hm->AddHistogram(histClass, "MultFT0A", "MultFT0A", false, 300, 0.0, 200.0, VarManager::kMultFT0A);
+        hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 250, 0.0, 500.0, VarManager::kMultTPC);
+        hm->AddHistogram(histClass, "MultFV0A", "MultFV0A", false, 250, 0.0, 500.0, VarManager::kMultFV0A);
+        hm->AddHistogram(histClass, "MultFT0A", "MultFT0A", false, 300, 0.0, 300.0, VarManager::kMultFT0A);
         hm->AddHistogram(histClass, "MultFT0C", "MultFT0C", false, 300, 0.0, 300.0, VarManager::kMultFT0C);
         hm->AddHistogram(histClass, "MultFDDA", "MultFDDA", false, 300, 0.0, 300.0, VarManager::kMultFDDA);
+<<<<<<< HEAD
         hm->AddHistogram(histClass, "MultFDDC", "MultFDDC", false, 300, 0.0, 50.0, VarManager::kMultFDDC);
         hm->AddHistogram(histClass, "MultTracklets", "MultTracklets", false, 100, 0.0, 250.0, VarManager::kMultTracklets);
         hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontribReal);
+||||||| parent of b3a4aba4 (Fix binning in pp mult histograms)
+        hm->AddHistogram(histClass, "MultFDDC", "MultFDDC", false, 300, 0.0, 50.0, VarManager::kMultFDDC);
+        hm->AddHistogram(histClass, "MultTracklets", "MultTracklets", false, 100, 0.0, 250.0, VarManager::kMultTracklets);
+        hm->AddHistogram(histClass, "VtxNContribReal", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontribReal);
+=======
+        hm->AddHistogram(histClass, "MultFDDC", "MultFDDC", false, 50, 0.0, 50.0, VarManager::kMultFDDC);
+        hm->AddHistogram(histClass, "MultTracklets", "MultTracklets", false, 250, 0.0, 250.0, VarManager::kMultTracklets);
+        hm->AddHistogram(histClass, "VtxNContribReal", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontribReal);
+>>>>>>> b3a4aba4 (Fix binning in pp mult histograms)
         hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
         hm->AddHistogram(histClass, "MultTPC_MultFV0A", "MultTPC vs MultFV0A", false, 100, 0, 500.0, VarManager::kMultTPC, 100, 0, 500.0, VarManager::kMultFV0A);
         hm->AddHistogram(histClass, "MultTPC_MultFT0A", "MultTPC vs MultFT0A", false, 100, 0, 500.0, VarManager::kMultTPC, 100, 0, 200.0, VarManager::kMultFT0A);
