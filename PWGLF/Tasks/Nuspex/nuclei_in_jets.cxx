@@ -557,7 +557,7 @@ struct nuclei_in_jets {
 
     // Fill QA Histograms
     if (ptJetPlusUE < min_pt_leading) {
-          
+
       int nPartClustered_Jet = static_cast<int>(jet_particle_ID.size());
       registryQC.fill(HIST("nParticlesClusteredInJet"), nPartClustered_Jet);
 
