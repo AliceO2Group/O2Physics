@@ -502,7 +502,7 @@ struct TagTwoProngDisplacedVertices {
         SETBIT(signalFlag, aod::tagandprobe::SignalFlags::BkgFromNoHf);
       }
 
-      return signalFlag
+      return signalFlag;
     }
   }
 
