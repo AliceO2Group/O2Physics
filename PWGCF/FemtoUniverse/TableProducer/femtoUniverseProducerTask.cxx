@@ -1295,7 +1295,7 @@ struct femtoUniverseProducerTask {
     for (auto& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
-      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                      // fills the reco collisions for mc collision
+      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                     // fills the reco collisions for mc collision
       fillParticles<decltype(groupedMCParticles), true>(groupedMCParticles, recoMcIds); // fills mc particles
     }
   }
