@@ -363,8 +363,9 @@ struct skimmerSecondaryElectron {
         if (mee > slope * phiv + intercept) { // select phocon conversions
           continue;
         }
-        fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
-
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
+        }
         fillTrackTable(collision, pos);
         fillTrackTable(collision, neg);
         npair++;
@@ -423,8 +424,9 @@ struct skimmerSecondaryElectron {
         if (mee > slope * phiv + intercept) { // select phocon conversions
           continue;
         }
-        fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
-
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
+        }
         fillTrackTable(collision, pos);
         fillTrackTable(collision, neg);
         npair++;
@@ -603,7 +605,7 @@ struct AssociateMCInfoSecondaryElectron {
     fCounters[1] = 0;
   }
 
-  void processDummy(MyCollisionsMC const&) {}
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(AssociateMCInfoSecondaryElectron, processMC, "create em mc event table for Electron", false);
   PROCESS_SWITCH(AssociateMCInfoSecondaryElectron, processDummy, "processDummy", true);

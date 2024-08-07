@@ -840,7 +840,6 @@ struct phiInJets {
             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
               JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-
           }
 	  //  else if (!jetFlag && mcd_pt.size() > 0) {
           //    JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
@@ -1010,7 +1009,6 @@ struct phiInJets {
             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
               JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
             JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_INSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-
           }
 	  // 	  else if (!jetFlag && mcp_pt.size() > 0) {
 	  //       JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
@@ -1265,7 +1263,6 @@ struct phiInJets {
           if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
             JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE_1D_2_3"), lResonance.M());
           JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE"), jetpt_mcp, lResonance.Pt(), lResonance.M());
-
         }
 	// else if (!jetFlag && mcp_pt.size() > 0) {
         //    JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
@@ -1492,7 +1489,6 @@ struct phiInJets {
               if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
                 JEhistos.fill(HIST("hMCRec_hUSS_INSIDE_1D_2_3"), lResonance.M());
               JEhistos.fill(HIST("hMCRec_hUSS_INSIDE"), jetpt_mcd, lResonance.Pt(), lResonance.M());
-
             }
 	    // else if (!jetFlag && mcd_pt.size() > 0) {
             //    JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());

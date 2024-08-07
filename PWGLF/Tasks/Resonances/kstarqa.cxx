@@ -542,7 +542,7 @@ struct kstarqa {
         histos.fill(HIST("hNsigmaTPC_before"), track1.pt(), track1.tpcNSigmaKa());
         histos.fill(HIST("hNsigmaTOF_before"), track1.pt(), track1.tofNSigmaKa());
         histos.fill(HIST("hCRFC_before"), track1.tpcCrossedRowsOverFindableCls());
-        histos.fill(HIST("dE_by_dx_TPC"), track1.pt(), track1.tpcSignal());
+        histos.fill(HIST("dE_by_dx_TPC"), track1.p(), track1.tpcSignal());
         histos.fill(HIST("hphi"), track1.phi());
       }
       histos.fill(HIST("events_check_data"), 4.5);
@@ -581,10 +581,10 @@ struct kstarqa {
       if (QAafter) {
         histos.fill(HIST("hEta_after"), track1.eta());
         histos.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
-        histos.fill(HIST("hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
-        histos.fill(HIST("hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
-        histos.fill(HIST("hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
-        histos.fill(HIST("hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
+        // histos.fill(HIST("hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
+        // histos.fill(HIST("hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
+        // histos.fill(HIST("hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
+        // histos.fill(HIST("hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
       }
 
       if (track1.globalIndex() == track2.globalIndex())

@@ -60,7 +60,7 @@ struct strangeness_tutorial {
   HistogramRegistry hglue{"hglueball", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Configurable<bool> QAv0{"QAv0", false, "QAv0"};
-  Configurable<bool> QAPID{"QAPID", false, "QAPID"};
+  Configurable<bool> QAPID{"QAPID", true, "QAPID"};
   Configurable<bool> QAv0_daughters{"QAv0_daughters", false, "QA of v0 daughters"};
   Configurable<bool> QAevents{"QAevents", false, "QA of events"};
   Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
@@ -222,6 +222,7 @@ struct strangeness_tutorial {
       rKzeroShort.add("halpha", "Armenteros alpha", kTH1F, {{100, -5.0f, 5.0f}});
       rKzeroShort.add("hqtarmbyalpha", "qtarm/alpha", kTH1F, {{100, 0.0f, 1.0f}});
       rKzeroShort.add("hpsipair", "psi pair angle", kTH1F, {{100, -5.0f, 5.0f}});
+      rKzeroShort.add("NksProduced", "Number of K0s produced", kTH1I, {{15, 0, 15}});
 
       // // Topological histograms (before the selection)
       // rKzeroShort.add("hDCAV0Daughters_before", "DCA between v0 daughters before the selection", {HistType::kTH1F, {{60, -3.0f, 3.0f}}});
@@ -418,7 +419,7 @@ struct strangeness_tutorial {
       // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
       // }
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.pt(), track.tpcSignal());
+      rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.p(), track.tpcSignal());
     }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
@@ -519,6 +520,8 @@ struct strangeness_tutorial {
       rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
     }
 
+    std::vector<int> v0indexes;
+
     for (auto& [v1, v2] : combinations(CombinationsStrictlyUpperIndexPolicy(V0s, V0s))) {
 
       if (v1.size() == 0 || v2.size() == 0) {
@@ -560,6 +563,14 @@ struct strangeness_tutorial {
       }
       if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2)) {
         continue;
+      }
+
+      if (!(std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) != v0indexes.end())) {
+        v0indexes.push_back(v1.globalIndex());
+      }
+      // std::cout << "global index of v1: " << v1.globalIndex() << "   global index of v2: " << v2.globalIndex() << std::endl;
+      if (!(std::find(v0indexes.begin(), v0indexes.end(), v2.globalIndex()) != v0indexes.end())) {
+        v0indexes.push_back(v2.globalIndex());
       }
 
       TLorentzVector lv1, lv2, lv3, lv4, lv5;
@@ -635,6 +646,11 @@ struct strangeness_tutorial {
           }
         }
       }
+    }
+    if (QAv0) {
+      int sizeofv0indexes = v0indexes.size();
+      rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
+      // std::cout << "Size of v0indexes: " << sizeofv0indexes << std::endl;
     }
   }
 

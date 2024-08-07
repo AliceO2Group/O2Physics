@@ -36,6 +36,7 @@ namespace
 
 static constexpr int nNuclei{3};
 static constexpr int nHyperNuclei{1};
+static constexpr int nITStriggers{2};
 static constexpr int nCutsPID{5};
 static constexpr std::array<float, nNuclei> masses{
   constants::physics::MassDeuteron, constants::physics::MassTriton,
@@ -44,7 +45,7 @@ static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
 static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
-static const std::vector<std::string> columnsNames{"fH2", "fH3", o2::aod::filtering::He::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel()};
+static const std::vector<std::string> columnsNames{o2::aod::filtering::H2::columnLabel(), "fH3", o2::aod::filtering::He::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel(), o2::aod::filtering::ITSmildIonisation::columnLabel(), o2::aod::filtering::ITSextremeIonisation::columnLabel()};
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
@@ -52,16 +53,16 @@ constexpr double betheBlochDefault[nNuclei][6]{
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static constexpr float cutsPID[nNuclei][nCutsPID]{
-  {-3.f, +3.f, -4.f, +4.f, 1.0f},    /*H2*/
-  {-3.f, +3.f, -4.f, +4.f, 1.6f},    /*H3*/
-  {-5.f, +5.f, -4.f, +4.f, 14000.f}, /*He3*/
+  {-3.f, +400.f, -4.f, +400.f, 1.0f},  /*H2*/
+  {-3.f, +3.f, -4.f, +4.f, 1.6f},      /*H3*/
+  {-5.f, +400.f, -4.f, +4.f, 14000.f}, /*He3*/
 };
 constexpr double bbMomScalingDefault[nNuclei][2]{
   {1., 1.},
   {1., 1.},
   {1., 1.}};
 constexpr double minTPCmom[nNuclei][2]{
-  {0., 0.},
+  {0.8, 0.},
   {0., 0.},
   {0.8, 0.}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
@@ -80,6 +81,10 @@ struct nucleiFilter {
   Configurable<float> cfgCutEta{"cfgCutEta", 1.f, "Eta range for tracks"};
 
   Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 2, "Minimum number of ITS clusters"};
+  Configurable<int> cfgCutNclusExtremeIonisationITS{"cfgCutNclusExtremeIonisationITS", 5, "Minimum number of ITS clusters for the extreme ionisation trigger"};
+  Configurable<float> cfgMomentumCutExtremeIonisation{"cfgMomentumCutExtremeIonisation", 1.2, "Minimum momentum for the extreme ionisation trigger"};
+  Configurable<float> cfgCutClsSizeExtremeIonisation{"cfgCutClsSizeExtremeIonisation", 8, "Minimum average size of ITS clusters for the extreme ionisation trigger"};
+  Configurable<float> cfgCutClsSizeMildIonisation{"cfgCutClsSizeMildIonisation", 5, "Minimum average size of ITS clusters for the mild ionisation trigger"};
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 80, "Minimum number of TPC clusters"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 3, "Max DCAxy"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 10, "Max DCAz"};
@@ -113,7 +118,7 @@ struct nucleiFilter {
   Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", nNuclei + nHyperNuclei + 1, -0.5, nNuclei + nHyperNuclei + 0.5)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", nNuclei + nHyperNuclei + nITStriggers + 1, -0.5, nNuclei + nHyperNuclei + nITStriggers + 0.5)};
 
   void init(o2::framework::InitContext&)
   {
@@ -126,6 +131,7 @@ struct nucleiFilter {
     qaHists.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     qaHists.add("fDeuTOFNsigma", "Deuteron TOF Nsigma distribution", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {2000, -100, 100, "TOF n#sigma"}});
     qaHists.add("fH3LMassVsPt", "Hypertrion mass Vs pT", HistType::kTH2F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {80, 2.96, 3.04, "Inv. Mass (GeV/c^{2})"}});
+    qaHists.add("fExtremeIonisationITS", "ITS clusters for extreme ionisation trigger", HistType::kTH3F, {{4, 3.5, 7.5, "Number of ITS clusters"}, {150, 0, 15, "Average cluster size in ITS x cos#lambda"}, {100, 0.1, 10, "#it{p} (GeV/#it{c})"}});
 
     for (int iN{0}; iN < nNuclei; ++iN) {
       h2TPCsignal[iN] = qaHists.add<TH2>(Form("fTPCsignal_%s", nucleiNames[iN].data()), "Specific energy loss", HistType::kTH2F, {{1200, -6, 6., "#it{p}/Z (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
@@ -138,19 +144,17 @@ struct nucleiFilter {
     }
   }
 
-  // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);
-  // using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>;
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
   {
     // collision process loop
-    bool keepEvent[nNuclei + nHyperNuclei]{false};
+    bool keepEvent[nNuclei + nHyperNuclei + nITStriggers]{false};
     //
     qaHists.fill(HIST("fCollZpos"), collision.posZ());
     hProcessedEvents->Fill(0);
     //
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      tags(keepEvent[2], keepEvent[3]);
+      tags(keepEvent[0], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
       return;
     }
     //
@@ -160,6 +164,17 @@ struct nucleiFilter {
       {charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / masses[2], charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / masses[2]}};
 
     for (auto& track : tracks) { // start loop over tracks
+      if (track.itsNCls() >= cfgCutNclusExtremeIonisationITS) {
+        double avgClsSize{0.};
+        double cosL{std::sqrt(1. / (1. + track.tgl() * track.tgl()))};
+        for (int iC{0}; iC < 7; ++iC) {
+          avgClsSize += track.itsClsSizeInLayer(iC);
+        }
+        avgClsSize = avgClsSize * cosL / track.itsNCls();
+        qaHists.fill(HIST("fExtremeIonisationITS"), track.itsNCls(), avgClsSize, track.p());
+        keepEvent[4] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeMildIonisation;
+        keepEvent[5] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeExtremeIonisation;
+      }
       if (track.itsNCls() < cfgCutNclusITS ||
           track.tpcNClsFound() < cfgCutNclusTPC) {
         continue;
@@ -254,12 +269,12 @@ struct nucleiFilter {
       }
     } // end loop over hypertriton 3body decay candidates
 
-    for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei; ++iDecision) {
+    for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei + nITStriggers; ++iDecision) {
       if (keepEvent[iDecision]) {
         hProcessedEvents->Fill(iDecision + 1);
       }
     }
-    tags(keepEvent[2], keepEvent[3]);
+    tags(keepEvent[0], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
   }
 };
 

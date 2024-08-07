@@ -278,7 +278,7 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
 
-  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles, aod::BCsWithTimestamps const&)
+  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles)
   {
     float multiplicity = 0.0f;
     for (auto& particle : particles) {

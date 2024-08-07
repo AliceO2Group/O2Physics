@@ -201,7 +201,7 @@ struct TableMaker {
   Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
 
   // Track related options
-  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
+  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propagate tracks to associated collision to recalculate DCA and momentum vector"};
 
   // Muon related options
   Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
