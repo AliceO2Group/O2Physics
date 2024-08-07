@@ -61,7 +61,8 @@ enum SignalFlags : uint8_t {
   Bkg = 0,
   Prompt,
   NonPrompt,
-  Resonant
+  Resonant,
+  BkgFromNoHf
 };
 
 static constexpr int nBinsPt = 7;
@@ -188,7 +189,7 @@ struct TagTwoProngDisplacedVertices {
   Produces<aod::TagTopoVariables> tagVarsTable;
 
   SliceCache cache;
-  Configurable<int> fillTopoVarsTable{"fillTopoVarsTable", 0, "flag to fill tag table with topological variables (0 -> disabled, 1 -> signal only, 2 -> bkg only, 3 -> both)"};
+  Configurable<int> fillTopoVarsTable{"fillTopoVarsTable", 0, "flag to fill tag table with topological variables (0 -> disabled, 1 -> signal only, 2 -> bkg only, 3 -> bkg from no HF only, 4 -> all)"};
   Configurable<float> downsamplingForTopoVarTable{"downsamplingForTopoVarTable", 1.1, "fraction of tag candidates to downscale in filling table with topological variables"};
   Configurable<float> ptTagMaxForDownsampling{"ptTagMaxForDownsampling", 5., "maximum pT for downscaling of tag candidates in filling table with topological variables"};
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
@@ -418,7 +419,9 @@ struct TagTwoProngDisplacedVertices {
     }
 
     if (!firsTrack.has_mcParticle() || !secondTrack.has_mcParticle()) {
-      return BIT(aod::tagandprobe::SignalFlags::Bkg);
+      SETBIT(signalFlag, aod::tagandprobe::SignalFlags::Bkg);
+      SETBIT(signalFlag, aod::tagandprobe::SignalFlags::BkgFromNoHf);
+      return signalFlag;
     } else {
       auto firstMcTrack = firsTrack.template mcParticle_as<PParticles>();
       auto secondMcTrack = secondTrack.template mcParticle_as<PParticles>();
@@ -490,7 +493,16 @@ struct TagTwoProngDisplacedVertices {
         return signalFlag;
       }
 
-      return BIT(aod::tagandprobe::SignalFlags::Bkg);
+      // if not signal, it must be background
+      SETBIT(signalFlag, aod::tagandprobe::SignalFlags::Bkg);
+
+      auto originFirstTrack = RecoDecay::getCharmHadronOrigin(mcParticles, firstMcTrack, true);
+      auto originSecondTrack = RecoDecay::getCharmHadronOrigin(mcParticles, secondMcTrack, true);
+      if (originFirstTrack == RecoDecay::OriginType::None && originSecondTrack == RecoDecay::OriginType::None) {
+        SETBIT(signalFlag, aod::tagandprobe::SignalFlags::BkgFromNoHf);
+      }
+
+      return signalFlag
     }
   }
 
@@ -718,6 +730,8 @@ struct TagTwoProngDisplacedVertices {
           if (fillTopoVarsTable == 1 && !(TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt) || TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt))) { // only signal
             fillTable = false;
           } else if (fillTopoVarsTable == 2 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
+            fillTable = false;
+          } else if (fillTopoVarsTable == 3 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::BkgFromNoHf)) { // only background excluding tracks from other HF decays
             fillTable = false;
           }
           float pseudoRndm = trackFirst.pt() * 1000. - (int64_t)(trackFirst.pt() * 1000);
