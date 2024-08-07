@@ -278,10 +278,8 @@ struct nucleiSpectra {
   // configurables for track tuner
   Configurable<bool> cfgUseTrackTuner{"cfgUseTrackTuner", false, "Apply track tuner corrections to MC tracks"};
   Configurable<std::string> cfgTrackTunerParams{"cfgTrackTunerParams", "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=0|updatePulls=1|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/pp2023/smoothHighPtMC|nameInputFile=trackTuner_DataLHC23fPass1_McLHC23k4b_run535085.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=-1.|qOverPtData=-1.", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
-  OutputObj<TH1D> hTrackTunedTracks{TH1D("hTrackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
   // running variables for track tuner
   o2::dataformats::DCA mDcaInfoCov;
-  o2::dataformats::VertexBase mVtx;
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
@@ -293,7 +291,7 @@ struct nucleiSpectra {
 
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta && aod::track::tpcInnerParam > cfgCutTpcMom;
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>>;
 
   // Collisions with chentrality
   using CollWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
@@ -304,7 +302,6 @@ struct nucleiSpectra {
   using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
 
   double getPhiInRange(double phi)
   {
@@ -448,9 +445,8 @@ struct nucleiSpectra {
     // TrackTuner initialization
     if (cfgUseTrackTuner) {
       std::string outputStringParams = trackTunerObj.configParams(cfgTrackTunerParams);
+      spectra.add("hTrackTunedTracks", outputStringParams.c_str(), HistType::kTH1F, {{1, 0.5, 1.5, ""}});
       trackTunerObj.getDcaGraphs();
-      hTrackTunedTracks->SetTitle(outputStringParams.c_str());
-      hTrackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
     }
   }
 
@@ -477,6 +473,7 @@ struct nucleiSpectra {
   template <typename Tcoll, typename Ttrks>
   void fillDataInfo(Tcoll const& collision, Ttrks const& tracks)
   {
+    o2::pid::tof::Beta<typename Ttrks ::iterator> responseBeta;
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     gRandom->SetSeed(bc.timestamp());
@@ -545,18 +542,22 @@ struct nucleiSpectra {
       mDcaInfoCov.set(999, 999, 999, 999, 999);
       setTrackParCov(track, mTrackParCov);
       mTrackParCov.setPID(track.pidForTracking());
-      if (cfgUseTrackTuner) {
-        bool hasMcParticle = track.has_mcParticle();  
-        if (hasMcParticle) {
-          hTrackTunedTracks->Fill(1); // all tracks
-          auto mcParticle = track.mcParticle();
-          trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov, hTrackTunedTracks);
+      if constexpr (
+        requires {
+          track.has_mcParticle();
+        }) {
+        if (cfgUseTrackTuner) {
+          bool hasMcParticle = track.has_mcParticle();
+          if (hasMcParticle) {
+            spectra.get<TH1>(HIST("hTrackTunedTracks"))->Fill(1); // all tracks
+            auto mcParticle = track.mcParticle();
+            trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov, spectra.get<TH1>(HIST("hTrackTunedTracks")));
+          }
         }
       }
 
-      auto trackParCov = getTrackParCov(track); // should we set the charge according to the nucleus?
       gpu::gpustd::array<float, 2> dcaInfo;
-      o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParCov, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCA(collVtx, mTrackParCov, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
 
       float beta{responseBeta.GetBeta(track)};
       spectra.fill(HIST("hTpcSignalDataSelected"), correctedTpcInnerParam * track.sign(), track.tpcSignal());
@@ -581,7 +582,7 @@ struct nucleiSpectra {
         if (std::abs(dcaInfo[1]) > cfgDCAcut->get(iS, 1)) {
           continue;
         }
-        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{trackParCov.getPt() * nuclei::charges[iS], trackParCov.getEta(), trackParCov.getPhi(), nuclei::masses[iS]};
+        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{mTrackParCov.getPt() * nuclei::charges[iS], mTrackParCov.getEta(), mTrackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
         for (int iPID{0}; iPID < 2; ++iPID) {
           if (selectedTPC[iS]) {
@@ -670,7 +671,7 @@ struct nucleiSpectra {
             collision.multTPC()});
         }
         nuclei::candidates.emplace_back(NucleusCandidate{
-          static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(),
+          static_cast<int>(track.globalIndex()), (1 - 2 * iC) * mTrackParCov.getPt(), mTrackParCov.getEta(), mTrackParCov.getPhi(),
           correctedTpcInnerParam, beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(), track.tpcChi2NCl(),
           nSigmaTPC, tofMasses, fillTree, fillDCAHist, flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(),
           static_cast<uint8_t>(track.tpcNClsFound()), static_cast<uint8_t>(track.itsNCls()), static_cast<uint32_t>(track.itsClusterSizes())});
@@ -681,7 +682,7 @@ struct nucleiSpectra {
     nuclei::hGloTOFtracks[1]->Fill(nGloTracks[1], nTOFTracks[1]);
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McTrackLabels const&)
   {
     nuclei::candidates.clear();
     if (!eventSelection(collision)) {
@@ -766,7 +767,7 @@ struct nucleiSpectra {
   PROCESS_SWITCH(nucleiSpectra, processDataFlowAlternative, "Data analysis with flow - alternative framework", false);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
     for (auto& c : mcCollisions) {
@@ -783,7 +784,7 @@ struct nucleiSpectra {
     }
     std::vector<bool> isReconstructed(particlesMC.size(), false);
     for (auto& c : nuclei::candidates) {
-      auto label = trackLabelsMC.iteratorAt(c.globalIndex);
+      auto label = tracks.iteratorAt(c.globalIndex);
       if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
         continue;
       }
