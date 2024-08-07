@@ -18,9 +18,6 @@
 #ifndef PWGLF_DATAMODEL_LFSTRANGENESSMLTABLES_H_
 #define PWGLF_DATAMODEL_LFSTRANGENESSMLTABLES_H_
 
-using namespace o2;
-using namespace o2::framework;
-
 // Creating output TTree for ML analysis
 namespace o2::aod
 {

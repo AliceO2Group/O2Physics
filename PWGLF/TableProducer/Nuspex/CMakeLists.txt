@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(decay3bodybuilder
     SOURCES decay3bodybuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2::TOFBase
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hyhefour-builder
@@ -26,7 +26,7 @@ o2physics_add_dpl_workflow(hyper-kink-reco-task
 
 o2physics_add_dpl_workflow(hypertriton-reco-task
     SOURCES hyperRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lnn-reco-task
@@ -72,4 +72,9 @@ o2physics_add_dpl_workflow(threebody-reco-task
 o2physics_add_dpl_workflow(ebye-maker
     SOURCES ebyeMaker.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cluster-studies-tree-creator
+    SOURCES LFTreeCreatorClusterStudies.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

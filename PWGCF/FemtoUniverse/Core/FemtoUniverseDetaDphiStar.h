@@ -27,6 +27,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "Framework/HistogramRegistry.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoUniverse;
@@ -47,6 +48,7 @@ template <o2::aod::femtouniverseparticle::ParticleType partOne, o2::aod::femtoun
 class FemtoUniverseDetaDphiStar
 {
  public:
+  FemtoUniverseTrackSelection trackCuts;
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
@@ -137,6 +139,7 @@ class FemtoUniverseDetaDphiStar
       }
     }
   }
+
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
   bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield, uint8_t ChosenEventType)
@@ -331,12 +334,13 @@ class FemtoUniverseDetaDphiStar
         TLorentzVector sumVec(part1Vec);
         sumVec += part2Vec;
         float phiM = sumVec.M();
+        if ((phiM > CutPhiInvMassLow) && (phiM < CutPhiInvMassHigh)) {
+          pass = true; // pair comes from Phi meson decay
+        }
 
         // APPLYING THE CUTS
         if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true; // pair is close
-        } else if ((phiM > CutPhiInvMassLow) && (phiM < CutPhiInvMassHigh)) {
-          pass = true; // pair comes from Phi meson decay
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
             histdetadpisame[i][1]->Fill(deta, dphiAvg);

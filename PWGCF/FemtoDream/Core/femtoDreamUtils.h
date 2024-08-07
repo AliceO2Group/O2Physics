@@ -106,28 +106,31 @@ inline float getMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
-  float Mass = 0;
+  float mass = 0;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
-    case 211: // charged pions
-      Mass = o2::constants::physics::MassPiPlus;
+    case kPiPlus: // charged pions, changed magic number as per their pdg name
+      mass = o2::constants::physics::MassPiPlus;
       break;
-    case 321: // charged kaon
-      Mass = o2::constants::physics::MassKPlus;
+    case kKPlus: // charged kaon
+      mass = o2::constants::physics::MassKPlus;
       break;
-    case 2212: // proton
-      Mass = o2::constants::physics::MassProton;
+    case kProton: // proton
+      mass = o2::constants::physics::MassProton;
       break;
-    case 3122: // Lambda
-      Mass = o2::constants::physics::MassLambda;
+    case kLambda0: // Lambda
+      mass = o2::constants::physics::MassLambda;
       break;
-    case 1000010020: // Deuteron
-      Mass = o2::constants::physics::MassDeuteron;
+    case o2::constants::physics::Pdg::kLambdaCPlus: // Charm Lambda
+      mass = o2::constants::physics::MassLambdaCPlus;
+      break;
+    case o2::constants::physics::Pdg::kDeuteron: // Deuteron
+      mass = o2::constants::physics::MassDeuteron;
       break;
     default:
       LOG(fatal) << "PDG code is not suppored";
   }
-  return Mass;
+  return mass;
 }
 
 inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG)

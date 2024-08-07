@@ -13,6 +13,7 @@
 /// \brief Utilities needed for the KFParticle package
 ///
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
+/// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 
 #ifndef TOOLS_KFPARTICLE_KFUTILITIES_H_
 #define TOOLS_KFPARTICLE_KFUTILITIES_H_
@@ -103,6 +104,75 @@ KFPTrack createKFPTrackFromTrackParCov(const o2::track::TrackParametrizationWith
 {
   KFPTrack kfpTrack = createKFPTrack(trackparCov, trackSign, tpcNClsFound, tpcChi2NCl);
   return kfpTrack;
+}
+
+/// @brief Function to create a KFParticle from a o2::track::TrackParametrizationWithError track
+/// @tparam T
+/// @param trackparCov TrackParCov
+/// @param charge charg of track
+/// @param mass mass hypothesis
+/// @return KFParticle
+template <typename T>
+KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrizationWithError<T>& trackparCov, int charge, float mass)
+{
+  std::array<T, 3> xyz, pxpypz;
+  float xyzpxpypz[6];
+  trackparCov.getPxPyPzGlo(pxpypz);
+  trackparCov.getXYZGlo(xyz);
+  for (int i{0}; i < 3; ++i) {
+    xyzpxpypz[i] = xyz[i];
+    xyzpxpypz[i + 3] = pxpypz[i];
+  }
+
+  std::array<float, 21> cv;
+  try {
+    trackparCov.getCovXYZPxPyPzGlo(cv);
+  } catch (std::runtime_error& e) {
+    LOG(debug) << "Failed to get cov matrix from TrackParCov" << e.what();
+  }
+
+  KFParticle kfPart;
+  float Mini, SigmaMini, M, SigmaM;
+  kfPart.GetMass(Mini, SigmaMini);
+  LOG(debug) << "Daughter KFParticle mass before creation: " << Mini << " +- " << SigmaMini;
+
+  try {
+    kfPart.Create(xyzpxpypz, cv.data(), charge, mass);
+  } catch (std::runtime_error& e) {
+    LOG(debug) << "Failed to create KFParticle from daughter TrackParCov" << e.what();
+  }
+
+  kfPart.GetMass(M, SigmaM);
+  LOG(debug) << "Daughter KFParticle mass after creation: " << M << " +- " << SigmaM;
+  return kfPart;
+}
+
+/// @brief Function to create a o2::track::TrackParametrizationWithError track from a KFParticle
+/// @param kfParticle KFParticle to transform
+/// @param pid PID hypothesis
+/// @param sign sign of the particle
+/// @return o2::track::TrackParametrizationWithError track
+o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const o2::track::PID pid, const int sign)
+{
+  o2::gpu::gpustd::array<float, 3> xyz, pxpypz;
+  o2::gpu::gpustd::array<float, 21> cv;
+
+  // get parameters from kfParticle
+  xyz[0] = kfParticle.GetX();
+  xyz[1] = kfParticle.GetY();
+  xyz[2] = kfParticle.GetZ();
+  pxpypz[0] = kfParticle.GetPx();
+  pxpypz[1] = kfParticle.GetPy();
+  pxpypz[2] = kfParticle.GetPz();
+
+  // set covariance matrix elements (lower triangle)
+  for (int i = 0; i < 21; i++) {
+    cv[i] = kfParticle.GetCovariance(i);
+  }
+
+  // create TrackParCov track
+  o2::track::TrackParCov track = o2::track::TrackParCov(xyz, pxpypz, cv, sign, true, pid);
+  return track;
 }
 
 /// @brief Cosine of pointing angle from KFParticles

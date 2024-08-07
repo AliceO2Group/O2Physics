@@ -1010,9 +1010,9 @@ struct HfFilter { // Main struct for HF triggers
 
             auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecPhoton);
             auto ptCand = RecoDecay::pt(pVecReso3Prong);
-            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 1u)) {
-              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 1u));
-              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 1u));
+            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 2u)) {
+              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 2u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 2u));
+              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 2u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 2u));
               if (isGoodDsStarToKKPi || isGoodDsStarToPiKK) {
                 if (activateQA) {
                   if (isGoodDsStarToKKPi) {
