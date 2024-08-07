@@ -546,7 +546,7 @@ struct nucleiSpectra {
       setTrackParCov(track, mTrackParCov);
       mTrackParCov.setPID(track.pidForTracking());
       if (cfgUseTrackTuner) {
-        bool hasMcParticle = track.has_mcParticle();  
+        bool hasMcParticle = track.has_mcParticle();
         if (hasMcParticle) {
           hTrackTunedTracks->Fill(1); // all tracks
           auto mcParticle = track.mcParticle();
