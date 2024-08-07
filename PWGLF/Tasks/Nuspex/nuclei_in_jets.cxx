@@ -123,6 +123,7 @@ struct nuclei_in_jets {
     registryQC.add("deltaEtadeltaPhiJet", "deltaEtadeltaPhiJet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
     registryQC.add("deltaEtadeltaPhiUE", "deltaEtadeltaPhiUE", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
     registryQC.add("deltaEtadeltaPhi_leading_jet", "deltaEtadeltaPhi_leading_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("deltaJetPt", "deltaJetPt", HistType::kTH1F, {{200, -2, 2, "#Delta#it{p}_{T} (GeV/#it{c})"}});
 
     // QC Histograms for ptJet < pt_leading
     registryQC.add("nParticlesClusteredInJet", "nParticlesClusteredInJet", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
@@ -370,6 +371,7 @@ struct nuclei_in_jets {
 
     // Indices of Reduced Event
     std::vector<int> particle_ID;
+    std::vector<int> particle_ID_copy;
 
     // Leading Track
     int leading_ID(0);
@@ -390,6 +392,7 @@ struct nuclei_in_jets {
         pt_max = track.pt();
       }
       particle_ID.push_back(i);
+      particle_ID_copy.push_back(i);
     }
 
     // Momentum of the Leading Particle
@@ -510,7 +513,7 @@ struct nuclei_in_jets {
 
     for (int i = 0; i < nParticles; i++) {
 
-      auto track = tracks.iteratorAt(particle_ID[i]);
+      auto track = tracks.iteratorAt(particle_ID_copy[i]);
 
       TVector3 particle_dir(track.px(), track.py(), track.pz());
       double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
@@ -554,7 +557,7 @@ struct nuclei_in_jets {
 
     // Fill QA Histograms
     if (ptJetPlusUE < min_pt_leading) {
-
+          
       int nPartClustered_Jet = static_cast<int>(jet_particle_ID.size());
       registryQC.fill(HIST("nParticlesClusteredInJet"), nPartClustered_Jet);
 
@@ -572,6 +575,14 @@ struct nuclei_in_jets {
         registryQC.fill(HIST("dEtadPhi_jetaxis"), dEta, dPhi);
       }
     }
+
+    double ptJet_antikt(0);
+    for (int i = 0; i < nPartClustered_Jet; i++) {
+
+      auto track = tracks.iteratorAt(jet_particle_ID[i]);
+      ptJet_antikt = ptJet_antikt + track.pt();
+    }
+    registryQC.fill(HIST("deltaJetPt"), ptJet_antikt - ptJetPlusUE);
 
     // Event Counter: Skip Events with n. particles in jet less than given value
     if (NchJetPlusUE < min_nPartInJet)
@@ -836,6 +847,7 @@ struct nuclei_in_jets {
 
       // Reduced Event
       std::vector<int> particle_ID;
+      std::vector<int> particle_ID_copy;
       int leading_ID(0);
       double pt_max(0);
       int i = -1;
@@ -852,6 +864,7 @@ struct nuclei_in_jets {
           pt_max = track.pt();
         }
         particle_ID.push_back(i);
+        particle_ID_copy.push_back(i);
       }
       if (pt_max < min_pt_leading)
         continue;
@@ -955,7 +968,7 @@ struct nuclei_in_jets {
 
       for (int i = 0; i < nParticles; i++) {
 
-        auto track = tracks_per_coll.iteratorAt(particle_ID[i]);
+        auto track = tracks_per_coll.iteratorAt(particle_ID_copy[i]);
 
         TVector3 particle_dir(track.px(), track.py(), track.pz());
         double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
