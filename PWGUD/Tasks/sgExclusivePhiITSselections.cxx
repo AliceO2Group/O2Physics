@@ -314,7 +314,7 @@ struct sgExclusivePhiITSselections {
             }
           }
         } // Mass cut
-      } // end of two tracks only loop
+      }   // end of two tracks only loop
 
       if (allTracksAreKaonsBandPID.size() == 2) {
         TLorentzVector reallyPhi;
@@ -369,7 +369,7 @@ struct sgExclusivePhiITSselections {
       } // Kaon Band
 
     } // double gap
-  } // end of process
+  }   // end of process
 
   void processSG(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
   // process function subscribing to SG data
