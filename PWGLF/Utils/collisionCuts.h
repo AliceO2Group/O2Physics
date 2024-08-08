@@ -147,7 +147,9 @@ class CollisonCuts
   bool isSelected(T const& col)
   {
     mHistogramRegistry->fill(HIST("Event/posZ_noCut"), col.posZ());
-    mHistogramRegistry->fill(HIST("Event/trackOccupancyInTimeRange_noCut"), col.trackOccupancyInTimeRange());
+    if (mCheckIsRun3) {
+      mHistogramRegistry->fill(HIST("Event/trackOccupancyInTimeRange_noCut"), col.trackOccupancyInTimeRange());
+    }
     mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllEvent);
     if (std::abs(col.posZ()) > mZvtxMax) {
       LOGF(debug, "Vertex out of range");

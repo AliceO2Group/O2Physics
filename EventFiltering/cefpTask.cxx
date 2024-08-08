@@ -363,7 +363,7 @@ struct centralEventFilterTask {
           if (!(outTrigger[iE][iD] & BIT(iB))) {
             continue;
           }
-          for (int jD{0}; jD < outTrigger[0].size(); ++jD) {
+          for (uint64_t jD{0}; jD < outTrigger[0].size(); ++jD) {
             for (int iC{iB}; iC < 64; ++iC) {
               if (outTrigger[iE][iD] & BIT(iC)) {
                 mCovariance->Fill(iD * 64 + iB, jD * 64 + iC);
