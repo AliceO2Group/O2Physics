@@ -18,6 +18,14 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
 
+#include <Math/Vector4D.h> // used instead of TLorentzVector
+#include <Math/Vector2D.h>
+#include <cmath>
+#include <algorithm>
+#include <random>
+#include <vector>
+#include <chrono>
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -25,14 +33,6 @@
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
-#include <Math/Vector4D.h> // used instead of TLorentzVector
-#include <Math/Vector2D.h>
-
-#include <cmath>
-#include <algorithm>
-#include <random>
-#include <vector>
-#include <chrono>
 
 using namespace o2;
 using namespace o2::framework;
