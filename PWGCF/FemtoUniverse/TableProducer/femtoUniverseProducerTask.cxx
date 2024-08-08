@@ -161,6 +161,7 @@ struct femtoUniverseProducerTask {
 
   // V0
   FemtoUniverseV0Selection v0Cuts;
+  struct : o2::framework::ConfigurableGroup {
   Configurable<std::vector<float>> ConfV0Sign{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0Sign, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMin{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0pTMin, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0pTMin, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMax{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0pTMax, "ConfV0"), std::vector<float>{3.3f, 3.4f, 3.5f}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0pTMax, "V0 selection: ")};
@@ -170,20 +171,18 @@ struct femtoUniverseProducerTask {
   Configurable<std::vector<float>> ConfV0TranRadMin{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0TranRadMin, "ConfV0"), std::vector<float>{0.2f}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0TranRadMin, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0TranRadMax{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0TranRadMax, "ConfV0"), std::vector<float>{100.f}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0TranRadMax, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0DecVtxMax{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0DecVtxMax, "ConfV0"), std::vector<float>{100.f}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0DecVtxMax, "V0 selection: ")};
-
   Configurable<std::vector<float>> ConfChildCharge{"ConfChildSign", std::vector<float>{-1, 1}, "V0 Child sel: Charge"};
   Configurable<std::vector<float>> ConfChildEtaMax{"ConfChildEtaMax", std::vector<float>{0.8f}, "V0 Child sel: max eta"};
   Configurable<std::vector<float>> ConfChildTPCnClsMin{"ConfChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "V0 Child sel: Min. nCls TPC"};
   Configurable<std::vector<float>> ConfChildDCAMin{"ConfChildDCAMin", std::vector<float>{0.05f, 0.06f}, "V0 Child sel:  Max. DCA Daugh to PV (cm)"};
   Configurable<std::vector<float>> ConfChildPIDnSigmaMax{"ConfChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "V0 Child sel: Max. PID nSigma TPC"};
   Configurable<std::vector<int>> ConfChildPIDspecies{"ConfChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Child sel: Particles species for PID"};
-
   Configurable<float> ConfV0InvMassLowLimit{"ConfV0InvV0MassLowLimit", 1.05, "Lower limit of the V0 invariant mass"};
   Configurable<float> ConfV0InvMassUpLimit{"ConfV0InvV0MassUpLimit", 1.30, "Upper limit of the V0 invariant mass"};
-
   Configurable<bool> ConfV0RejectKaons{"ConfV0RejectKaons", false, "Switch to reject kaons"};
   Configurable<float> ConfV0InvKaonMassLowLimit{"ConfV0InvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfV0InvKaonMassUpLimit{"ConfV0InvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
+ } ConfV0Selection;
 
   struct : o2::framework::ConfigurableGroup {
     Configurable<float> ConfPtLowFilterCut{"ConfPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
@@ -354,29 +353,29 @@ struct femtoUniverseProducerTask {
     // femtoUniverseV0Selection::kDecVtxMax, femtoUniverseSelection::kAbsUpperLimit);
     if (ConfIsActivateV0) {
       // initializing for V0
-      v0Cuts.setSelection(ConfV0Sign, femtoUniverseV0Selection::kV0Sign, femtoUniverseSelection::kEqual);
-      v0Cuts.setSelection(ConfV0PtMin, femtoUniverseV0Selection::kV0pTMin, femtoUniverseSelection::kLowerLimit);
-      v0Cuts.setSelection(ConfV0PtMax, femtoUniverseV0Selection::kV0pTMax, femtoUniverseSelection::kUpperLimit);
-      v0Cuts.setSelection(ConfV0EtaMax, femtoUniverseV0Selection::kV0etaMax, femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setSelection(ConfV0DCADaughMax, femtoUniverseV0Selection::kV0DCADaughMax, femtoUniverseSelection::kUpperLimit);
-      v0Cuts.setSelection(ConfV0CPAMin, femtoUniverseV0Selection::kV0CPAMin, femtoUniverseSelection::kLowerLimit);
-      v0Cuts.setSelection(ConfV0TranRadMin, femtoUniverseV0Selection::kV0TranRadMin, femtoUniverseSelection::kLowerLimit);
-      v0Cuts.setSelection(ConfV0TranRadMax, femtoUniverseV0Selection::kV0TranRadMax, femtoUniverseSelection::kUpperLimit);
-      v0Cuts.setSelection(ConfV0DecVtxMax, femtoUniverseV0Selection::kV0DecVtxMax, femtoUniverseSelection::kUpperLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setChildPIDSpecies(femtoUniverseV0Selection::kPosTrack, ConfChildPIDspecies);
-      v0Cuts.setChildPIDSpecies(femtoUniverseV0Selection::kNegTrack, ConfChildPIDspecies);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0Sign, femtoUniverseV0Selection::kV0Sign, femtoUniverseSelection::kEqual);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0PtMin, femtoUniverseV0Selection::kV0pTMin, femtoUniverseSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0PtMax, femtoUniverseV0Selection::kV0pTMax, femtoUniverseSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0EtaMax, femtoUniverseV0Selection::kV0etaMax, femtoUniverseSelection::kAbsUpperLimit);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0DCADaughMax, femtoUniverseV0Selection::kV0DCADaughMax, femtoUniverseSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0CPAMin, femtoUniverseV0Selection::kV0CPAMin, femtoUniverseSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0TranRadMin, femtoUniverseV0Selection::kV0TranRadMin, femtoUniverseSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0TranRadMax, femtoUniverseV0Selection::kV0TranRadMax, femtoUniverseSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0Selection.ConfV0DecVtxMax, femtoUniverseV0Selection::kV0DecVtxMax, femtoUniverseSelection::kUpperLimit);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfV0Selection.ConfChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfV0Selection.ConfChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfV0Selection.ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfV0Selection.ConfChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfV0Selection.ConfChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfV0Selection.ConfChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfV0Selection.ConfChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfV0Selection.ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfV0Selection.ConfChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
+      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfV0Selection.ConfChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
+      v0Cuts.setChildPIDSpecies(femtoUniverseV0Selection::kPosTrack, ConfV0Selection.ConfChildPIDspecies);
+      v0Cuts.setChildPIDSpecies(femtoUniverseV0Selection::kNegTrack, ConfV0Selection.ConfChildPIDspecies);
       v0Cuts.init<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
-      v0Cuts.setInvMassLimits(ConfV0InvMassLowLimit, ConfV0InvMassUpLimit);
+      v0Cuts.setInvMassLimits(ConfV0Selection.ConfV0InvMassLowLimit, ConfV0Selection.ConfV0InvMassUpLimit);
 
       v0Cuts.setChildRejectNotPropagatedTracks(femtoUniverseV0Selection::kPosTrack, ConfTrkRejectNotPropagated);
       v0Cuts.setChildRejectNotPropagatedTracks(femtoUniverseV0Selection::kNegTrack, ConfTrkRejectNotPropagated);
@@ -385,8 +384,8 @@ struct femtoUniverseProducerTask {
       v0Cuts.setChildnSigmaPIDOffset(femtoUniverseV0Selection::kPosTrack, ConfTrkPIDnSigmaOffsetTPC, ConfTrkPIDnSigmaOffsetTOF);
       v0Cuts.setChildnSigmaPIDOffset(femtoUniverseV0Selection::kNegTrack, ConfTrkPIDnSigmaOffsetTPC, ConfTrkPIDnSigmaOffsetTOF);
 
-      if (ConfV0RejectKaons) {
-        v0Cuts.setKaonInvMassLimits(ConfV0InvKaonMassLowLimit, ConfV0InvKaonMassUpLimit);
+      if (ConfV0Selection.ConfV0RejectKaons) {
+        v0Cuts.setKaonInvMassLimits(ConfV0Selection.ConfV0InvKaonMassLowLimit, ConfV0Selection.ConfV0InvKaonMassUpLimit);
       }
       // if (ConfRejectITSHitandTOFMissing) {
       //   o2PhysicsTrackSelection = new
