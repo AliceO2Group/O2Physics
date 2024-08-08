@@ -28,8 +28,7 @@ using namespace o2::framework::expressions;
 
 /// \brief Exclusive phi without PID
 /// \author Simone Ragoni, Creighton
-/// \author Anisa Khatun, Kansas University
-/// \date 14/2/2024
+/// \date 8/8/2024
 
 struct sgExclusivePhiITSselections {
   SGSelector sgSelector;
@@ -131,27 +130,9 @@ struct sgExclusivePhiITSselections {
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
-  // template <typename TCollisions>
-  // void eventprocessing(int gapSide, TCollisions::iterator const& collision, udtracksfull const& tracks)
   void eventprocessing(int gapSide, udtracksfull const& tracks)
   {
     registry.fill(HIST("hSelectionCounter"), 0);
-
-    // int gapSide = collision.gapSide();
-    // if (gapSide < 0 || gapSide > 2)
-    //   return;
-
-    // registry.fill(HIST("posx"), collision.posX());
-    // registry.fill(HIST("posy"), collision.posY());
-    // registry.fill(HIST("posz"), collision.posZ());
-    // int truegapSide = 2;
-    // if (DGorSG == 1) {
-    //   // Single Gap mode
-    //   truegapSide = sgSelector.trueGap(collision, FV0_cut, FT0A_cut, FT0C_cut, ZDC_cut);
-    // }
-    // registry.fill(HIST("GapSide"), gapSide);
-    // registry.fill(HIST("TrueGapSide"), truegapSide);
-    // gapSide = truegapSide;
 
     if (gapSide == gap_Side) {
       TLorentzVector phi, phiWithoutPID, phiWithKaonPID; // lorentz vectors of tracks and the mother
@@ -387,7 +368,6 @@ struct sgExclusivePhiITSselections {
     gapSide = truegapSide;
 
     eventprocessing(gapSide, tracks);
-    // eventprocessing<aod::UDCollisionsFull>(gapSide, collision, tracks);
   }
   PROCESS_SWITCH(sgExclusivePhiITSselections, processSG, "Process SG data", SGactive);
 
@@ -400,7 +380,6 @@ struct sgExclusivePhiITSselections {
     registry.fill(HIST("posz"), collision.posZ());
     registry.fill(HIST("GapSide"), gapSide);
     eventprocessing(gapSide, tracks);
-    // eventprocessing<aod::UDCollisions>(gapSide, collision, tracks);
   }
   PROCESS_SWITCH(sgExclusivePhiITSselections, processDG, "Process DG data", DGactive);
 
