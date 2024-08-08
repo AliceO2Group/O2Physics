@@ -19,6 +19,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/TableHelper.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
@@ -45,6 +46,7 @@ struct AssociateMCInfoDilepton {
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
 
+  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<float> min_eta_gen_primary{"min_eta_gen_primary", -1.2, "min rapidity Y to store generated information"};  // smearing might be applied at analysis stage. set wider value.
   Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", +1.2, "max rapidity Y to store generated information"};  // smearing might be applied at analysis stage. set wider value.
@@ -53,8 +55,12 @@ struct AssociateMCInfoDilepton {
 
   HistogramRegistry registry{"EMMCEvent"};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
+    if (inherit_from_emevent_dilepton) {
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true);
+    }
+
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{6, 0.5f, 6.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "has mc collision");
@@ -106,7 +112,7 @@ struct AssociateMCInfoDilepton {
     for (auto& mcCollision : mcCollisions) {
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
-        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
+        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }
@@ -128,172 +134,175 @@ struct AssociateMCInfoDilepton {
       auto mcCollision = collision.mcCollision();
       mceventlabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
 
-    } // end of reconstructed collision loop
+      // store MC true information
+      auto mcelectrons_per_collision = mcelectrons.sliceBy(perMcCollision, mcCollision.globalIndex());
+      auto mcmuons_per_collision = mcmuons.sliceBy(perMcCollision, mcCollision.globalIndex());
+      auto mcvectormesons_per_collision = mcvectormesons.sliceBy(perMcCollision, mcCollision.globalIndex());
 
-    // store MC true information
-    for (auto& mctrack : mcelectrons) { // store necessary information for denominator of efficiency
-      if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
-        continue;
-      }
-      auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
-
-      // only for temporary protection, as of 15.July.2024 (by Daiki Sekihata)
-      int motherid_tmp = -999; // first mother index tmp
-      if (mctrack.has_mothers()) {
-        motherid_tmp = mctrack.mothersIds()[0]; // first mother index
-      }
-      auto mp_tmp = mcTracks.iteratorAt(motherid_tmp);
-      int ndau_tmp = mp_tmp.daughtersIds()[1] - mp_tmp.daughtersIds()[0] + 1;
-      if (ndau_tmp < 10) {
-
-        if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
-          fNewLabels[mctrack.globalIndex()] = fCounters[0];
-          fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
-          // fMCFlags[mctrack.globalIndex()] = mcflags;
-          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-          fCounters[0]++;
+      for (auto& mctrack : mcelectrons_per_collision) { // store necessary information for denominator of efficiency
+        if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
+          continue;
         }
+        auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
 
-        int motherid = -999; // first mother index
+        // only for temporary protection, as of 15.July.2024 (by Daiki Sekihata)
+        int motherid_tmp = -999; // first mother index tmp
         if (mctrack.has_mothers()) {
-          motherid = mctrack.mothersIds()[0]; // first mother index
+          motherid_tmp = mctrack.mothersIds()[0]; // first mother index
         }
-        while (motherid > -1) {
-          if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
-            auto mp = mcTracks.iteratorAt(motherid);
+        auto mp_tmp = mcTracks.iteratorAt(motherid_tmp);
+        int ndau_tmp = mp_tmp.daughtersIds()[1] - mp_tmp.daughtersIds()[0] + 1;
+        if (ndau_tmp < 10) {
 
-            // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-            if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
-              fNewLabels[mp.globalIndex()] = fCounters[0];
-              fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
-              // fMCFlags[mp.globalIndex()] = mcflags;
-              fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-              fCounters[0]++;
-            }
-
-            if (mp.has_mothers()) {
-              motherid = mp.mothersIds()[0]; // first mother index
-            } else {
-              motherid = -999;
-            }
-          } else {
-            motherid = -999;
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
           }
-        } // end of mother chain loop
-      }   // end of ndau protection
-    }     // end of mc electron loop
 
-    for (auto& mctrack : mcmuons) { // store necessary information for denominator of efficiency
-      if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
-        continue;
-      }
-      auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
-
-      // only for temporary protection, as of 15.July.2024 (by Daiki Sekihata)
-      int motherid_tmp = -999; // first mother index tmp
-      if (mctrack.has_mothers()) {
-        motherid_tmp = mctrack.mothersIds()[0]; // first mother index
-      }
-      auto mp_tmp = mcTracks.iteratorAt(motherid_tmp);
-      int ndau_tmp = mp_tmp.daughtersIds()[1] - mp_tmp.daughtersIds()[0] + 1;
-      if (ndau_tmp < 10) {
-
-        if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
-          fNewLabels[mctrack.globalIndex()] = fCounters[0];
-          fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
-          // fMCFlags[mctrack.globalIndex()] = mcflags;
-          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-          fCounters[0]++;
-        }
-
-        int motherid = -999; // first mother index
-        if (mctrack.has_mothers()) {
-          motherid = mctrack.mothersIds()[0]; // first mother index
-        }
-        while (motherid > -1) {
-          if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
-            auto mp = mcTracks.iteratorAt(motherid);
-
-            // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-            if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
-              fNewLabels[mp.globalIndex()] = fCounters[0];
-              fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
-              // fMCFlags[mp.globalIndex()] = mcflags;
-              fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-              fCounters[0]++;
-            }
-
-            if (mp.has_mothers()) {
-              motherid = mp.mothersIds()[0]; // first mother index
-            } else {
-              motherid = -999;
-            }
-          } else {
-            motherid = -999;
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
           }
-        } // end of mother chain loop
-      }   // end of ndau protection
-    }     // end of mc muon loop
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
 
-    for (auto& mctrack : mcvectormesons) { // store necessary information for denominator of efficiency
-      // Be careful!! dilepton rapidity is different from meson rapidity! No acceptance cut here.
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
 
-      if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
-        continue;
-      }
-      auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
-
-      int ndau = mctrack.daughtersIds()[1] - mctrack.daughtersIds()[0] + 1;
-      if (ndau < 10) {
-
-        if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
-          fNewLabels[mctrack.globalIndex()] = fCounters[0];
-          fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
-          // fMCFlags[mctrack.globalIndex()] = mcflags;
-          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-          fCounters[0]++;
-        }
-
-        // store daughter of vector mesons
-        if (mctrack.has_daughters()) {
-          bool is_lepton_involved = false;
-          for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
-            // TODO: remove this check as soon as issues with MC production are fixed
-            if (d < mcTracks.size()) { // protect against bad daughter indices
-              auto daughter = mcTracks.iteratorAt(d);
-              if (abs(daughter.pdgCode()) == 11 || abs(daughter.pdgCode()) == 13) {
-                is_lepton_involved = true;
-                break;
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
               }
             } else {
-              std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcTracks.size() << ")" << std::endl;
-              std::cout << " Check the MC generator" << std::endl;
+              motherid = -999;
             }
+          } // end of mother chain loop
+        }   // end of ndau protection
+      }     // end of mc electron loop
+
+      for (auto& mctrack : mcmuons_per_collision) { // store necessary information for denominator of efficiency
+        if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
+          continue;
+        }
+        auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+
+        // only for temporary protection, as of 15.July.2024 (by Daiki Sekihata)
+        int motherid_tmp = -999; // first mother index tmp
+        if (mctrack.has_mothers()) {
+          motherid_tmp = mctrack.mothersIds()[0]; // first mother index
+        }
+        auto mp_tmp = mcTracks.iteratorAt(motherid_tmp);
+        int ndau_tmp = mp_tmp.daughtersIds()[1] - mp_tmp.daughtersIds()[0] + 1;
+        if (ndau_tmp < 10) {
+
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
           }
 
-          if (is_lepton_involved) {
-            // LOGF(info, "daughter range in original MC stack pdg = %d | %d - %d , n dau = %d", mctrack.pdgCode(), mctrack.daughtersIds()[0], mctrack.daughtersIds()[1], mctrack.daughtersIds()[1] -mctrack.daughtersIds()[0] +1);
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
+
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
+              }
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
+        }   // end of ndau protection
+      }     // end of mc muon loop
+
+      for (auto& mctrack : mcvectormesons_per_collision) { // store necessary information for denominator of efficiency
+        // Be careful!! dilepton rapidity is different from meson rapidity! No acceptance cut here.
+
+        if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
+          continue;
+        }
+        auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+
+        int ndau = mctrack.daughtersIds()[1] - mctrack.daughtersIds()[0] + 1;
+        if (ndau < 10) {
+
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
+          }
+
+          // store daughter of vector mesons
+          if (mctrack.has_daughters()) {
+            bool is_lepton_involved = false;
             for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
               // TODO: remove this check as soon as issues with MC production are fixed
               if (d < mcTracks.size()) { // protect against bad daughter indices
                 auto daughter = mcTracks.iteratorAt(d);
-                // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-                if (!(fNewLabels.find(daughter.globalIndex()) != fNewLabels.end())) {
-                  fNewLabels[daughter.globalIndex()] = fCounters[0];
-                  fNewLabelsReversed[fCounters[0]] = daughter.globalIndex();
-                  // fMCFlags[daughter.globalIndex()] = mcflags;
-                  fEventIdx[daughter.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-                  fCounters[0]++;
+                if (abs(daughter.pdgCode()) == 11 || abs(daughter.pdgCode()) == 13) {
+                  is_lepton_involved = true;
+                  break;
                 }
               } else {
                 std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcTracks.size() << ")" << std::endl;
                 std::cout << " Check the MC generator" << std::endl;
               }
-            } // end of daughter loop
+            }
+
+            if (is_lepton_involved) {
+              // LOGF(info, "daughter range in original MC stack pdg = %d | %d - %d , n dau = %d", mctrack.pdgCode(), mctrack.daughtersIds()[0], mctrack.daughtersIds()[1], mctrack.daughtersIds()[1] -mctrack.daughtersIds()[0] +1);
+              for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+                // TODO: remove this check as soon as issues with MC production are fixed
+                if (d < mcTracks.size()) { // protect against bad daughter indices
+                  auto daughter = mcTracks.iteratorAt(d);
+                  // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+                  if (!(fNewLabels.find(daughter.globalIndex()) != fNewLabels.end())) {
+                    fNewLabels[daughter.globalIndex()] = fCounters[0];
+                    fNewLabelsReversed[fCounters[0]] = daughter.globalIndex();
+                    // fMCFlags[daughter.globalIndex()] = mcflags;
+                    fEventIdx[daughter.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                    fCounters[0]++;
+                  }
+                } else {
+                  std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcTracks.size() << ")" << std::endl;
+                  std::cout << " Check the MC generator" << std::endl;
+                }
+              } // end of daughter loop
+            }
           }
-        }
-      } // end of ndau protection
-    }   // end of generated vector mesons loop
+        } // end of ndau protection
+      }   // end of generated vector mesons loop
+    }     // end of reconstructed collision loop
 
     if constexpr (static_cast<bool>(system & kPCM)) {
       for (auto& v0 : v0photons) {
