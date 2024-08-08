@@ -473,14 +473,14 @@ struct EventSelectionTask {
   void init(InitContext&)
   {
     if (metadataInfo.isFullyDefined()) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      if (!doprocessRun2 && !doprocessRun3)        {
-          LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
-          if (metadataInfo.isRun3()) {
-            doprocessRun3.value = true;
-          } else {
-            doprocessRun2.value = false;
-          }
+      if (!doprocessRun2 && !doprocessRun3) {
+        LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = false;
         }
+      }
       if (isMC == -1) {
         LOG(info) << "Autosetting the MC mode based on metadata";
         if (metadataInfo.isMC()) {
