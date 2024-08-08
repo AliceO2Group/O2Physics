@@ -333,8 +333,8 @@ struct PidONNXModel {
   std::shared_ptr<Ort::Session> mSession = nullptr;
 #endif
 
-  bool mIsRun3;
   std::vector<double> mPLimits;
+  bool mIsRun3;
   std::vector<std::string> mInputNames;
   std::vector<std::vector<int64_t>> mInputShapes;
   std::vector<std::string> mOutputNames;
