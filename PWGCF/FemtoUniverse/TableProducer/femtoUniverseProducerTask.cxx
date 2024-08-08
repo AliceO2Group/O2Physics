@@ -233,6 +233,13 @@ struct femtoUniverseProducerTask {
     Configurable<std::vector<float>> ConfCascV0MassLowLimit{FemtoUniverseCascadeSelection::getSelectionName(femtoUniverseCascadeSelection::kCascadeV0MassMin, "ConfCasc"), std::vector<float>{1.05f}, FemtoUniverseCascadeSelection::getSelectionHelper(femtoUniverseCascadeSelection::kCascadeV0MassMin, "Cascade selection: ")};
     Configurable<std::vector<float>> ConfCascV0MassUpLimit{FemtoUniverseCascadeSelection::getSelectionName(femtoUniverseCascadeSelection::kCascadeV0MassMax, "ConfCasc"), std::vector<float>{1.30f}, FemtoUniverseCascadeSelection::getSelectionHelper(femtoUniverseCascadeSelection::kCascadeV0MassMax, "Cascade selection: ")};
 
+    Configurable<std::vector<float>> ConfCascChildCharge{"ConfCascChildSign", std::vector<float>{-1, 1}, "Cascade Child sel: Charge"};
+    Configurable<std::vector<float>> ConfCascChildEtaMax{"ConfCascChildEtaMax", std::vector<float>{0.8f}, "Cascade Child sel: max eta"};
+    Configurable<std::vector<float>> ConfCascChildTPCnClsMin{"ConfCascChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "Cascade Child sel: Min. nCls TPC"};
+    // Configurable<std::vector<float>> ConfCascChildDCAMin{"ConfCascChildDCAMin", std::vector<float>{0.05f, 0.06f}, "Cascade Child sel:  Max. DCA Daugh to PV (cm)"};
+    Configurable<std::vector<float>> ConfCascChildPIDnSigmaMax{"ConfCascChildPIDnSigmaMax", std::vector<float>{3.f, 4.f}, "Cascade Child sel: Max. PID nSigma TPC"};
+    Configurable<std::vector<int>> ConfCascChildPIDspecies{"ConfCascChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Child sel: Particles species for PID"};
+
     Configurable<float> ConfCascInvMassLowLimit{"ConfCascInvMassLowLimit", 1.25, "Lower limit of the V0 invariant mass"};
     Configurable<float> ConfCascInvMassUpLimit{"ConfCascInvMassUpLimit", 1.40, "Upper limit of the V0 invariant mass"};
 
@@ -457,27 +464,24 @@ struct femtoUniverseProducerTask {
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascDCAV0ToPV, femtoUniverseCascadeSelection::kCascadeDCAV0ToPV, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0MassLowLimit, femtoUniverseCascadeSelection::kCascadeV0MassMin, femtoUniverseSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadeSelection.ConfCascV0MassUpLimit, femtoUniverseCascadeSelection::kCascadeV0MassMax, femtoUniverseSelection::kUpperLimit);
-      // children cuts, using V0 configurables
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildDCAMin, femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
-      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
+      // children cuts
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfCascadeSelection.ConfCascChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfCascadeSelection.ConfCascChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfCascadeSelection.ConfCascChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kPosTrack, ConfCascadeSelection.ConfCascChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfCascadeSelection.ConfCascChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfCascadeSelection.ConfCascChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfCascadeSelection.ConfCascChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kNegTrack, ConfCascadeSelection.ConfCascChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfCascadeSelection.ConfCascChildCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfCascadeSelection.ConfCascChildEtaMax, femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfCascadeSelection.ConfCascChildTPCnClsMin, femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
+      cascadeCuts.setChildCuts(femtoUniverseCascadeSelection::kBachTrack, ConfCascadeSelection.ConfCascChildPIDnSigmaMax, femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
 
       // TODO
-      // cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildPIDspecies);
-      // cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildPIDspecies);
-      // cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildPIDspecies);
+      cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kPosTrack, ConfV0Selection.ConfChildPIDspecies);
+      cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kNegTrack, ConfV0Selection.ConfChildPIDspecies);
+      cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildPIDspecies);
 
       // check if works correctly for bachelor track
       cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);

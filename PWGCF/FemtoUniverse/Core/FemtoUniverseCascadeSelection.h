@@ -87,7 +87,7 @@ class FemtoUniverseCascadeSelection
 
  public:
   FemtoUniverseCascadeSelection()
-    : nPtCascadeMinSel(0), nPtCascadeMaxSel(0), nEtaCascadeMaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nV0DecVtxMax(0), nDCACascadeDaughMax(0), nCPACascadeMin(0), nTranRadCascadeMin(0), nTranRadCascadeMax(0), nDecVtxMax(0), nDCAPosToPV(0), nDCANegToPV(0), nDCABachToPV(0), nDCAV0ToPV(0), pTCascadeMin(9999999.), pTCascadeMax(-9999999.), etaCascadeMax(-9999999.), DCAV0DaughMax(-9999999.), CPAV0Min(9999999.), TranRadV0Min(9999999.), TranRadV0Max(-9999999.), V0DecVtxMax(-9999999.), DCACascadeDaughMax(-9999999.), CPACascadeMin(9999999.), TranRadCascadeMin(9999999.), TranRadCascadeMax(-9999999.), DecVtxMax(-9999999.), DCAPosToPV(9999999.), DCANegToPV(9999999.), DCABachToPV(9999999.), DCAV0ToPV(9999999.), fV0InvMassLowLimit(1.05), fV0InvMassUpLimit(1.3), fInvMassLowLimit(1.25), fInvMassUpLimit(1.4), fRejectOmega(false), fInvMassOmegaLowLimit(1.5), fInvMassOmegaUpLimit(2.0)/*, nSigmaPIDOffsetTPC(0.)*/
+    : nPtCascadeMinSel(0), nPtCascadeMaxSel(0), nEtaCascadeMaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nV0DecVtxMax(0), nDCACascadeDaughMax(0), nCPACascadeMin(0), nTranRadCascadeMin(0), nTranRadCascadeMax(0), nDecVtxMax(0), nDCAPosToPV(0), nDCANegToPV(0), nDCABachToPV(0), nDCAV0ToPV(0), pTCascadeMin(9999999.), pTCascadeMax(-9999999.), etaCascadeMax(-9999999.), DCAV0DaughMax(-9999999.), CPAV0Min(9999999.), TranRadV0Min(9999999.), TranRadV0Max(-9999999.), V0DecVtxMax(-9999999.), DCACascadeDaughMax(-9999999.), CPACascadeMin(9999999.), TranRadCascadeMin(9999999.), TranRadCascadeMax(-9999999.), DecVtxMax(-9999999.), DCAPosToPV(9999999.), DCANegToPV(9999999.), DCABachToPV(9999999.), DCAV0ToPV(9999999.), fV0InvMassLowLimit(1.05), fV0InvMassUpLimit(1.3), fInvMassLowLimit(1.25), fInvMassUpLimit(1.4), fRejectOmega(false), fInvMassOmegaLowLimit(1.5), fInvMassOmegaUpLimit(2.0) /*, nSigmaPIDOffsetTPC(0.)*/
   {
   }
 
@@ -221,7 +221,7 @@ class FemtoUniverseCascadeSelection
   float fInvMassOmegaLowLimit;
   float fInvMassOmegaUpLimit;
 
-  //float nSigmaPIDOffsetTPC;
+  // float nSigmaPIDOffsetTPC;
 
   FemtoUniverseTrackSelection PosDaughTrack;
   FemtoUniverseTrackSelection NegDaughTrack;
@@ -409,11 +409,14 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
                                     femtoUniverseSelection::kLowerLimit);
   DCAV0ToPV = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeDCAV0ToPV,
                                   femtoUniverseSelection::kLowerLimit);
-  // dodac V0 mass min i max
+  fV0InvMassLowLimit = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0MassMin,
+                                           femtoUniverseSelection::kLowerLimit);
+  fV0InvMassUpLimit = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0MassMax,
+                                          femtoUniverseSelection::kUpperLimit);
 }
 
 template <typename Col, typename Casc, typename Track>
-bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& /*bachTrack*/)
+bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
 {
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
@@ -481,10 +484,8 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
       return false;
     }
   }
-  // DCA pos neg bach v0
-  
-  // FIX ME: isSelectedMinimal for daughters desn't work yet
-  /*
+  // ADD: DCA pos neg bach v0
+
   if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
   }
@@ -494,22 +495,22 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
   if (!BachTrack.isSelectedMinimal(bachTrack)) {
     return false;
   }
-
-  // check that track combinations for V0 or antiV0 would be fulfilling PID
-  float nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
-  // antiV0
-  auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
-  auto nSigmaPiPos = posTrack.tpcNSigmaPi();
-  // v0
-  auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
-  auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-  if (!(abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-        abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) &&
-      !(abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-        abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
-    return false;
-  }
-*/
+  /*
+    // check that track combinations for V0 or antiV0 would be fulfilling PID
+    float nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+    // antiV0
+    auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
+    auto nSigmaPiPos = posTrack.tpcNSigmaPi();
+    // v0
+    auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
+    auto nSigmaPrPos = posTrack.tpcNSigmaPr();
+    if (!(abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
+          abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) &&
+        !(abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
+          abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
+      return false;
+    }
+  */
   return true;
 }
 
