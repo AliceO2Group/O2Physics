@@ -239,9 +239,6 @@ struct femtoUniverseProducerTask {
     Configurable<bool> ConfCascRejectOmegas{"ConfCascRejectOmegas", false, "Switch on to reject Omegas (for Xi) or Xis (for Omega)"};
     Configurable<float> ConfCascInvOmegaMassLowLimit{"ConfCascInvOmegaMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for Omega rejection"};
     Configurable<float> ConfCascInvOmegaMassUpLimit{"ConfCascInvOmegaMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for Omega rejection"};
-
-    // for cutculator
-    // Configurable<std::vector<int>> ConfCascChildPIDspecies{"ConfCascChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton, o2::track::PID::Pion}, "Cascade Child sel: Particles species for PID"};
   } ConfCascadeSelection;
 
   // PHI
