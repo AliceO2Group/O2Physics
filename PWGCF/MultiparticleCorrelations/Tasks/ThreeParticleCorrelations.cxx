@@ -122,16 +122,16 @@ struct ThreePartCorr {
         QARegistry.fill(HIST("hTrackPt"), track.pt());
         QARegistry.fill(HIST("hTrackEta"), track.eta());
         QARegistry.fill(HIST("hTrackPhi"), track.phi());
-	QARegistry.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
+        QARegistry.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
         if (A_PID[0] == 0.0) { // Pions
           QARegistry.fill(HIST("hNSigmaPion"), track.pt(), track.tpcNSigmaPi());
-	  QARegistry.fill(HIST("hdEdxPion"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hdEdxPion"), track.p(), track.tpcSignal());
         } else if (A_PID[0] == 1.0) { // Kaons
           QARegistry.fill(HIST("hNSigmaKaon"), track.pt(), track.tpcNSigmaKa());
-	  QARegistry.fill(HIST("hdEdxKaon"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hdEdxKaon"), track.p(), track.tpcSignal());
         } else if (A_PID[0] == 2.0) { // Protons
           QARegistry.fill(HIST("hNSigmaProton"), track.pt(), track.tpcNSigmaPr());
-	  QARegistry.fill(HIST("hdEdxProton"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hdEdxProton"), track.p(), track.tpcSignal());
         }
       }
     }
