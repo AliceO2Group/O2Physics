@@ -65,7 +65,6 @@ struct UpcEventITSROFcounter {
         firstBCglobalIndex = globalIndex;
         isFirst = false;
       }
-      uint64_t orbitBC = globalBC % o2::constants::lhc::LHCMaxBunches;
       uint16_t bcInITSROF = (globalBC + o2::constants::lhc::LHCMaxBunches - alppar->roFrameBiasInBC) % alppar->roFrameLengthInBC;
 
       if (bcInITSROF - previousBCinITSROF < 0) {
