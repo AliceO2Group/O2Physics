@@ -90,6 +90,7 @@ struct OnTheFlyTracker {
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
+  Configurable<bool> enableSecondarySmearing{"enableSecondarySmearing", false, "Enable smearing of weak decay daughters"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
   Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
   Configurable<bool> treatXi{"treatXi", false, "Manually decay Xi and fill tables with daughters"};
@@ -708,6 +709,7 @@ struct OnTheFlyTracker {
         convertTLorentzVectorToO2Track(2212, decayProducts[2], l0DecayVertex, xiDaughterTrackParCovs[2]);
 
         // Map daughter to smearer
+        if(enableSecondarySmearing) {
         int firstSmearerIndex = -1;
         int secondSmearerIndex = -1;
         for (unsigned i = 0; i < layers.size(); i++) {
@@ -734,6 +736,11 @@ struct OnTheFlyTracker {
         } else {
           isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
           isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+        }
+        }else{
+          isReco[0] = true;
+          isReco[1] = true;
+          isReco[2] = true;
         }
         for (int i = 0; i < 3; i++) {
           if (decayProducts[i].Pt() < minPt) {
