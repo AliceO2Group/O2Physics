@@ -921,7 +921,7 @@ struct nucleiWithFastJet {
     }
   }
 
-  void processMCGen(o2::aod::JMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recoColls, aod::JMcParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
+  void processMCGen(o2::aod::JMcCollision const& collision, /*soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recoColls,*/ aod::JMcParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
   {
     jetHist.fill(HIST("mcpJet/eventStat"), 0.5);
     jetHist.fill(HIST("mcpJet/eventStat"), 1.5);
@@ -1050,7 +1050,7 @@ struct nucleiWithFastJet {
   }   // process mc
 
   void processMCRec(o2::aod::JCollision const& collisionJet, soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels> const& tracks,
-                    soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, TrackCandidatesMC const& fulltracks)
+                    soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, TrackCandidatesMC const&)
   {
     jetHist.fill(HIST("mcdJet/eventStat"), 0.5);
     // JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
@@ -1341,8 +1341,8 @@ struct nucleiWithFastJet {
 
   int nprocessSimJEEvents = 0;
   void processGenMatched(aod::JMcCollision const& collision,
-                         soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recocolls,
-                         JetMCDetTable const& mcdjets, JetMCPartTable const& mcpjets, aod::JMcParticles const& mcParticles)
+                         soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, /*aod::JCollisions>> const& recocolls,*/
+                         JetMCDetTable const&, JetMCPartTable const& mcpjets, aod::JMcParticles const& mcParticles)
   {
 
     if (cDebugLevel > 0) {
