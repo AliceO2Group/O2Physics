@@ -174,6 +174,6 @@ o2physics_add_dpl_workflow(upc-pion-analysis
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upc-event-itsrof-counter
-                           SOURCES UpcEventITSROFcounter.cxx
+                           SOURCES upcEventITSROFcounter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::DataModel O2::CCDB
                            COMPONENT_NAME Analysis)
