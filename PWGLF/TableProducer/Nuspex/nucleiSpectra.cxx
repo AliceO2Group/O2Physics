@@ -1,3 +1,4 @@
+
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -66,6 +67,7 @@ using namespace o2::constants::physics;
 
 struct NucleusCandidate {
   int globalIndex;
+  int collTrackIndex;
   float pt;
   float eta;
   float phi;
@@ -81,6 +83,7 @@ struct NucleusCandidate {
   std::array<float, 5> tofMasses;
   bool fillTree;
   bool fillDCAHist;
+  bool correctPV;
   uint16_t flags;
   uint8_t TPCfindableCls;
   uint8_t TPCcrossedRows;
@@ -379,6 +382,7 @@ struct nucleiSpectra {
     const AxisSpec nITSClusAxis{cfgNITSClusBins, "N ITS clusters"};
     const AxisSpec nTPCClusAxis{cfgNTPCClusBins, "N TPC clusters"};
     const AxisSpec hasTRDAxis{2, -0.5, 1.5, "Has TRD"};
+    const AxisSpec correctPVAxis{2, -0.5, 1.5, "Correct PV"};
 
     const AxisSpec ptAxes[5]{
       {cfgPtBinsProtons, "#it{p}_{T} (GeV/#it{c})"},
@@ -425,13 +429,15 @@ struct nucleiSpectra {
         if (doprocessMC) {
           nuclei::hMomRes[iS][iC] = spectra.add<TH3>(fmt::format("h{}MomRes{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Momentum resolution {}", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], ptResAxis});
           nuclei::hGenNuclei[iS][iC] = spectra.add<TH2>(fmt::format("h{}Gen{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Generated {}", nuclei::names[iS]).data(), HistType::kTH2D, {centAxis, ptAxes[iS]});
-        }
-        if (doprocessDataFlow) {
-          if (cfgFlowHist->get(iS)) {
-            nuclei::hFlowHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
+          nuclei::hDCAHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hDCAHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCA histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {ptAxes[iS], dcaxyAxes[iS], dcazAxes[iS], nSigmaAxes[0], tofMassAxis, nITSClusAxis, nTPCClusAxis, correctPVAxis});
+        } else {
+          if (doprocessDataFlow) {
+            if (cfgFlowHist->get(iS)) {
+              nuclei::hFlowHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
+            }
           }
+          nuclei::hDCAHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hDCAHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCA histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {ptAxes[iS], dcaxyAxes[iS], dcazAxes[iS], nSigmaAxes[0], tofMassAxis, nITSClusAxis, nTPCClusAxis});
         }
-        nuclei::hDCAHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hDCAHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCA histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {ptAxes[iS], dcaxyAxes[iS], dcazAxes[iS], nSigmaAxes[0], tofMassAxis, nITSClusAxis, nTPCClusAxis});
       }
     }
 
@@ -567,6 +573,7 @@ struct nucleiSpectra {
       std::array<float, 5> tofMasses{-3.f, -3.f, -3.f, -3.f, -3.f};
       bool fillTree{false};
       bool fillDCAHist{false};
+      bool correctPV{false};
 
       if (track.hasTOF()) {
         flag |= kHasTOF;
@@ -671,9 +678,9 @@ struct nucleiSpectra {
             collision.multTPC()});
         }
         nuclei::candidates.emplace_back(NucleusCandidate{
-          static_cast<int>(track.globalIndex()), (1 - 2 * iC) * mTrackParCov.getPt(), mTrackParCov.getEta(), mTrackParCov.getPhi(),
+          static_cast<int>(track.globalIndex()), static_cast<int>(track.collisionId()), (1 - 2 * iC) * mTrackParCov.getPt(), mTrackParCov.getEta(), mTrackParCov.getPhi(),
           correctedTpcInnerParam, beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(), track.tpcChi2NCl(),
-          nSigmaTPC, tofMasses, fillTree, fillDCAHist, flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(),
+          nSigmaTPC, tofMasses, fillTree, fillDCAHist,correctPV, flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(),
           static_cast<uint8_t>(track.tpcNClsFound()), static_cast<uint8_t>(track.itsNCls()), static_cast<uint32_t>(track.itsClusterSizes())});
       }
     } // end loop over tracks
@@ -796,8 +803,13 @@ struct nucleiSpectra {
             nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
             storeIt = cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u); /// store only the particles of interest
           }
+          auto coll=collisions.iteratorAt(c.collTrackIndex);
+          int collMCGlobId=coll.mcCollisionId();
+          if (particle.mcCollisionId() == collMCGlobId) {
+            c.correctPV = true;
+          }
           if (c.fillDCAHist && cfgDCAHists->get(iS, c.pt < 0) && particle.isPhysicalPrimary()) {
-            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls);
+            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls,c.correctPV);
           }
         }
       }
@@ -849,3 +861,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<nucleiSpectra>(cfgc, TaskName{"nuclei-spectra"})};
 }
+
+
+
