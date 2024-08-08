@@ -110,6 +110,7 @@ struct lambdakzeromcbuilder {
     std::array<float, 3> xyz;
     std::array<float, 3> posP;
     std::array<float, 3> negP;
+    std::array<float, 3> momentum;
     uint64_t packedMcParticleIndices;
   };
   mcV0info thisInfo;
@@ -141,6 +142,7 @@ struct lambdakzeromcbuilder {
       thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
       thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
       thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
+      thisInfo.momentum[0] = thisInfo.momentum[1] = thisInfo.momentum[2] = 0.0f;
       auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
       auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
 
@@ -207,6 +209,10 @@ struct lambdakzeromcbuilder {
                 // acquire information
                 thisInfo.pdgCode = lNegMother.pdgCode();
                 thisInfo.isPhysicalPrimary = lNegMother.isPhysicalPrimary();
+                thisInfo.momentum[0] = lNegMother.px();
+                thisInfo.momentum[1] = lNegMother.py();
+                thisInfo.momentum[2] = lNegMother.pz();
+
                 if (lNegMother.has_mothers()) {
                   for (auto& lNegGrandMother : lNegMother.mothers_as<aod::McParticles>()) {
                     thisInfo.pdgCodeMother = lNegGrandMother.pdgCode();
@@ -237,7 +243,8 @@ struct lambdakzeromcbuilder {
           thisInfo.pdgCodeMother, thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative,
           thisInfo.isPhysicalPrimary, thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
           thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
-          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2]);
+          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
+          thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
         v0mccollref(thisInfo.mcCollision);
 
         // n.b. placing the interlink index here allows for the writing of
@@ -277,19 +284,19 @@ struct lambdakzeromcbuilder {
             if (thisInfo.pdgCode == 310 && TMath::Abs(ymc) < rapidityWindow) {
               histos.fill(HIST("hStatisticsK0s"), 0.0f); // found
               if (thisInfo.processPositive != 4 || thisInfo.processNegative != 4) {
-                histos.fill(HIST("hStatisticsK0s"), 1.0f); // found
+                histos.fill(HIST("hStatisticsK0s"), 1.0f); // Not originating from decay
               }
             }
             if (thisInfo.pdgCode == 3122 && TMath::Abs(ymc) < rapidityWindow) {
               histos.fill(HIST("hStatisticsLambda"), 0.0f); // found
               if (thisInfo.processPositive != 4 || thisInfo.processNegative != 4) {
-                histos.fill(HIST("hStatisticsLambda"), 1.0f); // found
+                histos.fill(HIST("hStatisticsLambda"), 1.0f); // Not originating from decay
               }
             }
             if (thisInfo.pdgCode == -3122 && TMath::Abs(ymc) < rapidityWindow) {
               histos.fill(HIST("hStatisticsAlambda"), 0.0f); // found
               if (thisInfo.processPositive != 4 || thisInfo.processNegative != 4) {
-                histos.fill(HIST("hStatisticsAlambda"), 1.0f); // found
+                histos.fill(HIST("hStatisticsAlambda"), 1.0f); // Not originating from decay
               }
             }
           }
@@ -313,6 +320,7 @@ struct lambdakzeromcbuilder {
         thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
         thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
         thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
+        thisInfo.momentum[0] = thisInfo.momentum[1] = thisInfo.momentum[2] = 0.0f;
 
         if (mcParticleIsReco[mcParticle.globalIndex()] == true)
           continue; // skip if already created in list
@@ -333,11 +341,10 @@ struct lambdakzeromcbuilder {
             thisInfo.mcCollision = mcParticle.mcCollisionId(); // save this reference, please
           }
 
-          // guarantee compressibility: keep momentum entirely in the positive prong
-          // WARNING: THIS IS AS ARBITRARY AS IT GETS but should be ok
-          thisInfo.posP[0] = mcParticle.px();
-          thisInfo.posP[1] = mcParticle.py();
-          thisInfo.posP[2] = mcParticle.pz();
+          //
+          thisInfo.momentum[0] = mcParticle.px();
+          thisInfo.momentum[1] = mcParticle.py();
+          thisInfo.momentum[2] = mcParticle.pz();
 
           if (mcParticle.has_mothers()) {
             auto const& mother = mcParticle.mothers_first_as<aod::McParticles>();
@@ -346,15 +353,29 @@ struct lambdakzeromcbuilder {
           }
           if (mcParticle.has_daughters()) {
             auto const& daughters = mcParticle.daughters_as<aod::McParticles>();
-            if(daughters.size() > 2)
-              LOGF(info, Form("V0 candidate with %d daughters!", daughters.size()));
-            else
-            {
-              for (auto& dau : daughters) {
-                if(dau.pdgCode() > 0)
-                  thisInfo.pdgCodePositive = dau.pdgCode();
-                if(dau.pdgCode() < 0)
-                  thisInfo.pdgCodeNegative = dau.pdgCode();
+            // if(daughters.size() > 2)
+              // LOGF(info, Form("V0 candidate with %d daughters!", daughters.size()));
+
+            for (auto& dau : daughters) {
+              if (dau.getProcess() != 4 )
+                continue;
+
+              if (dau.pdgCode() > 0) { 
+                thisInfo.pdgCodePositive = dau.pdgCode();
+                thisInfo.processPositive = dau.getProcess();
+                thisInfo.posP[0] = dau.px();
+                thisInfo.posP[1] = dau.py();
+                thisInfo.posP[2] = dau.pz();
+                thisInfo.xyz[0] = dau.vx();
+                thisInfo.xyz[1] = dau.vy();
+                thisInfo.xyz[2] = dau.vz();
+              }
+              if (dau.pdgCode() < 0) {
+                thisInfo.pdgCodeNegative = dau.pdgCode();
+                thisInfo.processNegative = dau.getProcess();
+                thisInfo.negP[0] = dau.px();
+                thisInfo.negP[1] = dau.py();
+                thisInfo.negP[2] = dau.pz();
               }
             }
           }
@@ -387,7 +408,8 @@ struct lambdakzeromcbuilder {
           info.pdgCodeMother, info.pdgCodePositive, info.pdgCodeNegative,
           info.isPhysicalPrimary, info.xyz[0], info.xyz[1], info.xyz[2],
           info.posP[0], info.posP[1], info.posP[2],
-          info.negP[0], info.negP[1], info.negP[2]);
+          info.negP[0], info.negP[1], info.negP[2],
+          info.momentum[0], info.momentum[1], info.momentum[2]);
         v0mccollref(info.mcCollision);
       }
     }
