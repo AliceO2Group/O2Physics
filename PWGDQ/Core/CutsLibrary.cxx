@@ -3848,6 +3848,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
       cut->AddCut(VarManager::kITSncls, cutVar_ITSnCl.at(i), 7.5);
       cut->AddCut(VarManager::kTPCnclsCR, cutVar_TPCnClsCR.at(i), 161.);
       cut->AddCut(VarManager::kTPCncls, cutVar_TPCnCls.at(i), 170.);
+      return cut;
     }
   }
 
@@ -4438,8 +4439,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     std::vector<double> cutVar_TPCnSigmaKa_up = {4., 3., 2., 3., 4., 3., 4., 4., 4., 4., 4., 4., 4., 4., 2., 4., 4., 2., 2., 4., 3., 3., 2., 4., 2., 4., 3., 3., 3., 3};
     std::vector<double> cutVar_TPCnSigmaPr_low = {-4., -2., -2., -3., -4., -4., -3., -2., -2., -4., -4., -2., -3., -4., -2., -3., -3., -2., -3., -3., -2., -2., -2., -2., -2., -3., -2., -3., -3., -3};
     std::vector<double> cutVar_TPCnSigmaPr_up = {2., 2., 3., 2., 3., 3., 3., 2., 4., 3., 3., 4., 4., 3., 4., 4., 3., 4., 2., 3., 4., 4., 3., 4., 3., 2., 3., 3., 2., 3};
-    std::vector<double> cutVar_TOFnSigmaEl_low = {-4., -2., -4., -4., -3., -2., -4., -4., -4., -2., -2., -4., -3., -3., -4., -4., -4., -2., -4., -4., -2., -2., -3., -4., -4., -2., -4., -2., -3., -3};
-    std::vector<double> cutVar_TOFnSigmaEl_up = {4., 2., 4., 2., 4., 3., 2., 3., 3., 3., 4., 3., 2., 3., 4., 3., 3., 3., 4., 4., 2., 2., 2., 3., 3., 3., 2., 3., 2., 4};
 
     for (unsigned int i = 0; i < cutVar_TPCnSigmaEl_low.size(); i++) {
       if (!nameStr.compare(Form("electronPID_TPCnsigma_cutVar%s%i", vecPIDcase.at(icase).Data(), i))) {
