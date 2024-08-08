@@ -193,7 +193,7 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
     for (int j = 0; j < 5; ++j)
       val += lutEntry->eigvec[j][i] * o2track.getParam(j);
     double eigValToUse = 0.0f;
-    if(lutEntry->eigval[i]>0.0f) 
+    if (lutEntry->eigval[i] > 0.0f)
       eigValToUse = lutEntry->eigval[i];
     params_[i] = gRandom->Gaus(val, eigValToUse);
   }
