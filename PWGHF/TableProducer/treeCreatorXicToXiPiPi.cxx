@@ -72,6 +72,8 @@ DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //!
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(Chi2XicPlusTopoToPV, chi2XicPlusTopoToPV, float);
+DECLARE_SOA_COLUMN(Chi2XicPlusTopoXiToXicPlus, chi2XicPlusTopoXiToXicPlus, float);
 // properties of daughter tracks
 DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! Transverse momentum of Xi (prong0) (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! Impact parameter of Xi (prong0)
@@ -87,9 +89,13 @@ DECLARE_SOA_COLUMN(CpaXi, cpaXi, float);
 DECLARE_SOA_COLUMN(CpaXYXi, cpaXYXi, float);
 DECLARE_SOA_COLUMN(CpaLam, cpaLam, float);
 DECLARE_SOA_COLUMN(CpaXYLam, cpaXYLam, float);
+DECLARE_SOA_COLUMN(DcaXYPi0Pi1, dcaXYPi0Pi1, float);
+DECLARE_SOA_COLUMN(DcaXYPi0Xi, dcaXYPi0Xi, float);
+DECLARE_SOA_COLUMN(DcaXYPi1Xi, dcaXYPi1Xi, float);
 DECLARE_SOA_COLUMN(DcaPi0Pi1, dcaPi0Pi1, float);
 DECLARE_SOA_COLUMN(DcaPi0Xi, dcaPi0Xi, float);
 DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
+DECLARE_SOA_COLUMN(DcaXiDaughters, dcaXiDaughters, float);
 DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
 DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
 } // namespace full
@@ -162,9 +168,15 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   full::CpaXYLam,
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
+                  full::Chi2XicPlusTopoToPV,
+                  full::Chi2XicPlusTopoXiToXicPlus,
+                  full::DcaXYPi0Pi1,
+                  full::DcaXYPi0Xi,
+                  full::DcaXYPi1Xi,
                   full::DcaPi0Pi1,
                   full::DcaPi0Xi,
                   full::DcaPi1Xi,
+                  full::DcaXiDaughters,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
@@ -275,9 +287,15 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::InvMassXiPi1,
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
+                  full::Chi2XicPlusTopoToPV,
+                  full::Chi2XicPlusTopoXiToXicPlus,
+                  full::DcaXYPi0Pi1,
+                  full::DcaXYPi0Xi,
+                  full::DcaXYPi1Xi,
                   full::DcaPi0Pi1,
                   full::DcaPi0Xi,
                   full::DcaPi1Xi,
+                  full::DcaXiDaughters,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiDauInds, "AOD", "HFXICXI2PIDAUIN",
@@ -490,9 +508,15 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.cosPaXYLambda(),
           candidate.kfCascadeChi2(),
           candidate.kfV0Chi2(),
+          candidate.chi2TopoXicPlusToPV(),
+          candidate.chi2TopoXiToXicPlus(),
+          candidate.dcaXYPi0Pi1(),
+          candidate.dcaXYPi0Xi(),
+          candidate.dcaXYPi1Xi(),
           candidate.dcaPi0Pi1(),
           candidate.dcaPi0Xi(),
           candidate.dcaPi1Xi(),
+          candidate.dcacascdaughters(),
           flagMc);
       } else {
         rowCandidateFullKf(
@@ -549,9 +573,15 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.invMassXiPi1(),
           candidate.kfCascadeChi2(),
           candidate.kfV0Chi2(),
+          candidate.chi2TopoXicPlusToPV(),
+          candidate.chi2TopoXiToXicPlus(),
+          candidate.dcaXYPi0Pi1(),
+          candidate.dcaXYPi0Xi(),
+          candidate.dcaXYPi1Xi(),
           candidate.dcaPi0Pi1(),
           candidate.dcaPi0Xi(),
           candidate.dcaPi1Xi(),
+          candidate.dcacascdaughters(),
           flagMc);
       }
     }

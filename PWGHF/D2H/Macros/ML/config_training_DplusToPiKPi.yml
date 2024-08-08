@@ -18,6 +18,8 @@ data_prep:
         dirPath/
       ]
 
+  tree_name: treeMLDplus # null if .parquet input files, not null if .root input files
+
   pt_bins_limits: [1, 24]
   name_pt_var: fPt # name of pT branch in original TTree
   downsample_bkg_factor: 1 # value of downSampleBkgFactor set at TTree creation level

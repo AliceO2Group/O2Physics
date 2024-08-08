@@ -301,7 +301,7 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting)
   }
 
   for (UInt_t ih = 2; ih < kNH; ih++) {
-    for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) {
+    for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : static_cast<UInt_t>(kcNH)); ihh < mm; ihh++) {
       TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
       pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, ih, ihh, scfour.Re(), event_weight_four);
     }

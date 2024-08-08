@@ -69,7 +69,7 @@ struct TagAndProbe {
   Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
-  EMEventCut fEMEventCut;
+  EMPhotonEventCut fEMEventCut;
   static constexpr std::string_view event_types[2] = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};

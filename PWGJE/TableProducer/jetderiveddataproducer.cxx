@@ -35,6 +35,7 @@
 
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetV0Utilities.h"
@@ -52,6 +53,7 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JCollisions> jCollisionsTable;
   Produces<aod::JCollisionPIs> jCollisionsParentIndexTable;
   Produces<aod::JCollisionBCs> jCollisionsBunchCrossingIndexTable;
+  Produces<aod::JEMCCollisionLbs> jCollisionsEMCalLabelTable;
   Produces<aod::JMcCollisionLbs> jMcCollisionsLabelTable;
   Produces<aod::JMcCollisions> jMcCollisionsTable;
   Produces<aod::JMcCollisionPIs> jMcCollisionsParentIndexTable;
@@ -132,6 +134,18 @@ struct JetDerivedDataProducerTask {
     jCollisionsBunchCrossingIndexTable(-1);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsALICE3, "produces derived collision tables for ALICE 3 simulations", false);
+
+  void processWithoutEMCalCollisionLabels(aod::Collision const&)
+  {
+    jCollisionsEMCalLabelTable(false, false);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processWithoutEMCalCollisionLabels, "produces dummy derived collision labels for EMCal", true);
+
+  void processEMCalCollisionLabels(aod::EMCALMatchedCollision const& collision)
+  {
+    jCollisionsEMCalLabelTable(collision.ambiguous(), collision.isemcreadout());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processEMCalCollisionLabels, "produces derived collision labels for EMCal", false);
 
   void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision)
   {

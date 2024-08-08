@@ -25,10 +25,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "TRandom.h"
-
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
+#include "Math/Vector4D.h"
+#include "Math/Boost.h"
 
 namespace o2::aod
 {
@@ -43,6 +41,8 @@ enum EvFlags : uint8_t {
 };
 
 DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
 DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
 DECLARE_SOA_COLUMN(Sign, sign, int);
@@ -115,7 +115,7 @@ namespace cascadesflow
 DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
-DECLARE_SOA_COLUMN(Sign, sign, int);
+DECLARE_SOA_COLUMN(Sign, sign, int16_t);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -126,11 +126,17 @@ DECLARE_SOA_COLUMN(V2CSP, v2CSP, float);
 DECLARE_SOA_COLUMN(PsiT0C, psiT0C, float);
 DECLARE_SOA_COLUMN(BDTResponseXi, bdtResponseXi, float);
 DECLARE_SOA_COLUMN(BDTResponseOmega, bdtResponseOmega, float);
+DECLARE_SOA_COLUMN(CosThetaStarLambdaFromOmega, cosThetaStarLambdaFromOmega, float);
+DECLARE_SOA_COLUMN(CosThetaStarLambdaFromXi, cosThetaStarLambdaFromXi, float);
+DECLARE_SOA_COLUMN(CosThetaStarProton, cosThetaStarProton, float);
 
 } // namespace cascadesflow
 
 DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
-                  mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
+                  mycascades::CollisionZ,
+                  mycascades::CentFT0M, mycascades::CentFV0A,
+                  mycascades::MultFT0M, mycascades::MultFV0A,
+                  mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
                   mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
                   mycascades::BachEta, mycascades::PosITSHits, mycascades::NegITSHits, mycascades::BachITSHits,
@@ -154,7 +160,7 @@ DECLARE_SOA_TABLE(CascTraining, "AOD", "CascTraining", o2::soa::Index<>,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV, mycascades::McPdgCode);
 
 DECLARE_SOA_TABLE(CascAnalysis, "AOD", "CascAnalysis", o2::soa::Index<>,
-                  cascadesflow::CentFT0C, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::Phi, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2CSP, cascadesflow::V2CEP, cascadesflow::PsiT0C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega);
+                  cascadesflow::CentFT0C, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::Phi, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2CSP, cascadesflow::V2CEP, cascadesflow::PsiT0C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega, cascadesflow::CosThetaStarLambdaFromOmega, cascadesflow::CosThetaStarLambdaFromXi, cascadesflow::CosThetaStarProton);
 
 namespace myMCcascades
 {
@@ -175,6 +181,9 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);
 DECLARE_SOA_COLUMN(NAssocColl, nAssocColl, int); // Number of reconstructed collisions assoceated to the generated one of this cascade
 DECLARE_SOA_COLUMN(NChInFT0M, nChInFT0M, float); // Number of charged particles in FT0M acceptance
+DECLARE_SOA_COLUMN(NChInFV0A, nChInFV0A, float); // Number of charged particles in FV0A acceptance
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);   // centr. (mult.) % FT0M
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);   // centr. (mult.) % FV0A
 DECLARE_SOA_COLUMN(AssCollisionTypeFilterBitMask, assCollisionTypeFilterBitMask, uint8_t);
 DECLARE_SOA_COLUMN(McCollisionTypeFilterBitMask, mcCollisionTypeFilterBitMask, uint8_t);
 
@@ -196,7 +205,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1, isINELgt1, //! True if the Event belongs t
 DECLARE_SOA_TABLE(MyMCCascades, "AOD", "MYMCCASCADES", o2::soa::Index<>,
                   myMCcascades::CollisionZ, myMCcascades::Sign, myMCcascades::PdgCode,
                   myMCcascades::Y, myMCcascades::Eta, myMCcascades::Phi, myMCcascades::Pt,
-                  myMCcascades::IsPrimary, myMCcascades::NAssocColl, myMCcascades::NChInFT0M,
+                  myMCcascades::IsPrimary, myMCcascades::NAssocColl,
+                  myMCcascades::NChInFT0M, myMCcascades::NChInFV0A,
+                  myMCcascades::CentFT0M, myMCcascades::CentFV0A,
                   myMCcascades::AssCollisionTypeFilterBitMask,
                   myMCcascades::McCollisionTypeFilterBitMask,
                   myMCcascades::IsINELassoc<myMCcascades::AssCollisionTypeFilterBitMask>,

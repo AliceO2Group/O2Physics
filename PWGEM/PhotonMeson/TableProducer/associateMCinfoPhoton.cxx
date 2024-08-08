@@ -66,16 +66,16 @@ struct AssociateMCInfoPhoton {
     // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at analysis.!!
     std::vector<double> ptbins;
     for (int i = 0; i < 2; i++) {
-      ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.1 GeV/c, every 0.05 GeV/c
+      ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.05 GeV/c, every 0.05 GeV/c
     }
-    for (int i = 2; i < 52; i++) {
-      ptbins.emplace_back(0.1 * (i - 2) + 0.1); // from 0.1 to 5 GeV/c, every 0.1 GeV/c
+    for (int i = 2; i < 51; i++) {
+      ptbins.emplace_back(0.1 * (i - 2) + 0.1); // from 0.1 to 4.9 GeV/c, every 0.1 GeV/c
     }
-    for (int i = 52; i < 62; i++) {
-      ptbins.emplace_back(0.5 * (i - 52) + 5.0); // from 5 to 10 GeV/c, evety 0.5 GeV/c
+    for (int i = 51; i < 61; i++) {
+      ptbins.emplace_back(0.5 * (i - 51) + 5.0); // from 5 to 9.5 GeV/c, every 0.5 GeV/c
     }
-    for (int i = 62; i < 73; i++) {
-      ptbins.emplace_back(1.0 * (i - 62) + 10.0); // from 10 to 20 GeV/c, evety 1 GeV/c
+    for (int i = 61; i < 72; i++) {
+      ptbins.emplace_back(1.0 * (i - 61) + 10.0); // from 10 to 20 GeV/c, every 1 GeV/c
     }
     const AxisSpec axis_pt{ptbins, "p_{T} (GeV/c)"};
     const AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
@@ -142,18 +142,18 @@ struct AssociateMCInfoPhoton {
 
       for (auto& mctrack : groupedMcTracks) { // store necessary information for denominator of efficiency
         if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && abs(mctrack.y()) < 0.9f && mctrack.pt() < 20.f) {
-          auto binNumber = hBinFinder->FindBin(mctrack.pt(), mctrack.y()); // caution: pack
+          auto binNumber = hBinFinder->FindBin(mctrack.pt(), abs(mctrack.y())); // caution: pack
           switch (abs(mctrack.pdgCode())) {
             case 22:
-              registry.fill(HIST("Generated/h2PtY_Gamma"), mctrack.pt(), mctrack.y());
+              registry.fill(HIST("Generated/h2PtY_Gamma"), mctrack.pt(), abs(mctrack.y()));
               genGamma[binNumber]++;
               break;
             case 111:
-              registry.fill(HIST("Generated/h2PtY_Pi0"), mctrack.pt(), mctrack.y());
+              registry.fill(HIST("Generated/h2PtY_Pi0"), mctrack.pt(), abs(mctrack.y()));
               genPi0[binNumber]++;
               break;
             case 221:
-              registry.fill(HIST("Generated/h2PtY_Eta"), mctrack.pt(), mctrack.y());
+              registry.fill(HIST("Generated/h2PtY_Eta"), mctrack.pt(), abs(mctrack.y()));
               genEta[binNumber]++;
               break;
             default:

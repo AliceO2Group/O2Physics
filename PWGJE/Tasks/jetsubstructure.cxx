@@ -49,6 +49,7 @@ struct JetSubstructureTask {
 
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
+  Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
   std::vector<fastjet::PseudoJet> jetConstituents;
@@ -154,7 +155,9 @@ struct JetSubstructureTask {
     pairThetaVec.clear();
     std::vector<typename U::iterator> tracksVec;
     for (auto const& constituent : jet.template tracks_as<U>()) {
-      tracksVec.push_back(constituent);
+      if (constituent.pt() >= pairConstituentPtMin) {
+        tracksVec.push_back(constituent);
+      }
     }
     if (tracksVec.size() >= 2) {
       for (typename std::vector<typename U::iterator>::size_type track1Index = 0; track1Index < tracksVec.size() - 1; track1Index++) {

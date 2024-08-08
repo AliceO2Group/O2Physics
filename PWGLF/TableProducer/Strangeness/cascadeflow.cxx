@@ -298,6 +298,25 @@ struct cascadeFlow {
   template <class collision_t, class cascade_t>
   void fillAnalysedTable(collision_t coll, cascade_t casc, float v2CSP, float v2CEP, float PsiT0C, float BDTresponseXi, float BDTresponseOmega)
   {
+    double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
+    ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
+    float cosThetaStarLambda[2], cosThetaStarProton;
+    lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+    ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
+    if (casc.sign() < 0) {
+      protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
+    } else {
+      protonVector.SetCoordinates(casc.pxpos(), casc.pypos(), casc.pzpos(), o2::constants::physics::MassProton);
+    }
+    auto boostedProton{lambdaBoost(protonVector)};
+    cosThetaStarProton = boostedProton.Pz() / boostedProton.P();
+    for (int i{0}; i < 2; ++i) {
+      cascadeVector[i].SetCoordinates(casc.px(), casc.py(), casc.pz(), masses[i]);
+      ROOT::Math::Boost cascadeBoost{cascadeVector[i].BoostToCM()};
+      auto boostedLambda{cascadeBoost(lambdaVector)};
+      cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
+    }
+
     analysisSample(coll.centFT0C(),
                    casc.sign(),
                    casc.pt(),
@@ -309,7 +328,10 @@ struct cascadeFlow {
                    v2CEP,
                    PsiT0C,
                    BDTresponseXi,
-                   BDTresponseOmega);
+                   BDTresponseOmega,
+                   cosThetaStarLambda[0],
+                   cosThetaStarLambda[1],
+                   cosThetaStarProton);
   }
 
   void init(InitContext const&)
