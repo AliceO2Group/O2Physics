@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file mlModelGenHists
-/// \brief Generate pt histograms for tracks accepted by ML model and for MC mcParticles.
+/// \file pidMLEffAndPurProducer.cxx
+/// \brief Produce pt histograms for tracks accepted by ML network and for MC mcParticles.
 ///
 /// \author Michał Olędzki <m.oledzki@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
@@ -24,32 +24,31 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Tools/PIDML/pidOnnxModel.h"
+#include "pidOnnxModel.h"
+#include "Tools/PIDML/pidUtils.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace pidml::pidutils;
 
 struct PidMlEffAndPurProducer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
+  PidONNXModel pidModel;
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
+  Configurable<bool> cfgIsRun3{"is-run3", true, "Is data from Run3"};
   Configurable<double> cfgNSigmaCut{"n-sigma-cut", 3.0f, "TPC and TOF PID nSigma cut"};
   Configurable<double> cfgTofPCut{"tof-p-cut", 0.5f, "From what p TOF is used"};
   Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given mcPart to be of given kind"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
-  Configurable<bool> cfgUseCCDB{"useCCDB", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
+  Configurable<bool> cfgUseCCDB{"use-ccdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
   Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML", "base path to the local directory with ONNX models"};
 
   Configurable<bool> cfgUseFixedTimestamp{"use-fixed-timestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
   Configurable<uint64_t> cfgTimestamp{"timestamp", 1524176895000, "Hardcoded timestamp for tests"};
-
-  static constexpr float kTOFMissingSignal = -999.0f;
-  static constexpr float kTRDMissingSignal = 0.0f;
-  static constexpr float kEtaCut = 0.8f;
-  static constexpr float kEpsilon = 1e-10f;
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
@@ -96,11 +95,13 @@ struct PidMlEffAndPurProducer {
 
   bool IsNSigmaAccept(const BigTracks::iterator& track, nSigma_t& nSigma)
   {
+    // FIXME: for current particles it works, but there are some particles,
+    //  which can have different sign and pdgSign
     int sign = cfgPid > 0 ? 1 : -1;
     if (track.sign() != sign)
       return false;
 
-    if (track.p() < cfgTofPCut || TMath::Abs(track.tofSignal() - kTOFMissingSignal) < kEpsilon) {
+    if (!inPLimit(track, cfgTofPCut) || tofMissing(track)) {
       if (TMath::Abs(nSigma.tpc) >= cfgNSigmaCut)
         return false;
     } else {
@@ -116,8 +117,8 @@ struct PidMlEffAndPurProducer {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL);
     } else {
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                              ccdbApi, -1, cfgPid.value, cfgCertainty.value);
+      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1,
+                              cfgPid.value, cfgCertainty.value, pidml_pt_cuts::defaultModelPLimits, cfgIsRun3);
     }
 
     const AxisSpec axisPt{100, 0, 5.0, "pt"};
@@ -153,10 +154,11 @@ struct PidMlEffAndPurProducer {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                              ccdbApi, timestamp, cfgPid.value, cfgCertainty.value);
+      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp,
+                              cfgPid.value, cfgCertainty.value, pidml_pt_cuts::defaultModelPLimits, cfgIsRun3);
     }
 
+    static constexpr double kEtaCut = 0.8f;
     for (auto& mcPart : mcParticles) {
       // eta cut is included in requireGlobalTrackInFilter() so we cut it only here
       if (mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < kEtaCut && mcPart.pdgCode() == pidModel.mPid) {
