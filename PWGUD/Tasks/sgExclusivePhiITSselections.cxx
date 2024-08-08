@@ -124,7 +124,6 @@ struct sgExclusivePhiITSselections {
     registry.add("PHI/hInCoherentPhiWithoutPID", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1F, {{400, 0., 4.}});
     registry.add("PHI/hCoherentMassLike", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1F, {{400, 0., 4.}});
     registry.add("PHI/hInCoherentMassLike", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1F, {{400, 0., 4.}});
-
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
@@ -146,10 +145,10 @@ struct sgExclusivePhiITSselections {
     // registry.fill(HIST("posy"), collision.posY());
     // registry.fill(HIST("posz"), collision.posZ());
     // int truegapSide = 2;
-    // if (DGorSG == 1) { 
+    // if (DGorSG == 1) {
     //   // Single Gap mode
     //   truegapSide = sgSelector.trueGap(collision, FV0_cut, FT0A_cut, FT0C_cut, ZDC_cut);
-    // }  
+    // }
     // registry.fill(HIST("GapSide"), gapSide);
     // registry.fill(HIST("TrueGapSide"), truegapSide);
     // gapSide = truegapSide;
@@ -241,7 +240,6 @@ struct sgExclusivePhiITSselections {
         a.SetXYZM(t.px(), t.py(), t.pz(), o2::constants::physics::MassKaonCharged);
         allTracksAreKaons.push_back(a);
 
-
         bool kaonBand = false;
         if ((momentum > 0.180) && (momentum < 0.220) && (dEdx > 300)) {
           kaonBand = true;
@@ -318,14 +316,6 @@ struct sgExclusivePhiITSselections {
         } // Mass cut
       } // end of two tracks only loop
 
-
-
-
-
-
-
-
-
       if (allTracksAreKaonsBandPID.size() == 2) {
         TLorentzVector reallyPhi;
         for (auto kaon : allTracksAreKaonsBandPID) {
@@ -337,9 +327,6 @@ struct sgExclusivePhiITSselections {
           registry.fill(HIST("KanonBandPHI/hMassPhiIdentifiedKaons"), reallyPhi.M());
         }
       }
-
-
-
 
       if (allTracksAreKaonsBandPID.size() == 1 && allTracksAreITSonlyAndFourITSclusters.size() > 0) {
 
@@ -381,21 +368,8 @@ struct sgExclusivePhiITSselections {
         }
       } // Kaon Band
 
-
-
-
-
-
-
-
-
-    }   // double gap
-  }     // end of process
-
-
-
-
-
+    } // double gap
+  } // end of process
 
   void processSG(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
   // process function subscribing to SG data
@@ -416,7 +390,6 @@ struct sgExclusivePhiITSselections {
     // eventprocessing<aod::UDCollisionsFull>(gapSide, collision, tracks);
   }
   PROCESS_SWITCH(sgExclusivePhiITSselections, processSG, "Process SG data", SGactive);
-
 
   void processDG(aod::UDCollisions::iterator const& collision, udtracksfull const& tracks)
   // process function subscribing to DG data
