@@ -308,6 +308,8 @@ struct phosElId {
         continue;
 
       float trackMom = track.p();
+      float trackPT = track.pt();
+
       bool posTrack = (track.sign() > 0 && bz > 0) || (track.sign() < 0 && bz < 0);
       for (auto const& clu : clusters) {
         if (module != clu.mod())
@@ -330,53 +332,53 @@ struct phosElId {
 
         mHistManager.fill(HIST("hCluXZ_mod"), posX, posZ, module);
 
-        mHistManager.fill(HIST("hdZpmod"), dZ, trackMom, module);
-        mHistManager.fill(HIST("hdXpmod"), dX, trackMom, module);
+        mHistManager.fill(HIST("hdZpmod"), dZ, trackPT, module);
+        mHistManager.fill(HIST("hdXpmod"), dX, trackPT, module);
         if (posTrack) {
-          mHistManager.fill(HIST("hdZpmod_pos"), dZ, trackMom, module);
-          mHistManager.fill(HIST("hdXpmod_pos"), dX, trackMom, module);
+          mHistManager.fill(HIST("hdZpmod_pos"), dZ, trackPT, module);
+          mHistManager.fill(HIST("hdXpmod_pos"), dX, trackPT, module);
         } else {
-          mHistManager.fill(HIST("hdZpmod_neg"), dZ, trackMom, module);
-          mHistManager.fill(HIST("hdXpmod_neg"), dX, trackMom, module);
+          mHistManager.fill(HIST("hdZpmod_neg"), dZ, trackPT, module);
+          mHistManager.fill(HIST("hdXpmod_neg"), dX, trackPT, module);
         }
 
         if (isDispOK) {
-          mHistManager.fill(HIST("hCluE_v_p_disp"), cluE, trackMom, module);
-          mHistManager.fill(HIST("hEp_v_p_disp"), Ep, trackMom, module);
+          mHistManager.fill(HIST("hCluE_v_p_disp"), cluE, trackPT, module);
+          mHistManager.fill(HIST("hEp_v_p_disp"), Ep, trackPT, module);
           if (isTPC_electron) {
-            mHistManager.fill(HIST("hCluE_v_p_disp_TPC"), cluE, trackMom, module);
-            mHistManager.fill(HIST("hEp_v_p_disp_TPC"), Ep, trackMom, module);
+            mHistManager.fill(HIST("hCluE_v_p_disp_TPC"), cluE, trackPT, module);
+            mHistManager.fill(HIST("hEp_v_p_disp_TPC"), Ep, trackPT, module);
           }
         }
         if (!isWithin2Sigma(module, trackMom, dZ, dX))
           continue;
-        mHistManager.fill(HIST("hCluE_v_p_2sigma"), cluE, trackMom, module);
-        mHistManager.fill(HIST("hEp_v_p_2sigma"), Ep, trackMom, module);
+        mHistManager.fill(HIST("hCluE_v_p_2sigma"), cluE, trackPT, module);
+        mHistManager.fill(HIST("hEp_v_p_2sigma"), Ep, trackPT, module);
         if (isTPC_electron) {
-          mHistManager.fill(HIST("hCluE_v_p_2sigma_TPC"), cluE, trackMom, module);
-          mHistManager.fill(HIST("hEp_v_p_2sigma_TPC"), Ep, trackMom, module);
+          mHistManager.fill(HIST("hCluE_v_p_2sigma_TPC"), cluE, trackPT, module);
+          mHistManager.fill(HIST("hEp_v_p_2sigma_TPC"), Ep, trackPT, module);
         }
         if (isDispOK) {
-          mHistManager.fill(HIST("hCluE_v_p_2sigma_disp"), cluE, trackMom, module);
-          mHistManager.fill(HIST("hEp_v_p_2sigma_disp"), Ep, trackMom, module);
+          mHistManager.fill(HIST("hCluE_v_p_2sigma_disp"), cluE, trackPT, module);
+          mHistManager.fill(HIST("hEp_v_p_2sigma_disp"), Ep, trackPT, module);
           if (isTPC_electron) {
-            mHistManager.fill(HIST("hCluE_v_p_2sigma_disp_TPC"), cluE, trackMom, module);
-            mHistManager.fill(HIST("hEp_v_p_2sigma_disp_TPC"), Ep, trackMom, module);
+            mHistManager.fill(HIST("hCluE_v_p_2sigma_disp_TPC"), cluE, trackPT, module);
+            mHistManager.fill(HIST("hEp_v_p_2sigma_disp_TPC"), Ep, trackPT, module);
           }
         }
         if (isWithin1Sigma(module, trackMom, dZ, dX)) {
-          mHistManager.fill(HIST("hCluE_v_p_1sigma"), cluE, trackMom, module);
-          mHistManager.fill(HIST("hEp_v_p_1sigma"), Ep, trackMom, module);
+          mHistManager.fill(HIST("hCluE_v_p_1sigma"), cluE, trackPT, module);
+          mHistManager.fill(HIST("hEp_v_p_1sigma"), Ep, trackPT, module);
           if (isTPC_electron) {
-            mHistManager.fill(HIST("hCluE_v_p_1sigma_TPC"), cluE, trackMom, module);
-            mHistManager.fill(HIST("hEp_v_p_1sigma_TPC"), Ep, trackMom, module);
+            mHistManager.fill(HIST("hCluE_v_p_1sigma_TPC"), cluE, trackPT, module);
+            mHistManager.fill(HIST("hEp_v_p_1sigma_TPC"), Ep, trackPT, module);
           }
           if (isDispOK) {
-            mHistManager.fill(HIST("hCluE_v_p_1sigma_disp"), cluE, trackMom, module);
-            mHistManager.fill(HIST("hEp_v_p_1sigma_disp"), Ep, trackMom, module);
+            mHistManager.fill(HIST("hCluE_v_p_1sigma_disp"), cluE, trackPT, module);
+            mHistManager.fill(HIST("hEp_v_p_1sigma_disp"), Ep, trackPT, module);
             if (isTPC_electron) {
-              mHistManager.fill(HIST("hCluE_v_p_1sigma_disp_TPC"), cluE, trackMom, module);
-              mHistManager.fill(HIST("hEp_v_p_1sigma_disp_TPC"), Ep, trackMom, module);
+              mHistManager.fill(HIST("hCluE_v_p_1sigma_disp_TPC"), cluE, trackPT, module);
+              mHistManager.fill(HIST("hEp_v_p_1sigma_disp_TPC"), Ep, trackPT, module);
             }
           }
         }
