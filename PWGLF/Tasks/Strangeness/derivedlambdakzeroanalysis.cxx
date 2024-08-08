@@ -1445,7 +1445,8 @@ struct derivedlambdakzeroanalysis {
   }
 
   // ______________________________________________________
-  // Simulated processing (subscribes to MC information too)
+  // Simulated processing
+  // Fill event information (for event loss estimation) and return the index to the recoed collision associated to a given MC collision.
   std::vector<int> fillGenEventHist(soa::Join<aod::StraMCCollisions,aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels> const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
@@ -1461,33 +1462,33 @@ struct derivedlambdakzeroanalysis {
       float centrality = 100.5f;
       int nCollisions = 0;
       for (auto const& collision : groupedCollisions) {
-        // if (!collision.sel8()) {
-        //   continue;
-        // }
-        // if (std::abs(collision.posZ()) > 10.f) {
-        //   continue;
-        // }
-        // if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-        //   continue;
-        // }
-        // if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        //   continue;
-        // }
-        // if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-        //   continue;
-        // }
-        // if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        //   continue;
-        // }
+        if (!collision.sel8()) {
+          continue;
+        }
+        if (std::abs(collision.posZ()) > 10.f) {
+          continue;
+        }
+        if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue;
+        }
+        if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          continue;
+        }
+        if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+          continue;
+        }
+        if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          continue;
+        }
         if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
           continue;
         }
         if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
           continue;
         }
-        // if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-          // continue;
-        // }
+        if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
         if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
           continue;
         }

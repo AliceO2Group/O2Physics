@@ -444,7 +444,9 @@ struct strangederivedbuilder {
     // populate references, including those that might not be assigned
     for (const auto& v0 : V0s) {
       v0collref(V0CollIndices[v0.globalIndex()]);
+      printf("%d ", V0CollIndices[v0.globalIndex()]);
     }
+    printf("\n");
     for (const auto& casc : Cascades) {
       casccollref(CascadeCollIndices[casc.globalIndex()]);
     }

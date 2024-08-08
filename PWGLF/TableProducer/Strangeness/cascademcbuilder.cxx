@@ -92,8 +92,6 @@ struct cascademcbuilder {
   mcCascinfo thisInfo;
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  void init(InitContext const&) {}
-
   template <typename TCascadeTable, typename TMCParticleTable>
   void generateCascadeMCinfo(TCascadeTable cascTable, TMCParticleTable mcParticles)
   {
@@ -159,36 +157,6 @@ struct cascademcbuilder {
                 thisInfo.lxyz[1] = lMCPosTrack.vy();
                 thisInfo.lxyz[2] = lMCPosTrack.vz();
                 thisInfo.pdgCodeV0 = lNegMother.pdgCode();
-
-                // MC pos. and neg. daughters are the same! Looking for replacement...
-                if (lMCPosTrack.globalIndex() == lMCNegTrack.globalIndex())
-                {
-                  auto const& daughters = lNegMother.template daughters_as<aod::McParticles>();
-                  for (auto& ldau : daughters) {
-                    // check if the candidate originate from a decay
-                    // if not, this is not a suitable candidate for one of the decay daughters
-                    if (ldau.getProcess() != 4) // see TMCProcess.h
-                      continue;
-                    
-                    if (lMCPosTrack.pdgCode() < 0 && ldau.pdgCode() > 0) { // the positive track needs to be changed
-                      thisInfo.pdgCodePositive = ldau.pdgCode();
-                      thisInfo.processPositive = ldau.getProcess();
-                      thisInfo.posP[0] = ldau.px();
-                      thisInfo.posP[1] = ldau.py();
-                      thisInfo.posP[2] = ldau.pz();
-                      thisInfo.xyz[0] = ldau.vx();
-                      thisInfo.xyz[1] = ldau.vy();
-                      thisInfo.xyz[2] = ldau.vz();
-                    }
-                    if (lMCNegTrack.pdgCode() > 0 && ldau.pdgCode() < 0) { // the negative track needs to be changed
-                      thisInfo.pdgCodeNegative = ldau.pdgCode();
-                      thisInfo.processNegative = ldau.getProcess();
-                      thisInfo.negP[0] = ldau.px();
-                      thisInfo.negP[1] = ldau.py();
-                      thisInfo.negP[2] = ldau.pz();
-                    }
-                  }
-                }
 
                 // if we got to this level, it means the mother particle exists and is the same
                 // now we have to go one level up and compare to the bachelor mother too
@@ -305,6 +273,54 @@ struct cascademcbuilder {
           thisInfo.momentum[0] = mcParticle.px();
           thisInfo.momentum[1] = mcParticle.py();
           thisInfo.momentum[2] = mcParticle.pz();
+          thisInfo.label = mcParticle.globalIndex();
+
+          if (mcParticle.has_daughters()) {
+            auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
+            for (auto& dau : daughters) {
+              if (dau.getProcess() != 4 ) // check whether the daughter comes from a decay
+                continue;
+
+              if (TMath::Abs(dau.pdgCode()) == 211 || TMath::Abs(dau.pdgCode()) == 321) {
+                thisInfo.pdgCodeBachelor = dau.pdgCode();
+                thisInfo.bachP[0] = dau.px();
+                thisInfo.bachP[1] = dau.py();
+                thisInfo.bachP[2] = dau.pz();
+                thisInfo.xyz[0] = dau.vx();
+                thisInfo.xyz[1] = dau.vy();
+                thisInfo.xyz[2] = dau.vz();
+                thisInfo.mcParticleBachelor = dau.globalIndex();
+              }
+              if (TMath::Abs(dau.pdgCode()) == 2212) {              
+                thisInfo.pdgCodeV0 = dau.pdgCode();
+
+                for (auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
+                  if (v0Dau.getProcess() != 4 )
+                    continue;
+
+                  if (v0Dau.pdgCode() > 0) { 
+                    thisInfo.pdgCodePositive = v0Dau.pdgCode();
+                    thisInfo.processPositive = v0Dau.getProcess();
+                    thisInfo.posP[0] = v0Dau.px();
+                    thisInfo.posP[1] = v0Dau.py();
+                    thisInfo.posP[2] = v0Dau.pz();
+                    thisInfo.lxyz[0] = v0Dau.vx();
+                    thisInfo.lxyz[1] = v0Dau.vy();
+                    thisInfo.lxyz[2] = v0Dau.vz();
+                    thisInfo.mcParticlePositive = v0Dau.globalIndex();
+                  }
+                  if (v0Dau.pdgCode() < 0) {
+                    thisInfo.pdgCodeNegative = v0Dau.pdgCode();
+                    thisInfo.processNegative = v0Dau.getProcess();
+                    thisInfo.negP[0] = v0Dau.px();
+                    thisInfo.negP[1] = v0Dau.py();
+                    thisInfo.negP[2] = v0Dau.pz();
+                    thisInfo.mcParticleNegative = v0Dau.globalIndex();
+                  }
+                }
+              }    
+            }
+          }
 
           // if I got here, it means this MC particle was not recoed and is of interest. Add it please
           mcCascinfos.push_back(thisInfo);
