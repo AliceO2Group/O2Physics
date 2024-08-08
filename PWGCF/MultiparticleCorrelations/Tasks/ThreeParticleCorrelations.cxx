@@ -42,7 +42,7 @@ struct ThreePartCorr {
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs>>;
   using MyFilteredCollision = MyFilteredCollisions::iterator;
   using MyFilteredV0s = soa::Filtered<aod::V0Datas>;
-  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>>;
+  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>>;
 
   // Mixed-events binning policy
   SliceCache cache;
@@ -73,7 +73,7 @@ struct ThreePartCorr {
     const AxisSpec PhiAxis{36, (-1. / 2) * M_PI, (3. / 2) * M_PI};
     const AxisSpec EtaAxis{32, -1.52, 1.52};
     const AxisSpec PtAxis{120, 0, 12};
-    const AxisSpec LambdaInvMassAxis{100, 1.08, 1.16};
+    const AxisSpec LambdaInvMassAxis{200, 1.08, 1.16};
 
     QARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
     QARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
@@ -81,6 +81,10 @@ struct ThreePartCorr {
     QARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{CentralityAxis}}});
     QARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{ZvtxAxis}}});
 
+    QARegistry.add("hdEdx", "hdEdx", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    QARegistry.add("hdEdxPion", "hdEdxPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    QARegistry.add("hdEdxKaon", "hdEdxKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    QARegistry.add("hdEdxProton", "hdEdxProton", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
     QARegistry.add("hNSigmaPion", "hNSigmaPion", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
     QARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
     QARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
@@ -118,12 +122,16 @@ struct ThreePartCorr {
         QARegistry.fill(HIST("hTrackPt"), track.pt());
         QARegistry.fill(HIST("hTrackEta"), track.eta());
         QARegistry.fill(HIST("hTrackPhi"), track.phi());
+	QARegistry.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
         if (A_PID[0] == 0.0) { // Pions
           QARegistry.fill(HIST("hNSigmaPion"), track.pt(), track.tpcNSigmaPi());
+	  QARegistry.fill(HIST("hdEdxPion"), track.p(), track.tpcSignal());
         } else if (A_PID[0] == 1.0) { // Kaons
           QARegistry.fill(HIST("hNSigmaKaon"), track.pt(), track.tpcNSigmaKa());
+	  QARegistry.fill(HIST("hdEdxKaon"), track.p(), track.tpcSignal());
         } else if (A_PID[0] == 2.0) { // Protons
           QARegistry.fill(HIST("hNSigmaProton"), track.pt(), track.tpcNSigmaPr());
+	  QARegistry.fill(HIST("hdEdxProton"), track.p(), track.tpcSignal());
         }
       }
     }
