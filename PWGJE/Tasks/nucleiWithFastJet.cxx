@@ -1341,7 +1341,7 @@ struct nucleiWithFastJet {
 
   int nprocessSimJEEvents = 0;
   void processGenMatched(aod::JMcCollision const& collision,
-                         soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, /*aod::JCollisions>> const& recocolls,*/
+                         /*soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recocolls,*/
                          JetMCDetTable const&, JetMCPartTable const& mcpjets, aod::JMcParticles const& mcParticles)
   {
 
