@@ -680,7 +680,7 @@ struct nucleiSpectra {
         nuclei::candidates.emplace_back(NucleusCandidate{
           static_cast<int>(track.globalIndex()), static_cast<int>(track.collisionId()), (1 - 2 * iC) * mTrackParCov.getPt(), mTrackParCov.getEta(), mTrackParCov.getPhi(),
           correctedTpcInnerParam, beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(), track.tpcChi2NCl(),
-          nSigmaTPC, tofMasses, fillTree, fillDCAHist,correctPV, flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(),
+          nSigmaTPC, tofMasses, fillTree, fillDCAHist, correctPV, flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(),
           static_cast<uint8_t>(track.tpcNClsFound()), static_cast<uint8_t>(track.itsNCls()), static_cast<uint32_t>(track.itsClusterSizes())});
       }
     } // end loop over tracks
@@ -803,13 +803,13 @@ struct nucleiSpectra {
             nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
             storeIt = cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u); /// store only the particles of interest
           }
-          auto coll=collisions.iteratorAt(c.collTrackIndex);
-          int collMCGlobId=coll.mcCollisionId();
+          auto coll = collisions.iteratorAt(c.collTrackIndex);
+          int collMCGlobId = coll.mcCollisionId();
           if (particle.mcCollisionId() == collMCGlobId) {
             c.correctPV = true;
           }
           if (c.fillDCAHist && cfgDCAHists->get(iS, c.pt < 0) && particle.isPhysicalPrimary()) {
-            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls,c.correctPV);
+            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls, c.correctPV);
           }
         }
       }
@@ -861,6 +861,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<nucleiSpectra>(cfgc, TaskName{"nuclei-spectra"})};
 }
-
-
-
