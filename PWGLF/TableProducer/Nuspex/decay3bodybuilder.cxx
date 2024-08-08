@@ -394,7 +394,7 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // Recalculate TOF PID for bachelors (deuteron), copied from PIDTOF.h
-  /*template <typename TrackType>
+  template <typename TrackType>
   static float GetExpectedSigma(const o2::pid::tof::TOFResoParamsV2& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes, double mMassZ)
   {
     const float& mom = track.p();
@@ -404,7 +404,7 @@ struct decay3bodyBuilder {
     const float dpp = parameters[9] + parameters[10] * mom + parameters[11] * mMassZ / mom; // mean relative pt resolution;
     const float sigma = dpp * tofSignal / (1. + mom * mom / (mMassZ * mMassZ));
     return std::sqrt(sigma * sigma + parameters[12] * parameters[12] / mom / mom + parameters[4] * parameters[4] + collisionTimeRes * collisionTimeRes);
-  }*/
+  }
 
   //------------------------------------------------------------------
   // function to select daughter track PID

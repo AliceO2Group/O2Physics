@@ -685,7 +685,7 @@ struct hypertriton3bodyTrackMcinfo {
           continue;
         }
         auto collision = collisions.iteratorAt(evtReconstructed - SelectedEvents.begin());
-        auto originalcollision = track.collision_as<aod::Collisions>();
+        //auto originalcollision = track.collision_as<aod::Collisions>();
 
         for (auto& particleMother : mcparticle.mothers_as<aod::McParticles>()) {
           bool flag_H3L = is3bodyDecayedH3L<aod::McParticles>(particleMother);
@@ -707,8 +707,9 @@ struct hypertriton3bodyTrackMcinfo {
             double tofsignalTest = track.trackTime() * 1000 + bachExpTimeTest;                                                                                                                                    // in ps
 
             double expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignal, collision.collisionTimeRes());
-            tofNsigmaDe = (tofsignal - collision.collisionTime() - ( originalcollision.bc() + collision.bc() ) - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-            std::cout << "col.bc:" << collision.bc() << std::endl;
+            tofNsigmaDe = (tofsignal - collision.collisionTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+            //tofNsigmaDe = (track.tofSignal() - track.tofEvTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+            std::cout << "col.bc:" << collision.bcId() << std::endl;
             std::cout << "col.bctimestamp:" << timestamp.value << std::endl;
             std::cout << "col.time:" << collision.collisionTime() << std::endl;
 
