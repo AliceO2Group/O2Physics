@@ -438,7 +438,11 @@ class VarManager : public TObject
     kTOFbeta,
     kTrackLength,
     kTrackDCAxy,
+    kTrackDCAxyProng1,
+    kTrackDCAxyProng2,
     kTrackDCAz,
+    kTrackDCAzProng1,
+    kTrackDCAzProng2,
     kTrackDCAsigXY,
     kTrackDCAsigZ,
     kTrackDCAresXY,
@@ -4108,9 +4112,13 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
   values[kQuadEta] = v123.Eta();
   values[kQuadPhi] = v123.Phi();
 
-  values[kTrackDCAxy] = hadron1.dcaXY();
-  values[kTrackDCAz] = hadron1.dcaZ();
-  values[kPt] = hadron1.pt();
+  values[kTrackDCAxyProng1] = hadron1.dcaXY();
+  values[kTrackDCAzProng1] = hadron1.dcaZ();
+  values[kPt1] = hadron1.pt();
+
+  values[kTrackDCAxyProng2] = hadron2.dcaXY();
+  values[kTrackDCAzProng2] = hadron2.dcaZ();
+  values[kPt2] = hadron2.pt();
 
   if (fgUsedVars[kCosthetaDileptonDitrack] || fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kDitrackPt] || fgUsedVars[kDitrackMass] || fgUsedVars[kQ] || fgUsedVars[kDeltaR1] || fgUsedVars[kDeltaR2] || fgUsedVars[kRap]) {
     ROOT::Math::PtEtaPhiMVector v23 = v2 + v3;
