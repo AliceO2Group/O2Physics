@@ -20,14 +20,8 @@
 
 #include <Math/Vector4D.h> // used instead of TLorentzVector
 #include <Math/Vector2D.h>
-#include <cmath>
-#include <algorithm>
 #include <random>
-#include <vector>
-#include <chrono>
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 
 #include "PWGUD/DataModel/UDTables.h"
