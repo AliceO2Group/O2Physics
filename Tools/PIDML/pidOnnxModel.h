@@ -26,16 +26,18 @@
 #include <utility>
 #include <memory>
 #include <vector>
-
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #else
 #include <onnxruntime_cxx_api.h>
 #endif
+
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
-
 #include "CCDB/CcdbApi.h"
+#include "Tools/PIDML/pidUtils.h"
+
+using namespace pidml::pidutils;
 
 enum PidMLDetector {
   kTPCOnly = 0,
@@ -73,7 +75,9 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, double minCertainty, const double* pLimits = &pidml_pt_cuts::defaultModelPLimits[0]) : mPid(pid), mMinCertainty(minCertainty), mPLimits(pLimits, pLimits + kNDetectors)
+  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp,
+               int pid, double minCertainty, const double* pLimits = &pidml_pt_cuts::defaultModelPLimits[0], bool isRun3 = true)
+    : mPid(pid), mMinCertainty(minCertainty), mPLimits(pLimits, pLimits + kNDetectors), mIsRun3(isRun3)
   {
     assert(mPLimits.size() == kNDetectors);
 
@@ -209,36 +213,6 @@ struct PidONNXModel {
     }
   }
 
-  bool almostEqual(float a, float b, float eps = 1e-6f)
-  {
-    return std::abs(a - b) <= eps;
-  }
-
-  template <typename T>
-  bool trdMissing(const T& track)
-  {
-    static constexpr float kTRDMissingSignal = 0.0f;
-
-    return almostEqual(track.trdSignal(), kTRDMissingSignal);
-  }
-
-  template <typename T>
-  bool tofMissing(const T& track)
-  {
-    static constexpr float kEpsilon = 1e-4f;
-    static constexpr float kTOFMissingSignal = -999.0f;
-    static constexpr float kTOFMissingBeta = -999.0f;
-
-    // Because of run3 data we use also TOF beta value to determine if signal is present
-    return almostEqual(track.tofSignal(), kTOFMissingSignal, kEpsilon) || almostEqual(track.beta(), kTOFMissingBeta, kEpsilon);
-  }
-
-  template <typename T>
-  bool inPLimit(const T& track, PidMLDetector detector)
-  {
-    return track.p() >= mPLimits[detector];
-  }
-
   template <typename T>
   std::vector<float> createInputsSingle(const T& track)
   {
@@ -250,7 +224,7 @@ struct PidONNXModel {
     std::vector<float> inputValues{scaledTPCSignal};
 
     // When TRD Signal shouldn't be used we pass quiet_NaNs to the network
-    if (!inPLimit(track, kTPCTOFTRD) || trdMissing(track)) {
+    if (!inPLimit(track, mPLimits[kTPCTOFTRD]) || trdMissing(track, mIsRun3)) {
       inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
       inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
     } else {
@@ -260,7 +234,7 @@ struct PidONNXModel {
     }
 
     // When TOF Signal shouldn't be used we pass quiet_NaNs to the network
-    if (!inPLimit(track, kTPCTOF) || tofMissing(track)) {
+    if (!inPLimit(track, mPLimits[kTPCTOF]) || tofMissing(track)) {
       inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
       inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
     } else {
@@ -360,6 +334,7 @@ struct PidONNXModel {
 #endif
 
   std::vector<double> mPLimits;
+  bool mIsRun3;
   std::vector<std::string> mInputNames;
   std::vector<std::vector<int64_t>> mInputShapes;
   std::vector<std::string> mOutputNames;
