@@ -1013,7 +1013,7 @@ struct femtoUniverseProducerTask {
   }
 
   template <typename TrackType, bool transientLabels = false>
-  void fillParticles(TrackType const& tracks)
+  void fillParticles(TrackType const& tracks, std::optional<std::reference_wrapper<const std::set<int>>> recoMcIds = std::nullopt)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
 
@@ -1036,7 +1036,7 @@ struct femtoUniverseProducerTask {
             if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary())
+              if (particle.isPhysicalPrimary() || (recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1242,20 +1242,23 @@ struct femtoUniverseProducerTask {
     soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
     aod::BCsWithTimestamps const&)
   {
-    // truth
-    for (auto& mccol : mccols) {
-      auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
-      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
-      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);          // fills the reco collisions for mc collision
-      fillParticles<decltype(groupedMCParticles), true>(groupedMCParticles); // fills mc particles
-    }
-
     // recos
+    std::set<int> recoMcIds;
     for (auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto groupedV0s = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedV0s);
+      for (auto& track : groupedTracks)
+        recoMcIds.insert(track.mcParticleId());
+    }
+
+    // truth
+    for (auto& mccol : mccols) {
+      auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
+      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                     // fills the reco collisions for mc collision
+      fillParticles<decltype(groupedMCParticles), true>(groupedMCParticles, recoMcIds); // fills mc particles
     }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTruthAndFullMC, "Provide both MC truth and reco for tracks and V0s", false);
