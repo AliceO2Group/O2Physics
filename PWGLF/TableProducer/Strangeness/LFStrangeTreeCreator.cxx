@@ -545,8 +545,8 @@ struct LFStrangeTreeCreator {
                 pdgCodeMotherDauPos = posMother.pdgCode();
                 pdgCodeMotherDauNeg = negMother.pdgCode();
                 // build  conditions for mother/daughter for k0short or lambda
-                boolean_t mother;
-                boolean_t daughter;
+                bool mother;
+                bool daughter;
                 if (k0short) {
                   // mother is k0short (310) and daughters are pions (211/-211)
                   mother = posMother.pdgCode() == 310;
@@ -717,7 +717,6 @@ struct LFStrangeTreeCreator {
       CascTable_thisCollision.bindExternalIndices(&tracks);
       CascTable_thisCollision.bindExternalIndices(&V0s);
 
-      auto multiplicity = collision.multFT0C();
       auto centrality = collision.centFT0C();
       fillRecoEvent(collision, tracks, V0Table_thisCollision, V0s, CascTable_thisCollision, centrality);
 
