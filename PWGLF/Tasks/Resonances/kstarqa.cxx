@@ -110,6 +110,7 @@ struct kstarqa {
   Configurable<bool> AllGenCollisions{"AllGenCollisions", true, "To fill all generated collisions for the signal loss calculations"};
   ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
   ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
+  ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
 
   // Event plane configurables
   Configurable<bool> boost_daugter1{"boost_daugter1", false, "Boost daughter Kaon in the COM frame"};
@@ -172,9 +173,9 @@ struct kstarqa {
 
     // Multplicity distribution
     if (QAevents) {
-      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {axisMultdist});
+      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {axisMultdist});
+      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {axisMultdist});
       histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
       histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
       histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
@@ -542,7 +543,7 @@ struct kstarqa {
         histos.fill(HIST("hNsigmaTPC_before"), track1.pt(), track1.tpcNSigmaKa());
         histos.fill(HIST("hNsigmaTOF_before"), track1.pt(), track1.tofNSigmaKa());
         histos.fill(HIST("hCRFC_before"), track1.tpcCrossedRowsOverFindableCls());
-        histos.fill(HIST("dE_by_dx_TPC"), track1.pt(), track1.tpcSignal());
+        histos.fill(HIST("dE_by_dx_TPC"), track1.p(), track1.tpcSignal());
         histos.fill(HIST("hphi"), track1.phi());
       }
       histos.fill(HIST("events_check_data"), 4.5);

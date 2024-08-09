@@ -92,6 +92,7 @@ struct PhotonHBT {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
+  Configurable<bool> cfgDo3D{"cfgDo3D", false, "enable 3D analysis"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
@@ -110,7 +111,8 @@ struct PhotonHBT {
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", true, "flag to apply weighting by 1/N"};
 
-  ConfigurableAxis ConfKtBins{"ConfKtBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}, "kT bins for output histograms"};
+  ConfigurableAxis ConfKtBins{"ConfKtBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0}, "kT bins for output histograms"};
+  ConfigurableAxis ConfMtBins{"ConfMtBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0}, "mT bins for output histograms"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -331,15 +333,24 @@ struct PhotonHBT {
 
     // pair info
     const AxisSpec axis_kt{ConfKtBins, "k_{T} (GeV/c)"};
-
+    const AxisSpec axis_mt{ConfMtBins, "m_{T} (GeV/c^{2})"};
     const AxisSpec axis_qinv{30, 0.0, +0.3, "q_{inv} (GeV/c)"};
+    const AxisSpec axis_kstar{30, 0.0, +0.3, "k* (GeV/c)"};
     const AxisSpec axis_qabs_lcms{30, 0.0, +0.3, "|#bf{q}|^{LCMS} (GeV/c)"};
     const AxisSpec axis_qout{60, -0.3, +0.3, "q_{out} (GeV/c)"};   // qout does not change between LAB and LCMS frame
     const AxisSpec axis_qside{60, -0.3, +0.3, "q_{side} (GeV/c)"}; // qside does not change between LAB and LCMS frame
     const AxisSpec axis_qlong{60, -0.3, +0.3, "q_{long} (GeV/c)"};
 
-    fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_kt, axis_qinv, axis_qabs_lcms}, true);
-    fRegistry.add("Pair/same/hs_3d", "diphoton correlation 3D LCMS", kTHnSparseD, {axis_kt, axis_qout, axis_qside, axis_qlong}, true);
+    if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
+      fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_qinv, axis_qabs_lcms, axis_kt, axis_mt}, true);
+    } else { // identical particle femtoscopy
+      fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_kstar, axis_qabs_lcms, axis_kt, axis_mt}, true);
+    }
+
+    if (cfgDo3D) {
+      fRegistry.add("Pair/same/hs_3d", "diphoton correlation 3D LCMS", kTHnSparseD, {axis_qout, axis_qside, axis_qlong, axis_kt, axis_mt}, true);
+    }
+
     fRegistry.add("Pair/same/hDeltaEtaDeltaPhi", "diphoton distance in #eta-#varphi plane;#Delta#varphi (rad);#Delta#eta", kTH2D, {{200, -0.1, +0.1}, {200, -0.1, 0.1}}, false);
     fRegistry.addClone("Pair/same/", "Pair/mix/");
   }
@@ -489,8 +500,9 @@ struct PhotonHBT {
     // center-of-mass system (CMS)
     ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
     ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
-    float qinv = -q12.M();
+    float qinv = -q12.M(); // for identical particles -> qinv = 2 x kstar
     float kt = k12.Pt();
+    float mt = std::sqrt(std::pow(k12.M(), 2) + std::pow(kt, 2));
 
     // ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
     ROOT::Math::XYZVector uv_out(k12.Px() / k12.Pt(), k12.Py() / k12.Pt(), 0); // unit vector for out. i.e. parallel to kt
@@ -498,11 +510,15 @@ struct PhotonHBT {
     ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long);                     // unit vector for side
     // float qlong_lab = q_3d.Dot(uv_long);
 
-    // longitudinally co-moving system (LCMS)
-    ROOT::Math::PxPyPzEVector v1_cartesian(v1.Px(), v1.Py(), v1.Pz(), v1.E());
-    ROOT::Math::PxPyPzEVector v2_cartesian(v2.Px(), v2.Py(), v2.Pz(), v2.E());
+    ROOT::Math::PxPyPzEVector v1_cartesian(v1);
+    ROOT::Math::PxPyPzEVector v2_cartesian(v2);
     ROOT::Math::PxPyPzEVector q12_cartesian = v1_cartesian - v2_cartesian;
-    float beta_z = (v1 + v2).Pz() / (v1 + v2).E();
+    float beta = (v1 + v2).Beta();
+    float beta_x = beta * std::cos((v1 + v2).Phi()) * std::sin((v1 + v2).Theta());
+    float beta_y = beta * std::sin((v1 + v2).Phi()) * std::sin((v1 + v2).Theta());
+    float beta_z = beta * std::cos((v1 + v2).Theta());
+
+    // longitudinally co-moving system (LCMS)
     ROOT::Math::Boost bst_z(0, 0, -beta_z); // Boost supports only PxPyPzEVector
     ROOT::Math::PxPyPzEVector q12_lcms = bst_z(q12_cartesian);
     ROOT::Math::XYZVector q_3d_lcms = q12_lcms.Vect(); // 3D q vector in LCMS
@@ -510,6 +526,14 @@ struct PhotonHBT {
     float qside_lcms = q_3d_lcms.Dot(uv_side);
     float qlong_lcms = q_3d_lcms.Dot(uv_long);
     float qabs_lcms = q_3d_lcms.R();
+
+    // pair rest frame (PRF)
+    ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-beta_x, -beta_y, -beta_z);
+    ROOT::Math::PxPyPzEVector v1_pfr = boostPRF(v1_cartesian);
+    ROOT::Math::PxPyPzEVector v2_pfr = boostPRF(v2_cartesian);
+    ROOT::Math::PxPyPzEVector rel_k = v1_pfr - v2_pfr;
+    float kstar = 0.5 * rel_k.P();
+    // LOGF(info, "qabs_lcms = %f, qinv = %f, kstar = %f", qabs_lcms, qinv, kstar);
 
     // ROOT::Math::PxPyPzEVector v1_lcms_cartesian = bst_z(v1_cartesian);
     // ROOT::Math::PxPyPzEVector v2_lcms_cartesian = bst_z(v2_cartesian);
@@ -529,8 +553,14 @@ struct PhotonHBT {
     float dphi = v1.Phi() - v2.Phi();
     o2::math_utils::bringToPMPi(dphi);
     fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hDeltaEtaDeltaPhi"), dphi, deta, weight);
-    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), kt, qinv, qabs_lcms, weight);
-    fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), kt, qout_lcms, qside_lcms, qlong_lcms, weight);
+    if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), qinv, qabs_lcms, kt, mt, weight);
+    } else {
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), kstar, qabs_lcms, kt, mt, weight);
+    }
+    if (cfgDo3D) {
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), qout_lcms, qside_lcms, qlong_lcms, kt, mt, weight);
+    }
   }
 
   template <bool isTriggerAnalysis, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
