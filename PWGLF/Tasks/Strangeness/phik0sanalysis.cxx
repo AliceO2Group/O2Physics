@@ -158,6 +158,7 @@ struct phik0shortanalysis {
   Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "Maximum DCAxy to primary vertex"};
   Configurable<float> dcazMax{"dcazMax", 0.1f, "Maximum DCAz to primary vertex"};
   Configurable<float> NSigmaTOFPion{"NSigmaTOFPion", 5.0, "NSigmaTOFPion"};
+  Configurable<std::vector<float>> binspT{"binspT", std::vector<float>{0.0, 0.5, 1.2, 10.0}, "pT bin limits for pions"};
 
   // Configurables for invariant mass histograms filling
   Configurable<double> cfgFirstCutonDeltay{"cgfFirstCutonDeltay", 0.5, "First upper bound on Deltay selection"};
@@ -166,11 +167,14 @@ struct phik0shortanalysis {
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
 
+  //Configurable for RecMC
+  Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"}; 
+
   // Configurable axis
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
-  Configurable<std::vector<float>> binspT{"binspT", std::vector<float>{0.0, 0.5, 1.2, 10.0}, "pT bin limits for pions"};
+
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiPlus;
@@ -393,8 +397,12 @@ struct phik0shortanalysis {
         return false;
       if (QA)
         MCeventHist.fill(HIST("hRecMCEventSelection"), 2); // kNoTimeFrameBorder collisions
-      if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && QA)
-        MCeventHist.fill(HIST("hRecMCEventSelection"), 3); // kNoITSROFrameBorder collisions (not requested in the selection, but useful for QA)
+      if (cfgiskNoITSROFrameBorder) {
+        if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+          return false;
+        if (QA)
+          MCeventHist.fill(HIST("hRecMCEventSelection"), 3); // kNoITSROFrameBorder collisions (by default not requested by the selection)
+      }
       if (std::abs(collision.posZ()) > cutzvertex)
         return false;
       if (QA) {
