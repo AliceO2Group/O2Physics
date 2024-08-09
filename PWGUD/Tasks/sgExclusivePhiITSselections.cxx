@@ -222,7 +222,9 @@ struct sgExclusivePhiITSselections {
         allTracksAreKaons.push_back(a);
 
         bool kaonBand = false;
-        if ((momentum > 0.180) && (momentum < 0.220) && (dEdx > 300)) {
+        if ((momentum < 0.150) && (dEdx > 300)) {
+          kaonBand = true;
+        } else if ((momentum > 0.150) && (momentum < 0.220) && (dEdx > 250)) {
           kaonBand = true;
         } else if ((momentum > 0.220) && (momentum < 0.300) && (dEdx > 180)) {
           kaonBand = true;
