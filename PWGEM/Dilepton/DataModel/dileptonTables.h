@@ -197,7 +197,7 @@ DECLARE_SOA_COLUMN(McCollisionId, mcCollisionId, int);
 DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
                   o2::soa::Index<>, emmcevent::McCollisionId, mccollision::GeneratorsID,
                   mccollision::PosX, mccollision::PosY, mccollision::PosZ,
-                  mccollision::T, mccollision::ImpactParameter,
+                  mccollision::ImpactParameter, mccollision::EventPlaneAngle,
 
                   // dynamic column
                   mccollision::GetGeneratorId<mccollision::GeneratorsID>,

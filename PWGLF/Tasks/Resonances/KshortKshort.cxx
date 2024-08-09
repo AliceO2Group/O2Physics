@@ -35,6 +35,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/StepTHn.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h" //
@@ -60,7 +61,7 @@ struct strangeness_tutorial {
   HistogramRegistry hglue{"hglueball", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Configurable<bool> QAv0{"QAv0", false, "QAv0"};
-  Configurable<bool> QAPID{"QAPID", false, "QAPID"};
+  Configurable<bool> QAPID{"QAPID", true, "QAPID"};
   Configurable<bool> QAv0_daughters{"QAv0_daughters", false, "QA of v0 daughters"};
   Configurable<bool> QAevents{"QAevents", false, "QA of events"};
   Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
@@ -115,7 +116,7 @@ struct strangeness_tutorial {
 
   // Other cuts on Ks and glueball
   Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
-  Configurable<bool> masslambda{"masslambda", false, "mass under lambda hypothesis"};
+  Configurable<bool> apply_competingcut{"apply_competingcut", false, "Competing cascade rejection cut"};
   Configurable<float> competingcascrejlambda{"competingcascrejlambda", 4.3, "rejecting competing cascade lambda"};
   Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 4.3, "rejecting competing cascade anti-lambda"};
   Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
@@ -134,6 +135,7 @@ struct strangeness_tutorial {
   ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
   ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
   ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
+  ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -141,6 +143,7 @@ struct strangeness_tutorial {
   TF1* fMultCutLow = nullptr;
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
+  Service<o2::framework::O2DatabasePDG> PDGdatabase;
 
   void init(InitContext const&)
   {
@@ -179,9 +182,9 @@ struct strangeness_tutorial {
     if (QAevents) {
       rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
       rEventSelection.add("hmultiplicity", "multiplicity percentile distribution", {HistType::kTH1F, {{150, 0.0f, 150.0f}}});
-      rEventSelection.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      rEventSelection.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      rEventSelection.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      rEventSelection.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {axisMultdist});
+      rEventSelection.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {axisMultdist});
+      rEventSelection.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {axisMultdist});
       rEventSelection.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
     }
 
@@ -211,7 +214,8 @@ struct strangeness_tutorial {
       rKzeroShort.add("Mass_lambda", "Mass under lambda hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("mass_AntiLambda", "Mass under anti-lambda hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("mass_Gamma", "Mass under Gamma hypothesis", kTH1F, {glueballMassAxis});
-      rKzeroShort.add("mass_lambda_kshort", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_before", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
       // rKzeroShort.add("mass_Hypertriton", "Mass under hypertriton hypothesis", kTH1F, {glueballMassAxis});
       // rKzeroShort.add("mass_AnitHypertriton", "Mass under anti-hypertriton hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("rapidity", "Rapidity distribution", kTH1F, {{100, -1.0f, 1.0f}});
@@ -222,6 +226,7 @@ struct strangeness_tutorial {
       rKzeroShort.add("halpha", "Armenteros alpha", kTH1F, {{100, -5.0f, 5.0f}});
       rKzeroShort.add("hqtarmbyalpha", "qtarm/alpha", kTH1F, {{100, 0.0f, 1.0f}});
       rKzeroShort.add("hpsipair", "psi pair angle", kTH1F, {{100, -5.0f, 5.0f}});
+      rKzeroShort.add("NksProduced", "Number of K0s produced", kTH1I, {{15, 0, 15}});
 
       // // Topological histograms (before the selection)
       // rKzeroShort.add("hDCAV0Daughters_before", "DCA between v0 daughters before the selection", {HistType::kTH1F, {{60, -3.0f, 3.0f}}});
@@ -316,7 +321,7 @@ struct strangeness_tutorial {
     const float dcaDaughv0 = candidate.dcaV0daughters();
     const float cpav0 = candidate.v0cosPA();
 
-    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
+    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * PDGdatabase->Mass(310);
     float lowmasscutks0 = 0.497 - cWidthKs0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + cWidthKs0 * cSigmaMassKs0;
     // float decayLength = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::sqrtSumOfSquares(candidate.px(), candidate.py(), candidate.pz());
@@ -340,7 +345,7 @@ struct strangeness_tutorial {
       rKzeroShort.fill(HIST("halpha"), candidate.alpha());
       rKzeroShort.fill(HIST("hqtarmbyalpha"), arm);
       rKzeroShort.fill(HIST("hpsipair"), candidate.psipair());
-      rKzeroShort.fill(HIST("mass_lambda_kshort"), candidate.mK0Short(), candidate.mLambda());
+      rKzeroShort.fill(HIST("mass_lambda_kshort_before"), candidate.mK0Short(), candidate.mLambda());
     }
 
     hglue.fill(HIST("htrackscheck_v0"), 0.5);
@@ -357,7 +362,7 @@ struct strangeness_tutorial {
 
     hglue.fill(HIST("htrackscheck_v0"), 2.5);
 
-    if (masslambda && TMath::Abs(candidate.mLambda() - candidate.mK0Short()) >= competingcascrejlambda && TMath::Abs(candidate.mAntiLambda() - candidate.mK0Short()) >= competingcascrejlambdaanti) {
+    if (apply_competingcut && (TMath::Abs(candidate.mLambda() - PDGdatabase->Mass(3122)) >= competingcascrejlambda || TMath::Abs(candidate.mAntiLambda() - PDGdatabase->Mass(-3122)) >= competingcascrejlambdaanti)) {
       return false;
     }
 
@@ -392,7 +397,7 @@ struct strangeness_tutorial {
     }
     hglue.fill(HIST("htrackscheck_v0"), 8.5);
 
-    if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
+    if (fabs(CtauK0s) > cMaxV0LifeTime) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 9.5);
@@ -404,6 +409,11 @@ struct strangeness_tutorial {
 
     if (QAv0) {
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after"), candidate.mK0Short(), candidate.mLambda());
+    }
+
+    if (candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
+      return false;
     }
     return true;
   }
@@ -418,7 +428,7 @@ struct strangeness_tutorial {
       // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
       // }
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.pt(), track.tpcSignal());
+      rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.p(), track.tpcSignal());
     }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
@@ -519,6 +529,8 @@ struct strangeness_tutorial {
       rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
     }
 
+    std::vector<int> v0indexes;
+
     for (auto& [v1, v2] : combinations(CombinationsStrictlyUpperIndexPolicy(V0s, V0s))) {
 
       if (v1.size() == 0 || v2.size() == 0) {
@@ -560,6 +572,14 @@ struct strangeness_tutorial {
       }
       if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2)) {
         continue;
+      }
+
+      if (!(std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) != v0indexes.end())) {
+        v0indexes.push_back(v1.globalIndex());
+      }
+      // std::cout << "global index of v1: " << v1.globalIndex() << "   global index of v2: " << v2.globalIndex() << std::endl;
+      if (!(std::find(v0indexes.begin(), v0indexes.end(), v2.globalIndex()) != v0indexes.end())) {
+        v0indexes.push_back(v2.globalIndex());
       }
 
       TLorentzVector lv1, lv2, lv3, lv4, lv5;
@@ -635,6 +655,11 @@ struct strangeness_tutorial {
           }
         }
       }
+    }
+    if (QAv0) {
+      int sizeofv0indexes = v0indexes.size();
+      rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
+      // std::cout << "Size of v0indexes: " << sizeofv0indexes << std::endl;
     }
   }
 

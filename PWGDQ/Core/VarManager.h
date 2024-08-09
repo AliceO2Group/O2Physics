@@ -438,7 +438,11 @@ class VarManager : public TObject
     kTOFbeta,
     kTrackLength,
     kTrackDCAxy,
+    kTrackDCAxyProng1,
+    kTrackDCAxyProng2,
     kTrackDCAz,
+    kTrackDCAzProng1,
+    kTrackDCAzProng2,
     kTrackDCAsigXY,
     kTrackDCAsigZ,
     kTrackDCAresXY,
@@ -3929,14 +3933,14 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
     values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
     values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
-    values[kM01POIoverMp] = values[kMultDimuons] > 0 && !(isnan(values[kM01POI]) || isinf(values[kM01POI])) ? values[kM01POI] / values[kMultDimuons] : 0;
-    values[kM0111POIoverMp] = values[kMultDimuons] > 0 && !(isnan(values[kM0111POI]) || isinf(values[kM0111POI])) ? values[kM0111POI] / values[kMultDimuons] : 0;
-    values[kM11REFoverMp] = values[kMultDimuons] > 0 && !(isnan(values[kM11REF]) || isinf(values[kM11REF])) ? values[kM11REF] / values[kMultDimuons] : 0;
-    values[kM1111REFoverMp] = values[kMultDimuons] > 0 && !(isnan(values[kM1111REF]) || isinf(values[kM1111REF])) ? values[kM1111REF] / values[kMultDimuons] : 0;
-    values[kCORR2POIMp] = isnan(values[kCORR2POI]) || isinf(values[kCORR2POI]) ? 0 : values[kCORR2POI] * values[kMultDimuons];
-    values[kCORR4POIMp] = isnan(values[kCORR4POI]) || isinf(values[kCORR4POI]) ? 0 : values[kCORR4POI] * values[kMultDimuons];
-    values[kCORR2REF] = isnan(values[kCORR2REF]) || isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
-    values[kCORR4REF] = isnan(values[kCORR4REF]) || isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
+    values[kM01POIoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM01POI]) || std::isinf(values[kM01POI])) ? values[kM01POI] / values[kMultDimuons] : 0;
+    values[kM0111POIoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM0111POI]) || std::isinf(values[kM0111POI])) ? values[kM0111POI] / values[kMultDimuons] : 0;
+    values[kM11REFoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF])) ? values[kM11REF] / values[kMultDimuons] : 0;
+    values[kM1111REFoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF])) ? values[kM1111REF] / values[kMultDimuons] : 0;
+    values[kCORR2POIMp] = std::isnan(values[kCORR2POI]) || std::isinf(values[kCORR2POI]) ? 0 : values[kCORR2POI] * values[kMultDimuons];
+    values[kCORR4POIMp] = std::isnan(values[kCORR4POI]) || std::isinf(values[kCORR4POI]) ? 0 : values[kCORR4POI] * values[kMultDimuons];
+    values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
+    values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
   }
 }
 
@@ -4108,9 +4112,13 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
   values[kQuadEta] = v123.Eta();
   values[kQuadPhi] = v123.Phi();
 
-  values[kTrackDCAxy] = hadron1.dcaXY();
-  values[kTrackDCAz] = hadron1.dcaZ();
-  values[kPt] = hadron1.pt();
+  values[kTrackDCAxyProng1] = hadron1.dcaXY();
+  values[kTrackDCAzProng1] = hadron1.dcaZ();
+  values[kPt1] = hadron1.pt();
+
+  values[kTrackDCAxyProng2] = hadron2.dcaXY();
+  values[kTrackDCAzProng2] = hadron2.dcaZ();
+  values[kPt2] = hadron2.pt();
 
   if (fgUsedVars[kCosthetaDileptonDitrack] || fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kDitrackPt] || fgUsedVars[kDitrackMass] || fgUsedVars[kQ] || fgUsedVars[kDeltaR1] || fgUsedVars[kDeltaR2] || fgUsedVars[kRap]) {
     ROOT::Math::PtEtaPhiMVector v23 = v2 + v3;

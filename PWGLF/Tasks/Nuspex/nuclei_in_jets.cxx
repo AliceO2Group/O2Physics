@@ -123,6 +123,7 @@ struct nuclei_in_jets {
     registryQC.add("deltaEtadeltaPhiJet", "deltaEtadeltaPhiJet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
     registryQC.add("deltaEtadeltaPhiUE", "deltaEtadeltaPhiUE", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
     registryQC.add("deltaEtadeltaPhi_leading_jet", "deltaEtadeltaPhi_leading_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("deltaJetPt", "deltaJetPt", HistType::kTH1F, {{200, -2, 2, "#Delta#it{p}_{T} (GeV/#it{c})"}});
 
     // QC Histograms for ptJet < pt_leading
     registryQC.add("nParticlesClusteredInJet", "nParticlesClusteredInJet", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
@@ -187,9 +188,9 @@ struct nuclei_in_jets {
     registryMC.add("antiproton_all_ue", "antiproton_all_ue", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
 
     // Antiproton Reweighting
-    registryMC.add("antiproton_incl", "antiproton_incl", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("antiproton_jet", "antiproton_jet", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("antiproton_ue", "antiproton_ue", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
+    registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
+    registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
   }
 
   // Single-Track Selection for Particles inside Jets
@@ -370,6 +371,7 @@ struct nuclei_in_jets {
 
     // Indices of Reduced Event
     std::vector<int> particle_ID;
+    std::vector<int> particle_ID_copy;
 
     // Leading Track
     int leading_ID(0);
@@ -390,6 +392,7 @@ struct nuclei_in_jets {
         pt_max = track.pt();
       }
       particle_ID.push_back(i);
+      particle_ID_copy.push_back(i);
     }
 
     // Momentum of the Leading Particle
@@ -510,7 +513,7 @@ struct nuclei_in_jets {
 
     for (int i = 0; i < nParticles; i++) {
 
-      auto track = tracks.iteratorAt(particle_ID[i]);
+      auto track = tracks.iteratorAt(particle_ID_copy[i]);
 
       TVector3 particle_dir(track.px(), track.py(), track.pz());
       double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
@@ -552,12 +555,12 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("ptJet"), ptJet);
     registryQC.fill(HIST("ptUE"), 0.5 * ptUE);
 
+    int nPartClustered_Jet = static_cast<int>(jet_particle_ID.size());
+
     // Fill QA Histograms
     if (ptJetPlusUE < min_pt_leading) {
 
-      int nPartClustered_Jet = static_cast<int>(jet_particle_ID.size());
       registryQC.fill(HIST("nParticlesClusteredInJet"), nPartClustered_Jet);
-
       double dEta = p_leading.Eta() - p_jet.Eta();
       double dPhi = GetDeltaPhi(p_leading.Phi(), p_jet.Phi());
       registryQC.fill(HIST("dEtadPhi_jetaxis_leadTrk"), dEta, dPhi);
@@ -572,6 +575,14 @@ struct nuclei_in_jets {
         registryQC.fill(HIST("dEtadPhi_jetaxis"), dEta, dPhi);
       }
     }
+
+    double ptJet_antikt(0);
+    for (int i = 0; i < nPartClustered_Jet; i++) {
+
+      auto track = tracks.iteratorAt(jet_particle_ID[i]);
+      ptJet_antikt = ptJet_antikt + track.pt();
+    }
+    registryQC.fill(HIST("deltaJetPt"), ptJet_antikt - ptJetPlusUE);
 
     // Event Counter: Skip Events with n. particles in jet less than given value
     if (NchJetPlusUE < min_nPartInJet)
@@ -836,6 +847,7 @@ struct nuclei_in_jets {
 
       // Reduced Event
       std::vector<int> particle_ID;
+      std::vector<int> particle_ID_copy;
       int leading_ID(0);
       double pt_max(0);
       int i = -1;
@@ -852,6 +864,7 @@ struct nuclei_in_jets {
           pt_max = track.pt();
         }
         particle_ID.push_back(i);
+        particle_ID_copy.push_back(i);
       }
       if (pt_max < min_pt_leading)
         continue;
@@ -955,7 +968,7 @@ struct nuclei_in_jets {
 
       for (int i = 0; i < nParticles; i++) {
 
-        auto track = tracks_per_coll.iteratorAt(particle_ID[i]);
+        auto track = tracks_per_coll.iteratorAt(particle_ID_copy[i]);
 
         TVector3 particle_dir(track.px(), track.py(), track.pz());
         double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
@@ -1022,22 +1035,236 @@ struct nuclei_in_jets {
         float deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
         float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-        // Inclusive antiprotons
-        registryMC.fill(HIST("antiproton_incl"), track.pt());
-
         if (deltaR_jet < Rmax) {
           registryMC.fill(HIST("antiproton_all_jet"), track.pt());
           if (particle.isPhysicalPrimary()) {
             registryMC.fill(HIST("antiproton_prim_jet"), track.pt());
-            registryMC.fill(HIST("antiproton_jet"), track.pt());
           }
         }
         if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
           registryMC.fill(HIST("antiproton_all_ue"), track.pt());
           if (particle.isPhysicalPrimary()) {
             registryMC.fill(HIST("antiproton_prim_ue"), track.pt());
-            registryMC.fill(HIST("antiproton_ue"), track.pt());
           }
+        }
+      }
+    }
+  }
+
+  void processAntipReweighting(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    for (const auto& mccollision : mcCollisions) {
+
+      // Selection on z_{vertex}
+      if (abs(mccollision.posZ()) > 10)
+        continue;
+
+      // MC Particles per Collision
+      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
+
+      // Reduced Event
+      std::vector<int> particle_ID;
+      std::vector<int> particle_ID_copy;
+      int leading_ID(0);
+      double pt_max(0);
+      int i = -1;
+
+      for (auto& particle : mcParticles_per_coll) {
+
+        i++;
+
+        if (particle.isPhysicalPrimary() && particle.pdgCode() == -2212 && particle.y() > min_y && particle.y() < max_y) {
+          registryMC.fill(HIST("antiproton_eta_pt_pythia"), particle.pt(), particle.eta());
+        }
+
+        // Select Primary Particles
+        double dx = particle.vx() - mccollision.posX();
+        double dy = particle.vy() - mccollision.posY();
+        double dz = particle.vz() - mccollision.posZ();
+        double dcaxy = sqrt(dx * dx + dy * dy);
+        double dcaz = abs(dz);
+        if (dcaxy > (0.0105 * 0.035 / TMath::Power(particle.pt(), 1.1)))
+          continue;
+        if (dcaz > 2.0)
+          continue;
+        if (abs(particle.eta()) > 0.8)
+          continue;
+        if (particle.pt() < 0.1)
+          continue;
+
+        // PDG Selection
+        int pdg = abs(particle.pdgCode());
+        if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
+          continue;
+
+        // Find pt Leading
+        if (particle.pt() > pt_max) {
+          leading_ID = i;
+          pt_max = particle.pt();
+        }
+
+        // Store Array Elements
+        particle_ID.push_back(i);
+        particle_ID_copy.push_back(i);
+      }
+
+      // Momentum of the Leading Particle
+      auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
+      TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
+      TVector3 p_jet(leading_track.px(), leading_track.py(), leading_track.pz());
+
+      // Skip Events with pt<pt_leading_min
+      if (pt_max < min_pt_leading)
+        continue;
+
+      // Labels
+      int exit(0);
+      int nPartAssociated(0);
+      int nParticles = static_cast<int>(particle_ID.size());
+      std::vector<int> jet_particle_ID;
+      jet_particle_ID.push_back(leading_ID);
+
+      // Jet Finder
+      do {
+        // Initialization
+        double distance_jet_min(1e+08);
+        double distance_bkg_min(1e+08);
+        int label_jet_particle(0);
+        int i_jet_particle(0);
+
+        for (int i = 0; i < nParticles; i++) {
+
+          // Skip Leading Particle & Elements already associated to the Jet
+          if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
+            continue;
+
+          // Get Particle Momentum
+          auto stored_track = mcParticles_per_coll.iteratorAt(particle_ID[i]);
+          TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
+
+          // Variables
+          double one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
+          double one_over_pt2_lead = 1.0 / (p_jet.Pt() * p_jet.Pt());
+          double deltaEta = p_particle.Eta() - p_jet.Eta();
+          double deltaPhi = GetDeltaPhi(p_particle.Phi(), p_jet.Phi());
+          double min = Minimum(one_over_pt2_part, one_over_pt2_lead);
+          double Delta2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
+
+          // Distances
+          double distance_jet = min * Delta2 / (Rjet * Rjet);
+          double distance_bkg = one_over_pt2_part;
+
+          // Find Minimum Distance Jet
+          if (distance_jet < distance_jet_min) {
+            distance_jet_min = distance_jet;
+            label_jet_particle = particle_ID[i];
+            i_jet_particle = i;
+          }
+
+          // Find Minimum Distance Bkg
+          if (distance_bkg < distance_bkg_min) {
+            distance_bkg_min = distance_bkg;
+          }
+        }
+
+        if (distance_jet_min <= distance_bkg_min) {
+
+          // Add Particle to Jet
+          jet_particle_ID.push_back(label_jet_particle);
+
+          // Update Momentum of Leading Particle
+          auto jet_track = mcParticles_per_coll.iteratorAt(label_jet_particle);
+          TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
+          p_jet = p_jet + p_i;
+
+          // Remove Element
+          particle_ID[i_jet_particle] = -1;
+          nPartAssociated++;
+        }
+
+        if (nPartAssociated >= (nParticles - 1))
+          exit = 1;
+        if (distance_jet_min > distance_bkg_min)
+          exit = 2;
+      } while (exit == 0);
+
+      // Event Counter: Skip Events with jet not fully inside acceptance
+      if ((TMath::Abs(p_jet.Eta()) + Rmax) > max_eta)
+        continue;
+
+      // Perpendicular Cones for the UE Estimate
+      TVector3 ue_axis1(0.0, 0.0, 0.0);
+      TVector3 ue_axis2(0.0, 0.0, 0.0);
+      get_perpendicular_axis(p_jet, ue_axis1, +1.0);
+      get_perpendicular_axis(p_jet, ue_axis2, -1.0);
+
+      // Protection against delta<0
+      if (ue_axis1.Mag() == 0 || ue_axis2.Mag() == 0)
+        continue;
+
+      double NchJetPlusUE(0);
+      double ptJetPlusUE(0);
+      double ptJet(0);
+      double ptUE(0);
+
+      for (int i = 0; i < nParticles; i++) {
+
+        auto track = mcParticles_per_coll.iteratorAt(particle_ID_copy[i]);
+        TVector3 particle_dir(track.px(), track.py(), track.pz());
+        double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
+        double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
+        double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        double deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
+        double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
+        double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        double deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
+        double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
+        double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+        if (deltaR_jet < Rmax) {
+          NchJetPlusUE++;
+          ptJetPlusUE = ptJetPlusUE + track.pt();
+        }
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+          ptUE = ptUE + track.pt();
+        }
+      }
+      ptJet = ptJetPlusUE - 0.5 * ptUE;
+
+      // Skip Events with n. particles in jet less than given value
+      if (NchJetPlusUE < min_nPartInJet)
+        continue;
+
+      // Skip Events with Jet Pt lower than threshold
+      if (ptJet < min_jet_pt)
+        continue;
+
+      // Generated Particles
+      for (auto& particle : mcParticles_per_coll) {
+
+        if (!particle.isPhysicalPrimary())
+          continue;
+        if (particle.pdgCode() != -2212)
+          continue;
+        if (particle.y() < min_y || particle.y() > max_y)
+          continue;
+
+        TVector3 particle_dir(particle.px(), particle.py(), particle.pz());
+        double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
+        double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
+        double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        double deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
+        double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
+        double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        double deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
+        double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
+        double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+        if (deltaR_jet < Rmax) {
+          registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta());
+        }
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+          registryMC.fill(HIST("antiproton_eta_pt_ue"), particle.pt(), particle.eta());
         }
       }
     }
@@ -1045,6 +1272,7 @@ struct nuclei_in_jets {
   PROCESS_SWITCH(nuclei_in_jets, processData, "Process Data", true);
   PROCESS_SWITCH(nuclei_in_jets, processMC, "process MC", false);
   PROCESS_SWITCH(nuclei_in_jets, processSecAntiprotons, "Process sec antip", false);
+  PROCESS_SWITCH(nuclei_in_jets, processAntipReweighting, "Process antip reweighting", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

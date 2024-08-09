@@ -9,26 +9,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidMLProducerMc.cxx
-/// \brief Produce PID ML skimmed data from MC files.
+/// \file pidMLProducer.cxx
+/// \brief Produce PID ML skimmed data from MC or data files.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
+/// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
 #include <string_view>
 #include "Framework/AnalysisTask.h"
 #include "Framework/StaticFor.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/PIDML/pidML.h"
+#include "Tools/PIDML/pidUtils.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
+using namespace pidml::pidutils;
 
 // Naming convention
 //  Data: experimental data without simulation
@@ -53,9 +55,6 @@ struct PidMlProducer {
   using MyCollisionML = aod::Collisions::iterator;
   using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
 
-  static constexpr float kEps = 1e-10f;
-  static constexpr float kMissingBeta = -999.0f;
-  static constexpr float kMissingTOFSignal = -999.0f;
   static constexpr uint32_t nCharges = 2;
 
   static constexpr std::string_view histPrefixes[nCharges] = {"minus", "plus"};
@@ -109,7 +108,7 @@ struct PidMlProducer {
     hX[prefixInd] = registry.add<TH1>(Form("%s/hX", histPrefixes[prefixInd].data()), "#it{x};#it{x}", HistType::kTH1F, {{1000, -2., 2.}});
     hY[prefixInd] = registry.add<TH1>(Form("%s/hY", histPrefixes[prefixInd].data()), "#it{y};#it{y}", HistType::kTH1F, {{1000, -2., 2.}});
     hZ[prefixInd] = registry.add<TH1>(Form("%s/hZ", histPrefixes[prefixInd].data()), "#it{z};#it{z}", HistType::kTH1F, {{1000, -10., 10.}});
-    hAlpha[prefixInd] = registry.add<TH1>(Form("%s/hAlpha", histPrefixes[prefixInd].data()), "#{alpha};#{alpha}", HistType::kTH1F, {{1000, -5., 5.}});
+    hAlpha[prefixInd] = registry.add<TH1>(Form("%s/hAlpha", histPrefixes[prefixInd].data()), "alpha;alpha", HistType::kTH1F, {{1000, -5., 5.}});
     hTrackType[prefixInd] = registry.add<TH1>(Form("%s/hTrackType", histPrefixes[prefixInd].data()), "Track Type;Track Type", HistType::kTH1F, {{300, 0., 300.}});
     hTPCNClsShared[prefixInd] = registry.add<TH1>(Form("%s/hTPCNClsShared", histPrefixes[prefixInd].data()), "hTPCNClsShared;hTPCNClsShared", HistType::kTH1F, {{100, 0., 100.}});
     hDcaXY[prefixInd] = registry.add<TH1>(Form("%s/hDcaXY", histPrefixes[prefixInd].data()), "#it{DcaXY};#it{DcaXY}", HistType::kTH1F, {{1000, -1., 1.}});
@@ -130,10 +129,10 @@ struct PidMlProducer {
     hTPCSigvsP[prefixInd]->Fill(track.p(), track.tpcSignal());
     hTOFBetavsP[prefixInd]->Fill(track.p(), track.beta());
     hTOFSigvsP[prefixInd]->Fill(track.p(), track.tofSignal());
-    if (TMath::Abs(track.beta() - kMissingBeta) >= kEps) {
-      hFilteredTOFSigvsP[prefixInd]->Fill(track.p(), track.tofSignal());
+    if (tofMissing(track)) {
+      hFilteredTOFSigvsP[prefixInd]->Fill(track.p(), kTOFMissingSignal);
     } else {
-      hFilteredTOFSigvsP[prefixInd]->Fill(track.p(), kMissingTOFSignal);
+      hFilteredTOFSigvsP[prefixInd]->Fill(track.p(), track.tofSignal());
     }
     hTRDPattvsP[prefixInd]->Fill(track.p(), track.trdPattern());
     hTRDSigvsP[prefixInd]->Fill(track.p(), track.trdSignal());

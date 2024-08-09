@@ -70,10 +70,11 @@ enum TrackType {
   kNoChild,    //! Not a V0 child
   kPosChild,   //! Positive V0 child
   kNegChild,   //! Negative V0 child
+  kBachelor,   //! Cascade bachelor
   kNTrackTypes //! Number of child types
 };
 
-static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg"}; //! Naming of the different particle types
+static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg", "Bach"}; //! Naming of the different particle types
 
 DECLARE_SOA_INDEX_COLUMN(FDCollision, fdCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                       //! p_T (GeV/c)
