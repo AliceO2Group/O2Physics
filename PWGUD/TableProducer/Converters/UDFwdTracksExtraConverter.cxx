@@ -38,14 +38,14 @@ struct UDFwdTracksExtraConverter {
   void process(o2::aod::UDFwdTracksExtra_000 const& tracks)
   {
     int trkType = 3; // trackType of MCH-MID tracks is 3
-  
+
     for (const auto& track : tracks) {
-    
+
       if (track.chi2MatchMCHMID() > 0)
         trkType = 3; // trackType of MCH-MID tracks is 3
       if (track.chi2MatchMCHMID() < 0)
         trkType = 4; // trackType of MCH only tracks is 4
-      
+
       udFwdTracksExtra_001(trkType,
                            track.nClusters(),
                            track.pDca(),
