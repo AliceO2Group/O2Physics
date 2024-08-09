@@ -126,6 +126,11 @@ struct tableMakerJpsiHf {
 
   void init(o2::framework::InitContext&)
   {
+    std::array<bool, 4> doprocess{doprocessJspiToMuMuD0, doprocessJspiToMuMuD0WithBdt, doprocessJspiToEED0, doprocessJspiToEED0WithBdt};
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+      LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
+    }
+
     fValuesDileptonCharmHadron = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -208,7 +213,7 @@ struct tableMakerJpsiHf {
 
     for (auto& [trackFirst, trackSecond] : combinations(tracks, tracks)) {
       bool isFirstSelected = isLeptonSelected<TPairType, TTrackFillMap>(trackFirst);
-      bool isSecondSelected = isLeptonSelected<TPairType, TTrackFillMap>(trackFirst);
+      bool isSecondSelected = isLeptonSelected<TPairType, TTrackFillMap>(trackSecond);
 
       if (!isFirstSelected || !isSecondSelected || (trackFirst.sign() + trackSecond.sign()) != 0) {
         continue;
