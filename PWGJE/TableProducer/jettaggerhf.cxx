@@ -41,6 +41,7 @@ struct JetTaggerHFTask {
 
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
   Configurable<bool> removeGluonShower{"removeGluonShower", true, "find jet origin removed gluon spliting"}; // true:: remove gluon spliting
+  Configurable<bool> searchUpToQuark{"searchUpToQuark", true, "Finding first mother in particles to quark"};
   Configurable<bool> useJetProb{"useJetProb", false, "fill table for track counting algorithm"};
   Configurable<bool> trackProbQA{"trackProbQA", false, "fill track probability histograms separately for geometric positive and negative tracks for QA"};
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
@@ -173,9 +174,9 @@ struct JetTaggerHFTask {
       typename JetTagTracksMCD::iterator hftrack;
       int origin = 0;
       if (removeGluonShower)
-        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR);
+        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark);
       else
-        origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack);
+        origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack, searchUpToQuark);
       int algorithm2 = 0;
       int algorithm3 = 0;
       if (useJetProb) {
