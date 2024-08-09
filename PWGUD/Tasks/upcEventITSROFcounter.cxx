@@ -52,7 +52,6 @@ struct UpcEventITSROFcounter {
     bool isFirst = true;
     uint16_t firstBCglobalIndex = 0;
     uint16_t previousBCglobalIndex = 0;
-    int ientry = 0;
 
     // extract ITS time frame parameters
     int64_t ts = bcs.iteratorAt(0).timestamp();
@@ -73,7 +72,6 @@ struct UpcEventITSROFcounter {
         nAllColls = 0;
         nUPCcolls = 0;
         vecITSROFborders.push_back(std::make_pair(firstBCglobalIndex, previousBCglobalIndex));
-        ientry++;
         firstBCglobalIndex = globalIndex;
       }
       previousBCinITSROF = bcInITSROF;
@@ -95,8 +93,6 @@ struct UpcEventITSROFcounter {
         }
       } // end loop over collisions
     }   // end loop over bcs
-
-    LOGF(info, "size %i", vecITSROFborders.size());
 
     int arrAllColls[1000] = {0};
     int arrUPCcolls[1000] = {0};
