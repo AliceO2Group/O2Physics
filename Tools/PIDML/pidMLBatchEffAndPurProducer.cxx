@@ -69,7 +69,7 @@ struct PidMlBatchEffAndPurProducer {
   std::vector<PidONNXModel> models;
 
   Configurable<std::vector<int32_t>> cfgPids{"kPids", std::vector<int32_t>(kPids, kPids + kNPids), "PIDs to predict"};
-  Configurable<std::array<double, kNDetectors>> cfgDetectorsPLimits{"detectors-p-limits", pidml_pt_cuts::defaultModelPLimits, "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
+  Configurable<std::array<double, kNDetectors>> cfgDetectorsPLimits{"detectors-p-limits", std::array<double, kNDetectors>(pidml_pt_cuts::defaultModelPLimits), "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   Configurable<bool> cfgUseCCDB{"use-ccdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
