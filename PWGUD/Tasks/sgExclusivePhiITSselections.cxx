@@ -300,7 +300,7 @@ struct sgExclusivePhiITSselections {
       }   // end of two tracks only loop
 
       if (allTracksAreKaonsBandPID.size() == 2) {
-        registry.fill(HIST("hTracksKaons"), allTracksAreKaonsBandPID.size()+10);
+        registry.fill(HIST("hTracksKaons"), allTracksAreKaonsBandPID.size() + 10);
         TLorentzVector reallyPhi;
         for (auto kaon : allTracksAreKaonsBandPID) {
           reallyPhi += kaon;
