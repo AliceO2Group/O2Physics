@@ -89,8 +89,9 @@ struct OnTheFlyTracker {
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
-  Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
+  Configurable<bool> enablePrimarySmearing{"enablePrimarySmearing", false, "Enable smearing of primary particles"};
   Configurable<bool> enableSecondarySmearing{"enableSecondarySmearing", false, "Enable smearing of weak decay daughters"};
+  Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
   Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
   Configurable<bool> treatXi{"treatXi", false, "Manually decay Xi and fill tables with daughters"};
@@ -751,6 +752,8 @@ struct OnTheFlyTracker {
           }
           if (TMath::IsNaN(xiDaughterTrackParCovs[i].getZ())) {
             histos.fill(HIST("hNaNBookkeeping"), i+1, 0.0f);
+            LOGF(info, "Issues with track parametrization %i ! inspect track:", i);
+            xiDaughterTrackParCovs[i].print();
             isReco[i] = false; // not acceptable
             continue;
           }else{
@@ -959,7 +962,11 @@ struct OnTheFlyTracker {
         histos.fill(HIST("hSimTrackX"), trackParCov.getX());
       }
 
-      bool reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      bool reconstructed = true;
+      if(enablePrimarySmearing){
+        bool reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      }
+      
       if (!reconstructed && !processUnreconstructedTracks) {
         continue;
       }
