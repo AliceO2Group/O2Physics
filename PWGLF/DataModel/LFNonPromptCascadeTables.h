@@ -97,6 +97,10 @@ DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
+DECLARE_SOA_COLUMN(DCAxMC, dcaXmc, float);
+DECLARE_SOA_COLUMN(DCAyMC, dcaYmc, float);
+DECLARE_SOA_COLUMN(DCAzMC, dcaZmc, float);
+DECLARE_SOA_COLUMN(MCcollisionMatch, mcCollisionMatch, bool);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
@@ -212,7 +216,11 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
                   NPCascadeTable::gPhi,
-                  NPCascadeTable::PDGcode)
+                  NPCascadeTable::PDGcode,
+                  NPCascadeTable::DCAxMC,
+                  NPCascadeTable::DCAyMC,
+                  NPCascadeTable::DCAzMC,
+                  NPCascadeTable::MCcollisionMatch)
 
 } // namespace o2::aod
 
