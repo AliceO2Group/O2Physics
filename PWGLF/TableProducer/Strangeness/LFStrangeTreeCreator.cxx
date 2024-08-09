@@ -160,8 +160,6 @@ struct LFStrangeTreeCreator {
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
-  ConfigurableAxis multAxis{"multAxis", {100, 0, 10000}, "Binning for the multiplicity axis"};
-  ConfigurableAxis multFt0Axis{"multFt0Axis", {100, 0, 100000}, "Binning for the ft0 multiplicity axis"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
@@ -198,6 +196,7 @@ struct LFStrangeTreeCreator {
   Configurable<float> cascsetting_vetoOm{"cascsetting_vetoOm", 0.01f, "vetoOm"};
   Configurable<float> cascsetting_mXi{"cascsetting_mXi", 0.02f, "mXi"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
+  Configurable<bool> k0short{"k0short", false, "process for k0short (true) or lambda (false)"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -276,8 +275,6 @@ struct LFStrangeTreeCreator {
 
     // event QA
     histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
-    histos.add<TH2>("QA/PvMultVsCent", ";Centrality T0C (%);#it{N}_{PV contributors};", HistType::kTH2F, {centAxis, multAxis});
-    histos.add<TH2>("QA/MultVsCent", ";Centrality T0C (%);Multiplicity T0C;", HistType::kTH2F, {centAxis, multFt0Axis});
 
     // v0 QA
     histos.add<TH3>("QA/massLambda", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
@@ -344,13 +341,18 @@ struct LFStrangeTreeCreator {
       // pid selections
       auto nSigmaTPCPos = matter ? posTrack.tpcNSigmaPr() : posTrack.tpcNSigmaPi();
       auto nSigmaTPCNeg = matter ? negTrack.tpcNSigmaPi() : negTrack.tpcNSigmaPr();
+      // change for k0
+      if (k0short) {
+        nSigmaTPCPos = posTrack.tpcNSigmaPi();
+        nSigmaTPCNeg = negTrack.tpcNSigmaPi();
+      }
 
       if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
         continue;
       }
 
-      // veto on K0s mass
-      if (std::abs(mK0Short - o2::constants::physics::MassK0Short) < vetoMassK0Short) {
+      // veto on K0s mass (only for lambda)
+      if (!k0short && (std::abs(mK0Short - o2::constants::physics::MassK0Short) < vetoMassK0Short)) {
         continue;
       }
 
@@ -384,8 +386,15 @@ struct LFStrangeTreeCreator {
 
       auto ptotal = RecoDecay::sqrtSumOfSquares(momV0[0], momV0[1], momV0[2]);
       auto lengthTraveled = RecoDecay::sqrtSumOfSquares(vtx[0] - primVtx[0], vtx[1] - primVtx[1], vtx[2] - primVtx[2]);
-      float ML2P_Lambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
-      if (ML2P_Lambda > v0setting_lifetime) {
+      // change calculation of ML2P for k0 and lambda
+      float particlemass;
+      if (k0short) {
+        particlemass = o2::constants::physics::MassK0;
+      } else {
+        particlemass = o2::constants::physics::MassLambda;
+      }
+      float ML2P = particlemass * lengthTraveled / ptotal;
+      if (ML2P > v0setting_lifetime) {
         continue;
       }
 
@@ -409,7 +418,7 @@ struct LFStrangeTreeCreator {
       CandidateV0 candV0;
       candV0.pt = matter > 0. ? ptV0 : -ptV0;
       candV0.eta = etaV0;
-      candV0.ct = ML2P_Lambda;
+      candV0.ct = ML2P;
       candV0.len = lengthTraveled;
       candV0.mass = mLambda;
       candV0.radius = radiusV0;
@@ -535,11 +544,23 @@ struct LFStrangeTreeCreator {
                 candidateV0.pdgcode = posMother.pdgCode();
                 pdgCodeMotherDauPos = posMother.pdgCode();
                 pdgCodeMotherDauNeg = negMother.pdgCode();
-                if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
-                  continue;
-                if (std::abs(posMother.pdgCode()) != 3122) {
+                // build  conditions for mother/daughter for k0short or lambda
+                bool mother;
+                bool daughter;
+                if (k0short) {
+                  // mother is k0short (310) and daughters are pions (211/-211)
+                  mother = posMother.pdgCode() == 310;
+                  daughter = (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -211);
+                } else {
+                  // mother is lambda (3122) and daughters are proton (2212) and pion(211)
+                  mother = posMother.pdgCode() == 3122;
+                  daughter = ((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212));
+                }
+                // check conditions
+                if (!mother || !daughter) {
                   continue;
                 }
+
                 if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
                   continue;
 
@@ -548,7 +569,8 @@ struct LFStrangeTreeCreator {
                   pdgCodeMother = 0;
                 } else if (posMother.has_mothers()) {
                   for (auto& mcMother : posMother.mothers_as<aod::McParticles>()) {
-                    if (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334) {
+                    // feed-down: xi and omega decaying to lambda, ignore for k0
+                    if (!k0short && (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334)) {
                       pdgCodeMother = mcMother.pdgCode();
                       break;
                     }
@@ -603,18 +625,31 @@ struct LFStrangeTreeCreator {
 
       auto pdgCode = mcPart.pdgCode();
       std::array<float, 3> secVtx;
-      if (std::abs(pdgCode) == 3122) {
+
+      // look for lambda (3122) or k0short (310)
+      int pdg_test = 3122;
+      if (k0short)
+        pdg_test = 310;
+
+      if (std::abs(pdgCode) == pdg_test) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
-        bool foundPr = false;
+        // check if its the right decay containing proton (2122) for lambda and charged pion (211) for k0short
+        int pdg_particle;
+        if (k0short) {
+          pdg_particle = 211;
+        } else {
+          pdg_particle = 2212;
+        }
+        bool foundParticle = false;
         for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
-          if (std::abs(mcDaught.pdgCode()) == 2212) {
-            foundPr = true;
+          if (std::abs(mcDaught.pdgCode()) == pdg_particle) {
+            foundParticle = true;
             secVtx = std::array{mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
             break;
           }
         }
-        if (!foundPr) {
+        if (!foundParticle) {
           continue;
         }
         auto pdgCodeMother = -999;
@@ -622,7 +657,8 @@ struct LFStrangeTreeCreator {
           pdgCodeMother = 0;
         } else if (mcPart.has_mothers()) {
           for (auto& mcMother : mcPart.mothers_as<aod::McParticles>()) {
-            if (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334) {
+            // feed-down: xi and omega decaying to lambda, ignore for k0
+            if (!k0short && (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334)) {
               pdgCodeMother = mcMother.pdgCode();
               break;
             }
@@ -681,12 +717,8 @@ struct LFStrangeTreeCreator {
       CascTable_thisCollision.bindExternalIndices(&tracks);
       CascTable_thisCollision.bindExternalIndices(&V0s);
 
-      auto multiplicity = collision.multFT0C();
       auto centrality = collision.centFT0C();
       fillRecoEvent(collision, tracks, V0Table_thisCollision, V0s, CascTable_thisCollision, centrality);
-
-      histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
-      histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
 
       for (auto& candidateV0 : candidateV0s) {
         lambdaTableML(

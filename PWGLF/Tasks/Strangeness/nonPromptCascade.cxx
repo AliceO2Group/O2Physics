@@ -42,6 +42,7 @@ struct NPCascCandidate {
   int64_t trackITSID;
   int64_t collisionID;
   float matchingChi2;
+  float itsClusSize;
   bool isGoodMatch;
   bool isGoodCascade;
   int pdgCodePrimary;
@@ -570,7 +571,7 @@ struct NonPromptCascadeTask {
         }
       }
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), isGoodMatch, isGoodCascade, pdgCodePrimary,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), isGoodMatch, isGoodCascade, pdgCodePrimary,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -596,8 +597,8 @@ struct NonPromptCascadeTask {
       }
       auto particle = mcParticles.iteratorAt(mcParticleId[i]);
       auto& c = candidates[i];
-      auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
-      NPCTableMC(c.matchingChi2, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
+
+      NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
                  c.pvX, c.pvY, c.pvZ,
                  c.cascPt, c.cascEta, c.cascPhi,
                  c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
@@ -805,7 +806,7 @@ struct NonPromptCascadeTask {
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), 0, 0, -1,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), 0, 0, -1,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -821,7 +822,7 @@ struct NonPromptCascadeTask {
 
     for (auto& c : candidates) {
 
-      NPCTable(c.matchingChi2,
+      NPCTable(c.matchingChi2, c.itsClusSize,
                c.pvX, c.pvY, c.pvZ,
                c.cascPt, c.cascEta, c.cascPhi,
                c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,

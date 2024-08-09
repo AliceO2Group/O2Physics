@@ -75,6 +75,8 @@ DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
+DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
 } // namespace jcollision
 
 DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
@@ -101,6 +103,17 @@ DECLARE_SOA_TABLE(StoredJCollisions, "AOD1", "JCOLLISION",
                   o2::soa::Marker<1>);
 
 using StoredJCollision = StoredJCollisions::iterator;
+
+DECLARE_SOA_TABLE(JEMCCollisionLbs, "AOD", "JEMCCOLLISIONLB",
+                  jcollision::IsAmbiguous,
+                  jcollision::IsEMCALReadout);
+using JEMCCollisionLb = JEMCCollisionLbs::iterator;
+
+DECLARE_SOA_TABLE(StoredJEMCCollisionLbs, "AOD1", "JEMCCOLLISIONLB",
+                  jcollision::IsAmbiguous,
+                  jcollision::IsEMCALReadout,
+                  o2::soa::Marker<1>);
+using StoredJEMCCollisionLb = StoredJEMCCollisionLbs::iterator;
 
 DECLARE_SOA_TABLE(JCollisionPIs, "AOD", "JCOLLISIONPI",
                   jcollision::CollisionId);

@@ -36,6 +36,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/Tools/TrackTuner.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -65,6 +66,7 @@ using namespace o2::constants::physics;
 
 struct NucleusCandidate {
   int globalIndex;
+  int collTrackIndex;
   float pt;
   float eta;
   float phi;
@@ -80,6 +82,7 @@ struct NucleusCandidate {
   std::array<float, 5> tofMasses;
   bool fillTree;
   bool fillDCAHist;
+  bool correctPV;
   uint16_t flags;
   uint8_t TPCfindableCls;
   uint8_t TPCcrossedRows;
@@ -227,6 +230,7 @@ struct nucleiSpectra {
   Produces<o2::aod::NucleiTableFlow> nucleiTableFlow;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
+  TrackTuner trackTunerObj;
 
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
 
@@ -273,6 +277,14 @@ struct nucleiSpectra {
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
 
+  // configurables for track tuner
+  Configurable<bool> cfgUseTrackTuner{"cfgUseTrackTuner", false, "Apply track tuner corrections to MC tracks"};
+  Configurable<std::string> cfgTrackTunerParams{"cfgTrackTunerParams", "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=0|updatePulls=1|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/pp2023/smoothHighPtMC|nameInputFile=trackTuner_DataLHC23fPass1_McLHC23k4b_run535085.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=-1.|qOverPtData=-1.", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  // running variables for track tuner
+  o2::dataformats::DCA mDcaInfoCov;
+  o2::track::TrackParametrizationWithError<float> mTrackParCov;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
   // CCDB options
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -292,7 +304,6 @@ struct nucleiSpectra {
   using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
 
   double getPhiInRange(double phi)
   {
@@ -350,6 +361,7 @@ struct nucleiSpectra {
 
     o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
     o2::base::Propagator::initFieldFromGRP(grpmag);
+    o2::base::Propagator::Instance()->setMatLUT(nuclei::lut);
     mBz = static_cast<float>(grpmag->getNominalL3Field());
     LOGF(info, "Retrieved GRP for timestamp %ull (%i) with magnetic field of %1.2f kZG", timestamp, mRunNumber, mBz);
   }
@@ -369,6 +381,7 @@ struct nucleiSpectra {
     const AxisSpec nITSClusAxis{cfgNITSClusBins, "N ITS clusters"};
     const AxisSpec nTPCClusAxis{cfgNTPCClusBins, "N TPC clusters"};
     const AxisSpec hasTRDAxis{2, -0.5, 1.5, "Has TRD"};
+    const AxisSpec correctPVAxis{2, -0.5, 1.5, "Correct PV"};
 
     const AxisSpec ptAxes[5]{
       {cfgPtBinsProtons, "#it{p}_{T} (GeV/#it{c})"},
@@ -415,13 +428,15 @@ struct nucleiSpectra {
         if (doprocessMC) {
           nuclei::hMomRes[iS][iC] = spectra.add<TH3>(fmt::format("h{}MomRes{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Momentum resolution {}", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], ptResAxis});
           nuclei::hGenNuclei[iS][iC] = spectra.add<TH2>(fmt::format("h{}Gen{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Generated {}", nuclei::names[iS]).data(), HistType::kTH2D, {centAxis, ptAxes[iS]});
-        }
-        if (doprocessDataFlow) {
-          if (cfgFlowHist->get(iS)) {
-            nuclei::hFlowHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
+          nuclei::hDCAHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hDCAHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCA histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {ptAxes[iS], dcaxyAxes[iS], dcazAxes[iS], nSigmaAxes[0], tofMassAxis, nITSClusAxis, nTPCClusAxis, correctPVAxis});
+        } else {
+          if (doprocessDataFlow) {
+            if (cfgFlowHist->get(iS)) {
+              nuclei::hFlowHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
+            }
           }
+          nuclei::hDCAHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hDCAHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCA histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {ptAxes[iS], dcaxyAxes[iS], dcazAxes[iS], nSigmaAxes[0], tofMassAxis, nITSClusAxis, nTPCClusAxis});
         }
-        nuclei::hDCAHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hDCAHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCA histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {ptAxes[iS], dcaxyAxes[iS], dcazAxes[iS], nSigmaAxes[0], tofMassAxis, nITSClusAxis, nTPCClusAxis});
       }
     }
 
@@ -432,7 +447,12 @@ struct nucleiSpectra {
     }
 
     nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-    o2::base::Propagator::Instance(true)->setMatLUT(nuclei::lut);
+    // TrackTuner initialization
+    if (cfgUseTrackTuner) {
+      std::string outputStringParams = trackTunerObj.configParams(cfgTrackTunerParams);
+      spectra.add("hTrackTunedTracks", outputStringParams.c_str(), HistType::kTH1F, {{1, 0.5, 1.5, ""}});
+      trackTunerObj.getDcaGraphs();
+    }
   }
 
   template <typename Tcoll>
@@ -458,6 +478,7 @@ struct nucleiSpectra {
   template <typename Tcoll, typename Ttrks>
   void fillDataInfo(Tcoll const& collision, Ttrks const& tracks)
   {
+    o2::pid::tof::Beta<typename Ttrks ::iterator> responseBeta;
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     gRandom->SetSeed(bc.timestamp());
@@ -523,9 +544,25 @@ struct nucleiSpectra {
         continue;
       }
 
-      auto trackParCov = getTrackParCov(track); // should we set the charge according to the nucleus?
+      mDcaInfoCov.set(999, 999, 999, 999, 999);
+      setTrackParCov(track, mTrackParCov);
+      mTrackParCov.setPID(track.pidForTracking());
+      if constexpr (
+        requires {
+          track.has_mcParticle();
+        }) {
+        if (cfgUseTrackTuner) {
+          bool hasMcParticle = track.has_mcParticle();
+          if (hasMcParticle) {
+            spectra.get<TH1>(HIST("hTrackTunedTracks"))->Fill(1); // all tracks
+            auto mcParticle = track.mcParticle();
+            trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov, spectra.get<TH1>(HIST("hTrackTunedTracks")));
+          }
+        }
+      }
+
       gpu::gpustd::array<float, 2> dcaInfo;
-      o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParCov, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCA(collVtx, mTrackParCov, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
 
       float beta{responseBeta.GetBeta(track)};
       spectra.fill(HIST("hTpcSignalDataSelected"), correctedTpcInnerParam * track.sign(), track.tpcSignal());
@@ -535,6 +572,7 @@ struct nucleiSpectra {
       std::array<float, 5> tofMasses{-3.f, -3.f, -3.f, -3.f, -3.f};
       bool fillTree{false};
       bool fillDCAHist{false};
+      bool correctPV{false};
 
       if (track.hasTOF()) {
         flag |= kHasTOF;
@@ -550,7 +588,7 @@ struct nucleiSpectra {
         if (std::abs(dcaInfo[1]) > cfgDCAcut->get(iS, 1)) {
           continue;
         }
-        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{trackParCov.getPt() * nuclei::charges[iS], trackParCov.getEta(), trackParCov.getPhi(), nuclei::masses[iS]};
+        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{mTrackParCov.getPt() * nuclei::charges[iS], mTrackParCov.getEta(), mTrackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
         for (int iPID{0}; iPID < 2; ++iPID) {
           if (selectedTPC[iS]) {
@@ -639,9 +677,9 @@ struct nucleiSpectra {
             collision.multTPC()});
         }
         nuclei::candidates.emplace_back(NucleusCandidate{
-          static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(),
+          static_cast<int>(track.globalIndex()), static_cast<int>(track.collisionId()), (1 - 2 * iC) * mTrackParCov.getPt(), mTrackParCov.getEta(), mTrackParCov.getPhi(),
           correctedTpcInnerParam, beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(), track.tpcChi2NCl(),
-          nSigmaTPC, tofMasses, fillTree, fillDCAHist, flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(),
+          nSigmaTPC, tofMasses, fillTree, fillDCAHist, correctPV, flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(),
           static_cast<uint8_t>(track.tpcNClsFound()), static_cast<uint8_t>(track.itsNCls()), static_cast<uint32_t>(track.itsClusterSizes())});
       }
     } // end loop over tracks
@@ -735,7 +773,7 @@ struct nucleiSpectra {
   PROCESS_SWITCH(nucleiSpectra, processDataFlowAlternative, "Data analysis with flow - alternative framework", false);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
     for (auto& c : mcCollisions) {
@@ -752,7 +790,7 @@ struct nucleiSpectra {
     }
     std::vector<bool> isReconstructed(particlesMC.size(), false);
     for (auto& c : nuclei::candidates) {
-      auto label = trackLabelsMC.iteratorAt(c.globalIndex);
+      auto label = tracks.iteratorAt(c.globalIndex);
       if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
         continue;
       }
@@ -764,8 +802,13 @@ struct nucleiSpectra {
             nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
             storeIt = cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u); /// store only the particles of interest
           }
+          auto coll = collisions.iteratorAt(c.collTrackIndex);
+          int collMCGlobId = coll.mcCollisionId();
+          if (particle.mcCollisionId() == collMCGlobId) {
+            c.correctPV = true;
+          }
           if (c.fillDCAHist && cfgDCAHists->get(iS, c.pt < 0) && particle.isPhysicalPrimary()) {
-            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls);
+            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls, c.correctPV);
           }
         }
       }

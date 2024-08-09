@@ -35,43 +35,57 @@ struct ApplySmearing {
   Produces<aod::SmearedElectrons> smearedelectron;
   Produces<aod::SmearedMuons> smearedmuon;
 
-  // Maps
-  Configurable<std::string> fConfigResFileName_Electron{"cfgResFileName_Electron", "", "name of resolution file"};
-  Configurable<std::string> fConfigResPtHistName_Electron{"cfgResPtHistName_Electron", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
-  Configurable<std::string> fConfigResEtaHistName_Electron{"cfgResEtaHistName_Electron", "EtaResArr", "histogram name for eta in resolution file"};
-  Configurable<std::string> fConfigResPhiPosHistName_Electron{"cfgResPhiPosHistName_Electron", "PhiPosResArr", "histogram name for phi pos in resolution file"};
-  Configurable<std::string> fConfigResPhiNegHistName_Electron{"cfgResPhiNegHistName_Electron", "PhiEleResArr", "hisogram for phi neg in resolution file"};
-  Configurable<std::string> fConfigEffFileName_Electron{"cfgEffFileName_Electron", "", "name of efficiency file"};
-  Configurable<std::string> fConfigEffHistName_Electron{"cfgEffHistName_Electron", "fhwEffpT", "name of efficiency histogram"};
-  Configurable<std::string> fConfigDCAFileName_Electron{"cfgDCAFileName_Electron", "", "name of DCA template file"};
-  Configurable<std::string> fConfigDCAHistName_Electron{"cfgDCAHistName_Electron", "fh_DCAtempaltes", "histogram name of the DCA templates"};
-
-  Configurable<std::string> fConfigResFileName_StandaloneMuon{"cfgResFileName_StandaloneMuon", "", "name of resolution file"};
-  Configurable<std::string> fConfigResPtHistName_StandaloneMuon{"cfgResPtHistName_StandaloneMuon", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
-  Configurable<std::string> fConfigResEtaHistName_StandaloneMuon{"cfgResEtaHistName_StandaloneMuon", "EtaResArr", "histogram name for eta in resolution file"};
-  Configurable<std::string> fConfigResPhiPosHistName_StandaloneMuon{"cfgResPhiPosHistName_StandaloneMuon", "PhiPosResArr", "histogram name for phi pos in resolution file"};
-  Configurable<std::string> fConfigResPhiNegHistName_StandaloneMuon{"cfgResPhiNegHistName_StandaloneMuon", "PhiEleResArr", "hisogram for phi neg in resolution file"};
-  Configurable<std::string> fConfigEffFileName_StandaloneMuon{"cfgEffFileName_StandaloneMuon", "", "name of efficiency file"};
-  Configurable<std::string> fConfigEffHistName_StandaloneMuon{"cfgEffHistName_StandaloneMuon", "fhwEffpT", "name of efficiency histogram"};
-  Configurable<std::string> fConfigDCAFileName_StandaloneMuon{"cfgDCAFileName_StandaloneMuon", "", "name of DCA template file"};
-  Configurable<std::string> fConfigDCAHistName_StandaloneMuon{"cfgDCAHistName_StandaloneMuon", "fh_DCAtempaltes", "histogram name of the DCA templates"};
-
-  Configurable<std::string> fConfigResFileName_GlobalMuon{"cfgResFileName_GlobalMuon", "", "name of resolution file"};
-  Configurable<std::string> fConfigResPtHistName_GlobalMuon{"cfgResPtHistName_GlobalMuon", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
-  Configurable<std::string> fConfigResEtaHistName_GlobalMuon{"cfgResEtaHistName_GlobalMuon", "EtaResArr", "histogram name for eta in resolution file"};
-  Configurable<std::string> fConfigResPhiPosHistName_GlobalMuon{"cfgResPhiPosHistName_GlobalMuon", "PhiPosResArr", "histogram name for phi pos in resolution file"};
-  Configurable<std::string> fConfigResPhiNegHistName_GlobalMuon{"cfgResPhiNegHistName_GlobalMuon", "PhiEleResArr", "hisogram for phi neg in resolution file"};
-  Configurable<std::string> fConfigEffFileName_GlobalMuon{"cfgEffFileName_GlobalMuon", "", "name of efficiency file"};
-  Configurable<std::string> fConfigEffHistName_GlobalMuon{"cfgEffHistName_GlobalMuon", "fhwEffpT", "name of efficiency histogram"};
-  Configurable<std::string> fConfigDCAFileName_GlobalMuon{"cfgDCAFileName_GlobalMuon", "", "name of DCA template file"};
-  Configurable<std::string> fConfigDCAHistName_GlobalMuon{"cfgDCAHistName_GlobalMuon", "fh_DCAtempaltes", "histogram name of the DCA templates"};
-
   Configurable<bool> fFromCcdb{"cfgFromCcdb", false, "get resolution and efficiency histos from CCDB"};
-  Configurable<std::string> fConfigCcdbPathRes{"cfgCcdbPathRes", "", "path to the ccdb object for resolution"};
-  Configurable<std::string> fConfigCcdbPathEff{"cfgCcdbPahtEff", "", "path to the ccdb object for efficiency"};
-  Configurable<std::string> fConfigCcdbPathDCA{"cfgCcdbPahtDCA", "", "path to the ccdb object for dca"};
   Configurable<std::string> fConfigCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> fConfigCcdbNoLaterThan{"cfgCcdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> fTimestamp{"cfgCcdbTimestamp", 10, "valid timestamp of CCDB object"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "electron_filename_group";
+    Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
+    Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
+    Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
+    Configurable<std::string> fConfigResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
+    Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
+    Configurable<std::string> fConfigEffHistName{"cfgEffHistName", "fhwEffpT", "name of efficiency histogram"};
+    Configurable<std::string> fConfigDCAFileName{"cfgDCAFileName", "", "name of DCA template file"};
+    Configurable<std::string> fConfigDCAHistName{"cfgDCAHistName", "fh_DCAtempaltes", "histogram name of the DCA templates"};
+    Configurable<std::string> fConfigCcdbPathRes{"cfgCcdbPathRes", "", "path to the ccdb object for resolution"};
+    Configurable<std::string> fConfigCcdbPathEff{"cfgCcdbPahtEff", "", "path to the ccdb object for efficiency"};
+    Configurable<std::string> fConfigCcdbPathDCA{"cfgCcdbPahtDCA", "", "path to the ccdb object for dca"};
+  } electron_filenames;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "sa_muon_filename_group";
+    Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
+    Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
+    Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
+    Configurable<std::string> fConfigResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
+    Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
+    Configurable<std::string> fConfigEffHistName{"cfgEffHistName", "fhwEffpT", "name of efficiency histogram"};
+    Configurable<std::string> fConfigDCAFileName{"cfgDCAFileName", "", "name of DCA template file"};
+    Configurable<std::string> fConfigDCAHistName{"cfgDCAHistName", "fh_DCAtempaltes", "histogram name of the DCA templates"};
+    Configurable<std::string> fConfigCcdbPathRes{"cfgCcdbPathRes", "", "path to the ccdb object for resolution"};
+    Configurable<std::string> fConfigCcdbPathEff{"cfgCcdbPahtEff", "", "path to the ccdb object for efficiency"};
+    Configurable<std::string> fConfigCcdbPathDCA{"cfgCcdbPahtDCA", "", "path to the ccdb object for dca"};
+  } sa_muon_filenames;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "gl_muon_filename_group";
+    Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
+    Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
+    Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
+    Configurable<std::string> fConfigResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
+    Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
+    Configurable<std::string> fConfigEffHistName{"cfgEffHistName", "fhwEffpT", "name of efficiency histogram"};
+    Configurable<std::string> fConfigDCAFileName{"cfgDCAFileName", "", "name of DCA template file"};
+    Configurable<std::string> fConfigDCAHistName{"cfgDCAHistName", "fh_DCAtempaltes", "histogram name of the DCA templates"};
+    Configurable<std::string> fConfigCcdbPathRes{"cfgCcdbPathRes", "", "path to the ccdb object for resolution"};
+    Configurable<std::string> fConfigCcdbPathEff{"cfgCcdbPahtEff", "", "path to the ccdb object for efficiency"};
+    Configurable<std::string> fConfigCcdbPathDCA{"cfgCcdbPahtDCA", "", "path to the ccdb object for dca"};
+  } gl_muon_filenames;
 
   MomentumSmearer smearer_Electron;
   MomentumSmearer smearer_StandaloneMuon;
@@ -80,58 +94,58 @@ struct ApplySmearing {
 
   void init(InitContext&)
   {
-    smearer_Electron.setResFileName(TString(fConfigResFileName_Electron));
-    smearer_Electron.setResPtHistName(TString(fConfigResPtHistName_Electron));
-    smearer_Electron.setResEtaHistName(TString(fConfigResEtaHistName_Electron));
-    smearer_Electron.setResPhiPosHistName(TString(fConfigResPhiPosHistName_Electron));
-    smearer_Electron.setResPhiNegHistName(TString(fConfigResPhiNegHistName_Electron));
-    smearer_Electron.setEffFileName(TString(fConfigEffFileName_Electron));
-    smearer_Electron.setEffHistName(TString(fConfigEffHistName_Electron));
-    smearer_Electron.setDCAFileName(TString(fConfigDCAFileName_Electron));
-    smearer_Electron.setDCAHistName(TString(fConfigDCAHistName_Electron));
+    smearer_Electron.setResFileName(TString(electron_filenames.fConfigResFileName));
+    smearer_Electron.setResPtHistName(TString(electron_filenames.fConfigResPtHistName));
+    smearer_Electron.setResEtaHistName(TString(electron_filenames.fConfigResEtaHistName));
+    smearer_Electron.setResPhiPosHistName(TString(electron_filenames.fConfigResPhiPosHistName));
+    smearer_Electron.setResPhiNegHistName(TString(electron_filenames.fConfigResPhiNegHistName));
+    smearer_Electron.setEffFileName(TString(electron_filenames.fConfigEffFileName));
+    smearer_Electron.setEffHistName(TString(electron_filenames.fConfigEffHistName));
+    smearer_Electron.setDCAFileName(TString(electron_filenames.fConfigDCAFileName));
+    smearer_Electron.setDCAHistName(TString(electron_filenames.fConfigDCAHistName));
 
-    smearer_StandaloneMuon.setResFileName(TString(fConfigResFileName_StandaloneMuon));
-    smearer_StandaloneMuon.setResPtHistName(TString(fConfigResPtHistName_StandaloneMuon));
-    smearer_StandaloneMuon.setResEtaHistName(TString(fConfigResEtaHistName_StandaloneMuon));
-    smearer_StandaloneMuon.setResPhiPosHistName(TString(fConfigResPhiPosHistName_StandaloneMuon));
-    smearer_StandaloneMuon.setResPhiNegHistName(TString(fConfigResPhiNegHistName_StandaloneMuon));
-    smearer_StandaloneMuon.setEffFileName(TString(fConfigEffFileName_StandaloneMuon));
-    smearer_StandaloneMuon.setEffHistName(TString(fConfigEffHistName_StandaloneMuon));
-    smearer_StandaloneMuon.setDCAFileName(TString(fConfigDCAFileName_StandaloneMuon));
-    smearer_StandaloneMuon.setDCAHistName(TString(fConfigDCAHistName_StandaloneMuon));
+    smearer_StandaloneMuon.setResFileName(TString(sa_muon_filenames.fConfigResFileName));
+    smearer_StandaloneMuon.setResPtHistName(TString(sa_muon_filenames.fConfigResPtHistName));
+    smearer_StandaloneMuon.setResEtaHistName(TString(sa_muon_filenames.fConfigResEtaHistName));
+    smearer_StandaloneMuon.setResPhiPosHistName(TString(sa_muon_filenames.fConfigResPhiPosHistName));
+    smearer_StandaloneMuon.setResPhiNegHistName(TString(sa_muon_filenames.fConfigResPhiNegHistName));
+    smearer_StandaloneMuon.setEffFileName(TString(sa_muon_filenames.fConfigEffFileName));
+    smearer_StandaloneMuon.setEffHistName(TString(sa_muon_filenames.fConfigEffHistName));
+    smearer_StandaloneMuon.setDCAFileName(TString(sa_muon_filenames.fConfigDCAFileName));
+    smearer_StandaloneMuon.setDCAHistName(TString(sa_muon_filenames.fConfigDCAHistName));
 
-    smearer_GlobalMuon.setResFileName(TString(fConfigResFileName_GlobalMuon));
-    smearer_GlobalMuon.setResPtHistName(TString(fConfigResPtHistName_GlobalMuon));
-    smearer_GlobalMuon.setResEtaHistName(TString(fConfigResEtaHistName_GlobalMuon));
-    smearer_GlobalMuon.setResPhiPosHistName(TString(fConfigResPhiPosHistName_GlobalMuon));
-    smearer_GlobalMuon.setResPhiNegHistName(TString(fConfigResPhiNegHistName_GlobalMuon));
-    smearer_GlobalMuon.setEffFileName(TString(fConfigEffFileName_GlobalMuon));
-    smearer_GlobalMuon.setEffHistName(TString(fConfigEffHistName_GlobalMuon));
-    smearer_GlobalMuon.setDCAFileName(TString(fConfigDCAFileName_GlobalMuon));
-    smearer_GlobalMuon.setDCAHistName(TString(fConfigDCAHistName_GlobalMuon));
+    smearer_GlobalMuon.setResFileName(TString(gl_muon_filenames.fConfigResFileName));
+    smearer_GlobalMuon.setResPtHistName(TString(gl_muon_filenames.fConfigResPtHistName));
+    smearer_GlobalMuon.setResEtaHistName(TString(gl_muon_filenames.fConfigResEtaHistName));
+    smearer_GlobalMuon.setResPhiPosHistName(TString(gl_muon_filenames.fConfigResPhiPosHistName));
+    smearer_GlobalMuon.setResPhiNegHistName(TString(gl_muon_filenames.fConfigResPhiNegHistName));
+    smearer_GlobalMuon.setEffFileName(TString(gl_muon_filenames.fConfigEffFileName));
+    smearer_GlobalMuon.setEffHistName(TString(gl_muon_filenames.fConfigEffHistName));
+    smearer_GlobalMuon.setDCAFileName(TString(gl_muon_filenames.fConfigDCAFileName));
+    smearer_GlobalMuon.setDCAHistName(TString(gl_muon_filenames.fConfigDCAHistName));
 
     if (fFromCcdb) {
       ccdb->setURL(fConfigCcdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
-      ccdb->setCreatedNotAfter(fConfigCcdbNoLaterThan);
+      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()); // now
 
-      smearer_Electron.setCcdbPathRes(TString(fConfigCcdbPathRes));
-      smearer_Electron.setCcdbPathEff(TString(fConfigCcdbPathEff));
-      smearer_Electron.setCcdbPathDCA(TString(fConfigCcdbPathDCA));
-      smearer_Electron.setTimestamp(fConfigCcdbNoLaterThan);
+      smearer_Electron.setCcdbPathRes(TString(electron_filenames.fConfigCcdbPathRes));
+      smearer_Electron.setCcdbPathEff(TString(electron_filenames.fConfigCcdbPathEff));
+      smearer_Electron.setCcdbPathDCA(TString(electron_filenames.fConfigCcdbPathDCA));
+      smearer_Electron.setTimestamp(fTimestamp);
       smearer_Electron.setCcdb(ccdb);
 
-      smearer_StandaloneMuon.setCcdbPathRes(TString(fConfigCcdbPathRes));
-      smearer_StandaloneMuon.setCcdbPathEff(TString(fConfigCcdbPathEff));
-      smearer_StandaloneMuon.setCcdbPathDCA(TString(fConfigCcdbPathDCA));
-      smearer_StandaloneMuon.setTimestamp(fConfigCcdbNoLaterThan);
+      smearer_StandaloneMuon.setCcdbPathRes(TString(sa_muon_filenames.fConfigCcdbPathRes));
+      smearer_StandaloneMuon.setCcdbPathEff(TString(sa_muon_filenames.fConfigCcdbPathEff));
+      smearer_StandaloneMuon.setCcdbPathDCA(TString(sa_muon_filenames.fConfigCcdbPathDCA));
+      smearer_StandaloneMuon.setTimestamp(fTimestamp);
       smearer_StandaloneMuon.setCcdb(ccdb);
 
-      smearer_GlobalMuon.setCcdbPathRes(TString(fConfigCcdbPathRes));
-      smearer_GlobalMuon.setCcdbPathEff(TString(fConfigCcdbPathEff));
-      smearer_GlobalMuon.setCcdbPathDCA(TString(fConfigCcdbPathDCA));
-      smearer_GlobalMuon.setTimestamp(fConfigCcdbNoLaterThan);
+      smearer_GlobalMuon.setCcdbPathRes(TString(gl_muon_filenames.fConfigCcdbPathRes));
+      smearer_GlobalMuon.setCcdbPathEff(TString(gl_muon_filenames.fConfigCcdbPathEff));
+      smearer_GlobalMuon.setCcdbPathDCA(TString(gl_muon_filenames.fConfigCcdbPathDCA));
+      smearer_GlobalMuon.setTimestamp(fTimestamp);
       smearer_GlobalMuon.setCcdb(ccdb);
     }
     smearer_Electron.init();
@@ -238,9 +252,9 @@ struct CheckSmearing {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add<TH2>("hCorrelation_Pt", "pT correlation", {HistType::kTH2F, {{1000, 0.0f, 10.0f}, {1000, 0.0f, 10.0f}}});
-    registry.add<TH2>("hCorrelation_Eta", "eta correlation", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {200, -1.0f, +1.0f}}});
-    registry.add<TH2>("hCorrelation_Phi", "phi correlation", {HistType::kTH2F, {{100, 0.0f, TMath::TwoPi()}, {100, 0.0f, TMath::TwoPi()}}});
+    registry.add<TH2>("hCorrelation_Pt", "pT correlation;p_{T,l}^{gen} (GeV/c);p_{T,l}^{smeared} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 10.0f}, {1000, 0.0f, 10.0f}}});
+    registry.add<TH2>("hCorrelation_Eta", "eta correlation;#eta_{l}^{gen};#eta_{l}^{smeared}", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {200, -1.0f, +1.0f}}});
+    registry.add<TH2>("hCorrelation_Phi", "phi correlation;#varphi_{l}^{gen} (rad.);#varphi_{l}^{smeared} (rad.)", {HistType::kTH2F, {{100, 0.0f, TMath::TwoPi()}, {100, 0.0f, TMath::TwoPi()}}});
 
     // Binning for resolution
     AxisSpec axisPtRes{ptResBins, "#it{p}^{gen}_{T,l} (GeV/#it{c})"};
@@ -302,13 +316,15 @@ struct CheckSmearing {
     Check(tracksMC);
   }
 
-  void processDummyMCanalysis(ReducedMCTracks const&) {}
+  void processDummyMCanalysisEM(aod::EMMCParticles const&) {}
+  void processDummyMCanalysisDQ(ReducedMCTracks const&) {}
   void processDummyCocktail(aod::McParticles const&) {}
 
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisEM, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisDQ, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckCocktail, "Run for cocktail analysis", false);
-  PROCESS_SWITCH(CheckSmearing, processDummyMCanalysis, "Dummy process function", false);
+  PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisEM, "Dummy process function", false);
+  PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisDQ, "Dummy process function", false);
   PROCESS_SWITCH(CheckSmearing, processDummyCocktail, "Dummy process function", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

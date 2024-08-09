@@ -58,8 +58,8 @@ struct qVectorsCorrection {
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest"};
 
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
-  Configurable<std::string> cfgRefAName{"cfgRefAName", "BPos", "The name of detector for reference A"};
-  Configurable<std::string> cfgRefBName{"cfgRefBName", "BNeg", "The name of detector for reference B"};
+  Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCpos", "The name of detector for reference A"};
+  Configurable<std::string> cfgRefBName{"cfgRefBName", "TPCneg", "The name of detector for reference B"};
   Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number"};
@@ -81,6 +81,9 @@ struct qVectorsCorrection {
   template <typename T>
   int GetDetId(const T& name)
   {
+    if (name.value == "BPos" || name.value == "BNeg" || name.value == "BTot") {
+      LOGF(warning, "Using deprecated label: %s. Please use TPCpos, TPCneg, TPCall instead.", name.value);
+    }
     if (name.value == "FT0C") {
       return 0;
     } else if (name.value == "FT0A") {
@@ -89,11 +92,11 @@ struct qVectorsCorrection {
       return 2;
     } else if (name.value == "FV0A") {
       return 3;
-    } else if (name.value == "BPos") {
+    } else if (name.value == "TPCpos" || name.value == "BPos") {
       return 4;
-    } else if (name.value == "BNeg") {
+    } else if (name.value == "TPCneg" || name.value == "BNeg") {
       return 5;
-    } else if (name.value == "BTot") {
+    } else if (name.value == "TPCall" || name.value == "BTot") {
       return 6;
     } else {
       return 0;
@@ -107,7 +110,7 @@ struct qVectorsCorrection {
     RefBId = GetDetId(cfgRefBName);
 
     if (DetId == RefAId || DetId == RefBId || RefAId == RefBId) {
-      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The BPos and BNeg will be used as reference systems");
+      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The TPCpos and TPCneg will be used as reference systems");
       DetId = 0;
       RefAId = 4;
       RefBId = 5;
@@ -122,7 +125,7 @@ struct qVectorsCorrection {
     histosQA.add("histCentFull", "Centrality distribution for valid events",
                  HistType::kTH1F, {axisCent});
 
-    for (auto i = 0; i < cfgnMods->size(); i++) {
+    for (uint i = 0; i < cfgnMods->size(); i++) {
       histosQA.add(Form("histQvecUncorV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
       histosQA.add(Form("histQvecRefAUncorV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
       histosQA.add(Form("histQvecRefBUncorV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
@@ -337,7 +340,7 @@ struct qVectorsCorrection {
                          !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))) {
       return;
     }
-    for (auto i = 0; i < cfgnMods->size(); i++) {
+    for (uint i = 0; i < cfgnMods->size(); i++) {
       fillHistosQvec(qVec, cfgnMods->at(i));
     }
   } // End void process(...)

@@ -514,7 +514,6 @@ struct HfCorrelatorDplusHadrons {
 
     BinningTypeMcGen corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
     bool isDplusPrompt = false;
@@ -528,6 +527,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
         continue;
       }
+      registry.fill(HIST("hDplusBin"), poolBin);
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
       registry.fill(HIST("hEtaMcGen"), particle1.eta());
       registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle1.phi(), -PIHalf));

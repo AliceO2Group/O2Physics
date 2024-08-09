@@ -25,6 +25,7 @@ namespace o2::aod
 namespace NPCascadeTable
 {
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float);
+DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
 DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
 DECLARE_SOA_COLUMN(IsGoodCascade, isGoodCascade, bool);
 DECLARE_SOA_COLUMN(PdgCodePrimary, pdgCodePrimary, int);
@@ -104,6 +105,7 @@ DECLARE_SOA_COLUMN(MCcollisionMatch, mcCollisionMatch, bool);
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::MatchingChi2,
+                  NPCascadeTable::ITSClusSize,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
                   NPCascadeTable::PvZ,
@@ -157,6 +159,7 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::MatchingChi2,
+                  NPCascadeTable::ITSClusSize,
                   NPCascadeTable::IsGoodMatch,
                   NPCascadeTable::IsGoodCascade,
                   NPCascadeTable::PdgCodePrimary,
