@@ -35,7 +35,7 @@ const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Va
 const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, true, 0.03);
 const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.5, 0.1, -10000, 10000, true, 0.);
 const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.5, 0.1, -10000, 10000, false, 0.);
-const EMCALClusterDefinition kV3Variation3(ClusterAlgorithm_t::kV3, 13, 1, "kV3Variation2", 0.5, 0.1, -10000, 10000, true, 20.);
+const EMCALClusterDefinition kV3Variation3(ClusterAlgorithm_t::kV3, 13, 1, "kV3Variation3", 0.5, 0.1, -10000, 10000, true, 20.);
 
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
