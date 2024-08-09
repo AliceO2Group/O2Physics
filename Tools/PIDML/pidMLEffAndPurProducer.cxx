@@ -37,7 +37,6 @@ struct PidMlEffAndPurProducer {
 
   PidONNXModel pidModel;
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
-  Configurable<bool> cfgIsRun3{"is-run3", true, "Is data from Run3"};
   Configurable<double> cfgNSigmaCut{"n-sigma-cut", 3.0f, "TPC and TOF PID nSigma cut"};
   Configurable<double> cfgTofPCut{"tof-p-cut", 0.5f, "From what p TOF is used"};
   Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given mcPart to be of given kind"};
@@ -118,7 +117,7 @@ struct PidMlEffAndPurProducer {
       ccdbApi.init(cfgCCDBURL);
     } else {
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1,
-                              cfgPid.value, cfgCertainty.value, pidml_pt_cuts::defaultModelPLimits, cfgIsRun3);
+                              cfgPid.value, cfgCertainty.value);
     }
 
     const AxisSpec axisPt{100, 0, 5.0, "pt"};
@@ -155,7 +154,7 @@ struct PidMlEffAndPurProducer {
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp,
-                              cfgPid.value, cfgCertainty.value, pidml_pt_cuts::defaultModelPLimits, cfgIsRun3);
+                              cfgPid.value, cfgCertainty.value);
     }
 
     static constexpr double kEtaCut = 0.8f;
