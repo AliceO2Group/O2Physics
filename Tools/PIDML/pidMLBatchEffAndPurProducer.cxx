@@ -148,7 +148,7 @@ struct PidMlBatchEffAndPurProducer {
         break;
     }
 
-    if (!inPLimit(track, cfgDetectorsPLimits[kTPCTOF]) || tofMissing(track)) {
+    if (!inPLimit(track, cfgDetectorsPLimits.value[kTPCTOF]) || tofMissing(track)) {
       nSigma.composed = TMath::Abs(nSigma.tpc);
     } else {
       nSigma.composed = TMath::Hypot(nSigma.tof, nSigma.tpc);
@@ -169,11 +169,11 @@ struct PidMlBatchEffAndPurProducer {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       for (const int32_t& pid : cfgPids.value)
         models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, timestamp, pid, 1.1, &cfgDetectorsPLimits[0]));
+                                         ccdbApi, timestamp, pid, 1.1, &cfgDetectorsPLimits.value[0]));
     } else {
       for (int32_t& pid : cfgPids.value)
         models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, -1, pid, 1.1, &cfgDetectorsPLimits[0]));
+                                         ccdbApi, -1, pid, 1.1, &cfgDetectorsPLimits.value[0]));
     }
 
     for (auto& mcPart : mcParticles) {
