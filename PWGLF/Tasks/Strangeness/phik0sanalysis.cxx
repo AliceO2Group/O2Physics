@@ -168,7 +168,7 @@ struct phik0shortanalysis {
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
 
-  //Configurable for RecMC
+  // Configurable for RecMC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
 
   // Configurable axis
@@ -381,7 +381,7 @@ struct phik0shortanalysis {
     PhieffHist.add("h3PhieffPiInvMassFirstCut", "Invariant mass of Phi for Efficiency (Pi) Deltay < FirstCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhieffHist.add("h3PhieffPiInvMassSecondCut", "Invariant mass of Phi for Efficiency (Pi) Deltay < SecondCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
 
-    //GenMC Phi and Phi coupled to K0S and Pion
+    // GenMC Phi and Phi coupled to K0S and Pion
     PhieffHist.add("h1PhiGenMC", "Phi for GenMC", kTH1F, {{10, -0.5f, 9.5f}});
     PhieffHist.add("h1PhieffK0SGenMCInclusive", "Phi coupled to K0Short for GenMC Inclusive", kTH1F, {{10, -0.5f, 9.5f}});
     PhieffHist.add("h1PhieffK0SGenMCFirstCut", "Phi coupled to K0Short for GenMC Deltay < FirstCut", kTH1F, {{10, -0.5f, 9.5f}});
