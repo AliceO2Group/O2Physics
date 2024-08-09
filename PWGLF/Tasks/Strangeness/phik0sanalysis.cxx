@@ -1895,6 +1895,8 @@ struct phik0shortanalysis {
       for (auto mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 310)
           continue;
+        if (!mcParticle2.isPhysicalPrimary())
+          continue;
         if (mcParticle2.y() > 0.8)
           continue;
 
@@ -1920,6 +1922,8 @@ struct phik0shortanalysis {
 
       for (auto mcParticle2 : mcParticles) {
         if (std::abs(mcParticle2.pdgCode()) != 211)
+          continue;
+        if (!mcParticle2.isPhysicalPrimary())
           continue;
         if (mcParticle2.y() > 0.8)
           continue;
@@ -1987,6 +1991,8 @@ struct phik0shortanalysis {
 
     for (auto mcParticle1 : mcParticles) {
       if (mcParticle1.pdgCode() != 310)
+        continue;
+      if (!mcParticle1.isPhysicalPrimary())
         continue;
       if (mcParticle1.y() > 0.8)
         continue;
@@ -2066,6 +2072,8 @@ struct phik0shortanalysis {
 
     for (auto mcParticle1 : mcParticles) {
       if (std::abs(mcParticle1.pdgCode()) != 211)
+        continue;
+      if (!mcParticle1.isPhysicalPrimary())
         continue;
       if (mcParticle1.y() > 0.8)
         continue;
