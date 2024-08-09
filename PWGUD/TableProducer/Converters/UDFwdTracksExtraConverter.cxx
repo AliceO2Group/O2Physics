@@ -13,7 +13,7 @@
 /// \brief Converts UDFwdTracksExtra table from version 000 to 001
 
 /// This task allows for the conversion of the UDFwdTracksExtra table from the version 000,
-/// that is before the introduction of global tracks (and so contains only MCH-MID and 
+/// that is before the introduction of global tracks (and so contains only MCH-MID and
 /// MCH only tracks), to the version 001, that includes global tracks
 /// Global tracks introduced here: https://github.com/AliceO2Group/O2Physics/commit/72f673611ddcd7c39978787dbed9f77e6e7c3d6a)
 
@@ -38,15 +38,15 @@ struct UDFwdTracksExtraConverter {
   void process(o2::aod::UDFwdTracksExtra_000 const& tracks)
   {
     int trkType = 3; // trackType of MCH-MID tracks is 3
-    
+  
     for (const auto& track : tracks) {
-      
-      if (track.chi2MatchMCHMID() > 0) 
+    
+      if (track.chi2MatchMCHMID() > 0)
         trkType = 3; // trackType of MCH-MID tracks is 3
-      if (track.chi2MatchMCHMID() < 0) 
+      if (track.chi2MatchMCHMID() < 0)
         trkType = 4; // trackType of MCH only tracks is 4
       
-      udFwdTracksExtra_001(trkType, 
+      udFwdTracksExtra_001(trkType,
                            track.nClusters(),
                            track.pDca(),
                            track.rAtAbsorberEnd(),
