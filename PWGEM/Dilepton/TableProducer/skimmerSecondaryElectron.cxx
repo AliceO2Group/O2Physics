@@ -480,7 +480,7 @@ struct AssociateMCInfoSecondaryElectron {
       auto mcCollision = collision.mcCollision();
 
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
-        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
+        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }
