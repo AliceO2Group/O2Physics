@@ -597,6 +597,7 @@ struct NonPromptCascadeTask {
       }
       auto particle = mcParticles.iteratorAt(mcParticleId[i]);
       auto& c = candidates[i];
+      auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
 
       NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
                  c.pvX, c.pvY, c.pvZ,
