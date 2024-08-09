@@ -23,12 +23,6 @@ namespace pidml::pidutils
 {
 constexpr double kTOFMissingSignal = -999.0f;
 constexpr double kGlobalEtaCut = 0.8f;
-constexpr double kEpsilon = 1e-6f;
-
-bool almostEqual(double a, double b, double eps = kEpsilon)
-{
-  return std::abs(a - b) <= eps;
-}
 
 template <typename T>
 bool trdMissing(const T& track)
