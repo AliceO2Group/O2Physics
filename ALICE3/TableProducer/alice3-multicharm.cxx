@@ -300,11 +300,11 @@ struct alice3multicharm {
     fitter3.setBz(magneticField);
     fitter3.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
-    // This histogram bookkeeps the attempts at DCA minimization and their eventual 
-    // failure rates. 
+    // This histogram bookkeeps the attempts at DCA minimization and their eventual
+    // failure rates.
     // --- 0: attempt XiC, 1: success XiC
     // --- 2: attempt XiCC, 3: success XiCC
-    histos.add("hCharmBuilding", "hCharmBuilding", kTH1F, {{10,-0.5, 9.5f}});
+    histos.add("hCharmBuilding", "hCharmBuilding", kTH1F, {{10, -0.5, 9.5f}});
 
     histos.add("h2dGenXi", "h2dGenXi", kTH2F, {axisPt, axisEta});
     histos.add("h2dGenXiC", "h2dGenXiC", kTH2F, {axisPt, axisEta});
@@ -317,7 +317,7 @@ struct alice3multicharm {
     histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1F, {axisDCAXiCDaughters});
     histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1F, {axisDCAXiCCDaughters});
 
-    // These histograms bookkeep the exact number of combinations attempted 
+    // These histograms bookkeep the exact number of combinations attempted
     // CombinationsXiC: triplets Xi-pi-pi considered per Xi
     // CombinationsXiCC: doublets XiC-pi considered per XiC
     histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1F, {axisNConsidered});
@@ -358,10 +358,10 @@ struct alice3multicharm {
           LOGF(info, "Damn, something is wrong");
         }
       }
-      for (auto const& track : tracks){
-        if(bitcheck(track.decayMap(), kTruePiFromXiC))
+      for (auto const& track : tracks) {
+        if (bitcheck(track.decayMap(), kTruePiFromXiC))
           histos.fill(HIST("h2dDCAxyVsPtPiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
-        if(bitcheck(track.decayMap(), kTruePiFromXiCC))
+        if (bitcheck(track.decayMap(), kTruePiFromXiCC))
           histos.fill(HIST("h2dDCAxyVsPtPiFromXiCC"), track.pt(), track.dcaXY() * 1e+4);
       }
     }
@@ -370,7 +370,7 @@ struct alice3multicharm {
       histos.fill(HIST("hMassXi"), xiCand.mXi());
       uint32_t nCombinationsC = 0;
       auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
-      if(!bitcheck(xi.decayMap(),kTrueXiFromXiC))
+      if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))

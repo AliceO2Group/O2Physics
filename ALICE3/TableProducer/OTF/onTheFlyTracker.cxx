@@ -361,7 +361,7 @@ struct OnTheFlyTracker {
     }
 
     // Basic QA
-    auto hNaN = histos.add<TH2>("hNaNBookkeeping", "hNaNBookkeeping", kTH2F, {{10,-0.5f,9.5f}, {10,-0.5f,9.5f}});
+    auto hNaN = histos.add<TH2>("hNaNBookkeeping", "hNaNBookkeeping", kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}});
 
     hNaN->GetXaxis()->SetBinLabel(1, "Primary");
     hNaN->GetXaxis()->SetBinLabel(2, "Bachelor");
@@ -399,7 +399,7 @@ struct OnTheFlyTracker {
     }
 
     if (doXiQA) {
-      histos.add("hXiBuilding", "hXiBuilding", kTH1F, {{10,-0.5f,9.5f}});
+      histos.add("hXiBuilding", "hXiBuilding", kTH1F, {{10, -0.5f, 9.5f}});
 
       histos.add("hGenXi", "hGenXi", kTH2F, {axisRadius, axisMomentum});
       histos.add("hRecoXi", "hRecoXi", kTH2F, {axisRadius, axisMomentum});
@@ -710,35 +710,35 @@ struct OnTheFlyTracker {
         convertTLorentzVectorToO2Track(2212, decayProducts[2], l0DecayVertex, xiDaughterTrackParCovs[2]);
 
         // Map daughter to smearer
-        if(enableSecondarySmearing) {
-        int firstSmearerIndex = -1;
-        int secondSmearerIndex = -1;
-        for (unsigned i = 0; i < layers.size(); i++) {
-          if (xiDecayRadius2D > layers[i]) {
-            firstSmearerIndex = i;
+        if (enableSecondarySmearing) {
+          int firstSmearerIndex = -1;
+          int secondSmearerIndex = -1;
+          for (unsigned i = 0; i < layers.size(); i++) {
+            if (xiDecayRadius2D > layers[i]) {
+              firstSmearerIndex = i;
+            }
+            if (l0DecayRadius2D > layers[i]) {
+              secondSmearerIndex = i;
+            }
           }
-          if (l0DecayRadius2D > layers[i]) {
-            secondSmearerIndex = i;
+          if (firstSmearerIndex > 5) {
+            isReco[0] = false;
+          } else if (firstSmearerIndex == -1) {
+            isReco[0] = mSmearer.smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
+          } else {
+            isReco[0] = smearer[firstSmearerIndex].smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
           }
-        }
-        if (firstSmearerIndex > 5) {
-          isReco[0] = false;
-        } else if (firstSmearerIndex == -1) {
-          isReco[0] = mSmearer.smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
+          if (secondSmearerIndex > 5) {
+            isReco[1] = false;
+            isReco[2] = false;
+          } else if (secondSmearerIndex == -1) {
+            isReco[1] = mSmearer.smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
+            isReco[2] = mSmearer.smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+          } else {
+            isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
+            isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+          }
         } else {
-          isReco[0] = smearer[firstSmearerIndex].smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
-        }
-        if (secondSmearerIndex > 5) {
-          isReco[1] = false;
-          isReco[2] = false;
-        } else if (secondSmearerIndex == -1) {
-          isReco[1] = mSmearer.smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
-          isReco[2] = mSmearer.smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
-        } else {
-          isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
-          isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
-        }
-        }else{
           isReco[0] = true;
           isReco[1] = true;
           isReco[2] = true;
@@ -751,13 +751,13 @@ struct OnTheFlyTracker {
             continue;
           }
           if (TMath::IsNaN(xiDaughterTrackParCovs[i].getZ())) {
-            histos.fill(HIST("hNaNBookkeeping"), i+1, 0.0f);
+            histos.fill(HIST("hNaNBookkeeping"), i + 1, 0.0f);
             LOGF(info, "Issues with track parametrization %i ! inspect track:", i);
             xiDaughterTrackParCovs[i].print();
             isReco[i] = false; // not acceptable
             continue;
-          }else{
-            histos.fill(HIST("hNaNBookkeeping"), i+1, 1.0f);
+          } else {
+            histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           }
           if (isReco[i]) {
             tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
@@ -767,7 +767,7 @@ struct OnTheFlyTracker {
         }
 
         if (doXiQA && mcParticle.pdgCode() == 3312) {
-          if (isReco[0] && isReco[1] && isReco[2]){
+          if (isReco[0] && isReco[1] && isReco[2]) {
             histos.fill(HIST("hXiBuilding"), 2.0f);
             histos.fill(HIST("hRecoXi"), xiDecayRadius2D, mcParticle.pt());
           }
@@ -940,8 +940,8 @@ struct OnTheFlyTracker {
               tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, false, false, 1});
 
               if (doXiQA) {
-                histos.fill(HIST("h2dDeltaPtVsPt"), trackParCov.getPt(), cascadeTrack.getPt()-trackParCov.getPt());
-                histos.fill(HIST("h2dDeltaEtaVsPt"), trackParCov.getPt(), cascadeTrack.getEta()-trackParCov.getEta());
+                histos.fill(HIST("h2dDeltaPtVsPt"), trackParCov.getPt(), cascadeTrack.getPt() - trackParCov.getPt());
+                histos.fill(HIST("h2dDeltaEtaVsPt"), trackParCov.getPt(), cascadeTrack.getEta() - trackParCov.getEta());
 
                 histos.fill(HIST("hMassLambda"), thisCascade.mLambda);
                 histos.fill(HIST("hMassXi"), thisCascade.mXi);
@@ -963,10 +963,10 @@ struct OnTheFlyTracker {
       }
 
       bool reconstructed = true;
-      if(enablePrimarySmearing){
+      if (enablePrimarySmearing) {
         bool reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
       }
-      
+
       if (!reconstructed && !processUnreconstructedTracks) {
         continue;
       }
@@ -974,7 +974,7 @@ struct OnTheFlyTracker {
         // capture rare smearing mistakes / corrupted tracks
         histos.fill(HIST("hNaNBookkeeping"), 0.0f, 0.0f);
         continue;
-      }else{
+      } else {
         histos.fill(HIST("hNaNBookkeeping"), 0.0f, 1.0f); // ok!
       }
 
