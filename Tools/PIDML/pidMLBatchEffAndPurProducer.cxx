@@ -27,10 +27,13 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Tools/PIDML/pidOnnxModel.h"
+#include "Tools/PIDML/pidUtils.h"
+#include "pidOnnxModel.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace pidml::pidutils;
 
 namespace o2::aod
 {
@@ -53,11 +56,7 @@ struct PidMlBatchEffAndPurProducer {
   Produces<o2::aod::EffAndPurPidResult> effAndPurPIDResult;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  int32_t currentRunNumber = -1;
-  static constexpr float kEpsilon = 1e-10;
-  static constexpr float kEtaCut = 0.8f;
-  static constexpr float kNSigmaTofPCut = 0.5f;
-  static constexpr float kTofMissing = -999.0f;
+  static constexpr int32_t currentRunNumber = -1;
   static constexpr int32_t kNPids = 6;
   static constexpr int32_t kPids[kNPids] = {2212, 321, 211, -211, -321, -2212};
   static constexpr std::string_view kParticleLabels[kNPids] = {"2212", "321", "211", "0211", "0321", "02212"};
@@ -70,6 +69,7 @@ struct PidMlBatchEffAndPurProducer {
   std::vector<PidONNXModel> models;
 
   Configurable<std::vector<int32_t>> cfgPids{"kPids", std::vector<int32_t>(kPids, kPids + kNPids), "PIDs to predict"};
+  Configurable<std::array<double, kNDetectors>> cfgDetectorsPLimits{"detectors-p-limits", pidml_pt_cuts::defaultModelPLimits, "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   Configurable<bool> cfgUseCCDB{"use-ccdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
@@ -148,7 +148,7 @@ struct PidMlBatchEffAndPurProducer {
         break;
     }
 
-    if (track.p() < kNSigmaTofPCut || TMath::Abs(track.tofSignal() - kTofMissing) < kEpsilon) {
+    if (!inPLimit(track, cfgDetectorsPLimits[kTPCTOF]) || tofMissing(track)) {
       nSigma.composed = TMath::Abs(nSigma.tpc);
     } else {
       nSigma.composed = TMath::Hypot(nSigma.tof, nSigma.tpc);
@@ -169,16 +169,16 @@ struct PidMlBatchEffAndPurProducer {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       for (const int32_t& pid : cfgPids.value)
         models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, timestamp, pid, 1.1));
+                                         ccdbApi, timestamp, pid, 1.1, &cfgDetectorsPLimits[0]));
     } else {
       for (int32_t& pid : cfgPids.value)
         models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, -1, pid, 1.1));
+                                         ccdbApi, -1, pid, 1.1, &cfgDetectorsPLimits[0]));
     }
 
     for (auto& mcPart : mcParticles) {
       // eta cut is done in requireGlobalTrackInFilter() so we cut it only here
-      if (mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < kEtaCut) {
+      if (mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < kGlobalEtaCut) {
         fillMCPositiveHist(mcPart.pdgCode(), mcPart.pt());
       }
     }

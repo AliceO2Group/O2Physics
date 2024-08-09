@@ -38,7 +38,7 @@ struct PidMlEffAndPurProducer {
   PidONNXModel pidModel;
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
   Configurable<double> cfgNSigmaCut{"n-sigma-cut", 3.0f, "TPC and TOF PID nSigma cut"};
-  Configurable<double> cfgTofPCut{"tof-p-cut", 0.5f, "From what p TOF is used"};
+  Configurable<std::array<double, kNDetectors>> cfgDetectorsPLimits{"detectors-p-limits", pidml_pt_cuts::defaultModelPLimits, "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
   Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given mcPart to be of given kind"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
@@ -100,7 +100,7 @@ struct PidMlEffAndPurProducer {
     if (track.sign() != sign)
       return false;
 
-    if (!inPLimit(track, cfgTofPCut) || tofMissing(track)) {
+    if (!inPLimit(track, cfgDetectorsPLimits[kTPCTOF]) || tofMissing(track)) {
       if (TMath::Abs(nSigma.tpc) >= cfgNSigmaCut)
         return false;
     } else {
@@ -117,7 +117,7 @@ struct PidMlEffAndPurProducer {
       ccdbApi.init(cfgCCDBURL);
     } else {
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1,
-                              cfgPid.value, cfgCertainty.value);
+                              cfgPid.value, cfgCertainty.value, &cfgDetectorsPLimits[0]);
     }
 
     const AxisSpec axisPt{100, 0, 5.0, "pt"};
@@ -154,13 +154,12 @@ struct PidMlEffAndPurProducer {
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp,
-                              cfgPid.value, cfgCertainty.value);
+                              cfgPid.value, cfgCertainty.value, &cfgDetectorsPLimits[0]);
     }
 
-    static constexpr double kEtaCut = 0.8f;
     for (auto& mcPart : mcParticles) {
       // eta cut is included in requireGlobalTrackInFilter() so we cut it only here
-      if (mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < kEtaCut && mcPart.pdgCode() == pidModel.mPid) {
+      if (mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < kGlobalEtaCut && mcPart.pdgCode() == pidModel.mPid) {
         histos.fill(HIST("hPtMCPositive"), mcPart.pt());
       }
     }
