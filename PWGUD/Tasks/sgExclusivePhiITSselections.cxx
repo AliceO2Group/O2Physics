@@ -222,7 +222,9 @@ struct sgExclusivePhiITSselections {
         allTracksAreKaons.push_back(a);
 
         bool kaonBand = false;
-        if ((momentum > 0.180) && (momentum < 0.220) && (dEdx > 300)) {
+        if ((momentum < 0.150) && (dEdx > 300)) {
+          kaonBand = true;
+        } else if ((momentum > 0.150) && (momentum < 0.220) && (dEdx > 250)) {
           kaonBand = true;
         } else if ((momentum > 0.220) && (momentum < 0.300) && (dEdx > 180)) {
           kaonBand = true;
@@ -298,6 +300,7 @@ struct sgExclusivePhiITSselections {
       }   // end of two tracks only loop
 
       if (allTracksAreKaonsBandPID.size() == 2) {
+        registry.fill(HIST("hTracksKaons"), allTracksAreKaonsBandPID.size()+10);
         TLorentzVector reallyPhi;
         for (auto kaon : allTracksAreKaonsBandPID) {
           reallyPhi += kaon;
@@ -310,6 +313,9 @@ struct sgExclusivePhiITSselections {
       }
 
       if (allTracksAreKaonsBandPID.size() == 1 && allTracksAreITSonlyAndFourITSclusters.size() > 0) {
+
+        registry.fill(HIST("hTracksKaons"), allTracksAreKaonsBandPID.size()+20);
+        registry.fill(HIST("hTracksKaons"), allTracksAreITSonlyAndFourITSclusters.size()+40);
 
         double momentum = TMath::Sqrt(onlyKaonBandPID[0].px() * onlyKaonBandPID[0].px() + onlyKaonBandPID[0].py() * onlyKaonBandPID[0].py() + onlyKaonBandPID[0].pz() * onlyKaonBandPID[0].pz());
         double dEdx = onlyKaonBandPID[0].tpcSignal();
