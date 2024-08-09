@@ -43,34 +43,35 @@ using namespace o2::aod::hf_cand_2prong;
 constexpr static uint32_t gkTrackFillMapWithColl = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID | VarManager::ObjTypes::ReducedTrackCollInfo;
 constexpr static uint32_t gkMuonFillMapWithColl = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCollInfo;
 
-namespace {
-  struct CandidateDilepton {
-    float fMass;
-    float fPt;
-    float fPhi;
-    float fEta;
-    float fTauz;
-    float fLz;
-    float fLxy;
-    int fSign;
-    uint32_t fMcDecision;
+namespace
+{
+struct CandidateDilepton {
+  float fMass;
+  float fPt;
+  float fPhi;
+  float fEta;
+  float fTauz;
+  float fLz;
+  float fLxy;
+  int fSign;
+  uint32_t fMcDecision;
 
-    float pt() const { return fPt; }
-    float mass() const { return fMass; }
-    float phi() const { return fPhi; }
-    float eta() const { return fEta; }
-    int sign() const { return fSign; }
-    uint32_t mcDecision() const { return fMcDecision; }
-    float tauz() const { return fTauz; }
-    float lz() const { return fLz; }
-    float lxy() const { return fLxy; }
-    float px() const { return fPt * std::cos(fPhi); }
-    float py() const { return fPt * std::sin(fPhi); }
-    float pz() const { return fPt * std::sinh(fEta); }
-    float p() const { return fPt * std::cosh(fEta); }
-    float rap() const { return std::log((std::sqrt(fMass * fMass + fPt * fPt * std::cosh(fEta) * std::cosh(fEta)) + fPt * std::sinh(fEta)) / std::sqrt(fMass * fMass + fPt * fPt)); }
-  };
-}
+  float pt() const { return fPt; }
+  float mass() const { return fMass; }
+  float phi() const { return fPhi; }
+  float eta() const { return fEta; }
+  int sign() const { return fSign; }
+  uint32_t mcDecision() const { return fMcDecision; }
+  float tauz() const { return fTauz; }
+  float lz() const { return fLz; }
+  float lxy() const { return fLxy; }
+  float px() const { return fPt * std::cos(fPhi); }
+  float py() const { return fPt * std::sin(fPhi); }
+  float pz() const { return fPt * std::sinh(fEta); }
+  float p() const { return fPt * std::cosh(fEta); }
+  float rap() const { return std::log((std::sqrt(fMass * fMass + fPt * fPt * std::cosh(fEta) * std::cosh(fEta)) + fPt * std::sinh(fEta)) / std::sqrt(fMass * fMass + fPt * fPt)); }
+};
+} // namespace
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
@@ -183,16 +184,17 @@ struct tableMakerJpsiHf {
 
   // template function for lepton selection
   template <int TPairType, uint32_t TTrackFillMap /* gkMuonFillMapWithColl or gkTrackFillMapWithColl*/, typename TTrack>
-  bool isLeptonSelected(TTrack const& lepton) {
+  bool isLeptonSelected(TTrack const& lepton)
+  {
 
-    if constexpr(TPairType == VarManager::kDecayToEE) {
+    if constexpr (TPairType == VarManager::kDecayToEE) {
       VarManager::FillTrack<TTrackFillMap>(lepton);
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++) {
         if (!(*cut).IsSelected(VarManager::fgValues)) {
           return false;
         }
       }
-    } else if constexpr(TPairType == VarManager::kDecayToMuMu) {
+    } else if constexpr (TPairType == VarManager::kDecayToMuMu) {
       VarManager::FillTrack<TTrackFillMap>(lepton);
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++) {
         if (!(*cut).IsSelected(VarManager::fgValues)) {
