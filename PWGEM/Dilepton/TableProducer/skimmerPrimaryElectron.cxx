@@ -90,6 +90,7 @@ struct skimmerPrimaryElectron {
   Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", 0.0, "min. TPC n sigma for kaon exclusion"};
   Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 0.0, "max. TPC n sigma for proton exclusion"};
   Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", 0.0, "min. TPC n sigma for proton exclusion"};
+  Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -204,6 +205,10 @@ struct skimmerPrimaryElectron {
       if (!track.has_mcParticle()) {
         return false;
       }
+    }
+
+    if (requireTOF && !track.hasTOF()) {
+      return false;
     }
 
     if (track.tpcChi2NCl() > maxchi2tpc) {

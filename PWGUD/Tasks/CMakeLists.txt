@@ -168,6 +168,11 @@ o2physics_add_dpl_workflow(sg-exclusive-phi
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sg-exclusive-phi-its
+                           SOURCES sgExclusivePhiITSselections.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(upc-pion-analysis
                            SOURCES upcPionAnalysis.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
@@ -176,4 +181,9 @@ o2physics_add_dpl_workflow(upc-pion-analysis
 o2physics_add_dpl_workflow(upc-event-itsrof-counter
                            SOURCES upcEventITSROFcounter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::DataModel O2::CCDB
+                           COMPONENT_NAME Analysis)
+                           
+o2physics_add_dpl_workflow(upc-rho-analysis
+                           SOURCES upcRhoAnalysis.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)

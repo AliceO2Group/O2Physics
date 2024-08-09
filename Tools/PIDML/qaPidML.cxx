@@ -28,7 +28,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct pidml {
+struct QaPidML {
   static const int maxP = 5;
   // nb of bins for TH1 hists
   static const int binsNb = 100;
@@ -394,6 +394,6 @@ struct pidml {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<pidml>(cfgc),
+    adaptAnalysisTask<QaPidML>(cfgc),
   };
 }
