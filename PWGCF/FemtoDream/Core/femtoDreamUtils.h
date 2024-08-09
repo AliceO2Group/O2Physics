@@ -121,6 +121,9 @@ inline float getMass(int pdgCode)
     case kLambda0: // Lambda
       mass = o2::constants::physics::MassLambda;
       break;
+    case o2::constants::physics::Pdg::kPhi: // Phi Meson
+      mass = o2::constants::physics::MassPhi;
+      break;
     case o2::constants::physics::Pdg::kLambdaCPlus: // Charm Lambda
       mass = o2::constants::physics::MassLambdaCPlus;
       break;
