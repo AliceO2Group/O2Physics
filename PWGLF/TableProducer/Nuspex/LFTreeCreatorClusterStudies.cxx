@@ -1388,18 +1388,17 @@ struct LfTreeCreatorClusterStudies {
       cascTable_thisCollision.bindExternalIndices(&tracks);
       cascTable_thisCollision.bindExternalIndices(&v0s);
 
-      if (setting_fillV0) {
-        m_v0TrackParCovs.clear();
-        for (auto& v0 : v0Table_thisCollision) {
-          CandidateV0 candV0;
-          if (fillV0Cand(PV, v0, candV0, tracks)) {
-            if (fillV0CandMc(v0, candV0)) {
-              fillV0TableMc(candV0);
-            }
+      m_v0TrackParCovs.clear();
+      for (auto& v0 : v0Table_thisCollision) {
+        CandidateV0 candV0;
+        if (fillV0Cand(PV, v0, candV0, tracks) && setting_fillV0) {
+          if (fillV0CandMc(v0, candV0)) {
+            fillV0TableMc(candV0);
           }
         }
       }
-      if (setting_fillK && setting_fillV0) { // the v0 loops are needed for the Ks
+
+      if (setting_fillK) { // the v0 loops are needed for the Ks
         for (auto& cascade : cascTable_thisCollision) {
           CandidateK candK;
           if (fillKCand(PV, cascade, candK, tracks)) {
