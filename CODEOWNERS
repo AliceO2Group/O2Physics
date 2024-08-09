@@ -20,13 +20,13 @@
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
 /DPG/Tasks/FT0 @alibuild @afurs
-/EventFiltering @alibuild @mpuccio @strogolo
-/EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @strogolo
-/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo
-/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @strogolo
-/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @strogolo
-/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @strogolo
-/EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @strogolo
+/EventFiltering @alibuild @mpuccio @lietava
+/EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava
+/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @lietava
+/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava
+/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava
+/EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava
 /PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul
 /PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
 /PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
