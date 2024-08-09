@@ -91,7 +91,7 @@ static constexpr std::string_view MCPhiK0SSESCut[nMultBin] = {"h2RecMCPhiK0SSESC
 static constexpr std::string_view MCPhiPiSEInc[nMultBin] = {"h2RecMCPhiPiSEInc_0_1", "h2RecMCPhiPiSEInc_1_5", "h2RecMCPhiPiSEInc_5_10", "h2RecMCPhiPiSEInc_10_15", "h2RecMCPhiPiSEInc_15_20",
                                                             "h2RecMCPhiPiSEInc_20_30", "h2RecMCPhiPiSEInc_30_40", "h2RecMCPhiPiSEInc_40_50", "h2RecMCPhiPiSEInc_50_70", "h2RecMCPhiPiSEInc_70_100"};
 static constexpr std::string_view MCPhiPiSEFCut[nMultBin] = {"h2RecMCPhiPiSEFCut_0_1", "h2RecMCPhiPiSEFCut_1_5", "h2RecMCPhiPiSEFCut_5_10", "h2RecMCPhiPiSEFCut_10_15", "h2RecMCPhiPiSEFCut_15_20",
-                                                             "h2RecMCPhiPiSEFCut_20_30", "hRecMCPhiPiSEFCut_30_40", "h2RecMCPhiPiSEFCut_40_50", "h2RecMCPhiPiSEFCut_50_70", "h2RecMCPhiPiSEFCut_70_100"};
+                                                             "h2RecMCPhiPiSEFCut_20_30", "h2RecMCPhiPiSEFCut_30_40", "h2RecMCPhiPiSEFCut_40_50", "h2RecMCPhiPiSEFCut_50_70", "h2RecMCPhiPiSEFCut_70_100"};
 static constexpr std::string_view MCPhiPiSESCut[nMultBin] = {"h2RecMCPhiPiSESCut_0_1", "h2RecMCPhiPiSESCut_1_5", "h2RecMCPhiPiSESCut_5_10", "h2RecMCPhiPiSESCut_10_15", "h2RecMCPhiPiSESCut_15_20",
                                                              "h2RecMCPhiPiSESCut_20_30", "h2RecMCPhiPiSESCut_30_40", "h2RecMCPhiPiSESCut_40_50", "h2RecMCPhiPiSESCut_50_70", "h2RecMCPhiPiSESCut_70_100"};
 } // namespace
