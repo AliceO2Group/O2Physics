@@ -2127,36 +2127,36 @@ struct phik0shortanalysis {
 
         if (isAssocColl) {
           if (!isCountedPhiInclusiveAssocReco) {
-            MCPhiPionHist.fill(HIST("h1PhiPiGenMCInclusiveAssocReco"), imultBin, ipTBin);
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCInclusiveAssocReco"), imultBin, ipTBin);
             isCountedPhiInclusiveAssocReco = true;
           }
           if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
             continue;
           if (!isCountedPhiFirstCutAssocReco) {
-            MCPhiPionHist.fill(HIST("h1PhiPiGenMCFirstCutAssocReco"), imultBin, ipTBin);
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCFirstCutAssocReco"), imultBin, ipTBin);
             isCountedPhiFirstCutAssocReco = true;
           }
           if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
             continue;
           if (!isCountedPhiSecondCutAssocReco) {
-            MCPhiPionHist.fill(HIST("h1PhiPiGenMCSecondCutAssocReco"), imultBin, ipTBin);
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCSecondCutAssocReco"), imultBin, ipTBin);
             isCountedPhiSecondCutAssocReco = true;
           }
         } else {
           if (!isCountedPhiInclusive) {
-            MCPhiPionHist.fill(HIST("h1PhiPiGenMCInclusive"), imultBin, ipTBin);
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCInclusive"), imultBin, ipTBin);
             isCountedPhiInclusive = true;
           }
           if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
             continue;
           if (!isCountedPhiFirstCut) {
-            MCPhiPionHist.fill(HIST("h1PhiPiGenMCFirstCut"), imultBin, ipTBin);
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCFirstCut"), imultBin, ipTBin);
             isCountedPhiFirstCut = true;
           }
           if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
             continue;
           if (!isCountedPhiSecondCut) {
-            MCPhiPionHist.fill(HIST("h1PhiPiGenMCSecondCut"), imultBin, ipTBin);
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCSecondCut"), imultBin, ipTBin);
             isCountedPhiSecondCut = true;
           }
         }
