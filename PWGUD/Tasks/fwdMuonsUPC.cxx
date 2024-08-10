@@ -410,9 +410,6 @@ struct fwdMuonsUPC {
     std::unordered_map<int32_t, ZDCinfo> zdcPerCand;
     collectCandZDCInfo(zdcPerCand, ZDCs);
 
-    int match = 0;
-    int tot = 0;
-
     // loop over the candidates
     for (const auto& item : tracksPerCand) {
       int32_t trId1 = item.second[0];
@@ -421,10 +418,6 @@ struct fwdMuonsUPC {
       auto cand = eventCandidates.iteratorAt(candID);
       auto tr1 = fwdTracks.iteratorAt(trId1);
       auto tr2 = fwdTracks.iteratorAt(trId2);
-
-      // see number of events that have ZDC info
-      match = match + zdcPerCand.count(candID);
-      tot++;
 
       ZDCinfo zdc;
 
@@ -439,9 +432,6 @@ struct fwdMuonsUPC {
 
       processCand(cand, tr1, tr2, zdc);
     }
-
-    // LOGP(info,"my matches = {}",match);
-    // LOGP(info,"tot = {}",tot);
   }
 
   PROCESS_SWITCH(fwdMuonsUPC, process, "", false);
