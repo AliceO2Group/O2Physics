@@ -681,7 +681,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPhi;
         recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Rapidity() > 0.8)
+        if (std::abs(recPhi.Rapidity()) > 0.8)
           continue;
 
         if (!isCountedPhi) {
@@ -716,7 +716,7 @@ struct phik0shortanalysis {
           TLorentzVector recK0S;
           recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
-          if (recK0S.Rapidity() > 0.8)
+          if (std::abs(recK0S.Rapidity()) > 0.8)
             continue;
           if (!isCountedK0SInclusive) {
             PhipurHist.fill(HIST("h2PhipurK0SInvMassInclusive"), multiplicity, recPhi.M());
@@ -747,7 +747,7 @@ struct phik0shortanalysis {
           TLorentzVector recPi;
           recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
-          if (recPi.Rapidity() > 0.8)
+          if (std::abs(recPi.Rapidity()) > 0.8)
             continue;
           if (!isCountedPiInclusive) {
             PhipurHist.fill(HIST("h3PhipurPiInvMassInclusive"), multiplicity, recPi.Pt(), recPhi.M());
@@ -803,7 +803,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recK0S;
       recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-      if (recK0S.Rapidity() > 0.8)
+      if (std::abs(recK0S.Rapidity()) > 0.8)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -828,7 +828,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Rapidity() > 0.8)
+          if (std::abs(recPhi.Rapidity()) > 0.8)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -944,7 +944,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recPi;
       recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-      if (recPi.Rapidity() > 0.8)
+      if (std::abs(recPi.Rapidity()) > 0.8)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -969,7 +969,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Rapidity() > 0.8)
+          if (std::abs(recPhi.Rapidity()) > 0.8)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1101,7 +1101,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recK0S;
         recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-        if (recK0S.Rapidity() > 0.8)
+        if (std::abs(recK0S.Rapidity()) > 0.8)
           continue;
 
         std::vector<TLorentzVector> listrecPhi;
@@ -1114,7 +1114,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Rapidity() > 0.8)
+          if (std::abs(recPhi.Rapidity()) > 0.8)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1214,7 +1214,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPi;
         recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-        if (recPi.Rapidity() > 0.8)
+        if (std::abs(recPi.Rapidity()) > 0.8)
           continue;
 
         std::vector<TLorentzVector> listrecPhi;
@@ -1227,7 +1227,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Rapidity() > 0.8)
+          if (std::abs(recPhi.Rapidity()) > 0.8)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1363,7 +1363,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPhi;
         recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Rapidity() > 0.8)
+        if (std::abs(recPhi.Rapidity()) > 0.8)
           continue;
 
         if (!isCountedPhi) {
@@ -1409,7 +1409,7 @@ struct phik0shortanalysis {
           TLorentzVector recK0S;
           recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
-          if (recK0S.Rapidity() > 0.8)
+          if (std::abs(recK0S.Rapidity()) > 0.8)
             continue;
           if (!isCountedK0SInclusive) {
             PhieffHist.fill(HIST("h2PhieffK0SInvMassInclusive"), multiplicity, recPhi.M());
@@ -1446,7 +1446,7 @@ struct phik0shortanalysis {
           TLorentzVector recPi;
           recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
-          if (recPi.Rapidity() > 0.8)
+          if (std::abs(recPi.Rapidity()) > 0.8)
             continue;
           if (!isCountedPiInclusive) {
             PhieffHist.fill(HIST("h3PhieffPiInvMassInclusive"), multiplicity, recPi.Pt(), recPhi.M());
@@ -1523,7 +1523,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recK0S;
       recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-      if (recK0S.Rapidity() > 0.8)
+      if (std::abs(recK0S.Rapidity()) > 0.8)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -1573,7 +1573,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Rapidity() > 0.8)
+          if (std::abs(recPhi.Rapidity()) > 0.8)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1693,7 +1693,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recPi;
       recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-      if (recPi.Rapidity() > 0.8)
+      if (std::abs(recPi.Rapidity()) > 0.8)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -1743,7 +1743,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Rapidity() > 0.8)
+          if (std::abs(recPhi.Rapidity()) > 0.8)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1890,7 +1890,7 @@ struct phik0shortanalysis {
       }
       if (!isPosKaon || !isNegKaon)
         continue;
-      if (mcParticle1.y() > 0.8)
+      if (std::abs(mcParticle1.y()) > 0.8)
         continue;
 
       if (!isCountedPhi) {
@@ -1905,7 +1905,7 @@ struct phik0shortanalysis {
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
-        if (mcParticle2.y() > 0.8)
+        if (std::abs(mcParticle2.y()) > 0.8)
           continue;
 
         if (!isCountedK0SInclusive) {
@@ -1933,7 +1933,7 @@ struct phik0shortanalysis {
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
-        if (mcParticle2.y() > 0.8)
+        if (std::abs(mcParticle2.y()) > 0.8)
           continue;
 
         int ipTBin = 0;
@@ -1997,7 +1997,7 @@ struct phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
-      if (mcParticle1.y() > 0.8)
+      if (std::abs(mcParticle1.y()) > 0.8)
         continue;
 
       bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
@@ -2018,7 +2018,7 @@ struct phik0shortanalysis {
         }
         if (!isPosKaon || !isNegKaon)
           continue;
-        if (mcParticle2.y() > 0.8)
+        if (std::abs(mcParticle2.y()) > 0.8)
           continue;
 
         if (isAssocColl) {
@@ -2093,7 +2093,7 @@ struct phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
-      if (mcParticle1.y() > 0.8)
+      if (std::abs(mcParticle1.y()) > 0.8)
         continue;
 
       int ipTBin = 0;
@@ -2122,7 +2122,7 @@ struct phik0shortanalysis {
         }
         if (!isPosKaon || !isNegKaon)
           continue;
-        if (mcParticle2.y() > 0.8)
+        if (std::abs(mcParticle2.y()) > 0.8)
           continue;
 
         if (isAssocColl) {
