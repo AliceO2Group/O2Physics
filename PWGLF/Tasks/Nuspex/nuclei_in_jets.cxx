@@ -513,7 +513,7 @@ struct nuclei_in_jets {
 
     // Loop over particles selected by anti-KT
     double totalPtJetPlusUE_antikt(0);
-    for (int i = 0 ; i < multJetPlusUE_antikt ; i++) {
+    for (int i = 0; i < multJetPlusUE_antikt; i++) {
 
       auto track = tracks.iteratorAt(jet_particle_ID[i]);
       TVector3 particle_dir(track.px(), track.py(), track.pz());
