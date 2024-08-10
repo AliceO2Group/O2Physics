@@ -52,7 +52,6 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// using EMCCollisions = o2::soa::Join<aod::JCollisions, aod::EMCALMatchedCollisions>; //needed for the workaround to access EMCAL trigger bits
 using EMCCollisions = o2::soa::Join<aod::JCollisions, aod::JEMCCollisionLbs>; //needed for the workaround to access EMCAL trigger bits
 
 
@@ -403,12 +402,12 @@ struct FullJetSpectrapp {
     }
   }
 
-  void processDummy(JetCollisions const& collisions)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(FullJetSpectrapp, processDummy, "dummy task", true);
 
-  void processJetsData(soa::Filtered<EMCCollisions>::iterator const& collision, FullJetTableDataJoined const& jets, JetTracks const&, JetClusters const&)
+  void processJetsData(soa::Filtered<EMCCollisions>::iterator const&, FullJetTableDataJoined const& jets, JetTracks const&, JetClusters const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -422,7 +421,7 @@ struct FullJetSpectrapp {
   }
   PROCESS_SWITCH(FullJetSpectrapp, processJetsData, "Full Jets Data", false);
 
-  void processJetsMCD(soa::Filtered<EMCCollisions>::iterator const& collision, JetTableMCDJoined const& jets, JetTracks const&, JetClusters const&)
+  void processJetsMCD(soa::Filtered<EMCCollisions>::iterator const&, JetTableMCDJoined const& jets, JetTracks const&, JetClusters const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -436,7 +435,7 @@ struct FullJetSpectrapp {
   }
   PROCESS_SWITCH(FullJetSpectrapp, processJetsMCD, "Full Jets at Detector Level", false);
 
-  void processJetsMCDWeighted(soa::Filtered<EMCCollisions>::iterator const& collision, JetTableMCDWeightedJoined const& jets, JetTracks const&, JetClusters const&)
+  void processJetsMCDWeighted(soa::Filtered<EMCCollisions>::iterator const&, JetTableMCDWeightedJoined const& jets, JetTracks const&, JetClusters const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
