@@ -575,7 +575,7 @@ struct nuclei_in_jets {
       registryQC.fill(HIST("NchJet_antikt_lowSumpt"), multJetPlusUE_antikt);
       registryQC.fill(HIST("NchJet_areaCut_lowSumpt"), multJetPlusUE_areaCut);
 
-      for (int i = 0; i < NchJet_antikt; i++) {
+      for (int i = 0; i < multJetPlusUE_antikt; i++) {
 
         auto track = tracks.iteratorAt(jet_particle_ID[i]);
         TVector3 particle_dir(track.px(), track.py(), track.pz());
@@ -586,12 +586,12 @@ struct nuclei_in_jets {
     }
 
     // Event Counter: Skip Events with n. particles in jet less than given value
-    if (NchJet_areaCut < min_nPartInJet)
+    if (multJetPlusUE_areaCut < min_nPartInJet)
       return;
     registryData.fill(HIST("number_of_events_data"), 6.5);
 
     // Event Counter: Skip Events with Jet Pt lower than threshold
-    if ((sumPtJet_areaCut - 0.5 * sumPtUE) < min_jet_pt)
+    if ((totalPtJetPlusUE_areaCut - 0.5 * totalPtUE) < min_jet_pt)
       return;
     registryData.fill(HIST("number_of_events_data"), 7.5);
 
