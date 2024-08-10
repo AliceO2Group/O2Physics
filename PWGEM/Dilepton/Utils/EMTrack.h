@@ -22,8 +22,9 @@ namespace o2::aod::pwgem::dilepton::utils
 class EMTrack
 {
  public:
-  EMTrack(int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, std::vector<int> amb_ele_self_ids = {})
+  EMTrack(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, std::vector<int> amb_ele_self_ids = {})
   {
+    fDFId = dfId;
     fGlobalId = globalId;
     fCollisionId = collisionId;
     fTrackId = trackId;
@@ -46,6 +47,7 @@ class EMTrack
 
   ~EMTrack() {}
 
+  int dfId() const { return fDFId; }
   int globalIndex() const { return fGlobalId; }
   int collisionId() const { return fCollisionId; }
   int trackId() const { return fTrackId; }
@@ -68,6 +70,7 @@ class EMTrack
   void setPairDca3DinSigmaOTF(float dca) { fPairDCA3DinSigmaOTF = dca; }
 
  protected:
+  int fDFId;
   int fGlobalId;
   int fCollisionId;
   int fTrackId;
@@ -86,12 +89,12 @@ class EMTrack
 class EMTrackWithCov : public EMTrack
 {
  public:
-  EMTrackWithCov(int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, std::vector<int> amb_ele_self_ids = {},
+  EMTrackWithCov(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, std::vector<int> amb_ele_self_ids = {},
                  float X = 0.f, float Y = 0.f, float Z = 0.f, float Alpha = 0.f, float Snp = 0.f, float Tgl = 0.f,
                  float CYY = 0.f, float CZY = 0.f, float CZZ = 0.f,
                  float CSnpY = 0.f, float CSnpZ = 0.f, float CSnpSnp = 0.f,
                  float CTglY = 0.f, float CTglZ = 0.f, float CTglSnp = 0.f, float CTglTgl = 0.f,
-                 float C1PtY = 0.f, float C1PtZ = 0.f, float C1PtSnp = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f) : EMTrack(globalId, collisionId, trackId, pt, eta, phi, mass, charge, dcaXY, dcaZ, amb_ele_self_ids)
+                 float C1PtY = 0.f, float C1PtZ = 0.f, float C1PtSnp = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f) : EMTrack(dfId, globalId, collisionId, trackId, pt, eta, phi, mass, charge, dcaXY, dcaZ, amb_ele_self_ids)
   {
     fX = X;
     fY = Y;

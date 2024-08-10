@@ -22,8 +22,9 @@ namespace o2::aod::pwgem::dilepton::utils
 class EMFwdTrack
 {
  public:
-  EMFwdTrack(int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaX = 0.f, float dcaY = 0.f, std::vector<int> amb_muon_self_ids = {})
+  EMFwdTrack(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaX = 0.f, float dcaY = 0.f, std::vector<int> amb_muon_self_ids = {})
   {
+    fDFId = dfId;
     fGlobalId = globalId;
     fCollisionId = collisionId;
     fTrackId = trackId;
@@ -46,6 +47,7 @@ class EMFwdTrack
 
   ~EMFwdTrack() {}
 
+  int dfId() const { return fDFId; }
   int globalIndex() const { return fGlobalId; }
   int collisionId() const { return fCollisionId; }
   int fwdtrackId() const { return fTrackId; }
@@ -69,6 +71,7 @@ class EMFwdTrack
   void setPairDcaXYinSigmaOTF(float dca) { fPairDCAXYinSigmaOTF = dca; }
 
  protected:
+  int fDFId;
   int fGlobalId;
   int fCollisionId;
   int fTrackId;
@@ -87,12 +90,12 @@ class EMFwdTrack
 class EMFwdTrackWithCov : public EMFwdTrack
 {
  public:
-  EMFwdTrackWithCov(int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaX = 0.f, float dcaY = 0.f, std::vector<int> amb_muon_self_ids = {},
+  EMFwdTrackWithCov(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaX = 0.f, float dcaY = 0.f, std::vector<int> amb_muon_self_ids = {},
                     float X = 0.f, float Y = 0.f, float Z = 0.f, float Tgl = 0.f,
                     float CXX = 0.f, float CXY = 0.f, float CYY = 0.f,
                     float CPhiX = 0.f, float CPhiY = 0.f, float CPhiPhi = 0.f,
                     float CTglX = 0.f, float CTglY = 0.f, float CTglPhi = 0.f, float CTglTgl = 0.f,
-                    float C1PtX = 0.f, float C1PtY = 0.f, float C1PtPhi = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f, float chi2 = 0.f) : EMFwdTrack(globalId, collisionId, trackId, pt, eta, phi, mass, charge, dcaX, dcaY, amb_muon_self_ids)
+                    float C1PtX = 0.f, float C1PtY = 0.f, float C1PtPhi = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f, float chi2 = 0.f) : EMFwdTrack(dfId, globalId, collisionId, trackId, pt, eta, phi, mass, charge, dcaX, dcaY, amb_muon_self_ids)
   {
     fX = X;
     fY = Y;
