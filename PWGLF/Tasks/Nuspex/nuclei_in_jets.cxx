@@ -594,16 +594,7 @@ struct nuclei_in_jets {
     if ((sumPtJet_areaCut - 0.5 * sumPtUE) < min_jet_pt)
       return;
     registryData.fill(HIST("number_of_events_data"), 7.5);
-      // QA Plots ****************************************************************************************************************
 
-      
-      
-      
-      
-      
-      
-      
-      
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
 
