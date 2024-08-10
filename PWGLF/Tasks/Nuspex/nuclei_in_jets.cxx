@@ -108,28 +108,28 @@ struct nuclei_in_jets {
   void init(InitContext const&)
   {
     // QC Histograms
-    registryQC.add("multiplicityJetPlusUE", "multiplicityJetPlusUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
-    registryQC.add("multiplicityJet", "multiplicityJet", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
-    registryQC.add("multiplicityUE", "multiplicityUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("ptLeading", "ptLeading", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
     registryQC.add("etaLeading", "etaLeading", HistType::kTH1F, {{100, -0.8, 0.8, "#eta"}});
     registryQC.add("phiLeading", "phiLeading", HistType::kTH1F, {{100, 0, TMath::TwoPi(), "#phi"}});
-    registryQC.add("rJet", "rJet", HistType::kTH1F, {{100, 0.0, 0.5, "#it{R}"}});
-    registryQC.add("rUE", "rUE", HistType::kTH1F, {{100, 0.0, 0.5, "#it{R}"}});
-    registryQC.add("angle_jet_leading_track", "angle_jet_leading_track", HistType::kTH1F, {{200, 0.0, 50.0, "#theta"}});
-    registryQC.add("ptJetPlusUE", "ptJetPlusUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
-    registryQC.add("ptJet", "ptJet", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
-    registryQC.add("ptUE", "ptUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
-    registryQC.add("deltaEtadeltaPhiJet", "deltaEtadeltaPhiJet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
-    registryQC.add("deltaEtadeltaPhiUE", "deltaEtadeltaPhiUE", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
-    registryQC.add("deltaEtadeltaPhi_leading_jet", "deltaEtadeltaPhi_leading_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
-    registryQC.add("deltaJetPt", "deltaJetPt", HistType::kTH1F, {{200, -2, 2, "#Delta#it{p}_{T} (GeV/#it{c})"}});
+    registryQC.add("deltaEtadeltaPhi_jet_antikt", "deltaEtadeltaPhi_jet_antikt", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("deltaEtadeltaPhi_jet_areaCut", "deltaEtadeltaPhi_jet_areaCut", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("deltaEtadeltaPhi_ue", "deltaEtadeltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("NchJetPlusUE_antikt", "NchJetPlusUE_antikt", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
+    registryQC.add("NchJet_antikt", "NchJet_antikt", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
+    registryQC.add("NchJetPlusUE_areaCut", "NchJetPlusUE_areaCut", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
+    registryQC.add("NchJet_areaCut", "NchJet_areaCut", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
+    registryQC.add("NchUE", "NchUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
+    registryQC.add("sumPtJetPlusUE_antikt", "sumPtJetPlusUE_antikt", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQC.add("sumPtJet_antikt", "sumPtJet_antikt", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQC.add("sumPtJetPlusUE_areaCut", "sumPtJetPlusUE_areaCut", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQC.add("sumPtJet_areaCut", "sumPtJet_areaCut", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQC.add("sumPtUE", "sumPtUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQC.add("deltaEtadeltaPhi_jetaxis_leadingTrk", "deltaEtadeltaPhi_jetaxis_leadingTrk", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
 
     // QC Histograms for ptJet < pt_leading
-    registryQC.add("nParticlesClusteredInJet", "nParticlesClusteredInJet", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
-    registryQC.add("ptParticlesClusteredInJet", "ptParticlesClusteredInJet", HistType::kTH1F, {{200, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
-    registryQC.add("dEtadPhi_jetaxis", "dEtadPhi_jetaxis", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
-    registryQC.add("dEtadPhi_jetaxis_leadTrk", "dEtadPhi_jetaxis_leadTrk", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("NchJet_antikt_lowSumpt", "NchJet_antikt_lowSumpt", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
+    registryQC.add("NchJet_areaCut_lowSumpt", "NchJet_areaCut_lowSumpt", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
+    registryQC.add("deltaEta_deltaPhi_antikt_lowSumpt", "deltaEta_deltaPhi_antikt_lowSumpt", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
 
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
@@ -408,7 +408,7 @@ struct nuclei_in_jets {
     // QC: pt, eta, and phi Distributions of Leading Track
     registryQC.fill(HIST("ptLeading"), p_leading.Pt());
     registryQC.fill(HIST("etaLeading"), p_leading.Eta());
-    registryQC.fill(HIST("phiLeading"), p_leading.Phi());
+    registryQC.fill(HIST("phiLeading"), TVector2::Phi_0_2pi(p_leading.Phi()));
 
     // Event Counter: Skip Events with pt<pt_leading_min
     if (pt_max < min_pt_leading)
@@ -503,23 +503,36 @@ struct nuclei_in_jets {
       return;
     registryData.fill(HIST("number_of_events_data"), 5.5);
 
-    // QA Plots
+    // DeltaEta - DeltaPhi between jet axis and leading track
     double deltaEta = p_leading.Eta() - p_jet.Eta();
     double deltaPhi = GetDeltaPhi(p_leading.Phi(), p_jet.Phi());
-    registryQC.fill(HIST("angle_jet_leading_track"), (180.0 / TMath::Pi()) * p_leading.Angle(p_jet));
-    registryQC.fill(HIST("deltaEtadeltaPhi_leading_jet"), deltaEta, deltaPhi);
+    registryQC.fill(HIST("deltaEtadeltaPhi_jetaxis_leadingTrk"), deltaEta, deltaPhi);
 
-    double NchJetPlusUE(0);
-    double NchJet(0);
-    double NchUE(0);
-    double ptJetPlusUE(0);
-    double ptJet(0);
-    double ptUE(0);
+    int multJetPlusUE_antikt = static_cast<int>(jet_particle_ID.size());
+    registryQC.fill(HIST("NchJetPlusUE_antikt"), multJetPlusUE_antikt);
+
+    // Loop over particles selected by anti-KT
+    double totalPtJetPlusUE_antikt(0);
+    for (int i = 0; i < multJetPlusUE_antikt; i++) {
+
+      auto track = tracks.iteratorAt(jet_particle_ID[i]);
+      TVector3 particle_dir(track.px(), track.py(), track.pz());
+      double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
+      double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
+      registryQC.fill(HIST("deltaEtadeltaPhi_jet_antikt"), deltaEta_jet, deltaPhi_jet);
+      totalPtJetPlusUE_antikt = totalPtJetPlusUE_antikt + track.pt();
+    }
+    registryQC.fill(HIST("sumPtJetPlusUE_antikt"), totalPtJetPlusUE_antikt);
+
+    // Loop over particles
+    double multJetPlusUE_areaCut(0);
+    double multUE(0);
+    double totalPtJetPlusUE_areaCut(0);
+    double totalPtUE(0);
 
     for (int i = 0; i < nParticles; i++) {
 
       auto track = tracks.iteratorAt(particle_ID_copy[i]);
-
       TVector3 particle_dir(track.px(), track.py(), track.pz());
       double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
       double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
@@ -532,70 +545,53 @@ struct nuclei_in_jets {
       double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
       if (deltaR_jet < Rmax) {
-        registryQC.fill(HIST("deltaEtadeltaPhiJet"), deltaEta_jet, deltaPhi_jet);
-        registryQC.fill(HIST("rJet"), deltaR_jet);
-        NchJetPlusUE++;
-        ptJetPlusUE = ptJetPlusUE + track.pt();
+        registryQC.fill(HIST("deltaEtadeltaPhi_jet_areaCut"), deltaEta_jet, deltaPhi_jet);
+        multJetPlusUE_areaCut++;
+        totalPtJetPlusUE_areaCut = totalPtJetPlusUE_areaCut + track.pt();
       }
       if (deltaR_ue1 < Rmax) {
-        registryQC.fill(HIST("deltaEtadeltaPhiUE"), deltaEta_ue1, deltaPhi_ue1);
-        registryQC.fill(HIST("rUE"), deltaR_ue1);
-        NchUE++;
-        ptUE = ptUE + track.pt();
+        registryQC.fill(HIST("deltaEtadeltaPhi_ue"), deltaEta_ue1, deltaPhi_ue1);
+        multUE++;
+        totalPtUE = totalPtUE + track.pt();
       }
       if (deltaR_ue2 < Rmax) {
-        registryQC.fill(HIST("deltaEtadeltaPhiUE"), deltaEta_ue2, deltaPhi_ue2);
-        registryQC.fill(HIST("rUE"), deltaR_ue2);
-        NchUE++;
-        ptUE = ptUE + track.pt();
+        registryQC.fill(HIST("deltaEtadeltaPhi_ue"), deltaEta_ue2, deltaPhi_ue2);
+        multUE++;
+        totalPtUE = totalPtUE + track.pt();
       }
     }
+    registryQC.fill(HIST("NchJetPlusUE_areaCut"), multJetPlusUE_areaCut);
+    registryQC.fill(HIST("NchJet_areaCut"), multJetPlusUE_areaCut - 0.5 * multUE);
+    registryQC.fill(HIST("NchUE"), 0.5 * multUE);
+    registryQC.fill(HIST("NchJet_antikt"), multJetPlusUE_antikt - 0.5 * multUE);
+    registryQC.fill(HIST("sumPtJetPlusUE_areaCut"), totalPtJetPlusUE_areaCut);
+    registryQC.fill(HIST("sumPtJet_antikt"), totalPtJetPlusUE_antikt - 0.5 * totalPtUE);
+    registryQC.fill(HIST("sumPtUE"), 0.5 * totalPtUE);
+    registryQC.fill(HIST("sumPtJet_areaCut"), totalPtJetPlusUE_areaCut - 0.5 * totalPtUE);
 
-    NchJet = NchJetPlusUE - 0.5 * NchUE;
-    ptJet = ptJetPlusUE - 0.5 * ptUE;
-    registryQC.fill(HIST("multiplicityJetPlusUE"), NchJetPlusUE);
-    registryQC.fill(HIST("multiplicityJet"), NchJet);
-    registryQC.fill(HIST("multiplicityUE"), 0.5 * NchUE);
-    registryQC.fill(HIST("ptJetPlusUE"), ptJetPlusUE);
-    registryQC.fill(HIST("ptJet"), ptJet);
-    registryQC.fill(HIST("ptUE"), 0.5 * ptUE);
+    // Fill QA Histograms for low sumPt events
+    if (totalPtJetPlusUE_areaCut < min_pt_leading) {
 
-    int nPartClustered_Jet = static_cast<int>(jet_particle_ID.size());
+      registryQC.fill(HIST("NchJet_antikt_lowSumpt"), multJetPlusUE_antikt);
+      registryQC.fill(HIST("NchJet_areaCut_lowSumpt"), multJetPlusUE_areaCut);
 
-    // Fill QA Histograms
-    if (ptJetPlusUE < min_pt_leading) {
-
-      registryQC.fill(HIST("nParticlesClusteredInJet"), nPartClustered_Jet);
-      double dEta = p_leading.Eta() - p_jet.Eta();
-      double dPhi = GetDeltaPhi(p_leading.Phi(), p_jet.Phi());
-      registryQC.fill(HIST("dEtadPhi_jetaxis_leadTrk"), dEta, dPhi);
-
-      for (int i = 0; i < nPartClustered_Jet; i++) {
+      for (int i = 0; i < multJetPlusUE_antikt; i++) {
 
         auto track = tracks.iteratorAt(jet_particle_ID[i]);
         TVector3 particle_dir(track.px(), track.py(), track.pz());
-        double dEta = particle_dir.Eta() - p_jet.Eta();
-        double dPhi = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
-        registryQC.fill(HIST("ptParticlesClusteredInJet"), track.pt());
-        registryQC.fill(HIST("dEtadPhi_jetaxis"), dEta, dPhi);
+        double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
+        double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
+        registryQC.fill(HIST("deltaEta_deltaPhi_antikt_lowSumpt"), deltaEta_jet, deltaPhi_jet);
       }
     }
 
-    double ptJet_antikt(0);
-    for (int i = 0; i < nPartClustered_Jet; i++) {
-
-      auto track = tracks.iteratorAt(jet_particle_ID[i]);
-      ptJet_antikt = ptJet_antikt + track.pt();
-    }
-    registryQC.fill(HIST("deltaJetPt"), ptJet_antikt - ptJetPlusUE);
-
     // Event Counter: Skip Events with n. particles in jet less than given value
-    if (NchJetPlusUE < min_nPartInJet)
+    if (multJetPlusUE_areaCut < min_nPartInJet)
       return;
     registryData.fill(HIST("number_of_events_data"), 6.5);
 
     // Event Counter: Skip Events with Jet Pt lower than threshold
-    if (ptJet < min_jet_pt)
+    if ((totalPtJetPlusUE_areaCut - 0.5 * totalPtUE) < min_jet_pt)
       return;
     registryData.fill(HIST("number_of_events_data"), 7.5);
 
