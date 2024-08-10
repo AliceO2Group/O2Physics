@@ -661,11 +661,11 @@ struct PhotonHBT {
           std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
           std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, g2.globalIndex());
           if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, EMTrack(g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
             used_photonIds.emplace_back(pair_tmp_id1);
           }
           if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id2) == used_photonIds.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, EMTrack(g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0));
             used_photonIds.emplace_back(pair_tmp_id2);
           }
         } // end of pairing loop
@@ -754,13 +754,13 @@ struct PhotonHBT {
               std::tuple<int, int, int, int> tuple_tmp_id1 = std::make_tuple(ndf, collision.globalIndex(), pos1.globalIndex(), ele1.globalIndex());
               std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
               if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id1) == used_dileptonIds.end()) {
-                EMTrack g1pair = EMTrack(-1, collision.globalIndex(), -1, v1_ee.Pt(), v1_ee.Eta(), v1_ee.Phi(), v1_ee.M());
+                EMTrack g1pair = EMTrack(ndf, -1, collision.globalIndex(), -1, v1_ee.Pt(), v1_ee.Eta(), v1_ee.Phi(), v1_ee.M());
                 g1pair.setPairDca3DinSigmaOTF(dca1_3d);
                 emh1->AddTrackToEventPool(key_df_collision, g1pair);
                 used_dileptonIds.emplace_back(tuple_tmp_id1);
               }
               if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id2) == used_dileptonIds.end()) {
-                EMTrack g2pair = EMTrack(-1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
+                EMTrack g2pair = EMTrack(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
                 g2pair.setPairDca3DinSigmaOTF(dca2_3d);
                 emh1->AddTrackToEventPool(key_df_collision, g2pair);
                 used_dileptonIds.emplace_back(tuple_tmp_id2);
@@ -829,11 +829,11 @@ struct PhotonHBT {
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
             std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
             if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
-              emh1->AddTrackToEventPool(key_df_collision, EMTrack(g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
+              emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
               used_photonIds.emplace_back(pair_tmp_id1);
             }
             if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id2) == used_dileptonIds.end()) {
-              EMTrack g2pair = EMTrack(-1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
+              EMTrack g2pair = EMTrack(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
               g2pair.setPairDca3DinSigmaOTF(dca2_3d);
               emh2->AddTrackToEventPool(key_df_collision, g2pair);
               used_dileptonIds.emplace_back(tuple_tmp_id2);

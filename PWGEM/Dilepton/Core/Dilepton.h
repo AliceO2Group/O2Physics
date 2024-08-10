@@ -600,26 +600,24 @@ struct Dilepton {
   {
     if constexpr (ev_id == 1) {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-        if (t1.has_ambiguousElectrons() && t2.has_ambiguousElectrons()) {
-          for (auto& possible_id1 : t1.ambiguousElectronsIds()) {
-            for (auto& possible_id2 : t2.ambiguousElectronsIds()) {
-              if (possible_id1 == possible_id2) {
-                // LOGF(info, "event id = %d: same track is found. t1.trackId() = %d, t1.collisionId() = %d, t1.pt() = %f, t1.eta() = %f, t1.phi() = %f, t2.trackId() = %d, t2.collisionId() = %d, t2.pt() = %f, t2.eta() = %f, t2.phi() = %f", ev_id, t1.trackId(), t1.collisionId(), t1.pt(), t1.eta(), t1.phi(), t2.trackId(), t2.collisionId(), t2.pt(), t2.eta(), t2.phi());
-                return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
-              }
-            }
-          }
+        // bool is_found1 = std::find(t2.ambiguousElectronsIds.begin(), t2.ambiguousElectronsIds.end(), t1.globalIndex()) != t2.ambiguousElectronsIds.end(); //this does not work.
+        // bool is_found2 = std::find(t1.ambiguousElectronsIds.begin(), t1.ambiguousElectronsIds.end(), t2.globalIndex()) != t1.ambiguousElectronsIds.end(); //this does not work.
+        auto v1ambIds = t1.ambiguousElectronsIds();
+        auto v2ambIds = t2.ambiguousElectronsIds();
+
+        if ((t1.dfId() == t2.dfId()) && std::find(v2ambIds.begin(), v2ambIds.end(), t1.globalIndex()) != v2ambIds.end() && std::find(v1ambIds.begin(), v1ambIds.end(), t2.globalIndex()) != v1ambIds.end()) {
+          // LOGF(info, "event id = %d: same track is found. t1.globalIndex() = %d, t1.sign() = %d, t1.pt() = %f, t1.eta() = %f, t1.phi() = %f, t2.globalIndex() = %d, t2.sign() = %d, t2.pt() = %f, t2.eta() = %f, t2.phi() = %f, deta = %f, dphi = %f (rad.)", ev_id, t1.globalIndex(), t1.sign(), t1.pt(), t1.eta(), t1.phi(), t2.globalIndex(), t2.sign(), t2.pt(), t2.eta(), t2.phi(), t1.eta() - t2.eta(), t1.phi() - t2.phi());
+          return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
         }
       } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-        if (t1.has_ambiguousMuons() && t2.has_ambiguousMuons()) {
-          for (auto& possible_id1 : t1.ambiguousMuonsIds()) {
-            for (auto& possible_id2 : t2.ambiguousMuonsIds()) {
-              if (possible_id1 == possible_id2) {
-                // LOGF(info, "event id = %d: same track is found. t1.trackId() = %d, t1.collisionId() = %d, t1.pt() = %f, t1.eta() = %f, t1.phi() = %f, t2.trackId() = %d, t2.collisionId() = %d, t2.pt() = %f, t2.eta() = %f, t2.phi() = %f", ev_id, t1.trackId(), t1.collisionId(), t1.pt(), t1.eta(), t1.phi(), t2.trackId(), t2.collisionId(), t2.pt(), t2.eta(), t2.phi());
-                return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
-              }
-            }
-          }
+        // bool is_found1 = std::find(t2.ambiguousMuonsIds.begin(), t2.ambiguousMuonsIds.end(), t1.globalIndex()) != t2.ambiguousMuonsIds.end(); //this does not work.
+        // bool is_found2 = std::find(t1.ambiguousMuonsIds.begin(), t1.ambiguousMuonsIds.end(), t2.globalIndex()) != t1.ambiguousMuonsIds.end(); //this does not work.
+        auto v1ambIds = t1.ambiguousMuonsIds();
+        auto v2ambIds = t2.ambiguousMuonsIds();
+
+        if ((t1.dfId() == t2.dfId()) && std::find(v2ambIds.begin(), v2ambIds.end(), t1.globalIndex()) != v2ambIds.end() && std::find(v1ambIds.begin(), v1ambIds.end(), t2.globalIndex()) != v1ambIds.end()) {
+          // LOGF(info, "event id = %d: same track is found. t1.globalIndex() = %d, t1.sign() = %d, t1.pt() = %f, t1.eta() = %f, t1.phi() = %f, t2.globalIndex() = %d, t2.sign() = %d, t2.pt() = %f, t2.eta() = %f, t2.phi() = %f, deta = %f, dphi = %f (rad.)", ev_id, t1.globalIndex(), t1.sign(), t1.pt(), t1.eta(), t1.phi(), t2.globalIndex(), t2.sign(), t2.pt(), t2.eta(), t2.phi(), t1.eta() - t2.eta(), t1.phi() - t2.phi());
+          return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
         }
       }
     }
@@ -844,11 +842,11 @@ struct Dilepton {
           used_trackIds.emplace_back(pair_tmp_id1);
           if (cfgDoMix) {
             if (t1.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, EMTrackWithCov(t1.globalIndex(), collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.dcaXY(), t1.dcaZ(), possibleIds1,
+              emh_pos->AddTrackToEventPool(key_df_collision, EMTrackWithCov(ndf, t1.globalIndex(), collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.dcaXY(), t1.dcaZ(), possibleIds1,
                                                                             t1.x(), t1.y(), t1.z(), t1.alpha(), t1.snp(), t1.tgl(), t1.cYY(), t1.cZY(), t1.cZZ(),
                                                                             t1.cSnpY(), t1.cSnpZ(), t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(), t1.c1PtY(), t1.c1PtZ(), t1.c1PtSnp(), t1.c1PtTgl(), t1.c1Pt21Pt2()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, EMTrackWithCov(t1.globalIndex(), collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.dcaXY(), t1.dcaZ(), possibleIds1,
+              emh_neg->AddTrackToEventPool(key_df_collision, EMTrackWithCov(ndf, t1.globalIndex(), collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.dcaXY(), t1.dcaZ(), possibleIds1,
                                                                             t1.x(), t1.y(), t1.z(), t1.alpha(), t1.snp(), t1.tgl(), t1.cYY(), t1.cZY(), t1.cZZ(),
                                                                             t1.cSnpY(), t1.cSnpZ(), t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(), t1.c1PtY(), t1.c1PtZ(), t1.c1PtSnp(), t1.c1PtTgl(), t1.c1Pt21Pt2()));
             }
@@ -858,11 +856,11 @@ struct Dilepton {
           used_trackIds.emplace_back(pair_tmp_id2);
           if (cfgDoMix) {
             if (t2.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, EMTrackWithCov(t2.globalIndex(), collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.dcaXY(), t2.dcaZ(), possibleIds1,
+              emh_pos->AddTrackToEventPool(key_df_collision, EMTrackWithCov(ndf, t2.globalIndex(), collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.dcaXY(), t2.dcaZ(), possibleIds2,
                                                                             t2.x(), t2.y(), t2.z(), t2.alpha(), t2.snp(), t2.tgl(), t2.cYY(), t2.cZY(), t2.cZZ(),
                                                                             t2.cSnpY(), t2.cSnpZ(), t2.cSnpSnp(), t2.cTglY(), t2.cTglZ(), t2.cTglSnp(), t2.cTglTgl(), t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, EMTrackWithCov(t2.globalIndex(), collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.dcaXY(), t2.dcaZ(), possibleIds1,
+              emh_neg->AddTrackToEventPool(key_df_collision, EMTrackWithCov(ndf, t2.globalIndex(), collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.dcaXY(), t2.dcaZ(), possibleIds2,
                                                                             t2.x(), t2.y(), t2.z(), t2.alpha(), t2.snp(), t2.tgl(), t2.cYY(), t2.cZY(), t2.cZZ(),
                                                                             t2.cSnpY(), t2.cSnpZ(), t2.cSnpSnp(), t2.cTglY(), t2.cTglZ(), t2.cTglSnp(), t2.cTglTgl(), t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()));
             }
@@ -876,11 +874,11 @@ struct Dilepton {
           used_trackIds.emplace_back(pair_tmp_id1);
           if (cfgDoMix) {
             if (t1.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrackWithCov(t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
+              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrackWithCov(ndf, t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
                                                                                t1.x(), t1.y(), t1.z(), t1.tgl(), t1.cXX(), t1.cXY(), t1.cYY(),
                                                                                t1.cPhiX(), t1.cPhiY(), t1.cPhiPhi(), t1.cTglX(), t1.cTglY(), t1.cTglPhi(), t1.cTglTgl(), t1.c1PtX(), t1.c1PtY(), t1.c1PtPhi(), t1.c1PtTgl(), t1.c1Pt21Pt2(), t1.chi2()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrackWithCov(t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
+              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrackWithCov(ndf, t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
                                                                                t1.x(), t1.y(), t1.z(), t1.tgl(), t1.cXX(), t1.cXY(), t1.cYY(),
                                                                                t1.cPhiX(), t1.cPhiY(), t1.cPhiPhi(), t1.cTglX(), t1.cTglY(), t1.cTglPhi(), t1.cTglTgl(), t1.c1PtX(), t1.c1PtY(), t1.c1PtPhi(), t1.c1PtTgl(), t1.c1Pt21Pt2(), t1.chi2()));
             }
@@ -890,11 +888,11 @@ struct Dilepton {
           used_trackIds.emplace_back(pair_tmp_id2);
           if (cfgDoMix) {
             if (t2.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrackWithCov(t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
+              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrackWithCov(ndf, t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
                                                                                t2.x(), t2.y(), t2.z(), t2.tgl(), t2.cXX(), t2.cXY(), t2.cYY(),
                                                                                t2.cPhiX(), t2.cPhiY(), t2.cPhiPhi(), t2.cTglX(), t2.cTglY(), t2.cTglPhi(), t2.cTglTgl(), t2.c1PtX(), t2.c1PtY(), t2.c1PtPhi(), t2.c1PtTgl(), t2.c1Pt21Pt2(), t2.chi2()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrackWithCov(t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
+              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrackWithCov(ndf, t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
                                                                                t2.x(), t2.y(), t2.z(), t2.tgl(), t2.cXX(), t2.cXY(), t2.cYY(),
                                                                                t2.cPhiX(), t2.cPhiY(), t2.cPhiPhi(), t2.cTglX(), t2.cTglY(), t2.cTglPhi(), t2.cTglTgl(), t2.c1PtX(), t2.c1PtY(), t2.c1PtPhi(), t2.c1PtTgl(), t2.c1Pt21Pt2(), t2.chi2()));
             }
