@@ -523,15 +523,15 @@ struct strangeness_tutorial {
     if (QAevents) {
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       rEventSelection.fill(HIST("hmultiplicity"), multiplicity);
-      rEventSelection.fill(HIST("multdist_FT0M"), collision.centFT0M());
-      rEventSelection.fill(HIST("multdist_FT0A"), collision.centFT0A());
-      rEventSelection.fill(HIST("multdist_FT0C"), collision.centFT0C());
+      rEventSelection.fill(HIST("multdist_FT0M"), collision.multFT0M());
+      rEventSelection.fill(HIST("multdist_FT0A"), collision.multFT0A());
+      rEventSelection.fill(HIST("multdist_FT0C"), collision.multFT0C());
       rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
     }
 
     std::vector<int> v0indexes;
 
-    for (auto& [v1, v2] : combinations(CombinationsStrictlyUpperIndexPolicy(V0s, V0s))) {
+    for (auto& [v1, v2] : combinations(CombinationsUpperIndexPolicy(V0s, V0s))) {
 
       if (v1.size() == 0 || v2.size() == 0) {
         continue;
@@ -548,13 +548,6 @@ struct strangeness_tutorial {
       auto negtrack1 = v1.template negTrack_as<TrackCandidates>();
       auto postrack2 = v2.template posTrack_as<TrackCandidates>();
       auto negtrack2 = v2.template negTrack_as<TrackCandidates>();
-
-      if (postrack1.globalIndex() == postrack2.globalIndex()) {
-        continue;
-      }
-      if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
-        continue;
-      }
 
       double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
       double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
@@ -580,6 +573,17 @@ struct strangeness_tutorial {
       // std::cout << "global index of v1: " << v1.globalIndex() << "   global index of v2: " << v2.globalIndex() << std::endl;
       if (!(std::find(v0indexes.begin(), v0indexes.end(), v2.globalIndex()) != v0indexes.end())) {
         v0indexes.push_back(v2.globalIndex());
+      }
+
+      if (v1.globalIndex() == v2.globalIndex()) {
+        continue;
+      }
+
+      if (postrack1.globalIndex() == postrack2.globalIndex()) {
+        continue;
+      }
+      if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
+        continue;
       }
 
       TLorentzVector lv1, lv2, lv3, lv4, lv5;
