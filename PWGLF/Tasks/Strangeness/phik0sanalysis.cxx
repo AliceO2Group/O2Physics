@@ -1578,13 +1578,16 @@ struct phik0shortanalysis {
 
           listrecPhi.push_back(recPhi);
 
-          countInclusive++;
+          if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
+            countInclusive++;
           if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
-          countLtFirstCut++;
+          if (lowmPhiFCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiFCut->at(iBin))
+            countLtFirstCut++;
           if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
-          countLtSecondCut++;
+          if (lowmPhiSCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiSCut->at(iBin))
+            countLtSecondCut++;
         }
       }
 
@@ -1748,13 +1751,16 @@ struct phik0shortanalysis {
 
           listrecPhi.push_back(recPhi);
 
-          countInclusive++;
+          if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
+            countInclusive++;
           if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
-          countLtFirstCut++;
+          if (lowmPhiFCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiFCut->at(iBin))
+            countLtFirstCut++;
           if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
-          countLtSecondCut++;
+          if (lowmPhiSCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiSCut->at(iBin))
+            countLtSecondCut++;
         }
       }
 
