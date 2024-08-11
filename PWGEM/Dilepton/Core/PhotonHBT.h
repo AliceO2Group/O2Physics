@@ -336,7 +336,7 @@ struct PhotonHBT {
     const AxisSpec axis_kt{ConfKtBins, "k_{T} (GeV/c)"};
     const AxisSpec axis_qinv{60, 0.0, +0.3, "q_{inv} (GeV/c)"};
     const AxisSpec axis_kstar{60, 0.0, +0.3, "k* (GeV/c)"};
-    const AxisSpec axis_qabs_lcms{30, 0.0, +0.3, "|#bf{q}|^{LCMS} (GeV/c)"};
+    const AxisSpec axis_qabs_lcms{60, 0.0, +0.3, "|#bf{q}|^{LCMS} (GeV/c)"};
     const AxisSpec axis_qout{60, -0.3, +0.3, "q_{out} (GeV/c)"};   // qout does not change between LAB and LCMS frame
     const AxisSpec axis_qside{60, -0.3, +0.3, "q_{side} (GeV/c)"}; // qside does not change between LAB and LCMS frame
     const AxisSpec axis_qlong{60, -0.3, +0.3, "q_{long} (GeV/c)"};
