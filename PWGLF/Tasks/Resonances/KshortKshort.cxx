@@ -419,9 +419,13 @@ struct strangeness_tutorial {
   }
 
   template <typename T, typename V0s>
-  bool isSelectedV0Daughter(T const& track, float charge,
-                            double nsigmaV0Daughter, V0s const& /*candidate*/)
+  bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0Daughter, V0s const& /*candidate*/)
   {
+    //  if (QAv0_daughters) {
+    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_pt"), track.pt()) : rKzeroShort.fill(HIST("positive_pt"), track.pt());
+    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_eta"), track.eta()) : rKzeroShort.fill(HIST("positive_eta"), track.eta());
+    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_phi"), track.phi()) : rKzeroShort.fill(HIST("positive_phi"), track.phi());
+    //   }
     if (QAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
       // tpcInnerParam is the momentum at the inner wall of TPC. So momentum of tpc vs nsigma of tpc is plotted.
@@ -475,12 +479,6 @@ struct strangeness_tutorial {
     //   (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
     //   // }
     // }
-
-    if (QAv0_daughters) {
-      (charge == 1) ? rKzeroShort.fill(HIST("positive_pt"), track.pt()) : rKzeroShort.fill(HIST("negative_pt"), track.pt());
-      (charge == 1) ? rKzeroShort.fill(HIST("positive_eta"), track.eta()) : rKzeroShort.fill(HIST("negative_eta"), track.eta());
-      (charge == 1) ? rKzeroShort.fill(HIST("positive_phi"), track.phi()) : rKzeroShort.fill(HIST("negative_phi"), track.phi());
-    }
 
     return true;
   }
@@ -554,18 +552,27 @@ struct strangeness_tutorial {
       double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
       double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
 
-      if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1)) {
+      if (!(isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1) && isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1))) {
         continue;
       }
-      if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2)) {
+      if (!(isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2) && isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2))) {
         continue;
       }
-      if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1)) {
-        continue;
+
+      if (QAv0_daughters) {
+        rKzeroShort.fill(HIST("negative_pt"), negtrack1.pt());
+        rKzeroShort.fill(HIST("positive_pt"), postrack1.pt());
+        rKzeroShort.fill(HIST("negative_eta"), negtrack1.eta());
+        rKzeroShort.fill(HIST("positive_eta"), postrack1.eta());
+        rKzeroShort.fill(HIST("negative_phi"), negtrack1.phi());
+        rKzeroShort.fill(HIST("positive_phi"), postrack1.phi());
       }
-      if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2)) {
-        continue;
-      }
+      // if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1)) {
+      //   continue;
+      // }
+      // if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2)) {
+      //   continue;
+      // }
 
       if (!(std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) != v0indexes.end())) {
         v0indexes.push_back(v1.globalIndex());
