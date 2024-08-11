@@ -91,6 +91,8 @@ struct skimmerPrimaryElectron {
   Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 0.0, "max. TPC n sigma for proton exclusion"};
   Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", 0.0, "min. TPC n sigma for proton exclusion"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
+  Configurable<float> minTOFbeta{"minTOFbeta", 0.97, "min TOF beta for single track"}; // |beta - 1| < 0.015 corresponds to 3 sigma in pp
+  Configurable<float> maxTOFbeta{"maxTOFbeta", 1.03, "max TOF beta for single track"}; // |beta - 1| < 0.015 corresponds to 3 sigma in pp
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -311,7 +313,7 @@ struct skimmerPrimaryElectron {
     if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
       return false;
     }
-    if (!(track.beta() < 0.f || (0.96 < track.beta() && track.beta() < 1.04))) {
+    if (!(track.beta() < 0.f || (minTOFbeta < track.beta() && track.beta() < maxTOFbeta))) {
       return false;
     }
     return true;
@@ -422,7 +424,7 @@ struct skimmerPrimaryElectron {
 
   std::vector<std::pair<int, int>> stored_trackIds;
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
-  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.96f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.04f) || o2::aod::pidtofbeta::beta < 0.f) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
+  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((minTOFbeta < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < maxTOFbeta) || o2::aod::pidtofbeta::beta < 0.f) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
