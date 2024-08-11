@@ -16,6 +16,7 @@
 /// \author Michał Olędzki <m.oledzki@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
+#include <cstddef>
 #include <string_view>
 #include <algorithm>
 
@@ -28,7 +29,6 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Tools/PIDML/pidOnnxModel.h"
 #include "Tools/PIDML/pidUtils.h"
-#include "pidOnnxModel.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -57,7 +57,7 @@ struct PidMlBatchEffAndPurProducer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   static constexpr int32_t currentRunNumber = -1;
-  static constexpr int32_t kNPids = 6;
+  static constexpr uint32_t kNPids = 6;
   static constexpr int32_t kPids[kNPids] = {2212, 321, 211, -211, -321, -2212};
   static constexpr std::string_view kParticleLabels[kNPids] = {"2212", "321", "211", "0211", "0321", "02212"};
   static constexpr std::string_view kParticleNames[kNPids] = {"proton", "kaon", "pion", "antipion", "antikaon", "antiproton"};
@@ -87,10 +87,10 @@ struct PidMlBatchEffAndPurProducer {
   {
     static const AxisSpec axisPt{50, 0, 3.1, "pt"};
 
-    std::static_for<0, kNPids>([&](auto i) {
-      hTracked[i] = histos.add(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("Tracked %ss vs pT", kParticleNames[i]), kTH1F, {axisPt});
-      hMCPositive[i] = histos.add(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i]), kTH1F, {axisPt});
-    })
+    static_for<0, kNPids>([&](auto i) {
+      hTracked[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("Tracked %ss vs pT", kParticleNames[i]), kTH1F, {axisPt});
+      hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i]), kTH1F, {axisPt});
+    });
   }
 
   void init(InitContext const&)
@@ -102,7 +102,7 @@ struct PidMlBatchEffAndPurProducer {
     initHistos();
   }
 
-  int32_t getPartIndex(int32_t pdgCode)
+  uint32_t getPartIndex(int32_t pdgCode)
   {
     return std::distance(kPids, std::find(kPids, kPids + kNPids, pdgCode));
   }
@@ -189,7 +189,7 @@ struct PidMlBatchEffAndPurProducer {
         if (mcPart.isPhysicalPrimary()) {
           fillTrackedHist(mcPart.pdgCode(), track.pt());
 
-          for (int32_t i = 0; i < cfgPids.value.size(); ++i) {
+          for (size_t i = 0; i < cfgPids.value.size(); ++i) {
             float mlCertainty = models[i].applyModel(track);
             nSigma_t nSigma = getNSigma(track, cfgPids.value[i]);
             bool isMCPid = mcPart.pdgCode() == cfgPids.value[i];
