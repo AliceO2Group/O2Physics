@@ -926,7 +926,7 @@ struct nucleiWithFastJet {
       }
 
     } // track
-  } // process mc
+  }   // process mc
 
   void processMCRec(o2::aod::JCollision const& collisionJet, soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
                     soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, JetParticles const&)
@@ -1077,7 +1077,7 @@ struct nucleiWithFastJet {
         jetHist.fill(HIST("recmatched/pt/PtParticleType"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
       }
     } // tracks
-  } // process
+  }   // process
 
   int nprocessSimJEEvents = 0;
   void processGenMatched(aod::JMcCollision const& collision,
@@ -1134,7 +1134,7 @@ struct nucleiWithFastJet {
         jetHist.fill(HIST("genmatched/hRecMatchedJetEta"), mcpjet.eta(), mcpjet.eta() - mcdjet.eta());
 
       } // mcdJet
-    } // mcpJet
+    }   // mcpJet
 
     for (const auto& mcParticle : mcParticles) {
       if (fabs(mcParticle.eta()) > cfgtrkMaxEta)
