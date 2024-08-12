@@ -277,6 +277,25 @@ struct FilterCF {
     delete[] mcParticleLabels;
   }
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
+
+  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles)
+  {
+    float multiplicity = 0.0f;
+    for (auto& particle : particles) {
+      if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > cfgCutMCEta || particle.pt() < cfgCutMCPt)
+        continue;
+      int8_t sign = 0;
+      if (TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode()))
+        if ((sign = pdgparticle->Charge()) != 0)
+          multiplicity += 1.0f;
+      outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), FLOAT_PRECISION),
+                        truncateFloatFraction(particle.eta(), FLOAT_PRECISION),
+                        truncateFloatFraction(particle.phi(), FLOAT_PRECISION),
+                        sign, particle.pdgCode(), particle.flags());
+    }
+    outputMcCollisions(mcCollision.posZ(), multiplicity);
+  }
+  PROCESS_SWITCH(FilterCF, processMCGen, "Process MCGen", false);
 };
 
 struct MultiplicitySelector {
@@ -304,6 +323,9 @@ struct MultiplicitySelector {
       enabledFunctions++;
     }
     if (doprocessFT0A) {
+      enabledFunctions++;
+    }
+    if (doprocessMCGen) {
       enabledFunctions++;
     }
 
@@ -349,6 +371,12 @@ struct MultiplicitySelector {
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processRun2V0M, "Select V0M centrality as multiplicity", true);
+
+  void processMCGen(aod::McCollision const&, aod::McParticles const& particles)
+  {
+    output(particles.size());
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processMCGen, "Select MC particle count as multiplicity", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

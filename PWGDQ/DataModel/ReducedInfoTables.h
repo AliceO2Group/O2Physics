@@ -192,6 +192,14 @@ DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float); //!
 DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float); //!
 DECLARE_SOA_COLUMN(EnergyCommonZPA, energyCommonZPA, float); //!
 DECLARE_SOA_COLUMN(EnergyCommonZPC, energyCommonZPC, float); //!
+DECLARE_SOA_COLUMN(EnergyZNA1, energyZNA1, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNA2, energyZNA2, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNA3, energyZNA3, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNA4, energyZNA4, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNC1, energyZNC1, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNC2, energyZNC2, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNC3, energyZNC3, float);           //!
+DECLARE_SOA_COLUMN(EnergyZNC4, energyZNC4, float);           //!
 DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);                 //!
 DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);                 //!
 DECLARE_SOA_COLUMN(TimeZPA, timeZPA, float);                 //!
@@ -204,7 +212,12 @@ DECLARE_SOA_TABLE(ReducedZdcs, "AOD", "REDUCEDZDC", //!   Event ZDC information
                   reducedzdc::TimeZNA, reducedzdc::TimeZNC,
                   reducedzdc::TimeZPA, reducedzdc::TimeZPC);
 
+DECLARE_SOA_TABLE(ReducedZdcsExtra, "AOD", "REDUCEDZDCEXTRA", //!   Event ZDC extra information
+                  reducedzdc::EnergyZNA1, reducedzdc::EnergyZNA2, reducedzdc::EnergyZNA3, reducedzdc::EnergyZNA4,
+                  reducedzdc::EnergyZNC1, reducedzdc::EnergyZNC2, reducedzdc::EnergyZNC3, reducedzdc::EnergyZNC4);
+
 using ReducedZdc = ReducedZdcs::iterator;
+using ReducedZdcExtra = ReducedZdcsExtra::iterator;
 
 namespace reducedtrack
 {
@@ -492,18 +505,6 @@ DECLARE_SOA_TABLE(ReducedMuonsAssoc, "AOD", "RMASSOC", //! Table for reducedmuon
 DECLARE_SOA_TABLE(ReducedMFTAssoc, "AOD", "RMFTASSOC", //! Table for reducemft-to-reducedcollision association
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedMFTId);
-
-namespace smearedtrack
-{
-DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
-DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
-DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
-DECLARE_SOA_COLUMN(Efficiency, efficiency, float);
-} // namespace smearedtrack
-
-DECLARE_SOA_TABLE(SmearedTracks, "AOD", "SMEAREDTRACK", // use like this Join<ReducedMCTracks, SmearedTracks>
-                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared, smearedtrack::Efficiency);
-using SmearedTrack = SmearedTracks::iterator;
 
 namespace dilepton_track_index
 {
@@ -977,6 +978,33 @@ DECLARE_SOA_TABLE(RedDleptDmesAll, "AOD", "RTDILPTDMESALL", //!
                   jpsidmescorr::BdtBkg,
                   jpsidmescorr::BdtPrompt,
                   jpsidmescorr::BdtNonprompt);
+
+namespace muondca
+{
+DECLARE_SOA_COLUMN(pDCA, pdca, float); //!
+DECLARE_SOA_COLUMN(DCA, dca, float);   //!
+DECLARE_SOA_COLUMN(DCAx, dcax, float); //!
+DECLARE_SOA_COLUMN(DCAy, dcay, float); //!
+DECLARE_SOA_COLUMN(Rabs, rabs, float); //!
+DECLARE_SOA_COLUMN(Px, px, float);     //!
+DECLARE_SOA_COLUMN(Py, py, float);     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);     //!
+} // namespace muondca
+
+DECLARE_SOA_TABLE(ReducedMuonsDca, "AOD", "RTMUONDCA",
+                  muondca::pDCA,
+                  muondca::DCA,
+                  muondca::DCAx,
+                  muondca::DCAy,
+                  muondca::Rabs,
+                  reducedmuon::Pt,
+                  reducedmuon::Eta, reducedmuon::Phi,
+                  reducedmuon::Sign, reducedmuon::IsAmbiguous,
+                  muondca::Px,
+                  muondca::Py,
+                  muondca::Pz);
+
+using ReducedMuonDca = ReducedMuonsDca::iterator;
 } // namespace o2::aod
 
 #endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_

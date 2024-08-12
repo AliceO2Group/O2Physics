@@ -25,6 +25,8 @@
 #include "Common/Core/trackUtilities.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/Core/TableHelper.h"
+#include "EventFiltering/Zorro.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
@@ -59,6 +61,9 @@ struct skimmerPrimaryElectron {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
+  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
 
   // Operation and minimisation criteria
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
@@ -85,17 +90,21 @@ struct skimmerPrimaryElectron {
   Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", 0.0, "min. TPC n sigma for kaon exclusion"};
   Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 0.0, "max. TPC n sigma for proton exclusion"};
   Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", 0.0, "min. TPC n sigma for proton exclusion"};
+  Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
+  Configurable<float> minTOFbeta{"minTOFbeta", 0.97, "min TOF beta for single track"}; // |beta - 1| < 0.015 corresponds to 3 sigma in pp
+  Configurable<float> maxTOFbeta{"maxTOFbeta", 1.03, "max TOF beta for single track"}; // |beta - 1| < 0.015 corresponds to 3 sigma in pp
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   std::pair<int8_t, std::set<uint8_t>> itsRequirement = {1, {0, 1, 2}}; // any hits on 3 ITS ib layers.
 
+  Zorro zorro;
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -105,14 +114,18 @@ struct skimmerPrimaryElectron {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    if (inherit_from_emevent_dilepton) {
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);                           // for EM users.
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
+    }
+
     if (fillQAHistogram) {
       fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
       fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
       fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {20, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-      fRegistry.add("Track/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
-      fRegistry.add("Track/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
       fRegistry.add("Track/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
       fRegistry.add("Track/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
       fRegistry.add("Track/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -144,6 +157,10 @@ struct skimmerPrimaryElectron {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if (enable_swt) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -188,6 +205,10 @@ struct skimmerPrimaryElectron {
       if (!track.has_mcParticle()) {
         return false;
       }
+    }
+
+    if (requireTOF && !(track.hasTOF() && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl)) {
+      return false;
     }
 
     if (track.tpcChi2NCl() > maxchi2tpc) {
@@ -292,7 +313,7 @@ struct skimmerPrimaryElectron {
     if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
       return false;
     }
-    if (!(track.beta() < 0.f || (0.96 < track.beta() && track.beta() < 1.04))) {
+    if (!(track.beta() < 0.f || (minTOFbeta < track.beta() && track.beta() < maxTOFbeta))) {
       return false;
     }
     return true;
@@ -373,8 +394,6 @@ struct skimmerPrimaryElectron {
         fRegistry.fill(HIST("Track/hEtaPhi"), phi_recalc, eta_recalc);
         fRegistry.fill(HIST("Track/hDCAxyz"), dcaXY, dcaZ);
         fRegistry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / sqrt(track_par_cov_recalc.getSigmaY2()), dcaZ / sqrt(track_par_cov_recalc.getSigmaZ2()));
-        fRegistry.fill(HIST("Track/hDCAxy_Pt"), pt_recalc, dcaXY);
-        fRegistry.fill(HIST("Track/hDCAz_Pt"), pt_recalc, dcaZ);
         fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt_recalc, sqrt(track_par_cov_recalc.getSigmaY2()) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt_recalc, sqrt(track_par_cov_recalc.getSigmaZ2()) * 1e+4);  // convert cm to um
         fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
@@ -405,7 +424,7 @@ struct skimmerPrimaryElectron {
 
   std::vector<std::pair<int, int>> stored_trackIds;
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
-  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.96f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.04f) || o2::aod::pidtofbeta::beta < 0.f) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
+  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((minTOFbeta < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < maxTOFbeta) || o2::aod::pidtofbeta::beta < 0.f) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -418,10 +437,13 @@ struct skimmerPrimaryElectron {
     stored_trackIds.reserve(tracks.size());
 
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
         continue;
       }
 
@@ -446,10 +468,13 @@ struct skimmerPrimaryElectron {
     stored_trackIds.reserve(tracks.size() * 2);
 
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
         continue;
       }
 
@@ -490,7 +515,7 @@ struct skimmerPrimaryElectron {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
@@ -519,7 +544,7 @@ struct skimmerPrimaryElectron {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
@@ -757,7 +782,7 @@ struct prefilterPrimaryElectron {
     std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
@@ -836,7 +861,7 @@ struct prefilterPrimaryElectron {
     std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;

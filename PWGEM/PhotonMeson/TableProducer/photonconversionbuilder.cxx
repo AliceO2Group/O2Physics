@@ -39,6 +39,8 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "Common/Core/TableHelper.h"
+#include "EventFiltering/Zorro.h"
 
 #include "Tools/KFparticle/KFUtilities.h"
 
@@ -71,6 +73,10 @@ struct PhotonConversionBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
+  Configurable<bool> inherit_from_emevent_photon{"inherit_from_emevent_photon", false, "flag to inherit task options from emevent-photon"};
+  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -117,6 +123,7 @@ struct PhotonConversionBuilder {
   Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
   Configurable<bool> reject_v0_on_itsib{"reject_v0_on_itsib", true, "flag to reject v0s on ITSib"};
 
+  Zorro zorro;
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -157,7 +164,7 @@ struct PhotonConversionBuilder {
       {"V0Leg/hXZ", "track iu x vs. z;z (cm);x (cm)", {HistType::kTH2F, {{200, -100.f, 100.f}, {200, 0.f, 100.f}}}},
     }};
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -168,6 +175,12 @@ struct PhotonConversionBuilder {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    if (inherit_from_emevent_dilepton) {
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);                           // for EM users.
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
+    }
 
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
@@ -190,6 +203,10 @@ struct PhotonConversionBuilder {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if (enable_swt) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -643,13 +660,17 @@ struct PhotonConversionBuilder {
           continue;
         }
       }
+
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      registry.fill(HIST("hCollisionCounter"), 1);
+
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      registry.fill(HIST("hCollisionCounter"), 1);
+      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
+        continue;
+      }
 
       auto v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
       // LOGF(info, "n v0 = %d", v0s_per_coll.size());

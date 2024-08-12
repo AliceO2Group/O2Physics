@@ -47,6 +47,7 @@ namespace o2::aod
 {
 
 using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
+using FemtoFullCollision_noCent = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 using FemtoFullMCgenCollisions = soa::Join<aod::McCollisions, MultsExtraMC>;
@@ -176,10 +177,10 @@ struct femtoDreamProducerTask {
 
   void init(InitContext&)
   {
-    if (doprocessData == false && doprocessMC == false && doprocessMC_noCentrality == false) {
+    if (doprocessData == false && doprocessData_noCentrality == false && doprocessMC == false && doprocessMC_noCentrality == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true)) {
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true)) {
       LOGF(fatal,
            "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
@@ -681,6 +682,20 @@ struct femtoDreamProducerTask {
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData,
                  "Provide experimental data", true);
+
+  void
+    processData_noCentrality(aod::FemtoFullCollision_noCent const& col,
+                             aod::BCsWithTimestamps const&,
+                             aod::FemtoFullTracks const& tracks,
+                             o2::aod::V0Datas const& fullV0s)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracksAndV0<false, false>(col, tracks, fullV0s);
+  }
+  PROCESS_SWITCH(femtoDreamProducerTask, processData_noCentrality,
+                 "Provide experimental data without centrality information", false);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,

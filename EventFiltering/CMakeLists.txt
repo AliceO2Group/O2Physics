@@ -109,8 +109,9 @@ o2physics_add_dpl_workflow(lf-f1proton-filter
 
 o2physics_add_library(EventFilteringUtils
     SOURCES Zorro.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+    INSTALL_HEADERS ZorroHelper.h
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore Arrow::arrow_shared)
 
 o2physics_target_root_dictionary(EventFilteringUtils
-   HEADERS Zorro.h
+   HEADERS ZorroHelper.h
    LINKDEF EventFilteringUtilsLinkDef.h)

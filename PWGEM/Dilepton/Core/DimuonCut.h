@@ -27,12 +27,17 @@
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 class DimuonCut : public TNamed
 {
  public:
   DimuonCut() = default;
   DimuonCut(const char* name, const char* title) : TNamed(name, title) {}
+
+  ~DimuonCut() {}
 
   enum class DimuonCuts : int {
     // pair cut
@@ -79,36 +84,9 @@ class DimuonCut : public TNamed
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float dcaX1 = t1.fwdDcaX();
-    float dcaY1 = t1.fwdDcaY();
-    float cXX1 = t1.cXX();
-    float cYY1 = t1.cYY();
-    float cXY1 = t1.cXY();
-    float dcaX2 = t2.fwdDcaX();
-    float dcaY2 = t2.fwdDcaY();
-    float cXX2 = t2.cXX();
-    float cYY2 = t2.cYY();
-    float cXY2 = t2.cXY();
-
-    float dca_xy1 = 999.f;
-    float det1 = cXX1 * cYY1 - cXY1 * cXY1;
-    if (det1 < 0) {
-      dca_xy1 = 999.f;
-    } else {
-      float chi2 = (dcaX1 * dcaX1 * cYY1 + dcaY1 * dcaY1 * cXX1 - 2. * dcaX1 * dcaY1 * cXY1) / det1;
-      dca_xy1 = std::sqrt(std::abs(chi2) / 2.); // in sigma
-    }
-
-    float dca_xy2 = 999.f;
-    float det2 = cXX2 * cYY2 - cXY2 * cXY2;
-    if (det2 < 0) {
-      dca_xy2 = 999.f;
-    } else {
-      float chi2 = (dcaX2 * dcaX2 * cYY2 + dcaY2 * dcaY2 * cXX2 - 2. * dcaX2 * dcaY2 * cXY2) / det2;
-      dca_xy2 = std::sqrt(std::abs(chi2) / 2.); // in sigma
-    }
-
-    float pair_dca_xy = std::sqrt((std::pow(dca_xy1, 2) + std::pow(dca_xy2, 2)) / 2.);
+    float dca_xy_t1 = fwdDcaXYinSigma(t1);
+    float dca_xy_t2 = fwdDcaXYinSigma(t2);
+    float pair_dca_xy = std::sqrt((dca_xy_t1 * dca_xy_t1 + dca_xy_t2 * dca_xy_t2) / 2.);
 
     if (v12.M() < mMinMass || mMaxMass < v12.M()) {
       return false;

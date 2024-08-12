@@ -93,6 +93,8 @@ struct TrackEfficiencyJets {
       registry.fill(HIST("h2_centrality_track_energy"), collision.centrality(), track.energy(), weight);
       registry.fill(HIST("h2_track_pt_track_sigma1overpt"), track.pt(), track.sigma1Pt(), weight);
       registry.fill(HIST("h2_track_pt_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), weight);
+      registry.fill(HIST("h2_track_pt_high_track_sigma1overpt"), track.pt(), track.sigma1Pt(), weight);
+      registry.fill(HIST("h2_track_pt_high_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), weight);
     }
   }
 
@@ -113,8 +115,8 @@ struct TrackEfficiencyJets {
 
       registry.add("hMcPartCutsCounts", "McPart cuts count checks", {HistType::kTH1F, {{10, 0., 10.}}});
       registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(1, "allPartsInSelMcColl");
-      registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(2, "isPrimary");
-      registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(3, "isCharged");
+      registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(2, "isCharged");
+      registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(3, "isPrimary");
       registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(4, "etaAccept"); // not actually applied here but it will give an idea of what will be done in the post processing
 
       registry.add("hTrackCutsCounts", "Track cuts count checks", {HistType::kTH1F, {{10, 0., 10.}}});
@@ -131,6 +133,7 @@ struct TrackEfficiencyJets {
 
       // ptAxisLow
       registry.add("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
+      registry.add("h3_particle_pt_particle_eta_particle_phi_mcpart_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
 
       registry.add("h3_track_pt_track_eta_track_phi_nonassociatedtrack", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}; #phi_{track}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
       registry.add("h3_track_pt_track_eta_track_phi_associatedtrack_primary", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}; #phi_{track}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
@@ -142,6 +145,8 @@ struct TrackEfficiencyJets {
       registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
       registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_primary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
       registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxis, etaAxis, phiAxis}});
+
+      registry.add("h2_particle_pt_track_pt_residual_associatedtrack_primary", "(#it{p}_{T, mcpart} - #it{p}_{T, track}) / #it{p}_{T, mcpart}; #it{p}_{T, mcpart} (GeV/#it{c})", {HistType::kTH2F, {ptAxis, {200, -1., 1.}}});
 
       // ptAxisHigh
       registry.add("h3_particle_pt_high_particle_eta_particle_phi_mcpartofinterest", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisHigh, etaAxis, phiAxis}});
@@ -157,7 +162,7 @@ struct TrackEfficiencyJets {
       registry.add("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_split_primary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisHigh, etaAxis, phiAxis}});
       registry.add("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_split_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisHigh, etaAxis, phiAxis}});
 
-      registry.add("h2_particle_pt_track_pt_residual_associatedtrack_primary", "(#it{p}_{T, mcpart} - #it{p}_{T, track}) / #it{p}_{T, mcpart}; #it{p}_{T, mcpart} (GeV/#it{c})", {HistType::kTH2F, {ptAxis, {200, -1., 1.}}});
+      registry.add("h2_particle_pt_high_track_pt_high_residual_associatedtrack_primary", "(#it{p}_{T, mcpart} - #it{p}_{T, track}) / #it{p}_{T, mcpart}; #it{p}_{T, mcpart} (GeV/#it{c})", {HistType::kTH2F, {ptAxisHigh, {200, -1., 1.}}});
     }
 
     if (doprocessTracks || doprocessTracksWeighted) {
@@ -168,8 +173,10 @@ struct TrackEfficiencyJets {
       registry.add("h2_centrality_track_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {centAxis, {100, -1.0, 1.0}}});
       registry.add("h2_centrality_track_phi", "centrality vs track #varphi; centrality; #varphi_{track}", {HistType::kTH2F, {centAxis, {160, -1.0, 7.}}});
       registry.add("h2_centrality_track_energy", "centrality vs track energy; centrality; Energy GeV", {HistType::kTH2F, {centAxis, {100, 0.0, 100.0}}});
-      registry.add("h2_track_pt_track_sigmapt", "#it{p}_{T,track} (GeV/#it{c}); #sigma(#it{p}_{T})", {HistType::kTH2F, {{500, 0., 100.}, {10000, 0.0, 100.0}}});        // c'est sigma(pt)/pt
-      registry.add("h2_track_pt_track_sigma1overpt", "#it{p}_{T,track} (GeV/#it{c}); #sigma(1/#it{p}_{T})", {HistType::kTH2F, {{500, 0., 100.}, {10000, 0.0, 100.0}}}); // ici sigma(1/pt)
+      registry.add("h2_track_pt_track_sigmapt", "#sigma(#it{p}_{T})/#it{p}_{T}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 10.}, {100000, 0.0, 100.0}}});
+      registry.add("h2_track_pt_high_track_sigmapt", "#sigma(#it{p}_{T})/#it{p}_{T}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {100000, 0.0, 100.0}}});
+      registry.add("h2_track_pt_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 10.}, {1000, 0.0, 10.0}}});
+      registry.add("h2_track_pt_high_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {1000, 0.0, 10.0}}});
       if (doprocessTracksWeighted) {
         registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       }
@@ -242,15 +249,17 @@ struct TrackEfficiencyJets {
     for (auto& jMcParticle : jMcParticles) {
       registry.fill(HIST("hMcPartCutsCounts"), 0.5); // allPartsInSelMcColl
 
-      if (checkPrimaryPart && !jMcParticle.isPhysicalPrimary()) { // global tracks should be mostly primaries
-        continue;
-      }
-      registry.fill(HIST("hMcPartCutsCounts"), 1.5); // isPrimary
-
       if (!isChargedParticle(jMcParticle.pdgCode())) {
         continue;
       }
-      registry.fill(HIST("hMcPartCutsCounts"), 2.5); // isCharged
+      registry.fill(HIST("hMcPartCutsCounts"), 1.5); // isCharged
+
+      registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_mcpart_nonprimary"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
+
+      if (checkPrimaryPart && !jMcParticle.isPhysicalPrimary()) { // global tracks should be mostly primaries
+        continue;
+      }
+      registry.fill(HIST("hMcPartCutsCounts"), 2.5); // isPrimary
 
       registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
 
@@ -316,11 +325,11 @@ struct TrackEfficiencyJets {
 
         registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_primary"), track.pt(), track.eta(), track.phi());
         registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+        registry.fill(HIST("h2_particle_pt_track_pt_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
 
         registry.fill(HIST("h3_track_pt_high_track_eta_track_phi_associatedtrack_primary"), track.pt(), track.eta(), track.phi());
         registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
-
-        registry.fill(HIST("h2_particle_pt_track_pt_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
+        registry.fill(HIST("h2_particle_pt_high_track_pt_high_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
 
         if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_primary"), track.pt(), track.eta(), track.phi());

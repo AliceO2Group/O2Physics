@@ -402,6 +402,7 @@ struct tofSpectra {
     histos.add("Data/neg/pt/tpc", "neg TPC", kTH1D, {ptAxis});
     if (doprocessOccupancy) {
       const AxisSpec nsigmaTPCAxisOccupancy{binsOptions.binsnsigmaTPC, "nsigmaTPC"};
+      histos.add("nsigmatpc/test_occupancy/Mult_vs_Occupancy", "occuppancy vs Multiplicity", kTHnSparseD, {multAxis, occupancyAxis});
       histos.add("nsigmatpc/test_occupancy/pos/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
       histos.add("nsigmatpc/test_occupancy/neg/pi", "occuppancy dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
       histos.add("nsigmatpc/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
@@ -1287,6 +1288,7 @@ struct tofSpectra {
     }
     int occupancy = collision.trackOccupancyInTimeRange();
     const float multiplicity = collision.centFT0C();
+    histos.fill(HIST("nsigmatpc/test_occupancy/Mult_vs_Occupancy"), multiplicity, occupancy);
     for (const auto& track : tracks) {
       if (!isTrackSelected<true>(track)) {
         continue;

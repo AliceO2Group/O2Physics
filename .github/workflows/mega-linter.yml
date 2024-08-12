@@ -47,6 +47,16 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Upload MegaLinter artifacts
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: MegaLinter reports
+          path: |
+            megalinter-reports
+            mega-linter.log
+
       # Create or delete the cleanup branch
       - name: Update cleanup branch
         if: ${{ github.event.repository.owner.login == 'AliceO2Group' }}

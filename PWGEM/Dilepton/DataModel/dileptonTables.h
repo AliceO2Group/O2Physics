@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <vector>
+#include <string>
+#include <unordered_map>
 #include "Common/Core/RecoDecay.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -25,49 +28,82 @@
 namespace o2::aod
 {
 
+namespace pwgem::dilepton::swt
+{
+enum class swtAliases : int { // software trigger aliases for EM
+  kHighTrackMult = 0,
+  kHighFt0Mult,
+  // kSingleE,
+  // kLMeeIMR,
+  // kLMeeHMR,
+  // kDiElectron,
+  // kSingleMuLow,
+  // kSingleMuHigh,
+  // kDiMuon,
+  kNaliases
+};
+
+const std::unordered_map<std::string, int> aliasLabels = {
+  {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
+  {"fHighFt0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0Mult)},
+  // {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
+  // {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
+  // {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
+  // {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
+  // {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
+  // {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
+  // {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
+};
+} // namespace pwgem::dilepton::swt
+
 namespace emevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
+DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16); //! Bitmask of fired trigger aliases (see above for definitions)
+DECLARE_SOA_COLUMN(NInspectedTVX, nInspectedTVX, uint64_t);
 DECLARE_SOA_COLUMN(NeeULS, neeuls, int);
 DECLARE_SOA_COLUMN(NeeLSpp, neelspp, int);
 DECLARE_SOA_COLUMN(NeeLSmm, neelsmm, int);
-DECLARE_SOA_COLUMN(Bz, bz, float);           //! kG
-DECLARE_SOA_COLUMN(Q2xFT0M, q2xft0m, float); //! Qx for 2nd harmonics in FT0M
-DECLARE_SOA_COLUMN(Q2yFT0M, q2yft0m, float); //! Qy for 2nd harmonics in FT0M
-DECLARE_SOA_COLUMN(Q2xFT0A, q2xft0a, float); //! Qx for 2nd harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q2yFT0A, q2yft0a, float); //! Qy for 2nd harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q2xFT0C, q2xft0c, float); //! Qx for 2nd harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q2yFT0C, q2yft0c, float); //! Qy for 2nd harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q2xBPos, q2xbpos, float); //! Qx for 2nd harmonics in Barrel positive eta region
-DECLARE_SOA_COLUMN(Q2yBPos, q2ybpos, float); //! Qy for 2nd harmonics in Barrel positive eta region
-DECLARE_SOA_COLUMN(Q2xBNeg, q2xbneg, float); //! Qx for 2nd harmonics in Barrel negative eta region
-DECLARE_SOA_COLUMN(Q2yBNeg, q2ybneg, float); //! Qy for 2nd harmonics in Barrel negative eta region
-DECLARE_SOA_COLUMN(Q2xBTot, q2xbtot, float); //! Qx for 2nd harmonics in Barrel full eta region
-DECLARE_SOA_COLUMN(Q2yBTot, q2ybtot, float); //! Qy for 2nd harmonics in Barrel full eta region
-DECLARE_SOA_COLUMN(Q3xFT0M, q3xft0m, float); //! Qx for 3rd harmonics in FT0M
-DECLARE_SOA_COLUMN(Q3yFT0M, q3yft0m, float); //! Qy for 3rd harmonics in FT0M
-DECLARE_SOA_COLUMN(Q3xFT0A, q3xft0a, float); //! Qx for 3rd harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q3yFT0A, q3yft0a, float); //! Qy for 3rd harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q3xFT0C, q3xft0c, float); //! Qx for 3rd harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q3yFT0C, q3yft0c, float); //! Qy for 3rd harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q3xBPos, q3xbpos, float); //! Qx for 3rd harmonics in Barrel positive eta region
-DECLARE_SOA_COLUMN(Q3yBPos, q3ybpos, float); //! Qy for 3rd harmonics in Barrel positive eta region
-DECLARE_SOA_COLUMN(Q3xBNeg, q3xbneg, float); //! Qx for 3rd harmonics in Barrel negative eta region
-DECLARE_SOA_COLUMN(Q3yBNeg, q3ybneg, float); //! Qy for 3rd harmonics in Barrel negative eta region
-DECLARE_SOA_COLUMN(Q3xBTot, q3xbtot, float); //! Qx for 3rd harmonics in Barrel full eta region
-DECLARE_SOA_COLUMN(Q3yBTot, q3ybtot, float); //! Qy for 3rd harmonics in Barrel full eta region
-DECLARE_SOA_COLUMN(Q4xFT0M, q4xft0m, float); //! Qx for 4th harmonics in FT0M
-DECLARE_SOA_COLUMN(Q4yFT0M, q4yft0m, float); //! Qy for 4th harmonics in FT0M
-DECLARE_SOA_COLUMN(Q4xFT0A, q4xft0a, float); //! Qx for 4th harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q4yFT0A, q4yft0a, float); //! Qy for 4th harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q4xFT0C, q4xft0c, float); //! Qx for 4th harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q4yFT0C, q4yft0c, float); //! Qy for 4th harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q4xBPos, q4xbpos, float); //! Qx for 4th harmonics in Barrel positive eta region
-DECLARE_SOA_COLUMN(Q4yBPos, q4ybpos, float); //! Qy for 4th harmonics in Barrel positive eta region
-DECLARE_SOA_COLUMN(Q4xBNeg, q4xbneg, float); //! Qx for 4th harmonics in Barrel negative eta region
-DECLARE_SOA_COLUMN(Q4yBNeg, q4ybneg, float); //! Qy for 4th harmonics in Barrel negative eta region
-DECLARE_SOA_COLUMN(Q4xBTot, q4xbtot, float); //! Qx for 4th harmonics in Barrel full eta region
-DECLARE_SOA_COLUMN(Q4yBTot, q4ybtot, float); //! Qy for 4th harmonics in Barrel full eta region
+DECLARE_SOA_COLUMN(Bz, bz, float);                                          //! kG
+DECLARE_SOA_COLUMN(Q2xFT0M, q2xft0m, float);                                //! Qx for 2nd harmonics in FT0M
+DECLARE_SOA_COLUMN(Q2yFT0M, q2yft0m, float);                                //! Qy for 2nd harmonics in FT0M
+DECLARE_SOA_COLUMN(Q2xFT0A, q2xft0a, float);                                //! Qx for 2nd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2yFT0A, q2yft0a, float);                                //! Qy for 2nd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2xFT0C, q2xft0c, float);                                //! Qx for 2nd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q2yFT0C, q2yft0c, float);                                //! Qy for 2nd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q2xBPos, q2xbpos, float);                                //! Qx for 2nd harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q2yBPos, q2ybpos, float);                                //! Qy for 2nd harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q2xBNeg, q2xbneg, float);                                //! Qx for 2nd harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q2yBNeg, q2ybneg, float);                                //! Qy for 2nd harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q2xBTot, q2xbtot, float);                                //! Qx for 2nd harmonics in Barrel full eta region
+DECLARE_SOA_COLUMN(Q2yBTot, q2ybtot, float);                                //! Qy for 2nd harmonics in Barrel full eta region
+DECLARE_SOA_COLUMN(Q3xFT0M, q3xft0m, float);                                //! Qx for 3rd harmonics in FT0M
+DECLARE_SOA_COLUMN(Q3yFT0M, q3yft0m, float);                                //! Qy for 3rd harmonics in FT0M
+DECLARE_SOA_COLUMN(Q3xFT0A, q3xft0a, float);                                //! Qx for 3rd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3yFT0A, q3yft0a, float);                                //! Qy for 3rd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3xFT0C, q3xft0c, float);                                //! Qx for 3rd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q3yFT0C, q3yft0c, float);                                //! Qy for 3rd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q3xBPos, q3xbpos, float);                                //! Qx for 3rd harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q3yBPos, q3ybpos, float);                                //! Qy for 3rd harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q3xBNeg, q3xbneg, float);                                //! Qx for 3rd harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q3yBNeg, q3ybneg, float);                                //! Qy for 3rd harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q3xBTot, q3xbtot, float);                                //! Qx for 3rd harmonics in Barrel full eta region
+DECLARE_SOA_COLUMN(Q3yBTot, q3ybtot, float);                                //! Qy for 3rd harmonics in Barrel full eta region
+DECLARE_SOA_COLUMN(Q4xFT0M, q4xft0m, float);                                //! Qx for 4th harmonics in FT0M
+DECLARE_SOA_COLUMN(Q4yFT0M, q4yft0m, float);                                //! Qy for 4th harmonics in FT0M
+DECLARE_SOA_COLUMN(Q4xFT0A, q4xft0a, float);                                //! Qx for 4th harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q4yFT0A, q4yft0a, float);                                //! Qy for 4th harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q4xFT0C, q4xft0c, float);                                //! Qx for 4th harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q4yFT0C, q4yft0c, float);                                //! Qy for 4th harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q4xBPos, q4xbpos, float);                                //! Qx for 4th harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q4yBPos, q4ybpos, float);                                //! Qy for 4th harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q4xBNeg, q4xbneg, float);                                //! Qx for 4th harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q4yBNeg, q4ybneg, float);                                //! Qy for 4th harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q4xBTot, q4xbtot, float);                                //! Qx for 4th harmonics in Barrel full eta region
+DECLARE_SOA_COLUMN(Q4yBTot, q4ybtot, float);                                //! Qy for 4th harmonics in Barrel full eta region
+DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocity_ptweighted, float);     //! transverse spherocity
+DECLARE_SOA_COLUMN(SpherocityPtUnWeighted, spherocity_ptunweighted, float); //! transverse spherocity
+DECLARE_SOA_COLUMN(NtrackSpherocity, ntspherocity, int);
 
 DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::evsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::evsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::evsel::kNoITSROFrameBorder)); });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0M, ep2ft0m, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
@@ -97,7 +133,7 @@ DECLARE_SOA_TABLE(EMEvents, "AOD", "EMEVENT", //!   Main event information table
 using EMEvent = EMEvents::iterator;
 
 DECLARE_SOA_TABLE(EMEventsCov, "AOD", "EMEVENTCOV", //! joinable to EMEvents
-                  collision::CovXX, collision::CovXY, collision::CovXZ, collision::CovYY, collision::CovYZ, collision::CovZZ, collision::Chi2);
+                  collision::CovXX, collision::CovXY, collision::CovXZ, collision::CovYY, collision::CovYZ, collision::CovZZ, collision::Chi2, o2::soa::Marker<1>);
 using EMEventCov = EMEventsCov::iterator;
 
 DECLARE_SOA_TABLE(EMEventsBz, "AOD", "EMEVENTBZ", emevent::Bz); // joinable to EMEvents
@@ -118,6 +154,8 @@ DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table
                   emevent::Q2xBPos, emevent::Q2yBPos, emevent::Q2xBNeg, emevent::Q2yBNeg, emevent::Q2xBTot, emevent::Q2yBTot,
                   emevent::Q3xFT0M, emevent::Q3yFT0M, emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C,
                   emevent::Q3xBPos, emevent::Q3yBPos, emevent::Q3xBNeg, emevent::Q3yBNeg, emevent::Q3xBTot, emevent::Q3yBTot,
+                  emevent::Q4xFT0M, emevent::Q4yFT0M, emevent::Q4xFT0A, emevent::Q4yFT0A, emevent::Q4xFT0C, emevent::Q4yFT0C,
+                  emevent::Q4xBPos, emevent::Q4yBPos, emevent::Q4xBNeg, emevent::Q4yBNeg, emevent::Q4xBTot, emevent::Q4yBTot,
 
                   // Dynamic columns
                   emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>,
@@ -131,8 +169,22 @@ DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table
                   emevent::EP3FT0C<emevent::Q3xFT0C, emevent::Q3yFT0C>,
                   emevent::EP3BPos<emevent::Q3xBPos, emevent::Q3yBPos>,
                   emevent::EP3BNeg<emevent::Q3xBNeg, emevent::Q3yBNeg>,
-                  emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>);
+                  emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>,
+                  emevent::EP4FT0M<emevent::Q4xFT0M, emevent::Q4yFT0M>,
+                  emevent::EP4FT0A<emevent::Q4xFT0A, emevent::Q4yFT0A>,
+                  emevent::EP4FT0C<emevent::Q4xFT0C, emevent::Q4yFT0C>,
+                  emevent::EP4BPos<emevent::Q4xBPos, emevent::Q4yBPos>,
+                  emevent::EP4BNeg<emevent::Q4xBNeg, emevent::Q4yBNeg>,
+                  emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>);
 using EMEventQvec = EMEventsQvec::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTRIGGERINFO", //! joinable to EMEvents
+                  emevent::SWTAlias, emevent::NInspectedTVX);
+using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
+
+DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEvents
+                  emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);
+using EMEventProperty = EMEventsProperty::iterator;
 
 DECLARE_SOA_TABLE(EMEventsNee, "AOD", "EMEVENTNEE", emevent::NeeULS, emevent::NeeLSpp, emevent::NeeLSmm); // joinable to EMEvents
 using EMEventNee = EMEventsNee::iterator;
@@ -145,7 +197,7 @@ DECLARE_SOA_COLUMN(McCollisionId, mcCollisionId, int);
 DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
                   o2::soa::Index<>, emmcevent::McCollisionId, mccollision::GeneratorsID,
                   mccollision::PosX, mccollision::PosY, mccollision::PosZ,
-                  mccollision::T, mccollision::ImpactParameter,
+                  mccollision::ImpactParameter, mccollision::EventPlaneAngle,
 
                   // dynamic column
                   mccollision::GetGeneratorId<mccollision::GeneratorsID>,
@@ -203,6 +255,35 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using EMMCParticle = EMMCParticles::iterator;
+
+namespace smearedtrack
+{
+DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
+DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
+DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
+DECLARE_SOA_COLUMN(Efficiency, efficiency, float);
+DECLARE_SOA_COLUMN(DCA, dca, float);
+
+DECLARE_SOA_COLUMN(PtSmearedSAMuon, ptSmeared_sa_muon, float);
+DECLARE_SOA_COLUMN(EtaSmearedSAMuon, etaSmeared_sa_muon, float);
+DECLARE_SOA_COLUMN(PhiSmearedSAMuon, phiSmeared_sa_muon, float);
+DECLARE_SOA_COLUMN(EfficiencySAMuon, efficiency_sa_muon, float);
+DECLARE_SOA_COLUMN(DCASAMuon, dca_sa_muon, float);
+DECLARE_SOA_COLUMN(PtSmearedGLMuon, ptSmeared_gl_muon, float);
+DECLARE_SOA_COLUMN(EtaSmearedGLMuon, etaSmeared_gl_muon, float);
+DECLARE_SOA_COLUMN(PhiSmearedGLMuon, phiSmeared_gl_muon, float);
+DECLARE_SOA_COLUMN(EfficiencyGLMuon, efficiency_gl_muon, float);
+DECLARE_SOA_COLUMN(DCAGLMuon, dca_gl_muon, float);
+} // namespace smearedtrack
+
+DECLARE_SOA_TABLE(SmearedElectrons, "AOD", "SMEAREDEL", // usage Join<aod::EMMCParitlces, aod::SmearedElectrons>
+                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared, smearedtrack::Efficiency, smearedtrack::DCA);
+using SmearedElectron = SmearedElectrons::iterator;
+
+DECLARE_SOA_TABLE(SmearedMuons, "AOD", "SMEAREDMU", // usage Join<aod::EMMCParitlces, aod::SmearedSAMuons>
+                  smearedtrack::PtSmearedSAMuon, smearedtrack::EtaSmearedSAMuon, smearedtrack::PhiSmearedSAMuon, smearedtrack::EfficiencySAMuon, smearedtrack::DCASAMuon,
+                  smearedtrack::PtSmearedGLMuon, smearedtrack::EtaSmearedGLMuon, smearedtrack::PhiSmearedGLMuon, smearedtrack::EfficiencyGLMuon, smearedtrack::DCAGLMuon);
+using SmearedMuon = SmearedMuons::iterator;
 
 namespace emprimaryelectronmclabel
 {
@@ -303,8 +384,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
-                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
-                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                   emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
                   emprimaryelectron::P<track::Pt, track::Eta>,
                   emprimaryelectron::Px<track::Pt, track::Phi>,
@@ -331,7 +411,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectronsCov, "AOD", "EMPRIMARYELCOV", //!
                   aod::track::C1PtZ,
                   aod::track::C1PtSnp,
                   aod::track::C1PtTgl,
-                  aod::track::C1Pt21Pt2);
+                  aod::track::C1Pt21Pt2, o2::soa::Marker<1>);
 // iterators
 using EMPrimaryElectronCov = EMPrimaryElectronsCov::iterator;
 
