@@ -152,8 +152,8 @@ struct femtoUniversePairTaskTrackV0Extended {
   HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
-  TH1* plocalEffp1 = 0;
-  TH1* plocalEffp2 = 0;
+  std::unique_ptr<TH1> plocalEffp1;
+  std::unique_ptr<TH1> plocalEffp2;
 
   bool IsNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
   {
@@ -276,12 +276,12 @@ struct femtoUniversePairTaskTrackV0Extended {
       if (!pf || pf->IsZombie())
         LOGF(fatal, "Could not load efficiency histogram from %s", ConfLocalEfficiency.value.c_str());
       if (doprocessSameEvent || doprocessMixedEvent) {
-        plocalEffp1 = (ConfChargePart1 > 0) ? static_cast<TH1*>(pf->Get("PrPlus")) : static_cast<TH1*>(pf->Get("PrMinus")); // note: works only for protons for now
-        plocalEffp2 = (ConfV0Type1 == 0) ? static_cast<TH1*>(pf->Get("Lambda")) : static_cast<TH1*>(pf->Get("AntiLambda"));
+        plocalEffp1 = (ConfChargePart1 > 0) ? std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("PrPlus"))) : std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("PrMinus"))); // note: works only for protons for now
+        plocalEffp2 = (ConfV0Type1 == 0) ? std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("Lambda"))) : std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("AntiLambda")));
         LOGF(info, "Loaded efficiency histograms for track-V0.");
       } else if (doprocessSameEventV0 || doprocessMixedEventV0) {
-        plocalEffp1 = (ConfV0Type1 == 0) ? static_cast<TH1*>(pf->Get("Lambda")) : static_cast<TH1*>(pf->Get("AntiLambda"));
-        plocalEffp2 = (ConfV0Type2 == 0) ? static_cast<TH1*>(pf->Get("Lambda")) : static_cast<TH1*>(pf->Get("AntiLambda"));
+        plocalEffp1 = (ConfV0Type1 == 0) ? std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("Lambda"))) : std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("AntiLambda")));
+        plocalEffp2 = (ConfV0Type2 == 0) ? std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("Lambda"))) : std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("AntiLambda")));
         LOGF(info, "Loaded efficiency histograms for V0-V0.");
       }
     }
@@ -356,7 +356,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
       float weight = 1.0f;
       if (plocalEffp1)
-        weight = plocalEffp1->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
+        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
       sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D, weight);
     }
   }
@@ -526,7 +526,7 @@ struct femtoUniversePairTaskTrackV0Extended {
         }
         float weight = 1.0f;
         if (plocalEffp1)
-          weight = plocalEffp1->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
+          weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D, weight);
       }
     }
