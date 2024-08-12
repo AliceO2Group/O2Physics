@@ -108,14 +108,14 @@ struct UpcEventITSROFcounter {
             nUpcCollsInROF++;
           }
         }
-      }// end loop over collisions
+      } // end loop over collisions
       arrAllColls[nAllCollsInROF]++;
       arrUPCcolls[nUpcCollsInROF]++;
-    }// end loop over ITSROFs
+    } // end loop over ITSROFs
 
     for (int ncol = 0; ncol < 12; ncol++) {
-      histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(ncol,arrAllColls[ncol]);
-      histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(ncol,arrUPCcolls[ncol]);
+      histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(ncol, arrAllColls[ncol]);
+      histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(ncol, arrUPCcolls[ncol]);
     }
   }
 
