@@ -88,8 +88,8 @@ struct PidMlBatchEffAndPurProducer {
     static const AxisSpec axisPt{50, 0, 3.1, "pt"};
 
     static_for<0, kNPids>([&](auto i) {
-      hTracked[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("Tracked %ss vs pT", kParticleNames[i]), kTH1F, {axisPt});
-      hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i]), kTH1F, {axisPt});
+      hTracked[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("Tracked %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
+      hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
     });
   }
 
