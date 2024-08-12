@@ -84,6 +84,8 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   /// Table for linear cut for TPC Deuteron Sigma
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> ConfIsLine{"ConfIsLine", false, "Enable a separation line for clearer TPC Deuteron Sigma"};
+    Configurable<float> pTlow{"pTlow", 0.0f, "Lower limit of pT for linear cut of TPC Deuteron Sigma"};
+    Configurable<float> pThigh{"pThigh", 1.4f, "Higher limit of pT for linear cut of TPC Deuteron Sigma"};
     Configurable<float> a{"a", -167.0f, "Parameter 'a' of a linear function 'y = a * x + b'"};
     Configurable<float> b{"b", 300.0f, "Parameter 'b' of a linear function 'y = a * x + b'"};
   } lincut;
@@ -230,105 +232,31 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
 
   HistogramRegistry sphericityRegistry{"SphericityHisto", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  // PID for protons
-  bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
+  /// TPC Pion/Kaon/Proton Sigma selection
+  bool IsNSigma(float mom, float nsigmaTPC, float nsigmaTOF)
   {
-    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
-    //|nsigma_combined| < 3 for p > 0.5
+    // |nsigma_TPC| < 3 for p < 0.5 GeV/c
+    // |nsigma_combined| < 3 for p > 0.5
 
     // using configurables:
-    // ConfTOFPtMin - momentum value when we start using TOF; set to 1000 if TOF not needed
-    // ConfNsigmaTPC -> TPC Sigma for momentum < 0.5
-    // ConfNsigmaCombined -> TPC and TOF Sigma (combined) for momentum > 0.5
-
-    if (mom < twotracksconfigs.ConfTOFPtMin) {
-      if (TMath::Abs(nsigmaTPCPr) < twotracksconfigs.ConfNsigmaTPC) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < twotracksconfigs.ConfNsigmaCombined) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-  }
-
-  bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
-  {
-    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
-    //|nsigma_combined| < 3 for p > 0.5
-
-    // using configurables:
-    // ConfTOFPtMin - momentum value when we start using TOF; set to 1000 if TOF not needed
-    // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
-    // ConfNsigmaTPC -> TPC Kaon Sigma for momentum < 0.5
-    // ConfNsigmaCombined -> TPC and TOF Sigma (combined) for momentum > 0.5
-
-    if (mom < twotracksconfigs.ConfTOFPtMin) {
-      if (TMath::Abs(nsigmaTPCK) < twotracksconfigs.ConfNsigmaTPC) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < twotracksconfigs.ConfNsigmaCombined) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-  }
-
-  bool IsPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
-  {
-    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
-    //|nsigma_combined| < 3 for p > 0.5
-
-    // using configurables:
-    // ConfTOFPtMin - momentum value when we start using TOF; set to 1000 if TOF not needed
-    // ConfNsigmaTPC -> TPC Sigma for momentum < 0.5
-    // ConfNsigmaCombined -> TPC and TOF Pion Sigma (combined) for momentum > 0.5
-
-    if (mom < twotracksconfigs.ConfTOFPtMin) {
-      if (TMath::Abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPC) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < twotracksconfigs.ConfNsigmaCombined) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-  }
-
-  bool IsDeuteronNSigma(float mom, float nsigmaTPCDe, float nsigmaTOFDe)
-  {
-    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
-    //|nsigma_combined| < 3 for p > 0.5
-
-    // using configurables:
-    // ConfTOFPtMin - momentum value when we start using TOF; set to 1000 if TOF not needed
+    // ConfTOFPtMin -- momentum value when we start using TOF; set to 1000 if TOF not needed
     // ConfNsigmaTPC -> TPC Sigma for momentum < ConfTOFPtMin
     // ConfNsigmaCombined -> TPC and TOF Sigma (combined) for momentum > ConfTOFPtMin
 
-    if (mom < twotracksconfigs.ConfTOFPtMinDe) {
-      if (TMath::Abs(nsigmaTPCDe) < twotracksconfigs.ConfNsigmaTPCDe) {
-        return true;
-      } else {
-        return false;
-      }
+    if (mom < twotracksconfigs.ConfTOFPtMin) {
+      return TMath::Abs(nsigmaTPC) < twotracksconfigs.ConfNsigmaTPC;
     } else {
-      if (TMath::Abs(nsigmaTOFDe) < twotracksconfigs.ConfNsigmaTOFDe && (TMath::Abs(nsigmaTPCDe) < twotracksconfigs.ConfNsigmaTPCDe)) {
-        return true;
-      } else {
-        return false;
-      }
+      return TMath::Hypot(nsigmaTOF, nsigmaTPC) < twotracksconfigs.ConfNsigmaCombined;
+    }
+  }
+
+  /// TPC Deuteron Sigma selection
+  bool IsDeuteronNSigma(float mom, float nsigmaTPCDe, float nsigmaTOFDe)
+  {
+    if (mom < twotracksconfigs.ConfTOFPtMinDe) {
+      return TMath::Abs(nsigmaTPCDe) < twotracksconfigs.ConfNsigmaTPCDe;
+    } else {
+      return (TMath::Abs(nsigmaTOFDe) < twotracksconfigs.ConfNsigmaTOFDe && (TMath::Abs(nsigmaTPCDe) < twotracksconfigs.ConfNsigmaTPCDe));
     }
   }
 
@@ -336,7 +264,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   bool IsDeuteronNSigmaLinearCut(float mom, float nsigmaTPCDe, float nsigmaTOFDe, float tpcSignal)
   {
     if (lincut.ConfIsLine == true) {
-      if (mom > 0 && mom < 1.4) {
+      if (mom > lincut.pTlow && mom < lincut.pThigh) {
         if (tpcSignal > lincut.a * mom + lincut.b) {
           return IsDeuteronNSigma(mom, nsigmaTPCDe, nsigmaTOFDe);
         } else {
@@ -356,18 +284,18 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
       switch (trackonefilter.ConfPDGCodePartOne) {
         case 2212:  // Proton+
         case -2212: // Proton-
-          return IsProtonNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
+          return IsNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
           break;
         case 211:  // Pion+
         case -211: // Pion-
         case 111:  // Pion 0
-          return IsPionNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
+          return IsNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
           break;
         case 321:  // Kaon+
         case -321: // Kaon-
         case 130:  // Kaon 0 LONG
         case 310:  // Kaon 0 SHORT
-          return IsKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+          return IsNSigma(mom, nsigmaTPCK, nsigmaTOFK);
           break;
         case 1000010020:  // Deuteron+
         case -1000010020: // Deuteron-
@@ -381,18 +309,18 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
       switch (tracktwofilter.ConfPDGCodePartTwo) {
         case 2212:  // Proton+
         case -2212: // Proton-
-          return IsProtonNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
+          return IsNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
           break;
         case 211:  // Pion+
         case -211: // Pion-
         case 111:  // Pion 0
-          return IsPionNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
+          return IsNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
           break;
         case 321:  // Kaon+
         case -321: // Kaon-
         case 130:  // Kaon 0 LONG
         case 310:  // Kaon 0 SHORT
-          return IsKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+          return IsNSigma(mom, nsigmaTPCK, nsigmaTOFK);
           break;
         case 1000010020:  // Deuteron+
         case -1000010020: // Deuteron-
