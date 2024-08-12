@@ -30,6 +30,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "ReconstructionDataFormats/Track.h"
+
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -38,6 +39,53 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 struct nucleiWithFastJet {
+
+  enum Particle {
+    kPion = 1,     // π+
+    kKaon = 2,     // K+
+    kProton = 3,   // p
+    kDeuteron = 4, // d
+    kTriton = 5,   // Tr
+    kHelium = 6    // He
+  };
+
+  int mapPDGToValue(int pdgCode)
+  {
+    switch (pdgCode) {
+      case 211: // π+
+        return Particle::kPion;
+      case -211: // π-
+        return -Particle::kPion;
+
+      case 321: // k+
+        return Particle::kKaon;
+      case -321: // k-
+        return -Particle::kKaon;
+
+      case 2212: // p
+        return Particle::kProton;
+      case -2212: // antip
+        return -Particle::kProton;
+
+      case 1000010020: // Deuteron
+        return Particle::kDeuteron;
+      case -1000010020: // AntiDeuteron
+        return -Particle::kDeuteron;
+
+      case 1000010030: // Triton
+        return Particle::kTriton;
+      case -1000010030: // AntiTriton
+        return -Particle::kTriton;
+
+      case 1000020030: // Helium
+        return Particle::kHelium;
+      case -1000020030: // AntiHelium
+        return -Particle::kHelium;
+      default:
+        return 0; // Default case for unknown or unmapped PDG codes
+    }
+  }
+
   Configurable<std::string> cfgeventSelections{"cfgeventSelections", "sel8", "choose event selection"};
   Configurable<std::string> cfgtrackSelections{"cfgtrackSelections", "globalTracks", "set track selections"};
 
@@ -102,7 +150,7 @@ struct nucleiWithFastJet {
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa,
                                       aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTPCFullTr, aod::pidTOFFullPi,
                                       aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe,
-                                      aod::TOFSignal, aod::McTrackLabels>;
+                                      aod::TOFSignal /*, aod::McTrackLabels*/>;
 
   Filter jetCuts = aod::jet::pt > cfgjetPtMin&& aod::jet::r == nround(cfgjetR.node() * 100.0f);
 
@@ -389,60 +437,9 @@ struct nucleiWithFastJet {
       }
 
       // PartilceJet-constituents
-      jetHist.add<TH1>("mcpJet/proton/pt/PtProton", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiProton/pt/PtantiProton", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/deuteron/pt/PtDeuteron", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiDeuteron/pt/PtantiDeuteron", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/helium/pt/PtHelium", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiHelium/pt/PtantiHelium", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/triton/pt/PtTriton", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiTriton/pt/PtantiTriton", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
-      jetHist.add<TH1>("mcpJet/proton/pt/PtProton_jet", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiProton/pt/PtantiProton_jet", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/deuteron/pt/PtDeuteron_jet", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiDeuteron/pt/PtantiDeuteron_jet", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/helium/pt/PtHelium_jet", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiHelium/pt/PtantiHelium_jet", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/triton/pt/PtTriton_jet", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiTriton/pt/PtantiTriton_jet", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
-      jetHist.add<TH1>("mcpJet/proton/pt/PtProton_outJet", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiProton/pt/PtantiProton_outJet", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/deuteron/pt/PtDeuteron_outJet", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiDeuteron/pt/PtantiDeuteron_outJet", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/helium/pt/PtHelium_outJet", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiHelium/pt/PtantiHelium_outJet", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/triton/pt/PtTriton_outJet", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcpJet/antiTriton/pt/PtantiTriton_outJet", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
+      jetHist.add<TH3>("mcpJet/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
       // detectorJet-constituents
-      jetHist.add<TH1>("mcdJet/proton/pt/PtProton", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiProton/pt/PtantiProton", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/deuteron/pt/PtDeuteron", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiDeuteron/pt/PtantiDeuteron", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/helium/pt/PtHelium", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiHelium/pt/PtantiHelium", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/triton/pt/PtTriton", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiTriton/pt/PtantiTriton", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
-      jetHist.add<TH1>("mcdJet/proton/pt/PtProton_jet", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiProton/pt/PtantiProton_jet", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/deuteron/pt/PtDeuteron_jet", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiDeuteron/pt/PtantiDeuteron_jet", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/helium/pt/PtHelium_jet", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiHelium/pt/PtantiHelium_jet", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/triton/pt/PtTriton_jet", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiTriton/pt/PtantiTriton_jet", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
-      jetHist.add<TH1>("mcdJet/proton/pt/PtProton_outJet", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiProton/pt/PtantiProton_outJet", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/deuteron/pt/PtDeuteron_outJet", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiDeuteron/pt/PtantiDeuteron_outJet", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/helium/pt/PtHelium_outJet", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiHelium/pt/PtantiHelium_outJet", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/triton/pt/PtTriton_outJet", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("mcdJet/antiTriton/pt/PtantiTriton_outJet", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
+      jetHist.add<TH3>("mcdJet/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
 
       jetHist.add<TH1>("mcpJet/hJetPt", "Pt (jet)", HistType::kTH1F, {{100, 0.f, 50.f}});
       jetHist.add<TH1>("mcpJet/hJetEta", "Eta (jet)", HistType::kTH1F, {{100, 1.5, 1.5}});
@@ -462,32 +459,7 @@ struct nucleiWithFastJet {
       jetHist.add<TH1>("recmatched/hRecJetPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
       jetHist.add<TH1>("recmatched/hGenJetPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
 
-      jetHist.add<TH1>("recmatched/proton/pt/PtProton", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiProton/pt/PtantiProton", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/deuteron/pt/PtDeuteron", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiDeuteron/pt/PtantiDeuteron", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/helium/pt/PtHelium", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiHelium/pt/PtantiHelium", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/triton/pt/PtTriton", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiTriton/pt/PtantiTriton", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
-      jetHist.add<TH1>("recmatched/proton/pt/PtProton_jet", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiProton/pt/PtantiProton_jet", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/deuteron/pt/PtDeuteron_jet", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiDeuteron/pt/PtantiDeuteron_jet", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/helium/pt/PtHelium_jet", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiHelium/pt/PtantiHelium_jet", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/triton/pt/PtTriton_jet", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiTriton/pt/PtantiTriton_jet", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
-      jetHist.add<TH1>("recmatched/proton/pt/PtProton_outJet", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiProton/pt/PtantiProton_outJet", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/deuteron/pt/PtDeuteron_outJet", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiDeuteron/pt/PtantiDeuteron_outJet", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/helium/pt/PtHelium_outJet", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiHelium/pt/PtantiHelium_outJet", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/triton/pt/PtTriton_outJet", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("recmatched/antiTriton/pt/PtantiTriton_outJet", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
+      jetHist.add<TH3>("recmatched/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
 
       // gen matched
       jetHist.add<TH2>("genmatched/hRecMatchedJetPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH2F, {{100, 0., 100.}, {400, -20., 20.}});
@@ -500,32 +472,7 @@ struct nucleiWithFastJet {
       jetHist.add<TH1>("genmatched/hRecJetWithGenPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
       jetHist.add<TH1>("genmatched/hGenJetPtMatched", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
 
-      jetHist.add<TH1>("genmatched/proton/pt/PtProton", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiProton/pt/PtantiProton", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/deuteron/pt/PtDeuteron", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiDeuteron/pt/PtantiDeuteron", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/helium/pt/PtHelium", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiHelium/pt/PtantiHelium", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/triton/pt/PtTriton", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiTriton/pt/PtantiTriton", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
-      jetHist.add<TH1>("genmatched/proton/pt/PtProton_jet", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiProton/pt/PtantiProton_jet", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/deuteron/pt/PtDeuteron_jet", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiDeuteron/pt/PtantiDeuteron_jet", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/helium/pt/PtHelium_jet", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiHelium/pt/PtantiHelium_jet", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/triton/pt/PtTriton_jet", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiTriton/pt/PtantiTriton_jet", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
-
-      jetHist.add<TH1>("genmatched/proton/pt/PtProton_outJet", "Pt (p)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiProton/pt/PtantiProton_outJet", "Pt (#bar{p})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/deuteron/pt/PtDeuteron_outJet", "Pt (De)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiDeuteron/pt/PtantiDeuteron_outJet", "Pt (#bar{De})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/helium/pt/PtHelium_outJet", "Pt (He)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiHelium/pt/PtantiHelium_outJet", "Pt (#bar{He})", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/triton/pt/PtTriton_outJet", "Pt (Tr)", HistType::kTH1F, {{100, 0.f, 10.f}});
-      jetHist.add<TH1>("genmatched/antiTriton/pt/PtantiTriton_outJet", "Pt (#bar{Tr})", HistType::kTH1F, {{100, 0.f, 10.f}});
+      jetHist.add<TH3>("genmatched/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
     }
   }
 
@@ -974,83 +921,15 @@ struct nucleiWithFastJet {
         // jetPt = mcpjet.pt();
         break;
       } // jet
-
-      if (mcParticle.pdgCode() == PDGProton) {
-        jetHist.fill(HIST("mcpJet/proton/pt/PtProton"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcpJet/proton/pt/PtProton_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("mcpJet/proton/pt/PtProton_outJet"), mcParticle.pt());
-        }
+      if (mapPDGToValue(mcParticle.pdgCode())) {
+        jetHist.fill(HIST("mcpJet/pt/PtParticleType"), mcParticle.pt(), jetFlag, mapPDGToValue(mcParticle.pdgCode()));
       }
 
-      if (mcParticle.pdgCode() == -PDGProton) {
-        jetHist.fill(HIST("mcpJet/antiProton/pt/PtantiProton"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcpJet/antiProton/pt/PtantiProton_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("mcpJet/antiProton/pt/PtantiProton_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == PDGDeuteron) {
-        jetHist.fill(HIST("mcpJet/deuteron/pt/PtDeuteron"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcpJet/deuteron/pt/PtDeuteron_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("mcpJet/deuteron/pt/PtDeuteron_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == -PDGDeuteron) {
-        jetHist.fill(HIST("mcpJet/antiDeuteron/pt/PtantiDeuteron"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcpJet/antiDeuteron/pt/PtantiDeuteron_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("mcpJet/antiDeuteron/pt/PtantiDeuteron_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == PDGHelium) {
-        jetHist.fill(HIST("mcpJet/helium/pt/PtHelium"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcpJet/helium/pt/PtHelium_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("mcpJet/helium/pt/PtHelium_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == -PDGHelium) {
-        jetHist.fill(HIST("mcpJet/antiHelium/pt/PtantiHelium"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcpJet/antiHelium/pt/PtantiHelium_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("mcpJet/antiHelium/pt/PtantiHelium_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == PDGTriton) {
-        jetHist.fill(HIST("mcpJet/triton/pt/PtTriton"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcpJet/triton/pt/PtTriton_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("mcpJet/triton/pt/PtTriton_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == -PDGTriton) {
-        jetHist.fill(HIST("mcpJet/antiTriton/pt/PtantiTriton"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcpJet/antiTriton/pt/PtantiTriton_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("mcpJet/antiTriton/pt/PtantiTriton_outJet"), mcParticle.pt());
-        }
-      }
     } // track
-  }   // process mc
+  } // process mc
 
-  void processMCRec(o2::aod::JCollision const& collisionJet, soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels> const& tracks,
-                    soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, TrackCandidatesMC const&)
+  void processMCRec(o2::aod::JCollision const& collisionJet, soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
+                    soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, JetParticles const&)
   {
     jetHist.fill(HIST("mcdJet/eventStat"), 0.5);
     // JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
@@ -1086,23 +965,20 @@ struct nucleiWithFastJet {
     jetHist.fill(HIST("mcdJet/vertexZ"), collisionJet.posZ());
     jetHist.fill(HIST("mcdJet/nJetsPerEvent"), nJets);
 
-    for (const auto& track : tracks) {
+    for (auto& track : tracks) {
       auto fullTrack = track.track_as<TrackCandidatesMC>();
-
       if (!isTrackSelected(fullTrack))
-        continue;
-      if (fabs(fullTrack.eta()) > cfgtrkMaxEta)
         continue;
       if (!track.has_mcParticle())
         continue;
-      if (!track.mcParticle().isPhysicalPrimary())
+      auto mcTrack = track.mcParticle_as<JetParticles>();
+      if (fabs(mcTrack.eta()) > cfgtrkMaxEta)
         continue;
-      if (fabs(track.mcParticle().y()) > cfgtrkMaxRap)
+      if (!mcTrack.isPhysicalPrimary())
         continue;
 
       bool jetFlag = false;
       // float jetPt = -999.;
-
       for (auto& mcdjet : mcdjets) {
         double delPhi = TVector2::Phi_mpi_pi(mcdjet.phi() - track.phi());
         double delEta = mcdjet.eta() - track.eta();
@@ -1113,83 +989,16 @@ struct nucleiWithFastJet {
         break;
       } // jet
 
-      if (track.mcParticle().pdgCode() == PDGProton) {
-        jetHist.fill(HIST("mcdJet/proton/pt/PtProton"), track.mcParticle().pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcdJet/proton/pt/PtProton_jet"), track.mcParticle().pt());
-        } else {
-          jetHist.fill(HIST("mcdJet/proton/pt/PtProton_outJet"), track.mcParticle().pt());
-        }
+      if (mapPDGToValue(mcTrack.pdgCode())) {
+        jetHist.fill(HIST("mcdJet/pt/PtParticleType"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
       }
 
-      if (track.mcParticle().pdgCode() == -PDGProton) {
-        jetHist.fill(HIST("mcdJet/antiProton/pt/PtantiProton"), track.mcParticle().pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcdJet/antiProton/pt/PtantiProton_jet"), track.mcParticle().pt());
-        } else {
-          jetHist.fill(HIST("mcdJet/antiProton/pt/PtantiProton_outJet"), track.mcParticle().pt());
-        }
-      }
-
-      if (track.mcParticle().pdgCode() == PDGDeuteron) {
-        jetHist.fill(HIST("mcdJet/deuteron/pt/PtDeuteron"), track.mcParticle().pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcdJet/deuteron/pt/PtDeuteron_jet"), track.mcParticle().pt());
-        } else {
-          jetHist.fill(HIST("mcdJet/deuteron/pt/PtDeuteron_outJet"), track.mcParticle().pt());
-        }
-      }
-
-      if (track.mcParticle().pdgCode() == -PDGDeuteron) {
-        jetHist.fill(HIST("mcdJet/antiDeuteron/pt/PtantiDeuteron"), track.mcParticle().pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcdJet/antiDeuteron/pt/PtantiDeuteron_jet"), track.mcParticle().pt());
-        } else {
-          jetHist.fill(HIST("mcdJet/antiDeuteron/pt/PtantiDeuteron_outJet"), track.mcParticle().pt());
-        }
-      }
-
-      if (track.mcParticle().pdgCode() == PDGHelium) {
-        jetHist.fill(HIST("mcdJet/helium/pt/PtHelium"), track.mcParticle().pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcdJet/helium/pt/PtHelium_jet"), track.mcParticle().pt());
-        } else {
-          jetHist.fill(HIST("mcdJet/helium/pt/PtHelium_outJet"), track.mcParticle().pt());
-        }
-      }
-
-      if (track.mcParticle().pdgCode() == -PDGHelium) {
-        jetHist.fill(HIST("mcdJet/antiHelium/pt/PtantiHelium"), track.mcParticle().pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcdJet/antiHelium/pt/PtantiHelium_jet"), track.mcParticle().pt());
-        } else {
-          jetHist.fill(HIST("mcdJet/antiHelium/pt/PtantiHelium_outJet"), track.mcParticle().pt());
-        }
-      }
-
-      if (track.mcParticle().pdgCode() == PDGTriton) {
-        jetHist.fill(HIST("mcdJet/triton/pt/PtTriton"), track.mcParticle().pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcdJet/triton/pt/PtTriton_jet"), track.mcParticle().pt());
-        } else {
-          jetHist.fill(HIST("mcdJet/triton/pt/PtTriton_outJet"), track.mcParticle().pt());
-        }
-      }
-
-      if (track.mcParticle().pdgCode() == -PDGTriton) {
-        jetHist.fill(HIST("mcdJet/antiTriton/pt/PtantiTriton"), track.mcParticle().pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("mcdJet/antiTriton/pt/PtantiTriton_jet"), track.mcParticle().pt());
-        } else {
-          jetHist.fill(HIST("mcdJet/antiTriton/pt/PtantiTriton_outJet"), track.mcParticle().pt());
-        }
-      }
     } // tracks
   }
 
   void processRecMatched(aod::JCollision const& collision, JetMCDetTable const& mcdjets,
-                         soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels> const& tracks,
-                         JetMCPartTable const&, TrackCandidatesMC const&, aod::McParticles const&)
+                         soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
+                         JetMCPartTable const&, TrackCandidatesMC const&, aod::JMcParticles const&)
   {
     if (fabs(collision.posZ()) > 10)
       return;
@@ -1247,8 +1056,9 @@ struct nucleiWithFastJet {
         continue;
       if (!isTrackSelected(completeTrack))
         continue;
-      if (!completeTrack.has_mcParticle())
+      if (!track.has_mcParticle())
         continue;
+      auto mcTrack = track.mcParticle_as<JetParticles>();
       // add pid later
 
       bool jetFlag = false;
@@ -1259,84 +1069,14 @@ struct nucleiWithFastJet {
 
         if (R < cfgjetR) {
           jetFlag = true;
-          // break;
+          break;
         }
+      }
 
-        if (track.mcParticle().pdgCode() == PDGProton) {
-          jetHist.fill(HIST("recmatched/proton/pt/PtProton"), track.mcParticle().pt());
-          if (jetFlag) {
-            jetHist.fill(HIST("recmatched/proton/pt/PtProton_jet"), track.mcParticle().pt());
-          } else {
-            jetHist.fill(HIST("recmatched/proton/pt/PtProton_outJet"), track.mcParticle().pt());
-          }
-        }
-
-        if (track.mcParticle().pdgCode() == -PDGProton) {
-          jetHist.fill(HIST("recmatched/antiProton/pt/PtantiProton"), track.mcParticle().pt());
-          if (jetFlag) {
-            jetHist.fill(HIST("recmatched/antiProton/pt/PtantiProton_jet"), track.mcParticle().pt());
-          } else {
-            jetHist.fill(HIST("recmatched/antiProton/pt/PtantiProton_outJet"), track.mcParticle().pt());
-          }
-        }
-
-        if (track.mcParticle().pdgCode() == PDGDeuteron) {
-          jetHist.fill(HIST("recmatched/deuteron/pt/PtDeuteron"), track.mcParticle().pt());
-          if (jetFlag) {
-            jetHist.fill(HIST("recmatched/deuteron/pt/PtDeuteron_jet"), track.mcParticle().pt());
-          } else {
-            jetHist.fill(HIST("recmatched/deuteron/pt/PtDeuteron_outJet"), track.mcParticle().pt());
-          }
-        }
-
-        if (track.mcParticle().pdgCode() == -PDGDeuteron) {
-          jetHist.fill(HIST("recmatched/antiDeuteron/pt/PtantiDeuteron"), track.mcParticle().pt());
-          if (jetFlag) {
-            jetHist.fill(HIST("recmatched/antiDeuteron/pt/PtantiDeuteron_jet"), track.mcParticle().pt());
-          } else {
-            jetHist.fill(HIST("recmatched/antiDeuteron/pt/PtantiDeuteron_outJet"), track.mcParticle().pt());
-          }
-        }
-
-        if (track.mcParticle().pdgCode() == PDGHelium) {
-          jetHist.fill(HIST("recmatched/helium/pt/PtHelium"), track.mcParticle().pt());
-          if (jetFlag) {
-            jetHist.fill(HIST("recmatched/helium/pt/PtHelium_jet"), track.mcParticle().pt());
-          } else {
-            jetHist.fill(HIST("recmatched/helium/pt/PtHelium_outJet"), track.mcParticle().pt());
-          }
-        }
-
-        if (track.mcParticle().pdgCode() == -PDGHelium) {
-          jetHist.fill(HIST("recmatched/antiHelium/pt/PtantiHelium"), track.mcParticle().pt());
-          if (jetFlag) {
-            jetHist.fill(HIST("recmatched/antiHelium/pt/PtantiHelium_jet"), track.mcParticle().pt());
-          } else {
-            jetHist.fill(HIST("recmatched/antiHelium/pt/PtantiHelium_outJet"), track.mcParticle().pt());
-          }
-        }
-
-        if (track.mcParticle().pdgCode() == PDGTriton) {
-          jetHist.fill(HIST("recmatched/triton/pt/PtTriton"), track.mcParticle().pt());
-          if (jetFlag) {
-            jetHist.fill(HIST("recmatched/triton/pt/PtTriton_jet"), track.mcParticle().pt());
-          } else {
-            jetHist.fill(HIST("recmatched/triton/pt/PtTriton_outJet"), track.mcParticle().pt());
-          }
-        }
-
-        if (track.mcParticle().pdgCode() == -PDGTriton) {
-          jetHist.fill(HIST("recmatched/antiTriton/pt/PtantiTriton"), track.mcParticle().pt());
-          if (jetFlag) {
-            jetHist.fill(HIST("recmatched/antiTriton/pt/PtantiTriton_jet"), track.mcParticle().pt());
-          } else {
-            jetHist.fill(HIST("recmatched/antiTriton/pt/PtantiTriton_outJet"), track.mcParticle().pt());
-          }
-        }
-
-      } // DetJet
-    }   // jet constituents
-
+      if (mapPDGToValue(mcTrack.pdgCode())) {
+        jetHist.fill(HIST("recmatched/pt/PtParticleType"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
+      }
+    } // tracks
   } // process
 
   int nprocessSimJEEvents = 0;
@@ -1394,7 +1134,7 @@ struct nucleiWithFastJet {
         jetHist.fill(HIST("genmatched/hRecMatchedJetEta"), mcpjet.eta(), mcpjet.eta() - mcdjet.eta());
 
       } // mcdJet
-    }   // mcpJet
+    } // mcpJet
 
     for (const auto& mcParticle : mcParticles) {
       if (fabs(mcParticle.eta()) > cfgtrkMaxEta)
@@ -1409,79 +1149,11 @@ struct nucleiWithFastJet {
 
         if (R < cfgjetR) {
           jetFlag = true;
-          // break;
+          break;
         }
       } // DetJet
-      if (mcParticle.pdgCode() == PDGProton) {
-        jetHist.fill(HIST("genmatched/proton/pt/PtProton"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("genmatched/proton/pt/PtProton_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("genmatched/proton/pt/PtProton_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == -PDGProton) {
-        jetHist.fill(HIST("genmatched/antiProton/pt/PtantiProton"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("genmatched/antiProton/pt/PtantiProton_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("genmatched/antiProton/pt/PtantiProton_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == PDGDeuteron) {
-        jetHist.fill(HIST("genmatched/deuteron/pt/PtDeuteron"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("genmatched/deuteron/pt/PtDeuteron_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("genmatched/deuteron/pt/PtDeuteron_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == -PDGDeuteron) {
-        jetHist.fill(HIST("genmatched/antiDeuteron/pt/PtantiDeuteron"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("genmatched/antiDeuteron/pt/PtantiDeuteron_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("genmatched/antiDeuteron/pt/PtantiDeuteron_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == PDGHelium) {
-        jetHist.fill(HIST("genmatched/helium/pt/PtHelium"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("genmatched/helium/pt/PtHelium_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("genmatched/helium/pt/PtHelium_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == -PDGHelium) {
-        jetHist.fill(HIST("genmatched/antiHelium/pt/PtantiHelium"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("genmatched/antiHelium/pt/PtantiHelium_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("genmatched/antiHelium/pt/PtantiHelium_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == PDGTriton) {
-        jetHist.fill(HIST("genmatched/triton/pt/PtTriton"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("genmatched/triton/pt/PtTriton_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("genmatched/triton/pt/PtTriton_outJet"), mcParticle.pt());
-        }
-      }
-
-      if (mcParticle.pdgCode() == -PDGTriton) {
-        jetHist.fill(HIST("genmatched/antiTriton/pt/PtantiTriton"), mcParticle.pt());
-        if (jetFlag) {
-          jetHist.fill(HIST("genmatched/antiTriton/pt/PtantiTriton_jet"), mcParticle.pt());
-        } else {
-          jetHist.fill(HIST("genmatched/antiTriton/pt/PtantiTriton_outJet"), mcParticle.pt());
-        }
+      if (mapPDGToValue(mcParticle.pdgCode())) {
+        jetHist.fill(HIST("genmatched/pt/PtParticleType"), mcParticle.pt(), jetFlag, mapPDGToValue(mcParticle.pdgCode()));
       }
     } // jet constituents
 
