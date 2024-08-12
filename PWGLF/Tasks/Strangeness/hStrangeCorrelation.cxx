@@ -236,7 +236,7 @@ struct correlateStrangeness {
 
         //---] syst cuts [---
         if (assoc.v0radius() < systCuts.v0RadiusMin || assoc.v0radius() > systCuts.v0RadiusMax ||
-            assoc.dcapostopv() < systCuts.dcapostopv || assoc.dcanegtopv() < systCuts.dcanegtopv ||
+            std::abs(assoc.dcapostopv()) < systCuts.dcapostopv || std::abs(assoc.dcanegtopv()) < systCuts.dcanegtopv ||
             assoc.v0cosPA() < systCuts.v0cospa)
           continue;
 
@@ -316,8 +316,8 @@ struct correlateStrangeness {
         auto assoc = assocCandidate.cascData();
 
         //---] syst cuts [---
-        if (assoc.dcapostopv() < systCuts.dcapostopv ||
-            assoc.dcanegtopv() < systCuts.dcanegtopv ||
+        if (std::abs(assoc.dcapostopv()) < systCuts.dcapostopv ||
+            std::abs(assoc.dcanegtopv()) < systCuts.dcanegtopv ||
             assoc.dcabachtopv() < systCuts.casc_dcabachtopv ||
             assoc.dcaV0daughters() > systCuts.dcaV0dau ||
             assoc.dcacascdaughters() > systCuts.casc_dcacascdau ||
@@ -747,35 +747,35 @@ struct correlateStrangeness {
     }
     if (doprocessClosureTest) {
       if (doCorrelationPion) {
-        histos.add("ClosureTest/sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/sameEvent/Pion", "Pion", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/hPion", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       if (doCorrelationK0Short) {
-        histos.add("ClosureTest/sameEvent/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/sameEvent/K0Short", "K0Short", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/hK0Short", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       if (doCorrelationLambda) {
-        histos.add("ClosureTest/sameEvent/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/sameEvent/Lambda", "Lambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/hLambda", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       if (doCorrelationAntiLambda) {
-        histos.add("ClosureTest/sameEvent/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/sameEvent/AntiLambda", "AntiLambda", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/hAntiLambda", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       if (doCorrelationXiMinus) {
-        histos.add("ClosureTest/sameEvent/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/sameEvent/XiMinus", "XiMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/hXiMinus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       if (doCorrelationXiPlus) {
-        histos.add("ClosureTest/sameEvent/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/sameEvent/XiPlus", "XiPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/XiPlus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       if (doCorrelationOmegaMinus) {
-        histos.add("ClosureTest/sameEvent/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/sameEvent/OmegaMinus", "OmegaMinus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/hOmegaMinus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       if (doCorrelationOmegaPlus) {
-        histos.add("ClosureTest/sameEvent/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMult});
+        histos.add("ClosureTest/sameEvent/OmegaPlus", "OmegaPlus", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/hOmegaPlus", "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       histos.add("ClosureTest/hTrigger", "Trigger Tracks", kTH3F, {axisPtQA, axisEta, axisMult});
@@ -831,7 +831,7 @@ struct correlateStrangeness {
 
       //---] syst cuts [---
       if (v0Data.v0radius() < systCuts.v0RadiusMin || v0Data.v0radius() > systCuts.v0RadiusMax ||
-          v0Data.dcapostopv() < systCuts.dcapostopv || v0Data.dcanegtopv() < systCuts.dcanegtopv ||
+          std::abs(v0Data.dcapostopv()) < systCuts.dcapostopv || std::abs(v0Data.dcanegtopv()) < systCuts.dcanegtopv ||
           v0Data.v0cosPA() < systCuts.v0cospa)
         continue;
 
@@ -911,8 +911,8 @@ struct correlateStrangeness {
       auto cascData = casc.cascData();
 
       //---] syst cuts [---
-      if (cascData.dcapostopv() < systCuts.dcapostopv ||
-          cascData.dcanegtopv() < systCuts.dcanegtopv ||
+      if (std::abs(cascData.dcapostopv()) < systCuts.dcapostopv ||
+          std::abs(cascData.dcanegtopv()) < systCuts.dcanegtopv ||
           cascData.dcabachtopv() < systCuts.casc_dcabachtopv ||
           cascData.dcaV0daughters() > systCuts.dcaV0dau ||
           cascData.dcacascdaughters() > systCuts.casc_dcacascdau ||
