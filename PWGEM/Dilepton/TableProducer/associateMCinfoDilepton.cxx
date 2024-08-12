@@ -171,7 +171,7 @@ struct AssociateMCInfoDilepton {
         if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
           continue;
         }
-        auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+        // auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
 
         // only for temporary protection, as of 15.July.2024 (by Daiki Sekihata)
         int motherid_tmp = -999; // first mother index tmp
@@ -223,7 +223,7 @@ struct AssociateMCInfoDilepton {
         if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
           continue;
         }
-        auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+        // auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
 
         // only for temporary protection, as of 15.July.2024 (by Daiki Sekihata)
         int motherid_tmp = -999; // first mother index tmp
@@ -282,7 +282,7 @@ struct AssociateMCInfoDilepton {
           continue;
         }
 
-        auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+        // auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
 
         int ndau = mctrack.daughtersIds()[1] - mctrack.daughtersIds()[0] + 1;
         if (ndau < 10) {
@@ -370,7 +370,6 @@ struct AssociateMCInfoDilepton {
         if (!collision_from_v0.has_mcCollision()) {
           continue;
         }
-        auto mcCollision_from_v0 = collision_from_v0.mcCollision();
 
         auto ele = v0.template negTrack_as<aod::V0Legs>();
         auto pos = v0.template posTrack_as<aod::V0Legs>();
@@ -392,7 +391,7 @@ struct AssociateMCInfoDilepton {
             fNewLabels[mctrack.globalIndex()] = fCounters[0];
             fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
             // fMCFlags[mctrack.globalIndex()] = mcflags;
-            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision_from_v0.globalIndex())->second;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mctrack.mcCollisionId())->second;
             fCounters[0]++;
           }
           v0legmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
@@ -411,7 +410,7 @@ struct AssociateMCInfoDilepton {
                 fNewLabels[mp.globalIndex()] = fCounters[0];
                 fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
                 // fMCFlags[mp.globalIndex()] = mcflags;
-                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision_from_v0.globalIndex())->second;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mp.mcCollisionId())->second;
                 fCounters[0]++;
               }
 
@@ -435,7 +434,6 @@ struct AssociateMCInfoDilepton {
         if (!collision_from_el.has_mcCollision()) {
           continue;
         }
-        auto mcCollision_from_el = collision_from_el.mcCollision();
 
         auto o2track = o2tracks.iteratorAt(emprimaryelectron.trackId());
         if (!o2track.has_mcParticle()) {
@@ -448,7 +446,7 @@ struct AssociateMCInfoDilepton {
           fNewLabels[mctrack.globalIndex()] = fCounters[0];
           fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
           // fMCFlags[mctrack.globalIndex()] = mcflags;
-          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision_from_el.globalIndex())->second;
+          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mctrack.mcCollisionId())->second;
           fCounters[0]++;
         }
         emprimaryelectronmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
@@ -467,7 +465,7 @@ struct AssociateMCInfoDilepton {
               fNewLabels[mp.globalIndex()] = fCounters[0];
               fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
               // fMCFlags[mp.globalIndex()] = mcflags;
-              fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision_from_el.globalIndex())->second;
+              fEventIdx[mp.globalIndex()] = fEventLabels.find(mp.mcCollisionId())->second;
               fCounters[0]++;
             }
 
@@ -483,6 +481,7 @@ struct AssociateMCInfoDilepton {
 
       } // end of em primary electron loop
     }
+
     if constexpr (static_cast<bool>(system & kFwdMuon)) {
       // auto emprimarymuons_coll = emprimarymuons.sliceBy(perCollision_mu, collision.globalIndex());
       for (auto& emprimarymuon : emprimarymuons) {
@@ -490,7 +489,6 @@ struct AssociateMCInfoDilepton {
         if (!collision_from_mu.has_mcCollision()) {
           continue;
         }
-        auto mcCollision_from_mu = collision_from_mu.mcCollision();
 
         auto o2track = o2fwdtracks.iteratorAt(emprimarymuon.fwdtrackId());
         if (!o2track.has_mcParticle()) {
@@ -503,7 +501,7 @@ struct AssociateMCInfoDilepton {
           fNewLabels[mctrack.globalIndex()] = fCounters[0];
           fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
           // fMCFlags[mctrack.globalIndex()] = mcflags;
-          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision_from_mu.globalIndex())->second;
+          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mctrack.mcCollisionId())->second;
           fCounters[0]++;
         }
         emprimarymuonmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
@@ -522,7 +520,7 @@ struct AssociateMCInfoDilepton {
               fNewLabels[mp.globalIndex()] = fCounters[0];
               fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
               // fMCFlags[mp.globalIndex()] = mcflags;
-              fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision_from_mu.globalIndex())->second;
+              fEventIdx[mp.globalIndex()] = fEventLabels.find(mp.mcCollisionId())->second;
               fCounters[0]++;
             }
 
