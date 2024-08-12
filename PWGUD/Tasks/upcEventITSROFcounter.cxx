@@ -98,23 +98,24 @@ struct UpcEventITSROFcounter {
     int arrUPCcolls[1000] = {0};
 
     // next is based on matching of collision bc within ITSROF range in bcs
-    for (auto& collision : collisions) {
-      int index = 0;
-      for (auto& itsrofBorder : vecITSROFborders) {
+    for (auto& itsrofBorder : vecITSROFborders) {
+      int nAllCollsInROF = 0;
+      int nUpcCollsInROF = 0;
+      for (auto& collision : collisions) {
         if ((itsrofBorder.first < collision.bcId()) && (collision.bcId() < itsrofBorder.second)) {
-          break;
+          nAllCollsInROF++;
+          if (collision.numContrib() < nTracksForUPCevent + 1) {
+            nUpcCollsInROF++;
+          }
         }
-        index++;
-      }
-      arrAllColls[index]++;
-      if (collision.numContrib() < nTracksForUPCevent + 1) {
-        arrUPCcolls[index]++;
-      }
-    } // end loop over collisions
+      } // end loop over collisions
+      arrAllColls[nAllCollsInROF]++;
+      arrUPCcolls[nUpcCollsInROF]++;
+    } // end loop over ITSROFs
 
-    for (int i = 0; i < vecITSROFborders.size(); i++) {
-      histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(arrAllColls[i]);
-      histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(arrUPCcolls[i]);
+    for (int ncol = 0; ncol < 12; ncol++) {
+      histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(ncol, arrAllColls[ncol]);
+      histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(ncol, arrUPCcolls[ncol]);
     }
   }
 
