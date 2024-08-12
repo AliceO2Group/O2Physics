@@ -187,11 +187,13 @@ struct TableMaker {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> grpmagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
+  Configurable<int> useMatCorrType{"materialCorrType", 1, "0: none, 1: TGeo, 2: LUT"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   o2::parameters::GRPObject* grpmagrun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* grpmag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
@@ -216,8 +218,16 @@ struct TableMaker {
     fCCDB->setURL(fConfigCcdbUrl);
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      fCCDB->get<TGeoManager>(geoPath);
+    if (useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        fCCDB->get<TGeoManager>(geoPath);
+      }
+    }
+    if (useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
+      LOGF(info, "LUT load done!");
     }
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -371,6 +381,11 @@ struct TableMaker {
         }
         if (fPropMuon) {
           VarManager::SetupMuonMagField();
+        }
+        if (useMatCorrType == 2) {
+          // setMatLUT only after magfield has been initalized
+          // (setMatLUT has implicit and problematic init field call if not)
+          o2::base::Propagator::Instance()->setMatLUT(lut);
         }
       }
       fCurrentRun = bc.runNumber();
@@ -819,6 +834,11 @@ struct TableMaker {
         }
         if constexpr (static_cast<bool>(TMuonFillMap)) {
           VarManager::SetupMuonMagField();
+        }
+        if (useMatCorrType == 2) {
+          // setMatLUT only after magfield has been initalized
+          // (setMatLUT has implicit and problematic init field call if not)
+          o2::base::Propagator::Instance()->setMatLUT(lut);
         }
       }
       fCurrentRun = bc.runNumber();
