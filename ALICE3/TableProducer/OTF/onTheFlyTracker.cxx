@@ -568,7 +568,7 @@ struct OnTheFlyTracker {
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    int lastTrackIndex = tracksParCov.lastIndex(); //bookkeep the last added track
+    int lastTrackIndex = tracksParCov.lastIndex(); // bookkeep the last added track
 
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
