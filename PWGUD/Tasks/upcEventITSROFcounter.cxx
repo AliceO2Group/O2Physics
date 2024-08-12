@@ -40,7 +40,6 @@ struct UpcEventITSROFcounter {
     histos.add("Events/hCountUPCcollisionsExactMatching", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
     histos.add("Events/hCountCollisionsInROFborderMatching", ";;Number of collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
     histos.add("Events/hCountUPCcollisionsInROFborderMatching", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
-    histos.add("Events/hCountUPCcollisionsInROFborderMatchingTest", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
 
   } // end init
 
