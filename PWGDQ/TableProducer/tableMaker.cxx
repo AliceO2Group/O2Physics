@@ -188,6 +188,7 @@ struct TableMaker {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> grpmagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
   Configurable<int> useMatCorrType{"materialCorrType", 1, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -226,7 +227,7 @@ struct TableMaker {
     }
     if (useMatCorrType == 2) {
       LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(fCCDB->get<o2::base::MatLayerCylSet>(lutPath));
       LOGF(info, "LUT load done!");
     }
     VarManager::SetDefaultVarNames();
