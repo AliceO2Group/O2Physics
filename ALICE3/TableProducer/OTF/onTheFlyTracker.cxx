@@ -568,6 +568,8 @@ struct OnTheFlyTracker {
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
+    int lastTrackIndex = tracksParCov.lastIndex(); //bookkeep the last added track
+
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
     bcData.clear();
@@ -752,9 +754,9 @@ struct OnTheFlyTracker {
           // n-1: proton from lambda
           // n-2: pion from lambda
           // n-3: pion from xi
-          thisCascade.positiveId = tracksAlice3.size() - 1;
-          thisCascade.negativeId = tracksAlice3.size() - 2;
-          thisCascade.bachelorId = tracksAlice3.size() - 3;
+          thisCascade.positiveId = lastTrackIndex + tracksAlice3.size() - 1;
+          thisCascade.negativeId = lastTrackIndex + tracksAlice3.size() - 2;
+          thisCascade.bachelorId = lastTrackIndex + tracksAlice3.size() - 3;
 
           // use DCA fitters
           int nCand = 0;
@@ -896,7 +898,7 @@ struct OnTheFlyTracker {
               }
 
               // add cascade track
-              thisCascade.cascadeTrackId = tracksAlice3.size(); // this is the next index to be filled -> should be it
+              thisCascade.cascadeTrackId = lastTrackIndex + tracksAlice3.size(); // this is the next index to be filled -> should be it
               tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, false, false, 1});
 
               if (doXiQA) {
