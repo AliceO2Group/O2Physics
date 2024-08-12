@@ -293,7 +293,7 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
   /// This function processes the same event for track - V0
-  template<typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
+  template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
   void doSameEvent(FilteredFDCollision& col, PartType& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
     const auto& magFieldTesla = col.magField();
@@ -369,7 +369,8 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  void processSameEvent(FilteredFDCollision& col, FemtoFullParticles& parts){
+  void processSameEvent(FilteredFDCollision& col, FemtoFullParticles& parts)
+  {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent(col, parts, groupPartsOne, groupPartsTwo);
@@ -379,7 +380,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   void processSameEventMC(FilteredFDCollision& col, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts){
     auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doSameEvent(col, parts, groupPartsOne, groupPartsTwo, mcparts); 
+    doSameEvent(col, parts, groupPartsOne, groupPartsTwo, mcparts);
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventMC, "Enable processing same event for track - V0", false);
 
@@ -503,7 +504,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCSameEvent, "Enable processing same event for MC truth track - V0", false);
 
   /// This function processes the mixed event for track - V0
-  template<typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
+  template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
   void doMixedEvent(FilteredFDCollisions& cols, PartType& parts, PartitionType& partitionOne, PartitionType& partitionTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
@@ -557,7 +558,8 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  void processMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts){
+  void processMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts)
+  {
     doMixedEvent(cols, parts, partsOne, partsTwo);
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing same event for track - V0", false);
@@ -616,11 +618,9 @@ struct femtoUniversePairTaskTrackV0Extended {
           }
         }
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
-
       }
     }
   }
-  
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventV0, "Enable processing mixed events for V0 - V0", false);
 
   void processMCMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts)
