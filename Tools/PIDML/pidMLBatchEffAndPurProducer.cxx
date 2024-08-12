@@ -68,7 +68,7 @@ struct PidMlBatchEffAndPurProducer {
   o2::ccdb::CcdbApi ccdbApi;
   std::vector<PidONNXModel> models;
 
-  Configurable<std::vector<int32_t>> cfgPids{"kPids", std::vector<int32_t>(kPids, kPids + kNPids), "PIDs to predict"};
+  Configurable<std::vector<int32_t>> cfgPids{"pids", std::vector<int32_t>(kPids, kPids + kNPids), "PIDs to predict"};
   Configurable<std::array<double, kNDetectors>> cfgDetectorsPLimits{"detectors-p-limits", std::array<double, kNDetectors>(pidml_pt_cuts::defaultModelPLimits), "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
@@ -89,7 +89,7 @@ struct PidMlBatchEffAndPurProducer {
 
     static_for<0, kNPids - 1>([&](auto i) {
       hTracked[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("Tracked %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
-      hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
+      hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCPositive", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
     });
   }
 
@@ -102,19 +102,52 @@ struct PidMlBatchEffAndPurProducer {
     initHistos();
   }
 
-  uint32_t getPartIndex(int32_t pdgCode)
+  std::optional<size_t> getPartIndex(int32_t pdgCode)
   {
-    return std::distance(kPids, std::find(kPids, kPids + kNPids, pdgCode));
+    std::optional<size_t> ret;
+
+    if(std::find(cfgPids.begin(), cfgPids.end(), pdgCode) == cfgPids.end()) {
+      return ret;
+    }
+
+    switch(pdgCode) {
+      case 2212:
+        ret = 0;
+        break;
+      case 321:
+        ret = 1;
+        break;
+      case 211:
+        ret = 2;
+        break;
+      case -211:
+        ret = 3;
+        break;
+      case -321:
+        ret = 4;
+        break;
+      case -2212:
+        ret = 5;
+        break;
+    }
+
+    return ret;
   }
 
   void fillTrackedHist(int32_t pdgCode, float pt)
   {
-    hTracked[getPartIndex(pdgCode)]->Fill(pt);
+    auto ind = getPartIndex(pdgCode);
+    if(ind) {
+      hTracked[ind.value()]->Fill(pt);
+    }
   }
 
   void fillMCPositiveHist(int32_t pdgCode, float pt)
   {
-    hMCPositive[getPartIndex(pdgCode)]->Fill(pt);
+    auto ind = getPartIndex(pdgCode);
+    if(ind) {
+      hMCPositive[ind.value()]->Fill(pt);
+    }
   }
 
   typedef struct nSigma_t {
