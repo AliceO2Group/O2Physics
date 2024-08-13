@@ -548,10 +548,10 @@ struct derivedlambdakzeroanalysis {
 
     // Creation of histograms: MC generated
     if (doprocessGenerated) {
-      histos.add("hGenEvents", "hGenEvents", kTH1F, {{2, -0.5f, +1.5f}});
-      histos.get<TH1>(HIST("hGenEvents"))->GetXaxis()->SetBinLabel(1, "All gen. events");
-      histos.get<TH1>(HIST("hGenEvents"))->GetXaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
-      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisCentrality});
+      histos.add("hGenEvents", "hGenEvents", kTH2F, {{axisNch}, {2, -0.5f, +1.5f}});
+      histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
+      histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
+      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
 
       histos.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2F, {axisCentrality, {50, -0.5f, 49.5f}});
       histos.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2F, {axisCentrality, {50, -0.5f, 49.5f}});
@@ -565,6 +565,14 @@ struct derivedlambdakzeroanalysis {
       histos.add("h2dGenXiPlus", "h2dGenXiPlus", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", kTH2D, {axisCentrality, axisPt});
+
+      histos.add("h2dGenK0ShortVsMultMC", "h2dGenK0ShortVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", kTH2D, {axisNch, axisPt});
     }
     if (doprocessBinnedGenerated) {
       histos.add("h2dGeneratedK0Short", "h2dGeneratedK0Short", kTH2D, {axisCentrality, axisPt});
@@ -1369,7 +1377,6 @@ struct derivedlambdakzeroanalysis {
   void processGenerated(soa::Join<aod::StraMCCollisions,aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels> const& collisions)
   {
     std::vector<int> listBestCollisionIdx = fillGenEventHist(mcCollisions, collisions);
-
     for (auto const& v0MC : V0MCCores) {
       if (!v0MC.has_straMCCollision())
         continue;
@@ -1396,12 +1403,15 @@ struct derivedlambdakzeroanalysis {
 
       if (v0MC.pdgCode() == 310) {
         histos.fill(HIST("h2dGenK0Short"), centrality, ptmc);
+        histos.fill(HIST("h2dGenK0ShortVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (v0MC.pdgCode() == 3122) {
         histos.fill(HIST("h2dGenLambda"), centrality, ptmc);
+        histos.fill(HIST("h2dGenLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (v0MC.pdgCode() == -3122) {
         histos.fill(HIST("h2dGenAntiLambda"), centrality, ptmc);
+        histos.fill(HIST("h2dGenAntiLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
     }
 
@@ -1431,15 +1441,19 @@ struct derivedlambdakzeroanalysis {
 
       if (cascMC.pdgCode() == 3312) {
         histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
+        histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == -3312) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
+        histos.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == 3334) {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
+        histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == -3334) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
+        histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
     }
   }
@@ -1451,7 +1465,7 @@ struct derivedlambdakzeroanalysis {
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
     for (auto const& mcCollision : mcCollisions) {
-      histos.fill(HIST("hGenEvents"), 0 /* all gen. events*/);
+      histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
       // Check if there is at least one of the reconstructed collisions associated to this MC collision 
@@ -1535,7 +1549,7 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hCentralityVsMultMC"), centrality, mcCollision.multMCNParticlesEta05());
 
       if (atLeastOne) {
-        histos.fill(HIST("hGenEvents"), 1 /* at least 1 rec. event*/);
+        histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
 
         histos.fill(HIST("hGenEventCentrality"), centrality);        
       }
