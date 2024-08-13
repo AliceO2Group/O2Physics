@@ -151,7 +151,7 @@ struct JetDerivedDataWriter {
 
   std::vector<bool> collisionFlag;
   std::vector<bool> McCollisionFlag;
-  std::vector<int> bcIndicies;
+  std::vector<int32_t> bcIndicies;
 
   uint32_t precisionPositionMask;
   uint32_t precisionMomentumMask;
@@ -425,7 +425,7 @@ struct JetDerivedDataWriter {
                                         cluster.nlm(), cluster.definition(), cluster.leadingCellEnergy(), cluster.subleadingCellEnergy(), cluster.leadingCellNumber(), cluster.subleadingCellNumber());
           products.storedJClustersParentIndexTable(cluster.clusterId());
 
-          std::vector<int> clusterStoredJTrackIDs;
+          std::vector<int32_t> clusterStoredJTrackIDs;
           for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>()) {
             auto JtrackIndex = trackMapping.find(clusterTrack.globalIndex());
             if (JtrackIndex != trackMapping.end()) {
@@ -548,7 +548,7 @@ struct JetDerivedDataWriter {
         }
         for (auto particle : particlesPerMcCollision) {
 
-          std::vector<int> mothersId;
+          std::vector<int32_t> mothersId;
           if (particle.has_mothers()) {
             auto mothersIdTemps = particle.mothersIds();
             for (auto mothersIdTemp : mothersIdTemps) {
@@ -629,7 +629,7 @@ struct JetDerivedDataWriter {
             if (JParticleIndex != paticleMapping.end()) {
               DielectronParticleId = JParticleIndex->second;
             }
-            std::vector<int> DielectronMothersId;
+            std::vector<int32_t> DielectronMothersId;
             int DielectronDaughtersId[2];
             if (DielectronParticle.has_mothers()) {
               for (auto const& DielectronMother : DielectronParticle.template mothers_as<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>>()) {
@@ -735,7 +735,7 @@ struct JetDerivedDataWriter {
                                             cluster.nlm(), cluster.definition(), cluster.leadingCellEnergy(), cluster.subleadingCellEnergy(), cluster.leadingCellNumber(), cluster.subleadingCellNumber());
               products.storedJClustersParentIndexTable(cluster.clusterId());
 
-              std::vector<int> clusterStoredJTrackIDs;
+              std::vector<int32_t> clusterStoredJTrackIDs;
               for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>()) {
                 auto JtrackIndex = trackMapping.find(clusterTrack.globalIndex());
                 if (JtrackIndex != trackMapping.end()) {
@@ -744,7 +744,7 @@ struct JetDerivedDataWriter {
               }
               products.storedJClustersMatchedTracksTable(clusterStoredJTrackIDs);
 
-              std::vector<int> clusterStoredJParticleIDs;
+              std::vector<int32_t> clusterStoredJParticleIDs;
               for (const auto& clusterParticleId : cluster.mcParticleIds()) {
                 auto JParticleIndex = paticleMapping.find(clusterParticleId);
                 if (JParticleIndex != paticleMapping.end()) {
@@ -897,7 +897,7 @@ struct JetDerivedDataWriter {
           particleTableIndex++;
         }
         for (auto particle : particlesPerMcCollision) {
-          std::vector<int> mothersId;
+          std::vector<int32_t> mothersId;
           int daughtersId[2];
           if (particle.has_mothers()) {
             for (auto const& mother : particle.template mothers_as<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>>()) {
@@ -975,7 +975,7 @@ struct JetDerivedDataWriter {
             if (JParticleIndex != paticleMapping.end()) {
               DielectronParticleId = JParticleIndex->second;
             }
-            std::vector<int> DielectronMothersId;
+            std::vector<int32_t> DielectronMothersId;
             int DielectronDaughtersId[2];
             if (DielectronParticle.has_mothers()) {
               for (auto const& DielectronMother : DielectronParticle.template mothers_as<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>>()) {

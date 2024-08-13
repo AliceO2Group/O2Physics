@@ -32,7 +32,8 @@ enum JCollisionSel {
   sel7 = 2,
   selMC = 3,
   selUnanchoredMC = 4,
-  sel7KINT7 = 5
+  sel7KINT7 = 5,
+  selMCFull = 6,
 };
 
 template <typename T>
@@ -64,6 +65,9 @@ int initialiseEventSelection(std::string eventSelection)
   if (eventSelection == "sel7KINT7") {
     return JCollisionSel::sel7KINT7;
   }
+  if (eventSelection == "selMCFull") {
+    return JCollisionSel::selMCFull;
+  }
   return -1;
 }
 
@@ -87,6 +91,9 @@ uint8_t setEventSelectionBit(T const& collision)
     SETBIT(bit, JCollisionSel::selUnanchoredMC);
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       SETBIT(bit, JCollisionSel::selMC);
+      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        SETBIT(bit, JCollisionSel::selMCFull);
+      }
     }
   }
   return bit;
@@ -321,7 +328,8 @@ enum JTrackSel {
   qualityTrack = 2,
   hybridTrack = 3,
   uniformTrack = 4,
-  uniformTrackWoDCA = 5
+  uniformTrackWoDCA = 5,
+  qualityTrackWDCA = 6
 };
 
 template <typename T>
@@ -354,12 +362,14 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::uniformTrack;
   } else if (trackSelection == "uniformTracksWoDCA") {
     return JTrackSel::uniformTrackWoDCA;
+  } else if (trackSelection == "QualityTracksWDCA") {
+    return JTrackSel::qualityTrackWDCA;
   }
   return -1;
 }
 
 template <typename T>
-uint8_t setTrackSelectionBit(T const& track)
+uint8_t setTrackSelectionBit(T const& track, float trackDCAZ, float maxDCAZ)
 {
 
   uint8_t bit = 0;
@@ -372,6 +382,9 @@ uint8_t setTrackSelectionBit(T const& track)
   }
   if (track.isQualityTrack()) {
     SETBIT(bit, JTrackSel::qualityTrack);
+    if (std::abs(trackDCAZ) < maxDCAZ) {
+      SETBIT(bit, JTrackSel::qualityTrackWDCA);
+    }
   }
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
