@@ -88,8 +88,10 @@ struct PidMlBatchEffAndPurProducer {
     static const AxisSpec axisPt{50, 0, 3.1, "pt"};
 
     static_for<0, kNPids - 1>([&](auto i) {
-      hTracked[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("Tracked %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
-      hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCPositive", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
+      if (std::find(cfgPids.value.begin(), cfgPids.value.end(), kPids[i]) != cfgPids.value.end()) {
+        hTracked[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("Tracked %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
+        hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCPositive", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
+      }
     });
   }
 
@@ -104,40 +106,38 @@ struct PidMlBatchEffAndPurProducer {
 
   std::optional<size_t> getPartIndex(int32_t pdgCode)
   {
-    std::optional<size_t> ret;
+    std::optional<size_t> index;
 
-    if(std::find(cfgPids.begin(), cfgPids.end(), pdgCode) == cfgPids.end()) {
-      return ret;
+    if (std::find(cfgPids.value.begin(), cfgPids.value.end(), pdgCode) != cfgPids.value.end()) {
+      switch (pdgCode) {
+        case 2212:
+          index = 0;
+          break;
+        case 321:
+          index = 1;
+          break;
+        case 211:
+          index = 2;
+          break;
+        case -211:
+          index = 3;
+          break;
+        case -321:
+          index = 4;
+          break;
+        case -2212:
+          index = 5;
+          break;
+      }
     }
 
-    switch(pdgCode) {
-      case 2212:
-        ret = 0;
-        break;
-      case 321:
-        ret = 1;
-        break;
-      case 211:
-        ret = 2;
-        break;
-      case -211:
-        ret = 3;
-        break;
-      case -321:
-        ret = 4;
-        break;
-      case -2212:
-        ret = 5;
-        break;
-    }
-
-    return ret;
+    return index;
   }
 
   void fillTrackedHist(int32_t pdgCode, float pt)
   {
     auto ind = getPartIndex(pdgCode);
-    if(ind) {
+    if (ind) {
       hTracked[ind.value()]->Fill(pt);
     }
   }
@@ -145,7 +145,7 @@ struct PidMlBatchEffAndPurProducer {
   void fillMCPositiveHist(int32_t pdgCode, float pt)
   {
     auto ind = getPartIndex(pdgCode);
-    if(ind) {
+    if (ind) {
       hMCPositive[ind.value()]->Fill(pt);
     }
   }
@@ -197,6 +197,8 @@ struct PidMlBatchEffAndPurProducer {
 
   void process(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
   {
+    effAndPurPIDResult.reserve(mcParticles.size());
+
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
