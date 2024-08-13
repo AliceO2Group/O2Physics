@@ -150,7 +150,7 @@ struct lnnRecoTask {
   Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
 
   // histogram axes
-  ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
+  ConfigurableAxis rigidityBins{"rigidityBins", {200, -5.f, 5.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
   ConfigurableAxis dEdxBins{"dEdxBins", {1000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
