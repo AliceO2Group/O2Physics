@@ -218,6 +218,9 @@ struct correlateStrangeness {
     if (std::abs(track.dcaXY()) > systCuts.dcaXYconstant + systCuts.dcaXYpTdep * std::abs(track.signed1Pt())) {
       return false;
     }
+    if (track.pt() > axisRanges[3][1] || track.pt() < axisRanges[3][0]) {
+      return false;
+    }
     return true;
   }
   void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvz, float mult)
@@ -266,8 +269,7 @@ struct correlateStrangeness {
           continue;
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
-        if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
-          continue;
+
         TH2F* hEfficiencyV0[3];
         hEfficiencyV0[0] = hEfficiencyK0Short;
         hEfficiencyV0[1] = hEfficiencyLambda;
@@ -359,8 +361,7 @@ struct correlateStrangeness {
           continue;
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
-        if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
-          continue;
+
         TH2F* hEfficiencyCascade[4];
         hEfficiencyCascade[0] = hEfficiencyXiMinus;
         hEfficiencyCascade[1] = hEfficiencyXiPlus;
@@ -430,8 +431,6 @@ struct correlateStrangeness {
         if (deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1])
           continue;
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
-          continue;
-        if (pttrigger < axisRanges[3][0] || pttrigger > axisRanges[3][1])
           continue;
 
         if (!mixing)
@@ -1274,6 +1273,9 @@ struct correlateStrangeness {
         return;
       if (!bestCollisionINELgtZERO)
         return;
+      if (bestCollisionFT0Mpercentile > axisRanges[5][1] || bestCollisionFT0Mpercentile < axisRanges[5][0]) {
+        return;
+      }
     }
 
     int iteratorNum = -1;
@@ -1337,9 +1339,10 @@ struct correlateStrangeness {
 
     for (Int_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
       auto triggerParticle = mcParticles.iteratorAt(triggerIndices[iTrigger]);
-      // if (!mcParticle) {
-      //   continue;
-      //   }
+      // check range of trigger particle
+      if (triggerParticle.pt() > axisRanges[3][1] || triggerParticle.pt() < axisRanges[3][0]) {
+        continue;
+      }
       Double_t getatrigger = triggerParticle.eta();
       Double_t gphitrigger = triggerParticle.phi();
       Double_t pttrigger = triggerParticle.pt();
@@ -1353,6 +1356,14 @@ struct correlateStrangeness {
             Double_t getaassoc = assocParticle.eta();
             Double_t gphiassoc = assocParticle.phi();
             Double_t ptassoc = assocParticle.pt();
+
+            // skip if basic ranges not met
+            if (gphiassoc < axisRanges[0][0] || gphiassoc > axisRanges[0][1])
+              continue;
+            if (getaassoc < axisRanges[1][0] || getaassoc > axisRanges[1][1])
+              continue;
+            if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
+              continue;
             histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger, gphiassoc), getatrigger - getaassoc, ptassoc, pttrigger, collision.posZ(), bestCollisionFT0Mpercentile);
           }
         }
