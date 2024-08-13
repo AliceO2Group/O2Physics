@@ -97,7 +97,6 @@ struct HfTaskDs {
   Preslice<CandDsData> candDsDataPerCollision = aod::hf_cand::collisionId;
   Preslice<CandDsDataWithMl> candDsDataWithMlPerCollision = aod::hf_cand::collisionId;
   Preslice<CandDsMcReco> candDsMcRecoPerCollision = aod::hf_cand::collisionId;
-  Preslice<CandDsMcRecoWithMl> candDsMcRecoWithMlPerCollision = aod::hf_cand::collisionId;
 
   PresliceUnsorted<CollisionsMc> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsMcWithFT0C> colPerMcCollisionWithFT0C = aod::mccollisionlabel::mcCollisionId;
@@ -108,30 +107,6 @@ struct HfTaskDs {
   int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
 
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
-
-  // Data
-  Partition<CandDsData> selectedDsToKKPiCandData = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<CandDsDataWithMl> selectedDsToKKPiCandWithMlData = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<CandDsData> selectedDsToPiKKCandData = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<CandDsDataWithMl> selectedDsToPiKKCandWithMlData = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-
-  // MC
-  Partition<CandDsMcReco> selectedDsToKKPiCandMc = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<CandDsMcRecoWithMl> selectedDsToKKPiCandWithMlMc = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<CandDsMcReco> selectedDsToPiKKCandMc = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<CandDsMcRecoWithMl> selectedDsToPiKKCandWithMlMc = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-
-  // Matched MC, no ML
-  Partition<CandDsMcReco> reconstructedCandDsSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<CandDsMcReco> reconstructedCandDplusSig = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel);
-  Partition<CandDsMcReco> reconstructedCandDplusBkg = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
-  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
-
-  // Matched MC, with ML
-  Partition<CandDsMcRecoWithMl> reconstructedCandDsSigWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<CandDsMcRecoWithMl> reconstructedCandDplusSigWithMl = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel);
-  Partition<CandDsMcRecoWithMl> reconstructedCandDplusBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<CandDsMcRecoWithMl> reconstructedCandBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
   HistogramRegistry registry{"registry", {}};
 
