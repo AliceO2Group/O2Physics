@@ -480,9 +480,6 @@ struct HfTaskXicToXiPiPi {
       int flagMcMatchRecXic = std::abs(candidate.flagMcMatchRec());
 
       if (TESTBIT(flagMcMatchRecXic, hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(flagMcMatchRecXic, hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.template pi0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXicMcGen>>(), o2::constants::physics::Pdg::kXiCPlus, true);
-        auto particleMother = mcParticles.rawIteratorAt(indexMother);
-
         registry.fill(HIST("hChi2topoToPVRecSig"), candidate.chi2TopoXicPlusToPV(), candidate.pt());
         registry.fill(HIST("hChi2topoXiToXicPlusRecSig"), candidate.chi2TopoXiToXicPlus(), candidate.pt());
         registry.fill(HIST("hChi2geoXiRecSig"), candidate.kfCascadeChi2(), candidate.pt());
