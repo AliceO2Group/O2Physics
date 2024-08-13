@@ -17,6 +17,7 @@
 
 #include <TLorentzVector.h>
 #include "TF1.h"
+#include "TRandom3.h"
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -99,6 +100,12 @@ struct k892analysis {
   Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
   Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
+
+  // Rotational background
+  Configurable<bool> IsCalcRotBkg{"IsCalcRotBkg", true, "Calculate rotational background"};
+  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+  Configurable<int> c_nof_rotations{"c_nof_rotations", 3, "Number of random rotations in the rotational background"};
+
   // MC Event selection
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
 
@@ -236,6 +243,9 @@ struct k892analysis {
     histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {centAxis, ptAxis, invMassAxis});
+    if (IsCalcRotBkg) {
+      histos.add("h3K892InvMassRotation", "Invariant mass of K(892)0 rotation", kTH3F, {centAxis, ptAxis, invMassAxis});
+    }
 
     if (additionalMEPlots) {
       histos.add("h3k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH3F, {centAxis, ptAxis, invMassAxis});
@@ -446,7 +456,7 @@ struct k892analysis {
       histos.fill(HIST("MultCalib/GloPVpi_after"), dTracks1.size(), collision.multNTracksPV()); // global tracks vs PV tracks after the multiplicity calibration cuts
     }
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughter_rot, lresonance_rot;
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
 
       // Full index policy is needed to consider all possible combinations
@@ -558,9 +568,10 @@ struct k892analysis {
       }
 
       //// Resonance reconstruction
-      lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-      lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
+      lDecayDaughter1.SetPtEtaPhiM(trk1.pt(), trk1.eta(), trk1.phi(), massPi);
+      lDecayDaughter2.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
+      TRandom* rn = new TRandom();
       // Rapidity cut
       if (abs(lResonance.Rapidity()) >= 0.5)
         continue;
@@ -590,6 +601,14 @@ struct k892analysis {
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (!IsMix) {
+          if (IsCalcRotBkg) {
+            for (int i = 0; i < c_nof_rotations; i++) {
+              float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
+              ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
+              lresonance_rot = lDecayDaughter1 + ldaughter_rot;
+              histos.fill(HIST("h3K892InvMassRotation"), multiplicity, lresonance_rot.Pt(), lresonance_rot.M());
+            }
+          }
           if (trk1.sign() < 0) {
             histos.fill(HIST("k892invmassDS"), lResonance.M());
             histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M());
