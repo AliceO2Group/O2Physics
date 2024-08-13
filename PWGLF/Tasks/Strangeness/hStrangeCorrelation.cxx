@@ -1356,7 +1356,7 @@ struct correlateStrangeness {
             Double_t getaassoc = assocParticle.eta();
             Double_t gphiassoc = assocParticle.phi();
             Double_t ptassoc = assocParticle.pt();
-            
+
             // skip if basic ranges not met
             if (gphiassoc < axisRanges[0][0] || gphiassoc > axisRanges[0][1])
               continue;
