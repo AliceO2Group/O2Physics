@@ -109,30 +109,6 @@ struct HfTaskDs {
 
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
 
-  // Data
-  Partition<CandDsData> selectedDsToKKPiCandData = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<CandDsDataWithMl> selectedDsToKKPiCandWithMlData = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<CandDsData> selectedDsToPiKKCandData = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<CandDsDataWithMl> selectedDsToPiKKCandWithMlData = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-
-  // MC
-  Partition<CandDsMcReco> selectedDsToKKPiCandMc = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<CandDsMcRecoWithMl> selectedDsToKKPiCandWithMlMc = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
-  Partition<CandDsMcReco> selectedDsToPiKKCandMc = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Partition<CandDsMcRecoWithMl> selectedDsToPiKKCandWithMlMc = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-
-  // Matched MC, no ML
-  Partition<CandDsMcReco> reconstructedCandDsSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<CandDsMcReco> reconstructedCandDplusSig = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel);
-  Partition<CandDsMcReco> reconstructedCandDplusBkg = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
-  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
-
-  // Matched MC, with ML
-  Partition<CandDsMcRecoWithMl> reconstructedCandDsSigWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<CandDsMcRecoWithMl> reconstructedCandDplusSigWithMl = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel);
-  Partition<CandDsMcRecoWithMl> reconstructedCandDplusBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
-  Partition<CandDsMcRecoWithMl> reconstructedCandBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
-
   HistogramRegistry registry{"registry", {}};
 
   std::array<std::string, DataType::kDataTypes> folders = {"Data/", "MC/Ds/Prompt/", "MC/Ds/NonPrompt/", "MC/Dplus/Prompt/", "MC/Dplus/NonPrompt/", "MC/Dplus/Bkg/", "MC/Bkg/"};
@@ -939,7 +915,7 @@ struct HfTaskDs {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsDataWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
@@ -1097,7 +1073,7 @@ struct HfTaskDs {
       std::array<int, DataType::kDataTypes> nCandsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
@@ -1131,7 +1107,7 @@ struct HfTaskDs {
       std::array<int, DataType::kDataTypes> nCandsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
@@ -1165,7 +1141,7 @@ struct HfTaskDs {
       std::array<int, DataType::kDataTypes> nCandsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
@@ -1196,7 +1172,7 @@ struct HfTaskDs {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
