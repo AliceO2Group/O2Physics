@@ -149,9 +149,12 @@ struct qVectorsTable {
   /////////////////////////////////////////////////////////////////
 
   std::unordered_map<string, bool> useDetector = {
-    {"QvectorTPCalls", cfgUseTPCall || cfgUseBTot},
-    {"QvectorTPCnegs", cfgUseTPCneg || cfgUseBNeg},
-    {"QvectorTPCposs", cfgUseTPCpos || cfgUseBPos},
+    {"QvectorBTots", cfgUseBTot},
+    {"QvectorBNegs", cfgUseBNeg},
+    {"QvectorBPoss", cfgUseBPos},
+    {"QvectorTPCalls", cfgUseTPCall},
+    {"QvectorTPCnegs", cfgUseTPCneg},
+    {"QvectorTPCposs", cfgUseTPCpos},
     {"QvectorFV0As", cfgUseFV0A},
     {"QvectorFT0Ms", cfgUseFT0M},
     {"QvectorFT0As", cfgUseFT0A},
@@ -427,12 +430,12 @@ struct qVectorsTable {
       if (std::abs(trk.eta()) < 0.1) {
         continue;
       }
-      if (trk.eta() > 0 && useDetector["QvectorTPCposs"]) {
+      if (trk.eta() > 0 && (useDetector["QvectorTPCposs"] || useDetector["QvectorBPoss"])) {
         qVectTPCpos[0] += trk.pt() * std::cos(trk.phi() * nmode);
         qVectTPCpos[1] += trk.pt() * std::sin(trk.phi() * nmode);
         TrkTPCposLabel.push_back(trk.globalIndex());
         nTrkTPCpos++;
-      } else if (trk.eta() < 0 && useDetector["QvectorTPCnegs"]) {
+      } else if (trk.eta() < 0 && (useDetector["QvectorTPCnegs"] || useDetector["QvectorBNegs"])) {
         qVectTPCneg[0] += trk.pt() * std::cos(trk.phi() * nmode);
         qVectTPCneg[1] += trk.pt() * std::sin(trk.phi() * nmode);
         TrkTPCnegLabel.push_back(trk.globalIndex());
@@ -605,11 +608,11 @@ struct qVectorsTable {
     qVectorTPCallVec(IsCalibrated, qvecReTPCall, qvecImTPCall, qvecAmp[kTPCall], TrkTPCallLabel);
 
     // Deprecated, will be removed in future after transition time //
-    if (useDetector["QvectorTPCposs"])
+    if (useDetector["QvectorBPoss"])
       qVectorBPos(IsCalibrated, qvecReTPCpos.at(0), qvecImTPCpos.at(0), qvecAmp[kTPCpos], TrkTPCposLabel);
-    if (useDetector["QvectorTPCnegs"])
+    if (useDetector["QvectorBNegs"])
       qVectorBNeg(IsCalibrated, qvecReTPCneg.at(0), qvecImTPCneg.at(0), qvecAmp[kTPCneg], TrkTPCnegLabel);
-    if (useDetector["QvectorTPCalls"])
+    if (useDetector["QvectorBTots"])
       qVectorBTot(IsCalibrated, qvecReTPCall.at(0), qvecImTPCall.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
 
     qVectorBPosVec(IsCalibrated, qvecReTPCpos, qvecImTPCpos, qvecAmp[kTPCpos], TrkTPCposLabel);
