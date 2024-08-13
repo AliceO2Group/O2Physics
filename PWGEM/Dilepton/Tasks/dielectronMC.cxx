@@ -23,5 +23,5 @@
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DileptonMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, FilteredMyMCElectrons>>(cfgc, TaskName{"dielectron-mc"})};
+    adaptAnalysisTask<DileptonMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, FilteredMyMCElectrons, MySmearedElectrons>>(cfgc, TaskName{"dielectron-mc"})};
 }

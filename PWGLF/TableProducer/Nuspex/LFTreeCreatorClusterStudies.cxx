@@ -114,7 +114,6 @@ enum CascSelections {
 enum DeSelections {
   kDeNoCut = 0,
   kDeNClsIts,
-  kDePIDforTrk,
   kDePIDtpc,
   kDePIDtof,
   kDeAll
@@ -123,7 +122,6 @@ enum DeSelections {
 enum He3Selections {
   kHe3NoCut = 0,
   kHe3NClsIts,
-  kHe3PIDforTrk,
   kHe3PIDtpc,
   kHe3PIDtof,
   kHe3All
@@ -216,6 +214,7 @@ struct LfTreeCreatorClusterStudies {
   Configurable<bool> setting_fillK{"fillK", true, "Fill the K tree"};
   Configurable<bool> setting_fillDe{"fillDe", true, "Fill the De tree"};
   Configurable<bool> setting_fillHe3{"fillHe3", true, "Fill the He3 tree"};
+  Configurable<bool> setting_fillPKPi{"fillPKPPi", true, "Fill the p, K, pi tree"};
   Configurable<bool> setting_smallTable{"smallTable", true, "Use a small table for testing"};
 
   Configurable<int> setting_materialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -225,9 +224,9 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> setting_downscaleFactor{"downscaleFactor", 1.f, "Downscale factor for the V0 candidates"};
   Configurable<bool> setting_applyAdditionalEvSel{"applyAdditionalEvSel", false, "Apply additional event selection"};
 
-  Configurable<float> v0track_nClsItsMin{"v0track_NclsItsMin", 0.f, "Minimum number of ITS clusters for the V0 daughters"};
-  Configurable<float> v0track_nClsTpcMin{"v0track_NclsTpcMin", 100.f, "Minimum number of TPC clusters for the V0 daughters"};
-  Configurable<float> v0track_nClsTpcMaxShared{"v0track_NclsTpcMaxShared", 5.f, "Maximum number of shared TPC clusters for the V0 daughters"};
+  Configurable<float> track_nClsItsMin{"track_NclsItsMin", 0.f, "Minimum number of ITS clusters for the V0 daughters"};
+  Configurable<float> track_nClsTpcMin{"track_NclsTpcMin", 100.f, "Minimum number of TPC clusters for the V0 daughters"};
+  Configurable<float> track_nClsTpcMaxShared{"track_NclsTpcMaxShared", 5.f, "Maximum number of shared TPC clusters for the V0 daughters"};
 
   // Configurable<float> v0setting_etaMaxV0{"etaMaxV0", 0.8f, "Maximum eta for the V0 daughters"};
   Configurable<float> v0setting_etaMaxV0dau{"etaMaxV0dau", 0.8f, "Maximum eta for the V0 daughters"};
@@ -298,13 +297,14 @@ struct LfTreeCreatorClusterStudies {
      {"nSigmaTPCDe", "nSigma TPC Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
      {"nSigmaTPCHe", "nSigma TPC He3; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} ^{3}He", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
      {"nSigmaTOFDe", "nSigma TOF Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{TOF} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
+     {"TOFmassDe", "TOF mass De; signed #it{p}_{T} (GeV/#it{c}); mass_{TOF} ^{3}He (GeV/#it{c}^2)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 1.0f, 5.0f}}}},
      {"TOFmassHe", "TOF mass He3; signed #it{p}_{T} (GeV/#it{c}); mass_{TOF} ^{3}He (GeV/#it{c}^2)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 1.0f, 5.0f}}}},
-     {"pmatchingEl", "#it{p} matching e; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingPi", "#it{p} matching #pi; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingKa", "#it{p} matching K; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingPr", "#it{p} matching p; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingDe", "#it{p} matching d; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingHe", "#it{p} matching ^{3}He; signed #it{p}_{TPC} (GeV/#it{c}); #it{p}_{TPC} - #it{p} (GeV/#it{c})", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
+     {"pmatchingEl", "#it{p} matching e; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
+     {"pmatchingPi", "#it{p} matching #pi; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
+     {"pmatchingKa", "#it{p} matching K; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
+     {"pmatchingPr", "#it{p} matching p; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
+     {"pmatchingDe", "#it{p} matching d; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
+     {"pmatchingHe", "#it{p} matching ^{3}He; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
      {"zVtx", "Binning for the vertex z in cm", {HistType::kTH1F, {{100, -20.f, 20.f}}}},
      {"isPositive", "is the candidate positive?; isPositive; counts", {HistType::kTH1F, {{2, -0.5f, 1.5f}}}}},
     OutputObjHandlingPolicy::AnalysisObject,
@@ -428,16 +428,16 @@ struct LfTreeCreatorClusterStudies {
    * Select the V0 daughters based on the quality cuts
    */
   template <typename T>
-  bool qualitySelectionV0Daughter(const T& track)
+  bool qualityTrackSelection(const T& track)
   {
     if (std::abs(track.eta()) > v0setting_etaMaxV0dau) {
       return false;
     }
-    if (track.itsNCls() < v0track_nClsItsMin ||
-        track.tpcNClsFound() < v0track_nClsTpcMin ||
-        track.tpcNClsCrossedRows() < v0track_nClsTpcMin ||
+    if (track.itsNCls() < track_nClsItsMin ||
+        track.tpcNClsFound() < track_nClsTpcMin ||
+        track.tpcNClsCrossedRows() < track_nClsTpcMin ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
-        track.tpcNClsShared() > v0track_nClsTpcMaxShared) {
+        track.tpcNClsShared() > track_nClsTpcMaxShared) {
       return false;
     }
     return true;
@@ -476,6 +476,17 @@ struct LfTreeCreatorClusterStudies {
   // =========================================================================================================
 
   template <typename T>
+  bool nucleiTrackSelection(const T& track)
+  {
+    if (track.tpcNClsFound() < 90) {
+      return false;
+    }
+    return true;
+  }
+
+  // =========================================================================================================
+
+  template <typename T>
   float computeNSigmaDe(const T& candidate)
   {
     float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(candidate.tpcInnerParam() / constants::physics::MassDeuteron), m_BBparamsDe[0], m_BBparamsDe[1], m_BBparamsDe[2], m_BBparamsDe[3], m_BBparamsDe[4]);
@@ -491,6 +502,22 @@ struct LfTreeCreatorClusterStudies {
       return true;
     }
     return false;
+  }
+
+  template <typename T>
+  float computeTOFmassDe(const T& candidate)
+  {
+    float beta = m_responseBeta.GetBeta(candidate);
+    beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+    return candidate.tpcInnerParam() * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
+  }
+
+  template <typename T>
+  float computeTOFmassDeMc(const T& candidate)
+  {
+    float beta = m_responseBetaMc.GetBeta(candidate);
+    beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+    return candidate.tpcInnerParam() * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
   }
 
   // =========================================================================================================
@@ -606,19 +633,19 @@ struct LfTreeCreatorClusterStudies {
     for (int i = 0; i < Selections::kAll; i++)
       m_hAnalysis.get<TH1>(HIST("collision_selections"))->GetXaxis()->SetBinLabel(i + 1, collision_selection_labels[i].c_str());
 
-    std::vector<std::string> V0_selection_labels = {"All", "daughter track quality", "V0 daughters dca", "V0 radius", "V0 dca to PV", "V0 cosPA", "V0 mass selection", "V0 daughter DCA to PV"};
+    std::vector<std::string> V0_selection_labels = {"All", "daughter track quality", "V0 daughters dca", "V0 radius", "V0 cosPA", "V0 mass selection", "V0 daughter DCA to PV"};
     for (int i = 0; i < V0Selections::kV0All; i++)
       m_hAnalysis.get<TH1>(HIST("v0_selections"))->GetXaxis()->SetBinLabel(i + 1, V0_selection_labels[i].c_str());
 
-    std::vector<std::string> Casc_selection_labels = {"All", "Casc DCA", "Casc CosPA", "Accepted Omega", "Rejected Xi"};
+    std::vector<std::string> Casc_selection_labels = {"All", "Casc DCA", "Casc CosPA", "Accepted Omega", "Veto Xi", "n#sigma_{TPC} K"};
     for (int i = 0; i < CascSelections::kCascAll; i++)
       m_hAnalysis.get<TH1>(HIST("casc_selections"))->GetXaxis()->SetBinLabel(i + 1, Casc_selection_labels[i].c_str());
 
-    std::vector<std::string> De_selection_labels = {"All", "n clusters ITS", "De PID for tracking", "n#sigma_{TPC} d", "n#sigma_{TOF} d"};
+    std::vector<std::string> De_selection_labels = {"All", "n clusters ITS", "n#sigma_{TPC} d", "n#sigma_{TOF} d"};
     for (int i = 0; i < DeSelections::kDeAll; i++)
       m_hAnalysis.get<TH1>(HIST("de_selections"))->GetXaxis()->SetBinLabel(i + 1, De_selection_labels[i].c_str());
 
-    std::vector<std::string> He3_selection_labels = {"All", "n clusters ITS", "He3 PID for tracking", "n#sigma_{TPC} ^{3}He", "n#sigma_{TOF} ^{3}He"};
+    std::vector<std::string> He3_selection_labels = {"All", "n clusters ITS", "n#sigma_{TPC} ^{3}He", "TOF mass ^{3}He"};
     for (int i = 0; i < He3Selections::kHe3All; i++)
       m_hAnalysis.get<TH1>(HIST("he3_selections"))->GetXaxis()->SetBinLabel(i + 1, He3_selection_labels[i].c_str());
 
@@ -634,7 +661,7 @@ struct LfTreeCreatorClusterStudies {
 
     auto posTrack = v0.posTrack_as<Track>();
     auto negTrack = v0.negTrack_as<Track>();
-    if (!qualitySelectionV0Daughter(posTrack) || !qualitySelectionV0Daughter(negTrack)) {
+    if (!qualityTrackSelection(posTrack) || !qualityTrackSelection(negTrack)) {
       return false;
     }
     m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0DaughterQuality);
@@ -747,8 +774,9 @@ struct LfTreeCreatorClusterStudies {
       m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
       m_hAnalysis.fill(HIST("nSigmaTPCPr"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaPr());
       m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPi());
-      m_hAnalysis.fill(HIST("pmatchingPr"), posTrack.tpcInnerParam(), posTrack.tpcInnerParam() - posTrack.p());
-      m_hAnalysis.fill(HIST("pmatchingPi"), -negTrack.tpcInnerParam(), negTrack.tpcInnerParam() - negTrack.p());
+      m_hAnalysis.fill(HIST("pmatchingPr"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
+      m_hAnalysis.fill(HIST("pmatchingPi"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
+
     } else if (TESTBIT(v0Bitmask, AntiLambda)) {
       massV0 = massAntiLambdaV0;
       m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massAntiLambdaV0);
@@ -756,15 +784,16 @@ struct LfTreeCreatorClusterStudies {
       m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
       m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaPi());
       m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPr());
-      m_hAnalysis.fill(HIST("pmatchingPi"), posTrack.tpcInnerParam(), posTrack.tpcInnerParam() - posTrack.p());
-      m_hAnalysis.fill(HIST("pmatchingPr"), -negTrack.tpcInnerParam(), negTrack.tpcInnerParam() - negTrack.p());
+      m_hAnalysis.fill(HIST("pmatchingPi"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
+      m_hAnalysis.fill(HIST("pmatchingPr"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
+
     } else if (TESTBIT(v0Bitmask, Photon)) {
       massV0 = 0.f;
       m_hAnalysis.fill(HIST("nSigmaTPCEl"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaEl());
       m_hAnalysis.fill(HIST("nSigmaTPCEl"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaEl());
       m_hAnalysis.fill(HIST("armenteros_plot_gamma"), alphaAP, qtAP);
-      m_hAnalysis.fill(HIST("pmatchingEl"), posTrack.tpcInnerParam(), posTrack.tpcInnerParam() - posTrack.p());
-      m_hAnalysis.fill(HIST("pmatchingEl"), -negTrack.tpcInnerParam(), negTrack.tpcInnerParam() - negTrack.p());
+      m_hAnalysis.fill(HIST("pmatchingEl"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
+      m_hAnalysis.fill(HIST("pmatchingEl"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
     }
     m_hAnalysis.fill(HIST("radiusV0"), radiusV0);
     m_hAnalysis.fill(HIST("armenteros_plot"), alphaAP, qtAP);
@@ -963,7 +992,7 @@ struct LfTreeCreatorClusterStudies {
     }
     m_hAnalysis.fill(HIST("casc_selections"), CascSelections::kNSigmaTPC);
     m_hAnalysis.fill(HIST("massOmega"), std::hypot(momMother[0], momMother[1]) * bachelorTrack.sign(), massOmega);
-    m_hAnalysis.fill(HIST("pmatchingKa"), bachelorTrack.sign() * bachelorTrack.tpcInnerParam(), bachelorTrack.tpcInnerParam() - bachelorTrack.p());
+    m_hAnalysis.fill(HIST("pmatchingKa"), bachelorTrack.sign() * bachelorTrack.tpcInnerParam(), (bachelorTrack.tpcInnerParam() - bachelorTrack.p()) / bachelorTrack.tpcInnerParam());
     m_hAnalysis.fill(HIST("nSigmaTPCKa"), bachelorTrack.sign() * std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]), bachelorTrack.tpcNSigmaKa());
 
     uint8_t partID_bachelor = PartID::ka;
@@ -1062,10 +1091,6 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDeNClsIts);
-    if (track.pidForTracking() != o2::track::PID::Deuteron) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDforTrk);
     if (!selectionPIDtpcDe(track)) {
       return;
     }
@@ -1076,7 +1101,8 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
     m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
-    m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), track.tpcInnerParam() - track.p());
+    m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe(track));
+    m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), (track.tpcInnerParam() - track.p()) / track.tpcInnerParam());
 
     uint8_t partID = PartID::de;
 
@@ -1118,10 +1144,6 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDeNClsIts);
-    if (track.pidForTracking() != o2::track::PID::Deuteron) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDforTrk);
     if (!selectionPIDtpcDe(track)) {
       return;
     }
@@ -1132,7 +1154,8 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
     m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
-    m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), track.tpcInnerParam() - track.p());
+    m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDeMc(track));
+    m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), (track.tpcInnerParam() - track.p()) / track.tpcInnerParam());
 
     uint8_t partID = PartID::de;
 
@@ -1170,10 +1193,6 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3NClsIts);
-    if (track.pidForTracking() != o2::track::PID::Helium3) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDforTrk);
     if (!selectionPIDtpcHe3(track)) {
       return;
     }
@@ -1189,7 +1208,7 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.p() * track.sign(), computeNSigmaHe3(track));
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
-    m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, correctedTPCinnerParam - track.p());
+    m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
 
     if (setting_smallTable) {
       m_ClusterStudiesTable(
@@ -1229,10 +1248,6 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3NClsIts);
-    if (track.pidForTracking() != o2::track::PID::Helium3) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDforTrk);
     if (!selectionPIDtpcHe3(track)) {
       return;
     }
@@ -1248,7 +1263,7 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.p() * track.sign(), computeNSigmaHe3(track));
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
-    m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, correctedTPCinnerParam - track.p());
+    m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
 
     if (setting_smallTable) {
       m_ClusterStudiesTableMc(
@@ -1275,6 +1290,34 @@ struct LfTreeCreatorClusterStudies {
         -999.f);                               // massMother_He3
     }
   }
+
+  void fillPKPiTable(const TracksFullIU::iterator& track)
+  {
+    uint8_t partID = 0;
+    if (std::abs(track.tpcNSigmaPi()) < v0setting_nsigmatpcPi) {
+      partID = PartID::pi;
+      m_hAnalysis.fill(HIST("nSigmaTPCPi"), track.p() * track.sign(), track.tpcNSigmaPi());
+    } else if (std::abs(track.tpcNSigmaKa()) < cascsetting_nsigmatpc) {
+      partID = PartID::ka;
+      m_hAnalysis.fill(HIST("nSigmaTPCKa"), track.p() * track.sign(), track.tpcNSigmaKa());
+    } else if (std::abs(track.tpcNSigmaPr()) < v0setting_nsigmatpcPr) {
+      partID = PartID::pr;
+      m_hAnalysis.fill(HIST("nSigmaTPCPr"), track.p() * track.sign(), track.tpcNSigmaPr());
+    } else {
+      return;
+    }
+
+    if (setting_smallTable) {
+      m_ClusterStudiesTable(
+        track.p() * track.sign(),
+        track.eta(),
+        track.phi(),
+        track.itsClusterSizes(),
+        partID);
+    }
+  }
+
+  // =========================================================================================================
 
   void processDataV0Casc(CollisionsCustom const& collisions, TracksFullIU const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&)
   {
@@ -1337,6 +1380,10 @@ struct LfTreeCreatorClusterStudies {
       TrackTable_thisCollision.bindExternalIndices(&tracks);
 
       for (auto track : TrackTable_thisCollision) {
+        if (!nucleiTrackSelection(track)) {
+          continue;
+        }
+
         if (setting_fillDe)
           fillDeTable(track);
         if (setting_fillHe3)
@@ -1345,6 +1392,34 @@ struct LfTreeCreatorClusterStudies {
     }
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataNuclei, "process Data Nuclei", false);
+
+  /**
+   * @brief Produce a dataset with high purity p, K, #pi
+   */
+  void processDataPKPi(CollisionsCustom const& collisions, TracksFullIU const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      if (!collisionSelection(collision)) {
+        continue;
+      }
+
+      m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto TrackTable_thisCollision = tracks.sliceBy(m_perCol, collIdx);
+      TrackTable_thisCollision.bindExternalIndices(&tracks);
+
+      for (auto track : TrackTable_thisCollision) {
+        if (!qualityTrackSelection(track)) {
+          continue;
+        }
+
+        if (setting_fillPKPi)
+          fillPKPiTable(track);
+      }
+    }
+  }
+  PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataPKPi, "process Data p, K, pi", false);
 
   void processMcV0Casc(CollisionsCustom const& collisions, TracksFullIUMc const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
@@ -1370,18 +1445,17 @@ struct LfTreeCreatorClusterStudies {
       cascTable_thisCollision.bindExternalIndices(&tracks);
       cascTable_thisCollision.bindExternalIndices(&v0s);
 
-      if (setting_fillV0) {
-        m_v0TrackParCovs.clear();
-        for (auto& v0 : v0Table_thisCollision) {
-          CandidateV0 candV0;
-          if (fillV0Cand(PV, v0, candV0, tracks)) {
-            if (fillV0CandMc(v0, candV0)) {
-              fillV0TableMc(candV0);
-            }
+      m_v0TrackParCovs.clear();
+      for (auto& v0 : v0Table_thisCollision) {
+        CandidateV0 candV0;
+        if (fillV0Cand(PV, v0, candV0, tracks) && setting_fillV0) {
+          if (fillV0CandMc(v0, candV0)) {
+            fillV0TableMc(candV0);
           }
         }
       }
-      if (setting_fillK && setting_fillV0) { // the v0 loops are needed for the Ks
+
+      if (setting_fillK) { // the v0 loops are needed for the Ks
         for (auto& cascade : cascTable_thisCollision) {
           CandidateK candK;
           if (fillKCand(PV, cascade, candK, tracks)) {
@@ -1413,6 +1487,10 @@ struct LfTreeCreatorClusterStudies {
       TrackTable_thisCollision.bindExternalIndices(&tracks);
 
       for (auto track : TrackTable_thisCollision) {
+        if (!nucleiTrackSelection(track)) {
+          continue;
+        }
+
         if (setting_fillDe) {
           fillDeTableMc(track);
         }

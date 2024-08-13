@@ -76,6 +76,9 @@ struct qaMatchEff {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   using BCsWithTimeStamp = soa::Join<aod::BCs, aod::Timestamps>;
 
+  Configurable<bool> makethn{"makethn", false, "choose if produce thnsparse"};
+  Configurable<bool> makehistos{"makehistos", true, "choose if produce histos"};
+
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> enableMonitorVsTime{"enableMonitorVsTime", false, "Enable the storage of ITS-TPC matching efficiency vs. time"};
   Configurable<bool> enableTHnSparseMonitorVsTime{"enableTHnSparseMonitorVsTime", false, "Enable the storage of ITS-TPC matching efficiency vs. time"};
@@ -120,6 +123,7 @@ struct qaMatchEff {
     Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
   } kineCuts;
   //
+  //
   // DCA and PID cuts
   Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
   Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
@@ -159,50 +163,9 @@ struct qaMatchEff {
   ConfigurableAxis posZBinsVsTime{"posZBinsVsTime", {2, -100, 100}, "posZ primary vertex binning for monitoring vs time"};
   ConfigurableAxis tpcClstBinsVsTime{"tpcClstBinsVsTime", {40, 0, 160}, "TPC cluster binning for monitoring vs time"};
   ConfigurableAxis itsClstBinsVsTime{"itsClstBinsVsTime", {9, 0, 9}, "ITS cluster binning for monitoring vs time"};
-  //
-  AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
-  //
-  AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
-  //
-  AxisSpec axisX{XBins, "track x (cm)"};
-  //
-  AxisSpec axisZ{ZBins, "track z (cm)"};
-  //
-  AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
-  //
-  AxisSpec axisEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "#eta"};
-  AxisSpec axisPhi{phiBins, 0.f, TwoPI, "#it{#varphi} (rad)"};
-  AxisSpec axisDEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "D#eta"};
-  AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
   // pdg codes vector
   std::vector<int> pdgChoice = {211, 213, 215, 217, 219, 221, 223, 321, 411, 521, 2212, 1114, 2214};
-  //
-  // configuration for THnSparse's
-  //
-  Configurable<bool> makethn{"makethn", false, "choose if produce thnsparse"};
-  Configurable<bool> makehistos{"makehistos", true, "choose if produce histos"};
-  ConfigurableAxis thnd0{"thnd0", {150, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
-  ConfigurableAxis thndz{"thndz", {150, -10.0f, 10.0f}, "impact parameter in z [cm]"};
-  ConfigurableAxis thnPt{"thnPt", {80, 0.0f, 20.0f}, "pt [GeV/c]"};
-  ConfigurableAxis thnPhi{"thnPhi", {180, 0.0f, TwoPI}, "phi"};
-  ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
-  ConfigurableAxis thnType{"thnType", {3, -0.5f, 2.5f}, "0: primary, 1: physical secondary, 2: sec. from material"};
-  ConfigurableAxis thnSpec{"thnSpec", {11, -0.5f, 10.5f}, "particle ID"};
-  ConfigurableAxis thnSign{"thnSign", {3, -1.5f, 1.5f}, "sign of track"};
-  // ConfigurableAxis thnITSclumap{"thnITSclumap", {128, -0.5f, 127.5f}, "ITS cluster map"};
-  // ConfigurableAxis thnTPCclu{"thnTPCclu", {81, -0.5f, 160.5f}, "TPC nclust found"};
-  ConfigurableAxis thnHasDet{"thnHasDet", {12, -0.5f, 11.5f}, "presence of ITS, TPC, TOF, TRD"};
-  AxisSpec thnd0Axis{thnd0, "#it{d}_{r#it{#varphi}} [cm]"};
-  AxisSpec thndzAxis{thndz, "#it{d}_{z} [cm]"};
-  AxisSpec thnPtAxis{thnPt, "#it{p}_{T}^{reco} [GeV/#it{c}]"};
-  AxisSpec thnPhiAxis{thnPhi, "#it{#phi}"};
-  AxisSpec thnEtaAxis{thnEta, "#it{#eta}"};
-  AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
-  AxisSpec thnSpecAxis{thnSpec, "particle ID"};
-  AxisSpec thnSignAxis{thnSign, "track sign"};
-  // AxisSpec thnITSclumapAxis{thnITSclumap, "ITS cluster map"};
-  // AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
-  AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF, TRD"};
+
   //
   // Tracks selection object
   TrackSelection cutObject;
@@ -218,6 +181,20 @@ struct qaMatchEff {
   // limit for z position of primary vertex
   Configurable<float> zPrimVtxMax{"zPrimVtxax", 999.f, "Maximum asbolute value of z of primary vertex"};
   //
+  // configuration for THnSparse's
+  //
+  ConfigurableAxis thnd0{"thnd0", {150, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
+  ConfigurableAxis thndz{"thndz", {150, -10.0f, 10.0f}, "impact parameter in z [cm]"};
+  ConfigurableAxis thnPt{"thnPt", {80, 0.0f, 20.0f}, "pt [GeV/c]"};
+  ConfigurableAxis thnPhi{"thnPhi", {180, 0.0f, TwoPI}, "phi"};
+  ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
+  ConfigurableAxis thnType{"thnType", {3, -0.5f, 2.5f}, "0: primary, 1: physical secondary, 2: sec. from material"};
+  ConfigurableAxis thnSpec{"thnSpec", {11, -0.5f, 10.5f}, "particle ID"};
+  ConfigurableAxis thnSign{"thnSign", {3, -1.5f, 1.5f}, "sign of track"};
+  // ConfigurableAxis thnITSclumap{"thnITSclumap", {128, -0.5f, 127.5f}, "ITS cluster map"};
+  // ConfigurableAxis thnTPCclu{"thnTPCclu", {81, -0.5f, 160.5f}, "TPC nclust found"};
+  ConfigurableAxis thnHasDet{"thnHasDet", {12, -0.5f, 11.5f}, "presence of ITS, TPC, TOF, TRD"};
+  //
   //
   //      ******     BE VERY CAREFUL!   --  FILTERS !!!  *****
   //
@@ -231,6 +208,8 @@ struct qaMatchEff {
   {
     if (doDebug)
       LOG(info) << "===========================================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  is it MC? = " << isitMC;
+    //
+    //
     //
     // let's know if it's MC or data
     if (isitMC)
@@ -322,6 +301,32 @@ struct qaMatchEff {
   {
     if (doDebug)
       LOGF(info, "*********************************************************** DATA  ***************************************************");
+
+    //
+    const AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
+    const AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisX{XBins, "track x (cm)"};
+    const AxisSpec axisZ{ZBins, "track z (cm)"};
+    const AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
+    const AxisSpec axisEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "#eta"};
+    const AxisSpec axisPhi{phiBins, 0.f, TwoPI, "#it{#varphi} (rad)"};
+    const AxisSpec axisDEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "D#eta"};
+    const AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
+    //
+    // configuration for THnSparse's
+    //
+    const AxisSpec thnd0Axis{thnd0, "#it{d}_{r#it{#varphi}} [cm]"};
+    const AxisSpec thndzAxis{thndz, "#it{d}_{z} [cm]"};
+    const AxisSpec thnPtAxis{thnPt, "#it{p}_{T}^{reco} [GeV/#it{c}]"};
+    const AxisSpec thnPhiAxis{thnPhi, "#it{#phi}"};
+    const AxisSpec thnEtaAxis{thnEta, "#it{#eta}"};
+    const AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
+    const AxisSpec thnSpecAxis{thnSpec, "particle ID"};
+    const AxisSpec thnSignAxis{thnSign, "track sign"};
+    const AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF, TRD"};
+    // const AxisSpec thnITSclumapAxis{thnITSclumap, "ITS cluster map"};
+    // const AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
+    //
     //
     // data histos
     //
@@ -806,6 +811,31 @@ struct qaMatchEff {
   {
     if (doDebug)
       LOGF(info, " +++++++++++++++++++++++  MC  ++++++++++++++++++++++++");
+    //
+    const AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
+    const AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisX{XBins, "track x (cm)"};
+    const AxisSpec axisZ{ZBins, "track z (cm)"};
+    const AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
+    const AxisSpec axisEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "#eta"};
+    const AxisSpec axisPhi{phiBins, 0.f, TwoPI, "#it{#varphi} (rad)"};
+    const AxisSpec axisDEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "D#eta"};
+    const AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
+    //
+    //
+    // configuration for THnSparse's
+    //
+    const AxisSpec thnd0Axis{thnd0, "#it{d}_{r#it{#varphi}} [cm]"};
+    const AxisSpec thndzAxis{thndz, "#it{d}_{z} [cm]"};
+    const AxisSpec thnPtAxis{thnPt, "#it{p}_{T}^{reco} [GeV/#it{c}]"};
+    const AxisSpec thnPhiAxis{thnPhi, "#it{#phi}"};
+    const AxisSpec thnEtaAxis{thnEta, "#it{#eta}"};
+    const AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
+    const AxisSpec thnSpecAxis{thnSpec, "particle ID"};
+    const AxisSpec thnSignAxis{thnSign, "track sign"};
+    // const AxisSpec thnITSclumapAxis{thnITSclumap, "ITS cluster map"};
+    // const AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
+    const AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF, TRD"};
 
     //
     // adding histos to the registry
