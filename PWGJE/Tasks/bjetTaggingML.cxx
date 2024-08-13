@@ -217,7 +217,7 @@ struct BJetTaggingML {
 
   std::vector<std::vector<float>> getInputsForML(bjetParams jetparams, std::vector<bjetTrackParams>& tracksParams, std::vector<bjetSVParams>& svsParams)
   {
-    std::vector<float> jetInput = {jetparams.mJetpT, jetparams.mJetEta, jetparams.mJetPhi, (float)jetparams.mNTracks, (float)jetparams.mNSV, jetparams.mJetMass};
+    std::vector<float> jetInput = {jetparams.mJetpT, jetparams.mJetEta, jetparams.mJetPhi, static_cast<float>(jetparams.mNTracks), static_cast<float>(jetparams.mNSV), jetparams.mJetMass};
     std::vector<float> tracksInputFlat;
     std::vector<float> svsInputFlat;
 
@@ -398,7 +398,7 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), tracksParams.size());
       registry.fill(HIST("h2_nSV_jetpT"), analysisJet.pt(), SVsParams.size() < 250 ? SVsParams.size() : 249);
 
-      bjetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), (int)tracksParams.size(), (int)SVsParams.size(), analysisJet.mass()};
+      bjetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(SVsParams.size()), analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
       SVsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 
@@ -466,7 +466,7 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), tracksParams.size());
       registry.fill(HIST("h2_nSV_jetpT"), analysisJet.pt(), SVsParams.size() < 250 ? SVsParams.size() : 249);
 
-      bjetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), (int)tracksParams.size(), (int)SVsParams.size(), analysisJet.mass()};
+      bjetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(SVsParams.size()), analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
       SVsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 
