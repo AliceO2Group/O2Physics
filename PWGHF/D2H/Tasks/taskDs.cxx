@@ -97,6 +97,7 @@ struct HfTaskDs {
   Preslice<CandDsData> candDsDataPerCollision = aod::hf_cand::collisionId;
   Preslice<CandDsDataWithMl> candDsDataWithMlPerCollision = aod::hf_cand::collisionId;
   Preslice<CandDsMcReco> candDsMcRecoPerCollision = aod::hf_cand::collisionId;
+  Preslice<CandDsMcRecoWithMl> candDsMcRecoWithMlPerCollision = aod::hf_cand::collisionId;
 
   PresliceUnsorted<CollisionsMc> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsMcWithFT0C> colPerMcCollisionWithFT0C = aod::mccollisionlabel::mcCollisionId;
@@ -914,7 +915,7 @@ struct HfTaskDs {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsDataWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
@@ -1072,7 +1073,7 @@ struct HfTaskDs {
       std::array<int, DataType::kDataTypes> nCandsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
@@ -1106,7 +1107,7 @@ struct HfTaskDs {
       std::array<int, DataType::kDataTypes> nCandsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
@@ -1140,7 +1141,7 @@ struct HfTaskDs {
       std::array<int, DataType::kDataTypes> nCandsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
@@ -1171,7 +1172,7 @@ struct HfTaskDs {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
+      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
       for (const auto& candidate : groupedDsCandidates) {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
