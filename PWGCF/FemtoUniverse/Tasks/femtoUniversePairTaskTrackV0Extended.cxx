@@ -377,7 +377,8 @@ struct femtoUniversePairTaskTrackV0Extended {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event for track - V0", false);
 
-  void processSameEventMC(FilteredFDCollision& col, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts){
+  void processSameEventMC(FilteredFDCollision& col, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts)
+  {
     auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent(col, parts, groupPartsOne, groupPartsTwo, mcparts);
@@ -564,7 +565,8 @@ struct femtoUniversePairTaskTrackV0Extended {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing same event for track - V0", false);
 
-  void processMixedEventMC(FilteredFDCollisions& cols, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts){
+  void processMixedEventMC(FilteredFDCollisions& cols, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts)
+  {
     doMixedEvent(cols, parts, partsOneMC, partsTwoMC, mcparts);
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventMC, "Enable processing same event for track - V0 for MC", false);
