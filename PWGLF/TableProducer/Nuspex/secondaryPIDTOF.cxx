@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   eventTime.cxx
+/// \file   secondaryPIDTOF.cxx
 /// \origin Based on pidTOFBase.cxx
 /// \brief  Task to produce event Time obtained from TOF and FT0.
 ///         In order to redo TOF PID for secondaries which are linked to wrong collisions
@@ -37,7 +37,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PID/ParamBase.h"
 #include "PID/PIDTOF.h"
-#include "PWGLF/DataModel/Vtx3BodyTables.h"
+#include "PWGLF/DataModel/secondaryPIDTOFTable.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -68,10 +68,9 @@ o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& track
 }
 
 /// Task to produce the event time table for TOF PID of secondaries
-struct secondaryPIDTOF {
+struct secondaryPidTof {
   // Tables to produce
   Produces<o2::aod::EvTimeTOFFT0> tableEvTime;
-  static constexpr bool removeTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
   static constexpr float diamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
   static constexpr float errDiamond = diamond * 33.356409f;
   static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
@@ -134,13 +133,12 @@ struct secondaryPIDTOF {
       LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
     }
     // Checking that the table is requested in the workflow and enabling it
-    /*enableTable = isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0");
+    enableTable = isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0");
     if (!enableTable) {
       LOG(info) << "Table for Event time used for secondaries is not required, disabling it";
       return;
     }
-    LOG(info) << "Table EvTimeTOFFT0 enabled!";*/
-    enableTable = true;
+    LOG(info) << "Table EvTimeTOFFT0 enabled!";
 
     if (sel8TOFEvTime.value == true) {
       LOG(info) << "TOF event time will be computed for collisions that pass the event selection only!";
@@ -214,7 +212,7 @@ struct secondaryPIDTOF {
       tableEvTime(collision.collisionTime() * 1000.f, collision.collisionTimeRes() * 1000.f, 0.f, 999.f, 0.f, 999.f);
     }
   }
-  PROCESS_SWITCH(secondaryPIDTOF, processRun2, "Process with Run2 data", false);
+  PROCESS_SWITCH(secondaryPidTof, processRun2, "Process with Run2 data", false);
 
   ///
   /// Process function to prepare the event time on Run 3 data without the FT0
@@ -248,7 +246,7 @@ struct secondaryPIDTOF {
       tableEvTime(et, erret, et, erret, 0.f, 999.f);
     }
   }
-  PROCESS_SWITCH(secondaryPIDTOF, processNoFT0, "Process without FT0", false);
+  PROCESS_SWITCH(secondaryPidTof, processNoFT0, "Process without FT0", false);
 
   ///
   /// Process function to prepare the event for each track on Run 3 data with the FT0
@@ -304,7 +302,7 @@ struct secondaryPIDTOF {
       tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights), t0TOF[0], t0TOF[1], collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
     }
   }
-  PROCESS_SWITCH(secondaryPIDTOF, processFT0, "Process with FT0", true);
+  PROCESS_SWITCH(secondaryPidTof, processFT0, "Process with FT0", true);
 
   ///
   /// Process function to prepare the event time on Run 3 data with only the FT0
@@ -326,12 +324,12 @@ struct secondaryPIDTOF {
       tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
     }
   }
-  PROCESS_SWITCH(secondaryPIDTOF, processOnlyFT0, "Process only with FT0", false);
+  PROCESS_SWITCH(secondaryPidTof, processOnlyFT0, "Process only with FT0", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<secondaryPIDTOF>(cfgc)
+    adaptAnalysisTask<secondaryPidTof>(cfgc)
   };
 }

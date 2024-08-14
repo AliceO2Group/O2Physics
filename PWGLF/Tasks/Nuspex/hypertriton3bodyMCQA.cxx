@@ -21,6 +21,8 @@
 #include <cstdlib>
 #include <unordered_set>
 
+#include "CommonDataFormat/InteractionRecord.h"
+#include "CommonDataFormat/IRFrame.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -29,7 +31,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/Vtx3BodyTables.h"
+#include "PWGLF/DataModel/secondaryPIDTOFTable.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
@@ -101,17 +103,6 @@ bool isPairedH3LDaughters(TMCParticle const& mctrack0, TMCParticle const& mctrac
     return true;
   }
   return false;
-}
-
-int DoBCTimeSubraction(uint64_t t1, uint64_t t2)
-{
-  if (t1 > t2) {
-    uint64_t dt = t1 - t2;
-    return static_cast<int>(dt);
-  } else {
-    uint64_t dt = t2 - t1;
-    return -static_cast<int>(dt);
-  }
 }
 
 // check the properties of daughters candidates and true daughters
@@ -188,7 +179,6 @@ struct hypertriton3bodyTrackMcinfo {
         {"hDauDeuteronTPCVsPt", "hDauDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {120, -6.0f, 6.0f, "TPC n#sigma"}}}},
         {"hDauDeuteronTOFNSigmaVsP", "hDauDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
         {"hDauDeuteronTOFNSigmaVsPHasTOF", "hDauDeuteronTOFNSigmaVsPHasTOF", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
-        {"hDeuteronTOFMatchCounter", "hDeuteronTOFMatchCounter", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
         {"hDauDeuteronMatchCounter", "hDauDeuteronMatchCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
 
         {"hTPCBB", "hTPCBB", {HistType::kTH2F, {{120, -8.0f, 8.0f, "p/z(GeV/c)"}, {100, 0.0f, 1000.0f, "TPCSignal"}}}},
@@ -196,7 +186,6 @@ struct hypertriton3bodyTrackMcinfo {
         {"hPairedH3LDaughers", "hPairedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
         {"hPairedH3LDaughersInvMass", "hPairedH3LDaughersInvMass", {HistType::kTH1F, {{300, 2.9f, 3.2f}}}},
         {"hDuplicatedH3LDaughers", "hDuplicatedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
-        {"hTestCounter", "hTestCounter", {HistType::kTH1F, {{22, 0.0f, 22.0f}}}},
 
         // Diff checks always requir hasTOF
         {"hDiffTrackTOFSignal", "hDiffTrackTOFSignal", {HistType::kTH1F, {{2000, -1000.0f, 1000.0f}}}},
@@ -204,13 +193,19 @@ struct hypertriton3bodyTrackMcinfo {
         {"hWrongDeuteronTOFNSigmaVsP", "hWrongDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
         {"hWrongDeuteronNewTOFNSigmaVsP", "hWrongDeuteronNewTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
         {"hDiffColTime", "hDiffColTime", {HistType::kTH1F, {{200, -100.0f, 100.0f}}}},
-        {"hDiffColTimeErr", "hDiffColTimeErr", {HistType::kTH1F, {{200, -100.0f, 100.0f}}}},
         {"hDauDeuteronDiffTOFNsigmaDeHasTOF", "hDauDeuteronDiffTOFNsigmaDeHasTOF", {HistType::kTH1F, {{200, -100.0f, 100.0f}}}},
 
         // _v2 for using relinked collision
         {"hDiffDeuteronTOFSignal_v2", "hDiffDeuteronTOFSignal_v2", {HistType::kTH1F, {{2000, -1000.0f, 1000.0f}}}},
+        {"hDauDeuteronTOFNSigmaVsP_CorrectCol", "hDauDeuteronTOFNSigmaVsP_CorrectCol", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
         {"hDauDeuteronTOFNSigmaVsP_v2", "hDauDeuteronTOFNSigmaVsP_v2", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
-        {"hDauDeuteronNewTOFNSigmaVsP_v2", "hDauDeuteronNewTOFNSigmaVsP_v2", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
+        {"hDauDeuteronNewTOFNSigmaVsP_v2_AO2D", "hDauDeuteronNewTOFNSigmaVsP_v2 AO2D", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
+        {"hDauDeuteronNewTOFNSigmaVsP_v2_EvSel", "hDauDeuteronNewTOFNSigmaVsP_v2 EvSel", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
+        {"hDauDeuteronTOFNSigmaVsColTimeRes_v2", "hDauDeuteronTOFNSigmaVsColTimeRes_v2", {HistType::kTH2F, {{100, 0.0f, 400.0f, "CollisionTimeRes(ns)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
+        {"hDauDeuteronTOFNSigmaVsColTimeRes_v2_AO2D", "hDauDeuteronTOFNSigmaVsColTimeRes_v2 AO2D", {HistType::kTH2F, {{100, 0.0f, 400.0f, "CollisionTimeRes(ns)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
+        {"hDauDeuteronTOFNSigmaVsColTimeRes_v2_EvSel", "hDauDeuteronTOFNSigmaVsColTimeRes_v2 EvSel", {HistType::kTH2F, {{100, 0.0f, 400.0f, "CollisionTimeRes(ns)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
+        {"hDauDeuteronTOFPIDCounter", "hDauDeuteronTOFPIDCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
+        {"hDauDeuteronTOFPIDCounter_CloseBC", "hDauDeuteronTOFPIDCounter CloseBC", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
       },
   };
 
@@ -223,16 +218,6 @@ struct hypertriton3bodyTrackMcinfo {
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(5, "McisProton");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(6, "McisPion");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(7, "McisDeuteron");
-
-    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(1, "All track");
-    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(2, "hasMC");
-    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(3, "hasMC&TPC&TOF");
-    for (int i = 0; i < 16; i++) {
-      registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(i + 4, Form("Bit %d", i));
-    }
-    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(20, "hasMC&TPC&TOF&(!Bit15)");
-    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(21, "hasMC&TPC&TOF&(!Bit11)");
-    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(21, "hasMC&TPC&TOF&(!Bit13)&(Bit15)");
 
     TString TrackCounterbinLabel[6] = {"hasMom", "FromHypertriton", "TPCNcls", "Eta", "Pt", "TPCPID"};
     for (int i{0}; i < 6; i++) {
@@ -250,6 +235,17 @@ struct hypertriton3bodyTrackMcinfo {
     registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(2, "correct collision");
     registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(3, "hasTOF");
     registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(4, "hasTOF & correct collsion");
+
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(1, "Origin |n#sigma| >= 6");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(2, "BothBC work");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(3, "Only BCAO2D work");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(4, "Only BCEvSel work");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(5, "BothBC not work");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter_CloseBC"))->GetXaxis()->SetBinLabel(1, "Origin |n#sigma| < 6");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter_CloseBC"))->GetXaxis()->SetBinLabel(2, "BothBC work");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter_CloseBC"))->GetXaxis()->SetBinLabel(3, "Only BCAO2D work");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter_CloseBC"))->GetXaxis()->SetBinLabel(4, "Only BCEvSel work");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter_CloseBC"))->GetXaxis()->SetBinLabel(5, "BothBC not work");
   }
 
   Configurable<float> dcapiontopv{"dcapiontopv", .05, "DCA Pion To PV"};
@@ -377,32 +373,12 @@ struct hypertriton3bodyTrackMcinfo {
         registry.fill(HIST("hTrackNsigmaProton"), track.tpcNSigmaPr());
         registry.fill(HIST("hTrackNsigmaPion"), track.tpcNSigmaPi());
 
-        registry.fill(HIST("hTestCounter"), 0.5);
-        for (int i = 0; i < 16; i++) {
-          if (track.mcMask() & 1 << i) { // Bit ON means mismatch
-            registry.fill(HIST("hTestCounter"), i + 3.5);
-          }
-        }
-
         if (!track.has_mcParticle()) {
           continue;
         }
-        registry.fill(HIST("hTestCounter"), 1.5);
         auto mcparticle = track.mcParticle_as<aod::McParticles>();
         registry.fill(HIST("hTPCBB"), track.p() * track.sign(), track.tpcSignal());
 
-        if (track.hasTOF() && track.hasTPC()) {
-          registry.fill(HIST("hTestCounter"), 2.5);
-          if (!(track.mcMask() & 1 << 15)) {
-            registry.fill(HIST("hTestCounter"), 19.5);
-          }
-          if (!(track.mcMask() & 1 << 11)) {
-            registry.fill(HIST("hTestCounter"), 20.5);
-          }
-          if (!(track.mcMask() & 1 << 13) && (track.mcMask() & 1 << 15)) {
-            registry.fill(HIST("hTestCounter"), 21.5);
-          }
-        }
         registry.fill(HIST("hParticleCount"), 1.5);
 
         // if (TMath::Abs(mcparticle.y()) > 0.9) {continue;}
@@ -543,14 +519,12 @@ struct hypertriton3bodyTrackMcinfo {
           double tofsignalTest = track.trackTime() * 1000 + bachExpTimeTest; // in ps
 
           //double expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignal, track.tofEvTimeErr());
-          //tofNsigmaDe = (tofsignal - collision.collisionTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
           double expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, track.tofSignal(), track.tofEvTimeErr());
           //tofNsigmaDe = (track.tofSignal() - track.tofEvTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
           tofNsigmaDe = (tofsignalTest - track.tofEvTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
 
           if (collision.bcId() == collision.foundBCId()){
             registry.fill(HIST("hDiffColTime"), track.tofEvTime() - collision.collisionTime());
-            registry.fill(HIST("hDiffColTimeErr"), track.tofEvTimeErr() - collision.collisionTimeRes());
           }
 
           if ( (mcparticle.pdgCode() == 1000010020 || mcparticle.pdgCode() == -1000010020) && track.p() > 1) {
@@ -631,16 +605,6 @@ struct hypertriton3bodyTrackMcinfo {
           registry.fill(HIST("hDeuteronEta"), track.eta());
           registry.fill(HIST("hDeuteronMcRapidity"), mcparticle.y());
           registry.fill(HIST("hDeuteronTPCBB"), track.p() * track.sign(), track.tpcSignal());
-          registry.fill(HIST("hDeuteronTOFMatchCounter"), 0.5);
-          if (!(track.mcMask() & 1 << 15)) {
-            registry.fill(HIST("hDeuteronTOFMatchCounter"), 1.5);
-            if (track.hasTPC() && track.hasTOF()) {
-              registry.fill(HIST("hDeuteronTOFMatchCounter"), 2.5);
-              if (!(track.mcMask() & 1 << 11)) { // Bit ON means mismatch
-                registry.fill(HIST("hDeuteronTOFMatchCounter"), 3.5);
-              }
-            }
-          }
         } else {
           if (track.hasTOF()){
             registry.fill(HIST("hWrongDeuteronTOFNSigmaVsP"), track.sign() * track.p(), track.tofNSigmaDe());
@@ -706,40 +670,93 @@ struct hypertriton3bodyTrackMcinfo {
         }
         auto collision = collisions.iteratorAt(evtReconstructed - SelectedEvents.begin());
         auto originalcollision = track.collision_as<ColwithEvTimes>();
-        
-        if (collision.globalIndex() == originalcollision.globalIndex()) {
-          continue;
-        }
 
         for (auto& particleMother : mcparticle.mothers_as<aod::McParticles>()) {
           bool flag_H3L = is3bodyDecayedH3L<aod::McParticles>(particleMother);
           if (!flag_H3L) {
             continue;
           }
+
+          if (collision.globalIndex() == originalcollision.globalIndex()) {
+            if (track.hasTOF()) {
+              registry.fill(HIST("hDauDeuteronTOFNSigmaVsP_CorrectCol"), track.sign() * track.p(), track.tofNSigmaDe());
+            }
+            continue;
+          }
+
           auto bc = collision.bc_as<aod::BCsWithTimestamps>();
           auto originalbc = originalcollision.bc_as<aod::BCsWithTimestamps>();
+          auto bcEvSel = collision.foundBC_as<aod::BCsWithTimestamps>();
+          auto originalbcEvSel = originalcollision.foundBC_as<aod::BCsWithTimestamps>();
           initCCDB(bc);
-          double tofNsigmaDe = -999;
+          double tofNsigmaDeAO2D = -999;
+          double tofNsigmaDeEvSel = -999;
           static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
 
           if (track.hasTOF()) {
+            o2::InteractionRecord correctedIR = o2::InteractionRecord::long2IR(bc.globalBC());
+            o2::InteractionRecord originalIR = o2::InteractionRecord::long2IR(originalbc.globalBC());
+            o2::InteractionRecord correctedIREvSel = o2::InteractionRecord::long2IR(bcEvSel.globalBC());
+            o2::InteractionRecord originalIREvSel = o2::InteractionRecord::long2IR(originalbcEvSel.globalBC());
+
             auto responseDe = o2::pid::tof::ExpTimes<MCLabeledTracksIU::iterator, o2::track::PID::Deuteron>();
             /*double bachExpTime = track.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
-            double tofsignal = ( DoBCTimeSubraction(originalbc.timestamp(), bc.timestamp()) * 1000000.f  + track.trackTime()) * 1000.f + bachExpTime; // in ps*/
+            double tofsignal = ( originalIR.differenceInBCNS(correctedIR) + track.trackTime()) * 1000.f + bachExpTime; // in ps*/
 
-            float mMassHyp = o2::track::pid_constants::sMasses2Z[o2::track::PID::Deuteron];
+            float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
             double bachExpTimeTest = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
-            double tofsignalTest = (DoBCTimeSubraction(originalbc.timestamp(), bc.timestamp()) * 1000000.f + track.trackTime()) * 1000 + bachExpTimeTest; // in ps
+            //double bachExpTimeTest = track.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
+            double tofsignalAO2D = (originalIR.differenceInBCNS(correctedIR) + track.trackTime()) * 1000 + bachExpTimeTest; // in ps
+            double expSigmaAO2D = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignalAO2D, collision.evTimeErr());
+            tofNsigmaDeAO2D = (tofsignalAO2D - collision.evTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigmaAO2D;
+            
+            initCCDB(bcEvSel);
+            double tofsignalEvSel = (originalIREvSel.differenceInBCNS(correctedIREvSel) + track.trackTime()) * 1000 + bachExpTimeTest; // in ps
+            double expSigmaEvSel = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignalEvSel, collision.evTimeErr());
+            tofNsigmaDeEvSel = (tofsignalEvSel - collision.evTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigmaEvSel;
 
-            double expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignalTest, collision.evTimeErr());
-            tofNsigmaDe = (tofsignalTest - collision.evTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-            //tofNsigmaDe = (track.tofSignal() - track.tofEvTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-            //std::cout << "col.bc:" << collision.bcId() << std::endl;
-            //std::cout << "col.bctimestamp:" << timestamp.value << std::endl;
-
-            registry.fill(HIST("hDiffDeuteronTOFSignal_v2"), tofsignalTest - track.tofSignal());
+            registry.fill(HIST("hDiffDeuteronTOFSignal_v2"), tofsignalAO2D - track.tofSignal());
+            
+            /*if (originalcollision.collisionTimeRes() > 40){
+              continue;
+            }*/
             registry.fill(HIST("hDauDeuteronTOFNSigmaVsP_v2"), track.sign() * track.p(), track.tofNSigmaDe());
-            registry.fill(HIST("hDauDeuteronNewTOFNSigmaVsP_v2"), track.sign() * track.p(), tofNsigmaDe);
+            registry.fill(HIST("hDauDeuteronNewTOFNSigmaVsP_v2_AO2D"), track.sign() * track.p(), tofNsigmaDeAO2D);
+            registry.fill(HIST("hDauDeuteronNewTOFNSigmaVsP_v2_EvSel"), track.sign() * track.p(), tofNsigmaDeEvSel);
+            registry.fill(HIST("hDauDeuteronTOFNSigmaVsColTimeRes_v2"), collision.collisionTimeRes(), track.tofNSigmaDe());
+            registry.fill(HIST("hDauDeuteronTOFNSigmaVsColTimeRes_v2_AO2D"), originalcollision.collisionTimeRes(), tofNsigmaDeAO2D);
+            registry.fill(HIST("hDauDeuteronTOFNSigmaVsColTimeRes_v2_EvSel"), originalcollision.collisionTimeRes(), tofNsigmaDeEvSel);
+
+            if (std::abs(track.tofNSigmaDe()) >= 6) {
+              registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 0.5);
+              if (std::abs(tofNsigmaDeAO2D) < 6 && std::abs(tofNsigmaDeEvSel) < 6) {
+                registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 1.5);
+              }
+              else if (std::abs(tofNsigmaDeAO2D) < 6 && std::abs(tofNsigmaDeEvSel) >= 6) {
+                registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 2.5);
+              }
+              else if (std::abs(tofNsigmaDeAO2D) >= 6 && std::abs(tofNsigmaDeEvSel) < 6) {
+                registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 3.5);
+              }
+              else if (std::abs(tofNsigmaDeAO2D) >= 6 && std::abs(tofNsigmaDeEvSel) >= 6) {
+                registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 4.5);
+              }
+            }
+            else if (std::abs(track.tofNSigmaDe()) < 6) {
+              registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 0.5);
+              if (std::abs(tofNsigmaDeAO2D) < 6 && std::abs(tofNsigmaDeEvSel) < 6) {
+                registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 1.5);
+              }
+              else if (std::abs(tofNsigmaDeAO2D) < 6 && std::abs(tofNsigmaDeEvSel) >= 6) {
+                registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 2.5);
+              }
+              else if (std::abs(tofNsigmaDeAO2D) >= 6 && std::abs(tofNsigmaDeEvSel) < 6) {
+                registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 3.5);
+              }
+              else if (std::abs(tofNsigmaDeAO2D) >= 6 && std::abs(tofNsigmaDeEvSel) >= 6) {
+                registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 4.5);
+              }
+            }
           }
         }
       }
