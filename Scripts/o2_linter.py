@@ -25,7 +25,7 @@ from abc import ABC
 from typing import Union
 
 github_mode = False  # GitHub mode
-prefix_disable = "o2-linter: disable="
+prefix_disable = "o2-linter: disable="  # prefix for disabling tests
 
 
 def is_camel_case(name: str) -> bool:
@@ -120,7 +120,7 @@ def block_ranges(line: str, char_open: str, char_close: str) -> "list[list[int]]
     """Get list of index ranges of longest blocks opened with char_open and closed with char_close."""
     # print(f"Looking for {char_open}{char_close} blocks in \"{line}\".")
     # print(line)
-    list_ranges: list[list[int]] = []
+    list_ranges: "list[list[int]]" = []
     if not all((line, len(char_open) == 1, len(char_close) == 1)):
         return list_ranges
 
@@ -537,7 +537,7 @@ class TestWorkflowOptions(TestSpec):
 
     def test_file(self, path: str, content) -> bool:
         is_inside_define = False  # Are we inside defineDataProcessing?
-        for i, line in enumerate(content):
+        for i, line in enumerate(content):  # pylint: disable=unused-variable
             if not line.strip():
                 continue
             if self.is_disabled(line):
@@ -1170,7 +1170,7 @@ class TestHfNameStructClass(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path
+        return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
@@ -1284,6 +1284,8 @@ class TestHfNameFileWorkflow(TestSpec):
         file_name = os.path.basename(path).rstrip(".cxx")
         if file_name[0].isupper():
             return False
+        if "/Tasks/" in path and not file_name.startswith("task"):
+            return False
         base_struct_name = f"Hf{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
         # print(f"For file {file_name} expecting to find {base_struct_name}.")
         struct_names = []  # actual struct names in the file
@@ -1352,7 +1354,7 @@ def main():
     )
     args = parser.parse_args()
     if args.github:
-        global github_mode
+        global github_mode  # pylint: disable=global-statement
         github_mode = True
 
     tests = []  # list of activated tests
@@ -1427,7 +1429,7 @@ def main():
             # print(f"Skipping path \"{path}\".")
             continue
         try:
-            with open(path, "r") as file:
+            with open(path, "r", encoding="utf-8") as file:
                 content = file.readlines()
                 for test in tests:
                     result = test.run(path, content)
