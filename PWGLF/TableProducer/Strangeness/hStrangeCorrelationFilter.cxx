@@ -540,13 +540,13 @@ struct hstrangecorrelationfilter {
         massRegOmega = 0;
       }
 
-      if (compatibleXiMinus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueK0Short() && origCascadeEntry.isPhysicalPrimary())))
+      if (compatibleXiMinus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueXiMinus() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), collision.centFT0M());
-      if (compatibleXiPlus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueK0Short() && origCascadeEntry.isPhysicalPrimary())))
+      if (compatibleXiPlus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueXiPlus() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), collision.centFT0M());
-      if (compatibleOmegaMinus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueK0Short() && origCascadeEntry.isPhysicalPrimary())))
+      if (compatibleOmegaMinus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueOmegaMinus() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), collision.centFT0M());
-      if (compatibleOmegaPlus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueK0Short() && origCascadeEntry.isPhysicalPrimary())))
+      if (compatibleOmegaPlus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueOmegaPlus() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), collision.centFT0M());
 
       if (!fillTableOnlyWithCompatible ||
