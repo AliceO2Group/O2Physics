@@ -117,8 +117,8 @@ struct strangeness_tutorial {
   // Other cuts on Ks and glueball
   Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
   Configurable<bool> apply_competingcut{"apply_competingcut", false, "Competing cascade rejection cut"};
-  Configurable<float> competingcascrejlambda{"competingcascrejlambda", 4.3, "rejecting competing cascade lambda"};
-  Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 4.3, "rejecting competing cascade anti-lambda"};
+  Configurable<float> competingcascrejlambda{"competingcascrejlambda", 0.005, "rejecting competing cascade lambda"};
+  Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 0.005, "rejecting competing cascade anti-lambda"}; // If one of the pions is misidentified as a proton, then instead of Ks we reconstruct lambda, therefore the competing cascade rejection cut is applied in which if the reconstrcted mass of a pion and proton (which we are assuming to be misidentified as proton) is close to lambda or anti-lambda, then the track is rejected.
   Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
   Configurable<float> tpcCrossedrowsOverfcls{"tpcCrossedrowsOverfcls", 0.8, "TPC crossed rows over findable clusters"};
 
@@ -363,12 +363,6 @@ struct strangeness_tutorial {
 
     hglue.fill(HIST("htrackscheck_v0"), 2.5);
 
-    if (apply_competingcut && (TMath::Abs(candidate.mLambda() - PDGdatabase->Mass(3122)) >= competingcascrejlambda || TMath::Abs(candidate.mAntiLambda() - PDGdatabase->Mass(-3122)) >= competingcascrejlambdaanti)) {
-      return false;
-    }
-
-    hglue.fill(HIST("htrackscheck_v0"), 3.5);
-
     // if (isStandarv0 && candidate.isStandardV0 == 0) {
     //   return false;
     // }
@@ -376,34 +370,39 @@ struct strangeness_tutorial {
     if (pT < ConfV0PtMin) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 4.5);
+    hglue.fill(HIST("htrackscheck_v0"), 3.5);
 
     if (dcaDaughv0 > ConfV0DCADaughMax) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 5.5);
+    hglue.fill(HIST("htrackscheck_v0"), 4.5);
 
     if (cpav0 < ConfV0CPAMin) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 6.5);
+    hglue.fill(HIST("htrackscheck_v0"), 5.5);
 
     if (tranRad < ConfV0TranRadV0Min) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 7.5);
+    hglue.fill(HIST("htrackscheck_v0"), 6.5);
 
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 8.5);
+    hglue.fill(HIST("htrackscheck_v0"), 7.5);
 
     if (fabs(CtauK0s) > cMaxV0LifeTime) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 9.5);
+    hglue.fill(HIST("htrackscheck_v0"), 8.5);
 
     if (!armcut && arm < Confarmcut) {
+      return false;
+    }
+    hglue.fill(HIST("htrackscheck_v0"), 9.5);
+
+    if (apply_competingcut && (TMath::Abs(candidate.mLambda() - PDGdatabase->Mass(3122)) <= competingcascrejlambda || TMath::Abs(candidate.mAntiLambda() - PDGdatabase->Mass(-3122)) <= competingcascrejlambdaanti)) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 10.5);
