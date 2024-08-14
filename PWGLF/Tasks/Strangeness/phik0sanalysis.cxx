@@ -320,9 +320,11 @@ struct phik0shortanalysis {
 
     // Phi invariant mass for computing purities and normalisation
     PhipurHist.add("h2PhipurInvMass", "Invariant mass of Phi for Purity (no K0S/Pi)", kTH2F, {multAxis, PhimassAxis});
+
     PhipurHist.add("h3PhipurK0SInvMassInclusive", "Invariant mass of Phi for Purity (K0S) Inclusive", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhipurHist.add("h3PhipurK0SInvMassFirstCut", "Invariant mass of Phi for Purity (K0S) Deltay < FirstCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhipurHist.add("h3PhipurK0SInvMassSecondCut", "Invariant mass of Phi for Purity (K0S) Deltay < SecondCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
+
     PhipurHist.add("h3PhipurPiInvMassInclusive", "Invariant mass of Phi for Purity (Pi) Inclusive", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhipurHist.add("h3PhipurPiInvMassFirstCut", "Invariant mass of Phi for Purity (Pi) Deltay < FirstCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhipurHist.add("h3PhipurPiInvMassSecondCut", "Invariant mass of Phi for Purity (Pi) Deltay < SecondCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
@@ -383,9 +385,11 @@ struct phik0shortanalysis {
 
     // MCPhi invariant mass for computing efficiencies and MCnormalisation
     PhieffHist.add("h2PhieffInvMass", "Invariant mass of Phi for Efficiency (no K0S/Pi)", kTH2F, {multAxis, PhimassAxis});
+
     PhieffHist.add("h3PhieffK0SInvMassInclusive", "Invariant mass of Phi for Efficiency (K0S) Inclusive", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhieffHist.add("h3PhieffK0SInvMassFirstCut", "Invariant mass of Phi for Efficiency (K0S) Deltay < FirstCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhieffHist.add("h3PhieffK0SInvMassSecondCut", "Invariant mass of Phi for Efficiency (K0S) Deltay < SecondCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
+    
     PhieffHist.add("h3PhieffPiInvMassInclusive", "Invariant mass of Phi for Efficiency (Pi) Inclusive", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhieffHist.add("h3PhieffPiInvMassFirstCut", "Invariant mass of Phi for Efficiency (Pi) Deltay < FirstCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
     PhieffHist.add("h3PhieffPiInvMassSecondCut", "Invariant mass of Phi for Efficiency (Pi) Deltay < SecondCut", kTH3F, {multAxis, ptAxis, PhimassAxis});
