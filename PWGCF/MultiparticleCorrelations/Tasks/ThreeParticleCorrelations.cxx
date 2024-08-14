@@ -43,8 +43,8 @@ struct ThreePartCorr {
   using MyFilteredCollision = MyFilteredCollisions::iterator;
   using MyFilteredV0s = soa::Filtered<aod::V0Datas>;
   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
-						   aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-						   aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
+                                                   aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
+                                                   aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
 
   // Mixed-events binning policy
   SliceCache cache;
@@ -91,9 +91,9 @@ struct ThreePartCorr {
     QARegistry.add("hBetaPion", "hBetaPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
     QARegistry.add("hBetaKaon", "hBetaKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
     QARegistry.add("hBetaProton", "hBetaProton", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
-    //QARegistry.add("hNSigmaPion", "hNSigmaPion", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
-    //QARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
-    //QARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
+    // QARegistry.add("hNSigmaPion", "hNSigmaPion", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
+    // QARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
+    // QARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
 
     QARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {PtAxis}, {CentralityAxis}}});
     QARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {PtAxis}, {CentralityAxis}}});
@@ -129,19 +129,19 @@ struct ThreePartCorr {
         QARegistry.fill(HIST("hTrackEta"), track.eta());
         QARegistry.fill(HIST("hTrackPhi"), track.phi());
         QARegistry.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
-	QARegistry.fill(HIST("hBeta"), track.p(), track.beta());
+        QARegistry.fill(HIST("hBeta"), track.p(), track.beta());
         if (A_PID[0] == 0.0) { // Pions
-	  QARegistry.fill(HIST("hdEdxPion"), track.p(), track.tpcSignal());
-	  QARegistry.fill(HIST("hBetaPion"), track.p(), track.beta());
-          //QARegistry.fill(HIST("hNSigmaPion"), track.pt(), track.tpcNSigmaPi());
+          QARegistry.fill(HIST("hdEdxPion"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaPion"), track.p(), track.beta());
+          // QARegistry.fill(HIST("hNSigmaPion"), track.pt(), track.tpcNSigmaPi());
         } else if (A_PID[0] == 1.0) { // Kaons
-	  QARegistry.fill(HIST("hdEdxKaon"), track.p(), track.tpcSignal());
-	  QARegistry.fill(HIST("hBetaKaon"), track.p(), track.beta());
-          //QARegistry.fill(HIST("hNSigmaKaon"), track.pt(), track.tpcNSigmaKa());
+          QARegistry.fill(HIST("hdEdxKaon"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaKaon"), track.p(), track.beta());
+          // QARegistry.fill(HIST("hNSigmaKaon"), track.pt(), track.tpcNSigmaKa());
         } else if (A_PID[0] == 2.0) { // Protons
-	  QARegistry.fill(HIST("hdEdxProton"), track.p(), track.tpcSignal());
-	  QARegistry.fill(HIST("hBetaProton"), track.p(), track.beta());
-          //QARegistry.fill(HIST("hNSigmaProton"), track.pt(), track.tpcNSigmaPr());
+          QARegistry.fill(HIST("hdEdxProton"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaProton"), track.p(), track.beta());
+          // QARegistry.fill(HIST("hNSigmaProton"), track.pt(), track.tpcNSigmaPr());
         }
       }
     }
@@ -264,7 +264,7 @@ struct ThreePartCorr {
     NSigmaTPC[0] = Track.tpcNSigmaPi();
     NSigmaTPC[1] = Track.tpcNSigmaKa();
     NSigmaTPC[2] = Track.tpcNSigmaPr();
-    if(Track.hasTOF()) {
+    if (Track.hasTOF()) {
       NSigmaTOF[0] = Track.tofNSigmaPi();
       NSigmaTOF[1] = Track.tofNSigmaKa();
       NSigmaTOF[2] = Track.tofNSigmaPr();
