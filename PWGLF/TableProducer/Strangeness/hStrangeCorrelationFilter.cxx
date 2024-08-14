@@ -117,6 +117,8 @@ struct hstrangecorrelationfilter {
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.57f, 1.77f}, "Inv. Mass (GeV/c^{2})"};
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Centrality percentile bins"};
 
+  // QA
+  Configurable<bool> doTrueSelectionInMass{"doTrueSelectionInMass", false, "Fill mass histograms only with true primary Particles for MC"};
   // Do declarative selections for DCAs, if possible
   Filter preFilterTracks = nabs(aod::track::dcaXY) < dcaXYconstant + dcaXYpTdep * nabs(aod::track::signed1Pt);
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcaPostopv&&
@@ -424,11 +426,11 @@ struct hstrangecorrelationfilter {
         massRegAntiLambda = 0;
       }
 
-      if (compatibleK0Short)
+      if (compatibleK0Short && (!doTrueSelectionInMass || (origV0entry.isTrueK0Short() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), collision.centFT0M());
-      if (compatibleLambda)
+      if (compatibleLambda) && (!doTrueSelectionInMass || (origV0entry.isTrueLambda() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassLambda"), v0.pt(), v0.mLambda(), collision.centFT0M());
-      if (compatibleAntiLambda)
+      if (compatibleAntiLambda) && (!doTrueSelectionInMass || (origV0entry.isTrueAntiLambda() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassAntiLambda"), v0.pt(), v0.mAntiLambda(), collision.centFT0M());
 
       if (!fillTableOnlyWithCompatible ||
@@ -538,13 +540,13 @@ struct hstrangecorrelationfilter {
         massRegOmega = 0;
       }
 
-      if (compatibleXiMinus)
+      if (compatibleXiMinus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueK0Short() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), collision.centFT0M());
-      if (compatibleXiPlus)
+      if (compatibleXiPlus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueK0Short() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), collision.centFT0M());
-      if (compatibleOmegaMinus)
+      if (compatibleOmegaMinus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueK0Short() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), collision.centFT0M());
-      if (compatibleOmegaPlus)
+      if (compatibleOmegaPlus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueK0Short() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), collision.centFT0M());
 
       if (!fillTableOnlyWithCompatible ||
