@@ -392,12 +392,22 @@ struct phik0shortanalysis {
 
     // GenMC Phi and Phi coupled to K0S and Pion
     PhieffHist.add("h1PhiGenMC", "Phi for GenMC", kTH1F, {{10, -0.5f, 9.5f}});
+
     PhieffHist.add("h2PhieffK0SGenMCInclusive", "Phi coupled to K0Short for GenMC Inclusive", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
     PhieffHist.add("h2PhieffK0SGenMCFirstCut", "Phi coupled to K0Short for GenMC Deltay < FirstCut", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
     PhieffHist.add("h2PhieffK0SGenMCSecondCut", "Phi coupled to K0Short for GenMC Deltay < SecondCut", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+
+    PhieffHist.add("h2PhieffK0SGenMCInclusiveAssocReco", "Phi coupled to K0Short for GenMC Inclusive", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    PhieffHist.add("h2PhieffK0SGenMCFirstCutAssocReco", "Phi coupled to K0Short for GenMC Deltay < FirstCut", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    PhieffHist.add("h2PhieffK0SGenMCSecondCutAssocReco", "Phi coupled to K0Short for GenMC Deltay < SecondCut", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    
     PhieffHist.add("h2PhieffPiGenMCInclusive", "Phi coupled to Pion for GenMC Inclusive", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
     PhieffHist.add("h2PhieffPiGenMCFirstCut", "Phi coupled to Pion for GenMC Deltay < FirstCut", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
     PhieffHist.add("h2PhieffPiGenMCSecondCut", "Phi coupled to Pion for GenMC Deltay < SecondCut", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
+
+    PhieffHist.add("h2PhieffPiGenMCInclusiveAssocReco", "Phi coupled to Pion for GenMC Inclusive", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
+    PhieffHist.add("h2PhieffPiGenMCFirstCutAssocReco", "Phi coupled to Pion for GenMC Deltay < FirstCut", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
+    PhieffHist.add("h2PhieffPiGenMCSecondCutAssocReco", "Phi coupled to Pion for GenMC Deltay < SecondCut", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
   }
 
   // Event selection and QA filling
@@ -1915,6 +1925,7 @@ struct phik0shortanalysis {
       }
 
       bool isCountedK0SInclusive = false, isCountedK0SFirstCut = false, isCountedK0SSecondCut = false;
+      bool isCountedK0SInclusiveAssocReco = false, isCountedK0SFirstCutAssocReco = false, isCountedK0SSecondCutAssocReco = false;
 
       for (auto mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 310)
@@ -1929,6 +1940,25 @@ struct phik0shortanalysis {
           if (pTBinK0S[i] < mcParticle1.pt() && mcParticle1.pt() <= pTBinK0S[i + 1]) {
             ipTBinK0S = i;
             break;
+          }
+        }
+
+        if (isAssocColl) {
+          if (!isCountedK0SInclusiveAssocReco) {
+            PhieffHist.fill(HIST("h2PhieffK0SGenMCInclusiveAssocReco"), imultBin, ipTBinK0S);
+            isCountedK0SInclusiveAssocReco = true;
+          }
+          if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedK0SFirstCutAssocReco) {
+            PhieffHist.fill(HIST("h2PhieffK0SGenMCFirstCutAssocReco"), imultBin, ipTBinK0S);
+            isCountedK0SFirstCutAssocReco = true;
+          }
+          if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedK0SSecondCutAssocReco) {
+            PhieffHist.fill(HIST("h2PhieffK0SGenMCSecondCutAssocReco"), imultBin, ipTBinK0S);
+            isCountedK0SSecondCutAssocReco = true;
           }
         }
 
@@ -1951,6 +1981,7 @@ struct phik0shortanalysis {
       }
 
       bool isCountedPiInclusive = false, isCountedPiFirstCut = false, isCountedPiSecondCut = false;
+      bool isCountedPiInclusiveAssocReco = false, isCountedPiFirstCutAssocReco = false, isCountedPiSecondCutAssocReco = false;
 
       for (auto mcParticle2 : mcParticles) {
         if (std::abs(mcParticle2.pdgCode()) != 211)
@@ -1965,6 +1996,25 @@ struct phik0shortanalysis {
           if (pTBinPi[i] < mcParticle1.pt() && mcParticle1.pt() <= pTBinPi[i + 1]) {
             ipTBinPi = i;
             break;
+          }
+        }
+
+        if (isAssocColl) {
+          if (!isCountedPiInclusiveAssocReco) {
+            PhieffHist.fill(HIST("h2PhieffPiGenMCInclusiveAssocReco"), imultBin, ipTBinPi);
+            isCountedPiInclusiveAssocReco = true;
+          }
+          if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedPiFirstCutAssocReco) {
+            PhieffHist.fill(HIST("h2PhieffPiGenMCFirstCutAssocReco"), imultBin, ipTBinPi);
+            isCountedPiFirstCutAssocReco = true;
+          }
+          if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedPiSecondCutAssocReco) {
+            PhieffHist.fill(HIST("h2PhieffPiGenMCSecondCutAssocReco"), imultBin, ipTBinPi);
+            isCountedPiSecondCutAssocReco = true;
           }
         }
 
