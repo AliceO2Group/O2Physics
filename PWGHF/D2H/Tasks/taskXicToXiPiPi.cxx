@@ -63,16 +63,22 @@ struct HfTaskXicToXiPiPi {
 
   void init(InitContext const&)
   {
-    if (doprocessWithKFParticle == false && doprocessWithDCAFitter == false && doprocessMcWithKFParticle == false && doprocessMcWithDCAFitter == false) {
-      LOGF(fatal, "Neither doprocessWithKFParticle nor doprocessWithDCAFitter nor doprocessMcWithKFParticle nor doprocessMcWithDCAFitter enabled. Please choose one.");
+    if (!doprocessWithKFParticle && !doprocessWithDCAFitter && !doprocessMcWithKFParticle && !doprocessMcWithDCAFitter) {
+      LOGF(fatal, "No process function enabled. Please enable one.");
     }
-    if (doprocessWithKFParticle == true && doprocessWithDCAFitter == true) {
+    if (doprocessWithKFParticle && doprocessWithDCAFitter) {
+      LOGF(fatal, "Cannot enable doprocessWithKFParticle and doprocessWithDCAFitter at the same time. Please choose one.");
+    }
+    if (doprocessMcWithKFParticle && doprocessMcWithDCAFitter) {
       LOGF(fatal, "Cannot enable doprocessMcWithKFParticle and doprocessMcWithDCAFitter at the same time. Please choose one.");
     }
-    if (doprocessMcWithKFParticle == true && doprocessMcWithDCAFitter == true) {
-      LOGF(fatal, "Cannot enable doprocessMcWithKFParticle and doprocessMcWithDCAFitter at the same time. Please choose one.");
+    if (doprocessWithKFParticle && doprocessMcWithDCAFitter) {
+      LOGF(fatal, "Cannot enable doprocessWithKFParticle and doprocessMcWithDCAFitter at the same time. Please choose one.");
     }
-
+    if (doprocessWithDCAFitter && doprocessMcWithKFParticle) {
+      LOGF(fatal, "Cannot enable doprocessWithDCAFitter and doprocessMcWithKFParticle at the same time. Please choose one.");
+    }
+    
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisMassXiRes = {300, 1.0, 2.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
