@@ -232,8 +232,15 @@ struct correlateStrangeness {
       if (!isValidTrigger(trigg))
         continue;
 
-      if (!mixing)
-        histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult);
+      if (!mixing) {
+        float efficiency = 1.0f;
+        if (applyEfficiencyForTrigger) {
+          efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+        }
+        float weight = (applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
+        histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult, weight);
+      }
+
       for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.v0Core_as<V0DatasWithoutTrackX>();
 
@@ -312,8 +319,14 @@ struct correlateStrangeness {
       if (!isValidTrigger(trigg))
         continue;
 
-      if (!mixing)
-        histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt(), mult);
+      if (!mixing) {
+        float efficiency = 1.0f;
+        if (applyEfficiencyForTrigger) {
+          efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+        }
+        float weight = (applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
+        histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt(), mult, weight);
+      }
       for (auto& assocCandidate : assocs) {
         auto assoc = assocCandidate.cascData();
 
@@ -1290,7 +1303,7 @@ struct correlateStrangeness {
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           triggerIndices.emplace_back(iteratorNum);
-          histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, gphi);
+          histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
         }
       }
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
