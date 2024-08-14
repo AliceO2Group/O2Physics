@@ -235,7 +235,7 @@ struct correlateStrangeness {
       if (!mixing) {
         float efficiency = 1.0f;
         if (applyEfficiencyForTrigger) {
-          efficiency = hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
+          efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
         }
         float weight = (applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
         histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult, weight);
@@ -322,7 +322,7 @@ struct correlateStrangeness {
       if (!mixing) {
         float efficiency = 1.0f;
         if (applyEfficiencyForTrigger) {
-          efficiency = hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
+          efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
         }
         float weight = (applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
         histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt(), mult, weight);
