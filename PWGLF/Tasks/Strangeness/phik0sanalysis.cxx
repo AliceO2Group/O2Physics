@@ -237,8 +237,6 @@ struct phik0shortanalysis {
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedptK0SAxis{{0.0, 0.5, 0.8, 1.2, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedptPiAxis{{0.0, 0.5, 1.2, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
-    //AxisSpec binnedptK0SAxis{(std::vector<float>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
-    //AxisSpec binnedptPiAxis{(std::vector<float>)binspTPi, "#it{p}_{T} (GeV/#it{c})"};
     std::vector<AxisSpec> cfgPhimassAxisInc;
     std::vector<AxisSpec> cfgPhimassAxisFCut;
     std::vector<AxisSpec> cfgPhimassAxisSCut;
