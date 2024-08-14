@@ -149,12 +149,12 @@ struct lnnRecoTask {
   Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
 
   // histogram axes
-  ConfigurableAxis rigidityBins{"rigidityBins", {200, -5.f, 5.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
+  ConfigurableAxis rigidityBins{"rigidityBins", {200, -6.f, 6.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
   ConfigurableAxis dEdxBins{"dEdxBins", {1000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
   ConfigurableAxis centBins{"centBins", {100, 0.f, 100.f}, "Binning for centrality"};
-  ConfigurableAxis TritMomBins{"TritMom", {100, 0.f, 20.f}, "Binning for Triton TPC momentum"};
+  ConfigurableAxis TritMomBins{"TritMom", {100, 0.f, 6.f}, "Binning for Triton TPC momentum"};
 
   // std vector of candidates
   std::vector<lnnCandidate> lnnCandidates;
