@@ -368,8 +368,7 @@ struct alice3multicharm {
           if (pi1c.globalIndex() >= pi2c.globalIndex())
             continue; // avoid same-mother, avoid double-counting
           if (xiCand.posTrackId() == pi2c.globalIndex() || xiCand.negTrackId() == pi2c.globalIndex() || xiCand.bachTrackId() == pi2c.globalIndex())
-            continue; // avoid using any track that was already used  
-
+            continue; // avoid using any track that was already used
 
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
           // will now attempt to build a three-body decay candidate with these three track rows.
@@ -391,7 +390,7 @@ struct alice3multicharm {
           uint32_t nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
             if (xiCand.posTrackId() == picc.globalIndex() || xiCand.negTrackId() == picc.globalIndex() || xiCand.bachTrackId() == picc.globalIndex())
-              continue; // avoid using any track that was already used  
+              continue; // avoid using any track that was already used
 
             // to-do: check same mother here
 
