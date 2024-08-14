@@ -61,20 +61,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
-// DQ triggers
-enum DQTriggers {
-  kSingleE = 1 << 0,      // 0000001
-  kLMeeIMR = 1 << 1,      // 0000010
-  kLMeeHMR = 1 << 2,      // 0000100
-  kDiElectron = 1 << 3,   // 0001000
-  kSingleMuLow = 1 << 4,  // 0010000
-  kSingleMuHigh = 1 << 5, // 0100000
-  kDiMuon = 1 << 6,       // 1000000
-  kNTriggersDQ
-};
-
 Zorro zorro;
-std::string zorroTriggerMask[7] = {"fSingleE", "fLMeeIMR", "fLMeeHMR", "fDiElectron", "fSingleMuLow", "fSingleMuHigh", "fDiMuon"};
 
 // TODO: Since DCA depends on which collision the track is associated to, we should remove writing and subscribing to DCA tables, to optimize on CPU / memory
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
@@ -176,6 +163,7 @@ struct TableMaker {
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
+  Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
 
   // Steer QA output
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
@@ -213,7 +201,7 @@ struct TableMaker {
   Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
 
   // Track related options
-  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
+  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propagate tracks to associated collision to recalculate DCA and momentum vector"};
 
   // Muon related options
   Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
@@ -520,16 +508,14 @@ struct TableMaker {
       (reinterpret_cast<TH2D*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       if (fConfigRunZorro) {
-        for (int i = 0; i < kNTriggersDQ; ++i) {
-          zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
-          zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), zorroTriggerMask[i]);
-          if (!zorro.isSelected(bc.globalBC())) {
-            tag |= static_cast<uint64_t>(1 << i);
-          }
+        zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
+        zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
+        if (zorro.isSelected(bc.globalBC())) {
+          tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
         }
       } else {
         if (!fEventCut->IsSelected(VarManager::fgValues)) {
-          continue;
+          return;
         }
       }
 

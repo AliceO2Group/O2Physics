@@ -761,7 +761,7 @@ struct SGFITAnalyzer {
         //        registry.get<TH2>(HIST("tracks/etavsptPVC"))->Fill(vtrk.Eta(), track.pt(), 1.);
         if (truegapSide == 0) {
           pva++;
-          avPtPVa = track.pt();
+          avPtPVa += track.pt();
           vecEtaPVa.push_back(vtrk.Eta());
           registry.get<TH1>(HIST("tracks/etaApv"))->Fill(vtrk.Eta(), 1.);
           if (!an)
@@ -773,7 +773,7 @@ struct SGFITAnalyzer {
         }
         if (truegapSide == 1) {
           pvc++;
-          avPtPVc = track.pt();
+          avPtPVc += track.pt();
           vecEtaPVc.push_back(vtrk.Eta());
           registry.get<TH1>(HIST("tracks/etaCpv"))->Fill(vtrk.Eta(), 1.);
           if (!cn)
@@ -785,7 +785,7 @@ struct SGFITAnalyzer {
         }
         if (truegapSide == 2) {
           pvac++;
-          avPtPVac = track.pt();
+          avPtPVac += track.pt();
           vecEtaPVac.push_back(vtrk.Eta());
           registry.get<TH1>(HIST("tracks/etaACpv"))->Fill(vtrk.Eta(), 1.);
           if (!an && !cn)

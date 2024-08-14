@@ -20,15 +20,15 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 
-using McParticlesSmeared = soa::Join<aod::McParticles, aod::SmearedTracks>;
+using McParticlesSmeared = soa::Join<aod::McParticles, aod::SmearedElectrons>;
 
 enum EFromHFType {
   kNoE = -1,
@@ -200,7 +200,7 @@ struct lmeehfcocktailbeauty {
   MyConfigs myConfigs;
 
   Filter hfFilter = o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kBE) || o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kBCE);
-  using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedTracks, aod::HfTable>>;
+  using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedElectrons, aod::HfTable>>;
 
   Preslice<MyFilteredMcParticlesSmeared> perCollision = aod::mcparticle::mcCollisionId;
 
@@ -327,7 +327,7 @@ struct lmeehfcocktailcharm {
   MyConfigs myConfigs;
 
   Filter hfFilter = o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kCE);
-  using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedTracks, aod::HfTable>>;
+  using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedElectrons, aod::HfTable>>;
 
   Preslice<MyFilteredMcParticlesSmeared> perCollision = aod::mcparticle::mcCollisionId;
 

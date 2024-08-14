@@ -35,9 +35,19 @@ o2physics_add_dpl_workflow(smearing
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(create-resolution-map
+                    SOURCES createResolutionMap.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(table-reader-barrel
                     SOURCES tableReaderBarrel.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(single-electron-qc
+                    SOURCES singleElectronQC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(single-electron-qc-mc
@@ -45,23 +55,33 @@ o2physics_add_dpl_workflow(single-electron-qc-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dielectron-qc
-                    SOURCES dielectronQC.cxx
+o2physics_add_dpl_workflow(single-muon-qc
+                    SOURCES singleMuonQC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(single-muon-qc-mc
+                    SOURCES singleMuonQCMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dielectron
+                    SOURCES dielectron.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2::DCAFitter O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dielectron-qc-mc
-                    SOURCES dielectronQCMC.cxx
+o2physics_add_dpl_workflow(dielectron-mc
+                    SOURCES dielectronMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2::DCAFitter O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dimuon-qc
-                    SOURCES dimuonQC.cxx
+o2physics_add_dpl_workflow(dimuon
+                    SOURCES dimuon.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DCAFitter O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dimuon-qc-mc
-                    SOURCES dimuonQCMC.cxx
+o2physics_add_dpl_workflow(dimuon-mc
+                    SOURCES dimuonMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DCAFitter O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 

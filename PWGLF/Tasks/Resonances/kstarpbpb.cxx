@@ -125,7 +125,6 @@ struct kstarpbpb {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisPhiminusPsi{configThnAxisPhiminusPsi, "#phi - #psi"};
@@ -134,24 +133,26 @@ struct kstarpbpb {
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {400, -2, 2, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
-    AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
+    AxisSpec occupancyAxis = {1500, 0, 1500, "Occupancy"};
 
     histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
     histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
     histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
+    histos.add("hOccupancy", "Occupancy distribution", kTH1F, {occupancyAxis});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
     histos.add("hPsiFT0C", "PsiFT0C", kTH3F, {centAxis, occupancyAxis, phiAxis});
     histos.add("hPsiFT0A", "PsiFT0A", kTH3F, {centAxis, occupancyAxis, phiAxis});
     histos.add("hPsiTPC", "PsiTPC", kTH3F, {centAxis, occupancyAxis, phiAxis});
-    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality, occupancyAxis});
-    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality, occupancyAxis});
-    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality, occupancyAxis});
+    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hMC", "MC Event statistics", kTH1F, {{6, 0.0f, 6.0f}});
 
     // histogram for resolution
-    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
+    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
+    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
     if (additionalQAplots) {
       // DCA QA
       histos.add("QAbefore/trkDCAxyka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
@@ -261,16 +262,10 @@ struct kstarpbpb {
   bool selectionPID(const T& candidate, int PID)
   {
     if (PID == 0) {
-      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
-        return true;
-      }
       if (candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
         return true;
       }
     } else if (PID == 1) {
-      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
-        return true;
-      }
       if (candidate.hasTOF() && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) + (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi())) < (nsigmaCutCombined * nsigmaCutCombined)) {
         return true;
       }
@@ -320,16 +315,19 @@ struct kstarpbpb {
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
+    histos.fill(HIST("hMC"), 0.5);
     if (!collision.sel8()) {
       return;
     }
-
+    histos.fill(HIST("hMC"), 1.5);
     if (!collision.triggereventep()) {
       return;
     }
+    histos.fill(HIST("hMC"), 2.5);
     if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
+    histos.fill(HIST("hMC"), 3.5);
     auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto centrality = collision.centFT0C();
@@ -338,6 +336,10 @@ struct kstarpbpb {
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
     int occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy >= 1500) // occupancy info is available for this collision (*)
+    {
+      return;
+    }
     histos.fill(HIST("hFTOCvsTPC"), centrality, multTPC);
     if (additionalEvsel && !eventSelected(collision, tracks.size(), centrality)) {
       return;
@@ -346,10 +348,11 @@ struct kstarpbpb {
     histos.fill(HIST("hPsiFT0C"), centrality, occupancy, psiFT0C);
     histos.fill(HIST("hPsiFT0A"), centrality, occupancy, psiFT0A);
     histos.fill(HIST("hPsiTPC"), centrality, occupancy, psiTPC);
-    histos.fill(HIST("ResFT0CTPC"), centrality, occupancy, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
-    histos.fill(HIST("ResFT0CFT0A"), centrality, occupancy, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
-    histos.fill(HIST("ResFT0ATPC"), centrality, occupancy, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+    histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+    histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+    histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
     histos.fill(HIST("hCentrality"), centrality);
+    histos.fill(HIST("hOccupancy"), occupancy);
     histos.fill(HIST("hVtxZ"), collision.posZ());
 
     for (auto track1 : posThisColl) {
@@ -445,7 +448,7 @@ struct kstarpbpb {
         }
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality, occupancy);
+        histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
 
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
@@ -470,7 +473,7 @@ struct kstarpbpb {
             kstarrot = kaonrot + daughter2;
             auto phiminuspsiRot = GetPhiInRange(kstarrot.Phi() - psiFT0C);
             auto v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
-            histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality, occupancy);
+            histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality);
           }
         }
       }
@@ -493,6 +496,9 @@ struct kstarpbpb {
         continue;
       }
       int occupancy = collision1.trackOccupancyInTimeRange();
+      if (occupancy >= 1500) {
+        return;
+      }
       auto centrality = collision1.centFT0C();
       auto centrality2 = collision2.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
@@ -563,7 +569,7 @@ struct kstarpbpb {
         }
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality, occupancy);
+        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
       }
     }
   }

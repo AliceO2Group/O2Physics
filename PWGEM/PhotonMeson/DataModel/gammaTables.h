@@ -411,8 +411,8 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
 
 namespace skimmedcluster
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //! collisionID used as index for matched clusters
-DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //! bunch crossing ID used as index for ambiguous clusters
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                            //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                     //!
 DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
 DECLARE_SOA_COLUMN(E, e, float);                                       //! cluster energy (GeV)
 DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
@@ -440,12 +440,9 @@ DECLARE_SOA_COLUMN(TrackPt, trackpt, std::vector<float>);                       
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m = 0) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
 } // namespace emccluster
 DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //! table of skimmed EMCal clusters
-                  o2::soa::Index<>, skimmedcluster::CollisionId, skimmedcluster::BCId, skimmedcluster::E, emccluster::CoreEnergy,
-                  skimmedcluster::Eta, skimmedcluster::Phi, skimmedcluster::M02, skimmedcluster::M20, skimmedcluster::NCells, skimmedcluster::Time,
-                  emccluster::IsExotic, skimmedcluster::DistanceToBadChannel, skimmedcluster::NLM, emccluster::Definition,
-                  emccluster::TrackIds, emccluster::TrackEta, emccluster::TrackPhi, emccluster::TrackP, emccluster::TrackPt,
-                  // dynamic column
-                  emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
+                  o2::soa::Index<>, skimmedcluster::CollisionId, skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
+                  skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::TrackEta,
+                  emccluster::TrackPhi, emccluster::TrackP, emccluster::TrackPt, emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
 using SkimEMCCluster = SkimEMCClusters::iterator;
 
 DECLARE_SOA_TABLE(EMCEMEventIds, "AOD", "EMCEMEVENTID", emccluster::EMEventId); // To be joined with SkimEMCClusters table at analysis level.
