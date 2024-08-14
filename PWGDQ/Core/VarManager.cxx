@@ -228,6 +228,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kRunId] = "";
   fgVariableNames[kBC] = "Bunch crossing";
   fgVariableUnits[kBC] = "";
+  fgVariableNames[kBCOrbit] = "Bunch crossing";
+  fgVariableUnits[kBCOrbit] = "";
   fgVariableNames[kIsPhysicsSelection] = "Physics selection";
   fgVariableUnits[kIsPhysicsSelection] = "";
   fgVariableNames[kVtxX] = "Vtx X ";
@@ -236,6 +238,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxY] = "cm";
   fgVariableNames[kVtxZ] = "Vtx Z ";
   fgVariableUnits[kVtxZ] = "cm";
+  fgVariableNames[kCollisionTime] = "collision time wrt BC";
+  fgVariableUnits[kCollisionTime] = "ns";
+  fgVariableNames[kCollisionTimeRes] = "collision time resolution";
+  fgVariableUnits[kCollisionTimeRes] = "ns";
   fgVariableNames[kVtxNcontrib] = "Vtx contrib.";
   fgVariableUnits[kVtxNcontrib] = "";
   fgVariableNames[kVtxNcontribReal] = "Real Vtx contrib.";
