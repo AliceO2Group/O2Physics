@@ -405,7 +405,8 @@ struct BJetTaggingML {
       auto inputML = getInputsForML(jetparam, tracksParams, SVsParams);
 
       std::vector<float> output;
-      bool isSelectedMl = bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+      // bool isSelectedMl = bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+      bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
 
       registry.fill(HIST("h2_score_jetpT"), analysisJet.pt(), output[0]);
 
@@ -473,7 +474,8 @@ struct BJetTaggingML {
       auto inputML = getInputsForML(jetparam, tracksParams, SVsParams);
 
       std::vector<float> output;
-      bool isSelectedMl = bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+      // bool isSelectedMl = bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+      bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
 
       registry.fill(HIST("h2_score_jetpT"), analysisJet.pt(), output[0], eventWeight);
 

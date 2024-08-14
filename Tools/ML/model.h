@@ -111,7 +111,7 @@ class OnnxModel
     return evalModel<T>(inputTensors);
   }
 
-  // For multi-dimensional inputs
+  // For 2D inputs
   template <typename T>
   T* evalModel(std::vector<std::vector<T>>& input)
   {
