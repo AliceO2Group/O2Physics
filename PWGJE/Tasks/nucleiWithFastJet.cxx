@@ -921,7 +921,7 @@ struct nucleiWithFastJet {
         // jetPt = mcpjet.pt();
         break;
       } // jet
-      if (mapPDGToValue(mcParticle.pdgCode())) {
+      if (mapPDGToValue(mcParticle.pdgCode()) != 0) {
         jetHist.fill(HIST("mcpJet/pt/PtParticleType"), mcParticle.pt(), jetFlag, mapPDGToValue(mcParticle.pdgCode()));
       }
 
@@ -989,7 +989,7 @@ struct nucleiWithFastJet {
         break;
       } // jet
 
-      if (mapPDGToValue(mcTrack.pdgCode())) {
+      if (mapPDGToValue(mcTrack.pdgCode()) != 0) {
         jetHist.fill(HIST("mcdJet/pt/PtParticleType"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
       }
 
@@ -1073,7 +1073,7 @@ struct nucleiWithFastJet {
         }
       }
 
-      if (mapPDGToValue(mcTrack.pdgCode())) {
+      if (mapPDGToValue(mcTrack.pdgCode()) != 0) {
         jetHist.fill(HIST("recmatched/pt/PtParticleType"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
       }
     } // tracks
@@ -1152,7 +1152,7 @@ struct nucleiWithFastJet {
           break;
         }
       } // DetJet
-      if (mapPDGToValue(mcParticle.pdgCode())) {
+      if (mapPDGToValue(mcParticle.pdgCode())!=0) {
         jetHist.fill(HIST("genmatched/pt/PtParticleType"), mcParticle.pt(), jetFlag, mapPDGToValue(mcParticle.pdgCode()));
       }
     } // jet constituents
