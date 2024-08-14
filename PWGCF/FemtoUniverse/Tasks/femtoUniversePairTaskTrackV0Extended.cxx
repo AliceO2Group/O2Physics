@@ -377,13 +377,13 @@ struct femtoUniversePairTaskTrackV0Extended {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event for track - V0", false);
 
-  void processSameEventMC(FilteredFDCollision& col, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts)
+  void processSameEventMCReco(FilteredFDCollision& col, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts)
   {
-    auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsOne = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent(col, parts, groupPartsOne, groupPartsTwo, mcparts);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventMC, "Enable processing same event for track - V0", false);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventMCReco, "Enable processing same event for track - V0 MC Reco", false);
 
   /// This function processes the same event for V0 - V0
   void processSameEventV0(FilteredFDCollision& col, FemtoFullParticles& parts)
@@ -563,13 +563,13 @@ struct femtoUniversePairTaskTrackV0Extended {
   {
     doMixedEvent(cols, parts, partsOne, partsTwo);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing same event for track - V0", false);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed event for track - V0", false);
 
-  void processMixedEventMC(FilteredFDCollisions& cols, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts)
+  void processMixedEventMCReco(FilteredFDCollisions& cols, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts)
   {
-    doMixedEvent(cols, parts, partsOneMC, partsTwoMC, mcparts);
+    doMixedEvent(cols, parts, partsOneMCReco, partsTwoMCReco, mcparts);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventMC, "Enable processing same event for track - V0 for MC", false);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventMCReco, "Enable processing mixed event for track - V0 for MC Reco", false);
 
   /// This function processes the mixed event for V0 - V0
   void processMixedEventV0(FilteredFDCollisions& cols, FemtoFullParticles& parts)
