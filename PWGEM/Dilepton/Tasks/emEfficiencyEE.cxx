@@ -818,6 +818,7 @@ struct AnalysisTrackSelection {
       if (!mccollisionwithin10 && fConfigMCCollz)
         continue;
 
+      VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
@@ -849,19 +850,10 @@ struct AnalysisTrackSelection {
   void runRecTrack(TTracks const& groupedTracks, TTracksMC const& tracksMC, bool pass, bool write)
   {
 
-    std::map<uint64_t, int> fRecTrackLabels[fTrackCuts.size() + 1];
-
     uint32_t filterMap = 0;
     trackSel.reserve(groupedTracks.size());
 
     for (auto& track : groupedTracks) {
-
-      // How many time the associated MC track was seen for this cut
-      Int_t fRecCounters[fTrackCuts.size() + 1];
-      for (unsigned int k = 0; k < fTrackCuts.size() + 1; k++) {
-        fRecCounters[k] = 0;
-      }
-
       filterMap = 0;
 
       VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
@@ -904,11 +896,6 @@ struct AnalysisTrackSelection {
       // compute MC matching decisions
       uint32_t mcDecision = 0;
       int isig = 0;
-      Int_t mctrackindex = -999;
-      Int_t doublereconstructedtrack[fTrackCuts.size() + 1];
-      for (unsigned int k = 0; k < fTrackCuts.size() + 1; k++) {
-        doublereconstructedtrack[k] = 0;
-      }
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
 
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
@@ -921,38 +908,6 @@ struct AnalysisTrackSelection {
             auto mctrack = track.template mcParticle_as<aod::McParticles>();
             if ((*sig).CheckSignal(true, mctrack)) {
               mcDecision |= (uint32_t(1) << isig);
-              mctrackindex = mctrack.globalIndex();
-            }
-          }
-        }
-      }
-
-      // Double reconstructed track only for the signal (they should not be redundant or crossing!!)
-      for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
-          continue;
-        }
-
-        // no track cuts
-        if (!(fRecTrackLabels[fTrackCuts.size()].find(mctrackindex) != fRecTrackLabels[fTrackCuts.size()].end())) {
-          fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecCounters[fTrackCuts.size()];
-          fRecCounters[fTrackCuts.size()]++;
-        } else {
-          // printf("For cut %d, found a mc collision track already reconstructed %d for selected collision with the same mc collision %d\n",j,mctrackindex,mcCollisionId);
-          doublereconstructedtrack[fTrackCuts.size()] = 1;
-          fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecTrackLabels[fTrackCuts.size()].find(mctrackindex)->second + 1;
-        }
-
-        for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-          if (filterMap & (uint8_t(1) << j)) {
-
-            if (!(fRecTrackLabels[j].find(mctrackindex) != fRecTrackLabels[j].end())) {
-              fRecTrackLabels[j][mctrackindex] = fRecCounters[j];
-              fRecCounters[j]++;
-            } else {
-              // printf("For cut %d, found a mc collision track already reconstructed %d for selected collision with the same mc collision %d\n",j,mctrackindex,mcCollisionId);
-              doublereconstructedtrack[j] = 1;
-              fRecTrackLabels[j][mctrackindex] = fRecTrackLabels[j].find(mctrackindex)->second + 1;
             }
           }
         }
@@ -963,38 +918,6 @@ struct AnalysisTrackSelection {
         if (!(mcDecision & (uint32_t(1) << i))) {
           continue;
         }
-        Double_t mmcpt = -10000.;
-        Double_t mmceta = -10000.;
-        Double_t mmcphi = -1000.;
-        // No track cut
-        if (fConfigRecWithMC) {
-
-          if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-            auto mctrack = track.reducedMCTrack();
-            mmcpt = mctrack.pt();
-            mmceta = mctrack.eta();
-            mmcphi = mctrack.phi();
-          }
-          if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
-            if (track.has_mcParticle()) {
-              auto mctrack = track.template mcParticle_as<aod::McParticles>();
-              mmcpt = mctrack.pt();
-              mmceta = mctrack.eta();
-              mmcphi = mctrack.phi();
-            }
-          }
-
-          if (track.sign() < 0) {
-            fHistRecNegPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-            if (doublereconstructedtrack[fTrackCuts.size()] == 0)
-              fHistRecNegSingleRecPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-          } else {
-            fHistRecPosPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-            if (doublereconstructedtrack[fTrackCuts.size()] == 0)
-              fHistRecPosSingleRecPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-          }
-        }
-        // track cuts
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
           if (filterMap & (uint8_t(1) << j)) {
             if (track.sign() < 0) {
@@ -1005,14 +928,29 @@ struct AnalysisTrackSelection {
 
             if (fConfigRecWithMC) {
 
+              Double_t mcpt = -10000.;
+              Double_t mceta = -10000.;
+              Double_t mcphi = -1000.;
+
+              if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
+                auto mctrack = track.reducedMCTrack();
+                mcpt = mctrack.pt();
+                mceta = mctrack.eta();
+                mcphi = mctrack.phi();
+              }
+              if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+                if (track.has_mcParticle()) {
+                  auto mctrack = track.template mcParticle_as<aod::McParticles>();
+                  mcpt = mctrack.pt();
+                  mceta = mctrack.eta();
+                  mcphi = mctrack.phi();
+                }
+              }
+
               if (track.sign() < 0) {
-                fHistRecNegPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-                if (doublereconstructedtrack[j] == 0)
-                  fHistRecNegSingleRecPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
+                fHistRecNegPartMC[j * fMCSignals.size() + i]->Fill(mcpt, mceta, mcphi);
               } else {
-                fHistRecPosPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-                if (doublereconstructedtrack[j] == 0)
-                  fHistRecPosSingleRecPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
+                fHistRecPosPartMC[j * fMCSignals.size() + i]->Fill(mcpt, mceta, mcphi);
               }
             }
 
@@ -1202,7 +1140,7 @@ struct AnalysisTrackSelection {
           doublereconstructedtrack[fTrackCuts.size()] = 1;
           fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecTrackLabels[fTrackCuts.size()].find(mctrackindex)->second + 1;
         }
-
+        // track cuts
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
           if (filterMap & (uint8_t(1) << j)) {
 
@@ -1228,7 +1166,6 @@ struct AnalysisTrackSelection {
         Double_t mmcphi = -1000.;
         // No track cut
         if (fConfigRecWithMC) {
-
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
             auto mctrack = track.reducedMCTrack();
             mmcpt = mctrack.pt();
