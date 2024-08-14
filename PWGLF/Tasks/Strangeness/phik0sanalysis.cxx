@@ -133,7 +133,7 @@ struct phik0shortanalysis {
   Configurable<float> lowmK0S{"lowmK0S", 0.48, "Lower limit on K0Short mass"};
   Configurable<float> upmK0S{"upmK0S", 0.52, "Upper limit on K0Short mass"};
 
-  //Configurable on K0S pT
+  // Configurable on K0S pT
   Configurable<std::vector<float>> binspTK0S{"binspTK0S", std::vector<float>{pTBinK0S, pTBinK0S + nPtBinK0S + 1}, "pT bin limits for K0S"};
 
   // Configurables on Phi mass
