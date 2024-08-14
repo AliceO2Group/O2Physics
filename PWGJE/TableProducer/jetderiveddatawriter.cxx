@@ -54,6 +54,7 @@ struct JetDerivedDataWriter {
     Configurable<float> chargedDielectronJetPtMin{"chargedDielectronJetPtMin", 0.0, "Minimum charged Dielectron jet pt to accept event"};
     Configurable<float> chargedEventWiseSubtractedDielectronJetPtMin{"chargedEventWiseSubtractedDielectronJetPtMin", 0.0, "Minimum charged event-wise subtracted Dielectron jet pt to accept event"};
     Configurable<float> chargedDielectronMCPJetPtMin{"chargedDielectronMCPJetPtMin", 0.0, "Minimum charged Dielectron mcp jet pt to accept event"};
+    Configurable<float> triggerTrackPtMin{"triggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
     Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
     Configurable<int> downscaleFactor{"downscaleFactor", 1, "random downscale of selected events"};
 
@@ -151,7 +152,7 @@ struct JetDerivedDataWriter {
 
   std::vector<bool> collisionFlag;
   std::vector<bool> McCollisionFlag;
-  std::vector<int> bcIndicies;
+  std::vector<int32_t> bcIndicies;
 
   uint32_t precisionPositionMask;
   uint32_t precisionMomentumMask;
@@ -230,7 +231,7 @@ struct JetDerivedDataWriter {
   }
 
   template <typename T>
-  void processJets(T& triggerObjects)
+  void processTriggerObjects(T& triggerObjects)
   {
     float triggerObjectPtMin = 0.0;
     if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelJets>) {
@@ -265,6 +266,8 @@ struct JetDerivedDataWriter {
       triggerObjectPtMin = config.chargedEventWiseSubtractedDielectronJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets>) {
       triggerObjectPtMin = config.chargedDielectronMCPJetPtMin;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
+      triggerObjectPtMin = config.triggerTrackPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JClusters>) {
       triggerObjectPtMin = config.clusterEnergyMin;
     } else {
@@ -295,33 +298,34 @@ struct JetDerivedDataWriter {
   PROCESS_SWITCH(JetDerivedDataWriter, processMcCollisions, "setup the writing for MCP", false);
   PROCESS_SWITCH(JetDerivedDataWriter, processAllCollisionsWithDownscaling, "setup the writing of untriggered collisions with downscaling", false);
   PROCESS_SWITCH(JetDerivedDataWriter, processAllMcCollisionsWithDownscaling, "setup the writing of untriggered mccollisions with downscaling", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedJets>, processChargedJets, "process charged jets", true);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedEventWiseSubtractedJets>, processChargedEventWiseSubtractedJets, "process charged event-wise subtracted jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedMCDetectorLevelJets>, processChargedMCDJets, "process charged mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedMCDetectorLevelEventWiseSubtractedJets>, processChargedMCDetectorLevelEventWiseSubtractedJets, "process charged event-wise subtracted mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedMCParticleLevelJets>, processChargedMCPJets, "process charged mcp jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::NeutralJets>, processNeutralJets, "process neutral jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::NeutralMCDetectorLevelJets>, processNeutralMCDJets, "process neutral mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::NeutralMCParticleLevelJets>, processNeutralMCPJets, "process neutral mcp jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::FullJets>, processFullJets, "process full jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::FullMCDetectorLevelJets>, processFullMCDJets, "process full mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::FullMCParticleLevelJets>, processFullMCPJets, "process full mcp jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::D0ChargedEventWiseSubtractedJets>, processD0ChargedEventWiseSubtractedJets, "process D0 event-wise subtracted charged jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::D0ChargedMCDetectorLevelJets>, processD0ChargedMCDJets, "process D0 charged mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::D0ChargedMCDetectorLevelEventWiseSubtractedJets>, processD0ChargedMCDetectorLevelEventWiseSubtractedJets, "process D0 event-wise subtracted charged mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::D0ChargedMCParticleLevelJets>, processD0ChargedMCPJets, "process D0 charged mcp jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::LcChargedEventWiseSubtractedJets>, processLcChargedEventWiseSubtractedJets, "process Lc event-wise subtracted charged jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::LcChargedMCDetectorLevelJets>, processLcChargedMCDJets, "process Lc charged mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::LcChargedMCDetectorLevelEventWiseSubtractedJets>, processLcChargedMCDetectorLevelEventWiseSubtractedJets, "process Lc event-wise subtracted charged mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::LcChargedMCParticleLevelJets>, processLcChargedMCPJets, "process Lc charged mcp jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::DielectronChargedJets>, processDielectronChargedJets, "process Dielectron charged jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::DielectronChargedEventWiseSubtractedJets>, processDielectronChargedEventWiseSubtractedJets, "process Dielectron event-wise subtracted charged jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::DielectronChargedMCDetectorLevelJets>, processDielectronChargedMCDJets, "process Dielectron charged mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJets>, processDielectronChargedMCDetectorLevelEventWiseSubtractedJets, "process Dielectron event-wise subtracted charged mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::DielectronChargedMCParticleLevelJets>, processDielectronChargedMCPJets, "process Dielectron charged mcp jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::JClusters>, processClusters, "process EMCal clusters", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::ChargedJets>, processChargedJets, "process charged jets", true);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::ChargedEventWiseSubtractedJets>, processChargedEventWiseSubtractedJets, "process charged event-wise subtracted jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::ChargedMCDetectorLevelJets>, processChargedMCDJets, "process charged mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::ChargedMCDetectorLevelEventWiseSubtractedJets>, processChargedMCDetectorLevelEventWiseSubtractedJets, "process charged event-wise subtracted mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::ChargedMCParticleLevelJets>, processChargedMCPJets, "process charged mcp jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::NeutralJets>, processNeutralJets, "process neutral jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::NeutralMCDetectorLevelJets>, processNeutralMCDJets, "process neutral mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::NeutralMCParticleLevelJets>, processNeutralMCPJets, "process neutral mcp jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::FullJets>, processFullJets, "process full jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::FullMCDetectorLevelJets>, processFullMCDJets, "process full mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::FullMCParticleLevelJets>, processFullMCPJets, "process full mcp jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::D0ChargedEventWiseSubtractedJets>, processD0ChargedEventWiseSubtractedJets, "process D0 event-wise subtracted charged jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::D0ChargedMCDetectorLevelJets>, processD0ChargedMCDJets, "process D0 charged mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::D0ChargedMCDetectorLevelEventWiseSubtractedJets>, processD0ChargedMCDetectorLevelEventWiseSubtractedJets, "process D0 event-wise subtracted charged mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::D0ChargedMCParticleLevelJets>, processD0ChargedMCPJets, "process D0 charged mcp jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::LcChargedEventWiseSubtractedJets>, processLcChargedEventWiseSubtractedJets, "process Lc event-wise subtracted charged jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::LcChargedMCDetectorLevelJets>, processLcChargedMCDJets, "process Lc charged mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::LcChargedMCDetectorLevelEventWiseSubtractedJets>, processLcChargedMCDetectorLevelEventWiseSubtractedJets, "process Lc event-wise subtracted charged mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::LcChargedMCParticleLevelJets>, processLcChargedMCPJets, "process Lc charged mcp jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::DielectronChargedJets>, processDielectronChargedJets, "process Dielectron charged jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::DielectronChargedEventWiseSubtractedJets>, processDielectronChargedEventWiseSubtractedJets, "process Dielectron event-wise subtracted charged jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::DielectronChargedMCDetectorLevelJets>, processDielectronChargedMCDJets, "process Dielectron charged mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJets>, processDielectronChargedMCDetectorLevelEventWiseSubtractedJets, "process Dielectron event-wise subtracted charged mcd jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::DielectronChargedMCParticleLevelJets>, processDielectronChargedMCPJets, "process Dielectron charged mcp jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::JClusters>, processClusters, "process EMCal clusters", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::JTracks>, processTriggerTracks, "process trigger tracks", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processDownscaling<aod::JCollisions>, processCollisionDownscaling, "process downsaling of triggered collisions", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processDownscaling<aod::JMcCollisions>, processMcCollisionDownscaling, "process downsaling of triggered mccollisions", false);
 
@@ -425,7 +429,7 @@ struct JetDerivedDataWriter {
                                         cluster.nlm(), cluster.definition(), cluster.leadingCellEnergy(), cluster.subleadingCellEnergy(), cluster.leadingCellNumber(), cluster.subleadingCellNumber());
           products.storedJClustersParentIndexTable(cluster.clusterId());
 
-          std::vector<int> clusterStoredJTrackIDs;
+          std::vector<int32_t> clusterStoredJTrackIDs;
           for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>()) {
             auto JtrackIndex = trackMapping.find(clusterTrack.globalIndex());
             if (JtrackIndex != trackMapping.end()) {
@@ -548,7 +552,7 @@ struct JetDerivedDataWriter {
         }
         for (auto particle : particlesPerMcCollision) {
 
-          std::vector<int> mothersId;
+          std::vector<int32_t> mothersId;
           if (particle.has_mothers()) {
             auto mothersIdTemps = particle.mothersIds();
             for (auto mothersIdTemp : mothersIdTemps) {
@@ -629,7 +633,7 @@ struct JetDerivedDataWriter {
             if (JParticleIndex != paticleMapping.end()) {
               DielectronParticleId = JParticleIndex->second;
             }
-            std::vector<int> DielectronMothersId;
+            std::vector<int32_t> DielectronMothersId;
             int DielectronDaughtersId[2];
             if (DielectronParticle.has_mothers()) {
               for (auto const& DielectronMother : DielectronParticle.template mothers_as<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>>()) {
@@ -735,7 +739,7 @@ struct JetDerivedDataWriter {
                                             cluster.nlm(), cluster.definition(), cluster.leadingCellEnergy(), cluster.subleadingCellEnergy(), cluster.leadingCellNumber(), cluster.subleadingCellNumber());
               products.storedJClustersParentIndexTable(cluster.clusterId());
 
-              std::vector<int> clusterStoredJTrackIDs;
+              std::vector<int32_t> clusterStoredJTrackIDs;
               for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>()) {
                 auto JtrackIndex = trackMapping.find(clusterTrack.globalIndex());
                 if (JtrackIndex != trackMapping.end()) {
@@ -744,7 +748,7 @@ struct JetDerivedDataWriter {
               }
               products.storedJClustersMatchedTracksTable(clusterStoredJTrackIDs);
 
-              std::vector<int> clusterStoredJParticleIDs;
+              std::vector<int32_t> clusterStoredJParticleIDs;
               for (const auto& clusterParticleId : cluster.mcParticleIds()) {
                 auto JParticleIndex = paticleMapping.find(clusterParticleId);
                 if (JParticleIndex != paticleMapping.end()) {
@@ -897,7 +901,7 @@ struct JetDerivedDataWriter {
           particleTableIndex++;
         }
         for (auto particle : particlesPerMcCollision) {
-          std::vector<int> mothersId;
+          std::vector<int32_t> mothersId;
           int daughtersId[2];
           if (particle.has_mothers()) {
             for (auto const& mother : particle.template mothers_as<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>>()) {
@@ -975,7 +979,7 @@ struct JetDerivedDataWriter {
             if (JParticleIndex != paticleMapping.end()) {
               DielectronParticleId = JParticleIndex->second;
             }
-            std::vector<int> DielectronMothersId;
+            std::vector<int32_t> DielectronMothersId;
             int DielectronDaughtersId[2];
             if (DielectronParticle.has_mothers()) {
               for (auto const& DielectronMother : DielectronParticle.template mothers_as<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>>()) {

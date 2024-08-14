@@ -82,6 +82,7 @@ struct kaonkaonAnalysisRun3 {
   TF1* fMultMultPVCut = nullptr;
 
   // track
+  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -361,7 +362,7 @@ struct kaonkaonAnalysisRun3 {
 
       if (rotation) {
         for (int i = 0; i < c_nof_rotations; i++) {
-          float theta2 = rn->Uniform(0, TMath::Pi());
+          float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
           vec4.SetPtEtaPhiM(candidate1.pt(), candidate1.eta(), candidate1.phi() + theta2, massd1); // for rotated background
           vec5 = vec4 + vec2;
           histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, vec5.Pt(), vec5.M(), framecalculation);
