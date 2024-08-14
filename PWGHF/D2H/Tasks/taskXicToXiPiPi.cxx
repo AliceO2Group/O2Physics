@@ -476,13 +476,13 @@ struct HfTaskXicToXiPiPi {
   {
     fillHistograms<false>(candidates);
   }
-  PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithDCAFitter, "Process Run 3", true);
+  PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithDCAFitter, "Process data with DCAFitter", true);
 
   void processWithKFParticle(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi>> const& candidates)
   {
     fillHistograms<true>(candidates);
   }
-  PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithKFParticle, "Process Run 3 with KFParticle", false);
+  PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithKFParticle, "Process data with KFParticle", false);
 
   /// MC analysis and fill histograms
   void processMcWithDCAFitter(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
@@ -491,7 +491,7 @@ struct HfTaskXicToXiPiPi {
   {
     fillHistogramsMc<false>(candidates, mcParticles, tracksWMc);
   }
-  PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithDCAFitter, "Process MC", false);
+  PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithDCAFitter, "Process MC with DCAFitter", false);
 
   /// MC analysis and fill histograms with KFParticle
   void processMcWithKFParticle(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
