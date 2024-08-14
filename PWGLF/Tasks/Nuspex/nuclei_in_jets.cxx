@@ -104,6 +104,7 @@ struct nuclei_in_jets {
   Configurable<double> min_nsigmaTOF{"min_nsigmaTOF", -3.0, "Minimum nsigma TOF"};
   Configurable<double> max_nsigmaTOF{"max_nsigmaTOF", +3.5, "Maximum nsigma TOF"};
   Configurable<bool> require_PV_contributor{"require_PV_contributor", true, "require that the track is a PV contributor"};
+  Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", false, "require pt dependent selection on DCAxy"};
 
   void init(InitContext const&)
   {
@@ -130,6 +131,9 @@ struct nuclei_in_jets {
     registryQC.add("NchJet_antikt_lowSumpt", "NchJet_antikt_lowSumpt", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
     registryQC.add("NchJet_areaCut_lowSumpt", "NchJet_areaCut_lowSumpt", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
     registryQC.add("deltaEta_deltaPhi_antikt_lowSumpt", "deltaEta_deltaPhi_antikt_lowSumpt", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+
+    // DCA
+    registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
 
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
@@ -218,10 +222,22 @@ struct nuclei_in_jets {
       return false;
     if (track.pt() < 0.1)
       return false;
-    if (TMath::Abs(track.dcaXY()) > (0.0105 * 0.035 / TMath::Power(track.pt(), 1.1)))
-      return false;
-    if (TMath::Abs(track.dcaZ()) > 2.0)
-      return false;
+
+    //pt-dependent selection
+    if (setDCAselectionPtDep) {
+      if (TMath::Abs(track.dcaXY()) > (0.0105 * 0.035 / TMath::Power(track.pt(), 1.1)))
+        return false;
+      if (TMath::Abs(track.dcaZ()) > 2.0)
+        return false;
+    }
+
+    //standard selection
+    if (!setDCAselectionPtDep) {
+      if (TMath::Abs(track.dcaXY()) > 0.05)
+        return false;
+      if (TMath::Abs(track.dcaZ()) > 0.1)
+        return false;
+    }
 
     return true;
   }
@@ -391,6 +407,7 @@ struct nuclei_in_jets {
       i++;
       if (!passedTrackSelectionForJetReconstruction(track))
         continue;
+      registryQC.fill(HIST("dcaxy_vs_pt"), track.pt(), track.dcaXY());
 
       if (track.pt() > pt_max) {
         leading_ID = i;
