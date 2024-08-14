@@ -428,9 +428,9 @@ struct hstrangecorrelationfilter {
 
       if (compatibleK0Short && (!doTrueSelectionInMass || (origV0entry.isTrueK0Short() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), collision.centFT0M());
-      if (compatibleLambda) && (!doTrueSelectionInMass || (origV0entry.isTrueLambda() && origV0entry.isPhysicalPrimary())))
+      if (compatibleLambda && (!doTrueSelectionInMass || (origV0entry.isTrueLambda() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassLambda"), v0.pt(), v0.mLambda(), collision.centFT0M());
-      if (compatibleAntiLambda) && (!doTrueSelectionInMass || (origV0entry.isTrueAntiLambda() && origV0entry.isPhysicalPrimary())))
+      if (compatibleAntiLambda && (!doTrueSelectionInMass || (origV0entry.isTrueAntiLambda() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassAntiLambda"), v0.pt(), v0.mAntiLambda(), collision.centFT0M());
 
       if (!fillTableOnlyWithCompatible ||
