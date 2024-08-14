@@ -1402,8 +1402,7 @@ struct femtoUniverseProducerTask {
                         aod::BCsWithTimestamps const&,
                         soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                         aod::McCollisions const&,
-                        aod::McParticles const&,
-                        soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+                        aod::McParticles const&)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
