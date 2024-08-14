@@ -78,7 +78,7 @@ struct HfTaskXicToXiPiPi {
     if (doprocessWithDCAFitter && doprocessMcWithKFParticle) {
       LOGF(fatal, "Cannot enable doprocessWithDCAFitter and doprocessMcWithKFParticle at the same time. Please choose one.");
     }
-    
+
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisMassXiRes = {300, 1.0, 2.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
