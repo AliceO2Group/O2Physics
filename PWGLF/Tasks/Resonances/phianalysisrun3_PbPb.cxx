@@ -76,6 +76,10 @@ struct phianalysisrun3_PbPb {
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
+  Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
+  Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
+  Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
+  Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
@@ -126,7 +130,6 @@ struct phianalysisrun3_PbPb {
   double pT{0.};
   array<float, 3> pvec0;
   array<float, 3> pvec1;
-  array<float, 3> pvec1rotation;
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
@@ -170,18 +173,16 @@ struct phianalysisrun3_PbPb {
     }
     return true;
   }
+  ROOT::Math::PxPyPzMVector daughter1, daughter2, phirot;
   template <typename T1, typename T2>
   void FillinvMass(const T1& candidate1, const T2& candidate2, float multiplicity, bool unlike, bool mix, bool likesign, bool rotation, float massd1, float massd2)
   {
     pvec0 = array{candidate1.px(), candidate1.py(), candidate1.pz()};
     pvec1 = array{candidate2.px(), candidate2.py(), candidate2.pz()};
-    pvec1rotation = array{-candidate2.px(), -candidate2.py(), candidate2.pz()};
     auto arrMom = array{pvec0, pvec1};
-    auto arrMomrotation = array{pvec0, pvec1rotation};
     int track1Sign = candidate1.sign();
     int track2Sign = candidate2.sign();
     mass = RecoDecay::m(arrMom, array{massd1, massd2});
-    massrotation = RecoDecay::m(arrMomrotation, array{massd1, massd2});
     pT = RecoDecay::pt(array{candidate1.px() + candidate2.px(), candidate1.py() + candidate2.py()});
     rapidity = RecoDecay::y(array{candidate1.px() + candidate2.px(), candidate1.py() + candidate2.py(), candidate1.pz() + candidate2.pz()}, mass);
     if (isEtaAssym && unlike && track1Sign * track2Sign < 0) {
@@ -214,8 +215,20 @@ struct phianalysisrun3_PbPb {
       if (mix) {
         histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, pT, mass);
       }
-      if (rotation) {
-        histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, pT, massrotation);
+
+      if (fillRotation) {
+        for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
+          auto anglestart = confMinRot;
+          auto angleend = confMaxRot;
+          auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
+          auto rotangle = anglestart + nrotbkg * anglestep;
+          auto rotPx = candidate1.px() * std::cos(rotangle) - candidate1.py() * std::sin(rotangle);
+          auto rotPy = candidate1.px() * std::sin(rotangle) + candidate1.py() * std::cos(rotangle);
+          daughter1 = ROOT::Math::PxPyPzMVector(rotPx, rotPy, candidate1.pz(), massKa);
+          daughter2 = ROOT::Math::PxPyPzMVector(candidate2.px(), candidate2.py(), candidate2.pz(), massKa);
+          phirot = daughter1 + daughter2;
+          histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, phirot.Pt(), phirot.M());
+        }
       }
     }
     if (std::abs(rapidity) < 0.5 && !isEtaAssym && track1Sign * track2Sign > 0 && likesign) {
