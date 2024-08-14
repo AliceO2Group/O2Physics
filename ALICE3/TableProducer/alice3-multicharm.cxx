@@ -353,14 +353,23 @@ struct alice3multicharm {
       histos.fill(HIST("hMassXi"), xiCand.mXi());
       auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
       uint32_t nCombinationsC = 0;
+
+      // first pion from XiC decay for starts here
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
           continue;
+        if (xiCand.posTrackId() == pi1c.globalIndex() || xiCand.negTrackId() == pi1c.globalIndex() || xiCand.bachTrackId() == pi1c.globalIndex())
+          continue; // avoid using any track that was already used
+
+        // second pion from XiC decay for starts here
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
           if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
             continue; // keep only if same mother
           if (pi1c.globalIndex() >= pi2c.globalIndex())
             continue; // avoid same-mother, avoid double-counting
+          if (xiCand.posTrackId() == pi2c.globalIndex() || xiCand.negTrackId() == pi2c.globalIndex() || xiCand.bachTrackId() == pi2c.globalIndex())
+            continue; // avoid using any track that was already used  
+
 
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
           // will now attempt to build a three-body decay candidate with these three track rows.
@@ -381,6 +390,9 @@ struct alice3multicharm {
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
+            if (xiCand.posTrackId() == picc.globalIndex() || xiCand.negTrackId() == picc.globalIndex() || xiCand.bachTrackId() == picc.globalIndex())
+              continue; // avoid using any track that was already used  
+
             // to-do: check same mother here
 
             nCombinationsCC++;
