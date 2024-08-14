@@ -362,7 +362,7 @@ struct NonPromptCascadeTask {
   }
 
   void processTrackedCascadesMC(CollisionsCandidatesRun3 const& /*collisions*/,
-                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
+                                aod::AssignedTrackedCascades const& trackedCascades, aod::McCollisionLabels const& collisionLabels, aod::Cascades const& /*cascades*/,
                                 aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
                                 aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
@@ -598,6 +598,7 @@ struct NonPromptCascadeTask {
       auto particle = mcParticles.iteratorAt(mcParticleId[i]);
       auto& c = candidates[i];
       auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
+      auto label = collisionLabels.iteratorAt(c.collisionID);
 
       NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
                  c.pvX, c.pvY, c.pvZ,
@@ -611,7 +612,7 @@ struct NonPromptCascadeTask {
                  c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
                  c.protonHasTOF, c.pionHasTOF, c.bachKaonHasTOF, c.bachPionHasTOF,
                  c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                 particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(), mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == c.collisionID);
+                 particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(), mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == label.mcCollisionId());
     }
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
