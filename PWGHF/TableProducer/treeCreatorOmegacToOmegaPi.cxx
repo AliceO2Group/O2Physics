@@ -296,7 +296,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
 
   template <typename T>
   void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
-  { if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
+  {
+    if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
       rowKfCandidateFull(
         candidate.tpcNSigmaPiFromCharmBaryon(),
@@ -408,7 +409,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC", false);
 
   void processKFMcFull(MyEventTable const& collisions, MyTrackTable const&,
-                     soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
+                       soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
