@@ -205,26 +205,28 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracks, "produces derived track table", true);
 
-  void processTracksWithCollisionAssociator(aod::Collision const& collision, soa::Join<aod::BCs, aod::Timestamps> const&, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::TrackSelection, aod::TrackSelectionExtension> const&, aod::TrackAssoc const& assocCollisions)
+  void processTracksWithCollisionAssociator(aod::Collisions const& collisions, soa::Join<aod::BCs, aod::Timestamps> const&, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::TrackSelection, aod::TrackSelectionExtension> const&, aod::TrackAssoc const& assocCollisions)
   {
-    auto collisionTrackIndices = assocCollisions.sliceBy(perCollisionTrackIndices, collision.globalIndex());
-    for (auto const& collisionTrackIndex : collisionTrackIndices) {
-      auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::TrackSelection, aod::TrackSelectionExtension>>();
-      if (track.collisionId() == collision.globalIndex()) {
-        jTracksTable(collision.globalIndex(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
-        jTracksParentIndexTable(track.globalIndex());
-        jTracksExtraTable(track.dcaXY(), track.dcaZ(), track.sigma1Pt());
-      } else {
-        auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-        initCCDB(bc, runNumber, ccdb, doprocessCollisionsRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, doprocessCollisionsRun2);
-        auto trackPar = getTrackPar(track);
-        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, noMatCorr, &dcaInfo);
-        jTracksTable(collision.globalIndex(), trackPar.getPt(), trackPar.getEta(), trackPar.getPhi(), jetderiveddatautilities::setTrackSelectionBit(track, dcaInfo[1], dcaZMax)); // only qualitytracksWDCA are a reliable selection
-        jTracksParentIndexTable(-1);
-        jTracksExtraTable(dcaInfo[0], dcaInfo[1], track.sigma1Pt()); // sigma pT is not reliably updated!
+    for (auto const& collision : collisions) {
+      auto collisionTrackIndices = assocCollisions.sliceBy(perCollisionTrackIndices, collision.globalIndex());
+      for (auto const& collisionTrackIndex : collisionTrackIndices) {
+        auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::TrackSelection, aod::TrackSelectionExtension>>();
+        if (track.collisionId() == collision.globalIndex()) {
+          jTracksTable(collision.globalIndex(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
+          jTracksParentIndexTable(track.globalIndex());
+          jTracksExtraTable(track.dcaXY(), track.dcaZ(), track.sigma1Pt());
+        } else {
+          auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
+          initCCDB(bc, runNumber, ccdb, doprocessCollisionsRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, doprocessCollisionsRun2);
+          auto trackPar = getTrackPar(track);
+          o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, noMatCorr, &dcaInfo);
+          jTracksTable(collision.globalIndex(), trackPar.getPt(), trackPar.getEta(), trackPar.getPhi(), jetderiveddatautilities::setTrackSelectionBit(track, dcaInfo[1], dcaZMax)); // only qualitytracksWDCA are a reliable selection
+          jTracksParentIndexTable(-1);
+          jTracksExtraTable(dcaInfo[0], dcaInfo[1], track.sigma1Pt()); // sigma pT is not reliably updated!
+        }
+        trackCollisionMapping[{track.globalIndex(), collision.globalIndex()}] = jTracksTable.lastIndex();
       }
-      trackCollisionMapping[{track.globalIndex(), collision.globalIndex()}] = jTracksTable.lastIndex();
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracksWithCollisionAssociator, "produces derived track table taking into account track-to-collision associations", false);
