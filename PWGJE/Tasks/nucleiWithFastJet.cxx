@@ -1152,7 +1152,7 @@ struct nucleiWithFastJet {
           break;
         }
       } // DetJet
-      if (mapPDGToValue(mcParticle.pdgCode())!=0) {
+      if (mapPDGToValue(mcParticle.pdgCode()) != 0) {
         jetHist.fill(HIST("genmatched/pt/PtParticleType"), mcParticle.pt(), jetFlag, mapPDGToValue(mcParticle.pdgCode()));
       }
     } // jet constituents
