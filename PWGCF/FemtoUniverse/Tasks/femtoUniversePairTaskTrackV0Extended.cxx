@@ -152,6 +152,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
+  std::unique_ptr<TFile> plocalEffFile;
   std::unique_ptr<TH1> plocalEffp1;
   std::unique_ptr<TH1> plocalEffp2;
 
@@ -272,16 +273,16 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
 
     if (!ConfLocalEfficiency.value.empty()) {
-      TFile* pf = TFile::Open(ConfLocalEfficiency.value.c_str(), "read");
-      if (!pf || pf->IsZombie())
+      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(ConfLocalEfficiency.value.c_str(), "read"));
+      if (!plocalEffFile || plocalEffFile.get()->IsZombie())
         LOGF(fatal, "Could not load efficiency histogram from %s", ConfLocalEfficiency.value.c_str());
       if (doprocessSameEvent || doprocessMixedEvent) {
-        plocalEffp1 = (ConfChargePart1 > 0) ? std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("PrPlus"))) : std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("PrMinus"))); // note: works only for protons for now
-        plocalEffp2 = (ConfV0Type1 == 0) ? std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("Lambda"))) : std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("AntiLambda")));
+        plocalEffp1 = (ConfChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
+        plocalEffp2 = (ConfV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
         LOGF(info, "Loaded efficiency histograms for track-V0.");
       } else if (doprocessSameEventV0 || doprocessMixedEventV0) {
-        plocalEffp1 = (ConfV0Type1 == 0) ? std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("Lambda"))) : std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("AntiLambda")));
-        plocalEffp2 = (ConfV0Type2 == 0) ? std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("Lambda"))) : std::unique_ptr<TH1>(static_cast<TH1*>(pf->Get("AntiLambda")));
+        plocalEffp1 = (ConfV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
+        plocalEffp2 = (ConfV0Type2 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
         LOGF(info, "Loaded efficiency histograms for V0-V0.");
       }
     }
