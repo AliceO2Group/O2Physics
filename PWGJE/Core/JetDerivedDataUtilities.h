@@ -17,6 +17,7 @@
 #ifndef PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 #define PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 
+#include <vector>
 #include <string>
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/EventSelectionParams.h"
@@ -72,9 +73,9 @@ int initialiseEventSelection(std::string eventSelection)
 }
 
 template <typename T>
-uint8_t setEventSelectionBit(T const& collision)
+uint16_t setEventSelectionBit(T const& collision)
 {
-  uint8_t bit = 0;
+  uint16_t bit = 0;
   if (collision.sel8()) {
     SETBIT(bit, JCollisionSel::sel8);
     if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
@@ -114,10 +115,154 @@ bool eventEMCAL(T const& collision)
   return found;
 }
 
+inline const std::string JTriggerMasks = "fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL";
+
+enum JTrigSel {
+  noTrigSel = 0,
+  JetChLowPt = 1,
+  JetChHighPt = 2,
+  TrackLowPt = 3,
+  TrackHighPt = 4,
+  JetD0ChLowPt = 5,
+  JetD0ChHighPt = 6,
+  JetLcChLowPt = 7,
+  JetLcChHighPt = 8,
+  EMCALReadout = 9,
+  JetFullHighPt = 10,
+  JetFullLowPt = 11,
+  JetNeutralHighPt = 12,
+  JetNeutralLowPt = 13,
+  GammaVeryHighPtEMCAL = 14,
+  GammaVeryHighPtDCAL = 15,
+  GammaHighPtEMCAL = 16,
+  GammaHighPtDCAL = 17,
+  GammaLowPtEMCAL = 18,
+  GammaLowPtDCAL = 19,
+  GammaVeryLowPtEMCAL = 20,
+  GammaVeryLowPtDCAL = 21
+};
+
+template <typename T>
+bool selectTrigger(T const& collision, std::vector<int> triggerMaskBits)
+{
+  if (triggerMaskBits.size() == 0) {
+    return true;
+  }
+  for (auto triggerMaskBit : triggerMaskBits) {
+    if (collision.triggerSel() & (1 << triggerMaskBit)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
+bool selectTrigger(T const& collision, int triggerMaskBit)
+{
+  if (triggerMaskBit == -1) {
+    return false;
+  }
+  return collision.triggerSel() & (1 << triggerMaskBit);
+}
+
+bool triggerMasksContainTrigger(std::string triggerMasks, std::string trigger)
+{
+  size_t position = 0;
+  while ((position = triggerMasks.find(trigger, position)) != std::string::npos) {
+    bool validStart = (position == 0 || triggerMasks[position - 1] == ',');
+    bool validEnd = (position + trigger.length() == triggerMasks.length() || triggerMasks[position + trigger.length()] == ',');
+    if (validStart && validEnd) {
+      return true;
+    }
+    position += trigger.length();
+  }
+  return false;
+}
+
+std::vector<int> initialiseTriggerMaskBits(std::string triggerMasks)
+{
+  std::vector<int> triggerMaskBits;
+  if (triggerMasksContainTrigger(triggerMasks, "fJetChLowPt")) {
+    triggerMaskBits.push_back(JetChLowPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetChHighPt")) {
+    triggerMaskBits.push_back(JetChHighPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fTrackLowPt")) {
+    triggerMaskBits.push_back(TrackLowPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fTrackHighPt")) {
+    triggerMaskBits.push_back(TrackHighPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetD0ChLowPt")) {
+    triggerMaskBits.push_back(JetD0ChLowPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetD0ChHighPt")) {
+    triggerMaskBits.push_back(JetD0ChHighPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetLcChLowPt")) {
+    triggerMaskBits.push_back(JetLcChLowPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetLcChHighPt")) {
+    triggerMaskBits.push_back(JetLcChHighPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fEMCALReadout")) {
+    triggerMaskBits.push_back(EMCALReadout);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetFullHighPt")) {
+    triggerMaskBits.push_back(JetFullHighPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetFullLowPt")) {
+    triggerMaskBits.push_back(JetFullLowPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetNeutralHighPt")) {
+    triggerMaskBits.push_back(JetNeutralHighPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fJetNeutralLowPt")) {
+    triggerMaskBits.push_back(JetNeutralLowPt);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fGammaVeryHighPtEMCAL")) {
+    triggerMaskBits.push_back(GammaVeryHighPtEMCAL);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fGammaVeryHighPtDCAL")) {
+    triggerMaskBits.push_back(GammaVeryHighPtDCAL);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fGammaHighPtEMCAL")) {
+    triggerMaskBits.push_back(GammaHighPtEMCAL);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fGammaHighPtDCAL")) {
+    triggerMaskBits.push_back(GammaHighPtDCAL);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fGammaLowPtEMCAL")) {
+    triggerMaskBits.push_back(GammaLowPtEMCAL);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fGammaLowPtDCAL")) {
+    triggerMaskBits.push_back(GammaLowPtDCAL);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fGammaVeryLowPtEMCAL")) {
+    triggerMaskBits.push_back(GammaVeryLowPtEMCAL);
+  }
+  if (triggerMasksContainTrigger(triggerMasks, "fGammaVeryLowPtDCAL")) {
+    triggerMaskBits.push_back(GammaVeryLowPtDCAL);
+  }
+  return triggerMaskBits;
+}
+
+uint64_t setTriggerSelectionBit(std::vector<bool> triggerDecisions)
+{
+  uint64_t bit = 0;
+  for (std::vector<bool>::size_type i = 0; i < triggerDecisions.size(); i++) {
+    if (triggerDecisions[i]) {
+      SETBIT(bit, i + 1);
+    }
+  }
+  return bit;
+}
+
 enum JTrigSelCh {
   noChargedTigger = 0,
-  chargedLow = 1,
-  chargedHigh = 2,
+  jetChLowPt = 1,
+  jetChHighPt = 2,
   trackLowPt = 3,
   trackHighPt = 4
 };
@@ -133,11 +278,11 @@ bool selectChargedTrigger(T const& collision, int triggerSelection)
 
 int initialiseChargedTriggerSelection(std::string triggerSelection)
 {
-  if (triggerSelection == "chargedLow") {
-    return JTrigSelCh::chargedLow;
+  if (triggerSelection == "jetChLowPt") {
+    return JTrigSelCh::jetChLowPt;
   }
-  if (triggerSelection == "chargedHigh") {
-    return JTrigSelCh::chargedHigh;
+  if (triggerSelection == "jetChHighPt") {
+    return JTrigSelCh::jetChHighPt;
   }
   if (triggerSelection == "trackLowPt") {
     return JTrigSelCh::trackLowPt;
@@ -155,10 +300,10 @@ uint8_t setChargedTriggerSelectionBit(T const& collision)
 
   uint8_t bit = 0;
   if (collision.hasJetChLowPt()) {
-    SETBIT(bit, JTrigSelCh::chargedLow);
+    SETBIT(bit, JTrigSelCh::jetChLowPt);
   }
   if (collision.hasJetChHighPt()) {
-    SETBIT(bit, JTrigSelCh::chargedHigh);
+    SETBIT(bit, JTrigSelCh::jetChHighPt);
   }
   if (collision.hasTrackLowPt()) {
     SETBIT(bit, JTrigSelCh::trackLowPt);
@@ -172,18 +317,19 @@ uint8_t setChargedTriggerSelectionBit(T const& collision)
 
 enum JTrigSelFull {
   noFullTrigger = 0,
-  fullHigh = 1,
-  fullLow = 2,
-  neutralHigh = 3,
-  neutralLow = 4,
-  gammaVeryHighEMCAL = 5,
-  gammaHighEMCAL = 6,
-  gammaLowEMCAL = 7,
-  gammaVeryLowEMCAL = 8,
-  gammaVeryHighDCAL = 9,
-  gammaHighDCAL = 10,
-  gammaLowDCAL = 11,
-  gammaVeryLowDCAL = 12
+  emcalReadout = 1,
+  jetFullHighPt = 2,
+  jetFullLowPt = 3,
+  jetNeutralHighPt = 4,
+  jetNeutralLowPt = 5,
+  gammaVeryHighPtEMCAL = 6,
+  gammaVeryHighPtDCAL = 7,
+  gammaHighPtEMCAL = 8,
+  gammaHighPtDCAL = 9,
+  gammaLowPtEMCAL = 10,
+  gammaLowPtDCAL = 11,
+  gammaVeryLowPtEMCAL = 12,
+  gammaVeryLowPtDCAL = 13
 };
 
 template <typename T>
@@ -197,30 +343,32 @@ bool selectFullTrigger(T const& collision, int triggerSelection)
 
 int initialiseFullTriggerSelection(std::string triggerSelection)
 {
-  if (triggerSelection == "fullHigh") {
-    return JTrigSelFull::fullHigh;
-  } else if (triggerSelection == "fullLow") {
-    return JTrigSelFull::fullLow;
-  } else if (triggerSelection == "neutralHigh") {
-    return JTrigSelFull::neutralHigh;
-  } else if (triggerSelection == "neutralLow") {
-    return JTrigSelFull::neutralLow;
-  } else if (triggerSelection == "gammaVeryHighEMCAL") {
-    return JTrigSelFull::gammaVeryHighEMCAL;
-  } else if (triggerSelection == "gammaHighEMCAL") {
-    return JTrigSelFull::gammaHighEMCAL;
-  } else if (triggerSelection == "gammaLowEMCAL") {
-    return JTrigSelFull::gammaLowEMCAL;
-  } else if (triggerSelection == "gammaVeryLowEMCAL") {
-    return JTrigSelFull::gammaVeryLowEMCAL;
-  } else if (triggerSelection == "gammaVeryHighDCAL") {
-    return JTrigSelFull::gammaVeryHighDCAL;
-  } else if (triggerSelection == "gammaHighDCAL") {
-    return JTrigSelFull::gammaHighDCAL;
-  } else if (triggerSelection == "gammaLowDCAL") {
-    return JTrigSelFull::gammaLowDCAL;
-  } else if (triggerSelection == "gammaVeryLowDCAL") {
-    return JTrigSelFull::gammaVeryLowDCAL;
+  if (triggerSelection == "emcalReadout") {
+    return JTrigSelFull::emcalReadout;
+  } else if (triggerSelection == "jetFullHighPt") {
+    return JTrigSelFull::jetFullHighPt;
+  } else if (triggerSelection == "jetFullLowPt") {
+    return JTrigSelFull::jetFullLowPt;
+  } else if (triggerSelection == "jetNeutralHighPt") {
+    return JTrigSelFull::jetNeutralHighPt;
+  } else if (triggerSelection == "jetNeutralLowPt") {
+    return JTrigSelFull::jetNeutralLowPt;
+  } else if (triggerSelection == "gammaVeryHighPtEMCAL") {
+    return JTrigSelFull::gammaVeryHighPtEMCAL;
+  } else if (triggerSelection == "gammaVeryHighPtDCAL") {
+    return JTrigSelFull::gammaVeryHighPtDCAL;
+  } else if (triggerSelection == "gammaHighPtEMCAL") {
+    return JTrigSelFull::gammaHighPtEMCAL;
+  } else if (triggerSelection == "gammaHighPtDCAL") {
+    return JTrigSelFull::gammaHighPtDCAL;
+  } else if (triggerSelection == "gammaLowPtEMCAL") {
+    return JTrigSelFull::gammaLowPtEMCAL;
+  } else if (triggerSelection == "gammaLowPtDCAL") {
+    return JTrigSelFull::gammaLowPtDCAL;
+  } else if (triggerSelection == "gammaVeryLowPtEMCAL") {
+    return JTrigSelFull::gammaVeryLowPtEMCAL;
+  } else if (triggerSelection == "gammaVeryLowPtDCAL") {
+    return JTrigSelFull::gammaVeryLowPtDCAL;
   }
   return -1;
 }
@@ -229,51 +377,54 @@ template <typename T>
 uint32_t setFullTriggerSelectionBit(T const& collision)
 {
   uint32_t bit = 0;
+  if (collision.hasEMCALinReadout()) {
+    SETBIT(bit, JTrigSelFull::emcalReadout);
+  }
   if (collision.hasJetFullHighPt()) {
-    SETBIT(bit, JTrigSelFull::fullHigh);
+    SETBIT(bit, JTrigSelFull::jetFullHighPt);
   }
   if (collision.hasJetFullLowPt()) {
-    SETBIT(bit, JTrigSelFull::fullLow);
+    SETBIT(bit, JTrigSelFull::jetFullLowPt);
   }
   if (collision.hasJetNeutralHighPt()) {
-    SETBIT(bit, JTrigSelFull::neutralHigh);
+    SETBIT(bit, JTrigSelFull::jetNeutralHighPt);
   }
   if (collision.hasJetNeutralLowPt()) {
-    SETBIT(bit, JTrigSelFull::neutralLow);
+    SETBIT(bit, JTrigSelFull::jetNeutralLowPt);
   }
   if (collision.hasGammaVeryHighPtEMCAL()) {
-    SETBIT(bit, JTrigSelFull::gammaVeryHighEMCAL);
-  }
-  if (collision.hasGammaHighPtEMCAL()) {
-    SETBIT(bit, JTrigSelFull::gammaHighEMCAL);
-  }
-  if (collision.hasGammaLowPtEMCAL()) {
-    SETBIT(bit, JTrigSelFull::gammaLowEMCAL);
-  }
-  if (collision.hasGammaVeryLowPtEMCAL()) {
-    SETBIT(bit, JTrigSelFull::gammaVeryLowEMCAL);
+    SETBIT(bit, JTrigSelFull::gammaVeryHighPtEMCAL);
   }
   if (collision.hasGammaVeryHighPtDCAL()) {
-    SETBIT(bit, JTrigSelFull::gammaVeryHighDCAL);
+    SETBIT(bit, JTrigSelFull::gammaVeryHighPtDCAL);
+  }
+  if (collision.hasGammaHighPtEMCAL()) {
+    SETBIT(bit, JTrigSelFull::gammaHighPtEMCAL);
   }
   if (collision.hasGammaHighPtDCAL()) {
-    SETBIT(bit, JTrigSelFull::gammaHighDCAL);
+    SETBIT(bit, JTrigSelFull::gammaHighPtDCAL);
+  }
+  if (collision.hasGammaLowPtEMCAL()) {
+    SETBIT(bit, JTrigSelFull::gammaLowPtEMCAL);
   }
   if (collision.hasGammaLowPtDCAL()) {
-    SETBIT(bit, JTrigSelFull::gammaLowDCAL);
+    SETBIT(bit, JTrigSelFull::gammaLowPtDCAL);
+  }
+  if (collision.hasGammaVeryLowPtEMCAL()) {
+    SETBIT(bit, JTrigSelFull::gammaVeryLowPtEMCAL);
   }
   if (collision.hasGammaVeryLowPtDCAL()) {
-    SETBIT(bit, JTrigSelFull::gammaVeryLowDCAL);
+    SETBIT(bit, JTrigSelFull::gammaVeryLowPtDCAL);
   }
   return bit;
 }
 
 enum JTrigSelChHF {
   noChargedHFTigger = 0,
-  chargedD0Low = 1,
-  chargedD0High = 2,
-  chargedLcLow = 3,
-  chargedLcHigh = 4
+  jetD0ChLowPt = 1,
+  jetD0ChHighPt = 2,
+  jetLcChLowPt = 3,
+  jetLcChHighPt = 4
 };
 
 template <typename T>
@@ -287,17 +438,17 @@ bool selectChargedHFTrigger(T const& collision, int triggerSelection)
 
 int initialiseChargedHFTriggerSelection(std::string triggerSelection)
 {
-  if (triggerSelection == "chargedD0Low") {
-    return JTrigSelChHF::chargedD0Low;
+  if (triggerSelection == "jetD0ChLowPt") {
+    return JTrigSelChHF::jetD0ChLowPt;
   }
-  if (triggerSelection == "chargedD0High") {
-    return JTrigSelChHF::chargedD0High;
+  if (triggerSelection == "jetD0ChHighPt") {
+    return JTrigSelChHF::jetD0ChHighPt;
   }
-  if (triggerSelection == "chargedLcLow") {
-    return JTrigSelChHF::chargedLcLow;
+  if (triggerSelection == "jetLcChLowPt") {
+    return JTrigSelChHF::jetLcChLowPt;
   }
-  if (triggerSelection == "chargedLcHigh") {
-    return JTrigSelChHF::chargedLcHigh;
+  if (triggerSelection == "jetLcChHighPt") {
+    return JTrigSelChHF::jetLcChHighPt;
   }
   return -1;
 }
@@ -308,16 +459,16 @@ uint8_t setChargedHFTriggerSelectionBit(T const& collision)
 
   uint8_t bit = 0;
   if (collision.hasJetD0ChLowPt()) {
-    SETBIT(bit, JTrigSelChHF::chargedD0Low);
+    SETBIT(bit, JTrigSelChHF::jetD0ChLowPt);
   }
   if (collision.hasJetD0ChHighPt()) {
-    SETBIT(bit, JTrigSelChHF::chargedD0High);
+    SETBIT(bit, JTrigSelChHF::jetD0ChHighPt);
   }
   if (collision.hasJetLcChLowPt()) {
-    SETBIT(bit, JTrigSelChHF::chargedLcLow);
+    SETBIT(bit, JTrigSelChHF::jetLcChLowPt);
   }
   if (collision.hasJetLcChHighPt()) {
-    SETBIT(bit, JTrigSelChHF::chargedLcHigh);
+    SETBIT(bit, JTrigSelChHF::jetLcChHighPt);
   }
   return bit;
 }

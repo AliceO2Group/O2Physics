@@ -41,6 +41,7 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "EventFiltering/filterTables.h"
+#include "EventFiltering/Zorro.h"
 
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -104,28 +105,33 @@ struct JetDerivedDataProducerTask {
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Configurable<float> dcaZMax{"dcaZMax", 0.2, "maximum DCAZ selection for tracks - only applied for reassociation"};
 
+  Configurable<std::string> ccdbURL{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> includeTriggers{"includeTriggers", false, "fill the collision information with software trigger decisions"};
+
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::TrackAssoc> perCollisionTrackIndices = aod::track_association::collisionId;
 
   std::map<std::pair<int32_t, int32_t>, int32_t> trackCollisionMapping;
-
-  int runNumber;
-  void init(InitContext const&)
-  {
-    if (doprocessTracksWithCollisionAssociator) {
-      ccdb->setURL(ccdbUrl);
-      ccdb->setCaching(true);
-      ccdb->setLocalObjectValidityChecking();
-
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-      runNumber = 0;
-    }
-  }
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
+  Zorro triggerDecider;
+
+  int runNumber;
+  void init(InitContext const&)
+  {
+    if (doprocessTracksWithCollisionAssociator || includeTriggers) {
+      ccdb->setURL(ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      runNumber = 0;
+      if (doprocessTracksWithCollisionAssociator) {
+        lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+      }
+    }
+  }
 
   void processBunchCrossings(soa::Join<aod::BCs, aod::Timestamps>::iterator const& bc)
   {
@@ -134,17 +140,29 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossings, "produces derived bunch crossing table", false);
 
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>::iterator const& collision)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>::iterator const& collision, soa::Join<aod::BCs, aod::Timestamps> const&)
   {
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw()); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    uint64_t triggerBit = 0;
+    if (includeTriggers) {
+      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
+      triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
+      triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults());
+    }
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisions, "produces derived collision tables", true);
 
-  void processCollisionsWithoutCentralityAndMultiplicity(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  void processCollisionsWithoutCentralityAndMultiplicity(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::BCs, aod::Timestamps> const&)
   {
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw());
+    uint64_t triggerBit = 0;
+    if (includeTriggers) {
+      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
+      triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
+      triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults());
+    }
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit);
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -152,7 +170,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsRun2(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentRun2V0Ms>::iterator const& collision)
   {
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw()); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -160,7 +178,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsALICE3(aod::Collision const& collision)
   {
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, 0);
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, 0, 0);
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(-1);
   }

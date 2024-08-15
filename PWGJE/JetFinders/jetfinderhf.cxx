@@ -56,6 +56,8 @@ struct JetFinderHFTask {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
 
   // track level configurables
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
@@ -66,7 +68,6 @@ struct JetFinderHFTask {
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<double> trackingEfficiency{"trackingEfficiency", 1.0, "tracking efficiency applied to jet finding"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
   // cluster level configurables
@@ -114,9 +115,12 @@ struct JetFinderHFTask {
   JetFinder jetFinder;
   std::vector<fastjet::PseudoJet> inputParticles;
 
+  std::vector<int> triggerMaskBits;
+
   void init(InitContext const&)
   {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
     particleSelection = static_cast<std::string>(particleSelections);
 
@@ -170,7 +174,7 @@ struct JetFinderHFTask {
   template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
   void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& /*originalTracks*/, float minJetPt, float maxJetPt)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
     inputParticles.clear();

@@ -67,8 +67,9 @@ DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
+DECLARE_SOA_COLUMN(TriggerSel, triggerSel, uint64_t);
 DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
@@ -87,7 +88,8 @@ DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
                   jcollision::Multiplicity,
                   jcollision::Centrality,
                   jcollision::EventSel,
-                  jcollision::Alias);
+                  jcollision::Alias,
+                  jcollision::TriggerSel);
 
 using JCollision = JCollisions::iterator;
 
@@ -100,6 +102,7 @@ DECLARE_SOA_TABLE(StoredJCollisions, "AOD1", "JCOLLISION",
                   jcollision::Centrality,
                   jcollision::EventSel,
                   jcollision::Alias,
+                  jcollision::TriggerSel,
                   o2::soa::Marker<1>);
 
 using StoredJCollision = StoredJCollisions::iterator;
@@ -122,6 +125,13 @@ DECLARE_SOA_TABLE(StoredJCollisionPIs, "AOD1", "JCOLLISIONPI",
                   jcollision::CollisionId,
                   o2::soa::Marker<1>);
 
+DECLARE_SOA_TABLE(JCollisionBCs, "AOD", "JCOLLISIONBC",
+                  jcollision::JBCId);
+
+DECLARE_SOA_TABLE(StoredJCollisionBCs, "AOD1", "JCOLLISIONBC",
+                  jcollision::JBCId,
+                  o2::soa::Marker<1>);
+
 DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JCHTRIGSEL",
                   jcollision::ChargedTriggerSel);
 
@@ -141,13 +151,6 @@ DECLARE_SOA_TABLE(JChHFTrigSels, "AOD", "JCHHFTRIGSEL",
 
 DECLARE_SOA_TABLE(StoredJChHFTrigSels, "AOD1", "JCHHFTRIGSEL",
                   jcollision::ChargedHFTriggerSel,
-                  o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(JCollisionBCs, "AOD", "JCOLLISIONBC",
-                  jcollision::JBCId);
-
-DECLARE_SOA_TABLE(StoredJCollisionBCs, "AOD1", "JCOLLISIONBC",
-                  jcollision::JBCId,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(CollisionCounts, "AOD", "COLLCOUNT",
