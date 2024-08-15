@@ -70,6 +70,7 @@ struct kstarqa {
   Configurable<bool> onlyTPC{"onlyTPC", true, "only TPC tracks"};
 
   // Configurables for track selections
+  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -426,7 +427,7 @@ struct kstarqa {
             histos.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
 
             for (int i = 0; i < c_nof_rotations; i++) {
-              float theta2 = rn->Uniform(0, TMath::Pi());
+              float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
               lv4.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi() + theta2, massKa); // for rotated background
               lv5 = lv2 + lv4;
               histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity);

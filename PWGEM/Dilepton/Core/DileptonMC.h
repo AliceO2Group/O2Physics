@@ -113,6 +113,7 @@ struct DileptonMC {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -460,6 +461,7 @@ struct DileptonMC {
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+    fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
   }
 
   o2::ml::OnnxModel* eid_bdt = nullptr;

@@ -68,6 +68,10 @@ struct taskJPsiHf {
   Configurable<float> massDileptonCandMin{"massDileptonCandMin", 1.f, "minimum dilepton mass"};
   Configurable<float> massDileptonCandMax{"massDileptonCandMax", 5.f, "maximum dilepton mass"};
 
+  // Preslices for unsorted indexes
+  PresliceUnsorted<MyRedPairCandidatesSelected> perCollisionDilepton = aod::jpsidmescorr::redJpDmCollId;
+  PresliceUnsorted<MyRedD0CandidatesSelected> perCollisionDmeson = aod::jpsidmescorr::redJpDmCollId;
+
   // histogram for normalisation
   std::shared_ptr<TH1> hCollisions;
   HistogramRegistry registry{"registry"};
@@ -132,11 +136,15 @@ struct taskJPsiHf {
     }
   }
 
-  void processRedJspiD0(MyRedEvents::iterator const& event, MyRedPairCandidatesSelected const& dileptons, MyRedD0CandidatesSelected const& dmesons)
+  void processRedJspiD0(MyRedEvents const& events, MyRedPairCandidatesSelected const& dileptons, MyRedD0CandidatesSelected const& dmesons)
   {
     // Fill the column of collisions with pairs
-    hCollisions->Fill(1.f);
-    runDileptonDmeson(event, dileptons, dmesons);
+    for (auto& event : events) {
+      hCollisions->Fill(1.f);
+      auto groupedDileptonCandidates = dileptons.sliceBy(perCollisionDilepton, event.index());
+      auto groupedDmesonCandidates = dmesons.sliceBy(perCollisionDmeson, event.index());
+      runDileptonDmeson(event, groupedDileptonCandidates, groupedDmesonCandidates);
+    }
   }
 
   void processNormCounter(RedJpDmColCounts const& normCounters)

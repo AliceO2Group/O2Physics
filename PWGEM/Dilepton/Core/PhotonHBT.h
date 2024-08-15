@@ -103,6 +103,7 @@ struct PhotonHBT {
   Configurable<float> maxY{"maxY", 0.8, "maximum rapidity for reconstructed particles"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
   Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
+  Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 5, "difference in global BC required in mixed events"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
@@ -127,6 +128,7 @@ struct PhotonHBT {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
   } eventcuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -227,6 +229,8 @@ struct PhotonHBT {
     delete emh2;
     emh2 = 0x0;
 
+    map_mixed_eventId_to_globalBC.clear();
+
     used_photonIds.clear();
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
@@ -278,6 +282,7 @@ struct PhotonHBT {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{1001, -0.5, 1000.5}}, true);
     if (doprocessTriggerAnalysis) {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
     }
@@ -375,6 +380,7 @@ struct PhotonHBT {
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+    fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
   }
 
   void DefinePCMCut()
@@ -891,6 +897,13 @@ struct PhotonHBT {
             continue;
           }
 
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+          if (diffBC < ndiff_bc_mix) {
+            continue;
+          }
+
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
@@ -915,6 +928,12 @@ struct PhotonHBT {
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+            continue;
+          }
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+          if (diffBC < ndiff_bc_mix) {
             continue;
           }
 
@@ -972,6 +991,12 @@ struct PhotonHBT {
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
             continue;
           }
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+          if (diffBC < ndiff_bc_mix) {
+            continue;
+          }
 
           auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
@@ -999,6 +1024,12 @@ struct PhotonHBT {
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
             continue;
           }
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+          if (diffBC < ndiff_bc_mix) {
+            continue;
+          }
 
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), nll = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons2_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
@@ -1023,6 +1054,7 @@ struct PhotonHBT {
       if (ndiphoton > 0) {
         emh1->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh2->AddCollisionIdAtLast(key_bin, key_df_collision);
+        map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
       }
     } // end of collision loop
   }
@@ -1109,6 +1141,7 @@ struct PhotonHBT {
   MyEMH* emh2 = nullptr;
   std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
+  std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   SliceCache cache;
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emeventId;

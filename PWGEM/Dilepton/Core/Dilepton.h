@@ -102,6 +102,7 @@ struct Dilepton {
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
   Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
+  Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 5, "difference in global BC required in mixed events"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
@@ -130,6 +131,7 @@ struct Dilepton {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -293,6 +295,7 @@ struct Dilepton {
       // fwdfitter.setTGeoMat(false);
     }
 
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{1001, -0.5, 1000.5}}, true);
     if (doprocessTriggerAnalysis) {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
     }
@@ -368,6 +371,7 @@ struct Dilepton {
     emh_neg = 0x0;
 
     map_mixed_eventId_to_qvector.clear();
+    map_mixed_eventId_to_globalBC.clear();
 
     used_trackIds.clear();
     used_trackIds.shrink_to_fit();
@@ -498,6 +502,7 @@ struct Dilepton {
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+    fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
   }
 
   o2::ml::OnnxModel* eid_bdt = nullptr;
@@ -924,6 +929,7 @@ struct Dilepton {
   TEMH* emh_pos = nullptr;
   TEMH* emh_neg = nullptr;
   std::map<std::pair<int, int>, std::vector<std::vector<std::array<float, 2>>>> map_mixed_eventId_to_qvector;
+  std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   std::vector<std::pair<int, int>> used_trackIds;
   int ndf = 0;
@@ -1079,6 +1085,12 @@ struct Dilepton {
         }
 
         auto qvectors_mix = map_mixed_eventId_to_qvector[mix_dfId_collisionId];
+        auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+        uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+        fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+        if (diffBC < ndiff_bc_mix) {
+          continue;
+        }
 
         auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
         auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
@@ -1125,6 +1137,11 @@ struct Dilepton {
             }
 
             auto qvectors_mix = map_mixed_eventId_to_qvector[mix_dfId_collisionId];
+            auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+            uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+            if (diffBC < ndiff_bc_mix) {
+              continue;
+            }
 
             auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
             auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
@@ -1163,6 +1180,7 @@ struct Dilepton {
         if (nmod > 0) {
           map_mixed_eventId_to_qvector[key_df_collision] = qvectors;
         }
+        map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
         emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh_neg->AddCollisionIdAtLast(key_bin, key_df_collision);
       }

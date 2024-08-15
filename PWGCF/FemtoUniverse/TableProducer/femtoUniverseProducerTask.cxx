@@ -357,6 +357,7 @@ struct femtoUniverseProducerTask {
   // for now do not know why
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry cascadeQaRegistry{"CascadeQAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
   int mRunNumber;
   float mMagField;
@@ -484,7 +485,7 @@ struct femtoUniverseProducerTask {
       cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildPIDspecies);
 
       // check if works correctly for bachelor track
-      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::cutContainerType>(&cascadeQaRegistry);
       // invmass cuts
       cascadeCuts.setInvMassLimits(ConfCascadeSelection.ConfCascInvMassLowLimit, ConfCascadeSelection.ConfCascInvMassUpLimit);
 
@@ -1472,8 +1473,10 @@ struct femtoUniverseProducerTask {
       auto groupedV0s = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedV0s);
-      for (auto& track : groupedTracks)
-        recoMcIds.insert(track.mcParticleId());
+      for (auto& track : groupedTracks) {
+        if (trackCuts.isSelectedMinimal(track))
+          recoMcIds.insert(track.mcParticleId());
+      }
     }
 
     // truth
