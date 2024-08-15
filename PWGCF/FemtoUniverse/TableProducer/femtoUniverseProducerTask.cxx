@@ -1051,9 +1051,9 @@ struct femtoUniverseProducerTask {
                     0,  // D0 mass
                     0); // D0bar mass
         const int rowOfPosTrack = outputParts.lastIndex();
-        /*if constexpr (isMC) {
-          fillMCParticle(tracks, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
-        }*/
+        if constexpr (isMC) {
+          fillMCParticle(postrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
+        }
         // int negtrackID = hfCand.prong1().globalIndex();
         int negtrackID = hfCand.prong1Id();
         int rowInPrimaryTrackTableNeg = -1;
@@ -1073,9 +1073,9 @@ struct femtoUniverseProducerTask {
                     0,
                     0);
         const int rowOfNegTrack = outputParts.lastIndex();
-        /*if constexpr (isMC) {
-        fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
-        }*/
+        if constexpr (isMC) {
+          fillMCParticle(negtrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
+        }
         std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
 
         outputParts(outputCollision.lastIndex(),
@@ -1398,6 +1398,21 @@ struct femtoUniverseProducerTask {
     fillPhi<true>(col, tracks);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiMC, "Provide MC data for track Phi analysis", false);
+
+  void processTrackD0MC(aod::FemtoFullCollisionMC const& col,
+                        aod::BCsWithTimestamps const&,
+                        soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                        aod::McCollisions const&,
+                        aod::McParticles const&)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisions<true>(col, tracks);
+    fillTracks<true>(tracks);
+    // fillD0mesons<true>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackD0MC, "Provide MC data for track D0 analysis", false);
 
   void processTrackData(aod::FemtoFullCollision const& col,
                         aod::BCsWithTimestamps const&,
