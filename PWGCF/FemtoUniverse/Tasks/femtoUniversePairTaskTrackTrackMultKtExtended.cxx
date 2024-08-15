@@ -90,6 +90,15 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
     Configurable<float> b{"b", 300.0f, "Parameter 'b' of a linear function 'y = a * x + b'"};
   } lincut;
 
+  /// Table for polynomial 3 cut for TPC Deuteron Sigma
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> ConfIsPol{"ConfIsPol", false, "Enable a separation polynomial 3 curve for clearer TPC Deuteron Sigma"};
+    Configurable<float> A{"A", -52.2f, "Parameter 'A' of a polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
+    Configurable<float> B{"B", 357.7f, "Parameter 'B' of a polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
+    Configurable<float> C{"C", -834.7f, "Parameter 'C' of a polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
+    Configurable<float> D{"D", 705.8f, "Parameter 'D' of a polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
+  } polcut;
+
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   // Filters for selecting particles (both p1 and p2)
   Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
@@ -278,6 +287,20 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
     }
   }
 
+  /// Polynomial 3 cut for clearer TPC Deuteron Sigma
+  bool IsDeuteronNSigmaPolCut(float mom, float nsigmaTPCDe, float nsigmaTOFDe, float tpcSignal)
+  {
+    if (polcut.ConfIsPol == true) {
+      if (tpcSignal > polcut.A * TMath::Power(mom, 3) + polcut.B * TMath::Power(mom, 2) + polcut.C * mom + polcut.D) {
+        return IsDeuteronNSigma(mom, nsigmaTPCDe, nsigmaTOFDe);
+      } else {
+        return false;
+      }
+    } else {
+      return IsDeuteronNSigma(mom, nsigmaTPCDe, nsigmaTOFDe);
+    }
+  }
+
   bool IsParticleNSigma(int8_t particle_number, float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK, float nsigmaTPCDe, float nsigmaTOFDe, float tpcSignal)
   {
     if (particle_number == 1) {
@@ -299,7 +322,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
           break;
         case 1000010020:  // Deuteron+
         case -1000010020: // Deuteron-
-          return IsDeuteronNSigmaLinearCut(mom, nsigmaTPCDe, nsigmaTOFDe, tpcSignal);
+          return IsDeuteronNSigmaPolCut(mom, nsigmaTPCDe, nsigmaTOFDe, tpcSignal);
           break;
         default:
           return false;
@@ -324,7 +347,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
           break;
         case 1000010020:  // Deuteron+
         case -1000010020: // Deuteron-
-          return IsDeuteronNSigmaLinearCut(mom, nsigmaTPCDe, nsigmaTOFDe, tpcSignal);
+          return IsDeuteronNSigmaPolCut(mom, nsigmaTPCDe, nsigmaTOFDe, tpcSignal);
           break;
         default:
           return false;
