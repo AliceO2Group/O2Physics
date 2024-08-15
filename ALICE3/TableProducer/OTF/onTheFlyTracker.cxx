@@ -24,6 +24,7 @@
 ///
 
 #include <utility>
+#include <array>
 
 #include <TGeoGlobalMagField.h>
 #include <TGenPhaseSpace.h>
@@ -35,6 +36,8 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include <TPDGCode.h>
+#include "DCAFitter/DCAFitterN.h"
+#include "Common/Core/RecoDecay.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -45,12 +48,21 @@
 #include "SimulationDataFormat/InteractionSampler.h"
 #include "Field/MagneticField.h"
 
+#include "ITSMFTSimulation/Hit.h"
+#include "ITStracking/Configuration.h"
+#include "ITStracking/IOUtils.h"
+#include "ITStracking/Tracker.h"
+#include "ITStracking/Vertexer.h"
+#include "ITStracking/VertexerTraits.h"
+
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "ALICE3/DataModel/OTFStrangeness.h"
 
 using namespace o2;
 using namespace o2::framework;
+using std::array;
 
 struct OnTheFlyTracker {
   Produces<aod::Collisions> collisions;
@@ -64,6 +76,7 @@ struct OnTheFlyTracker {
   Produces<aod::TracksDCACov> tracksDCACov;
   Produces<aod::CollisionsAlice3> collisionsAlice3;
   Produces<aod::TracksAlice3> TracksAlice3;
+  Produces<aod::UpgradeCascades> upgradeCascades;
 
   // optionally produced, empty (to be tuned later)
   Produces<aod::StoredTracksExtra> tracksExtra; // base table, extend later
@@ -79,7 +92,10 @@ struct OnTheFlyTracker {
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
   Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
-  Configurable<bool> treatXi{"treatXi", false, "Manually decay Xi^{-} and fill tables with daughters"};
+  Configurable<bool> treatXi{"treatXi", false, "Manually decay Xi and fill tables with daughters"};
+  Configurable<bool> findXi{"findXi", false, "if treatXi on, find Xi and fill Tracks table also with Xi"};
+  Configurable<bool> trackXi{"trackXi", false, "if findXi on, attempt to track Xi"};
+  Configurable<float> pixelResolution{"pixelResolution", 2.5e-4, "pixel resolution in centimeters (for OTF strangeness tracking)"};
 
   Configurable<bool> populateTracksDCA{"populateTracksDCA", true, "populate TracksDCA table"};
   Configurable<bool> populateTracksDCACov{"populateTracksDCACov", false, "populate TracksDCACov table"};
@@ -120,8 +136,13 @@ struct OnTheFlyTracker {
   ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
   ConfigurableAxis axisX{"axisX", {250, -50, 200}, "track X (cm)"};
   ConfigurableAxis axisRadius{"axisRadius", {55, 0.01, 100}, "decay radius"};
+  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
+  ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, ""};
 
   using PVertex = o2::dataformats::PrimaryVertex;
+
+  // for secondary vertex finding
+  o2::vertexing::DCAFitterN<2> fitter;
 
   // Class to hold the track information for the O2 vertexing
   class TrackAlice3 : public o2::track::TrackParCov
@@ -132,12 +153,41 @@ struct OnTheFlyTracker {
     TrackAlice3() = default;
     ~TrackAlice3() = default;
     TrackAlice3(const TrackAlice3& src) = default;
-    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1, bool decayDauInput = false) : o2::track::TrackParCov(src), mcLabel{label}, timeEst{t, te}, isDecayDau(decayDauInput) {}
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1, bool decayDauInput = false, bool weakDecayDauInput = false, int isUsedInCascadingInput = 0) : o2::track::TrackParCov(src),
+                                                                                                                                                                                                             mcLabel{label},
+                                                                                                                                                                                                             timeEst{t, te},
+                                                                                                                                                                                                             isDecayDau(decayDauInput),
+                                                                                                                                                                                                             isWeakDecayDau(weakDecayDauInput),
+                                                                                                                                                                                                             isUsedInCascading(isUsedInCascadingInput) {}
     const TimeEst& getTimeMUS() const { return timeEst; }
     int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
     bool isDecayDau;
+    bool isWeakDecayDau;
+    int isUsedInCascading; // 0: not at all, 1: is a cascade, 2: is a bachelor, 3: is a pion, 4: is a proton
   };
+
+  // Helper struct to pass cascade information
+  struct cascadecandidate {
+    int cascadeTrackId; // track index in the Tracks table
+    int positiveId;     // track index in the Tracks table
+    int negativeId;     // track index in the Tracks table
+    int bachelorId;     // track index in the Tracks table
+
+    float dcaV0dau;
+    float dcacascdau;
+    float v0radius;
+    float cascradius;
+    float cascradiusMC;
+
+    // for tracking
+    int findableClusters;
+    int foundClusters;
+
+    float mLambda;
+    float mXi;
+  };
+  cascadecandidate thisCascade;
 
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -164,6 +214,7 @@ struct OnTheFlyTracker {
   std::vector<o2::InteractionRecord> bcData;
   o2::steer::InteractionSampler irSampler;
   o2::vertexing::PVertexer vertexer;
+  std::vector<cascadecandidate> cascadesAlice3;
 
   void init(o2::framework::InitContext&)
   {
@@ -342,6 +393,18 @@ struct OnTheFlyTracker {
       histos.add("hRecoPiFromXi", "hRecoPiFromXi", kTH2F, {axisRadius, axisMomentum});
       histos.add("hRecoPiFromL0", "hRecoPiFromL0", kTH2F, {axisRadius, axisMomentum});
       histos.add("hRecoPrFromL0", "hRecoPrFromL0", kTH2F, {axisRadius, axisMomentum});
+
+      // basic mass histograms to see if we're in business
+      histos.add("hMassLambda", "hMassLambda", kTH1F, {axisLambdaMass});
+      histos.add("hMassXi", "hMassXi", kTH1F, {axisXiMass});
+
+      // OTF strangeness tracking QA
+      histos.add("hFoundVsFindable", "hFoundVsFindable", kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}});
+
+      histos.add("h2dDCAxyCascade", "h2dDCAxyCascade", kTH2F, {axisMomentum, axisDCA});
+      histos.add("h2dDCAxyCascadeBachelor", "h2dDCAxyCascadeBachelor", kTH2F, {axisMomentum, axisDCA});
+      histos.add("h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative", kTH2F, {axisMomentum, axisDCA});
+      histos.add("h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive", kTH2F, {axisMomentum, axisDCA});
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -374,6 +437,18 @@ struct OnTheFlyTracker {
     vertexer.setValidateWithIR(kFALSE);
     vertexer.setBunchFilling(irSampler.getBunchFilling());
     vertexer.init();
+
+    // initialize O2 2-prong fitter
+    fitter.setPropagateToPCA(true);
+    fitter.setMaxR(200.);
+    fitter.setMinParamChange(1e-3);
+    fitter.setMinRelChi2Change(0.9);
+    fitter.setMaxDZIni(1e9);
+    fitter.setMaxDXYIni(4);
+    fitter.setMaxChi2(1e9);
+    fitter.setUseAbsDCA(true);
+    fitter.setWeightedFinalPCA(false);
+    fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE); // such a light detector here
   }
 
   /// Function to decay the xi
@@ -388,7 +463,7 @@ struct OnTheFlyTracker {
     std::vector<double> l0Velocity(3);
     std::vector<double> xiMomentum = {particle.px(), particle.py(), particle.pz()};
     std::vector<double> xiProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
-    double bz = magneticField * (-0.1); // To tesla (sign?!)
+    double bz = magneticField * 0.1; // To tesla
     TRandom3 rand;
     rand.SetSeed(seed);
     double u = rand.Uniform(0, 1);
@@ -396,7 +471,7 @@ struct OnTheFlyTracker {
       xiVelocity[i] = xiMomentum[i] / particle.e();
     }
     double xi_v_tot = particle.p() / particle.e();
-    double xi_ctau = 4.91 / 100; // xi
+    double xi_ctau = 4.91; // xi
     double xi_charge = -1.6022e-19;
     double speedOfLight = 3e+8;
     double xi_v_xy = speedOfLight * sqrt(xiVelocity[0] * xiVelocity[0] + xiVelocity[1] * xiVelocity[1]);
@@ -418,7 +493,7 @@ struct OnTheFlyTracker {
     xiDecay.Generate();
     decayDaughters.push_back(*xiDecay.GetDecay(1));
 
-    double l0_ctau = 7.89 / 100; // lambda
+    double l0_ctau = 7.89; // lambda
     double l0_v_tot = xiDecay.GetDecay(0)->P() / xiDecay.GetDecay(0)->E();
     std::vector<double> l0Daughters = {0.139, 0.938};
     l0Velocity[0] = xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->E();
@@ -493,9 +568,12 @@ struct OnTheFlyTracker {
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
+    int lastTrackIndex = tracksParCov.lastIndex(); // bookkeep the last added track
+
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
     bcData.clear();
+    cascadesAlice3.clear();
 
     o2::dataformats::DCA dcaInfo;
     o2::dataformats::VertexBase vtx;
@@ -545,8 +623,8 @@ struct OnTheFlyTracker {
       if (treatXi) {
         if (mcParticle.pdgCode() == 3312) {
           decayParticle(mcParticle, decayProducts, xiDecayVertex, l0DecayVertex);
-          xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]) * 100;
-          l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]) * 100;
+          xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]);
+          l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]);
         }
       }
 
@@ -589,6 +667,9 @@ struct OnTheFlyTracker {
       if (mcParticle.pt() < minPt) {
         continue;
       }
+
+      o2::track::TrackParCov trackParCov;
+      convertMCParticleToO2Track(mcParticle, trackParCov);
 
       bool isDecayDaughter = false;
       if (mcParticle.getProcess() == 4)
@@ -647,9 +728,9 @@ struct OnTheFlyTracker {
             continue;
           }
           if (isReco[i]) {
-            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
           } else {
-            ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true});
+            ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
           }
         }
 
@@ -663,11 +744,178 @@ struct OnTheFlyTracker {
           if (isReco[2])
             histos.fill(HIST("hRecoPrFromL0"), l0DecayRadius2D, decayProducts[2].Pt());
         }
+
+        // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+        // combine particles into actual Xi candidate
+        // cascade building starts here
+        if (findXi && mcParticle.pdgCode() == 3312 && isReco[0] && isReco[1] && isReco[2]) {
+          // assign indices of the particles we've used
+          // they should be the last ones to be filled, in order:
+          // n-1: proton from lambda
+          // n-2: pion from lambda
+          // n-3: pion from xi
+          thisCascade.positiveId = lastTrackIndex + tracksAlice3.size() - 1;
+          thisCascade.negativeId = lastTrackIndex + tracksAlice3.size() - 2;
+          thisCascade.bachelorId = lastTrackIndex + tracksAlice3.size() - 3;
+
+          // use DCA fitters
+          int nCand = 0;
+          bool dcaFitterOK_V0 = true;
+          try {
+            nCand = fitter.process(xiDaughterTrackParCovs[1], xiDaughterTrackParCovs[2]);
+          } catch (...) {
+            // LOG(error) << "Exception caught in DCA fitter process call!";
+            dcaFitterOK_V0 = false;
+          }
+          if (nCand == 0) {
+            dcaFitterOK_V0 = false;
+          }
+          // V0 found successfully
+          if (dcaFitterOK_V0) {
+            std::array<float, 3> pos;
+            std::array<float, 3> posCascade;
+            std::array<float, 3> posP;
+            std::array<float, 3> negP;
+            std::array<float, 3> bachP;
+
+            o2::track::TrackParCov pTrackAtPCA = fitter.getTrack(1); // proton (positive)
+            o2::track::TrackParCov nTrackAtPCA = fitter.getTrack(0); // pion (negative)
+            pTrackAtPCA.getPxPyPzGlo(posP);
+            nTrackAtPCA.getPxPyPzGlo(negP);
+
+            // get decay vertex coordinates
+            const auto& vtx = fitter.getPCACandidate();
+            for (int i = 0; i < 3; i++) {
+              pos[i] = vtx[i];
+            }
+
+            // calculate basic V0 properties here
+            // DCA to PV taken care of in daughter tracks already, not necessary
+            thisCascade.dcaV0dau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+            thisCascade.v0radius = std::hypot(pos[0], pos[1]);
+            thisCascade.mLambda = RecoDecay::m(array{array{posP[0], posP[1], posP[2]}, array{negP[0], negP[1], negP[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+
+            // go for cascade: create V0 (pseudo)track from reconstructed V0
+            std::array<float, 21> covV = {0.};
+            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+            for (int i = 0; i < 6; i++) {
+              covV[MomInd[i]] = 1e-6;
+              covV[i] = 1e-6;
+            }
+            o2::track::TrackParCov v0Track = o2::track::TrackParCov(
+              {pos[0], pos[1], pos[2]},
+              {posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]},
+              covV, 0, true);
+            v0Track.setAbsCharge(0);
+            v0Track.setPID(o2::track::PID::Lambda);
+
+            // dca fitter step
+            nCand = 0;
+            bool dcaFitterOK_Cascade = true;
+            try {
+              nCand = fitter.process(v0Track, xiDaughterTrackParCovs[0]);
+            } catch (...) {
+              // LOG(error) << "Exception caught in DCA fitter process call!";
+              dcaFitterOK_Cascade = false;
+            }
+            if (nCand == 0) {
+              dcaFitterOK_Cascade = false;
+            }
+
+            // Cascade found successfully
+            if (dcaFitterOK_Cascade) {
+              o2::track::TrackParCov bachelorTrackAtPCA = fitter.getTrack(1);
+
+              const auto& vtxCascade = fitter.getPCACandidate();
+              for (int i = 0; i < 3; i++) {
+                posCascade[i] = vtxCascade[i];
+              }
+
+              // basic properties of the cascade
+              thisCascade.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+              thisCascade.cascradius = std::hypot(posCascade[0], posCascade[1]);
+              bachelorTrackAtPCA.getPxPyPzGlo(bachP);
+
+              thisCascade.mXi = RecoDecay::m(array{array{bachP[0], bachP[1], bachP[2]}, array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
+
+              // initialize cascade track
+              o2::track::TrackParCov cascadeTrack = fitter.createParentTrackParCov();
+              cascadeTrack.setAbsCharge(-1);                // may require more adjustments
+              cascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
+
+              thisCascade.cascradiusMC = xiDecayRadius2D;
+              thisCascade.findableClusters = 0;
+              thisCascade.foundClusters = 0;
+
+              if (trackXi) {
+                // optionally, add the points in the layers before the decay of the Xi
+                // will back-track the perfect MC cascade to relevant layers, find hit, smear and add to smeared cascade
+                for (int i = layers.size() - 1; i >= 0; i--) {
+                  if (thisCascade.cascradiusMC > layers[i]) {
+                    // will add this layer, since cascade decayed after the corresponding radius
+                    thisCascade.findableClusters++; // add to findable
+
+                    // find perfect intercept XYZ
+                    float targetX = 1e+3;
+                    trackParCov.getXatLabR(layers[i], targetX, magneticField);
+                    if (targetX > 999)
+                      continue; // failed to find intercept
+
+                    if (!trackParCov.propagateTo(targetX, magneticField)) {
+                      continue; // failed to propagate
+                    }
+
+                    // get potential cluster position
+                    std::array<float, 3> posClusterCandidate;
+                    trackParCov.getXYZGlo(posClusterCandidate);
+                    float r{std::hypot(posClusterCandidate[0], posClusterCandidate[1])};
+                    float phi{std::atan2(-posClusterCandidate[1], -posClusterCandidate[0]) + o2::its::constants::math::Pi};
+
+                    if (pixelResolution > 1e-8) { // catch zero (though should not really happen...)
+                      phi = gRandom->Gaus(phi, std::asin(pixelResolution / r));
+                      posClusterCandidate[0] = r * std::cos(phi);
+                      posClusterCandidate[1] = r * std::sin(phi);
+                      posClusterCandidate[2] = gRandom->Gaus(posClusterCandidate[2], pixelResolution);
+                    }
+
+                    // towards adding cluster: move to track alpha
+                    double alpha = cascadeTrack.getAlpha();
+                    double xyz1[3]{
+                      TMath::Cos(alpha) * posClusterCandidate[0] + TMath::Sin(alpha) * posClusterCandidate[1],
+                      -TMath::Sin(alpha) * posClusterCandidate[0] + TMath::Cos(alpha) * posClusterCandidate[1],
+                      posClusterCandidate[2]};
+
+                    if (!(cascadeTrack.propagateTo(xyz1[0], magneticField)))
+                      continue;
+                    const o2::track::TrackParametrization<float>::dim2_t hitpoint = {
+                      static_cast<float>(xyz1[1]),
+                      static_cast<float>(xyz1[2])};
+                    const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {pixelResolution * pixelResolution, 0.f, pixelResolution * pixelResolution};
+                    cascadeTrack.update(hitpoint, hitpointcov);
+                    thisCascade.foundClusters++; // add to findable
+                  }
+                }
+              }
+
+              // add cascade track
+              thisCascade.cascadeTrackId = lastTrackIndex + tracksAlice3.size(); // this is the next index to be filled -> should be it
+              tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, false, false, 1});
+
+              if (doXiQA) {
+                histos.fill(HIST("hMassLambda"), thisCascade.mLambda);
+                histos.fill(HIST("hMassXi"), thisCascade.mXi);
+                histos.fill(HIST("hFoundVsFindable"), thisCascade.findableClusters, thisCascade.foundClusters);
+              }
+
+              // add this cascade to vector (will fill cursor later with collision ID)
+              cascadesAlice3.push_back(thisCascade);
+            }
+          }
+        } // end cascade building
+        // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+
         continue; // Not filling the tables with the xi itself
       }
-
-      o2::track::TrackParCov trackParCov;
-      convertMCParticleToO2Track(mcParticle, trackParCov);
 
       if (doExtraQA) {
         histos.fill(HIST("hSimTrackX"), trackParCov.getX());
@@ -793,6 +1041,16 @@ struct OnTheFlyTracker {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
+        if (doXiQA) {
+          if (trackParCov.isUsedInCascading == 1)
+            histos.fill(HIST("h2dDCAxyCascade"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          if (trackParCov.isUsedInCascading == 2)
+            histos.fill(HIST("h2dDCAxyCascadeBachelor"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          if (trackParCov.isUsedInCascading == 3)
+            histos.fill(HIST("h2dDCAxyCascadeNegative"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          if (trackParCov.isUsedInCascading == 4)
+            histos.fill(HIST("h2dDCAxyCascadePositive"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+        }
         tracksDCA(dcaXY, dcaZ);
         if (populateTracksDCACov) {
           tracksDCACov(dcaInfo.getSigmaY2(), dcaInfo.getSigmaZ2());
@@ -869,6 +1127,24 @@ struct OnTheFlyTracker {
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
       TracksAlice3(false);
+    }
+
+    for (const auto& cascade : cascadesAlice3) {
+      upgradeCascades(
+        collisions.lastIndex(), // now we know the collision index -> populate table
+        cascade.cascadeTrackId,
+        cascade.positiveId,
+        cascade.negativeId,
+        cascade.bachelorId,
+        cascade.dcaV0dau,
+        cascade.dcacascdau,
+        cascade.v0radius,
+        cascade.cascradius,
+        cascade.cascradiusMC,
+        cascade.mLambda,
+        cascade.mXi,
+        cascade.findableClusters,
+        cascade.foundClusters);
     }
   }
 };

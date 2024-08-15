@@ -40,7 +40,9 @@ using namespace o2::framework::expressions;
 struct NPCascCandidate {
   int64_t trackGlobID;
   int64_t trackITSID;
+  int64_t collisionID;
   float matchingChi2;
+  float itsClusSize;
   bool isGoodMatch;
   bool isGoodCascade;
   int pdgCodePrimary;
@@ -360,9 +362,9 @@ struct NonPromptCascadeTask {
   }
 
   void processTrackedCascadesMC(CollisionsCandidatesRun3 const& /*collisions*/,
-                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
+                                aod::AssignedTrackedCascades const& trackedCascades, aod::McCollisionLabels const& collisionLabels, aod::Cascades const& /*cascades*/,
                                 aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
-                                aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+                                aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
 
     candidates.clear();
@@ -370,7 +372,6 @@ struct NonPromptCascadeTask {
     for (const auto& trackedCascade : trackedCascades) {
       auto collision = trackedCascade.collision_as<CollisionsCandidatesRun3>();
 
-      bool isOmega{false};
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
@@ -447,11 +448,7 @@ struct NonPromptCascadeTask {
       momenta[1] = {pionTrack.px(), pionTrack.py(), pionTrack.pz()};
       const auto v0mass = RecoDecay::m(momenta, masses);
 
-      ////Omega hypohesis -> rejecting Xi
-      if (TMath::Abs(massXi - constants::physics::MassXiMinus) > 0.005) {
-        isOmega = true;
-        invMassBCOmega->Fill(massOmega);
-      }
+      invMassBCOmega->Fill(massOmega);
 
       invMassBCXi->Fill(massXi);
       invMassBCV0->Fill(v0mass);
@@ -463,18 +460,13 @@ struct NonPromptCascadeTask {
       int bachPionNClusTPC = -1;
       int bachKaonNClusITS = -1;
       int bachPionNClusITS = -1;
-      if (isOmega) {
-        bachKaonNClusTPC = bachelor.tpcNClsFound();
-        bachKaonNClusITS = bachelor.itsNCls();
-      }
+
       bachPionNClusTPC = bachelor.tpcNClsFound(); /// by default cascade = Xi
       bachPionNClusITS = bachelor.itsNCls();      /// by default cascade = Xi
 
       bool bachKaonHasTOF = 0;
       bool bachPionHasTOF = 0;
-      if (isOmega) {
-        bachKaonHasTOF = bachelor.hasTOF();
-      }
+
       bachPionHasTOF = bachelor.hasTOF();
 
       // if (!bachelor.hasTOF() && !ptrack.hasTOF() && !ntrack.hasTOF()) {
@@ -496,22 +488,13 @@ struct NonPromptCascadeTask {
       // QA PID
       float nSigmaTPC[nParticles]{bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(), protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi()};
 
-      if (isOmega) {
-        if (bachelor.hasTPC()) {
-          LOG(debug) << "TPCSignal bachelor " << bachelor.sign() << "/" << bachelor.tpcInnerParam() << "/" << bachelor.tpcSignal();
-          if (nSigmaTPC[0] < cfgCutsPID->get(0u, 0u) || nSigmaTPC[0] > cfgCutsPID->get(0u, 1u)) {
-            continue;
-          }
-        }
-        registry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
-      }
-
-      if (bachelor.hasTPC()) {
+      if (bachelor.hasTPC()) { // same cuts for Omega and Xi
         LOG(debug) << "TPCSignal bachelor " << bachelor.sign() << "/" << bachelor.tpcInnerParam() << "/" << bachelor.tpcSignal();
-        if (nSigmaTPC[1] < cfgCutsPID->get(1u, 0u) || nSigmaTPC[1] > cfgCutsPID->get(1u, 1u)) {
+        if (nSigmaTPC[0] < cfgCutsPID->get(0u, 0u) || nSigmaTPC[0] > cfgCutsPID->get(0u, 1u)) {
           continue;
         }
       }
+      registry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
       registry.fill(HIST("h_PIDcutsXi"), 3, massXi);
 
       LOG(debug) << "TPCSignal protonTrack " << protonTrack.sign() << "/" << protonTrack.tpcInnerParam() << "/" << protonTrack.tpcSignal();
@@ -529,11 +512,9 @@ struct NonPromptCascadeTask {
 
       registry.fill(HIST("h_PIDcutsXi"), 5, massXi);
 
-      if (isOmega) {
-        registry.fill(HIST("h_PIDcutsOmega"), 5, massOmega);
-        invMassACOmega->Fill(massOmega);
-        registry.fill(HIST("h_massvspt_Omega"), massOmega, track.pt());
-      }
+      registry.fill(HIST("h_PIDcutsOmega"), 5, massOmega);
+      invMassACOmega->Fill(massOmega);
+      registry.fill(HIST("h_massvspt_Omega"), massOmega, track.pt());
 
       registry.fill(HIST("h_PIDcutsXi"), 5, massXi);
 
@@ -544,7 +525,7 @@ struct NonPromptCascadeTask {
       registry.fill(HIST("h_massvspt_V0"), v0mass, track.pt());
 
       motherDCA mDCA;
-      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, isOmega, mDCA);
+      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, true, mDCA); // always filling in MC
 
       LOGF(debug, "protonTrack (id: %d, pdg: %d) has mother %d", protonTrack.mcParticleId(),
            protonTrack.mcParticle().pdgCode(), protonTrack.mcParticle().has_mothers() ? protonTrack.mcParticle().mothersIds()[0] : -1);
@@ -558,7 +539,7 @@ struct NonPromptCascadeTask {
         LOG(debug) << "v0 with PDG code: " << v0part.pdgCode();
       }
       daughtersDCA dDCA;
-      fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
+      fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, true, dDCA); // always filling in MC
 
       bool isGoodCascade = false;
 
@@ -582,7 +563,7 @@ struct NonPromptCascadeTask {
 
       bool isGoodMatch = ((motherParticleID == ITStrack.mcParticleId())) ? true : false;
 
-      int pdgCodePrimary = -1;
+      int pdgCodePrimary = 0;
       if (isGoodCascade && isGoodMatch) {
         if (track.mcParticle().has_mothers()) {
           const auto primary = track.mcParticle().mothers_as<aod::McParticles>()[0];
@@ -590,7 +571,7 @@ struct NonPromptCascadeTask {
         }
       }
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.matchingChi2(), isGoodMatch, isGoodCascade, pdgCodePrimary,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), isGoodMatch, isGoodCascade, pdgCodePrimary,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -616,8 +597,10 @@ struct NonPromptCascadeTask {
       }
       auto particle = mcParticles.iteratorAt(mcParticleId[i]);
       auto& c = candidates[i];
+      auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
+      auto label = collisionLabels.iteratorAt(c.collisionID);
 
-      NPCTableMC(c.matchingChi2, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
+      NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
                  c.pvX, c.pvY, c.pvZ,
                  c.cascPt, c.cascEta, c.cascPhi,
                  c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
@@ -629,7 +612,7 @@ struct NonPromptCascadeTask {
                  c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
                  c.protonHasTOF, c.pionHasTOF, c.bachKaonHasTOF, c.bachPionHasTOF,
                  c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                 particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
+                 particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(), mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == label.mcCollisionId());
     }
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
@@ -825,7 +808,7 @@ struct NonPromptCascadeTask {
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.matchingChi2(), 0, 0, -1,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), 0, 0, -1,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -841,7 +824,7 @@ struct NonPromptCascadeTask {
 
     for (auto& c : candidates) {
 
-      NPCTable(c.matchingChi2,
+      NPCTable(c.matchingChi2, c.itsClusSize,
                c.pvX, c.pvY, c.pvZ,
                c.cascPt, c.cascEta, c.cascPhi,
                c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,

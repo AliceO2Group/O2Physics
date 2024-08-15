@@ -164,7 +164,7 @@ struct AssociateMCInfoPhoton {
 
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
-        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
+        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
         binned_gen_pt(genGamma, genPi0, genEta);

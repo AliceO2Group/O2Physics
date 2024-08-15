@@ -123,7 +123,6 @@ struct lnnRecoTask {
   Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  // Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -150,12 +149,12 @@ struct lnnRecoTask {
   Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
 
   // histogram axes
-  ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
+  ConfigurableAxis rigidityBins{"rigidityBins", {200, -6.f, 6.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
   ConfigurableAxis dEdxBins{"dEdxBins", {1000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
   ConfigurableAxis centBins{"centBins", {100, 0.f, 100.f}, "Binning for centrality"};
-  ConfigurableAxis TritMomBins{"TritMom", {100, 0.f, 20.f}, "Binning for Triton TPC momentum"};
+  ConfigurableAxis TritMomBins{"TritMom", {100, 0.f, 6.f}, "Binning for Triton TPC momentum"};
 
   // std vector of candidates
   std::vector<lnnCandidate> lnnCandidates;
@@ -419,7 +418,7 @@ struct lnnRecoTask {
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       lnnCandidates.push_back(lnnCand);
 
-      if (isAnti3H) {
+      if (is3H) {
         hdEdx3HTPCMom->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
       }
     }

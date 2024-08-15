@@ -85,12 +85,19 @@ DECLARE_SOA_COLUMN(etaXcandidate, EtaXcandidate, float);
 DECLARE_SOA_COLUMN(massJpsicandidate, MJpsicandidate, float);
 DECLARE_SOA_COLUMN(massDipioncandidate, MDipioncandidate, float);
 DECLARE_SOA_COLUMN(pTJpsicandidate, PtJpsicandidate, float);
+DECLARE_SOA_COLUMN(pTDipioncandidate, PtDipioncandidate, float);
 DECLARE_SOA_COLUMN(massDiff, Q, float);
 DECLARE_SOA_COLUMN(angDistPion1, DeltaR1, float);
 DECLARE_SOA_COLUMN(angDistPion2, DeltaR2, float);
 DECLARE_SOA_COLUMN(cosDileptonDipion, CosDileptonDipion, float);
-DECLARE_SOA_COLUMN(dcaxy, DcaXY, float);
-DECLARE_SOA_COLUMN(dcaz, DcaZ, float);
+DECLARE_SOA_COLUMN(dcaxyPion1, DcaXYPion1, float);
+DECLARE_SOA_COLUMN(dcazPion1, DcaZPion1, float);
+DECLARE_SOA_COLUMN(dcaxyPion2, DcaXYPion2, float);
+DECLARE_SOA_COLUMN(dcazPion2, DcaZPion2, float);
+DECLARE_SOA_COLUMN(pTPion1, PtPion1, float);
+DECLARE_SOA_COLUMN(pTPion2, PtPion2, float);
+DECLARE_SOA_COLUMN(dileptonSign, DileptonSign, int);
+DECLARE_SOA_COLUMN(ditrackSign, DitrackSign, int);
 
 } // namespace dqanalysisflags
 
@@ -100,7 +107,7 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBar
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
-DECLARE_SOA_TABLE(XCandidates, "AOD", "DQX3872", dqanalysisflags::massXcandidate, dqanalysisflags::pTXcandidate, dqanalysisflags::rapidityXcandidate, dqanalysisflags::etaXcandidate, dqanalysisflags::massJpsicandidate, dqanalysisflags::massDipioncandidate, dqanalysisflags::pTJpsicandidate, dqanalysisflags::massDiff, dqanalysisflags::angDistPion1, dqanalysisflags::angDistPion2, dqanalysisflags::cosDileptonDipion, dqanalysisflags::dcaxy, dqanalysisflags::dcaz);
+DECLARE_SOA_TABLE(XCandidates, "AOD", "DQX3872", dqanalysisflags::massXcandidate, dqanalysisflags::pTXcandidate, dqanalysisflags::rapidityXcandidate, dqanalysisflags::etaXcandidate, dqanalysisflags::massJpsicandidate, dqanalysisflags::massDipioncandidate, dqanalysisflags::pTJpsicandidate, dqanalysisflags::pTDipioncandidate, dqanalysisflags::massDiff, dqanalysisflags::angDistPion1, dqanalysisflags::angDistPion2, dqanalysisflags::cosDileptonDipion, dqanalysisflags::dcaxyPion1, dqanalysisflags::dcazPion1, dqanalysisflags::dcaxyPion2, dqanalysisflags::dcazPion2, dqanalysisflags::pTPion1, dqanalysisflags::pTPion2, dqanalysisflags::dileptonSign, dqanalysisflags::ditrackSign);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -1949,11 +1956,10 @@ struct AnalysisDileptonTrackTrack {
             if (t1.isBarrelSelected() & (uint32_t(1) << (iTrackCut + 1)) && t2.isBarrelSelected() & (uint32_t(1) << (iTrackCut + 1))) {
               fHistMan->FillHistClass(Form("DitrackSelected_%s_%s", fDitrackCut.GetName(), (*cutname).Data()), fValuesDitrack);
               if (fQuadrupletCut.IsSelected(fValuesQuadruplet)) {
+                XTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kRap], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kPairMass], fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kPairPt], fValuesQuadruplet[VarManager::kDitrackPt], fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kCosthetaDileptonDitrack], fValuesQuadruplet[VarManager::kTrackDCAxyProng1], fValuesQuadruplet[VarManager::kTrackDCAzProng1], fValuesQuadruplet[VarManager::kTrackDCAxyProng2], fValuesQuadruplet[VarManager::kTrackDCAzProng2], fValuesQuadruplet[VarManager::kPt1], fValuesQuadruplet[VarManager::kPt2], dilepton.sign(), t1.sign() + t2.sign());
                 if (fIsUnlikeSignDilepton) {
                   if (fIsUnlikeSignDitrack) {
                     fHistMan->FillHistClass(Form("QuadrupletSEUSUS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
-                    XTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kRap], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kPairMass], fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kPairPt], fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kCosthetaDileptonDitrack], fValuesQuadruplet[VarManager::kTrackDCAxy], fValuesQuadruplet[VarManager::kTrackDCAz]);
-
                   } else {
                     fHistMan->FillHistClass(Form("QuadrupletSEUSLS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
                   }

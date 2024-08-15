@@ -21,8 +21,11 @@ namespace o2::aod
 {
 namespace filtering
 {
-DECLARE_SOA_COLUMN(He, hasHe, bool);             //!
+DECLARE_SOA_COLUMN(H2, hasH2, bool);             //! deuteron trigger for the helium normalisation (to be downscaled)
+DECLARE_SOA_COLUMN(He, hasHe, bool);             //! helium
 DECLARE_SOA_COLUMN(H3L3Body, hasH3L3Body, bool); //! hypertriton 3body
+DECLARE_SOA_COLUMN(ITSextremeIonisation, hasITSextremeIonisation, bool); //! ITS extreme ionisation
+DECLARE_SOA_COLUMN(ITSmildIonisation, hasITSmildIonisation, bool);       //! ITS mild ionisation (normalisation of the extreme ionisation), to be downscaled
 
 // diffraction
 DECLARE_SOA_COLUMN(UDdiffSmall, hasDiffSmall, bool); //! Double Gap events, <= 3 prongs
@@ -157,7 +160,8 @@ DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);     //! CEFP bcrange
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
-                  filtering::He, filtering::H3L3Body);
+                  filtering::H2, filtering::He, filtering::H3L3Body, filtering::ITSmildIonisation,
+                  filtering::ITSextremeIonisation);
 using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction

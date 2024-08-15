@@ -64,6 +64,7 @@ struct CreateResolutionMap {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
 
   struct : ConfigurableGroup {
     std::string prefix = "electroncut_group";
@@ -117,10 +118,10 @@ struct CreateResolutionMap {
     const AxisSpec axis_deta{500, -0.5, +0.5, "#eta_{l}^{gen.} - #eta_{l}^{rec.}"};
     const AxisSpec axis_dphi{500, -0.5, +0.5, "#varphi_{l}^{gen.} - #varphi_{l}^{rec.} (rad.)"};
 
-    registry.add("Electron/Ptgen_RelDeltaPt", "correlation", kTH2F, {{axis_pt_gen}, {axis_dpt}}, false);
-    registry.add("Electron/Ptgen_DeltaEta", "correlation", kTH2F, {{axis_pt_gen}, {axis_deta}}, false);
-    registry.add("Electron/Ptgen_DeltaPhi_Pos", "correlation", kTH2F, {{axis_pt_gen}, {axis_dphi}}, false);
-    registry.add("Electron/Ptgen_DeltaPhi_Neg", "correlation", kTH2F, {{axis_pt_gen}, {axis_dphi}}, false);
+    registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
+    registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
+    registry.add("Electron/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
+    registry.add("Electron/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
     registry.addClone("Electron/", "StandaloneMuon/");
     registry.addClone("Electron/", "GlobalMuon/");
   }
@@ -329,12 +330,20 @@ struct CreateResolutionMap {
         continue;
       }
 
+      auto mccollision = collision.template mcCollision_as<aod::McCollisions>();
+      if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
+        continue;
+      }
+
       auto tracks_per_coll = tracks.sliceBy(perCollision_mid, collision.globalIndex());
       for (auto& track : tracks_per_coll) {
         if (!track.has_mcParticle()) {
           continue;
         }
         auto mctrack = track.template mcParticle_as<aod::McParticles>();
+        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+          continue;
+        }
         if (abs(mctrack.pdgCode()) != 11 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           continue;
         }
@@ -360,6 +369,9 @@ struct CreateResolutionMap {
           continue;
         }
         auto mctrack = muon.template mcParticle_as<aod::McParticles>();
+        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+          continue;
+        }
         if (abs(mctrack.pdgCode()) != 13 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           continue;
         }
@@ -373,6 +385,9 @@ struct CreateResolutionMap {
           continue;
         }
         auto mctrack = muon.template mcParticle_as<aod::McParticles>();
+        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+          continue;
+        }
         if (abs(mctrack.pdgCode()) != 13 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           continue;
         }

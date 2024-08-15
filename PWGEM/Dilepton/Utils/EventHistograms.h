@@ -18,7 +18,7 @@ using namespace o2::framework;
 
 namespace o2::aod::pwgem::dilepton::utils::eventhistogram
 {
-const int nbin_ev = 13;
+const int nbin_ev = 14;
 template <const int nmod = -1>
 void addEventHistograms(HistogramRegistry* fRegistry)
 {
@@ -35,8 +35,9 @@ void addEventHistograms(HistogramRegistry* fRegistry)
   hCollisionCounter->GetXaxis()->SetBinLabel(9, "Is Vertex ITS-TPC-TOF");
   hCollisionCounter->GetXaxis()->SetBinLabel(10, "sel8");
   hCollisionCounter->GetXaxis()->SetBinLabel(11, "|Z_{vtx}| < 10 cm");
-  hCollisionCounter->GetXaxis()->SetBinLabel(12, "Calibrated Q vector");
-  hCollisionCounter->GetXaxis()->SetBinLabel(13, "accepted");
+  hCollisionCounter->GetXaxis()->SetBinLabel(12, "NoCollInTimeRangeStandard");
+  hCollisionCounter->GetXaxis()->SetBinLabel(13, "Calibrated Q vector");
+  hCollisionCounter->GetXaxis()->SetBinLabel(14, "accepted");
 
   fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
   fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
@@ -45,9 +46,13 @@ void addEventHistograms(HistogramRegistry* fRegistry)
   fRegistry->add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", kTH1F, {{110, 0, 110}}, false);
   fRegistry->add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", kTH1F, {{110, 0, 110}}, false);
   fRegistry->add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", kTH1F, {{110, 0, 110}}, false);
+  fRegistry->add("Event/before/hCentFT0A_HMpp", "hCentFT0A for HM pp;centrality FT0A (%)", kTH1F, {{100, 0, 1}}, false);
+  fRegistry->add("Event/before/hCentFT0C_HMpp", "hCentFT0C for HM pp;centrality FT0C (%)", kTH1F, {{100, 0, 1}}, false);
+  fRegistry->add("Event/before/hCentFT0M_HMpp", "hCentFT0M for HM pp;centrality FT0M (%)", kTH1F, {{100, 0, 1}}, false);
   fRegistry->add("Event/before/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", kTH2F, {{110, 0, 110}, {600, 0, 6000}}, false);
   fRegistry->add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
-  fRegistry->add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", kTH2F, {{60, 0, 60000}, {2000, 0, 20000}}, false);
+  fRegistry->add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", kTH2F, {{60, 0, 60000}, {200, 0, 20000}}, false);
+  fRegistry->add("Event/before/hNTracksPVvsOccupancy", "hNTracksPVvsOccupancy;N_{track} to PV;N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
   fRegistry->add("Event/before/hSpherocity", "hSpherocity;spherocity", kTH1F, {{100, 0, 1}}, false);
 
   if constexpr (nmod == 2) { // Q2
@@ -182,6 +187,9 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
   if (abs(collision.posZ()) < 10.0) {
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 11.0);
   }
+  if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 12.0);
+  }
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV());
@@ -190,9 +198,13 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0A"), collision.centFT0A());
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0C"), collision.centFT0C());
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0M"), collision.centFT0M());
+  fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0A_HMpp"), collision.centFT0A());
+  fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0C_HMpp"), collision.centFT0C());
+  fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0M_HMpp"), collision.centFT0M());
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0CvsMultNTracksPV"), collision.centFT0C(), collision.multNTracksPV());
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsMultNTracksPV"), collision.multFT0C(), collision.multNTracksPV());
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsOccupancy"), collision.multFT0C(), collision.trackOccupancyInTimeRange());
+  fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hNTracksPVvsOccupancy"), collision.multNTracksPV(), collision.trackOccupancyInTimeRange());
 
   if constexpr (nmod == 2) { // Q2
     std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};

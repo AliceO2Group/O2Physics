@@ -48,6 +48,16 @@ struct selectedFrames : public IRFrame {
   int GetNum() { return numSameTriggerInNearbyBCs; }
 };
 
+int DoBCSubraction(ULong64_t bc1, ULong64_t bc2)
+{
+  if (bc1 > bc2) {
+    return bc1 - bc2;
+  } else {
+    ULong64_t bcsub = bc2 - bc1;
+    return -static_cast<int>(bcsub);
+  }
+}
+
 bool isClose(selectedFrames a, selectedFrames b, ULong64_t bcDiffTolerance)
 {
   if (a.getMin() > b.getMax() + bcDiffTolerance || a.getMax() < b.getMin() - bcDiffTolerance)
@@ -143,8 +153,8 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
 
   // Checks for BC difference between original and skimming data, and the ratio of triggers which have BCdiff==0
   TH1D hPairedNumCounterTotal("hPairedNumCounterTotal", "hPairedNumCounterTotal", 10, -0.5, 9.5);
-  TH1D hBCDiffAO2DTotal("hBCDiffAO2DTotal", "hBCDiffAO2DTotal", 21, -10.5, 10.5);
-  TH1D hBCDiffEvSelTotal("hBCDiffEvSelTotal", "hBCDiffEvSelTotal", 21, -10.5, 10.5);
+  TH1D hBCDiffAO2DTotal("hBCDiffAO2DTotal", "hBCDiffAO2DTotal", 201, -100.5, 100.5);
+  TH1D hBCDiffEvSelTotal("hBCDiffEvSelTotal", "hBCDiffEvSelTotal", 201, -100.5, 100.5);
 
   // Readin labels
   TFile AnaFile(AnaFileName.c_str(), "READ");
@@ -164,7 +174,7 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
   TFile skimmedFile(skimmedFileName.c_str(), "READ");
   std::vector<std::string> sel_labels;
   std::vector<int> numOriginal, numSkimmed, numOriginalSingle, numSkimmedSingle, numOriginalDouble, numSkimmedDouble, numOriginalMultiple, numSkimmedMultiple;
-  std::vector<int> numpair, numpairedBCAO2D, numpairedBCEvSel;
+  std::vector<int> numpair, numpairedBCAO2D, numpairedBCEvSel, maxDeltaBCAO2D, maxDeltaBCEvSel;
   for (int i = 0; i < labels.size(); i++) {
     // std::cout << "i:" << i << std::endl;
     ULong64_t trigger0Bit = 0, trigger1Bit = 0;
@@ -178,7 +188,7 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
     // For Original dataset
     std::vector<bcTuple> bcSet;
     std::vector<ULong64_t> bcFullSet;
-    int noriginal{0}, nskimmed{0}, noriginalsingle{0}, nskimmedsingle{0}, noriginaldouble{0}, nskimmeddouble{0}, noriginalmultiple{0}, nskimmedmultiple{0};
+    int noriginal{0}, nskimmed{0}, noriginalsingle{0}, nskimmedsingle{0}, noriginaldouble{0}, nskimmeddouble{0}, noriginalmultiple{0}, nskimmedmultiple{0}, maxdiffBCAO2D{0}, maxdiffBCEvSel{0};
     auto originalFrames = getSelectedFrames(originalFile, trigger0Bit, trigger1Bit);
     checkNearbyBCs(originalFrames, bcDiffTolerance);
     noriginal = originalFrames.size();
@@ -220,7 +230,7 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
     numSkimmedMultiple.push_back(nskimmedmultiple);
 
     // Check BC differences
-    int npair{0}, npairedBCAO2D{0}, npairedBCEvSel{0};
+    int npair{0}, npairedBCAO2D{0}, npairedBCEvSel{0}, maxdeltaBCAO2D{0}, maxdeltaBCEvSel{0};
     int firstID = 0;
     for (auto frame : originalFrames) {
       if (frame.selMask[0] & trigger0Bit || frame.selMask[1] & trigger1Bit) {
@@ -255,8 +265,12 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
         }
         if (n == 1) {
           npair++;
-          hBCDiffAO2DTotal.Fill(frame.bcAO2D - skimmedbcs[0].bcAO2D);
-          hBCDiffEvSelTotal.Fill(frame.bcEvSel - skimmedbcs[0].bcEvSel);
+          int bcdiffAO2D = DoBCSubraction(frame.bcAO2D, skimmedbcs[0].bcAO2D);
+          int bcdiffEvSel = DoBCSubraction(frame.bcEvSel, skimmedbcs[0].bcEvSel);
+          hBCDiffAO2DTotal.Fill(bcdiffAO2D);
+          hBCDiffEvSelTotal.Fill(bcdiffEvSel);
+          maxdiffBCAO2D = std::max(std::abs(maxdiffBCAO2D), bcdiffAO2D);
+          maxdiffBCEvSel = std::max(std::abs(maxdiffBCEvSel), bcdiffEvSel);
           if (frame.bcAO2D == skimmedbcs[0].bcAO2D) {
             npairedBCAO2D++;
           }
@@ -270,6 +284,8 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
     numpair.push_back(npair);
     numpairedBCAO2D.push_back(npairedBCAO2D);
     numpairedBCEvSel.push_back(npairedBCEvSel);
+    maxDeltaBCAO2D.push_back(maxdiffBCAO2D);
+    maxDeltaBCEvSel.push_back(maxdiffBCEvSel);
   }
   originalFile.Close();
   skimmedFile.Close();
@@ -292,6 +308,8 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
 
   TH1D hPairedBCAO2DRatio("hPairedBCAO2DRatio", (runNumber + " One-to-One Pairs;; Pairs with same BCAO2D / Total").data(), sel_labels.size(), 0, sel_labels.size());
   TH1D hPairedBCEvSelRatio("hPairedBCEvSelRatio", (runNumber + " One-to-One Pairs;; Pairs with same BCEvSel / Total").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hMaxDiffBCAO2D("hMaxDiffBCAO2D", (runNumber + " One-to-One Pairs;;|#DeltaBCAO2D|_{max}").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hMaxDiffBCEvSel("hMaxDiffBCEvSel", (runNumber + " One-to-One Pairs;;|#DeltaBCEvSel|_{max}").data(), sel_labels.size(), 0, sel_labels.size());
 
   for (int i = 0; i < sel_labels.size(); i++) {
     hOriginalTotal.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
@@ -342,6 +360,11 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
       hPairedBCAO2DRatio.SetBinContent(i + 1, static_cast<double>(numpairedBCAO2D[i]) / numpair[i]);
       hPairedBCEvSelRatio.SetBinContent(i + 1, static_cast<double>(numpairedBCEvSel[i]) / numpair[i]);
     }
+
+    hMaxDiffBCAO2D.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hMaxDiffBCEvSel.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hMaxDiffBCAO2D.SetBinContent(i + 1, maxDeltaBCAO2D[i]);
+    hMaxDiffBCEvSel.SetBinContent(i + 1, maxDeltaBCEvSel[i]);
   }
 
   TFile fout(outputFileName, "UPDATE");
@@ -365,9 +388,12 @@ void checkDuplicateTriggerAndBCs(std::string AnaFileName = "AnalysisResults.root
   hBCDiffEvSelTotal.Write();
   hPairedBCAO2DRatio.Write();
   hPairedBCEvSelRatio.Write();
+  hMaxDiffBCAO2D.Write();
+  hMaxDiffBCEvSel.Write();
   fout.Close();
 }
 
+// Detailed checks for specific trigger
 void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root", std::string skimmedFileName = "bcRanges_fullrun_skimmed.root")
 {
   //---------------------------------For specific trigger----------------------------------
@@ -386,8 +412,8 @@ void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root
   hMultiPairCheck.GetXaxis()->SetBinLabel(3, "Same AO2D BC");
   hMultiPairCheck.GetXaxis()->SetBinLabel(4, "Same EvSel BC");
   hMultiPairCheck.GetXaxis()->SetBinLabel(5, "Same Both BC");
-  TH1D hBCDiffAO2D("hBCDiffAO2D", "hBCDiffAO2D", 21, -10.5, 10.5);
-  TH1D hBCDiffEvSel("hBCDiffEvSel", "hBCDiffEvSel", 21, -10.5, 10.5);
+  TH1D hBCDiffAO2D("hBCDiffAO2D", "hBCDiffAO2D", 2001, -1000.5, 1000.5);
+  TH1D hBCDiffEvSel("hBCDiffEvSel", "hBCDiffEvSel", 2001, -1000.5, 1000.5);
 
   TH1D hBCOriginal("hBCOriginal", "hBCOriginal", 4, 0.5, 4.5);
   hBCOriginal.GetXaxis()->SetBinLabel(1, "Total");
@@ -465,8 +491,8 @@ void checkBCrangesSkimming(std::string originalFileName = "bcRanges_fullrun.root
         // std::cout << "Trigger not found!!!" << std::endl;
       } else if (n == 1) {
         hSinglePairCheck.Fill(1);
-        hBCDiffAO2D.Fill(frame.bcAO2D - skimmedbcs[0].bcAO2D);
-        hBCDiffEvSel.Fill(frame.bcEvSel - skimmedbcs[0].bcEvSel);
+        hBCDiffAO2D.Fill(DoBCSubraction(frame.bcAO2D, skimmedbcs[0].bcAO2D));
+        hBCDiffEvSel.Fill(DoBCSubraction(frame.bcEvSel, skimmedbcs[0].bcEvSel));
         if (frame.bcAO2D == skimmedbcs[0].bcAO2D) {
           hSinglePairCheck.Fill(2);
         }

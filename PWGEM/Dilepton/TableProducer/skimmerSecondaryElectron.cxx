@@ -84,6 +84,7 @@ struct skimmerSecondaryElectron {
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +4.0, "max. TPC n sigma for electron inclusion"};
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0280, "intercept for m vs. phiv"};
+  Configurable<float> mee_min{"mee_min", 0.0f, "minimum mee to distinguish photon conversion and dalitz decay"};
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -122,7 +123,7 @@ struct skimmerSecondaryElectron {
       fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFbeta", "TOF beta;p_{in} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
-      fRegistry.add("Track/h1overTOFbeta", "TOF beta;p_{in} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {1000, 0.8, 1.8}}, false);
+      fRegistry.add("Track/h1overTOFbeta", "TOF beta;p_{in} (GeV/c);1/#beta", kTH2F, {{1000, 0, 10}, {1000, 0.8, 1.8}}, false);
       fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -133,7 +134,7 @@ struct skimmerSecondaryElectron {
       fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
       fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
       fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-      fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
+      fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {32, 0, 16}}, false);
       fRegistry.add("Pair/hMvsPhiV", "mee vs. phiv;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0, 0.1}}, false);
     }
   }
@@ -304,7 +305,7 @@ struct skimmerSecondaryElectron {
         fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
         fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
         fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-        fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())));
+        fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
         fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
         fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
@@ -360,11 +361,12 @@ struct skimmerSecondaryElectron {
         float mee = v12.M();
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), neg.px(), neg.py(), neg.pz(), pos.sign(), neg.sign(), d_bz);
 
-        if (mee > slope * phiv + intercept) { // select phocon conversions
+        if (mee < mee_min || slope * phiv + intercept < mee) { // select phocon conversions
           continue;
         }
-        fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
-
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
+        }
         fillTrackTable(collision, pos);
         fillTrackTable(collision, neg);
         npair++;
@@ -420,11 +422,12 @@ struct skimmerSecondaryElectron {
         float mee = v12.M();
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), neg.px(), neg.py(), neg.pz(), pos.sign(), neg.sign(), d_bz);
 
-        if (mee > slope * phiv + intercept) { // select phocon conversions
+        if (mee < mee_min || slope * phiv + intercept < mee) { // select phocon conversions
           continue;
         }
-        fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
-
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
+        }
         fillTrackTable(collision, pos);
         fillTrackTable(collision, neg);
         npair++;
@@ -477,7 +480,7 @@ struct AssociateMCInfoSecondaryElectron {
       auto mcCollision = collision.mcCollision();
 
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
-        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
+        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }
@@ -603,7 +606,7 @@ struct AssociateMCInfoSecondaryElectron {
     fCounters[1] = 0;
   }
 
-  void processDummy(MyCollisionsMC const&) {}
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(AssociateMCInfoSecondaryElectron, processMC, "create em mc event table for Electron", false);
   PROCESS_SWITCH(AssociateMCInfoSecondaryElectron, processDummy, "processDummy", true);
