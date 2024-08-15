@@ -827,6 +827,10 @@ struct LumiStabilityTask {
         } else {
           histos.fill(HIST("FT0/bcVertexTriggerPP"), localBC);
         }
+        if (pastActivityFT0TriggerA == false || pastActivityFT0TriggerC == false) {
+          histos.fill(HIST("FT0/hCounts"), 3);
+          histos.fill(HIST("FT0/bcVertexTriggerBothSidesPP"), localBC);
+        }
       } // vertex true
 
       if (sCentral) {
