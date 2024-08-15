@@ -1149,6 +1149,8 @@ struct ProbeThirdTrack {
     Configurable<LabeledArray<double>> mlCutsKaKaFromDsOrDplus{"mlCutsKaKaFromDsOrDplus", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from Ds or D+ decays"};
     Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
   } mlConfig;
+  Configurable<float> ptCandMin{"ptCandMin", 0.f, "Minimum candidate pt for THnSparse filling"};
+
   ConfigurableAxis axisPtProbe{"axisPtProbe", {VARIABLE_WIDTH, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Probe"};
   ConfigurableAxis axisPtTag{"axisPtTag", {VARIABLE_WIDTH, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Tag"};
   ConfigurableAxis axisPtD{"axisPtD", {VARIABLE_WIDTH, 0.f, 0.5f, 1.f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.f, 11.f, 12.f, 14.f, 16.f, 20.f, 24.f, 36.f, 50.f}, "Axis for pt D"};
@@ -1337,6 +1339,10 @@ struct ProbeThirdTrack {
       float invMass{-1.f}, invMassTag{-1.f}, ptTag{-1.f}, ptD{-1.f};
       computeInvariantMass(trackFirst, trackSecond, trackThird, channel, ptTag, invMassTag, ptD, invMass);
       if (invMass < minInvMass[channel] || invMass > maxInvMass[channel]) {
+        continue;
+      }
+      if (ptD < ptCandMin) {
+        /// candidate pt lower than the minimum allowed value, let's skip it
         continue;
       }
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
