@@ -1473,8 +1473,10 @@ struct femtoUniverseProducerTask {
       auto groupedV0s = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedV0s);
-      for (auto& track : groupedTracks)
-        recoMcIds.insert(track.mcParticleId());
+      for (auto& track : groupedTracks) {
+        if (trackCuts.isSelectedMinimal(track))
+          recoMcIds.insert(track.mcParticleId());
+      }
     }
 
     // truth

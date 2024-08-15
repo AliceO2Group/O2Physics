@@ -18,7 +18,7 @@ using namespace o2::framework;
 
 namespace o2::aod::pwgem::dilepton::utils::eventhistogram
 {
-const int nbin_ev = 13;
+const int nbin_ev = 14;
 template <const int nmod = -1>
 void addEventHistograms(HistogramRegistry* fRegistry)
 {
@@ -35,8 +35,9 @@ void addEventHistograms(HistogramRegistry* fRegistry)
   hCollisionCounter->GetXaxis()->SetBinLabel(9, "Is Vertex ITS-TPC-TOF");
   hCollisionCounter->GetXaxis()->SetBinLabel(10, "sel8");
   hCollisionCounter->GetXaxis()->SetBinLabel(11, "|Z_{vtx}| < 10 cm");
-  hCollisionCounter->GetXaxis()->SetBinLabel(12, "Calibrated Q vector");
-  hCollisionCounter->GetXaxis()->SetBinLabel(13, "accepted");
+  hCollisionCounter->GetXaxis()->SetBinLabel(12, "NoCollInTimeRangeStandard");
+  hCollisionCounter->GetXaxis()->SetBinLabel(13, "Calibrated Q vector");
+  hCollisionCounter->GetXaxis()->SetBinLabel(14, "accepted");
 
   fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
   fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
@@ -185,6 +186,9 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
   }
   if (abs(collision.posZ()) < 10.0) {
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 11.0);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 12.0);
   }
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 

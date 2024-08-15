@@ -225,7 +225,7 @@ struct nuclei_in_jets {
 
     // pt-dependent selection
     if (setDCAselectionPtDep) {
-      if (TMath::Abs(track.dcaXY()) > (0.0105 * 0.035 / TMath::Power(track.pt(), 1.1)))
+      if (TMath::Abs(track.dcaXY()) > (0.004f + 0.013f / track.pt()))
         return false;
       if (TMath::Abs(track.dcaZ()) > 2.0)
         return false;
@@ -233,9 +233,9 @@ struct nuclei_in_jets {
 
     // standard selection
     if (!setDCAselectionPtDep) {
-      if (TMath::Abs(track.dcaXY()) > 0.05)
+      if (TMath::Abs(track.dcaXY()) > 0.1)
         return false;
-      if (TMath::Abs(track.dcaZ()) > 0.1)
+      if (TMath::Abs(track.dcaZ()) > 1.0)
         return false;
     }
 

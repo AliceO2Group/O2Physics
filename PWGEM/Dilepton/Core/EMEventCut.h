@@ -39,6 +39,8 @@ class EMEventCut : public TNamed
     kIsVertexITSTPC,
     kIsGoodZvtxFT0vsPV,
     kOccupancy,
+    kNoCollInTimeRangeStandard,
+    kNoCollInTimeRangeNarrow,
     kNCuts
   };
 
@@ -70,6 +72,12 @@ class EMEventCut : public TNamed
       return false;
     }
     if (!IsSelected(collision, EMEventCuts::kOccupancy)) {
+      return false;
+    }
+    if (mRequireNoCollInTimeRangeStandard && !IsSelected(collision, EMEventCuts::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    if (mRequireNoCollInTimeRangeNarrow && !IsSelected(collision, EMEventCuts::kNoCollInTimeRangeNarrow)) {
       return false;
     }
     return true;
@@ -110,6 +118,13 @@ class EMEventCut : public TNamed
           return mMinOccupancy <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < mMaxOccupancy;
         }
       }
+
+      case EMEventCuts::kNoCollInTimeRangeStandard:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
+
+      case EMEventCuts::kNoCollInTimeRangeNarrow:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow);
+
       default:
         return true;
     }
@@ -125,6 +140,8 @@ class EMEventCut : public TNamed
   void SetRequireNoSameBunchPileup(bool flag);
   void SetRequireVertexITSTPC(bool flag);
   void SetRequireGoodZvtxFT0vsPV(bool flag);
+  void SetRequireNoCollInTimeRangeStandard(bool flag);
+  void SetRequireNoCollInTimeRangeNarrow(bool flag);
 
  private:
   bool mRequireSel8{true};
@@ -136,6 +153,8 @@ class EMEventCut : public TNamed
   bool mRequireNoSameBunchPileup{false};
   bool mRequireVertexITSTPC{false};
   bool mRequireGoodZvtxFT0vsPV{false};
+  bool mRequireNoCollInTimeRangeStandard{false};
+  bool mRequireNoCollInTimeRangeNarrow{false};
 
   ClassDef(EMEventCut, 1);
 };
