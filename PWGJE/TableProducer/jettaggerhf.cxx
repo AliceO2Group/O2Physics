@@ -39,12 +39,13 @@ struct JetTaggerHFTask {
   Produces<JetTaggingTableData> taggingTableData;
   Produces<JetTaggingTableMCD> taggingTableMCD;
 
+  // jet flavour definition
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
   Configurable<bool> removeGluonShower{"removeGluonShower", true, "find jet origin removed gluon spliting"}; // true:: remove gluon spliting
   Configurable<bool> searchUpToQuark{"searchUpToQuark", true, "Finding first mother in particles to quark"};
+  // configuration about IP method
   Configurable<bool> useJetProb{"useJetProb", false, "fill table for track counting algorithm"};
   Configurable<bool> trackProbQA{"trackProbQA", false, "fill track probability histograms separately for geometric positive and negative tracks for QA"};
-  Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
   Configurable<int> numCount{"numCount", 3, "number of track counting"};
   Configurable<int> resoFuncMatching{"resoFuncMatching", 0, "matching parameters of resolution function as MC samble (0: custom, 1: custom & inc, 2: MB, 3: MB & inc, 4: JJ, 5: JJ & inc)"};
   Configurable<std::vector<float>> paramsResoFuncData{"paramsResoFuncData", std::vector<float>{1306800, -0.1049, 0.861425, 13.7547, 0.977967, 8.96823, 0.151595, 6.94499, 0.0250301}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7))"};
@@ -53,8 +54,13 @@ struct JetTaggerHFTask {
   Configurable<std::vector<float>> paramsResoFuncBeautyJetMC{"paramsResoFuncBeautyJetMC", std::vector<float>{74901.583, -0.082, 0.874, 10.332, 0.941, 7.352, 0.097, 6.220, 0.022}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<std::vector<float>> paramsResoFuncLfJetMC{"paramsResoFuncLfJetMC", std::vector<float>{1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<float> minSignImpXYSig{"minsIPs", -40.0, "minimum of signed impact parameter significance"};
-  Configurable<float> tagPoint{"tagPoint", 2.5, "tagging working point"};
+  Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
+  Configurable<float> minIPCount{"minSipCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
+  // configuration about SV method
+  Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
+  Configurable<float> minDecayLengthCount{"minDecayLengthCount", 1, "Select at least N decay length significance in jets"}; // default 1
 
+  // axis spec
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
 
@@ -153,17 +159,17 @@ struct JetTaggerHFTask {
   void processData(JetCollision const& collision, JetTableData const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks)
   {
     for (auto& jet : jets) {
-      int algorithm2 = 0;
-      int algorithm3 = 0;
+  int flagbJetForIP = 0;
+  int flagbJetForSV = 0;
       if (useJetProb) {
         jetProb.clear();
         jetProb.reserve(maxOrder);
         for (int order = 0; order < maxOrder; order++) {
-          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigData, collision, jet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
+          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigData, collision, jet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
         }
       }
-      // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
-      taggingTableData(0, jetProb, algorithm2, algorithm3);
+      // if (doSV) flagbJetForSV = jettaggingutilities::FlagbJetForSV((mcdjet, tracks);
+      taggingTableData(0, jetProb, flagbJetForIP, flagbJetForSV);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processData, "Fill tagging decision for data jets", false);
@@ -171,29 +177,31 @@ struct JetTaggerHFTask {
   void processMCD(JetCollision const& collision, JetTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
+  int flagbJetForIP = 0;
+  int flagbJetForSV = 0;
       typename JetTagTracksMCD::iterator hftrack;
       int origin = 0;
       if (removeGluonShower)
         origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark);
       else
         origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack, searchUpToQuark);
-      int algorithm2 = 0;
-      int algorithm3 = 0;
+      //if (origin==JetTaggingSpecies::beauty || jettaggingutilities::isGreaterThanTaggingPoint(collision, mcdjet, jtracks, tracks, tagPointForIP, minIPCount))
+        //flagbJetForIP = 1;
       if (useJetProb) {
         jetProb.clear();
         jetProb.reserve(maxOrder);
         for (int order = 0; order < maxOrder; order++) {
           if (useResoFuncFromIncJet) {
-            jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigIncJetMC, collision, mcdjet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
+            jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigIncJetMC, collision, mcdjet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
           } else {
             if (origin == JetTaggingSpecies::charm) {
-              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigCharmJetMC, collision, mcdjet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
+              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigCharmJetMC, collision, mcdjet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
             }
             if (origin == JetTaggingSpecies::beauty) {
-              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigBeautyJetMC, collision, mcdjet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
+              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigBeautyJetMC, collision, mcdjet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
             }
             if (origin == JetTaggingSpecies::lightflavour) {
-              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, collision, mcdjet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
+              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, collision, mcdjet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
             }
           }
         }
@@ -223,8 +231,8 @@ struct JetTaggerHFTask {
           }
         }
       }
-      // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
-      taggingTableMCD(origin, jetProb, algorithm2, algorithm3);
+      // if (doSV) flagbJetForSV = jettaggingutilities::FlagbJetForSV((mcdjet, tracks);
+      taggingTableMCD(origin, jetProb, flagbJetForIP, flagbJetForSV);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCD, "Fill tagging decision for mcd jets", false);

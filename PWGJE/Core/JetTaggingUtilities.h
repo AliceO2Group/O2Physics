@@ -304,7 +304,7 @@ int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
 
       if (dR < jet.r() / 100.f) {
         if (TMath::Abs(pdgcode) == 5) {
-          return 2; // Beauty jet
+          return JetTaggingSpecies::beauty; // Beauty jet
         } else {
           if (count > arraySize - 1)
             return 0;
@@ -317,10 +317,10 @@ int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
 
   for (int ij = 0; ij < count; ij++) {
     if (TMath::Abs(countpartcode[ij]) == 4)
-      return 1; // Charm jet
+      return JetTaggingSpecies::charm; // Charm jet
   }
 
-  return 0; // Light flavor jet
+  return JetTaggingSpecies::lightflavour; // Light flavor jet
 }
 
 /**
