@@ -119,6 +119,7 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
+  Configurable<bool> fConfigOnlyInjectedEvents{"cfgOnlyInjectedEvents", false, "Use only on Non-skimmed data! If true, select only injected events"};
 
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
@@ -148,17 +149,27 @@ struct AnalysisEventSelection {
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     bool pass = true;
 
+    int32_t subGeneratorID = -999;
     VarManager::FillEvent<TEventFillMap>(event);
     if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
+      // TODO: Get access to subgenerator ID in skimmed data
+      // generatorID = event.reducedMCevent().generatorsID();
     }
     if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       if (!event.has_mcCollision()) {
         pass = false;
       } else {
         VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
+        subGeneratorID = event.mcCollision().getSubGeneratorId();
       }
     }
+
+    if (fConfigOnlyInjectedEvents && (subGeneratorID == 0)) {
+      eventSel(0);
+      return;
+    }
+
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
     }
