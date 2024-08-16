@@ -67,6 +67,7 @@ struct JetDerivedDataWriter {
     Configurable<bool> saveDielectronTable{"saveDielectronTable", false, "save the Dielectron table to the output"};
 
     Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
+    Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   } config;
 
   struct : ProducesGroup {
@@ -78,9 +79,6 @@ struct JetDerivedDataWriter {
     Produces<aod::StoredJCollisionPIs> storedJCollisionsParentIndexTable;
     Produces<aod::StoredJCollisionBCs> storedJCollisionsBunchCrossingIndexTable;
     Produces<aod::StoredJEMCCollisionLbs> storedJCollisionsEMCalLabelTable;
-    Produces<aod::StoredJChTrigSels> storedJChargedTriggerSelsTable;
-    Produces<aod::StoredJFullTrigSels> storedJFullTriggerSelsTable;
-    Produces<aod::StoredJChHFTrigSels> storedJChargedHFTriggerSelsTable;
     Produces<aod::StoredJMcCollisionLbs> storedJMcCollisionsLabelTable;
     Produces<aod::StoredJMcCollisions> storedJMcCollisionsTable;
     Produces<aod::StoredJMcCollisionPIs> storedJMcCollisionsParentIndexTable;
@@ -160,12 +158,15 @@ struct JetDerivedDataWriter {
   TRandom3 randomNumber;
 
   int eventSelection = -1;
+
+  std::vector<int> triggerMaskBits;
   void init(InitContext&)
   {
     precisionPositionMask = 0xFFFFFC00; // 13 bits
     precisionMomentumMask = 0xFFFFFC00; // 13 bits  this is currently keept at 13 bits wihich gives roughly a resolution of 1/8000. This can be increased to 15 bits if really needed
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(config.eventSelectionForCounting));
     randomNumber.SetSeed(0);
+    triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(config.triggerMasks);
   }
 
   bool acceptCollision(aod::JCollision const&)
@@ -227,6 +228,13 @@ struct JetDerivedDataWriter {
           McCollisionFlag[collision.globalIndex()] = false;
         }
       }
+    }
+  }
+
+  void processEventTriggers(aod::JCollision const& collision)
+  {
+    if (jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      collisionFlag[collision.globalIndex()] = true;
     }
   }
 
@@ -294,10 +302,11 @@ struct JetDerivedDataWriter {
     }
   }
   // Todo : Check memory consumption of having so many Process Switches
-  PROCESS_SWITCH(JetDerivedDataWriter, processCollisions, "setup the writing for data and MCD", true);
-  PROCESS_SWITCH(JetDerivedDataWriter, processMcCollisions, "setup the writing for MCP", false);
+  PROCESS_SWITCH(JetDerivedDataWriter, processCollisions, "setup the writing for data and MCD based on collisions", true);
+  PROCESS_SWITCH(JetDerivedDataWriter, processMcCollisions, "setup the writing for MCP based on mcCollisions", false);
   PROCESS_SWITCH(JetDerivedDataWriter, processAllCollisionsWithDownscaling, "setup the writing of untriggered collisions with downscaling", false);
   PROCESS_SWITCH(JetDerivedDataWriter, processAllMcCollisionsWithDownscaling, "setup the writing of untriggered mccollisions with downscaling", false);
+  PROCESS_SWITCH(JetDerivedDataWriter, processEventTriggers, "process software triggers", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::ChargedJets>, processChargedJets, "process charged jets", true);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::ChargedEventWiseSubtractedJets>, processChargedEventWiseSubtractedJets, "process charged event-wise subtracted jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::ChargedMCDetectorLevelJets>, processChargedMCDJets, "process charged mcd jets", false);
@@ -377,7 +386,7 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processCollisionCounting, "write out collision counting output table", false);
 
-  void processData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JChHFTrigSels, aod::JEMCCollisionLbs>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, CollisionsD0 const& D0Collisions, CandidatesD0Data const& D0s, CollisionsLc const& LcCollisions, CandidatesLcData const& Lcs, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronData const& Dielectrons)
+  void processData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JEMCCollisionLbs>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, CollisionsD0 const& D0Collisions, CandidatesD0Data const& D0s, CollisionsLc const& LcCollisions, CandidatesLcData const& Lcs, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronData const& Dielectrons)
   {
     std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> trackMapping;
@@ -393,7 +402,7 @@ struct JetDerivedDataWriter {
         }
       }
 
-      products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw());
+      products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
       products.storedJCollisionsParentIndexTable(collision.collisionId());
       if (config.saveBCsTable) {
         int32_t storedBCID = -1;
@@ -406,9 +415,6 @@ struct JetDerivedDataWriter {
       if (config.saveClustersTable) {
         products.storedJCollisionsEMCalLabelTable(collision.isAmbiguous(), collision.isEmcalReadout());
       }
-      products.storedJChargedTriggerSelsTable(collision.chargedTriggerSel());
-      products.storedJFullTriggerSelsTable(collision.fullTriggerSel());
-      products.storedJChargedHFTriggerSelsTable(collision.chargedHFTriggerSel());
 
       for (const auto& track : tracks) {
         if (config.performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept. This includes also the track pT selction.
@@ -521,7 +527,7 @@ struct JetDerivedDataWriter {
   // to run after all jet selections
   PROCESS_SWITCH(JetDerivedDataWriter, processData, "write out data output tables", false);
 
-  void processMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JChHFTrigSels, aod::JMcCollisionLbs, aod::JEMCCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks, aod::JMcClusterLbs> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, CollisionsD0 const& D0Collisions, CandidatesD0MCD const& D0s, soa::Join<McCollisionsD0, aod::HfD0McRCollIds> const& D0McCollisions, CandidatesD0MCP const& D0Particles, CollisionsLc const& LcCollisions, CandidatesLcMCD const& Lcs, soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds> const& LcMcCollisions, CandidatesLcMCP const& LcParticles, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronMCD const& Dielectrons, McCollisionsDielectron const& DielectronMcCollisions, CandidatesDielectronMCP const& DielectronParticles)
+  void processMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JMcCollisionLbs, aod::JEMCCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks, aod::JMcClusterLbs> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, CollisionsD0 const& D0Collisions, CandidatesD0MCD const& D0s, soa::Join<McCollisionsD0, aod::HfD0McRCollIds> const& D0McCollisions, CandidatesD0MCP const& D0Particles, CollisionsLc const& LcCollisions, CandidatesLcMCD const& Lcs, soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds> const& LcMcCollisions, CandidatesLcMCP const& LcParticles, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronMCD const& Dielectrons, McCollisionsDielectron const& DielectronMcCollisions, CandidatesDielectronMCP const& DielectronParticles)
   {
     std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> paticleMapping;
@@ -685,7 +691,7 @@ struct JetDerivedDataWriter {
             }
           }
 
-          products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw());
+          products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
           products.storedJCollisionsParentIndexTable(collision.collisionId());
 
           auto JMcCollisionIndex = mcCollisionMapping.find(mcCollision.globalIndex());
@@ -703,9 +709,6 @@ struct JetDerivedDataWriter {
           if (config.saveClustersTable) {
             products.storedJCollisionsEMCalLabelTable(collision.isAmbiguous(), collision.isEmcalReadout());
           }
-          products.storedJChargedTriggerSelsTable(collision.chargedTriggerSel());
-          products.storedJFullTriggerSelsTable(collision.fullTriggerSel());
-          products.storedJChargedHFTriggerSelsTable(collision.chargedHFTriggerSel());
 
           const auto tracksPerCollision = tracks.sliceBy(TracksPerCollision, collision.globalIndex());
           for (const auto& track : tracksPerCollision) {
