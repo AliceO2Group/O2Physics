@@ -1000,7 +1000,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processNoCentToXiPi(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                            aod::BCsWithTimestamps const& bcWithTimeStamps,
                            TracksWCovDca const& tracks,
-                           MyLFTracksWCov const &lfTracks,
+                           MyLFTracksWCov const& lfTracks,
                            MyCascTable const& cascades,
                            CascadesLinked const& cascadeLinks,
                            aod::HfCascLf2Prongs const& candidates)
@@ -1012,7 +1012,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processNoCentToOmegaPi(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                               aod::BCsWithTimestamps const& bcWithTimeStamps,
                               TracksWCovDca const& tracks,
-                              MyLFTracksWCov const &lfTracks,
+                              MyLFTracksWCov const& lfTracks,
                               MyCascTable const& cascades,
                               CascadesLinked const& cascadeLinks,
                               aod::HfCascLf2Prongs const& candidates)
@@ -1035,7 +1035,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processNoCentToOmegaK(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                              aod::BCsWithTimestamps const& bcWithTimeStamps,
                              TracksWCovDca const& tracks,
-                             MyLFTracksWCov const &lfTracks,
+                             MyLFTracksWCov const& lfTracks,
                              MyCascTable const& cascades,
                              CascadesLinked const& cascadeLinks,
                              aod::HfCascLf2Prongs const& candidates)
@@ -1048,7 +1048,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processCentFT0CToXiPi(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                              aod::BCsWithTimestamps const& bcWithTimeStamps,
                              TracksWCovDca const& tracks,
-                             MyLFTracksWCov const &lfTracks,
+                             MyLFTracksWCov const& lfTracks,
                              MyCascTable const& cascades,
                              CascadesLinked const& cascadeLinks,
                              aod::HfCascLf2Prongs const& candidates)
@@ -1060,7 +1060,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processCentFT0CToOmegaPi(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
                                 TracksWCovDca const& tracks,
-                                MyLFTracksWCov const &lfTracks,
+                                MyLFTracksWCov const& lfTracks,
                                 MyCascTable const& cascades,
                                 CascadesLinked const& cascadeLinks,
                                 aod::HfCascLf2Prongs const& candidates)
@@ -1072,7 +1072,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processCentFT0CToOmegaK(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                aod::BCsWithTimestamps const& bcWithTimeStamps,
                                TracksWCovDca const& tracks,
-                               MyLFTracksWCov const &lfTracks,
+                               MyLFTracksWCov const& lfTracks,
                                MyCascTable const& cascades,
                                CascadesLinked const& cascadeLinks,
                                aod::HfCascLf2Prongs const& candidates)
@@ -1085,7 +1085,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processCentFT0MToXiPi(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                              aod::BCsWithTimestamps const& bcWithTimeStamps,
                              TracksWCovDca const& tracks,
-                             MyLFTracksWCov const &lfTracks,
+                             MyLFTracksWCov const& lfTracks,
                              MyCascTable const& cascades,
                              CascadesLinked const& cascadeLinks,
                              aod::HfCascLf2Prongs const& candidates)
@@ -1097,7 +1097,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processCentFT0MToOmegaPi(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
                                 TracksWCovDca const& tracks,
-                                MyLFTracksWCov const &lfTracks,
+                                MyLFTracksWCov const& lfTracks,
                                 MyCascTable const& cascades,
                                 CascadesLinked const& cascadeLinks,
                                 aod::HfCascLf2Prongs const& candidates)
@@ -1109,7 +1109,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processCentFT0MToOmegaK(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                aod::BCsWithTimestamps const& bcWithTimeStamps,
                                TracksWCovDca const& tracks,
-                               MyLFTracksWCov const &lfTracks,
+                               MyLFTracksWCov const& lfTracks,
                                MyCascTable const& cascades,
                                CascadesLinked const& cascadeLinks,
                                aod::HfCascLf2Prongs const& candidates)
@@ -1293,9 +1293,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       std::vector<int> idxBhadMothers{};
 
       auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<aod::TracksWMc>(), // bachelor <- charm baryon
-                                       candidate.template bachelor_as<aod::lfTracksWMc>(),                // bachelor <- cascade
-                                       candidate.template posTrack_as<aod::lfTracksWMc>(),                // p <- lambda
-                                       candidate.template negTrack_as<aod::lfTracksWMc>()};               // pi <- lambda
+                                       candidate.template bachelor_as<aod::lfTracksWMc>(),              // bachelor <- cascade
+                                       candidate.template posTrack_as<aod::lfTracksWMc>(),              // p <- lambda
+                                       candidate.template negTrack_as<aod::lfTracksWMc>()};             // pi <- lambda
       auto arrayDaughtersCasc = std::array{candidate.template bachelor_as<aod::lfTracksWMc>(),
                                            candidate.template posTrack_as<aod::lfTracksWMc>(),
                                            candidate.template negTrack_as<aod::lfTracksWMc>()};

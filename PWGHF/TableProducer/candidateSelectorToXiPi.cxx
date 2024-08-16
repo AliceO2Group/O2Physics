@@ -189,9 +189,9 @@ struct HfCandidateSelectorToXiPi {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<TracksSelLf>();    // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<TracksSelLf>();    // negative V0 daughter
-      auto trackPiFromCasc = candidate.bachelor_as<TracksSelLf>();  // pion <- cascade
+      auto trackV0PosDau = candidate.posTrack_as<TracksSelLf>();                 // positive V0 daughter
+      auto trackV0NegDau = candidate.negTrack_as<TracksSelLf>();                 // negative V0 daughter
+      auto trackPiFromCasc = candidate.bachelor_as<TracksSelLf>();               // pion <- cascade
       auto trackPiFromCharm = candidate.bachelorFromCharmBaryon_as<TracksSel>(); // pion <- charm baryon
 
       auto trackPiFromLam = trackV0NegDau;
