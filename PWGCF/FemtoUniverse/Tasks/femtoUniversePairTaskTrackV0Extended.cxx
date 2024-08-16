@@ -395,36 +395,70 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
     }
 
-    /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-      // Lambda invariant mass cut for p1
-      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
-        continue;
-      // Lambda invariant mass cut for p2
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
-        continue;
-      // track cleaning
-      if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
-        continue;
-      }
-      if (ConfIsCPR.value) {
-        if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+    if (ConfV0Type1 == ConfV0Type2) {
+      /// Now build the combinations for identical V0s
+      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+        // Lambda invariant mass cut for p1
+        if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+          continue;
+        // Lambda invariant mass cut for p2
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+          continue;
+        // track cleaning
+        if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;
         }
+        if (ConfIsCPR.value) {
+          if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+            continue;
+          }
+        }
+        const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
+        const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
+        /// Daughters that do not pass this condition are not selected
+        if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
+          continue;
+
+        const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
+        const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
+        /// Daughters that do not pass this condition are not selected
+        if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
+          continue;
+
+        sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }
-      const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
-      const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
-      /// Daughters that do not pass this condition are not selected
-      if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
-        continue;
+    } else {
+      /// Now build the combinations for not identical identical V0s
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+        // Lambda invariant mass cut for p1
+        if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+          continue;
+        // Lambda invariant mass cut for p2
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+          continue;
+        // track cleaning
+        if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        if (ConfIsCPR.value) {
+          if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+            continue;
+          }
+        }
+        const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
+        const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
+        /// Daughters that do not pass this condition are not selected
+        if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
+          continue;
 
-      const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
-      const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
-      /// Daughters that do not pass this condition are not selected
-      if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
-        continue;
+        const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
+        const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
+        /// Daughters that do not pass this condition are not selected
+        if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
+          continue;
 
-      sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+        sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+      }
     }
   }
 
