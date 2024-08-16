@@ -128,7 +128,9 @@ struct femtoUniverseProducerTask {
   Configurable<std::vector<int>> ConfMCTruthPDGCodes{"ConfMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
   Configurable<float> ConfCentFT0Min{"ConfCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
   Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
-
+  Configurable<bool> ConfEvIsGoodZvtxFT0vsPV{"ConfEvIsGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection on Events."};
+  Configurable<bool> ConfEvNoSameBunchPileup{"ConfEvNoSameBunchPileup", true, "Require kNoSameBunchPileup selection on Events."};
+  Configurable<bool> ConfEvIsVertexITSTPC{"ConfEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
   Filter CustomCollCentFilter = (aod::cent::centFT0C > ConfCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfCentFT0Max);
 
@@ -196,8 +198,6 @@ struct femtoUniverseProducerTask {
     Configurable<float> ConfEtaFilterCut{"ConfEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
     Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"};      // max dca to vertex XY
     Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};         // max dca to vertex Z
-    Configurable<uint8_t> ConfITSNCls{"ConfITSNCls", 5, "Value for the number of ITS clusters."};
-    Configurable<int16_t> ConfTPCNClsCrossedRows{"ConfTPCNClsCrossedRows", 89, "Value for the number of TPC crossed rows clusters."};
   } ConfFilterCuts;
 
   Filter GlobalCutFilter = requireGlobalTrackInFilter();
@@ -644,7 +644,7 @@ struct femtoUniverseProducerTask {
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        if (ConfDoSpher) {
+        if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
           outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
         } else {
           outputCollision(vtxZ, mult, multNtr, 2, mMagField);
