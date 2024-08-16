@@ -148,7 +148,7 @@ struct JetDerivedDataProducerTask {
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
       triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults());
     }
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), collision.trackOccupancyInTimeRange(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -162,7 +162,7 @@ struct JetDerivedDataProducerTask {
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
       triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults());
     }
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit);
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit);
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -170,7 +170,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsRun2(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentRun2V0Ms>::iterator const& collision)
   {
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -178,7 +178,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsALICE3(aod::Collision const& collision)
   {
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, 0, 0);
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, -1.0, 0, 0);
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(-1);
   }
