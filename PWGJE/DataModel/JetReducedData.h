@@ -69,6 +69,7 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);
 DECLARE_SOA_COLUMN(TriggerSel, triggerSel, uint64_t);
 DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
@@ -87,6 +88,7 @@ DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
                   jcollision::PosZ,
                   jcollision::Multiplicity,
                   jcollision::Centrality,
+                  jcollision::TrackOccupancyInTimeRange,
                   jcollision::EventSel,
                   jcollision::Alias,
                   jcollision::TriggerSel);
@@ -100,6 +102,7 @@ DECLARE_SOA_TABLE(StoredJCollisions, "AOD1", "JCOLLISION",
                   jcollision::PosZ,
                   jcollision::Multiplicity,
                   jcollision::Centrality,
+                  jcollision::TrackOccupancyInTimeRange,
                   jcollision::EventSel,
                   jcollision::Alias,
                   jcollision::TriggerSel,

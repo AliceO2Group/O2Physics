@@ -58,6 +58,9 @@ struct JetDerivedDataWriter {
     Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
     Configurable<int> downscaleFactor{"downscaleFactor", 1, "random downscale of selected events"};
 
+    Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
+    Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
+    Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
     Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
     Configurable<float> trackPtSelectionMin{"trackPtSelectionMin", 0.15, "only save tracks that have a pT larger than this pT"};
     Configurable<float> trackEtaSelectionMax{"trackEtaSelectionMax", 0.9, "only save tracks that have an eta smaller than this eta"};
@@ -239,6 +242,13 @@ struct JetDerivedDataWriter {
     }
   }
 
+  void processCollisionSelections(aod::JCollision const& collision)
+  { // can also add event selection like sel8 but goes a little against the derived data idea
+    if (collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax) {
+      collisionFlag[collision.globalIndex()] = false;
+    }
+  }
+
   template <typename T>
   void processTriggerObjects(T& triggerObjects)
   {
@@ -338,6 +348,7 @@ struct JetDerivedDataWriter {
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processTriggerObjects<aod::JTracks>, processTriggerTracks, "process trigger tracks", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processDownscaling<aod::JCollisions>, processCollisionDownscaling, "process downsaling of triggered collisions", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processDownscaling<aod::JMcCollisions>, processMcCollisionDownscaling, "process downsaling of triggered mccollisions", false);
+  PROCESS_SWITCH(JetDerivedDataWriter, processCollisionSelections, "process event selections for saved events", false);
 
   void processDummyTable(aod::JDummys const&)
   {
@@ -403,7 +414,7 @@ struct JetDerivedDataWriter {
         }
       }
 
-      products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
+      products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.trackOccupancyInTimeRange(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
       products.storedJCollisionsParentIndexTable(collision.collisionId());
       if (config.saveBCsTable) {
         int32_t storedBCID = -1;
@@ -692,7 +703,7 @@ struct JetDerivedDataWriter {
             }
           }
 
-          products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
+          products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.trackOccupancyInTimeRange(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
           products.storedJCollisionsParentIndexTable(collision.collisionId());
 
           auto JMcCollisionIndex = mcCollisionMapping.find(mcCollision.globalIndex());
