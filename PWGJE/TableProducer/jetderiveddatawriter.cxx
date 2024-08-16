@@ -60,6 +60,7 @@ struct JetDerivedDataWriter {
 
     Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
     Configurable<float> trackPtSelectionMin{"trackPtSelectionMin", 0.15, "only save tracks that have a pT larger than this pT"};
+    Configurable<float> trackEtaSelectionMax{"trackEtaSelectionMax", 0.9, "only save tracks that have an eta smaller than this eta"};
     Configurable<bool> saveBCsTable{"saveBCsTable", true, "save the bunch crossing table to the output"};
     Configurable<bool> saveClustersTable{"saveClustersTable", true, "save the clusters table to the output"};
     Configurable<bool> saveD0Table{"saveD0Table", false, "save the D0 table to the output"};
@@ -420,7 +421,7 @@ struct JetDerivedDataWriter {
         if (config.performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept. This includes also the track pT selction.
           continue;
         }
-        if (track.pt() < config.trackPtSelectionMin) {
+        if (track.pt() < config.trackPtSelectionMin || std::abs(track.eta()) > config.trackEtaSelectionMax) {
           continue;
         }
         products.storedJTracksTable(products.storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(track.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(track.phi(), precisionPositionMask), track.trackSel());
@@ -715,7 +716,7 @@ struct JetDerivedDataWriter {
             if (config.performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
               continue;
             }
-            if (track.pt() < config.trackPtSelectionMin) {
+            if (track.pt() < config.trackPtSelectionMin || std::abs(track.eta()) > config.trackEtaSelectionMax) {
               continue;
             }
             products.storedJTracksTable(products.storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(track.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(track.phi(), precisionPositionMask), track.trackSel());
