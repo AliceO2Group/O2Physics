@@ -406,11 +406,11 @@ struct HfTaskDs {
       auto pt = candidate.pt(); // rec. level pT
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
-        fillHisto<Coll>(candidate, dataType);
+        fillHisto(candidate, dataType);
         fillHistoKKPi<useMl, Coll>(candidate, dataType);
       }
       if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
-        fillHisto<Coll>(candidate, dataType);
+        fillHisto(candidate, dataType);
         fillHistoPiKK<useMl, Coll>(candidate, dataType);
       }
 
@@ -436,11 +436,11 @@ struct HfTaskDs {
       return;
     }
     if constexpr (decayChannel == FinalState::KKPi) { // KKPi
-      fillHisto<Coll>(candidate, DataType::Data);
+      fillHisto(candidate, DataType::Data);
       fillHistoKKPi<useMl, Coll>(candidate, DataType::Data);
     }
     if constexpr (decayChannel == FinalState::PiKK) { // PiKK
-      fillHisto<Coll>(candidate, DataType::Data);
+      fillHisto(candidate, DataType::Data);
       fillHistoPiKK<useMl, Coll>(candidate, DataType::Data);
     }
   }
@@ -472,11 +472,11 @@ struct HfTaskDs {
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs) {
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
-          fillHisto<Coll>(candidate, DataType::McBkg);
+          fillHisto(candidate, DataType::McBkg);
           fillHistoKKPi<useMl, Coll>(candidate, DataType::McBkg);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
-          fillHisto<Coll>(candidate, DataType::McBkg);
+          fillHisto(candidate, DataType::McBkg);
           fillHistoPiKK<useMl, Coll>(candidate, DataType::McBkg);
         }
       }
