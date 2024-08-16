@@ -325,8 +325,8 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
-      float pseudorapV0Dau0 = trackV0Dau0.eta();
-      float pseudorapV0Dau1 = trackV0Dau1.eta();
+      float pseudorapV0Dau0 = casc.positiveeta();
+      float pseudorapV0Dau1 = casc.negativeeta();
 
       // info from LF table
       std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
@@ -336,7 +336,7 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       //-------------------reconstruct cascade track------------------
       // pseudorapidity
-      float pseudorapCascBachelor = trackCascDauCharged.eta();
+      float pseudorapCascBachelor = casc.bacheloreta();
 
       // info from LF table
       std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
