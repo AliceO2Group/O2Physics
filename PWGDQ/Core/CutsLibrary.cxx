@@ -1293,6 +1293,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       return cut;
     }
 
+    if (!nameStr.compare(Form("lmee%s_TrackCuts_Resol", vecTypetrack.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("openEtaSel")); // No pt cut and wider eta cut to produce resolution maps
+      cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+      return cut;
+    }
+
     // 4 cuts to separate pos & neg tracks in pos & neg eta range
     if (!nameStr.compare(Form("lmee_posTrack_posEta_selection%s", vecTypetrack.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("posTrack"));
