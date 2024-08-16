@@ -808,6 +808,9 @@ struct HfTaskCorrelationDsHadrons {
 
         // reconstructed track loop
         for (const auto& track : groupedTracks) {
+          if (!track.isGlobalTrackWoDCA()) {
+            continue;
+          }
           if (track.has_mcParticle()) {
             hAssocTracks->Fill(kAssocTrackStepRecoMcMatch, track.eta(), track.pt(), multiplicityReco, posZReco);
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();

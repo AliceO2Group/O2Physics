@@ -50,7 +50,7 @@ namespace pidml_pt_cuts
 {
 // TODO: for now first limit wouldn't be used,
 // network needs TPC, so we can either do not cut it by p or return 0.0f as prediction
-constexpr double defaultModelPLimits[kNDetectors] = {0.0, 0.5, 0.8};
+constexpr std::array<double, kNDetectors> defaultModelPLimits({0.0, 0.5, 0.8});
 } // namespace pidml_pt_cuts
 
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
@@ -76,8 +76,8 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 struct PidONNXModel {
  public:
   PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp,
-               int pid, double minCertainty, const double* pLimits = &pidml_pt_cuts::defaultModelPLimits[0], bool isRun3 = true)
-    : mPid(pid), mMinCertainty(minCertainty), mPLimits(pLimits, pLimits + kNDetectors), mIsRun3(isRun3)
+               int pid, double minCertainty, const double* pLimits = &pidml_pt_cuts::defaultModelPLimits[0])
+    : mPid(pid), mMinCertainty(minCertainty), mPLimits(pLimits, pLimits + kNDetectors)
   {
     assert(mPLimits.size() == kNDetectors);
 
@@ -224,7 +224,7 @@ struct PidONNXModel {
     std::vector<float> inputValues{scaledTPCSignal};
 
     // When TRD Signal shouldn't be used we pass quiet_NaNs to the network
-    if (!inPLimit(track, mPLimits[kTPCTOFTRD]) || trdMissing(track, mIsRun3)) {
+    if (!inPLimit(track, mPLimits[kTPCTOFTRD]) || trdMissing(track)) {
       inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
       inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
     } else {
@@ -334,7 +334,6 @@ struct PidONNXModel {
 #endif
 
   std::vector<double> mPLimits;
-  bool mIsRun3;
   std::vector<std::string> mInputNames;
   std::vector<std::vector<int64_t>> mInputShapes;
   std::vector<std::string> mOutputNames;

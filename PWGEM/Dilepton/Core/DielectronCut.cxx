@@ -159,12 +159,11 @@ void DielectronCut::SetMuonExclusionTPC(bool flag)
   LOG(info) << "Dielectron Cut, set flag for muon exclusion in TPC: " << mMuonExclusionTPC;
 }
 
-void DielectronCut::SetTOFbetaRange(bool flag, float min, float max)
+void DielectronCut::SetTOFbetaRange(float min, float max)
 {
-  mApplyTOFbeta = flag;
   mMinTOFbeta = min;
   mMaxTOFbeta = max;
-  LOG(info) << "Dielectron Cut, set TOF beta rejection range: " << mMinTOFbeta << " - " << mMaxTOFbeta;
+  LOG(info) << "Dielectron Cut, set TOF beta range (TOFif): " << mMinTOFbeta << " - " << mMaxTOFbeta;
 }
 
 void DielectronCut::SetTPCNsigmaElRange(float min, float max)

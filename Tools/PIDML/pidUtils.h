@@ -21,29 +21,19 @@
 
 namespace pidml::pidutils
 {
-// magic number had been changed for Run3
-constexpr double kRun2TRDMissingSignal = 0.0f;
-constexpr double kRun3TRDMissingSignal = -999.0f;
 constexpr double kTOFMissingSignal = -999.0f;
-constexpr double kTOFMissingBeta = -999.0f;
-constexpr double kEpsilon = 1e-6f;
-
-bool almostEqual(double a, double b, double eps = kEpsilon)
-{
-  return std::abs(a - b) <= eps;
-}
+constexpr double kGlobalEtaCut = 0.8f;
 
 template <typename T>
-bool trdMissing(const T& track, bool isRun3 = true)
+bool trdMissing(const T& track)
 {
-  return almostEqual(track.trdSignal(), isRun3 ? kRun3TRDMissingSignal : kRun2TRDMissingSignal);
+  return !track.hasTRD();
 }
 
 template <typename T>
 bool tofMissing(const T& track)
 {
-  // Because of run3 data we use also TOF beta value to determine if signal is present
-  return almostEqual(track.tofSignal(), kTOFMissingSignal, kEpsilon) || almostEqual(track.beta(), kTOFMissingBeta);
+  return !track.hasTOF();
 }
 
 template <typename T>
