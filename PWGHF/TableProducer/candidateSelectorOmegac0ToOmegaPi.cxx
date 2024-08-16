@@ -129,7 +129,7 @@ struct HfCandidateSelectorToOmegaPi {
   TrackSelectorKa selectorKaon;
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
-  using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr>;
+  using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
