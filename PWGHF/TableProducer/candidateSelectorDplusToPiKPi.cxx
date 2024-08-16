@@ -75,7 +75,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   // Mass Cut for trigger analysis
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
-  
+
   o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponse;
   std::vector<float> outputMlNotPreselected = {};
   std::vector<float> outputMl = {};
@@ -153,7 +153,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !hfTriggerCuts.isSelectedDplusInMassRange(hfHelper.invMassDplusToPiKPi(candidate), candpT)){
+    if (useTriggerMassCut && !hfTriggerCuts.isSelectedDplusInMassRange(hfHelper.invMassDplusToPiKPi(candidate), candpT)) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {
