@@ -146,8 +146,8 @@ struct NonPromptCascadeTask {
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
-  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-  using CollisionsCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
@@ -361,8 +361,8 @@ struct NonPromptCascadeTask {
     dDCA.pionDCAz = impactParameterPiontrack.getZ();
   }
 
-  void processTrackedCascadesMC(CollisionsCandidatesRun3 const& /*collisions*/,
-                                aod::AssignedTrackedCascades const& trackedCascades, aod::McCollisionLabels const& collisionLabels, aod::Cascades const& /*cascades*/,
+  void processTrackedCascadesMC(CollisionCandidatesRun3MC const& collisions,
+                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
                                 aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
                                 aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
@@ -370,7 +370,7 @@ struct NonPromptCascadeTask {
     candidates.clear();
     std::vector<int> mcParticleId;
     for (const auto& trackedCascade : trackedCascades) {
-      auto collision = trackedCascade.collision_as<CollisionsCandidatesRun3>();
+      auto collision = trackedCascade.collision_as<CollisionCandidatesRun3MC>();
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -598,7 +598,7 @@ struct NonPromptCascadeTask {
       auto particle = mcParticles.iteratorAt(mcParticleId[i]);
       auto& c = candidates[i];
       auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
-      auto label = collisionLabels.iteratorAt(c.collisionID);
+      auto label = collisions.iteratorAt(c.collisionID);
 
       NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
                  c.pvX, c.pvY, c.pvZ,
@@ -617,7 +617,7 @@ struct NonPromptCascadeTask {
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
 
-  void processTrackedCascadesData(CollisionsCandidatesRun3 const& /*collisions*/,
+  void processTrackedCascadesData(CollisionCandidatesRun3 const& /*collisions*/,
                                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
                                   aod::V0s const& /*v0s*/, TracksExtData const& /*tracks*/,
                                   aod::BCsWithTimestamps const&)
@@ -626,7 +626,7 @@ struct NonPromptCascadeTask {
     for (const auto& trackedCascade : trackedCascades) {
       bool isOmega{false};
 
-      auto collision = trackedCascade.collision_as<CollisionsCandidatesRun3>();
+      auto collision = trackedCascade.collision_as<CollisionCandidatesRun3>();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
