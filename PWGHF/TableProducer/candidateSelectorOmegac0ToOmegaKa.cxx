@@ -204,9 +204,9 @@ struct HfCandidateSelectorToOmegaKa {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<TracksSelLf>();                   // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<TracksSelLf>();                   // negative V0 daughter
-      auto trackKaFromCasc = candidate.bachelor_as<TracksSelLf>();                 // kaon <- cascade
+      auto trackV0PosDau = candidate.posTrack_as<TracksSelLf>();                 // positive V0 daughter
+      auto trackV0NegDau = candidate.negTrack_as<TracksSelLf>();                 // negative V0 daughter
+      auto trackKaFromCasc = candidate.bachelor_as<TracksSelLf>();               // kaon <- cascade
       auto trackKaFromCharm = candidate.bachelorFromCharmBaryon_as<TracksSel>(); // kaon <- charm baryon
 
       auto trackPiFromLam = trackV0NegDau;
