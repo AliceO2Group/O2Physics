@@ -20,8 +20,6 @@
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
 
-
-
 namespace o2::analysis
 {
 /// Finds pT bin in an array.
@@ -114,7 +112,7 @@ bool isSelectedTrackTpcQuality(T const& track, const int tpcNClustersFoundMin, c
 
 struct HfTriggerCuts : o2::framework::ConfigurableGroup {
   std::string prefix = "hfMassCut"; // JSON group name
-  
+
   static constexpr float defaultDeltaMassPars3Prong[1][2] = {{-0.0025f, 0.0001f}};
   static constexpr float defaultSigmaPars3Prong[1][2] = {{0.00796f, 0.00176f}};
   o2::framework::Configurable<float> nSigma{"nSigma", 2.5, "Number of Sigmas for pT differential mass cut"};
@@ -133,7 +131,7 @@ struct HfTriggerCuts : o2::framework::ConfigurableGroup {
   {
     float peakMean = (ptD < pTMaxDeltaMass) ? ((o2::constants::physics::MassDPlus + deltaMassPars3Prong->get("constant")) + deltaMassPars3Prong->get("linear") * ptD) : o2::constants::physics::MassDPlus;
     float peakWidth = sigmaPars3Prong->get("constant") + sigmaPars3Prong->get("linear") * ptD;
- 
+
     if (std::fabs(invMassDplus - peakMean) > nSigma * peakWidth && ptD < pTMaxMassCut) {
       return false;
     }
