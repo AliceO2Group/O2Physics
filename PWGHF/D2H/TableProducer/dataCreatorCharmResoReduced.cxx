@@ -73,8 +73,6 @@ enum DType : uint8_t {
   Dstar
 };
 
-
-
 /// Creation of D-V0 pairs
 struct HfDataCreatorCharmResoReduced {
 
@@ -114,7 +112,7 @@ struct HfDataCreatorCharmResoReduced {
     Configurable<int> trackNCrossedRowsTpc{"trackNCrossedRowsTpc", 50, "Minimum TPC crossed rows"};
     Configurable<float> trackNsharedClusTpc{"trackNsharedClusTpc", 1000, "Maximum number of shared TPC clusters for V0 daughter"};
     Configurable<float> dcaDau{"dcaDau", 1.f, "DCA V0 daughters"};
-    Configurable<float> dcaMaxDauToPv{"dcaMaxDauToPv",0.1f, "Maximum daughter's DCA to PV"};
+    Configurable<float> dcaMaxDauToPv{"dcaMaxDauToPv", 0.1f, "Maximum daughter's DCA to PV"};
     Configurable<float> dcaPv{"dcaPv", 1.f, "DCA V0 to PV"};
     Configurable<double> cosPa{"cosPa", 0.99f, "V0 CosPA"};
     Configurable<float> radiusMin{"radiusMin", 0.9f, "Minimum v0 radius accepted"};
@@ -141,26 +139,26 @@ struct HfDataCreatorCharmResoReduced {
   HfHelper hfHelper;
   o2::hf_evsel::HfEventSelection hfEvSel;
   o2::vertexing::DCAFitterN<2> fitter;
-  double bz {0.};
+  double bz{0.};
 
   bool isHfCandResoConfigFilled = false;
 
   // Helper struct to pass V0 informations
   struct {
-      std::array<float, 3> pos;
-      std::array<float, 3> mom;
-      std::array<float, 3> momPos;
-      std::array<float, 3> momNeg;
-      float pT;
-      float cosPA;
-      float dcaV0ToPv;
-      float dcaDau;
-      float alpha;
-      float eta;
-      float radius;
-      float mK0Short;
-      float mLambda;
-      uint8_t v0Type;
+    std::array<float, 3> pos;
+    std::array<float, 3> mom;
+    std::array<float, 3> momPos;
+    std::array<float, 3> momNeg;
+    float pT;
+    float cosPA;
+    float dcaV0ToPv;
+    float dcaDau;
+    float alpha;
+    float eta;
+    float radius;
+    float mK0Short;
+    float mLambda;
+    uint8_t v0Type;
   } candidateV0;
 
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -169,7 +167,7 @@ struct HfDataCreatorCharmResoReduced {
   using CandDstarFilteredWithMl = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
   using TracksWithPID = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using TracksIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr>;
-  
+
   Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= cfgDmesCuts.selectionFlagDplus);
   Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == cfgDmesCuts.selectionFlagDstarToD0Pi);
 
@@ -238,7 +236,6 @@ struct HfDataCreatorCharmResoReduced {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
-    
   }
 
   /// Basic track quality selections for V0 daughters
@@ -246,13 +243,13 @@ struct HfDataCreatorCharmResoReduced {
   /// \param dDaughtersIds are the IDs of the D meson daughter tracks
   template <typename Tr>
   bool selectV0Daughter(Tr const& track, const std::array<int, 3>& dDaughtersIds)
-  { 
+  {
     // acceptance selection
     if (std::abs(track.eta()) > cfgV0Cuts.etaMaxDau) {
       return false;
     }
     // Tpc Refit
-    if (!(track.hasTPC())){
+    if (!(track.hasTPC())) {
       return false;
     }
     // track quality selection
@@ -270,7 +267,7 @@ struct HfDataCreatorCharmResoReduced {
     return true;
   }
 
-  //Utility to find which v0 daughter carries the largest fraction of the mother longitudinal momentum
+  // Utility to find which v0 daughter carries the largest fraction of the mother longitudinal momentum
   float alphaAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
   {
     float momTot = std::sqrt(std::pow(momA[0], 2.) + std::pow(momA[1], 2.) + std::pow(momA[2], 2.));
@@ -278,7 +275,7 @@ struct HfDataCreatorCharmResoReduced {
     float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
     return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
   }
-  //Utility to find DCA of V0 to Primary vertex
+  // Utility to find DCA of V0 to Primary vertex
   float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
   {
     return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
@@ -288,12 +285,12 @@ struct HfDataCreatorCharmResoReduced {
   /// \param dauTracks are the v0 daughter tracks
   /// \param dDaughtersIds are the IDs of the D meson daughter tracks
   /// \return a bitmap with mass hypotesis if passes all cuts
-  template < typename Coll, typename Tr>
-  bool buildAndSelectV0( const Coll& collision, const std::array<int, 3>& dDaughtersIds, const std::array<Tr, 2>& dauTracks)
+  template <typename Coll, typename Tr>
+  bool buildAndSelectV0(const Coll& collision, const std::array<int, 3>& dDaughtersIds, const std::array<Tr, 2>& dauTracks)
   {
-    auto trackPos =dauTracks[0];
+    auto trackPos = dauTracks[0];
     auto trackNeg = dauTracks[1];
-    
+
     // single-tracks selection
     if (!selectV0Daughter(trackPos, dDaughtersIds) || !selectV0Daughter(trackNeg, dDaughtersIds))
       return false;
@@ -344,7 +341,7 @@ struct HfDataCreatorCharmResoReduced {
     // v0 radius
     const auto& vtx = fitter.getPCACandidate();
     candidateV0.radius = std::hypot(vtx[0], vtx[1]);
-    if (candidateV0.radius < cfgV0Cuts.radiusMin ) {
+    if (candidateV0.radius < cfgV0Cuts.radiusMin) {
       return false;
     }
     for (int i = 0; i < 3; i++) {
@@ -377,7 +374,7 @@ struct HfDataCreatorCharmResoReduced {
     auto massNeg = matter ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
     // mass hypotesis
     candidateV0.mLambda = RecoDecay::m(std::array{candidateV0.momPos, candidateV0.momNeg}, std::array{massPos, massNeg});
-    candidateV0.mK0Short = RecoDecay::m(std::array{ candidateV0.momPos, candidateV0.momNeg}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+    candidateV0.mK0Short = RecoDecay::m(std::array{candidateV0.momPos, candidateV0.momNeg}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
     if (std::fabs(candidateV0.mK0Short - MassK0) > cfgV0Cuts.deltaMassK0s) {
       CLRBIT(candidateV0.v0Type, K0s);
     }
@@ -385,23 +382,23 @@ struct HfDataCreatorCharmResoReduced {
       CLRBIT(candidateV0.v0Type, Lambda);
       CLRBIT(candidateV0.v0Type, AntiLambda);
     }
-    // PID 
-    if (TESTBIT(candidateV0.v0Type, K0s)){
-      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc) || 
+    // PID
+    if (TESTBIT(candidateV0.v0Type, K0s)) {
+      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc) ||
           (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc))
-          CLRBIT(candidateV0.v0Type, K0s);
+        CLRBIT(candidateV0.v0Type, K0s);
     }
-    if (TESTBIT(candidateV0.v0Type, Lambda)){
-      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPr()) > cfgV0Cuts.nSigmaTpc) || 
+    if (TESTBIT(candidateV0.v0Type, Lambda)) {
+      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPr()) > cfgV0Cuts.nSigmaTpc) ||
           (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc))
-          CLRBIT(candidateV0.v0Type, Lambda);
+        CLRBIT(candidateV0.v0Type, Lambda);
     }
-    if (TESTBIT(candidateV0.v0Type, AntiLambda)){
-      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc) || 
+    if (TESTBIT(candidateV0.v0Type, AntiLambda)) {
+      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc) ||
           (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPr()) > cfgV0Cuts.nSigmaTpc))
-          CLRBIT(candidateV0.v0Type, AntiLambda);
+        CLRBIT(candidateV0.v0Type, AntiLambda);
     }
-    if (candidateV0.v0Type == 0){
+    if (candidateV0.v0Type == 0) {
       return false;
     }
     return true;
