@@ -36,7 +36,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename JetTagTableData, typename JetTagTableMCD, typename JetTagTableMCP>
+template <typename JetTagTableData, typename JetTagTableMCD, typename JetTagTableMCDMCP, typename JetTagTableMCP, typename JetTagTableMCPMCD>
 struct JetTaggerHFQA {
 
   // task on/off configuration
@@ -84,9 +84,9 @@ struct JetTaggerHFQA {
   ConfigurableAxis binJetProbabilityLog{"binJetProbabilityLog", {100, 0.f, 10.f}, ""};
   ConfigurableAxis binNprongs{"binNprongs", {100, 0., 100.}, ""};
   ConfigurableAxis binLxy{"binLxy", {200, 0, 20.f}, ""};
-  ConfigurableAxis binSxy{"binSxy", {200, 0, 200.f}, ""};
+  ConfigurableAxis binSxy{"binSxy", {1000, 0, 1000.f}, ""};
   ConfigurableAxis binLxyz{"binLxyz", {200, 0, 20.f}, ""};
-  ConfigurableAxis binSxyz{"binSxyz", {200, 0, 200.f}, ""};
+  ConfigurableAxis binSxyz{"binSxyz", {1000, 0, 1000.f}, ""};
   ConfigurableAxis binSigmaLxy{"binSigmaLxy", {100, 0., 0.1}, ""};
   ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
 
@@ -100,6 +100,62 @@ struct JetTaggerHFQA {
   float minSxy3Prong = 0.;
   float maxSigmaLxyz3Prong = 0.;
   float minSxyz3Prong = 0.;
+
+  class bjetCandSV {
+    public:
+      bjetCandSV() = default;
+
+      bjetCandSV(float xpv, float ypv, float zpv, float xsv, float ysv, float zsv,
+          float px, float py, float pz, float e, float m, float chi2PCA,
+          float errorDecayLength, float errorDecayLengthXY,
+          float rSecondaryVertex, float pt, float p,
+          std::array<float, 3> pVector, float eta, float phi,
+          float y, float decayLength, float decayLengthXY,
+          float decayLengthNormalised, float decayLengthXYNormalised,
+          float cpa, float impactParameterXY)
+        : xPVertex(xpv), yPVertex(ypv), zPVertex(zpv),
+        xSecondaryVertex(xsv), ySecondaryVertex(ysv), zSecondaryVertex(zsv),
+        px(px), py(py), pz(pz), e(e), m(m), chi2PCA(chi2PCA),
+        errorDecayLength(errorDecayLength), errorDecayLengthXY(errorDecayLengthXY),
+        rSecondaryVertex(rSecondaryVertex), pt(pt), p(p),
+        pVector(pVector), eta(eta), phi(phi),
+        y(y), decayLength(decayLength), decayLengthXY(decayLengthXY),
+        decayLengthNormalised(decayLengthNormalised), decayLengthXYNormalised(decayLengthXYNormalised),
+        cpa(cpa), impactParameterXY(impactParameterXY)
+    {}
+
+      ~bjetCandSV() = default;
+
+      float xPVertex = 0.0f;
+      float yPVertex = 0.0f;
+      float zPVertex = 0.0f;
+      float xSecondaryVertex = 0.0f;
+      float ySecondaryVertex = 0.0f;
+      float zSecondaryVertex = 0.0f;
+      float px = 0.0f;
+      float py = 0.0f;
+      float pz = 0.0f;
+      float e = 0.0f;
+      float m = 0.0f;
+      float chi2PCA = 0.0f;
+      float errorDecayLength = 0.0f;
+      float errorDecayLengthXY = 0.0f;
+
+      float rSecondaryVertex = 0.0f;
+      float pt = 0.0f;
+      float p = 0.0f;
+      std::array<float, 3> pVector = {0.0f, 0.0f, 0.0f};
+      float eta = 0.0f;
+      float phi = 0.0f;
+      float y = 0.0f;
+      float decayLength = 0.0f;
+      float decayLengthXY = 0.0f;
+      float decayLengthNormalised = 0.0f;
+      float decayLengthXYNormalised = 0.0f;
+      float cpa = 0.0f;
+      float impactParameterXY = 0.0f;
+  };
+
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -232,6 +288,10 @@ struct JetTaggerHFQA {
         registry.add("h3_sign_impact_parameter_xyz_significance_tc_flavour", "", {HistType::kTH3F, {{impactParameterXYZSignificanceAxis}, {numOrderAxis}, {jetFlavourAxis}}});
       }
     }
+    if (doprocessIPsMCPMCDMatched) {
+      registry.add("h3_response_matrix_jet_pt_jet_pt_part_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {jetPtAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_flavour_flavour_run2", "", {HistType::kTH3F, {{jetPtAxis}, {jetFlavourAxis}, {jetFlavourAxis}}});
+    }
     if (doprocessJPData) {
       registry.add("h2_jet_pt_JP", "jet pt jet probability untagged", {HistType::kTH2F, {{jetPtAxis}, {JetProbabilityAxis}}});
       registry.add("h2_jet_pt_neg_log_JP", "jet pt jet probabilityun tagged", {HistType::kTH2F, {{jetPtAxis}, {JetProbabilityLogAxis}}});
@@ -329,6 +389,8 @@ struct JetTaggerHFQA {
   using JetTagTracksMCD = soa::Join<JetTracksMCD, aod::JTrackPIs, aod::JTracksTag>;
   using OriTracksData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection>;
   using OriTracksMCD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::McTrackLabels>;
+  using JetTagTableMCDMCPMatched = soa::Join<JetTagTableMCD, JetTagTableMCDMCP>;
+  using JetTagTableMCPMCDMatched = soa::Join<JetTagTableMCP, JetTagTableMCPMCD>;
 
   std::function<bool(const std::vector<float>&, const std::vector<float>&)> sortImp =
     [](const std::vector<float>& a, const std::vector<float>& b) {
@@ -360,12 +422,97 @@ struct JetTaggerHFQA {
 
     for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
       float Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+      if (prong.chi2PCA() > 10) continue;
       if (maxSxy < Sxy) {
         maxSxy = Sxy;
         correspondingErrorDecayLengthXY = prong.errorDecayLengthXY();
       }
     }
     return std::make_tuple(maxSxy, correspondingErrorDecayLengthXY);
+  }
+
+  template <typename ProngType, typename JetType>
+  bjetCandSV getMaxSxyForJetTemp(const JetType& mcdjet)
+  {
+    float xPVertex = 0.0f;
+    float yPVertex = 0.0f;
+    float zPVertex = 0.0f;
+    float xSecondaryVertex = 0.0f;
+    float ySecondaryVertex = 0.0f;
+    float zSecondaryVertex = 0.0f;
+    float px = 0.0f;
+    float py = 0.0f;
+    float pz = 0.0f;
+    float e = 0.0f;
+    float m = 0.0f;
+    float chi2PCA = 0.0f;
+    float errorDecayLength = 0.0f;
+    float errorDecayLengthXY = 0.0f;
+
+    float rSecondaryVertex = 0.0f;
+    float pt = 0.0f;
+    float p = 0.0f;
+    std::array<float, 3> pVector = {0.0f, 0.0f, 0.0f};
+    float eta = 0.0f;
+    float phi = 0.0f;
+    float y = 0.0f;
+    float decayLength = 0.0f;
+    float decayLengthXY = 0.0f;
+    float decayLengthNormalised = 0.0f;
+    float decayLengthXYNormalised = 0.0f;
+    float cpa = 0.0f;
+    float impactParameterXY = 0.0f;
+
+    float maxSxy = -1.0f;
+
+    for (const auto& prong : mcdjet.template secondaryVertices_as<ProngType>()) {
+      float Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+      if (prong.chi2PCA() > 10) continue;
+
+      if (maxSxy < Sxy) {
+        maxSxy = Sxy;
+
+        xPVertex = prong.xPVertex();
+        yPVertex = prong.yPVertex();
+        zPVertex = prong.zPVertex();
+        xSecondaryVertex = prong.xSecondaryVertex();
+        ySecondaryVertex = prong.ySecondaryVertex();
+        zSecondaryVertex = prong.zSecondaryVertex();
+        px = prong.px();
+        py = prong.py();
+        pz = prong.pz();
+        e = prong.e();
+        m = prong.m();
+        chi2PCA = prong.chi2PCA();
+        errorDecayLength = prong.errorDecayLength();
+        errorDecayLengthXY = prong.errorDecayLengthXY();
+        rSecondaryVertex = prong.rSecondaryVertex();
+        pt = prong.pt();
+        p = prong.p();
+        pVector = prong.pVector();
+        eta = prong.eta();
+        phi = prong.phi();
+        y = prong.y();
+        decayLength = prong.decayLength();
+        decayLengthXY = prong.decayLengthXY();
+        decayLengthNormalised = prong.decayLengthNormalised();
+        decayLengthXYNormalised = prong.decayLengthXYNormalised();
+        cpa = prong.cpa();
+        impactParameterXY = prong.impactParameterXY();
+      }
+    }
+
+    return bjetCandSV(
+        xPVertex, yPVertex, zPVertex,
+        xSecondaryVertex, ySecondaryVertex, zSecondaryVertex,
+        px, py, pz, e, m, chi2PCA,
+        errorDecayLength, errorDecayLengthXY,
+        rSecondaryVertex, pt, p,
+        pVector, eta, phi,
+        y, decayLength, decayLengthXY,
+        decayLengthNormalised, decayLengthXYNormalised,
+        cpa, impactParameterXY
+        );
   }
 
   template <typename V, typename JetType>
@@ -634,6 +781,27 @@ struct JetTaggerHFQA {
     }
   }
 
+  Preslice<aod::JMcParticles> particlesPerCollision = aod::jmcparticle::mcCollisionId;
+  template <typename T, typename U, typename V, typename W, typename X, typename Y>
+  void fillHistogramIPsMCPMCDMatched(T const& collision, U const& mcdjets, V const&, W const&, X const&, Y const& particles)
+  {
+    auto const particlesPerColl = particles.sliceBy(particlesPerCollision, collision.mcCollisionId());
+    for (auto& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      float eventWeight = mcdjet.eventWeight();
+      int jetflavour = mcdjet.origin();
+      int jetflavourRun2Def = -1;
+      //if (!mcdjet.has_matchedJetGeo()) continue;
+      for (auto& mcpjet : mcdjet.template matchedJetGeo_as<V>()) {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+        registry.fill(HIST("h3_response_matrix_jet_pt_jet_pt_part_flavour"), mcdjet.pt(), mcpjet.pt(), jetflavour, eventWeight);
+      }
+      registry.fill(HIST("h3_jet_pt_flavour_flavour_run2"), mcdjet.pt(), jetflavour, jetflavourRun2Def, eventWeight);
+    }
+  }
+
   template <typename T, typename U>
   void fillHistogramJPData(T const& /*collision*/, U const& jets)
   {
@@ -803,9 +971,20 @@ struct JetTaggerHFQA {
       }
       auto origin = mcdjet.origin();
       auto [maxSxy, sigmaLxy] = getMaxSxyForJet<V>(mcdjet);
+      auto bjetCand = getMaxSxyForJetTemp<V>(mcdjet);
+      //auto bjetCand = getMaxSxyForJetTemp(mcdjet);
+
+      //auto maxSxy = bjetCand.decayLength();
+      //auto sigmaLxy = bjetCand.errorDecayLength();
+
       auto [maxSxyz, sigmaLxyz] = getMaxSxyzForJet<V>(mcdjet);
       registry.fill(HIST("h2_3prong_nprongs_flavour"), mcdjet.template secondaryVertices_as<V>().size(), origin);
+      //if(origin==JetTaggingSpecies::beauty) LOG(info) << "nprongs: " << mcdjet.template secondaryVertices_as<V>().size();
+      if (mcdjet.template secondaryVertices_as<V>().size() < 1) continue;
       for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
+        //
+        //auto dR = jetutilities::deltaR(mcdjet, prong);
+        //
         auto Lxy = prong.decayLengthXY();
         auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
         auto Lxyz = prong.decayLength();
@@ -824,7 +1003,9 @@ struct JetTaggerHFQA {
         if (prongAcceptance(prong.errorDecayLength(), Sxyz, maxSigmaLxyz3Prong, minSxyz3Prong)) {
           registry.fill(HIST("h3_jet_pt_3prong_Sxyz_flavour_cutSxyzAndsigmaLxyz"), mcdjet.pt(), Sxyz, origin);
         }
+        //if (origin==JetTaggingSpecies::beauty) LOG (info) << "deltaR: "<< dR << " prongs Sxy: " << Sxy;
       }
+      //if (origin==JetTaggingSpecies::beauty) LOG(info) << "flavour: " << origin << " maxSxy: " << maxSxy;
       registry.fill(HIST("h3_jet_pt_3prong_Sxy_N1_flavour"), mcdjet.pt(), maxSxy, origin);
       registry.fill(HIST("h3_jet_pt_3prong_Sxyz_N1_flavour"), mcdjet.pt(), maxSxyz, origin);
       if (prongAcceptance(sigmaLxy, maxSxy, maxSigmaLxy3Prong, minSxy3Prong)) {
@@ -881,6 +1062,12 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter imformation for mcd jets", false);
 
+  void processIPsMCPMCDMatched(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& jcollision, JetTagTableMCDMCPMatched const& mcdjets, JetTagTableMCPMCDMatched const& mcpjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles& particles)
+  {
+    fillHistogramIPsMCPMCDMatched(jcollision, mcdjets, mcpjets, jtracks, tracks, particles);
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCPMCDMatched, "Fill impact parameter imformation for mcp mcd mathced jets", false);
+
   void processJPData(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableData const& jets, JetTagTracksData const&)
   {
     fillHistogramJPData(jcollision, jets);
@@ -920,9 +1107,11 @@ struct JetTaggerHFQA {
 
 using JetTaggerQAChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags>;
 using JetTaggerQAChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetTags>;
+using JetTaggerQAChargedMCDMCPJets = soa::Join<aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>;
 using JetTaggerQAChargedMCPJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>;
+using JetTaggerQAChargedMCPMCDJets = soa::Join<aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights>;
 
-using JetTaggerQACharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, JetTaggerQAChargedMCDJets, JetTaggerQAChargedMCPJets>;
+using JetTaggerQACharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, JetTaggerQAChargedMCDJets, JetTaggerQAChargedMCDMCPJets, JetTaggerQAChargedMCPJets, JetTaggerQAChargedMCPMCDJets>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
