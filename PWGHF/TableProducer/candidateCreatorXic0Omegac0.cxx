@@ -1024,7 +1024,6 @@ struct HfCandidateCreatorXic0Omegac0 {
   void processOmegacToOmegaPiWithKFParticle(aod::Collisions const& collisions,
                                             aod::BCsWithTimestamps const& bcWithTimeStamps,
                                             MyKfTracks const& tracks,
-                                            MyLFTracksWCov const &lfTracks,
                                             MyKfCascTable const& cascades,
                                             KFCascadesLinked const& cascadeLinks,
                                             aod::HfCascLf2Prongs const& candidates)
