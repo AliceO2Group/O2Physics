@@ -417,9 +417,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       float dcaxyV0Dau0 = impactParameterV0Dau0.getY();
       float dcaxyV0Dau1 = impactParameterV0Dau1.getY();
       float dcaxyCascBachelor = impactParameterCascDauCharged.getY();
-      float dcazV0Dau0 = impactParameterV0Dau0.dcaZ();
-      float dcazV0Dau1 = impactParameterV0Dau1.dcaZ();
-      float dcazCascBachelor = impactParameterCascDauCharged.dcaZ();
+      float dcazV0Dau0 = impactParameterV0Dau0.getZ();
+      float dcazV0Dau1 = impactParameterV0Dau1.getZ();
+      float dcazCascBachelor = impactParameterCascDauCharged.getZ();
 
       // impact parameters
       o2::dataformats::DCA impactParameterCasc;
