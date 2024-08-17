@@ -351,7 +351,7 @@ struct PhotonHBT {
 
     if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
       fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_qinv, axis_qabs_lcms, axis_kt}, true);
-    } else { // identical particle femtoscopy
+    } else { // non-identical particle femtoscopy
       fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_kstar, axis_qabs_lcms, axis_kt}, true);
     }
 
