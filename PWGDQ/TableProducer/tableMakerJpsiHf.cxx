@@ -292,6 +292,7 @@ struct tableMakerJpsiHf {
     auto dileptons = computeDileptonCombinatorial<TPairType, TTrackFillMap>(leptons);
 
     // loop over dileptons
+    std::vector<int> filledDmesonIds{}; // keep track of the D-mesons filled in the table to avoid repetitions
     for (auto dilepton : dileptons) {
       auto massJPsi = dilepton.mass();
       bool isJPsiFilled{false};
@@ -308,8 +309,13 @@ struct tableMakerJpsiHf {
       }
 
       // loop over D mesons
-      for (auto& dmeson : dmesons) {
+      for (auto const& dmeson : dmesons) {
         if (!TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
+          continue;
+        }
+
+        int dmesonIdx = dmeson.globalIndex();
+        if (std::find(filledDmesonIds.begin(), filledDmesonIds.end(), dmesonIdx) != filledDmesonIds.end()) { // we already included this D meson in the table, skip it
           continue;
         }
 
@@ -365,6 +371,7 @@ struct tableMakerJpsiHf {
             VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
           redD0Masses(massD0, massD0bar);
+          filledDmesonIds.push_back(dmesonIdx);
         }
       }
     }
