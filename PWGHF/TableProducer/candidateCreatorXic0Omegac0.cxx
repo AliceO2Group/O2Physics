@@ -1293,14 +1293,14 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       std::vector<int> idxBhadMothers{};
 
       auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<aod::TracksWMc>(), // bachelor <- charm baryon
-                                       candidate.template bachelor_as<aod::lfTracksWMc>(),              // bachelor <- cascade
-                                       candidate.template posTrack_as<aod::lfTracksWMc>(),              // p <- lambda
-                                       candidate.template negTrack_as<aod::lfTracksWMc>()};             // pi <- lambda
-      auto arrayDaughtersCasc = std::array{candidate.template bachelor_as<aod::lfTracksWMc>(),
-                                           candidate.template posTrack_as<aod::lfTracksWMc>(),
-                                           candidate.template negTrack_as<aod::lfTracksWMc>()};
-      auto arrayDaughtersV0 = std::array{candidate.template posTrack_as<aod::lfTracksWMc>(),
-                                         candidate.template negTrack_as<aod::lfTracksWMc>()};
+                                       candidate.template bachelor_as<lfTracksWMc>(),              // bachelor <- cascade
+                                       candidate.template posTrack_as<lfTracksWMc>(),              // p <- lambda
+                                       candidate.template negTrack_as<lfTracksWMc>()};             // pi <- lambda
+      auto arrayDaughtersCasc = std::array{candidate.template bachelor_as<lfTracksWMc>(),
+                                           candidate.template posTrack_as<lfTracksWMc>(),
+                                           candidate.template negTrack_as<lfTracksWMc>()};
+      auto arrayDaughtersV0 = std::array{candidate.template posTrack_as<lfTracksWMc>(),
+                                         candidate.template negTrack_as<lfTracksWMc>()};
 
       // Check whether the particle is from background events. If so, reject it.
       if (rejectBackground) {
