@@ -315,8 +315,9 @@ struct tableMakerJpsiHf {
         }
 
         int dmesonIdx = dmeson.globalIndex();
+        bool isDmesonFilled{false};
         if (std::find(filledDmesonIds.begin(), filledDmesonIds.end(), dmesonIdx) != filledDmesonIds.end()) { // we already included this D meson in the table, skip it
-          continue;
+          isDmesonFilled = true;
         }
 
         auto rapD0 = hfHelper.yD0(dmeson);
@@ -342,20 +343,25 @@ struct tableMakerJpsiHf {
             }
             isJPsiFilled = true;
           }
-          redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
+          if (!isDmesonFilled) {
+            redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
+            filledDmesonIds.push_back(dmesonIdx);
+          }
           std::array<float, 6> scores = {999., -999., -999., 999., -999., -999.}; // D0 + D0bar
           if constexpr (withBdt) {
-            if (dmeson.mlProbD0().size() == 3) {
-              for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
-                scores[iScore] = dmeson.mlProbD0()[iScore];
+            if (!isDmesonFilled) {
+              if (dmeson.mlProbD0().size() == 3) {
+                for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
+                  scores[iScore] = dmeson.mlProbD0()[iScore];
+                }
               }
-            }
-            if (dmeson.mlProbD0bar().size() == 3) {
-              for (auto iScore{0u}; iScore < dmeson.mlProbD0bar().size(); ++iScore) {
-                scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
+              if (dmeson.mlProbD0bar().size() == 3) {
+                for (auto iScore{0u}; iScore < dmeson.mlProbD0bar().size(); ++iScore) {
+                  scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
+                }
               }
+              redDmesBdts(scores[0], scores[1], scores[2], scores[3], scores[4], scores[5]);
             }
-            redDmesBdts(scores[0], scores[1], scores[2], scores[3], scores[4], scores[5]);
           }
 
           if (dmeson.isSelD0() >= 1) {
@@ -370,8 +376,9 @@ struct tableMakerJpsiHf {
             fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
             VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
-          redD0Masses(massD0, massD0bar);
-          filledDmesonIds.push_back(dmesonIdx);
+          if (!isDmesonFilled) {
+            redD0Masses(massD0, massD0bar);
+          }
         }
       }
     }
