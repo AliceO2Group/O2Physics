@@ -57,6 +57,7 @@ struct FlowPbPbTask {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
+  O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
   O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
   O2_DEFINE_CONFIGURABLE(cfgCutIR, float, 50.0, "maximum interaction rate (kHz)")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
@@ -580,12 +581,14 @@ struct FlowPbPbTask {
     registry.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initHadronicRate(bc);
-    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
-    double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
-    if (cfgUseInteractionRateCut && hadronicRate > cfgCutIR) // cut on hadronic rate
-      return;
-    gCurrentHadronicRate->Fill(seconds, hadronicRate);
+    if (cfgGetInteractionRate) {
+      initHadronicRate(bc);
+      double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
+      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+      if (cfgUseInteractionRateCut && hadronicRate > cfgCutIR) // cut on hadronic rate
+        return;
+      gCurrentHadronicRate->Fill(seconds, hadronicRate);
+    }
     loadCorrections(bc.timestamp());
     registry.fill(HIST("hEventCount"), 4.5);
 
