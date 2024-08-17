@@ -1293,9 +1293,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       std::vector<int> idxBhadMothers{};
 
       auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<aod::TracksWMc>(), // bachelor <- charm baryon
-                                       candidate.template bachelor_as<lfTracksWMc>(),              // bachelor <- cascade
-                                       candidate.template posTrack_as<lfTracksWMc>(),              // p <- lambda
-                                       candidate.template negTrack_as<lfTracksWMc>()};             // pi <- lambda
+                                       candidate.template bachelor_as<lfTracksWMc>(),                   // bachelor <- cascade
+                                       candidate.template posTrack_as<lfTracksWMc>(),                   // p <- lambda
+                                       candidate.template negTrack_as<lfTracksWMc>()};                  // pi <- lambda
       auto arrayDaughtersCasc = std::array{candidate.template bachelor_as<lfTracksWMc>(),
                                            candidate.template posTrack_as<lfTracksWMc>(),
                                            candidate.template negTrack_as<lfTracksWMc>()};
