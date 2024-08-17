@@ -1191,7 +1191,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
 
-  using lfTracksWMc = soa::Join<TracksIU, McTrackLabels>;
+  using MyTracksWMc = soa::Join<TracksIU, McTrackLabels>;
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
@@ -1251,8 +1251,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Colls, typename TMyRecoCand>
   void runXic0Omegac0Mc(TMyRecoCand const& candidates,
-                        aod::TracksWMc const&,
-                        lfTracksWMc const&,
+                        MyTracksWMc const&,
                         aod::McParticles const& mcParticles,
                         Colls const& collsWithMcLabels,
                         aod::McCollisions const& mcCollisions,
@@ -1292,15 +1291,15 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       collisionMatched = false;
       std::vector<int> idxBhadMothers{};
 
-      auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<aod::TracksWMc>(), // bachelor <- charm baryon
-                                       candidate.template bachelor_as<lfTracksWMc>(),                   // bachelor <- cascade
-                                       candidate.template posTrack_as<lfTracksWMc>(),                   // p <- lambda
-                                       candidate.template negTrack_as<lfTracksWMc>()};                  // pi <- lambda
-      auto arrayDaughtersCasc = std::array{candidate.template bachelor_as<lfTracksWMc>(),
-                                           candidate.template posTrack_as<lfTracksWMc>(),
-                                           candidate.template negTrack_as<lfTracksWMc>()};
-      auto arrayDaughtersV0 = std::array{candidate.template posTrack_as<lfTracksWMc>(),
-                                         candidate.template negTrack_as<lfTracksWMc>()};
+      auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<MyTracksWMc>(), // bachelor <- charm baryon
+                                       candidate.template bachelor_as<MyTracksWMc>(),                   // bachelor <- cascade
+                                       candidate.template posTrack_as<MyTracksWMc>(),                   // p <- lambda
+                                       candidate.template negTrack_as<MyTracksWMc>()};                  // pi <- lambda
+      auto arrayDaughtersCasc = std::array{candidate.template bachelor_as<MyTracksWMc>(),
+                                           candidate.template posTrack_as<MyTracksWMc>(),
+                                           candidate.template negTrack_as<MyTracksWMc>()};
+      auto arrayDaughtersV0 = std::array{candidate.template posTrack_as<MyTracksWMc>(),
+                                         candidate.template negTrack_as<MyTracksWMc>()};
 
       // Check whether the particle is from background events. If so, reject it.
       if (rejectBackground) {
@@ -1722,146 +1721,134 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processDoNoMc, "Do not run any MC process function", true);
 
   void processMcXicToXiPi(aod::HfCandToXiPi const& candidates,
-                          aod::TracksWMc const& tracks,
-                          lfTracksWMc const& lfTracks,
+                          MyTracksWMc const& tracks,
                           aod::McParticles const& mcParticles,
                           aod::McCollisions const& mcColls,
                           McCollisionsNoCents const& collsWithMcLabels,
                           BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPi, "Run Xic0 to xi pi MC process function - no centrality", false);
 
   void processMcXicToXiPiFT0m(aod::HfCandToXiPi const& candidates,
-                              aod::TracksWMc const& tracks,
-                              lfTracksWMc const& lfTracks,
+                              MyTracksWMc const& tracks,
                               aod::McParticles const& mcParticles,
                               aod::McCollisions const& mcColls,
                               McCollisionsFT0Ms const& collsWithMcLabels,
                               BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPiFT0m, "Run Xic0 to xi pi MC process function - FT0M", false);
 
   void processMcXicToXiPiFT0c(aod::HfCandToXiPi const& candidates,
-                              aod::TracksWMc const& tracks,
-                              lfTracksWMc const& lfTracks,
+                              MyTracksWMc const& tracks,
                               aod::McParticles const& mcParticles,
                               aod::McCollisions const& mcColls,
                               McCollisionsFT0Cs const& collsWithMcLabels,
                               BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPiFT0c, "Run Xic0 to xi pi MC process function - FT0C", false);
 
   void processMcOmegacToXiPi(aod::HfCandToXiPi const& candidates,
-                             aod::TracksWMc const& tracks,
-                             lfTracksWMc const& lfTracks,
+                             MyTracksWMc const& tracks,
                              aod::McParticles const& mcParticles,
                              aod::McCollisions const& mcColls,
                              McCollisionsNoCents const& collsWithMcLabels,
                              BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToXiPi, "Run Omegac0 to xi pi MC process function - no centrality", false);
 
   void processMcOmegacToXiPiFT0m(aod::HfCandToXiPi const& candidates,
-                                 aod::TracksWMc const& tracks,
-                                 lfTracksWMc const& lfTracks,
+                                 MyTracksWMc const& tracks,
                                  aod::McParticles const& mcParticles,
                                  aod::McCollisions const& mcColls,
                                  McCollisionsFT0Ms const& collsWithMcLabels,
                                  BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToXiPiFT0m, "Run Omegac0 to xi pi MC process function - FT0M", false);
 
   void processMcOmegacToXiPiFT0c(aod::HfCandToXiPi const& candidates,
-                                 aod::TracksWMc const& tracks,
-                                 lfTracksWMc const& lfTracks,
+                                 MyTracksWMc const& tracks,
                                  aod::McParticles const& mcParticles,
                                  aod::McCollisions const& mcColls,
                                  McCollisionsFT0Cs const& collsWithMcLabels,
                                  BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToXiPiFT0c, "Run Omegac0 to xi pi MC process function - FT0C", false);
 
   void processMcOmegacToOmegaPi(aod::HfCandToOmegaPi const& candidates,
-                                aod::TracksWMc const& tracks,
-                                lfTracksWMc const& lfTracks,
+                                MyTracksWMc const& tracks,
                                 aod::McParticles const& mcParticles,
                                 aod::McCollisions const& mcColls,
                                 McCollisionsNoCents const& collsWithMcLabels,
                                 BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPi, "Run Omegac0 to omega pi MC process function - no centrality", false);
 
   void processMcOmegacToOmegaPiFT0m(aod::HfCandToOmegaPi const& candidates,
-                                    aod::TracksWMc const& tracks,
-                                    lfTracksWMc const& lfTracks,
+                                    MyTracksWMc const& tracks,
                                     aod::McParticles const& mcParticles,
                                     aod::McCollisions const& mcColls,
                                     McCollisionsFT0Ms const& collsWithMcLabels,
                                     BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPiFT0m, "Run Omegac0 to omega pi MC process function - FT0M", false);
 
   void processMcOmegacToOmegaPiFT0c(aod::HfCandToOmegaPi const& candidates,
-                                    aod::TracksWMc const& tracks,
-                                    lfTracksWMc const& lfTracks,
+                                    MyTracksWMc const& tracks,
                                     aod::McParticles const& mcParticles,
                                     aod::McCollisions const& mcColls,
                                     McCollisionsFT0Cs const& collsWithMcLabels,
                                     BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPiFT0c, "Run Omegac0 to omega pi MC process function - FT0C", false);
 
   void processMcOmegacToOmegaK(aod::HfCandToOmegaK const& candidates,
-                               aod::TracksWMc const& tracks,
-                               lfTracksWMc const& lfTracks,
+                               MyTracksWMc const& tracks,
                                aod::McParticles const& mcParticles,
                                aod::McCollisions const& mcColls,
                                McCollisionsNoCents const& collsWithMcLabels,
                                BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaK, "Run Omegac0 to omega K MC process function - no centrality", false);
 
   void processMcOmegacToOmegaKFT0m(aod::HfCandToOmegaK const& candidates,
-                                   aod::TracksWMc const& tracks,
-                                   lfTracksWMc const& lfTracks,
+                                   MyTracksWMc const& tracks,
                                    aod::McParticles const& mcParticles,
                                    aod::McCollisions const& mcColls,
                                    McCollisionsFT0Ms const& collsWithMcLabels,
                                    BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaKFT0m, "Run Omegac0 to omega K MC process function - FT0M", false);
 
   void processMcOmegacToOmegaKFT0c(aod::HfCandToOmegaK const& candidates,
-                                   aod::TracksWMc const& tracks,
-                                   lfTracksWMc const& lfTracks,
+                                   MyTracksWMc const& tracks,
                                    aod::McParticles const& mcParticles,
                                    aod::McCollisions const& mcColls,
                                    McCollisionsFT0Cs const& collsWithMcLabels,
                                    BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, lfTracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaKFT0c, "Run Omegac0 to omega K MC process function - FT0C", false);
 
