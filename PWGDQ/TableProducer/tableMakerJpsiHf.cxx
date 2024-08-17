@@ -250,7 +250,7 @@ struct tableMakerJpsiHf {
 
     bool isCollSel{false};
     if (configDebug) {
-      for (auto& dmeson : dmesons) {
+      for (auto const& dmeson : dmesons) {
         if (!TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
           continue;
         }
@@ -390,7 +390,7 @@ struct tableMakerJpsiHf {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates.sliceBy(perCollisionDmeson, collision.globalIndex());
       auto groupedLeptonCandidates = muonCandidates.sliceBy(perCollisionMuons, collision.globalIndex());
       runDileptonDmeson<false, false, VarManager::kDecayToMuMu, gkMuonFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
@@ -403,7 +403,7 @@ struct tableMakerJpsiHf {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates.sliceBy(perCollisionDmeson, collision.globalIndex());
       auto groupedLeptonCandidates = electronCandidates.sliceBy(perCollisionElectrons, collision.globalIndex());
       runDileptonDmeson<false, false, VarManager::kDecayToEE, gkTrackFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
@@ -416,7 +416,7 @@ struct tableMakerJpsiHf {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt.sliceBy(perCollisionDmesonWithBdt, collision.globalIndex());
       auto groupedLeptonCandidates = muonCandidates.sliceBy(perCollisionMuons, collision.globalIndex());
       runDileptonDmeson<false, true, VarManager::kDecayToMuMu, gkMuonFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
@@ -429,7 +429,7 @@ struct tableMakerJpsiHf {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt.sliceBy(perCollisionDmesonWithBdt, collision.globalIndex());
       auto groupedLeptonCandidates = electronCandidates.sliceBy(perCollisionElectrons, collision.globalIndex());
       runDileptonDmeson<false, true, VarManager::kDecayToEE, gkTrackFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
