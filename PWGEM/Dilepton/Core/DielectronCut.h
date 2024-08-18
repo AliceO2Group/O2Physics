@@ -291,8 +291,7 @@ class DielectronCut : public TNamed
   bool PassTPConly(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    return is_el_included_TPC && is_pi_excluded_TPC;
+    return is_el_included_TPC;
   }
 
   template <typename T>
