@@ -135,7 +135,6 @@ struct FullJetSpectrapp {
       h_collisions_weighted->GetXaxis()->SetBinLabel(6, "JetsMCDWeighted w/o kTVXinEMC");
       h_collisions_weighted->GetXaxis()->SetBinLabel(7, "JetsMCPMCDMatchedWeighted w/o kTVXinEMC");
       h_collisions_weighted->GetXaxis()->SetBinLabel(8, "TracksWeighted w/o kTVXinEMC");
-
     }
   }
 
