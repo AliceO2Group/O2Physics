@@ -511,7 +511,7 @@ struct FullJetSpectrapp {
       fillJetHistograms(jet, jet.eventWeight());
     }
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processJetsMCDWeighted, "Full Jets at Detector Level on weighted events", false);
 
   void processJetsMCP(typename JetTableMCPJoined::iterator const& jet, JetParticles const&, JetMcCollisions const&)
   {
@@ -535,7 +535,7 @@ struct FullJetSpectrapp {
     }
     fillMCPHistograms(jet, jet.eventWeight());
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPWeighted, "jet finder HF QA mcp on weighted events", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPWeighted, "Full Jets at Particle Level on weighted events", false);
 
   void processTracks(soa::Filtered<EMCCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, soa::Filtered<JetClusters> const& clusters)
   {
@@ -571,7 +571,7 @@ struct FullJetSpectrapp {
     // Fill Accepted events histos
     fillTrackHistograms(tracks, clusters, 1.0);
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processTracks, "QA for fulljet tracks", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processTracks, "Full Jet tracks", false);
 
   void processJetsMCPMCDMatched(soa::Filtered<EMCCollisions>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, JetTableMCPMatchedJoined const&, JetTracks const&, JetClusters const&, JetParticles const&)
   {
@@ -607,7 +607,7 @@ struct FullJetSpectrapp {
       fillMatchedHistograms<typename JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet);
     }
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPMCDMatched, "full jet finder MCP matched to MCD", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPMCDMatched, "Full Jet finder MCP matched to MCD", false);
 
   void processJetsMCPMCDMatchedWeighted(soa::Filtered<EMCCollisions>::iterator const& collision, JetTableMCDMatchedWeightedJoined const& mcdjets, JetTableMCPMatchedWeightedJoined const&, JetTracks const&, JetClusters const&, JetParticles const&)
   {
@@ -643,7 +643,7 @@ struct FullJetSpectrapp {
       fillMatchedHistograms<typename JetTableMCDMatchedWeightedJoined::iterator, JetTableMCPMatchedWeightedJoined>(mcdjet, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPMCDMatchedWeighted, "full jet finder MCP matched to MCD on weighted events", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPMCDMatchedWeighted, "Full Jet finder MCP matched to MCD on weighted events", false);
 
   void processTracksWeighted(soa::Filtered<soa::Join<EMCCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
                              aod::JMcCollisions const&,
@@ -683,7 +683,7 @@ struct FullJetSpectrapp {
     // registry.fill(HIST("h_gaptrig_collisions"), 1.0, eventWeight);
     fillTrackHistograms(tracks, clusters, eventWeight);
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processTracksWeighted, "QA for fulljet tracks weighted", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processTracksWeighted, "Full Jet tracks weighted", false);
 
 }; // struct
 
