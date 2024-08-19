@@ -48,7 +48,7 @@ class Zorro
   TH1D* getInspectedTVX() const { return mInspectedTVX; }
   std::bitset<128> getLastResult() const { return mLastResult; }
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
-  std::vector<bool> getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance = 100)  ;
+  std::vector<bool> getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance = 100);
   std::vector<bool> getTriggerOfInterestResults() const;
 
   void setCCDBpath(std::string path) { mBaseCCDBPath = path; }
