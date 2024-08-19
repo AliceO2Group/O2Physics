@@ -1,0 +1,328 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "CCDB/BasicCCDBManager.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/GammaJetAnalysisTree.h"
+
+#include "EMCALBase/Geometry.h"
+#include "EMCALCalib/BadChannelMap.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "DataFormatsEMCAL/Cell.h"
+#include "DataFormatsEMCAL/Constants.h"
+#include "DataFormatsEMCAL/AnalysisCluster.h"
+#include "TVector2.h"
+#include "EventFiltering/Zorro.h"
+
+#include "CommonDataFormat/InteractionRecord.h"
+
+#include "EventFiltering/filterTables.h"
+
+// \struct GammaJetTreeProducer
+/// \brief Task to produce a tree for gamma-jet analysis, including photons (and information of isolation) and charged and full jets
+/// \author Florian Jonas <florian.jonas@cern.ch>, UC Berkeley/LBNL
+/// \since 02.08.2024
+///
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using bcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
+using selectedClusters = o2::soa::Filtered<o2::aod::JClusters>;
+
+#include "Framework/runDataProcessing.h"
+
+struct GammaJetTreeProducer {
+  // analysis tree
+  // charged jets
+  // photon candidates
+  Produces<aod::GjChargedJets> chargedJetsTable;
+  Produces<aod::GjEvents> eventsTable;
+  Produces<aod::GjGammas> gammasTable;
+
+  HistogramRegistry mHistograms{"GammaJetTreeProducerHisto"};
+
+  // configure zorro
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Zorro zorro;
+
+  // ---------------
+  // Configureables
+  // ---------------
+
+  // event cuts
+  Configurable<double> mVertexCut{"vertexCut", 10.0, "apply z-vertex cut with value in cm"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<std::string> mSoftwareTrigger{"softwareTrigger", "", "If set, only process events with this software trigger using zorro, e.g. fGammaHighPtEMCAL,fGammaHighPtDCAL"};
+  Configurable<std::string> fConfigCcdbPathZorro{
+    "ccdb-path-zorro", "http://alice-ccdb.cern.ch", "base path to the ccdb object for zorro"};
+  Configurable<std::string>
+    trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<float> trackMinPt{"trackMinPt", 0.15, "minimum track pT cut"};
+  Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
+  Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
+  Configurable<float> isoR{"isoR", 0.4, "isolation cone radius"};
+
+  // cluster cuts
+  Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
+  // Preslice<o2::aod::JClusterTracks> perClusterMatchedTracks = o2::aod::jcluster::clusterId;
+
+  int mRunNumber = 0;
+  int eventSelection = -1;
+  int trackSelection = -1;
+  void init(InitContext const&)
+  {
+    ccdb->setURL(fConfigCcdbPathZorro);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
+    using o2HistType = HistType;
+    using o2Axis = AxisSpec;
+
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+
+    // create histograms
+    LOG(info) << "Creating histograms";
+
+    const o2Axis ptAxis{100, 0, 100, "p_{T} (GeV/c)"};
+    const o2Axis energyAxis{100, 0, 100, "E (GeV)"};
+    const o2Axis m02Axis{100, 0, 3, "m02"};
+
+    mHistograms.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
+    mHistograms.add("trackPt", "pT of track", o2HistType::kTH1F, {ptAxis});
+    mHistograms.add("chjetPt", "pT of charged jet", o2HistType::kTH1F, {ptAxis});
+    mHistograms.add("chjetpt_vs_constpt", "pT of charged jet vs pT of constituents", o2HistType::kTH2F, {ptAxis, ptAxis});
+  }
+
+  void initCCDB(aod::JBC const& bc)
+  {
+
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    if (mSoftwareTrigger->length() > 0) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), mSoftwareTrigger.value);
+      zorro.populateHistRegistry(mHistograms, bc.runNumber());
+      mRunNumber = bc.runNumber();
+    }
+  }
+
+  // ---------------------
+  // Helper functions
+  // ---------------------
+  template <typename T>
+  double deltaR(T const& eta1, T const& phi1, T const& eta2, T const& phi2)
+  {
+    // make sure both phi1 and phi2 are 0 to 2pi
+
+    double dPhi = TVector2::Phi_0_2pi(phi1) - TVector2::Phi_0_2pi(phi2);
+    if (abs(dPhi) > M_PI) {
+      dPhi = 2 * M_PI - abs(dPhi);
+    }
+    double dEta = eta1 - eta2;
+    return std::sqrt(dPhi * dPhi + dEta * dEta);
+  }
+
+  bool isTrackSelected(const auto& track)
+  {
+    if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+      return false;
+    }
+    if (track.pt() < trackMinPt) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool isEventAccepted(const auto& collision, const auto& bc)
+  {
+    // get bc from collision
+    initCCDB(bc);
+
+    if (mSoftwareTrigger->length() > 0) {
+      if (!zorro.isSelected(bc.globalBC())) {
+        return false;
+      }
+    }
+
+    if (collision.posZ() > mVertexCut) {
+      return false;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return false;
+    }
+    if (!jetderiveddatautilities::eventEMCAL(collision)) {
+      return false;
+    }
+    return true;
+  }
+
+  double ch_iso_in_cone(const auto& cluster, JetTracks const& tracks, float radius = 0.4)
+  {
+    double iso = 0;
+    for (auto track : tracks) {
+      if (!isTrackSelected(track)) {
+        continue;
+      }
+      // make dR function live somwhere else
+      double dR = deltaR(cluster.eta(), cluster.phi(), track.eta(), track.phi());
+      if (dR < radius) {
+        iso += track.pt();
+      }
+    }
+    return iso;
+  }
+  double ch_perp_cone_rho(const auto& cluster, JetTracks const& tracks, float radius = 0.4)
+  {
+    double ptSumLeft = 0;
+    double ptSumRight = 0;
+
+    double cPhi = TVector2::Phi_0_2pi(cluster.phi());
+
+    // rotate cone left by 90 degrees
+    float cPhiLeft = cPhi - TMath::Pi() / 2;
+    float cPhiRight = cPhi + TMath::Pi() / 2;
+
+    // loop over tracks
+    float dRLeft, dRRight;
+    for (auto track : tracks) {
+      if (!isTrackSelected(track)) {
+        continue;
+      }
+      dRLeft = deltaR(cluster.eta(), cPhiLeft, track.eta(), track.phi());
+      dRRight = deltaR(cluster.eta(), cPhiRight, track.eta(), track.phi());
+
+      if (dRLeft < radius) {
+        ptSumLeft += track.pt();
+      }
+      if (dRRight < radius) {
+        ptSumRight += track.pt();
+      }
+    }
+
+    float rho = (ptSumLeft + ptSumRight) / (2 * TMath::Pi() * radius * radius);
+    return rho;
+  }
+
+  // ---------------------
+  // Processing functions
+  // ---------------------
+
+  // define cluster filter. It selects only those clusters which are of the type
+  // sadly passing of the string at runtime is not possible for technical region so cluster definition is
+  // an integer instead
+  Filter clusterDefinitionSelection = (o2::aod::jcluster::definition == mClusterDefinition);
+  // Process clusters
+  void processClusters(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, aod::JBCs const&, selectedClusters const& clusters, JetTracks const& tracks)
+  {
+    // get bc
+    auto bc = collision.bc_as<aod::JBCs>();
+    if (!isEventAccepted(collision, bc)) {
+      return;
+    }
+
+    eventsTable(collision.globalIndex(), collision.multiplicity(), collision.centrality(), collision.rho(), collision.eventSel(), collision.alias_raw());
+
+    // loop over clusters
+    for (auto cluster : clusters) {
+
+      // fill histograms
+      mHistograms.fill(HIST("clusterE"), cluster.energy());
+
+      double isoraw = ch_iso_in_cone(cluster, tracks, isoR);
+      double perpconerho = ch_perp_cone_rho(cluster, tracks, isoR);
+
+      // find closest matched track
+      double dEta = 0;
+      double dPhi = 0;
+      // double dRMin = 100;
+      double p = -1;
+
+      // auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
+      // for (const auto& match : tracksofcluster) {
+      //   // ask the jtracks table for track with ID trackID
+      //   double dR = deltaR(cluster.eta(), cluster.phi(), match.tracks_as<o2::aod::JTracks>().Eta(), match.tracks_as<o2::aod::JTracks>().Phi());
+      //   if (dR < dRMin) {
+      //     dRMin = dR;
+      //     dEta = cluster.eta() - match.tracks_as<o2::aod::JTracks>().eta();
+      //     dPhi = TVector2::Phi_0_2pi(cluster.phi()) - TVector2::Phi_0_2pi(match.tracks_as<o2::aod::JTracks>().phi());
+      //     if (abs(dPhi) > M_PI) {
+      //       dPhi = 2 * M_PI - abs(dPhi);
+      //     }
+      //     p = match.tracks_as<o2::aod::JTracks>().p();
+      //   }
+      // }
+
+      // // for compression reasons make dPhi and dEta 0 if no match is found
+      // if (p == -1) {
+      //   dPhi = 0;
+      //   dEta = 0;
+      // }
+
+      gammasTable(collision.globalIndex(), cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), isoraw, perpconerho, dPhi, dEta, p);
+    }
+
+    // dummy loop over tracks
+    for (auto track : tracks) {
+      mHistograms.fill(HIST("trackPt"), track.pt());
+    }
+  }
+  PROCESS_SWITCH(GammaJetTreeProducer, processClusters, "Process EMCal clusters", true);
+
+  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
+  // Process charged jets
+  void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, aod::JBCs const&, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const&)
+  {
+    // get bc
+    auto bc = collision.bc_as<aod::JBCs>();
+    if (!isEventAccepted(collision, bc)) {
+      return;
+    }
+
+    // loop over charged jets
+    for (auto jet : chargedJets) {
+      if (jet.pt() < jetPtMin)
+        continue;
+      ushort nconst = 0;
+      // loop over constituents
+      for (auto& constituent : jet.template tracks_as<JetTracks>()) {
+        mHistograms.fill(HIST("chjetpt_vs_constpt"), jet.pt(), constituent.pt());
+        nconst++;
+      }
+
+      chargedJetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(), jet.energy(), jet.mass(), jet.area(), nconst);
+      // fill histograms
+      mHistograms.fill(HIST("chjetPt"), jet.pt());
+    }
+  }
+  PROCESS_SWITCH(GammaJetTreeProducer, processChargedJets, "Process charged jets", true);
+};
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  WorkflowSpec workflow{
+    adaptAnalysisTask<GammaJetTreeProducer>(cfgc, TaskName{"gamma-jet-tree-producer"}, SetDefaultProcesses{{{"processClusters", true}, {"processChargedJets", true}}})};
+  return workflow;
+}
