@@ -479,16 +479,16 @@ struct OnTheFlyTracker {
     double newY = ((particle.vy() - xi_circle.yC) * std::cos(theta) + (particle.vx() - xi_circle.xC) * std::sin(theta)) + xi_circle.yC;
     double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
     double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
-    if (!track.propagateTo(sqrt(newX*newX + newY*newY), magneticField)) {
+    if (!track.propagateTo(sqrt(newX * newX + newY * newY), magneticField)) {
       LOGF(info, "failed to propagate");
     }
     std::array<float, 3> xiPos;
     track.getXYZGlo(xiPos);
     LOGF(info, "track: %f, %f, %f", xiPos[0], xiPos[1], xiPos[2]);
-    LOGF(info, "Bbend: %f, %f, %f", newX, newY, particle.vz() + xi_rxyz*(particle.pz()/particle.p()));
+    LOGF(info, "Bbend: %f, %f, %f", newX, newY, particle.vz() + xi_rxyz * (particle.pz() / particle.p()));
     xiDecayVertex.push_back(newX);
     xiDecayVertex.push_back(newY);
-    xiDecayVertex.push_back(particle.vz() + xi_rxyz*(particle.pz()/particle.p()));
+    xiDecayVertex.push_back(particle.vz() + xi_rxyz * (particle.pz() / particle.p()));
 
     std::vector<double> xiDaughters = {1.115, 0.139570};
     TLorentzVector xi(newPx, newPy, particle.pz(), particle.e());
@@ -496,13 +496,13 @@ struct OnTheFlyTracker {
     xiDecay.SetDecay(xi, 2, xiDaughters.data());
     xiDecay.Generate();
     decayDaughters.push_back(*xiDecay.GetDecay(1));
-    
+
     double l0_ctau = 7.89; // lambda
     std::vector<double> l0Daughters = {0.139570, 0.938272};
     double l0_rxyz = (-l0_ctau * log(1 - u));
-    l0DecayVertex.push_back(xiDecayVertex[0] + l0_rxyz * (xiDecay.GetDecay(0)->Px()/xiDecay.GetDecay(0)->P()));
-    l0DecayVertex.push_back(xiDecayVertex[1] + l0_rxyz * (xiDecay.GetDecay(0)->Py()/xiDecay.GetDecay(0)->P()));
-    l0DecayVertex.push_back(xiDecayVertex[2] + l0_rxyz * (xiDecay.GetDecay(0)->Pz()/xiDecay.GetDecay(0)->P()));
+    l0DecayVertex.push_back(xiDecayVertex[0] + l0_rxyz * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
+    l0DecayVertex.push_back(xiDecayVertex[1] + l0_rxyz * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
+    l0DecayVertex.push_back(xiDecayVertex[2] + l0_rxyz * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
 
     TLorentzVector l0 = *xiDecay.GetDecay(0);
     TGenPhaseSpace l0Decay;
