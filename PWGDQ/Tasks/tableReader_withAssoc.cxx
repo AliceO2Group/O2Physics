@@ -854,6 +854,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> fConfigCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
   Configurable<float> fConfigCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
+  Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -992,12 +993,20 @@ struct AnalysisSameEventPairing {
               Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
               Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
-            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+            if (fConfigAmbiguousHist) {
+              histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+            } else {
+              histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+            }
             if (fEnableMuonMixingHistos) {
               names.push_back(Form("PairsMuonMEPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsMuonMEPP_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsMuonMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
+              if (fConfigAmbiguousHist) {
+                histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[3].Data(), names[4].Data(), names[5].Data(), names[3].Data(), names[4].Data(), names[5].Data());
+              } else {
+                histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
+              }
             }
             fMuonHistNames[icut] = names;
 
@@ -1010,7 +1019,11 @@ struct AnalysisSameEventPairing {
                   Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                   Form("PairsMuonSEPP_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                   Form("PairsMuonSEMM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName())};
-                histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+                if (fConfigAmbiguousHist) {
+                  histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+                } else {
+                  histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+                }
                 fMuonHistNames[fNCutsMuon + icut * fNCutsMuon + iPairCut] = names;
               } // end loop (pair cuts)
             }   // end if (pair cuts)
@@ -1180,7 +1193,7 @@ struct AnalysisSameEventPairing {
 
       bool isFirst = true;
       for (auto& [a1, a2] : o2::soa::combinations(groupedAssocs, groupedAssocs)) {
-
+        bool dimuonUnambiguous = 0;
         if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
           twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
 
@@ -1247,8 +1260,11 @@ struct AnalysisSameEventPairing {
 
           auto t1 = a1.template reducedmuon_as<TTracks>();
           auto t2 = a2.template reducedmuon_as<TTracks>();
+          if (t1.matchMCHTrackId() == t2.matchMCHTrackId()) continue;
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId()) continue;
           sign1 = t1.sign();
           sign2 = t2.sign();
+          if (t1.isAmbiguous() || t2.isAmbiguous()) dimuonUnambiguous = 1;
 
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           if constexpr (TTwoProngFitter) {
@@ -1351,6 +1367,35 @@ struct AnalysisSameEventPairing {
                 }
               }
             }
+            if (fConfigAmbiguousHist && dimuonUnambiguous) {
+              if (sign1 * sign2 < 0) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
+                if (isAmbiInBunch) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][3 + histIdxOffset].Data()), VarManager::fgValues);
+                }
+                if (isAmbiOutOfBunch) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][3 + histIdxOffset + 3].Data()), VarManager::fgValues);
+                }
+              } else {
+                if (sign1 > 0) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][1].Data()), VarManager::fgValues);
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][4 + histIdxOffset].Data()), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][4 + histIdxOffset + 3].Data()), VarManager::fgValues);
+                  }
+                } else {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][2].Data()), VarManager::fgValues);
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][5 + histIdxOffset].Data()), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][5 + histIdxOffset + 3].Data()), VarManager::fgValues);
+                  }
+                }
+              }
+            }
             for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
               AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
               if (!(cut.IsSelected(VarManager::fgValues))) // apply pair cuts
@@ -1362,6 +1407,17 @@ struct AnalysisSameEventPairing {
                   fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][1].Data(), VarManager::fgValues);
                 } else {
                   fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][2].Data(), VarManager::fgValues);
+                }
+              }
+              if (fConfigAmbiguousHist && dimuonUnambiguous) {
+                if (sign1 * sign2 < 0) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[ncuts + icut * ncuts + iPairCut][0].Data()), VarManager::fgValues);
+                } else {
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(Form("%s_unambiguous", histNames[ncuts + icut * ncuts + iPairCut][1].Data()), VarManager::fgValues);
+                  } else {
+                    fHistMan->FillHistClass(Form("%s_unambiguous", histNames[ncuts + icut * ncuts + iPairCut][2].Data()), VarManager::fgValues);
+                  }
                 }
               }
             } // end loop (pair cuts)
@@ -1380,13 +1436,15 @@ struct AnalysisSameEventPairing {
     uint32_t twoTrackFilter = 0;
     for (auto& a1 : assocs1) {
       for (auto& a2 : assocs2) {
+        bool dimuonUnambiguous = 0;
         if constexpr (TPairType == VarManager::kDecayToEE) {
           twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
           if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
             continue;
           }
           auto t1 = a1.template reducedtrack_as<TTracks1>();
-          auto t2 = a1.template reducedtrack_as<TTracks2>();
+          auto t2 = a2.template reducedtrack_as<TTracks2>();
+          if (t1.isAmbiguous() || t2.isAmbiguous()) dimuonUnambiguous = 1;
           VarManager::FillPairME<TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
             VarManager::FillPairVn<TPairType>(t1, t2);
@@ -1400,11 +1458,15 @@ struct AnalysisSameEventPairing {
             continue;
           }
           auto t1 = a1.template reducedmuon_as<TTracks1>();
-          auto t2 = a1.template reducedmuon_as<TTracks2>();
+          auto t2 = a2.template reducedmuon_as<TTracks2>();
+          if (t1.matchMCHTrackId() == t2.matchMCHTrackId()) continue;
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId()) continue;
+          if (t1.isAmbiguous() || t2.isAmbiguous()) dimuonUnambiguous = 1;
           VarManager::FillPairME<TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
             VarManager::FillPairVn<TPairType>(t1, t2);
           }
+          pairSign = t1.sign() + t2.sign();
           ncuts = fNCutsMuon;
           histNames = fMuonHistNames;
         }
@@ -1423,6 +1485,17 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
             } else {
               fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
+            }
+          }
+          if (fConfigAmbiguousHist && dimuonUnambiguous) {
+            if (pairSign == 0) {
+              fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][3].Data()), VarManager::fgValues);
+            } else {
+              if (pairSign > 0) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][4].Data()), VarManager::fgValues);
+              } else {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][5].Data()), VarManager::fgValues);
+              }
             }
           }
         } // end for (cuts)
