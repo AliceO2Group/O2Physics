@@ -705,7 +705,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPhi;
         recPhi = recMother(track1, track2, massKa, massKa);
-        if (std::abs(recPhi.Rapidity()) > 0.8)
+        if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
           continue;
 
         if (!isCountedPhi) {
@@ -740,7 +740,7 @@ struct phik0shortanalysis {
           TLorentzVector recK0S;
           recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
-          if (std::abs(recK0S.Rapidity()) > 0.8)
+          if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           for (int i = 0; i < nPtBinK0S; i++) {
@@ -775,7 +775,7 @@ struct phik0shortanalysis {
           TLorentzVector recPi;
           recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
-          if (std::abs(recPi.Rapidity()) > 0.8)
+          if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
             continue;
           for (int i = 0; i < nPtBinPi; i++) {
             if (!isCountedPiInclusive[i]) {
@@ -833,7 +833,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recK0S;
       recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-      if (std::abs(recK0S.Rapidity()) > 0.8)
+      if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -858,7 +858,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -974,7 +974,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recPi;
       recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-      if (std::abs(recPi.Rapidity()) > 0.8)
+      if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -999,7 +999,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1131,7 +1131,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recK0S;
         recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-        if (std::abs(recK0S.Rapidity()) > 0.8)
+        if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
           continue;
 
         std::vector<TLorentzVector> listrecPhi;
@@ -1144,7 +1144,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1244,7 +1244,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPi;
         recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-        if (std::abs(recPi.Rapidity()) > 0.8)
+        if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
           continue;
 
         std::vector<TLorentzVector> listrecPhi;
@@ -1257,7 +1257,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1393,7 +1393,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPhi;
         recPhi = recMother(track1, track2, massKa, massKa);
-        if (std::abs(recPhi.Rapidity()) > 0.8)
+        if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
           continue;
 
         if (!isCountedPhi) {
@@ -1439,7 +1439,7 @@ struct phik0shortanalysis {
           TLorentzVector recK0S;
           recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
-          if (std::abs(recK0S.Rapidity()) > 0.8)
+          if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
             continue;
           if (!isCountedK0SInclusive) {
             PhieffHist.fill(HIST("h3PhieffK0SInvMassInclusive"), multiplicity, recK0S.Pt(), recPhi.M());
@@ -1476,7 +1476,7 @@ struct phik0shortanalysis {
           TLorentzVector recPi;
           recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
-          if (std::abs(recPi.Rapidity()) > 0.8)
+          if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
             continue;
           if (!isCountedPiInclusive) {
             PhieffHist.fill(HIST("h3PhieffPiInvMassInclusive"), multiplicity, recPi.Pt(), recPhi.M());
@@ -1553,7 +1553,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recK0S;
       recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-      if (std::abs(recK0S.Rapidity()) > 0.8)
+      if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -1603,7 +1603,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1726,7 +1726,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recPi;
       recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-      if (std::abs(recPi.Rapidity()) > 0.8)
+      if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -1776,7 +1776,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1926,7 +1926,7 @@ struct phik0shortanalysis {
       }
       if (!isPosKaon || !isNegKaon)
         continue;
-      if (std::abs(mcParticle1.y()) > 0.8)
+      if (std::abs(mcParticle1.y()) > cfgInclusiveDeltay)
         continue;
 
       if (!isCountedPhi) {
@@ -1942,7 +1942,7 @@ struct phik0shortanalysis {
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
-        if (std::abs(mcParticle2.y()) > 0.8)
+        if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
 
         int ipTBinK0S = 0;
@@ -1998,7 +1998,7 @@ struct phik0shortanalysis {
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
-        if (std::abs(mcParticle2.y()) > 0.8)
+        if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
 
         int ipTBinPi = 0;
@@ -2081,7 +2081,7 @@ struct phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
-      if (std::abs(mcParticle1.y()) > 0.8)
+      if (std::abs(mcParticle1.y()) > cfgInclusiveDeltay)
         continue;
 
       int ipTBin = 0;
@@ -2110,7 +2110,7 @@ struct phik0shortanalysis {
         }
         if (!isPosKaon || !isNegKaon)
           continue;
-        if (std::abs(mcParticle2.y()) > 0.8)
+        if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
 
         if (isAssocColl) {
@@ -2185,7 +2185,7 @@ struct phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
-      if (std::abs(mcParticle1.y()) > 0.8)
+      if (std::abs(mcParticle1.y()) > cfgInclusiveDeltay)
         continue;
 
       int ipTBin = 0;
@@ -2214,7 +2214,7 @@ struct phik0shortanalysis {
         }
         if (!isPosKaon || !isNegKaon)
           continue;
-        if (std::abs(mcParticle2.y()) > 0.8)
+        if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
 
         if (isAssocColl) {
