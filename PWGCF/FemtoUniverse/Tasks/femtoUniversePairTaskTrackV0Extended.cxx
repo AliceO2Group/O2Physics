@@ -395,7 +395,7 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
     }
 
-    auto f = [&](auto& p1, auto& p2) -> void {
+    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
       // Lambda invariant mass cut for p1
       if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
         return;
@@ -428,12 +428,12 @@ struct femtoUniversePairTaskTrackV0Extended {
     if (ConfV0Type1 == ConfV0Type2) {
       /// Now build the combinations for identical V0s
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-        f(p1, p2);
+        pairProcessFunc(p1, p2);
       }
     } else {
       /// Now build the combinations for not identical identical V0s
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-        f(p1, p2);
+        pairProcessFunc(p1, p2);
       }
     }
   }
