@@ -119,6 +119,8 @@ struct CandidateV0 {
   o2::track::TrackParCov trackv0;
   std::array<float, 3> mompos;
   std::array<float, 3> momneg;
+  std::array<float, 3> momposMC;
+  std::array<float, 3> momnegMC;
   float dcav0daugh = -999.f;
   float dcanegpv = -999.f;
   float dcapospv = -999.f;
@@ -314,9 +316,9 @@ struct LFStrangeTreeCreator {
       auto& posPropTrack = fitter.getTrack(0);
       auto& negPropTrack = fitter.getTrack(1);
 
-      std::array<float, 3> momPos;
-      std::array<float, 3> momNeg;
-      std::array<float, 3> momV0;
+      std::array<float, 3> momPos = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+      std::array<float, 3> momNeg = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+      std::array<float, 3> momV0 = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
       posPropTrack.getPxPyPzGlo(momPos);
       negPropTrack.getPxPyPzGlo(momNeg);
       momTotXYZ(momV0, momPos, momNeg);
@@ -610,6 +612,17 @@ struct LFStrangeTreeCreator {
         candidateV0.pdgcodemotherdauneg = pdgCodeMotherDauNeg;
         candidateV0.pdgcodemotherdaupos = pdgCodeMotherDauPos;
         candidateV0.pdgmatchmothersecondmother = pdgMatchMotherSecondMother;
+        // momentum of daughters
+        std::array<float, 3> momPosMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+        std::array<float, 3> momNegMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+        momPosMC[0] = mcTrackPos.px();
+        momPosMC[1] = mcTrackPos.py();
+        momPosMC[2] = mcTrackPos.pz();
+        momNegMC[0] = mcTrackNeg.px();
+        momNegMC[1] = mcTrackNeg.py();
+        momNegMC[2] = mcTrackNeg.pz();
+        candidateV0.momposMC = std::array{momPosMC[0], momPosMC[1], momPosMC[2]};
+        candidateV0.momnegMC = std::array{momNegMC[0], momNegMC[1], momNegMC[2]};
       }
     }
   }
@@ -625,6 +638,8 @@ struct LFStrangeTreeCreator {
 
       auto pdgCode = mcPart.pdgCode();
       std::array<float, 3> secVtx;
+      std::array<float, 3> momPosMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+      std::array<float, 3> momNegMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
 
       // look for lambda (3122) or k0short (310)
       int pdg_test = 3122;
@@ -647,6 +662,18 @@ struct LFStrangeTreeCreator {
             foundParticle = true;
             secVtx = std::array{mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
             break;
+          }
+        }
+        // momentum of daughters
+        for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+          if (mcDaught.pdgCode() < 0) {
+            momNegMC[0] = mcDaught.px();
+            momNegMC[1] = mcDaught.py();
+            momNegMC[2] = mcDaught.pz();
+          } else {
+            momPosMC[0] = mcDaught.px();
+            momPosMC[1] = mcDaught.py();
+            momPosMC[2] = mcDaught.pz();
           }
         }
         if (!foundParticle) {
@@ -676,6 +703,8 @@ struct LFStrangeTreeCreator {
         candV0.geneta = mcPart.eta();
         candV0.pdgcode = pdgCode;
         candV0.pdgcodemother = pdgCodeMother;
+        candV0.momposMC = std::array{momPosMC[0], momPosMC[1], momPosMC[2]};
+        candV0.momnegMC = std::array{momNegMC[0], momNegMC[1], momNegMC[2]};
         auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0) { return v0.mcIndex == mcPart.globalIndex(); });
         if (it == candidateV0s.end()) {
           candidateV0s.emplace_back(candV0);
@@ -824,6 +853,12 @@ struct LFStrangeTreeCreator {
           candidateV0.momneg[0],
           candidateV0.momneg[1],
           candidateV0.momneg[2],
+          candidateV0.momposMC[0],
+          candidateV0.momposMC[1],
+          candidateV0.momposMC[2],
+          candidateV0.momnegMC[0],
+          candidateV0.momnegMC[1],
+          candidateV0.momnegMC[2],
           candidateV0.radius,
           candidateV0.dcav0pv,
           candidateV0.dcapospv,
