@@ -44,8 +44,24 @@ struct femtoUniverseEfficiencyBase {
 
   /// Particle selection part
   /// Configurables for both particles
-  Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
-  Configurable<float> ConfMomProton{"ConfMomProton", 0.75, "Momentum threshold for proton identification using TOF"};
+  ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "Binning of the pT in the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfTempFitVarPDGBins{"ConfTempFitVarPDGBins", {6000, -2300, 2300}, "Binning of the PDG code in the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfTempFitVarCPABins{"ConfTempFitVarCPABins", {1000, 0.9, 1}, "Binning of the pointing angle cosinus in the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfTempFitVarDCABins{"ConfTempFitVarDCABins", {1000, -5, 5}, "Binning of the PDG code in the pT vs. TempFitVar plot"};
+
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
+    Configurable<float> ConfMomProton{"ConfMomProton", 0.75, "Momentum threshold for proton identification using TOF"};
+    Configurable<float> ConfMomPion{"ConfMomPion", 0.75, "Momentum threshold for pion identification using TOF"};
+    Configurable<float> ConfNsigmaCombinedProton{"ConfNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > ConfMomProton"};
+    Configurable<float> ConfNsigmaTPCProton{"ConfNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < ConfMomProton"};
+    Configurable<float> ConfNsigmaCombinedPion{"ConfNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
+    Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
+  } ConfBothTracks;
+
+  // Lambda cuts
+  Configurable<float> ConfV0InvMassLowLimit{"ConfV0InvV0MassLowLimit", 1.10, "Lower limit of the V0 invariant mass"};
+  Configurable<float> ConfV0InvMassUpLimit{"ConfV0InvV0MassUpLimit", 1.13, "Upper limit of the V0 invariant mass"};
 
   /// Particle 1
   Configurable<int32_t> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
@@ -56,9 +72,9 @@ struct femtoUniverseEfficiencyBase {
   Configurable<int> ConfChargePart1{"ConfChargePart1", 1, "Charge of the first particle"};
 
   /// Partition for particle 1
-  Partition<FemtoFullParticles> partsOneMCGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+  Partition<FemtoFullParticles> partsOneMCGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.ConfEtaMax;
 
-  Partition<FemtoFullParticles> partsTrackOneMCReco = aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+  Partition<FemtoFullParticles> partsTrackOneMCReco = aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.ConfEtaMax;
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> trackHistoPartOneGen;
@@ -77,9 +93,9 @@ struct femtoUniverseEfficiencyBase {
   Configurable<int> ConfChargePart2{"ConfChargePart2", 1, "Charge of the second particle"};
 
   /// Partition for particle 2
-  Partition<FemtoFullParticles> partsTwoGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+  Partition<FemtoFullParticles> partsTwoGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.ConfEtaMax;
 
-  Partition<FemtoFullParticles> partsTrackTwoMCReco = aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+  Partition<FemtoFullParticles> partsTrackTwoMCReco = aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.ConfEtaMax;
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> trackHistoPartTwoGen;
@@ -90,23 +106,6 @@ struct femtoUniverseEfficiencyBase {
 
   /// Histogramming for Event
   FemtoUniverseEventHisto eventHisto;
-
-  /// Particle part
-  ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "Binning of the pT in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfTempFitVarPDGBins{"ConfTempFitVarPDGBins", {6000, -2300, 2300}, "Binning of the PDG code in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfTempFitVarCPABins{"ConfTempFitVarCPABins", {1000, 0.9, 1}, "Binning of the pointing angle cosinus in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfTempFitVarDCABins{"ConfTempFitVarDCABins", {1000, -5, 5}, "Binning of the PDG code in the pT vs. TempFitVar plot"};
-
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfNsigmaCombinedProton{"ConfNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > ConfMomProton"};
-    Configurable<float> ConfNsigmaTPCProton{"ConfNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < ConfMomProton"};
-    Configurable<float> ConfNsigmaCombinedPion{"ConfNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
-    Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
-  } ConfBothTracks;
-
-  // Lambda cuts
-  Configurable<float> ConfV0InvMassLowLimit{"ConfV0InvV0MassLowLimit", 1.10, "Lower limit of the V0 invariant mass"};
-  Configurable<float> ConfV0InvMassUpLimit{"ConfV0InvV0MassUpLimit", 1.13, "Upper limit of the V0 invariant mass"};
 
   FemtoUniverseTrackSelection trackCuts;
 
@@ -148,7 +147,7 @@ struct femtoUniverseEfficiencyBase {
 
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
-    if (mom < ConfMomProton) {
+    if (mom < ConfBothTracks.ConfMomProton) {
       if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaTPCProton) {
         return true;
       } else {
@@ -205,13 +204,13 @@ struct femtoUniverseEfficiencyBase {
 
   bool IsPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
-    if (mom < 0.5) {
+    if (mom < ConfBothTracks.ConfMomPion) {
       if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaTPCPion) {
         return true;
       } else {
         return false;
       }
-    } else if (mom > 0.5) {
+    } else {
       if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
         return true;
       } else {
