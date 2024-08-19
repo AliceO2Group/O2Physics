@@ -27,6 +27,7 @@ class EMEventCut : public TNamed
  public:
   EMEventCut() = default;
   EMEventCut(const char* name, const char* title) : TNamed(name, title) {}
+  ~EMEventCut() {}
 
   enum class EMEventCuts : int {
     kSel8 = 0,
@@ -37,13 +38,11 @@ class EMEventCut : public TNamed
     kNoSameBunchPileup,
     kIsVertexITSTPC,
     kIsGoodZvtxFT0vsPV,
-    kEMCReadoutInMB,
-    kEMCHardwareTriggered,
     kOccupancy,
+    kNoCollInTimeRangeStandard,
+    kNoCollInTimeRangeNarrow,
     kNCuts
   };
-
-  static const char* mCutNames[static_cast<int>(EMEventCuts::kNCuts)];
 
   template <typename T>
   bool IsSelected(T const& collision) const
@@ -72,13 +71,13 @@ class EMEventCut : public TNamed
     if (mRequireGoodZvtxFT0vsPV && !IsSelected(collision, EMEventCuts::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    if (mRequireEMCReadoutInMB && !IsSelected(collision, EMEventCuts::kEMCReadoutInMB)) {
-      return false;
-    }
-    if (mRequireEMCHardwareTriggered && !IsSelected(collision, EMEventCuts::kEMCHardwareTriggered)) {
-      return false;
-    }
     if (!IsSelected(collision, EMEventCuts::kOccupancy)) {
+      return false;
+    }
+    if (mRequireNoCollInTimeRangeStandard && !IsSelected(collision, EMEventCuts::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    if (mRequireNoCollInTimeRangeNarrow && !IsSelected(collision, EMEventCuts::kNoCollInTimeRangeNarrow)) {
       return false;
     }
     return true;
@@ -112,12 +111,6 @@ class EMEventCut : public TNamed
       case EMEventCuts::kIsGoodZvtxFT0vsPV:
         return collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
 
-      case EMEventCuts::kEMCReadoutInMB:
-        return (collision.alias_bit(kTVXinEMC));
-
-      case EMEventCuts::kEMCHardwareTriggered:
-        return (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7));
-
       case EMEventCuts::kOccupancy: {
         if (mMinOccupancy < 0) {
           return true;
@@ -125,6 +118,13 @@ class EMEventCut : public TNamed
           return mMinOccupancy <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < mMaxOccupancy;
         }
       }
+
+      case EMEventCuts::kNoCollInTimeRangeStandard:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
+
+      case EMEventCuts::kNoCollInTimeRangeNarrow:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow);
+
       default:
         return true;
     }
@@ -140,11 +140,8 @@ class EMEventCut : public TNamed
   void SetRequireNoSameBunchPileup(bool flag);
   void SetRequireVertexITSTPC(bool flag);
   void SetRequireGoodZvtxFT0vsPV(bool flag);
-  void SetRequireEMCReadoutInMB(bool flag);
-  void SetRequireEMCHardwareTriggered(bool flag);
-
-  /// @brief Print the track selection
-  void print() const;
+  void SetRequireNoCollInTimeRangeStandard(bool flag);
+  void SetRequireNoCollInTimeRangeNarrow(bool flag);
 
  private:
   bool mRequireSel8{true};
@@ -156,8 +153,8 @@ class EMEventCut : public TNamed
   bool mRequireNoSameBunchPileup{false};
   bool mRequireVertexITSTPC{false};
   bool mRequireGoodZvtxFT0vsPV{false};
-  bool mRequireEMCReadoutInMB{false};
-  bool mRequireEMCHardwareTriggered{false};
+  bool mRequireNoCollInTimeRangeStandard{false};
+  bool mRequireNoCollInTimeRangeNarrow{false};
 
   ClassDef(EMEventCut, 1);
 };

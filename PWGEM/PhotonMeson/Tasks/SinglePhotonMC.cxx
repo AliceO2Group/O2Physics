@@ -90,7 +90,7 @@ struct SinglePhotonMC {
   // Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
-  EMEventCut fEMEventCut;
+  EMPhotonEventCut fEMEventCut;
   static constexpr std::string_view event_types[2] = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};

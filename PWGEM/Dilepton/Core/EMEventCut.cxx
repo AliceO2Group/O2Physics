@@ -18,8 +18,6 @@
 
 ClassImp(EMEventCut);
 
-const char* EMEventCut::mCutNames[static_cast<int>(EMEventCut::EMEventCuts::kNCuts)] = {"Sel8", "FT0AND", "Zvtx", "eNoTFB", "RequireNoITSROFB", "NoSameBunchPileup", "GoodVertexITSTPC", "GoodZvtxFT0vsPV", "EMC MB Readout", "EMC L0 Triggered"};
-
 void EMEventCut::SetRequireSel8(bool flag)
 {
   mRequireSel8 = flag;
@@ -76,38 +74,13 @@ void EMEventCut::SetRequireGoodZvtxFT0vsPV(bool flag)
   LOG(info) << "EM Event Cut, require good Zvtx between FT0 vs. PV: " << mRequireGoodZvtxFT0vsPV;
 }
 
-void EMEventCut::SetRequireEMCReadoutInMB(bool flag)
+void EMEventCut::SetRequireNoCollInTimeRangeStandard(bool flag)
 {
-  mRequireEMCReadoutInMB = flag;
-  LOG(info) << "EM Event Cut, require the EMC to be read out in an MB collision by checking kTVXinEMC: " << mRequireEMCReadoutInMB;
+  mRequireNoCollInTimeRangeStandard = flag;
+  LOG(info) << "EM Event Cut, require No collision in time range standard: " << mRequireNoCollInTimeRangeStandard;
 }
-
-void EMEventCut::SetRequireEMCHardwareTriggered(bool flag)
+void EMEventCut::SetRequireNoCollInTimeRangeNarrow(bool flag)
 {
-  mRequireEMCHardwareTriggered = flag;
-  LOG(info) << "EM Event Cut, require the EMC to be triggered by requiring kEMC7 or kDMC7: " << mRequireEMCHardwareTriggered;
-}
-
-void EMEventCut::print() const
-{
-  LOG(info) << "EM Event Cut:";
-  for (int i = 0; i < static_cast<int>(EMEventCuts::kNCuts); i++) {
-    switch (static_cast<EMEventCuts>(i)) {
-      case EMEventCuts::kFT0AND:
-        LOG(info) << mCutNames[i] << " = " << mRequireFT0AND;
-        break;
-      case EMEventCuts::kZvtx:
-        LOG(info) << mCutNames[i] << " in [" << mMinZvtx << ", " << mMaxZvtx << "]";
-        break;
-      case EMEventCuts::kNoTFB:
-        LOG(info) << mCutNames[i] << " = " << mRequireNoTFB;
-        break;
-      case EMEventCuts::kNoITSROFB:
-        LOG(info) << mCutNames[i] << " = " << mRequireNoITSROFB;
-        break;
-
-      default:
-        LOG(fatal) << "Cut unknown!";
-    }
-  }
+  mRequireNoCollInTimeRangeNarrow = flag;
+  LOG(info) << "EM Event Cut, require No collision in time range narrow: " << mRequireNoCollInTimeRangeNarrow;
 }

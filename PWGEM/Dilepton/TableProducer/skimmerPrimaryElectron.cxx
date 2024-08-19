@@ -12,7 +12,7 @@
 /// \brief write relevant information about primary electrons.
 /// \author daiki.sekihata@cern.ch
 
-#include <map>
+#include <unordered_map>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -25,10 +25,10 @@
 #include "Common/Core/trackUtilities.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/Core/TableHelper.h"
+#include "EventFiltering/Zorro.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-// #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
-// #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 using namespace o2;
@@ -36,7 +36,6 @@ using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
-// using namespace o2::aod::pwgem::photonmeson;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -62,6 +61,9 @@ struct skimmerPrimaryElectron {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
+  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
 
   // Operation and minimisation criteria
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
@@ -70,7 +72,7 @@ struct skimmerPrimaryElectron {
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-  Configurable<float> max_mean_itsob_cluster_size{"max_mean_itsob_cluster_size", 16.f, "max. <ITSob cluster size> x cos(lambda)"}; // this is to suppress random combination. default 4 + 1 for skimming.
+  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda)"}; // this is to suppress random combination. default 4 + 1 for skimming.
   Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
@@ -84,21 +86,25 @@ struct skimmerPrimaryElectron {
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.5, "max. TOF n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.5, "max. TPC n sigma for pion exclusion"};
   Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -1e+10 for nominalB
-  Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 0.0, "max. TPC n sigma for kaon exclusion"};
-  Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", 0.0, "min. TPC n sigma for kaon exclusion"};
-  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 0.0, "max. TPC n sigma for proton exclusion"};
-  Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", 0.0, "min. TPC n sigma for proton exclusion"};
+  Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.5, "max. TPC n sigma for kaon exclusion"};
+  Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", -2.5, "min. TPC n sigma for kaon exclusion"};
+  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.5, "max. TPC n sigma for proton exclusion"};
+  Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", -2.5, "min. TPC n sigma for proton exclusion"};
+  Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
+  Configurable<float> minTOFbeta{"minTOFbeta", 0.97, "min TOF beta for single track"}; // |beta - 1| < 0.015 corresponds to 3 sigma in pp
+  Configurable<float> maxTOFbeta{"maxTOFbeta", 1.03, "max TOF beta for single track"}; // |beta - 1| < 0.015 corresponds to 3 sigma in pp
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   std::pair<int8_t, std::set<uint8_t>> itsRequirement = {1, {0, 1, 2}}; // any hits on 3 ITS ib layers.
 
+  Zorro zorro;
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -108,14 +114,18 @@ struct skimmerPrimaryElectron {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    if (inherit_from_emevent_dilepton) {
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);                           // for EM users.
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
+    }
+
     if (fillQAHistogram) {
       fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
       fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
       fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {20, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-      fRegistry.add("Track/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
-      fRegistry.add("Track/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{1000, 0, 10}, {200, -1, 1}}, false);
       fRegistry.add("Track/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
       fRegistry.add("Track/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{1000, 0, 10}, {500, 0., 500}}, false);
       fRegistry.add("Track/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -127,8 +137,7 @@ struct skimmerPrimaryElectron {
       fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTOFbeta", "TOF beta;p_{in} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
-      fRegistry.add("Track/h1overTOFbeta", "TOF beta;p_{in} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {1000, 0.8, 1.8}}, false);
+      fRegistry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
       fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -147,6 +156,10 @@ struct skimmerPrimaryElectron {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if (enable_swt) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -193,6 +206,10 @@ struct skimmerPrimaryElectron {
       }
     }
 
+    if (requireTOF && !(track.hasTOF() && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl)) {
+      return false;
+    }
+
     if (track.tpcChi2NCl() > maxchi2tpc) {
       return false;
     }
@@ -215,14 +232,14 @@ struct skimmerPrimaryElectron {
 
     uint32_t itsClusterSizes = track.itsClusterSizes();
     int total_cluster_size = 0, nl = 0;
-    for (unsigned int layer = 3; layer < 7; layer++) {
+    for (unsigned int layer = 0; layer < 7; layer++) {
       int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
       if (cluster_size_per_layer > 0) {
         nl++;
       }
       total_cluster_size += cluster_size_per_layer;
     }
-    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_itsob_cluster_size) {
+    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_its_cluster_size) {
       return false;
     }
 
@@ -238,7 +255,7 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if ((0.0 < track.beta() && track.beta() < 0.95) || 1.05 < track.beta()) {
+    if ((0.0 < track.beta() && track.beta() < minTOFbeta) || maxTOFbeta < track.beta()) {
       return false;
     }
 
@@ -277,7 +294,7 @@ struct skimmerPrimaryElectron {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
-    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track);
+    return isElectron_TPChadrej(track) || isElectron_TOFreq(track);
   }
 
   template <typename TTrack>
@@ -295,19 +312,19 @@ struct skimmerPrimaryElectron {
     if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
       return false;
     }
-    if (!(track.beta() < 0.f || (0.96 < track.beta() && track.beta() < 1.04))) {
+    if (!(track.beta() < 0.f || (minTOFbeta < track.beta() && track.beta() < maxTOFbeta))) {
       return false;
     }
     return true;
   }
 
   template <typename TTrack>
-  bool isElectron_TOFrecovery(TTrack const& track)
+  bool isElectron_TOFreq(TTrack const& track)
   {
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
       return false;
     }
-    if (!(track.beta() < 0.f || (0.96 < track.beta() && track.beta() < 1.04))) {
+    if (!(track.beta() < 0.f || (minTOFbeta < track.beta() && track.beta() < maxTOFbeta))) {
       return false;
     }
     return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
@@ -316,7 +333,7 @@ struct skimmerPrimaryElectron {
   template <typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
-    if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
+    if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::pair<int, int>{collision.globalIndex(), track.globalIndex()}) == stored_trackIds.end()) {
       gpu::gpustd::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
       track_par_cov_recalc.setPID(o2::track::PID::Electron);
@@ -358,7 +375,7 @@ struct skimmerPrimaryElectron {
         track_par_cov_recalc.getSigma1PtTgl(),
         track_par_cov_recalc.getSigma1Pt2());
 
-      stored_trackIds.emplace_back(std::make_pair(collision.globalIndex(), track.globalIndex()));
+      stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});
 
       if (fillQAHistogram) {
         uint32_t itsClusterSizes = track.itsClusterSizes();
@@ -376,8 +393,6 @@ struct skimmerPrimaryElectron {
         fRegistry.fill(HIST("Track/hEtaPhi"), phi_recalc, eta_recalc);
         fRegistry.fill(HIST("Track/hDCAxyz"), dcaXY, dcaZ);
         fRegistry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / sqrt(track_par_cov_recalc.getSigmaY2()), dcaZ / sqrt(track_par_cov_recalc.getSigmaZ2()));
-        fRegistry.fill(HIST("Track/hDCAxy_Pt"), pt_recalc, dcaXY);
-        fRegistry.fill(HIST("Track/hDCAz_Pt"), pt_recalc, dcaZ);
         fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt_recalc, sqrt(track_par_cov_recalc.getSigmaY2()) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt_recalc, sqrt(track_par_cov_recalc.getSigmaZ2()) * 1e+4);  // convert cm to um
         fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
@@ -395,8 +410,7 @@ struct skimmerPrimaryElectron {
         fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
-        fRegistry.fill(HIST("Track/hTOFbeta"), track.tpcInnerParam(), track.beta());
-        fRegistry.fill(HIST("Track/h1overTOFbeta"), track.tpcInnerParam(), 1. / track.beta());
+        fRegistry.fill(HIST("Track/hTOFbeta"), track.p(), track.beta());
         fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
         fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
         fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
@@ -406,9 +420,9 @@ struct skimmerPrimaryElectron {
     }
   }
 
-  std::vector<std::pair<int64_t, int64_t>> stored_trackIds;
+  std::vector<std::pair<int, int>> stored_trackIds;
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
-  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.96f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.04f) || o2::aod::pidtofbeta::beta < 0.f) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
+  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((minTOFbeta < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < maxTOFbeta) || o2::aod::pidtofbeta::beta < 0.f) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -421,10 +435,13 @@ struct skimmerPrimaryElectron {
     stored_trackIds.reserve(tracks.size());
 
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
         continue;
       }
 
@@ -449,10 +466,13 @@ struct skimmerPrimaryElectron {
     stored_trackIds.reserve(tracks.size() * 2);
 
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
         continue;
       }
 
@@ -493,7 +513,7 @@ struct skimmerPrimaryElectron {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
@@ -522,7 +542,7 @@ struct skimmerPrimaryElectron {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
@@ -757,10 +777,10 @@ struct prefilterPrimaryElectron {
 
   void processPrefilter_TTCA(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracks const&, aod::EMPrimaryElectrons const& primaryelectrons, aod::TrackAssoc const& trackIndices)
   {
-    std::map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
+    std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
@@ -836,10 +856,10 @@ struct prefilterPrimaryElectron {
 
   void processPrefilter_SA(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const&, aod::EMPrimaryElectrons const& primaryelectrons)
   {
-    std::map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
+    std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
@@ -910,11 +930,11 @@ struct associateAmbiguousElectron {
     for (auto& electron : electrons) {
       auto electrons_with_same_trackId = electrons.sliceBy(perTrack, electron.trackId());
       ambele_self_Ids.reserve(electrons_with_same_trackId.size());
-      for (auto& amp_ele : electrons_with_same_trackId) {
-        if (amp_ele.globalIndex() == electron.globalIndex()) { // don't store myself.
+      for (auto& amb_ele : electrons_with_same_trackId) {
+        if (amb_ele.globalIndex() == electron.globalIndex()) { // don't store myself.
           continue;
         }
-        ambele_self_Ids.emplace_back(amp_ele.globalIndex());
+        ambele_self_Ids.emplace_back(amb_ele.globalIndex());
       }
       em_amb_ele_ids(ambele_self_Ids);
       ambele_self_Ids.clear();

@@ -26,12 +26,12 @@ o2physics_add_dpl_workflow(emc-pi0-qc
 
 o2physics_add_dpl_workflow(pcm-qc
                     SOURCES pcmQC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::PWGEMDileptonCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pcm-qc-mc
                     SOURCES pcmQCMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::PWGEMDileptonCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dalitz-ee-qc

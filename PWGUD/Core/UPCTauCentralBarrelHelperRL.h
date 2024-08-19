@@ -50,7 +50,7 @@ void printDebugMessage(std::string info)
 }
 
 template <typename T>
-int testPIDhypothesis(T trackPIDinfo, float maxNsigma = 5.0, bool useTOF = true, float nSigmaShift = 0., bool isMC = false)
+int testPIDhypothesis(T trackPIDinfo, float maxNsigmaTPC = 5.0, float maxNsigmaTOF = 5.0, bool useTOF = true, bool useTOFsigmaAfterTPC = true, float nSigmaShift = 0., bool isMC = false)
 // Choose, which particle it is according to PID
 {
   float nSigmaTPC[5];
@@ -76,24 +76,31 @@ int testPIDhypothesis(T trackPIDinfo, float maxNsigma = 5.0, bool useTOF = true,
   int enumChoiceTOF = std::distance(std::begin(nSigmaTOF),
                                     std::min_element(std::begin(nSigmaTOF), std::end(nSigmaTOF)));
 
-  if (trackPIDinfo.hasTPC() || trackPIDinfo.hasTOF()) {
+  if (trackPIDinfo.hasTPC()) {
     if (trackPIDinfo.hasTOF() && useTOF) {
-      if (nSigmaTOF[enumChoiceTOF] < maxNsigma) {
+      if (nSigmaTOF[enumChoiceTOF] < maxNsigmaTOF) {
         return enumChoiceTOF;
       } else {
-        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTOF is higher than %f", maxNsigma));
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTOF is higher than %f", maxNsigmaTPC));
+        return -1;
+      }
+    } else if (trackPIDinfo.hasTOF() && useTOFsigmaAfterTPC) {
+      if (nSigmaTPC[enumChoiceTPC] < maxNsigmaTPC && nSigmaTOF[enumChoiceTPC] < maxNsigmaTOF) {
+        return enumChoiceTPC;
+      } else {
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f or the lowest nSigmaTOF is higher than %f", maxNsigmaTPC, maxNsigmaTOF));
         return -1;
       }
     } else {
-      if (nSigmaTPC[enumChoiceTPC] < maxNsigma) {
+      if (nSigmaTPC[enumChoiceTPC] < maxNsigmaTPC) {
         return enumChoiceTPC;
       } else {
-        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f", maxNsigma));
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f", maxNsigmaTPC));
         return -1;
       }
     }
   } else {
-    printDebugMessage("testPIDhypothesis failed - track did not leave information in TPC or TOF");
+    printDebugMessage("testPIDhypothesis failed - track did not leave information in TPC");
     return -1;
   }
 }

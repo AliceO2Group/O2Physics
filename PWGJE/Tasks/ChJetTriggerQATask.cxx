@@ -78,6 +78,8 @@ struct ChJetTriggerQATask {
 
   Configurable<bool> bAddSupplementHistosToOutput{"bAddAdditionalHistosToOutput", false, "add supplementary histos to the output"};
 
+  Configurable<float> phiAngleRestriction{"phiAngleRestriction", 0.3, "angle to restrict track phi for plotting tpc momentum"};
+
   float fiducialVolume; // 0.9 - jetR
 
   HistogramRegistry spectra;
@@ -102,6 +104,14 @@ struct ChJetTriggerQATask {
     spectra.add("ptetaJetChInclFullVol", "inclusive charged jet pT vs eta in full TPC volume", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
     spectra.add("ptetaLeadingJetFullVol", "pT vs eta leading jet", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
     spectra.add("ptphiLeadingJetFullVol", "pT vs phi leading jet", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+
+    spectra.add("globalP_tpcglobalPDiff_withoutcuts", "difference of global and TPC inner momentum vs global momentum without any selection applied", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("globalP_tpcglobalPDiff", "difference of global and TPC inner momentum vs global momentum with selection applied", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("global1overP_tpcglobalPDiff", "difference of global and TPC inner momentum vs global momentum with selection applied", {HistType::kTH2F, {{100, 0., +100.}, {500, -8., +8.}}});
+
+    spectra.add("globalP_tpcglobalPDiff_withoutcuts_phirestrict", "difference of global and TPC inner momentum vs global momentum without any selection applied in a restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("globalP_tpcglobalPDiff_phirestrict", "difference of global and TPC inner momentum vs global momentum with selection applied restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
+    spectra.add("global1overP_tpcglobalPDiff_phirestrict", "difference of 1/p global and TPC inner momentum vs global momentum with selection applied restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {500, -8., +8.}}});
 
     // Supplementary plots
     if (bAddSupplementHistosToOutput) {
@@ -134,7 +144,7 @@ struct ChJetTriggerQATask {
   void
     process(soa::Filtered<soa::Join<JetCollisions,
                                     aod::JChTrigSels, aod::EvSels>>::iterator const& collision,
-            soa::Filtered<JetTracks> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
+            soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets, soa::Join<aod::Tracks, aod::TracksExtra> const&)
   {
 
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -145,8 +155,8 @@ struct ChJetTriggerQATask {
       return;
     }
 
-    bool bLowPtJet = (bLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow));
-    bool bHighPtJet = (bHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh));
+    bool bLowPtJet = (bLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::jetChLowPt));
+    bool bHighPtJet = (bHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::jetChHighPt));
     bool bLowPtTrack = (bTrackLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackLowPt));
     bool bHighPtTrack = (bTrackHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackHighPt));
     bool bMinimumBias = ((!bLowPtTrigger) && (!bHighPtTrigger) && (!bTrackLowPtTrigger) && (!bTrackHighPtTrigger));
@@ -171,8 +181,27 @@ struct ChJetTriggerQATask {
 
       for (auto& trk : tracks) { // loop over filtered tracks in full TPC volume having pT > 100 MeV
 
+        auto const& originalTrack = trk.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
+        spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
+
+        if (TMath::Abs(trk.phi() - TMath::Pi()) < phiAngleRestriction) {
+          spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts_phirestrict"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
+        }
+
         if (!jetderiveddatautilities::selectTrack(trk, trackSelection)) {
           continue;
+        }
+
+        spectra.fill(HIST("globalP_tpcglobalPDiff"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
+        if (trk.p() > 0 && originalTrack.tpcInnerParam() > 0) {
+          spectra.fill(HIST("global1overP_tpcglobalPDiff"), trk.p(), 1. / trk.p() - 1. / originalTrack.tpcInnerParam());
+        }
+        if (TMath::Abs(trk.phi() - TMath::Pi()) < phiAngleRestriction) {
+          spectra.fill(HIST("globalP_tpcglobalPDiff_phirestrict"), trk.p(), trk.p() - originalTrack.tpcInnerParam());
+
+          if (trk.p() > 0 && originalTrack.tpcInnerParam() > 0) {
+            spectra.fill(HIST("global1overP_tpcglobalPDiff_phirestrict"), trk.p(), 1. / trk.p() - 1. / originalTrack.tpcInnerParam());
+          }
         }
 
         spectra.fill(

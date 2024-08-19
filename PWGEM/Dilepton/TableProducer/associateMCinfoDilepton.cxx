@@ -19,6 +19,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/TableHelper.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
@@ -45,30 +46,87 @@ struct AssociateMCInfoDilepton {
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
 
+  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
-  Configurable<float> max_rxy_gen{"max_rxy_gen", 100, "max rxy to store generated information"};
-  Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", 1.2, "max rapidity Y to store generated information"};   // smearing might be applied at analysis stage. set wider value.
+  Configurable<float> min_eta_gen_primary{"min_eta_gen_primary", -1.2, "min rapidity Y to store generated information"};  // smearing might be applied at analysis stage. set wider value.
+  Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", +1.2, "max rapidity Y to store generated information"};  // smearing might be applied at analysis stage. set wider value.
   Configurable<float> min_eta_gen_primary_fwd{"min_eta_gen_primary_fwd", -4.5, "min eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
   Configurable<float> max_eta_gen_primary_fwd{"max_eta_gen_primary_fwd", -2.0, "max eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
-  Configurable<float> max_eta_gen_secondary{"max_eta_gen_secondary", 0.9, "max eta to store generated information"};
-  Configurable<float> margin_z_gen{"margin_z_gen", 15.f, "margin for Z of true photon conversion point to store generated information"};
 
   HistogramRegistry registry{"EMMCEvent"};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
+    if (inherit_from_emevent_dilepton) {
+      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true);
+    }
+
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{6, 0.5f, 6.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "has mc collision");
   }
 
+  template <typename TMCParticle, typename TMCParticles>
+  bool isDecayDielectronInAcceptance(TMCParticle const& mctrack, TMCParticles const& mcTracks)
+  {
+    if (!mctrack.has_daughters()) {
+      return false;
+    }
+
+    bool is_lepton = false, is_anti_lepton = false;
+    for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+      auto daughter = mcTracks.iteratorAt(d);
+      if (daughter.pdgCode() == 11 && (min_eta_gen_primary < daughter.eta() && daughter.eta() < max_eta_gen_primary)) {
+        is_lepton = true;
+      }
+      if (daughter.pdgCode() == -11 && (min_eta_gen_primary < daughter.eta() && daughter.eta() < max_eta_gen_primary)) {
+        is_anti_lepton = true;
+      }
+    }
+    if (is_lepton && is_anti_lepton) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  template <typename TMCParticle, typename TMCParticles>
+  bool isDecayDimuonInAcceptance(TMCParticle const& mctrack, TMCParticles const& mcTracks)
+  {
+    if (!mctrack.has_daughters()) {
+      return false;
+    }
+
+    bool is_lepton = false, is_anti_lepton = false;
+    for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+      auto daughter = mcTracks.iteratorAt(d);
+      if (daughter.pdgCode() == 13 && (min_eta_gen_primary_fwd < daughter.eta() && daughter.eta() < max_eta_gen_primary_fwd)) {
+        is_lepton = true;
+      }
+      if (daughter.pdgCode() == -13 && (min_eta_gen_primary_fwd < daughter.eta() && daughter.eta() < max_eta_gen_primary_fwd)) {
+        is_anti_lepton = true;
+      }
+    }
+    if (is_lepton && is_anti_lepton) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  SliceCache cache;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   Preslice<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   Preslice<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
 
+  // apply rapidity cut for electrons
+  Partition<aod::McParticles> mcelectrons = nabs(o2::aod::mcparticle::pdgCode) == 11 && min_eta_gen_primary < o2::aod::mcparticle::eta && o2::aod::mcparticle::eta < max_eta_gen_primary;
+  Partition<aod::McParticles> mcmuons = nabs(o2::aod::mcparticle::pdgCode) == 13 && min_eta_gen_primary_fwd < o2::aod::mcparticle::eta && o2::aod::mcparticle::eta < max_eta_gen_primary_fwd;
+  Partition<aod::McParticles> mcvectormesons = o2::aod::mcparticle::pdgCode == 223 || o2::aod::mcparticle::pdgCode == 333;
+
   template <uint8_t system, typename TTracks, typename TFwdTracks, typename TPCMs, typename TPCMLegs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TFwdTracks const& o2fwdtracks, TPCMs const& v0photons, TPCMLegs const& /*v0legs*/, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcTracks, TTracks const& o2tracks, TFwdTracks const& o2fwdtracks, TPCMs const& v0photons, TPCMLegs const& /*v0legs*/, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::map<uint64_t, int> fNewLabels;
@@ -77,6 +135,16 @@ struct AssociateMCInfoDilepton {
     std::map<uint64_t, int> fEventIdx;
     std::map<uint64_t, int> fEventLabels;
     int fCounters[2] = {0, 0}; //! [0] - particle counter, [1] - event counter
+
+    // first, run loop over mc collisions to create map between aod::McCollisions and aod::EMMCEvents
+    for (auto& mcCollision : mcCollisions) {
+      // make an entry for this MC event only if it was not already added to the table
+      if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
+        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
+        fEventLabels[mcCollision.globalIndex()] = fCounters[1];
+        fCounters[1]++;
+      }
+    } // end of mc collision loop
 
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
@@ -91,121 +159,210 @@ struct AssociateMCInfoDilepton {
       }
 
       registry.fill(HIST("hEventCounter"), 2);
-
       auto mcCollision = collision.mcCollision();
-      // store mc particles
-      auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
-
-      // make an entry for this MC event only if it was not already added to the table
-      if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
-        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
-        fEventLabels[mcCollision.globalIndex()] = fCounters[1];
-        fCounters[1]++;
-      }
-
       mceventlabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
 
-      for (auto& mctrack : groupedMcTracks) { // store necessary information for denominator of efficiency
-        if (mctrack.pt() < 1e-3 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
+      // store MC true information
+      auto mcelectrons_per_collision = mcelectrons.sliceBy(perMcCollision, mcCollision.globalIndex());
+      auto mcmuons_per_collision = mcmuons.sliceBy(perMcCollision, mcCollision.globalIndex());
+      auto mcvectormesons_per_collision = mcvectormesons.sliceBy(perMcCollision, mcCollision.globalIndex());
+
+      for (auto& mctrack : mcelectrons_per_collision) { // store necessary information for denominator of efficiency
+        if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
           continue;
         }
-        int pdg = mctrack.pdgCode();
-        if (abs(pdg) > 1e+9) {
-          continue;
+        // auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+
+        // only for temporary protection, as of 15.July.2024 (by Daiki Sekihata)
+        int motherid_tmp = -999; // first mother index tmp
+        if (mctrack.has_mothers()) {
+          motherid_tmp = mctrack.mothersIds()[0]; // first mother index
         }
+        auto mp_tmp = mcTracks.iteratorAt(motherid_tmp);
+        int ndau_tmp = mp_tmp.daughtersIds()[1] - mp_tmp.daughtersIds()[0] + 1;
+        if (ndau_tmp < 10) {
 
-        // Note that pi0 from weak decay gives producedByGenerator() = false
-        if (
-          abs(pdg) != 11       // electron
-          && (abs(pdg) != 13)  // muon
-          && (abs(pdg) != 223) // omega
-          && (abs(pdg) != 333) // phi
-        ) {
-          continue;
-        }
-        // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
+          }
 
-        if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) { // primary leptons
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
 
-          if ((abs(mctrack.eta()) < max_eta_gen_primary) || (min_eta_gen_primary_fwd < mctrack.eta() && mctrack.eta() < max_eta_gen_primary_fwd)) { // primary leptons
-
-            if (abs(pdg) == 11 || abs(pdg) == 13) {
-              if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
-                fNewLabels[mctrack.globalIndex()] = fCounters[0];
-                fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
-                // fMCFlags[mctrack.globalIndex()] = mcflags;
-                fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
                 fCounters[0]++;
               }
 
-              int motherid = -999; // first mother index
-              if (mctrack.has_mothers()) {
-                motherid = mctrack.mothersIds()[0]; // first mother index
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
               }
-              while (motherid > -1) {
-                if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
-                  auto mp = mcTracks.iteratorAt(motherid);
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
+        }   // end of ndau protection
+      }     // end of mc electron loop
 
+      for (auto& mctrack : mcmuons_per_collision) { // store necessary information for denominator of efficiency
+        if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
+          continue;
+        }
+        // auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+
+        // only for temporary protection, as of 15.July.2024 (by Daiki Sekihata)
+        int motherid_tmp = -999; // first mother index tmp
+        if (mctrack.has_mothers()) {
+          motherid_tmp = mctrack.mothersIds()[0]; // first mother index
+        }
+        auto mp_tmp = mcTracks.iteratorAt(motherid_tmp);
+        int ndau_tmp = mp_tmp.daughtersIds()[1] - mp_tmp.daughtersIds()[0] + 1;
+        if (ndau_tmp < 10) {
+
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
+          }
+
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
+
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
+              }
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
+        }   // end of ndau protection
+      }     // end of mc muon loop
+
+      for (auto& mctrack : mcvectormesons_per_collision) { // store necessary information for denominator of efficiency
+        // Be careful!! dilepton rapidity is different from meson rapidity! No acceptance cut here.
+
+        if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
+          continue;
+        }
+
+        if (!isDecayDielectronInAcceptance(mctrack, mcTracks) && !isDecayDimuonInAcceptance(mctrack, mcTracks)) { // acceptance cut to decay dileptons
+          continue;
+        }
+
+        // auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+
+        int ndau = mctrack.daughtersIds()[1] - mctrack.daughtersIds()[0] + 1;
+        if (ndau < 10) {
+
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
+          }
+
+          // store daughter of vector mesons
+          if (mctrack.has_daughters()) {
+            // bool is_lepton_involved = false;
+            // for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+            //   // TODO: remove this check as soon as issues with MC production are fixed
+            //   if (d < mcTracks.size()) { // protect against bad daughter indices
+            //     auto daughter = mcTracks.iteratorAt(d);
+            //     if (abs(daughter.pdgCode()) == 11 || abs(daughter.pdgCode()) == 13) {
+            //       is_lepton_involved = true;
+            //       break;
+            //     }
+            //   } else {
+            //     std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcTracks.size() << ")" << std::endl;
+            //     std::cout << " Check the MC generator" << std::endl;
+            //   }
+            // }
+
+            bool is_lepton_involved = true;
+            if (is_lepton_involved) {
+              // LOGF(info, "daughter range in original MC stack pdg = %d | %d - %d , n dau = %d", mctrack.pdgCode(), mctrack.daughtersIds()[0], mctrack.daughtersIds()[1], mctrack.daughtersIds()[1] -mctrack.daughtersIds()[0] +1);
+              for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+                // TODO: remove this check as soon as issues with MC production are fixed
+                if (d < mcTracks.size()) { // protect against bad daughter indices
+                  auto daughter = mcTracks.iteratorAt(d);
                   // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-                  if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
-                    fNewLabels[mp.globalIndex()] = fCounters[0];
-                    fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
-                    // fMCFlags[mp.globalIndex()] = mcflags;
-                    fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                  if (!(fNewLabels.find(daughter.globalIndex()) != fNewLabels.end())) {
+                    fNewLabels[daughter.globalIndex()] = fCounters[0];
+                    fNewLabelsReversed[fCounters[0]] = daughter.globalIndex();
+                    // fMCFlags[daughter.globalIndex()] = mcflags;
+                    fEventIdx[daughter.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
                     fCounters[0]++;
                   }
-
-                  if (mp.has_mothers()) {
-                    motherid = mp.mothersIds()[0]; // first mother index
-                  } else {
-                    motherid = -999;
-                  }
                 } else {
-                  motherid = -999;
+                  std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcTracks.size() << ")" << std::endl;
+                  std::cout << " Check the MC generator" << std::endl;
                 }
-              }                                    // end of mother chain loop
-            } else if (pdg == 223 || pdg == 333) { // for denominator of efficiency
-              if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
-                fNewLabels[mctrack.globalIndex()] = fCounters[0];
-                fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
-                // fMCFlags[mctrack.globalIndex()] = mcflags;
-                fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-                fCounters[0]++;
-              }
-            } // end of primary omega, phi
-          }
-
-        } else if (abs(pdg) == 11 && mctrack.has_mothers()) { // secondary electrons. i.e. ele/pos from photon conversions.
-          int motherid = mctrack.mothersIds()[0];             // first mother index
-          auto mp = mcTracks.iteratorAt(motherid);
-
-          if (sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen_secondary))) - margin_z_gen) {
-            continue;
-          }
-
-          if (mp.pdgCode() == 22 && (mp.isPhysicalPrimary() || mp.producedByGenerator()) && abs(mp.eta()) < max_eta_gen_secondary) {
-            // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-            if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) { // store electron information. !!Not photon!!
-              fNewLabels[mctrack.globalIndex()] = fCounters[0];
-              fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
-              // fMCFlags[mctrack.globalIndex()] = mcflags;
-              fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-              fCounters[0]++;
-            }
-
-            // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-            if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) { // store conversion photon
-              fNewLabels[mp.globalIndex()] = fCounters[0];
-              fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
-              // fMCFlags[mp.globalIndex()] = mcflags;
-              fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
-              fCounters[0]++;
+              } // end of daughter loop
             }
           }
+        } // end of ndau protection
+      }   // end of generated vector mesons loop
+
+      for (auto& mctrack : mcvectormesons_per_collision) { // store necessary information for denominator of efficiency
+        // Be careful!! dilepton rapidity is different from meson rapidity! No acceptance cut here.
+
+        if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
+          continue;
         }
-      } // end of mc track loop
 
-    } // end of rec. collision loop
+        if ((mctrack.y() < min_eta_gen_primary || max_eta_gen_primary < mctrack.y()) && (mctrack.y() < min_eta_gen_primary_fwd || max_eta_gen_primary_fwd < mctrack.y())) { // acceptance cut to mesons
+          continue;
+        }
+
+        auto mcCollision = mcCollisions.iteratorAt(mctrack.mcCollisionId());
+
+        int ndau = mctrack.daughtersIds()[1] - mctrack.daughtersIds()[0] + 1;
+        if (ndau < 10) {
+          if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+            fNewLabels[mctrack.globalIndex()] = fCounters[0];
+            fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
+            // fMCFlags[mctrack.globalIndex()] = mcflags;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+            fCounters[0]++;
+          }
+        } // end of ndau protection
+      }   // end of generated vector mesons loop for efficiency of omega, phi pT spectra
+
+    } // end of reconstructed collision loop
 
     if constexpr (static_cast<bool>(system & kPCM)) {
       for (auto& v0 : v0photons) {
@@ -213,13 +370,12 @@ struct AssociateMCInfoDilepton {
         if (!collision_from_v0.has_mcCollision()) {
           continue;
         }
-        auto mcCollision_from_v0 = collision_from_v0.mcCollision();
 
         auto ele = v0.template negTrack_as<aod::V0Legs>();
         auto pos = v0.template posTrack_as<aod::V0Legs>();
 
-        auto o2track_ele = o2tracks.iteratorAt(pos.trackId());
-        auto o2track_pos = o2tracks.iteratorAt(ele.trackId());
+        auto o2track_ele = o2tracks.iteratorAt(ele.trackId());
+        auto o2track_pos = o2tracks.iteratorAt(pos.trackId());
 
         if (!o2track_ele.has_mcParticle() || !o2track_pos.has_mcParticle()) {
           continue; // If no MC particle is found, skip the v0
@@ -235,7 +391,7 @@ struct AssociateMCInfoDilepton {
             fNewLabels[mctrack.globalIndex()] = fCounters[0];
             fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
             // fMCFlags[mctrack.globalIndex()] = mcflags;
-            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision_from_v0.globalIndex())->second;
+            fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mctrack.mcCollisionId())->second;
             fCounters[0]++;
           }
           v0legmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
@@ -254,7 +410,7 @@ struct AssociateMCInfoDilepton {
                 fNewLabels[mp.globalIndex()] = fCounters[0];
                 fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
                 // fMCFlags[mp.globalIndex()] = mcflags;
-                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision_from_v0.globalIndex())->second;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mp.mcCollisionId())->second;
                 fCounters[0]++;
               }
 
@@ -278,7 +434,6 @@ struct AssociateMCInfoDilepton {
         if (!collision_from_el.has_mcCollision()) {
           continue;
         }
-        auto mcCollision_from_el = collision_from_el.mcCollision();
 
         auto o2track = o2tracks.iteratorAt(emprimaryelectron.trackId());
         if (!o2track.has_mcParticle()) {
@@ -291,7 +446,7 @@ struct AssociateMCInfoDilepton {
           fNewLabels[mctrack.globalIndex()] = fCounters[0];
           fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
           // fMCFlags[mctrack.globalIndex()] = mcflags;
-          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision_from_el.globalIndex())->second;
+          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mctrack.mcCollisionId())->second;
           fCounters[0]++;
         }
         emprimaryelectronmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
@@ -310,7 +465,7 @@ struct AssociateMCInfoDilepton {
               fNewLabels[mp.globalIndex()] = fCounters[0];
               fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
               // fMCFlags[mp.globalIndex()] = mcflags;
-              fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision_from_el.globalIndex())->second;
+              fEventIdx[mp.globalIndex()] = fEventLabels.find(mp.mcCollisionId())->second;
               fCounters[0]++;
             }
 
@@ -326,6 +481,7 @@ struct AssociateMCInfoDilepton {
 
       } // end of em primary electron loop
     }
+
     if constexpr (static_cast<bool>(system & kFwdMuon)) {
       // auto emprimarymuons_coll = emprimarymuons.sliceBy(perCollision_mu, collision.globalIndex());
       for (auto& emprimarymuon : emprimarymuons) {
@@ -333,7 +489,6 @@ struct AssociateMCInfoDilepton {
         if (!collision_from_mu.has_mcCollision()) {
           continue;
         }
-        auto mcCollision_from_mu = collision_from_mu.mcCollision();
 
         auto o2track = o2fwdtracks.iteratorAt(emprimarymuon.fwdtrackId());
         if (!o2track.has_mcParticle()) {
@@ -346,7 +501,7 @@ struct AssociateMCInfoDilepton {
           fNewLabels[mctrack.globalIndex()] = fCounters[0];
           fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
           // fMCFlags[mctrack.globalIndex()] = mcflags;
-          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision_from_mu.globalIndex())->second;
+          fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mctrack.mcCollisionId())->second;
           fCounters[0]++;
         }
         emprimarymuonmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
@@ -365,7 +520,7 @@ struct AssociateMCInfoDilepton {
               fNewLabels[mp.globalIndex()] = fCounters[0];
               fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
               // fMCFlags[mp.globalIndex()] = mcflags;
-              fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision_from_mu.globalIndex())->second;
+              fEventIdx[mp.globalIndex()] = fEventLabels.find(mp.mcCollisionId())->second;
               fCounters[0]++;
             }
 
@@ -404,12 +559,19 @@ struct AssociateMCInfoDilepton {
       // Note that not all daughters from the original table are preserved in the skimmed MC stack
       std::vector<int> daughters;
       if (mctrack.has_daughters()) {
+        // int ndau = mctrack.daughtersIds()[1] - mctrack.daughtersIds()[0] + 1;
         // LOGF(info, "daughter range in original MC stack pdg = %d | %d - %d , n dau = %d", mctrack.pdgCode(), mctrack.daughtersIds()[0], mctrack.daughtersIds()[1], mctrack.daughtersIds()[1] -mctrack.daughtersIds()[0] +1);
         for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
           // TODO: remove this check as soon as issues with MC production are fixed
           if (d < mcTracks.size()) { // protect against bad daughter indices
             // auto dau_tmp = mcTracks.iteratorAt(d);
-            // LOGF(info, "daughter pdg = %d", dau_tmp.pdgCode());
+            // // LOGF(info, "daughter pdg = %d", dau_tmp.pdgCode());
+            // if ((mctrack.pdgCode() == 223 || mctrack.pdgCode() == 333) && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
+            //   if (fNewLabels.find(d) == fNewLabels.end() && (abs(dau_tmp.pdgCode()) == 11 || abs(dau_tmp.pdgCode()) == 13)) {
+            //     LOGF(info, "daughter lepton is not found mctrack.globalIndex() = %d, mctrack.producedByGenerator() == %d, ndau = %d | dau_tmp.globalIndex() = %d, dau_tmp.pdgCode() = %d, dau_tmp.producedByGenerator() = %d, dau_tmp.pt() = %f, dau_tmp.eta() = %f, dau_tmp.phi() = %f", mctrack.globalIndex(), mctrack.producedByGenerator(), ndau, dau_tmp.globalIndex(), dau_tmp.pdgCode(), dau_tmp.producedByGenerator(), dau_tmp.pt(), dau_tmp.eta(), dau_tmp.phi());
+            //   }
+            // }
+
             if (fNewLabels.find(d) != fNewLabels.end()) {
               daughters.push_back(fNewLabels.find(d)->second);
             }
@@ -424,6 +586,11 @@ struct AssociateMCInfoDilepton {
                     mothers, daughters,
                     mctrack.px(), mctrack.py(), mctrack.pz(), mctrack.e(),
                     mctrack.vx(), mctrack.vy(), mctrack.vz());
+
+      mothers.clear();
+      mothers.shrink_to_fit();
+      daughters.clear();
+      daughters.shrink_to_fit();
     } // end loop over labels
 
     fNewLabels.clear();

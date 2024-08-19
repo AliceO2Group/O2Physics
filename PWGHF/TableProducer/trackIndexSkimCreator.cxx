@@ -134,10 +134,10 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   void selectCollision(const Col& collision, const BCs&)
   {
     float centrality = -1.;
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(collision, centrality, ccdb);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(collision, centrality, ccdb, registry);
 
     if (fillHistograms) {
-      hfEvSel.fillHistograms(collision, rejectionMask);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
       // additional centrality histos
       if constexpr (centEstimator != o2::hf_centrality::None) {
         if (rejectionMask == 0) {

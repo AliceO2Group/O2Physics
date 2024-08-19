@@ -2080,7 +2080,7 @@ void BookParticleCutsHistograms()
   if (pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
     pc.fPtDependentDCAxyFormula = new TFormula("fPtDependentDCAxyFormula", pc.fsParticleCuts[ePtDependentDCAxyParameterization].Data());
     // As a quick insanity check, try immediately to evaluate something from this formula:
-    if (isnan(pc.fPtDependentDCAxyFormula->Eval(1.44))) {
+    if (std::isnan(pc.fPtDependentDCAxyFormula->Eval(1.44))) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
   } // if(pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
@@ -4303,10 +4303,10 @@ bool ValidTrack(T const& track)
   // c) Additional validity checks for all tracks (in Run 3, 2 and 1), use only during debugging:
   if (tc.fInsanityCheckForEachParticle) {
 
-    // *) isnan() check (remember that 'nan' is 0./0., inf-inf, etc. However 'inf' itself is NOT a 'nan', therefore isnan(1./0.) is false, isnan(0./0.) is true, etc.):
-    if (isnan(track.phi()) || isnan(track.pt()) || isnan(track.eta())) {
+    // *) std::isnan() check (remember that 'nan' is 0./0., inf-inf, etc. However 'inf' itself is NOT a 'nan', therefore std::isnan(1./0.) is false, std::isnan(0./0.) is true, etc.):
+    if (std::isnan(track.phi()) || std::isnan(track.pt()) || std::isnan(track.eta())) {
       if (tc.fVerboseForEachParticle) {
-        LOGF(info, "\033[1;31m%s isnan(track.phi()) || isnan(track.pt()) || isnan(track.eta())\033[0m", __FUNCTION__);
+        LOGF(info, "\033[1;31m%s std::isnan(track.phi()) || std::isnan(track.pt()) || std::isnan(track.eta())\033[0m", __FUNCTION__);
         LOGF(error, "track.phi() = %f\ntrack.pt() = %f\ntrack.eta() = %f", track.phi(), track.pt(), track.eta());
       }
       return kFALSE;

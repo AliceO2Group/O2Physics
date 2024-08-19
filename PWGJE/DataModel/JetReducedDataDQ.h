@@ -45,7 +45,7 @@ DECLARE_SOA_TABLE(StoredJDielectronMcCollisions, "AOD1", "JDIELMCCOLL",
 namespace jdielectronindices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
-DECLARE_SOA_INDEX_COLUMN(JDielectronMcCollision, dielectronmccollision);
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(JDielectronMcCollision, dielectronmccollision, "JDIELMCCOLLS");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
 DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);

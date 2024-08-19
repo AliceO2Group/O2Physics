@@ -22,18 +22,24 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StaticFor.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_evsel;
+using namespace o2::hf_centrality;
 
 namespace
 {
@@ -79,13 +85,20 @@ static constexpr std::string_view originNames[nOriginTypes] = {"Prompt", "NonPro
 /// - Number of candidates per collision
 /// - Momentum Conservation for these particles
 struct HfTaskMcValidationGen {
-  Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of generated primary vertex [cm]"};
-  Configurable<double> xVertexMax{"xVertexMax", 100., "max. x of generated primary vertex [cm]"};
-  Configurable<double> yVertexMin{"yVertexMin", -100., "min. y of generated primary vertex [cm]"};
-  Configurable<double> yVertexMax{"yVertexMax", 100., "max. y of generated primary vertex [cm]"};
-  Configurable<double> zVertexMin{"zVertexMin", -100., "min. z of generated primary vertex [cm]"};
-  Configurable<double> zVertexMax{"zVertexMax", 100., "max. z of generated primary vertex [cm]"};
+
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  using CollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using CollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using CollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  PresliceUnsorted<CollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<CollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<CollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+
   Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
+  Configurable<bool> rejectParticlesFromBkgEvent{"rejectParticlesFromBkgEvent", true, "Reject particles"};
+
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
   AxisSpec axisNhadrons{10, -0.5, 9.5};
   AxisSpec axisNquarks{20, -0.5, 19.5};
@@ -123,8 +136,14 @@ struct HfTaskMcValidationGen {
      {"NonPromptCharmBaryons/hNonPromptBaryonsYDistr", "Y distribution vs non-prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisBaryonSpecies, axisY}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr", "Decay length distribution vs non-prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisBaryonSpecies, axisDecLen}}}}};
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
+
+    std::array<bool, 3> processes = {doprocessNoCentSel, doprocessCentFT0C, doprocessCentFT0M};
+    if (std::accumulate(processes.begin(), processes.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for generated particles can be enabled at a time.");
+    }
+
     // add per species histograms
     for (size_t iOrigin = 0; iOrigin < nOriginTypes; iOrigin++) {
       for (int iChannel = 0; iChannel < nMesonChannels; iChannel++) {
@@ -153,35 +172,38 @@ struct HfTaskMcValidationGen {
       registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
     }
+
+    // inspect for which particle species the candidates were created and which zPvPosMax cut was set for reconstructed
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-task-mc-validation-rec") == 0) {
+        hfEvSelMc.configureFromDevice(device);
+        break;
+      }
+    }
+
+    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
-  /// Primary-vertex selection
-  /// \param collision  mcCollision table row
-  template <typename Col>
-  bool selectVertex(const Col& collision)
-  {
-    // x position
-    if (collision.posX() < xVertexMin || collision.posX() > xVertexMax) {
-      return false;
-    }
-    // y position
-    if (collision.posY() < yVertexMin || collision.posY() > yVertexMax) {
-      return false;
-    }
-    // z position
-    if (collision.posZ() < zVertexMin || collision.posZ() > zVertexMax) {
-      return false;
-    }
-    return true;
-  }
-
-  void process(aod::McCollision const& mcCollision,
-               aod::McParticles const& mcParticles)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename GenColl, typename Particles, typename RecoColls>
+  void runCheckGenParticles(GenColl const& mcCollision, Particles const& mcParticles, RecoColls const& recoCollisions, BCsInfo const&, std::array<int, nChannels>& counterPrompt, std::array<int, nChannels>& counterNonPrompt)
   {
     if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
       return;
     }
-    if (!selectVertex(mcCollision)) {
+
+    // Slice the collisions table to get the collision info for the current MC collision
+    float centrality{-1.f};
+    uint16_t rejectionMask{0};
+    if constexpr (centEstimator == CentralityEstimator::FT0C) {
+      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
+    } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
+    } else if constexpr (centEstimator == CentralityEstimator::None) {
+      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
+    }
+    hfEvSelMc.fillHistograms(rejectionMask);
+    if (rejectionMask != 0) {
       return;
     }
 
@@ -189,16 +211,20 @@ struct HfTaskMcValidationGen {
     int cBarPerCollision = 0;
     int bPerCollision = 0;
     int bBarPerCollision = 0;
-    std::array<int, nChannels> counterPrompt{0}, counterNonPrompt{0};
 
     for (const auto& particle : mcParticles) {
+
+      if (rejectParticlesFromBkgEvent && particle.fromBackgroundEvent()) {
+        continue;
+      }
+
       if (!particle.has_mothers()) {
         continue;
       }
 
       int particlePdgCode = particle.pdgCode();
       bool isDiffFromMothers = true;
-      for (const auto& mother : particle.mothers_as<aod::McParticles>()) {
+      for (const auto& mother : particle.template mothers_as<Particles>()) {
         if (particlePdgCode == mother.pdgCode()) {
           isDiffFromMothers = false;
           break;
@@ -321,7 +347,7 @@ struct HfTaskMcValidationGen {
           counterNonPrompt[iD]++;
         }
 
-        auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
+        auto daughter0 = particle.template daughters_as<Particles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
         double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
         auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
@@ -361,17 +387,79 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("Quarks/hCountB"), bPerCollision);
     registry.fill(HIST("Quarks/hCountCbar"), cBarPerCollision);
     registry.fill(HIST("Quarks/hCountBbar"), bBarPerCollision);
-    static_for<0, nMesonChannels - 1>([&](auto i) {
-      constexpr int index = i.value;
-      registry.fill(HIST("PromptCharmMesons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
-      registry.fill(HIST("NonPromptCharmMesons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
-    });
-    static_for<nMesonChannels, nChannels - 1>([&](auto i) {
-      constexpr int index = i.value;
-      registry.fill(HIST("PromptCharmBaryons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
-      registry.fill(HIST("NonPromptCharmBaryons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
-    });
-  };
+  }
+
+  void processNoCentSel(aod::McCollisions const& mcCollisions,
+                        aod::McParticles const& mcParticles,
+                        CollisionsNoCents const& recoCollisions,
+                        BCsInfo const& bcInfo)
+  {
+    for (const auto& mcCollision : mcCollisions) {
+      const auto recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
+      std::array<int, nChannels> counterPrompt{0}, counterNonPrompt{0};
+      runCheckGenParticles<o2::hf_centrality::CentralityEstimator::None>(mcCollision, mcParticlesPerMcColl, recoCollsPerMcColl, bcInfo, counterPrompt, counterNonPrompt);
+      static_for<0, nMesonChannels - 1>([&](auto i) {
+        constexpr int index = i.value;
+        registry.fill(HIST("PromptCharmMesons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("NonPromptCharmMesons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
+      });
+      static_for<nMesonChannels, nChannels - 1>([&](auto i) {
+        constexpr int index = i.value;
+        registry.fill(HIST("PromptCharmBaryons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("NonPromptCharmBaryons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
+      });
+    }
+  } // end processNoCentSel
+  PROCESS_SWITCH(HfTaskMcValidationGen, processNoCentSel, "Process generated collisions information without centrality selection", true);
+
+  void processCentFT0C(aod::McCollisions const& mcCollisions,
+                       aod::McParticles const& mcParticles,
+                       CollisionsFT0Cs const& recoCollisions,
+                       BCsInfo const& bcInfo)
+  {
+    for (const auto& mcCollision : mcCollisions) {
+      const auto recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
+      std::array<int, nChannels> counterPrompt{0}, counterNonPrompt{0};
+      runCheckGenParticles<o2::hf_centrality::CentralityEstimator::FT0C>(mcCollision, mcParticlesPerMcColl, recoCollsPerMcColl, bcInfo, counterPrompt, counterNonPrompt);
+      static_for<0, nMesonChannels - 1>([&](auto i) {
+        constexpr int index = i.value;
+        registry.fill(HIST("PromptCharmMesons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("NonPromptCharmMesons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
+      });
+      static_for<nMesonChannels, nChannels - 1>([&](auto i) {
+        constexpr int index = i.value;
+        registry.fill(HIST("PromptCharmBaryons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("NonPromptCharmBaryons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
+      });
+    }
+  } // end processCentFT0C
+  PROCESS_SWITCH(HfTaskMcValidationGen, processCentFT0C, "Process generated collisions information with centrality selection using FT0C", false);
+
+  void processCentFT0M(aod::McCollisions const& mcCollisions,
+                       aod::McParticles const& mcParticles,
+                       CollisionsFT0Ms const& recoCollisions,
+                       BCsInfo const& bcInfo)
+  {
+    for (const auto& mcCollision : mcCollisions) {
+      const auto recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
+      std::array<int, nChannels> counterPrompt{0}, counterNonPrompt{0};
+      runCheckGenParticles<o2::hf_centrality::CentralityEstimator::FT0M>(mcCollision, mcParticlesPerMcColl, recoCollsPerMcColl, bcInfo, counterPrompt, counterNonPrompt);
+      static_for<0, nMesonChannels - 1>([&](auto i) {
+        constexpr int index = i.value;
+        registry.fill(HIST("PromptCharmMesons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("NonPromptCharmMesons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
+      });
+      static_for<nMesonChannels, nChannels - 1>([&](auto i) {
+        constexpr int index = i.value;
+        registry.fill(HIST("PromptCharmBaryons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("NonPromptCharmBaryons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
+      });
+    }
+  } // end processCentFT0M
+  PROCESS_SWITCH(HfTaskMcValidationGen, processCentFT0M, "Process generated collisions information with centrality selection using FT0M", false);
 };
 
 /// Reconstruction Level Validation
@@ -393,11 +481,16 @@ struct HfTaskMcValidationRec {
 
   using HfCand2ProngWithMCRec = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec>;
   using HfCand3ProngWithMCRec = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>;
-  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::HfSelCollision>;
+  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using CollisionsWithMCLabelsAndCentFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, CentFT0Cs>;
+  using CollisionsWithMCLabelsAndCentFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, CentFT0Ms>;
   using TracksWithSel = soa::Join<aod::TracksWMc, aod::TracksExtra, aod::TrackSelection, aod::TrackCompColls>;
 
   Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
   Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HfEventSelection hfEvSel; // event selection and monitoring
 
   AxisSpec axisDeltaMom{2000, -1., 1.};
   AxisSpec axisOrigin{4, -1.5, 2.5};
@@ -478,6 +571,16 @@ struct HfTaskMcValidationRec {
 
   void init(InitContext&)
   {
+    std::array<bool, 3> procCollisions = {doprocessColl, doprocessCollWithCentFTOC, doprocessCollWithCentFTOM};
+    if (std::accumulate(procCollisions.begin(), procCollisions.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for collision study can be enabled at a time.");
+    }
+
+    std::array<bool, 3> procCollAccoc = {doprocessCollAssoc, doprocessCollAssocWithCentFTOC, doprocessCollAssocWithCentFTOM};
+    if (std::accumulate(procCollAccoc.begin(), procCollAccoc.end(), 0) > 1) {
+      LOGP(fatal, "At most one process for collision association study function can be enabled at a time.");
+    }
+
     histOriginTracks[0] = registry.add<THnSparse>("TrackToCollChecks/histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
     histOriginTracks[1] = registry.add<THnSparse>("TrackToCollChecks/histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision
     histOriginTracks[2] = registry.add<THnSparse>("TrackToCollChecks/histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
@@ -519,19 +622,31 @@ struct HfTaskMcValidationRec {
     histContributors = registry.add<TH1>("TrackToCollChecks/histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
     histContributors->GetXaxis()->SetBinLabel(1, "correct MC collision");
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
+    hfEvSel.addHistograms(registry); // collision monitoring
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
   }
 
-  void process(CollisionsWithMCLabels::iterator const& collision,
-               aod::McCollisions const&)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+  void checkCollisions(Coll const& collision,
+                       aod::McCollisions const&,
+                       aod::BCsWithTimestamps const&)
   {
-    // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
-    if (collision.whyRejectColl() != 0) {
-      return;
-    }
+    // apply event selection
     if (!collision.has_mcCollision()) {
       return;
     }
-    auto mcCollision = collision.mcCollision_as<aod::McCollisions>();
+
+    float centrality{-1.f};
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    if (rejectionMask != 0) {
+      /// at least one event selection not satisfied --> reject the candidate
+      return;
+    }
+
+    auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
     if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
       return;
     }
@@ -540,24 +655,30 @@ struct HfTaskMcValidationRec {
     registry.fill(HIST("histYvtxReco"), collision.posY());
     registry.fill(HIST("histZvtxReco"), collision.posZ());
     registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), collision.posZ() - mcCollision.posZ());
-  } // end process
+  }
 
-  void processCollAssoc(CollisionsWithMCLabels const& collisions,
-                        TracksWithSel const&,
-                        aod::McParticles const& mcParticles,
-                        aod::McCollisions const&,
-                        aod::BCs const&)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Colls>
+  void checkCollisionAssociation(Colls const& collisions,
+                                 TracksWithSel const&,
+                                 aod::McParticles const& mcParticles,
+                                 aod::McCollisions const&,
+                                 aod::BCsWithTimestamps const&)
   {
     // loop over collisions
-    for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
+    for (const auto& collision : collisions) {
       // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
-      if (collision.whyRejectColl() != 0) {
+
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
+
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto mcCollision = collision.mcCollision_as<aod::McCollisions>();
+      auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
       if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
         continue;
       }
@@ -678,7 +799,60 @@ struct HfTaskMcValidationRec {
       }
     }
   }
+
+  void processColl(CollisionsWithMCLabels::iterator const& collision,
+                   aod::McCollisions const& mcCollisions,
+                   aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisions<o2::hf_centrality::CentralityEstimator::None>(collision, mcCollisions, bcs);
+  } // end process
+  PROCESS_SWITCH(HfTaskMcValidationRec, processColl, "Process collision information without centrality selection", true);
+
+  void processCollWithCentFTOC(CollisionsWithMCLabelsAndCentFT0C::iterator const& collision,
+                               aod::McCollisions const& mcCollisions,
+                               aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisions<o2::hf_centrality::CentralityEstimator::FT0C>(collision, mcCollisions, bcs);
+  } // end process
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollWithCentFTOC, "Process collision information with centrality selection with FT0C", false);
+
+  void processCollWithCentFTOM(CollisionsWithMCLabelsAndCentFT0M::iterator const& collision,
+                               aod::McCollisions const& mcCollisions,
+                               aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisions<o2::hf_centrality::CentralityEstimator::FT0M>(collision, mcCollisions, bcs);
+  } // end process
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollWithCentFTOM, "Process collision information with centrality selection with FT0M", false);
+
+  void processCollAssoc(CollisionsWithMCLabels const& collisions,
+                        TracksWithSel const& tracks,
+                        aod::McParticles const& mcParticles,
+                        aod::McCollisions const& mcCollisions,
+                        aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisionAssociation<o2::hf_centrality::CentralityEstimator::None>(collisions, tracks, mcParticles, mcCollisions, bcs);
+  }
   PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssoc, "Process collision-association information, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
+
+  void processCollAssocWithCentFTOC(CollisionsWithMCLabelsAndCentFT0C const& collisions,
+                                    TracksWithSel const& tracks,
+                                    aod::McParticles const& mcParticles,
+                                    aod::McCollisions const& mcCollisions,
+                                    aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisionAssociation<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, tracks, mcParticles, mcCollisions, bcs);
+  }
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssocWithCentFTOC, "Process collision-association information with centrality selection with FT0C, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
+
+  void processCollAssocWithCentFTOM(CollisionsWithMCLabelsAndCentFT0M const& collisions,
+                                    TracksWithSel const& tracks,
+                                    aod::McParticles const& mcParticles,
+                                    aod::McCollisions const& mcCollisions,
+                                    aod::BCsWithTimestamps const& bcs)
+  {
+    checkCollisionAssociation<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, tracks, mcParticles, mcCollisions, bcs);
+  }
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssocWithCentFTOM, "Process collision-association information with centrality selection with FT0M, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
 
   void processEff(HfCand2ProngWithMCRec const& cand2Prongs,
                   HfCand3ProngWithMCRec const& cand3Prongs,

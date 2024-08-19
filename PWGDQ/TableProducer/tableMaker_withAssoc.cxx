@@ -61,20 +61,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
-// DQ triggers
-enum DQTriggers {
-  kSingleE = 1 << 0,      // 0000001
-  kLMeeIMR = 1 << 1,      // 0000010
-  kLMeeHMR = 1 << 2,      // 0000100
-  kDiElectron = 1 << 3,   // 0001000
-  kSingleMuLow = 1 << 4,  // 0010000
-  kSingleMuHigh = 1 << 5, // 0100000
-  kDiMuon = 1 << 6,       // 1000000
-  kNTriggersDQ
-};
-
 Zorro zorro;
-std::string zorroTriggerMask[7] = {"fSingleE", "fLMeeIMR", "fLMeeHMR", "fDiElectron", "fSingleMuLow", "fSingleMuHigh", "fDiMuon"};
 
 // TODO: Since DCA depends on which collision the track is associated to, we should remove writing and subscribing to DCA tables, to optimize on CPU / memory
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
@@ -86,7 +73,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                        aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                                        aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits>;
 using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -105,7 +92,7 @@ using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
 using MyEventsWithMultsAndFilter = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::DQEventFilter>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>;
+using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::MultsExtra>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA>;
 using MyMuonsColl = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
@@ -128,10 +115,10 @@ DECLARE_SOA_TABLE(AmbiguousTracksFwd, "AOD", "AMBIGUOUSFWDTR", //! Table for Fwd
 constexpr static uint32_t gkEventFillMapWithMultsAndEventFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::EventFilter;
 constexpr static uint32_t gkEventFillMapWithMultsEventFilterZdc = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::EventFilter | VarManager::ObjTypes::Zdc;
 // constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult;
+constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 //  constexpr static uint32_t gkEventFillMapWithCentRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2; // Unused variable
 // constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
-constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
+constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra | VarManager::ObjTypes::TrackV0Bits;
 // constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMapWithCov | VarManager::ObjTypes::TrackV0Bits;
 // constexpr static uint32_t gkTrackFillMapWithV0BitsForMaps = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackTPCPID;
 // constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
@@ -176,6 +163,7 @@ struct TableMaker {
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
+  Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
 
   // Steer QA output
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
@@ -198,6 +186,7 @@ struct TableMaker {
   // CCDB connection configurables
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+  Configurable<string> fConfigCcdbPathZorro{"ccdb-path-zorro", "Users/r/rlietava/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -212,10 +201,11 @@ struct TableMaker {
   Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
 
   // Track related options
-  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
+  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propagate tracks to associated collision to recalculate DCA and momentum vector"};
 
   // Muon related options
-  Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propgate muon tracks through absorber (do not use if applying pairing)"};
+  Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
+  Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Correct global muon parameters"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -227,6 +217,7 @@ struct TableMaker {
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi fCCDBApi;
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
@@ -330,6 +321,7 @@ struct TableMaker {
       // Not later than now objects
       fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     }
+    fCCDBApi.init(fConfigCcdbUrl.value);
   }
 
   void DefineCuts()
@@ -518,15 +510,14 @@ struct TableMaker {
       (reinterpret_cast<TH2D*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       if (fConfigRunZorro) {
-        for (int i = 0; i < kNTriggersDQ; ++i) {
-          zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), zorroTriggerMask[i]);
-          if (!zorro.isSelected(bc.globalBC())) {
-            tag |= static_cast<uint64_t>(1 << i);
-          }
+        zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
+        zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
+        if (zorro.isSelected(bc.globalBC())) {
+          tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
         }
       } else {
         if (!fEventCut->IsSelected(VarManager::fgValues)) {
-          continue;
+          return;
         }
       }
 
@@ -763,7 +754,7 @@ struct TableMaker {
         VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
       // recalculte pDca and global muon kinematics
-      if (static_cast<int>(muon.trackType()) < 2) {
+      if (static_cast<int>(muon.trackType()) < 2 && fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
@@ -832,6 +823,19 @@ struct TableMaker {
           mftIdx = fMftIndexMap[muon.matchMFTTrackId()];
         }
       }
+      VarManager::FillTrack<TMuonFillMap>(muon);
+      if (fPropMuon) {
+        VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+      }
+      // recalculte pDca and global muon kinematics
+      if (static_cast<int>(muon.trackType()) < 2 && fRefitGlobalMuon) {
+        auto muontrack = muon.template matchMCHTrack_as<TMuons>();
+        auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
+        VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
+        VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+      } else {
+        VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
+      }
       muonBasic(reducedEventIdx, mchIdx, mftIdx, fFwdTrackFilterMap[muon.globalIndex()], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), 0);
       muonExtra(muon.nClusters(), VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
                 muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
@@ -858,7 +862,7 @@ struct TableMaker {
                     TTrackAssoc const& trackAssocs, TFwdTrackAssoc const& fwdTrackAssocs, TMFTTrackAssoc const& mftAssocs)
   {
 
-    if (fCurrentRun != bcs.begin().runNumber()) {
+    if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
       if (fConfigComputeTPCpostCalib) {
         auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bcs.begin().timestamp());
         VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
@@ -883,6 +887,12 @@ struct TableMaker {
           o2::base::Propagator::initFieldFromGRP(grpmag);
         }
       }
+      std::map<string, string> metadataRCT, header;
+      header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
+      uint64_t sor = std::atol(header["SOR"].c_str());
+      uint64_t eor = std::atol(header["EOR"].c_str());
+      VarManager::SetSORandEOR(sor, eor);
+
       fCurrentRun = bcs.begin().runNumber();
     }
 

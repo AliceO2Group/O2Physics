@@ -53,7 +53,7 @@ struct emcalQC {
   Configurable<bool> cfgDo2DQA{"cfgDo2DQA", true, "perform 2 dimensional cluster QA"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  EMEventCut fEMEventCut;
+  EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
@@ -88,7 +88,7 @@ struct emcalQC {
 
   void DefineEMEventCut()
   {
-    fEMEventCut = EMEventCut("fEMEventCut", "fEMEventCut");
+    fEMEventCut = EMPhotonEventCut("fEMEventCut", "fEMEventCut");
     fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
     fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
     fEMEventCut.SetZvtxRange(-eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);
