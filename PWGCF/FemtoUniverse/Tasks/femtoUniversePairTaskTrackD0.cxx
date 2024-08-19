@@ -282,7 +282,7 @@ struct femtoUniversePairTaskTrackD0 {
       } else {
         return false;
       }
-    } else if (mom > 1.5) { // 1.5 -
+    } else if (mom > 1.5) {
       if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
         return true;
       } else {
@@ -310,7 +310,6 @@ struct femtoUniversePairTaskTrackD0 {
         }
       } else if (mom > 0.5) {
         if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
-          // if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
           return true;
         } else {
           return false;
@@ -552,7 +551,7 @@ struct femtoUniversePairTaskTrackD0 {
       }
       // // Close Pair Rejection
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+        if (!pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
       }

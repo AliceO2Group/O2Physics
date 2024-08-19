@@ -29,11 +29,6 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace o2::aod
-{
-using DplusHadronPairFull = soa::Join<aod::DplusHadronPair, aod::DplusHadronRecoInfo>;
-} // namespace o2::aod
-
 // string definitions, used for histogram axis labels
 const TString stringPtD = "#it{p}_{T}^{D} (GeV/#it{c});";
 const TString stringPtHadron = "#it{p}_{T}^{Hadron} (GeV/#it{c});";
@@ -138,6 +133,7 @@ struct HfTaskCorrelationDplusHadrons {
                        kCandidateStepMcRecoInAcceptance,
                        kCandidateNSteps };
 
+  using DplusHadronPair = soa::Join<aod::DplusHadronPair, aod::DplusHadronRecoInfo, aod::DplusHadronGenInfo>;
   using DplusHadronPairFullWithMl = soa::Join<aod::DplusHadronPair, aod::DplusHadronRecoInfo, aod::DplusHadronGenInfo, aod::DplusHadronMlInfo, aod::TrkRecInfoDplus>;
   using CandDplusMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi, aod::HfCand3ProngMcRec>>;
   using CandDplusMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
@@ -524,7 +520,7 @@ struct HfTaskCorrelationDplusHadrons {
   PROCESS_SWITCH(HfTaskCorrelationDplusHadrons, processMcRec, "Process MC Reco mode", true);
 
   /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(DplusHadronPairFullWithMl const& pairEntries)
+  void processMcGen(DplusHadronPair const& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities

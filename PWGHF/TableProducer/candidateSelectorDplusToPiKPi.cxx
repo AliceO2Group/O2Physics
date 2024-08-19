@@ -25,6 +25,7 @@
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -72,6 +73,8 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_DPlusToKPiPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  // Mass Cut for trigger analysis
+  Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponse;
   std::vector<float> outputMlNotPreselected = {};
@@ -80,6 +83,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   HfHelper hfHelper;
+  o2::analysis::HfTriggerCuts hfTriggerCuts;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
@@ -147,6 +151,9 @@ struct HfCandidateSelectorDplusToPiKPi {
     }
     // invariant-mass cut
     if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
+      return false;
+    }
+    if (useTriggerMassCut && !hfTriggerCuts.isSelectedDplusInMassRange(hfHelper.invMassDplusToPiKPi(candidate), candpT)) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {

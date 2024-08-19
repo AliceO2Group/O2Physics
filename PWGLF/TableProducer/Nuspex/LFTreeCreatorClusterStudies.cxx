@@ -214,6 +214,7 @@ struct LfTreeCreatorClusterStudies {
   Configurable<bool> setting_fillK{"fillK", true, "Fill the K tree"};
   Configurable<bool> setting_fillDe{"fillDe", true, "Fill the De tree"};
   Configurable<bool> setting_fillHe3{"fillHe3", true, "Fill the He3 tree"};
+  Configurable<bool> setting_fillPKPi{"fillPKPPi", true, "Fill the p, K, pi tree"};
   Configurable<bool> setting_smallTable{"smallTable", true, "Use a small table for testing"};
 
   Configurable<int> setting_materialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -223,9 +224,9 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> setting_downscaleFactor{"downscaleFactor", 1.f, "Downscale factor for the V0 candidates"};
   Configurable<bool> setting_applyAdditionalEvSel{"applyAdditionalEvSel", false, "Apply additional event selection"};
 
-  Configurable<float> v0track_nClsItsMin{"v0track_NclsItsMin", 0.f, "Minimum number of ITS clusters for the V0 daughters"};
-  Configurable<float> v0track_nClsTpcMin{"v0track_NclsTpcMin", 100.f, "Minimum number of TPC clusters for the V0 daughters"};
-  Configurable<float> v0track_nClsTpcMaxShared{"v0track_NclsTpcMaxShared", 5.f, "Maximum number of shared TPC clusters for the V0 daughters"};
+  Configurable<float> track_nClsItsMin{"track_NclsItsMin", 0.f, "Minimum number of ITS clusters for the V0 daughters"};
+  Configurable<float> track_nClsTpcMin{"track_NclsTpcMin", 100.f, "Minimum number of TPC clusters for the V0 daughters"};
+  Configurable<float> track_nClsTpcMaxShared{"track_NclsTpcMaxShared", 5.f, "Maximum number of shared TPC clusters for the V0 daughters"};
 
   // Configurable<float> v0setting_etaMaxV0{"etaMaxV0", 0.8f, "Maximum eta for the V0 daughters"};
   Configurable<float> v0setting_etaMaxV0dau{"etaMaxV0dau", 0.8f, "Maximum eta for the V0 daughters"};
@@ -427,16 +428,16 @@ struct LfTreeCreatorClusterStudies {
    * Select the V0 daughters based on the quality cuts
    */
   template <typename T>
-  bool qualitySelectionV0Daughter(const T& track)
+  bool qualityTrackSelection(const T& track)
   {
     if (std::abs(track.eta()) > v0setting_etaMaxV0dau) {
       return false;
     }
-    if (track.itsNCls() < v0track_nClsItsMin ||
-        track.tpcNClsFound() < v0track_nClsTpcMin ||
-        track.tpcNClsCrossedRows() < v0track_nClsTpcMin ||
+    if (track.itsNCls() < track_nClsItsMin ||
+        track.tpcNClsFound() < track_nClsTpcMin ||
+        track.tpcNClsCrossedRows() < track_nClsTpcMin ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
-        track.tpcNClsShared() > v0track_nClsTpcMaxShared) {
+        track.tpcNClsShared() > track_nClsTpcMaxShared) {
       return false;
     }
     return true;
@@ -660,7 +661,7 @@ struct LfTreeCreatorClusterStudies {
 
     auto posTrack = v0.posTrack_as<Track>();
     auto negTrack = v0.negTrack_as<Track>();
-    if (!qualitySelectionV0Daughter(posTrack) || !qualitySelectionV0Daughter(negTrack)) {
+    if (!qualityTrackSelection(posTrack) || !qualityTrackSelection(negTrack)) {
       return false;
     }
     m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0DaughterQuality);
@@ -1290,6 +1291,34 @@ struct LfTreeCreatorClusterStudies {
     }
   }
 
+  void fillPKPiTable(const TracksFullIU::iterator& track)
+  {
+    uint8_t partID = 0;
+    if (std::abs(track.tpcNSigmaPi()) < v0setting_nsigmatpcPi) {
+      partID = PartID::pi;
+      m_hAnalysis.fill(HIST("nSigmaTPCPi"), track.p() * track.sign(), track.tpcNSigmaPi());
+    } else if (std::abs(track.tpcNSigmaKa()) < cascsetting_nsigmatpc) {
+      partID = PartID::ka;
+      m_hAnalysis.fill(HIST("nSigmaTPCKa"), track.p() * track.sign(), track.tpcNSigmaKa());
+    } else if (std::abs(track.tpcNSigmaPr()) < v0setting_nsigmatpcPr) {
+      partID = PartID::pr;
+      m_hAnalysis.fill(HIST("nSigmaTPCPr"), track.p() * track.sign(), track.tpcNSigmaPr());
+    } else {
+      return;
+    }
+
+    if (setting_smallTable) {
+      m_ClusterStudiesTable(
+        track.p() * track.sign(),
+        track.eta(),
+        track.phi(),
+        track.itsClusterSizes(),
+        partID);
+    }
+  }
+
+  // =========================================================================================================
+
   void processDataV0Casc(CollisionsCustom const& collisions, TracksFullIU const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
@@ -1364,6 +1393,34 @@ struct LfTreeCreatorClusterStudies {
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataNuclei, "process Data Nuclei", false);
 
+  /**
+   * @brief Produce a dataset with high purity p, K, #pi
+   */
+  void processDataPKPi(CollisionsCustom const& collisions, TracksFullIU const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      if (!collisionSelection(collision)) {
+        continue;
+      }
+
+      m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto TrackTable_thisCollision = tracks.sliceBy(m_perCol, collIdx);
+      TrackTable_thisCollision.bindExternalIndices(&tracks);
+
+      for (auto track : TrackTable_thisCollision) {
+        if (!qualityTrackSelection(track)) {
+          continue;
+        }
+
+        if (setting_fillPKPi)
+          fillPKPiTable(track);
+      }
+    }
+  }
+  PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataPKPi, "process Data p, K, pi", false);
+
   void processMcV0Casc(CollisionsCustom const& collisions, TracksFullIUMc const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     for (const auto& collision : collisions) {
@@ -1388,18 +1445,17 @@ struct LfTreeCreatorClusterStudies {
       cascTable_thisCollision.bindExternalIndices(&tracks);
       cascTable_thisCollision.bindExternalIndices(&v0s);
 
-      if (setting_fillV0) {
-        m_v0TrackParCovs.clear();
-        for (auto& v0 : v0Table_thisCollision) {
-          CandidateV0 candV0;
-          if (fillV0Cand(PV, v0, candV0, tracks)) {
-            if (fillV0CandMc(v0, candV0)) {
-              fillV0TableMc(candV0);
-            }
+      m_v0TrackParCovs.clear();
+      for (auto& v0 : v0Table_thisCollision) {
+        CandidateV0 candV0;
+        if (fillV0Cand(PV, v0, candV0, tracks) && setting_fillV0) {
+          if (fillV0CandMc(v0, candV0)) {
+            fillV0TableMc(candV0);
           }
         }
       }
-      if (setting_fillK && setting_fillV0) { // the v0 loops are needed for the Ks
+
+      if (setting_fillK) { // the v0 loops are needed for the Ks
         for (auto& cascade : cascTable_thisCollision) {
           CandidateK candK;
           if (fillKCand(PV, cascade, candK, tracks)) {

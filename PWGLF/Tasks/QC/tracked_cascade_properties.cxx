@@ -77,10 +77,10 @@ struct tracked_cascade_properties {
   Configurable<float> maximumCascRadius{"maximumCascRadius", 18.0f, "Maximum Cascade Radius"};
 
   // Mass Cuts
-  Configurable<float> mMin_xi{"mMin_xi", 1.31f, "mMin Xi"};
-  Configurable<float> mMax_xi{"mMax_xi", 1.33f, "mMax Xi"};
-  Configurable<float> mMin_omega{"mMin_omega", 1.66f, "mMin Omega"};
-  Configurable<float> mMax_omega{"mMax_omega", 1.68f, "mMax Omega"};
+  Configurable<float> mMin_xi{"mMin_xi", 1.315f, "mMin Xi"};
+  Configurable<float> mMax_xi{"mMax_xi", 1.328f, "mMax Xi"};
+  Configurable<float> mMin_omega{"mMin_omega", 1.665f, "mMin Omega"};
+  Configurable<float> mMax_omega{"mMax_omega", 1.680f, "mMax Omega"};
 
   void init(InitContext const&)
   {
@@ -181,6 +181,14 @@ struct tracked_cascade_properties {
       registryQC.fill(HIST("deltaNclsITS_track"), nCls - track.itsNCls());
       registryQC.fill(HIST("deltaNclsITS_itstrack"), nCls - trackITS.itsNCls());
 
+      // Xi Mass
+      if (btrack.sign() > 0) {
+        registryData.fill(HIST("xi_mass_pos"), track.p(), trackedCascade.xiMass());
+      }
+      if (btrack.sign() < 0) {
+        registryData.fill(HIST("xi_mass_neg"), track.p(), trackedCascade.xiMass());
+      }
+
       // Track Inclination
       double lambda = track_inclination(track.eta());
 
@@ -190,16 +198,22 @@ struct tracked_cascade_properties {
         if (btrack.sign() > 0) {
           registryData.fill(HIST("xi_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("xi_pos_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("xi_mass_pos"), track.p(), trackedCascade.xiMass());
           registryData.fill(HIST("xi_pos_avgclustersize_cosL_vs_betagamma"), track.p() / mXi, averageClusterSize * cos(lambda));
         }
         if (btrack.sign() < 0) {
           registryData.fill(HIST("xi_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("xi_neg_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("xi_mass_neg"), track.p(), trackedCascade.xiMass());
           registryData.fill(HIST("xi_neg_avgclustersize_cosL_vs_betagamma"), track.p() / mXi, averageClusterSize * cos(lambda));
         }
         continue;
+      }
+
+      // Omega Mass
+      if (btrack.sign() > 0) {
+        registryData.fill(HIST("omega_mass_pos"), track.p(), trackedCascade.omegaMass());
+      }
+      if (btrack.sign() < 0) {
+        registryData.fill(HIST("omega_mass_neg"), track.p(), trackedCascade.omegaMass());
       }
 
       // Omega
@@ -208,13 +222,11 @@ struct tracked_cascade_properties {
         if (btrack.sign() > 0) {
           registryData.fill(HIST("omega_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("omega_pos_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("omega_mass_pos"), track.p(), trackedCascade.omegaMass());
           registryData.fill(HIST("omega_pos_avgclustersize_cosL_vs_betagamma"), track.p() / mOmega, averageClusterSize * cos(lambda));
         }
         if (btrack.sign() < 0) {
           registryData.fill(HIST("omega_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("omega_neg_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("omega_mass_neg"), track.p(), trackedCascade.omegaMass());
           registryData.fill(HIST("omega_neg_avgclustersize_cosL_vs_betagamma"), track.p() / mOmega, averageClusterSize * cos(lambda));
         }
       }

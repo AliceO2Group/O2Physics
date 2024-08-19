@@ -101,6 +101,7 @@ class VarManager : public TObject
     ReducedZdc = BIT(17),
     CollisionMultExtra = BIT(18),
     ReducedEventMultExtra = BIT(19),
+    CollisionQvectCentr = BIT(20),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -937,6 +938,8 @@ class VarManager : public TObject
   static void FillQVectorFromGFW(C const& collision, A const& compA11, A const& compB11, A const& compC11, A const& compA21, A const& compB21, A const& compC21, A const& compA31, A const& compB31, A const& compC31, A const& compA41, A const& compB41, A const& compC41, A const& compA23, A const& compA42, float S10A = 1.0, float S10B = 1.0, float S10C = 1.0, float S11A = 1.0, float S11B = 1.0, float S11C = 1.0, float S12A = 1.0, float S13A = 1.0, float S14A = 1.0, float S21A = 1.0, float S22A = 1.0, float S31A = 1.0, float S41A = 1.0, float* values = nullptr);
   template <typename C>
   static void FillQVectorFromCentralFW(C const& collision, float* values = nullptr);
+  template <typename C>
+  static void FillNewQVectorFromCentralFW(C const& collision, float* values = nullptr);
   template <typename C>
   static void FillSpectatorPlane(C const& collision, float* values = nullptr);
   template <uint32_t fillMap, int pairType, typename T1, typename T2>
@@ -3659,13 +3662,13 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   float yQVecFT0m = collision.qvecFT0MIm(); // already normalised
   float xQVecFV0a = collision.qvecFV0ARe(); // already normalised
   float yQVecFV0a = collision.qvecFV0AIm(); // already normalised
-  float xQVecBPos = collision.qvecBPosRe(); // already normalised
-  float yQVecBPos = collision.qvecBPosIm(); // already normalised
-  float xQVecBNeg = collision.qvecBNegRe(); // already normalised
-  float yQVecBNeg = collision.qvecBNegIm(); // already normalised
+  float xQVecBPos = collision.qvecTPCposRe(); // already normalised
+  float yQVecBPos = collision.qvecTPCposIm(); // already normalised
+  float xQVecBNeg = collision.qvecTPCnegRe(); // already normalised
+  float yQVecBNeg = collision.qvecTPCnegIm(); // already normalised
 
-  values[kQ2X0A] = (collision.nTrkBPos() * xQVecBPos + collision.nTrkBNeg() * xQVecBNeg) / (collision.nTrkBPos() + collision.nTrkBNeg());
-  values[kQ2Y0A] = (collision.nTrkBPos() * yQVecBPos + collision.nTrkBNeg() * yQVecBNeg) / (collision.nTrkBPos() + collision.nTrkBNeg());
+  values[kQ2X0A] = collision.qvecTPCallRe();
+  values[kQ2Y0A] = collision.qvecTPCallIm();
   values[kQ2X0APOS] = xQVecBPos;
   values[kQ2Y0APOS] = yQVecBPos;
   values[kQ2X0ANEG] = xQVecBNeg;
@@ -3674,9 +3677,9 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kQ2Y0B] = yQVecFT0a;
   values[kQ2X0C] = xQVecFT0c;
   values[kQ2Y0C] = yQVecFT0c;
-  values[kMultA] = collision.nTrkBPos() + collision.nTrkBNeg();
-  values[kMultAPOS] = collision.nTrkBPos();
-  values[kMultANEG] = collision.nTrkBNeg();
+  values[kMultA] = collision.nTrkTPCpos() + collision.nTrkTPCneg();
+  values[kMultAPOS] = collision.nTrkTPCpos();
+  values[kMultANEG] = collision.nTrkTPCneg();
   values[kMultB] = collision.sumAmplFT0A(); // Be careful, this is weighted sum of multiplicity
   values[kMultC] = collision.sumAmplFT0C(); // Be careful, this is weighted sum of multiplicity
 
