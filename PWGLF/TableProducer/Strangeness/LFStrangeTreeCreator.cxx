@@ -316,9 +316,9 @@ struct LFStrangeTreeCreator {
       auto& posPropTrack = fitter.getTrack(0);
       auto& negPropTrack = fitter.getTrack(1);
 
-      std::array<float, 3> momPos = std::array{(float) -999., (float) -999.,(float) -999.};
-      std::array<float, 3> momNeg = std::array{(float) -999., (float) -999.,(float) -999.};
-      std::array<float, 3> momV0 = std::array{(float) -999., (float) -999.,(float) -999.};
+      std::array<float, 3> momPos = std::array{(float)-999., (float)-999., (float)-999.};
+      std::array<float, 3> momNeg = std::array{(float)-999., (float)-999., (float)-999.};
+      std::array<float, 3> momV0 = std::array{(float)-999., (float)-999., (float)-999.};
       posPropTrack.getPxPyPzGlo(momPos);
       negPropTrack.getPxPyPzGlo(momNeg);
       momTotXYZ(momV0, momPos, momNeg);
@@ -613,8 +613,8 @@ struct LFStrangeTreeCreator {
         candidateV0.pdgcodemotherdaupos = pdgCodeMotherDauPos;
         candidateV0.pdgmatchmothersecondmother = pdgMatchMotherSecondMother;
         // momentum of daughters
-        std::array<float, 3> momPosMC = std::array{(float) -999., (float) -999.,(float) -999.};
-        std::array<float, 3> momNegMC = std::array{(float) -999., (float) -999.,(float) -999.};
+        std::array<float, 3> momPosMC = std::array{(float)-999., (float)-999., (float)-999.};
+        std::array<float, 3> momNegMC = std::array{(float)-999., (float)-999., (float)-999.};
         momPosMC[0] = mcTrackPos.px();
         momPosMC[1] = mcTrackPos.py();
         momPosMC[2] = mcTrackPos.pz();
@@ -623,8 +623,6 @@ struct LFStrangeTreeCreator {
         momNegMC[2] = mcTrackNeg.pz();
         candidateV0.momposMC = std::array{momPosMC[0], momPosMC[1], momPosMC[2]};
         candidateV0.momnegMC = std::array{momNegMC[0], momNegMC[1], momNegMC[2]};
-
-
       }
     }
   }
@@ -640,8 +638,8 @@ struct LFStrangeTreeCreator {
 
       auto pdgCode = mcPart.pdgCode();
       std::array<float, 3> secVtx;
-      std::array<float, 3> momPosMC = std::array{(float) -999., (float) -999., (float) -999.};
-      std::array<float, 3> momNegMC = std::array{(float) -999., (float) -999., (float) -999.};
+      std::array<float, 3> momPosMC = std::array{(float)-999., (float)-999., (float)-999.};
+      std::array<float, 3> momNegMC = std::array{(float)-999., (float)-999., (float)-999.};
 
       // look for lambda (3122) or k0short (310)
       int pdg_test = 3122;
@@ -668,7 +666,7 @@ struct LFStrangeTreeCreator {
         }
         // momentum of daughters
         for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
-          if (mcDaught.pdgCode()<0){
+          if (mcDaught.pdgCode() < 0) {
             momNegMC[0] = mcDaught.px();
             momNegMC[1] = mcDaught.py();
             momNegMC[2] = mcDaught.pz();
