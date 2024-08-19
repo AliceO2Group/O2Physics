@@ -893,9 +893,6 @@ struct TableMaker {
       uint64_t eor = std::atol(header["EOR"].c_str());
       VarManager::SetSORandEOR(sor, eor);
 
-      LOG(info) << "===============================+ SOR / EOR " << sor << " / " << eor << endl;
-      cout << "=============================== SOR / EOR " << sor << " / " << eor << endl;
-
       fCurrentRun = bcs.begin().runNumber();
     }
 
