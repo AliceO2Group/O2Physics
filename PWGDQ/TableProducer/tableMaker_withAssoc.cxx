@@ -217,6 +217,7 @@ struct TableMaker {
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi fCCDBApi;
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
@@ -320,6 +321,7 @@ struct TableMaker {
       // Not later than now objects
       fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     }
+    fCCDBApi.init(fConfigCcdbUrl.value);
   }
 
   void DefineCuts()
@@ -860,7 +862,7 @@ struct TableMaker {
                     TTrackAssoc const& trackAssocs, TFwdTrackAssoc const& fwdTrackAssocs, TMFTTrackAssoc const& mftAssocs)
   {
 
-    if (fCurrentRun != bcs.begin().runNumber()) {
+    if (bcs.size()>0 && fCurrentRun != bcs.begin().runNumber()) {
       if (fConfigComputeTPCpostCalib) {
         auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bcs.begin().timestamp());
         VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
@@ -885,6 +887,15 @@ struct TableMaker {
           o2::base::Propagator::initFieldFromGRP(grpmag);
         }
       }
+      std::map<string, string> metadataRCT, header;
+      header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
+      uint64_t sor = std::atol(header["SOR"].c_str());
+      uint64_t eor = std::atol(header["EOR"].c_str());
+      VarManager::SetSORandEOR(sor, eor);
+
+      LOG(info) << "===============================+ SOR / EOR " << sor << " / " << eor << endl;
+      cout << "=============================== SOR / EOR " << sor << " / " << eor << endl;
+
       fCurrentRun = bcs.begin().runNumber();
     }
 

@@ -175,6 +175,7 @@ class VarManager : public TObject
 
     // Event wise variables
     kTimestamp,
+    kTimeFromSOR,                // Time since Start of Run (SOR) in minutes
     kCollisionTime,
     kCollisionTimeRes,
     kBC,
@@ -987,6 +988,11 @@ class VarManager : public TObject
     fgITSROFBorderMarginHigh = marginHigh;
   }
 
+  static void SetSORandEOR(uint64_t sor, uint64_t eor) {
+    fgSOR = sor;
+    fgEOR = eor;
+  }
+
  public:
   VarManager();
   ~VarManager() override;
@@ -1010,6 +1016,8 @@ class VarManager : public TObject
   static int fgITSROFlength;              // ITS ROF length (from ALPIDE parameters)
   static int fgITSROFBorderMarginLow;     // ITS ROF border low margin
   static int fgITSROFBorderMarginHigh;    // ITS ROF border high margin
+  static uint64_t fgSOR;                  // Timestamp for start of run
+  static uint64_t fgEOR;                  // Timestamp for end of run
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -1276,11 +1284,12 @@ void VarManager::FillBC(T const& bc, float* values)
   if (!values) {
     values = fgValues;
   }
-  values[VarManager::kRunNo] = bc.runNumber();
-  values[VarManager::kBC] = bc.globalBC();
+  values[kRunNo] = bc.runNumber();
+  values[kBC] = bc.globalBC();
   values[kBCOrbit] = bc.globalBC() % o2::constants::lhc::LHCMaxBunches;
-  values[VarManager::kTimestamp] = bc.timestamp();
-  values[VarManager::kRunIndex] = GetRunIndex(bc.runNumber());
+  values[kTimestamp] = bc.timestamp();
+  values[kTimeFromSOR] = (fgSOR > 0 ? (bc.timestamp() - fgSOR) / 60000. : -1.0);
+  values[kRunIndex] = GetRunIndex(bc.runNumber());
 }
 
 template <uint32_t fillMap, typename T>

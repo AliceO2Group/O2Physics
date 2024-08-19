@@ -34,6 +34,8 @@ int VarManager::fgITSROFbias = 0;
 int VarManager::fgITSROFlength = 100;
 int VarManager::fgITSROFBorderMarginLow = 0;
 int VarManager::fgITSROFBorderMarginHigh = 0;
+uint64_t VarManager::fgSOR = 0;
+uint64_t VarManager::fgEOR = 0;
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
@@ -228,6 +230,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kRunId] = "";
   fgVariableNames[kBC] = "Bunch crossing";
   fgVariableUnits[kBC] = "";
+  fgVariableNames[kTimeFromSOR] = "time since SOR";
+  fgVariableUnits[kTimeFromSOR] = "min.";
   fgVariableNames[kBCOrbit] = "Bunch crossing";
   fgVariableUnits[kBCOrbit] = "";
   fgVariableNames[kIsPhysicsSelection] = "Physics selection";
