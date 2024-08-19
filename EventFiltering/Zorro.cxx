@@ -188,6 +188,12 @@ bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance)
   return false;
 }
 
+std::vector<bool> Zorro::getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance)
+{
+  fetch(bcGlobalId, tolerance);
+  return getTriggerOfInterestResults();
+}
+
 std::vector<bool> Zorro::getTriggerOfInterestResults() const
 {
   std::vector<bool> results(mTOIidx.size(), false);
@@ -199,4 +205,10 @@ std::vector<bool> Zorro::getTriggerOfInterestResults() const
     }
   }
   return results;
+}
+
+bool Zorro::isNotSelectedByAny(uint64_t bcGlobalId, uint64_t tolerance)
+{
+  fetch(bcGlobalId, tolerance);
+  return mLastResult.none();
 }
