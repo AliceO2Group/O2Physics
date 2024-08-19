@@ -118,6 +118,7 @@ struct HfCandidateSelectorToXiPi {
   TrackSelectorPr selectorProton;
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr>;
+  using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr>;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
@@ -176,7 +177,8 @@ struct HfCandidateSelectorToXiPi {
   }
 
   void process(aod::HfCandToXiPi const& candidates,
-               TracksSel const&)
+               TracksSel const&,
+               TracksSelLf const&)
   {
 
     double massLambdaFromPDG = o2::constants::physics::MassLambda0;
@@ -187,9 +189,9 @@ struct HfCandidateSelectorToXiPi {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<TracksSel>();    // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<TracksSel>();    // negative V0 daughter
-      auto trackPiFromCasc = candidate.bachelor_as<TracksSel>();  // pion <- cascade
+      auto trackV0PosDau = candidate.posTrack_as<TracksSelLf>();                 // positive V0 daughter
+      auto trackV0NegDau = candidate.negTrack_as<TracksSelLf>();                 // negative V0 daughter
+      auto trackPiFromCasc = candidate.bachelor_as<TracksSelLf>();               // pion <- cascade
       auto trackPiFromCharm = candidate.bachelorFromCharmBaryon_as<TracksSel>(); // pion <- charm baryon
 
       auto trackPiFromLam = trackV0NegDau;
