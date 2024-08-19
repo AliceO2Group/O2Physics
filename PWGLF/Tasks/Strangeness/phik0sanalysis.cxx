@@ -299,8 +299,8 @@ struct phik0shortanalysis {
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(2, "posZ cut");
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(3, "INEL>0 cut");
-    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(4, "With at least a reco coll");
-    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi");
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(4, "With at least a #phi");
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a reco coll");
 
     MCeventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     MCeventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
@@ -348,13 +348,13 @@ struct phik0shortanalysis {
     }
 
     // GenMC K0S coupled to Phi
-    MCPhiK0SHist.add("h1PhiK0SGenMCInclusive", "K0Short coupled to Phi for GenMC Inclusive", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
-    MCPhiK0SHist.add("h1PhiK0SGenMCFirstCut", "K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
-    MCPhiK0SHist.add("h1PhiK0SGenMCSecondCut", "K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    MCPhiK0SHist.add("h2PhiK0SGenMCInclusive", "K0Short coupled to Phi for GenMC Inclusive", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    MCPhiK0SHist.add("h2PhiK0SGenMCFirstCut", "K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    MCPhiK0SHist.add("h2PhiK0SGenMCSecondCut", "K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
 
-    MCPhiK0SHist.add("h1PhiK0SGenMCInclusiveAssocReco", "K0Short coupled to Phi for GenMC Inclusive Associated Reco Collision", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
-    MCPhiK0SHist.add("h1PhiK0SGenMCFirstCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
-    MCPhiK0SHist.add("h1PhiK0SGenMCSecondCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    MCPhiK0SHist.add("h2PhiK0SGenMCInclusiveAssocReco", "K0Short coupled to Phi for GenMC Inclusive Associated Reco Collision", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    MCPhiK0SHist.add("h2PhiK0SGenMCFirstCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+    MCPhiK0SHist.add("h2PhiK0SGenMCSecondCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
 
     // Phi mass vs Pion NSigma dE/dx for Same Event and Mixed Event
     for (int i = 0; i < nMultBin; i++) {
@@ -705,7 +705,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPhi;
         recPhi = recMother(track1, track2, massKa, massKa);
-        if (std::abs(recPhi.Rapidity()) > 0.8)
+        if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
           continue;
 
         if (!isCountedPhi) {
@@ -740,7 +740,7 @@ struct phik0shortanalysis {
           TLorentzVector recK0S;
           recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
-          if (std::abs(recK0S.Rapidity()) > 0.8)
+          if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           for (int i = 0; i < nPtBinK0S; i++) {
@@ -775,7 +775,7 @@ struct phik0shortanalysis {
           TLorentzVector recPi;
           recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
-          if (std::abs(recPi.Rapidity()) > 0.8)
+          if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
             continue;
           for (int i = 0; i < nPtBinPi; i++) {
             if (!isCountedPiInclusive[i]) {
@@ -833,7 +833,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recK0S;
       recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-      if (std::abs(recK0S.Rapidity()) > 0.8)
+      if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -858,7 +858,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -974,7 +974,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recPi;
       recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-      if (std::abs(recPi.Rapidity()) > 0.8)
+      if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -999,7 +999,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1131,7 +1131,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recK0S;
         recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-        if (std::abs(recK0S.Rapidity()) > 0.8)
+        if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
           continue;
 
         std::vector<TLorentzVector> listrecPhi;
@@ -1144,7 +1144,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1244,7 +1244,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPi;
         recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-        if (std::abs(recPi.Rapidity()) > 0.8)
+        if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
           continue;
 
         std::vector<TLorentzVector> listrecPhi;
@@ -1257,7 +1257,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1393,7 +1393,7 @@ struct phik0shortanalysis {
 
         TLorentzVector recPhi;
         recPhi = recMother(track1, track2, massKa, massKa);
-        if (std::abs(recPhi.Rapidity()) > 0.8)
+        if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
           continue;
 
         if (!isCountedPhi) {
@@ -1439,7 +1439,7 @@ struct phik0shortanalysis {
           TLorentzVector recK0S;
           recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
-          if (std::abs(recK0S.Rapidity()) > 0.8)
+          if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
             continue;
           if (!isCountedK0SInclusive) {
             PhieffHist.fill(HIST("h3PhieffK0SInvMassInclusive"), multiplicity, recK0S.Pt(), recPhi.M());
@@ -1476,7 +1476,7 @@ struct phik0shortanalysis {
           TLorentzVector recPi;
           recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
-          if (std::abs(recPi.Rapidity()) > 0.8)
+          if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
             continue;
           if (!isCountedPiInclusive) {
             PhieffHist.fill(HIST("h3PhieffPiInvMassInclusive"), multiplicity, recPi.Pt(), recPhi.M());
@@ -1553,7 +1553,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recK0S;
       recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
-      if (std::abs(recK0S.Rapidity()) > 0.8)
+      if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -1603,7 +1603,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1726,7 +1726,7 @@ struct phik0shortanalysis {
 
       TLorentzVector recPi;
       recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-      if (std::abs(recPi.Rapidity()) > 0.8)
+      if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
@@ -1776,7 +1776,7 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > 0.8)
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
             continue;
 
           listrecPhi.push_back(recPhi);
@@ -1884,9 +1884,6 @@ struct phik0shortanalysis {
       return;
     MCeventHist.fill(HIST("hGenMCEventSelection"), 2); // INEL>0 collisions
 
-    if (collisions.size() < 1)
-      return;
-
     bool isAssocColl = false;
     for (auto collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
@@ -1894,9 +1891,6 @@ struct phik0shortanalysis {
         break;
       }
     }
-    if (!isAssocColl)
-      return;
-    MCeventHist.fill(HIST("hGenMCEventSelection"), 3); // with at least a reco collision
 
     float multiplicity = mcCollision.centFT0M();
     MCeventHist.fill(HIST("hGenMCMultiplicityPercent"), multiplicity);
@@ -1926,11 +1920,13 @@ struct phik0shortanalysis {
       }
       if (!isPosKaon || !isNegKaon)
         continue;
-      if (std::abs(mcParticle1.y()) > 0.8)
+      if (std::abs(mcParticle1.y()) > cfgInclusiveDeltay)
         continue;
 
       if (!isCountedPhi) {
-        MCeventHist.fill(HIST("hGenMCEventSelection"), 4); // at least a Phi in the event
+        MCeventHist.fill(HIST("hGenMCEventSelection"), 3); // at least a Phi in the event
+        if (isAssocColl)
+          MCeventHist.fill(HIST("hGenMCEventSelection"), 4); // with at least a reco collision
         isCountedPhi = true;
       }
 
@@ -1942,7 +1938,7 @@ struct phik0shortanalysis {
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
-        if (std::abs(mcParticle2.y()) > 0.8)
+        if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
 
         int ipTBinK0S = 0;
@@ -1998,7 +1994,7 @@ struct phik0shortanalysis {
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
-        if (std::abs(mcParticle2.y()) > 0.8)
+        if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
 
         int ipTBinPi = 0;
@@ -2081,7 +2077,7 @@ struct phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
-      if (std::abs(mcParticle1.y()) > 0.8)
+      if (std::abs(mcParticle1.y()) > cfgInclusiveDeltay)
         continue;
 
       int ipTBin = 0;
@@ -2110,7 +2106,7 @@ struct phik0shortanalysis {
         }
         if (!isPosKaon || !isNegKaon)
           continue;
-        if (std::abs(mcParticle2.y()) > 0.8)
+        if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
 
         if (isAssocColl) {
@@ -2185,7 +2181,7 @@ struct phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
-      if (std::abs(mcParticle1.y()) > 0.8)
+      if (std::abs(mcParticle1.y()) > cfgInclusiveDeltay)
         continue;
 
       int ipTBin = 0;
@@ -2214,7 +2210,7 @@ struct phik0shortanalysis {
         }
         if (!isPosKaon || !isNegKaon)
           continue;
-        if (std::abs(mcParticle2.y()) > 0.8)
+        if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
 
         if (isAssocColl) {
