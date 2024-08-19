@@ -299,8 +299,8 @@ struct phik0shortanalysis {
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(2, "posZ cut");
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(3, "INEL>0 cut");
-    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(4, "With at least a reco coll");
-    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi");
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(4, "With at least a #phi");
+    MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a reco coll");
 
     MCeventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     MCeventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
@@ -1884,9 +1884,6 @@ struct phik0shortanalysis {
       return;
     MCeventHist.fill(HIST("hGenMCEventSelection"), 2); // INEL>0 collisions
 
-    if (collisions.size() < 1)
-      return;
-
     bool isAssocColl = false;
     for (auto collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
@@ -1894,9 +1891,6 @@ struct phik0shortanalysis {
         break;
       }
     }
-    if (!isAssocColl)
-      return;
-    MCeventHist.fill(HIST("hGenMCEventSelection"), 3); // with at least a reco collision
 
     float multiplicity = mcCollision.centFT0M();
     MCeventHist.fill(HIST("hGenMCMultiplicityPercent"), multiplicity);
@@ -1930,7 +1924,9 @@ struct phik0shortanalysis {
         continue;
 
       if (!isCountedPhi) {
-        MCeventHist.fill(HIST("hGenMCEventSelection"), 4); // at least a Phi in the event
+        MCeventHist.fill(HIST("hGenMCEventSelection"), 3); // at least a Phi in the event
+        if (isAssocColl)
+          MCeventHist.fill(HIST("hGenMCEventSelection"), 4); // with at least a reco collision
         isCountedPhi = true;
       }
 
