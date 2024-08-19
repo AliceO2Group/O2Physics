@@ -175,7 +175,7 @@ class VarManager : public TObject
 
     // Event wise variables
     kTimestamp,
-    kTimeFromSOR,                // Time since Start of Run (SOR) in minutes
+    kTimeFromSOR, // Time since Start of Run (SOR) in minutes
     kCollisionTime,
     kCollisionTimeRes,
     kBC,
@@ -988,7 +988,8 @@ class VarManager : public TObject
     fgITSROFBorderMarginHigh = marginHigh;
   }
 
-  static void SetSORandEOR(uint64_t sor, uint64_t eor) {
+  static void SetSORandEOR(uint64_t sor, uint64_t eor)
+  {
     fgSOR = sor;
     fgEOR = eor;
   }
