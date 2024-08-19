@@ -1260,11 +1260,14 @@ struct AnalysisSameEventPairing {
 
           auto t1 = a1.template reducedmuon_as<TTracks>();
           auto t2 = a2.template reducedmuon_as<TTracks>();
-          if (t1.matchMCHTrackId() == t2.matchMCHTrackId()) continue;
-          if (t1.matchMFTTrackId() == t2.matchMFTTrackId()) continue;
+          if (t1.matchMCHTrackId() == t2.matchMCHTrackId())
+            continue;
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
+            continue;
           sign1 = t1.sign();
           sign2 = t2.sign();
-          if (t1.isAmbiguous() || t2.isAmbiguous()) dimuonUnambiguous = 1;
+          if (t1.isAmbiguous() || t2.isAmbiguous())
+            dimuonUnambiguous = 1;
 
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           if constexpr (TTwoProngFitter) {
@@ -1444,7 +1447,6 @@ struct AnalysisSameEventPairing {
           }
           auto t1 = a1.template reducedtrack_as<TTracks1>();
           auto t2 = a2.template reducedtrack_as<TTracks2>();
-          if (t1.isAmbiguous() || t2.isAmbiguous()) dimuonUnambiguous = 1;
           VarManager::FillPairME<TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
             VarManager::FillPairVn<TPairType>(t1, t2);
@@ -1459,9 +1461,12 @@ struct AnalysisSameEventPairing {
           }
           auto t1 = a1.template reducedmuon_as<TTracks1>();
           auto t2 = a2.template reducedmuon_as<TTracks2>();
-          if (t1.matchMCHTrackId() == t2.matchMCHTrackId()) continue;
-          if (t1.matchMFTTrackId() == t2.matchMFTTrackId()) continue;
-          if (t1.isAmbiguous() || t2.isAmbiguous()) dimuonUnambiguous = 1;
+          if (t1.matchMCHTrackId() == t2.matchMCHTrackId())
+            continue;
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
+            continue;
+          if (t1.isAmbiguous() || t2.isAmbiguous())
+            dimuonUnambiguous = 1;
           VarManager::FillPairME<TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
             VarManager::FillPairVn<TPairType>(t1, t2);
