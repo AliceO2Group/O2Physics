@@ -469,7 +469,6 @@ struct OnTheFlyTracker {
     double u = rand.Uniform(0, 1);
     double xi_ctau = 4.91; // xi
     double xi_rxyz = (-xi_ctau * log(1 - u));
-    LOGF(info, "Xi r_xyz: %f", xi_rxyz);
     float sna, csa;
     o2::math_utils::CircleXYf_t xi_circle;
     track.getCircleParams(magneticField, xi_circle, sna, csa);
@@ -479,13 +478,6 @@ struct OnTheFlyTracker {
     double newY = ((particle.vy() - xi_circle.yC) * std::cos(theta) + (particle.vx() - xi_circle.xC) * std::sin(theta)) + xi_circle.yC;
     double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
     double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
-    if (!track.propagateTo(sqrt(newX * newX + newY * newY), magneticField)) {
-      LOGF(info, "failed to propagate");
-    }
-    std::array<float, 3> xiPos;
-    track.getXYZGlo(xiPos);
-    LOGF(info, "track: %f, %f, %f", xiPos[0], xiPos[1], xiPos[2]);
-    LOGF(info, "Bbend: %f, %f, %f", newX, newY, particle.vz() + xi_rxyz * (particle.pz() / particle.p()));
     xiDecayVertex.push_back(newX);
     xiDecayVertex.push_back(newY);
     xiDecayVertex.push_back(particle.vz() + xi_rxyz * (particle.pz() / particle.p()));
