@@ -216,6 +216,9 @@ struct OnTheFlyTracker {
   o2::vertexing::PVertexer vertexer;
   std::vector<cascadecandidate> cascadesAlice3;
 
+  // For TGenPhaseSpace seed
+  TRandom3 rand;
+
   void init(o2::framework::InitContext&)
   {
     if (enableLUT) {
@@ -449,60 +452,57 @@ struct OnTheFlyTracker {
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE); // such a light detector here
+
+    // Set seed for TGenPhaseSpace
+    rand.SetSeed(seed);
   }
 
   /// Function to decay the xi
   /// \param particle the particle to decay
+  /// \param track track of particle to decay
   /// \param decayDaughters the address of resulting daughters
   /// \param xiDecayVertex the address of the xi decay vertex
   /// \param l0DecayVertex the address of the l0 decay vertex
   template <typename McParticleType>
-  void decayParticle(McParticleType particle, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& l0DecayVertex)
+  void decayParticle(McParticleType particle, o2::track::TrackParCov track, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& l0DecayVertex)
   {
-    std::vector<double> xiVelocity(3);
-    std::vector<double> l0Velocity(3);
-    std::vector<double> xiMomentum = {particle.px(), particle.py(), particle.pz()};
-    std::vector<double> xiProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
-    double bz = magneticField * 0.1; // To tesla
-    TRandom3 rand;
-    rand.SetSeed(seed);
     double u = rand.Uniform(0, 1);
-    for (int i = 0; i < 3; i++) {
-      xiVelocity[i] = xiMomentum[i] / particle.e();
-    }
-    double xi_v_tot = particle.p() / particle.e();
     double xi_ctau = 4.91; // xi
-    double xi_charge = -1.6022e-19;
-    double speedOfLight = 3e+8;
-    double xi_v_xy = speedOfLight * sqrt(xiVelocity[0] * xiVelocity[0] + xiVelocity[1] * xiVelocity[1]);
-    double xi_lifetime = (-xi_ctau * log(1 - u)) / xi_v_tot;
-    double xi_kgMass = 1.32171 * 1.78e-27;
-    double xi_r = (xi_kgMass * xi_v_xy) / (xi_charge * bz);
-    double xi_theta = ((xi_lifetime / speedOfLight) * xi_charge * bz) / xi_kgMass;
-    double xi_phi = TMath::ATan2(xiVelocity[1], xiVelocity[0]);
-    xiDecayVertex.push_back(xiProductionVertex[0] + xi_r * (std::sin(xi_theta) * std::cos(xi_phi) - (1 - std::cos(xi_theta)) * std::sin(xi_phi)));
-    xiDecayVertex.push_back(xiProductionVertex[1] + xi_r * ((1 - std::cos(xi_theta)) * std::cos(xi_phi) + std::sin(xi_theta) * std::sin(xi_phi)));
-    xiDecayVertex.push_back(xiProductionVertex[2] + xi_lifetime * xiVelocity[2]);
-    std::vector<double> xiDaughters = {1.115, 0.139};
-    double px = (xi_v_xy * std::cos(xi_theta + xi_phi) * particle.e()) / speedOfLight;
-    double py = (xi_v_xy * std::sin(xi_theta + xi_phi) * particle.e()) / speedOfLight;
+    double xi_rxyz = (-xi_ctau * log(1 - u));
+    LOGF(info, "Xi r_xyz: %f", xi_rxyz);
+    float sna, csa;
+    o2::math_utils::CircleXYf_t xi_circle;
+    track.getCircleParams(magneticField, xi_circle, sna, csa);
+    double xi_rxy = xi_rxyz / sqrt(1. + track.getTgl() * track.getTgl());
+    double theta = xi_rxy / xi_circle.rC;
+    double newX = ((particle.vx() - xi_circle.xC) * std::cos(theta) - (particle.vy() - xi_circle.yC) * std::sin(theta)) + xi_circle.xC;
+    double newY = ((particle.vy() - xi_circle.yC) * std::cos(theta) + (particle.vx() - xi_circle.xC) * std::sin(theta)) + xi_circle.yC;
+    double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
+    double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
+    if (!track.propagateTo(sqrt(newX*newX + newY*newY), magneticField)) {
+      LOGF(info, "failed to propagate");
+    }
+    std::array<float, 3> xiPos;
+    track.getXYZGlo(xiPos);
+    LOGF(info, "track: %f, %f, %f", xiPos[0], xiPos[1], xiPos[2]);
+    LOGF(info, "Bbend: %f, %f, %f", newX, newY, particle.vz() + xi_rxyz*(particle.pz()/particle.p()));
+    xiDecayVertex.push_back(newX);
+    xiDecayVertex.push_back(newY);
+    xiDecayVertex.push_back(particle.vz() + xi_rxyz*(particle.pz()/particle.p()));
 
-    TLorentzVector xi(px, py, particle.pz(), particle.e());
+    std::vector<double> xiDaughters = {1.115, 0.139570};
+    TLorentzVector xi(newPx, newPy, particle.pz(), particle.e());
     TGenPhaseSpace xiDecay;
     xiDecay.SetDecay(xi, 2, xiDaughters.data());
     xiDecay.Generate();
     decayDaughters.push_back(*xiDecay.GetDecay(1));
-
+    
     double l0_ctau = 7.89; // lambda
-    double l0_v_tot = xiDecay.GetDecay(0)->P() / xiDecay.GetDecay(0)->E();
-    std::vector<double> l0Daughters = {0.139, 0.938};
-    l0Velocity[0] = xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->E();
-    l0Velocity[1] = xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->E();
-    l0Velocity[2] = xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->E();
-    double l0_lifetime = (-l0_ctau * log(1 - u)) / l0_v_tot;
-    for (int i = 0; i < 3; i++) {
-      l0DecayVertex.push_back(xiDecayVertex[i] + l0_lifetime * l0Velocity[i]);
-    }
+    std::vector<double> l0Daughters = {0.139570, 0.938272};
+    double l0_rxyz = (-l0_ctau * log(1 - u));
+    l0DecayVertex.push_back(xiDecayVertex[0] + l0_rxyz * (xiDecay.GetDecay(0)->Px()/xiDecay.GetDecay(0)->P()));
+    l0DecayVertex.push_back(xiDecayVertex[1] + l0_rxyz * (xiDecay.GetDecay(0)->Py()/xiDecay.GetDecay(0)->P()));
+    l0DecayVertex.push_back(xiDecayVertex[2] + l0_rxyz * (xiDecay.GetDecay(0)->Pz()/xiDecay.GetDecay(0)->P()));
 
     TLorentzVector l0 = *xiDecay.GetDecay(0);
     TGenPhaseSpace l0Decay;
@@ -622,7 +622,9 @@ struct OnTheFlyTracker {
       std::vector<double> layers = {0.50, 1.20, 2.50, 3.75, 7.00, 12.0, 20.0};
       if (treatXi) {
         if (mcParticle.pdgCode() == 3312) {
-          decayParticle(mcParticle, decayProducts, xiDecayVertex, l0DecayVertex);
+          o2::track::TrackParCov xiTrackParCov;
+          convertMCParticleToO2Track(mcParticle, xiTrackParCov);
+          decayParticle(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, l0DecayVertex);
           xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]);
           l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]);
         }
