@@ -112,6 +112,7 @@ struct phik0shortanalysis {
   HistogramRegistry PhiPionHist{"PhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MCPhiPionHist{"MCPhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhieffHist{"PhieffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry yaccHist{"yaccHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true}; 
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -231,7 +232,8 @@ struct phik0shortanalysis {
     AxisSpec K0SmassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec PhimassAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
-    AxisSpec deltayAxis = {16, 0.0f, 0.8f, "|#it{#Deltay}|"};
+    AxisSpec yAxis = {16, -0.8f, 0.8f, "#it{y}"};
+    AxisSpec deltayAxis = {16, 0.0f, 1.6f, "|#it{#Deltay}|"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{{0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "centFT0M"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
@@ -414,6 +416,13 @@ struct phik0shortanalysis {
     PhieffHist.add("h2PhieffPiGenMCInclusiveAssocReco", "Phi coupled to Pion for GenMC Inclusive", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
     PhieffHist.add("h2PhieffPiGenMCFirstCutAssocReco", "Phi coupled to Pion for GenMC Deltay < FirstCut", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
     PhieffHist.add("h2PhieffPiGenMCSecondCutAssocReco", "Phi coupled to Pion for GenMC Deltay < SecondCut", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
+
+    // y acceptance studies
+    yaccHist.add("hyaccK0SRecMC", "K0S y acceptance in RecMC", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
+    yaccHist.add("hyaccK0SGenMC", "K0S y acceptance in GenMC", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
+
+    yaccHist.add("hyaccPiRecMC", "Pion y acceptance in RecMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
+    yaccHist.add("hyaccPiGenMC", "Pion y acceptance in GenMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
   }
 
   // Event selection and QA filling
@@ -1572,6 +1581,8 @@ struct phik0shortanalysis {
       std::vector<TLorentzVector> listrecPhi;
       int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
+      bool isCountedPhi = false;
+
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
@@ -1620,6 +1631,11 @@ struct phik0shortanalysis {
             continue;
 
           listrecPhi.push_back(recPhi);
+
+          if (!isCountedPhi) {
+            yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, recK0S.Pt(), recK0S.Rapidity());
+            isCountedPhi = true;
+          }
 
           if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
             countInclusive++;
@@ -1748,6 +1764,8 @@ struct phik0shortanalysis {
       std::vector<TLorentzVector> listrecPhi;
       int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
+      bool isCountedPhi = false;
+
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
@@ -1796,6 +1814,11 @@ struct phik0shortanalysis {
             continue;
 
           listrecPhi.push_back(recPhi);
+
+          if (!isCountedPhi) {
+            yaccHist.fill(HIST("hyaccPiRecMC"), genmultiplicity, recPi.Pt(), recPi.Rapidity());
+            isCountedPhi = true;
+          }
 
           if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
             countInclusive++;
@@ -2104,6 +2127,8 @@ struct phik0shortanalysis {
         }
       }
 
+      bool isCountedPhi = false;
+
       bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
       bool isCountedPhiInclusiveAssocReco = false, isCountedPhiFirstCutAssocReco = false, isCountedPhiSecondCutAssocReco = false;
 
@@ -2124,6 +2149,11 @@ struct phik0shortanalysis {
           continue;
         if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
+
+        if (!isCountedPhi) {
+          yaccHist.fill(HIST("hyaccK0SGenMC"), multiplicity, mcParticle1.pt(), mcParticle1.y());
+          isCountedPhi = true;
+        }
 
         if (isAssocColl) {
           if (!isCountedPhiInclusiveAssocReco) {
@@ -2208,6 +2238,8 @@ struct phik0shortanalysis {
         }
       }
 
+      bool isCountedPhi = false;
+
       bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
       bool isCountedPhiInclusiveAssocReco = false, isCountedPhiFirstCutAssocReco = false, isCountedPhiSecondCutAssocReco = false;
 
@@ -2228,6 +2260,11 @@ struct phik0shortanalysis {
           continue;
         if (std::abs(mcParticle2.y()) > cfgInclusiveDeltay)
           continue;
+
+        if (!isCountedPhi) {
+          yaccHist.fill(HIST("hyaccPiGenMC"), multiplicity, mcParticle1.pt(), mcParticle1.y());
+          isCountedPhi = true;
+        }
 
         if (isAssocColl) {
           if (!isCountedPhiInclusiveAssocReco) {
