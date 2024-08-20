@@ -80,7 +80,6 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 }
 } // namespace
 
-
 struct PidONNXModel {
  public:
   PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp,
@@ -247,8 +246,9 @@ struct PidONNXModel {
     }
   }
 
-  template <typename... P1, typename ...P2>
-  static constexpr bool is_equal_size(o2::framework::pack<P1...>, o2::framework::pack<P2...>) {
+  template <typename... P1, typename... P2>
+  static constexpr bool is_equal_size(o2::framework::pack<P1...>, o2::framework::pack<P2...>)
+  {
     if constexpr (sizeof...(P1) == sizeof...(P2)) {
       return true;
     }
@@ -256,7 +256,8 @@ struct PidONNXModel {
     return false;
   }
 
-  static float scale(float value, const std::pair<float, float>& scalingParams) {
+  static float scale(float value, const std::pair<float, float>& scalingParams)
+  {
     return (value - scalingParams.first) / scalingParams.second;
   }
 
@@ -270,7 +271,7 @@ struct PidONNXModel {
     return std::static_pointer_cast<o2::soa::arrow_array_for_t<typename C::type>>(o2::soa::getIndexFromLabel(table, C::columnLabel())->chunk(ci))->raw_values()[ai];
   }
 
-  template <typename T, typename Tb,  typename... C>
+  template <typename T, typename Tb, typename... C>
   std::vector<float> getValues(o2::framework::pack<C...>, const T& track, const Tb& table)
   {
     auto arrowTable = table.asArrowTable();
@@ -280,7 +281,7 @@ struct PidONNXModel {
       std::optional<std::pair<float, float>> scalingParams = std::nullopt;
 
       auto scalingParamsEntry = mScalingParams.find(columnLabel);
-      if(scalingParamsEntry != mScalingParams.end()) {
+      if (scalingParamsEntry != mScalingParams.end()) {
         scalingParams = scalingParamsEntry->second;
       }
 
@@ -302,7 +303,7 @@ struct PidONNXModel {
 
             float value = static_cast<float>(track.template getDynamicColumn<C>());
 
-            if(scalingParams) {
+            if (scalingParams) {
               value = scale(value, scalingParams.value());
             }
 
@@ -316,12 +317,12 @@ struct PidONNXModel {
           }
 
           if constexpr (std::is_same_v<C, o2::aod::track::TRDSignal> || std::is_same_v<C, o2::aod::track::TRDPattern>) {
-            if(isTrdMissing || !isInPLimitTrd) {
+            if (isTrdMissing || !isInPLimitTrd) {
               output.push_back(std::numeric_limits<float>::quiet_NaN());
               return;
             }
           } else if constexpr (std::is_same_v<C, o2::aod::pidtofsignal::TOFSignal> || std::is_same_v<C, o2::aod::pidtofbeta::Beta>) {
-            if(isTofMissing || !isInPLimitTof) {
+            if (isTofMissing || !isInPLimitTof) {
               output.push_back(std::numeric_limits<float>::quiet_NaN());
               return;
             }
@@ -329,14 +330,14 @@ struct PidONNXModel {
 
           float value = static_cast<float>(getPersistentValue<T, C>(arrowTable.get(), track));
 
-          if(scalingParams) {
+          if (scalingParams) {
             value = scale(value, scalingParams.value());
           }
 
           output.push_back(value);
         }
       }(),
-      ...);
+       ...);
     }
 
     return output;
