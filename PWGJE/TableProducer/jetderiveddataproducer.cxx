@@ -259,16 +259,17 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcTrackLabels, "produces derived track labels table", false);
 
-  void processMcTrackLabelsWithCollisionAssociator(aod::Collision const& collision, soa::Join<aod::Tracks, aod::McTrackLabels> const&, aod::TrackAssoc const& assocCollisions)
+  void processMcTrackLabelsWithCollisionAssociator(aod::Collisions const& collisions, soa::Join<aod::Tracks, aod::McTrackLabels> const&, aod::TrackAssoc const& assocCollisions)
   {
-
-    auto collisionTrackIndices = assocCollisions.sliceBy(perCollisionTrackIndices, collision.globalIndex());
-    for (auto const& collisionTrackIndex : collisionTrackIndices) {
-      auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::McTrackLabels>>();
-      if (track.collisionId() == collision.globalIndex() && track.has_mcParticle()) {
-        jMcTracksLabelTable(track.mcParticleId());
-      } else {
-        jMcTracksLabelTable(-1);
+    for (auto const& collision : collisions) {
+      auto collisionTrackIndices = assocCollisions.sliceBy(perCollisionTrackIndices, collision.globalIndex());
+      for (auto const& collisionTrackIndex : collisionTrackIndices) {
+        auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::McTrackLabels>>();
+        if (track.collisionId() == collision.globalIndex() && track.has_mcParticle()) {
+          jMcTracksLabelTable(track.mcParticleId());
+        } else {
+          jMcTracksLabelTable(-1);
+        }
       }
     }
   }
