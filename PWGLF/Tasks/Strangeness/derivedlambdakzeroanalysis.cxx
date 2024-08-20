@@ -81,11 +81,6 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
-  Configurable<bool> requireNoHighOccupancyAgressive{"requireNoHighOccupancyAgressive", false, "reject collisions with high occupancies according to the aggressive cuts"};
-  Configurable<bool> requireNoHighOccupancyStrict{"requireNoHighOccupancyStrict", false, "reject collisions with high occupancies according to the strict cuts"};
-  Configurable<bool> requireNoHighOccupancyMedium{"requireNoHighOccupancyMedium", false, "reject collisions with high occupancies according to the medium cuts"};
-  Configurable<bool> requireNoHighOccupancyRelaxed{"requireNoHighOccupancyRelaxed", false, "reject collisions with high occupancies according to the relaxed cuts"};
-  Configurable<bool> requireNoHighOccupancyGentle{"requireNoHighOccupancyGentle", false, "reject collisions with high occupancies according to the gentle cuts"};
   Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
   Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
 
@@ -327,15 +322,10 @@ struct derivedlambdakzeroanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoHighOccupancyAgressive");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoHighOccupancyStrict");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoHighOccupancyMedium");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoHighOccupancyRelaxed");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoHighOccupancyGentle");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInTimeRangeStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Below min occup.");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Above max occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoCollInTimeRangeStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "Below min occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Above max occup.");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, axisNch});
@@ -1135,49 +1125,24 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
 
-    if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 10 /* No occupancy according to the aggressive cuts */);
-
-    if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 11 /* No occupancy according to the strict cuts */);
-
-    if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 12 /* No occupancy according to the medium cuts */);
-
-    if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 13 /* No occupancy according to the relaxed cuts */);
-
-    if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 14 /* No occupancy according to the gentle cuts */);
-
     if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 15 /* No other collision within +/- 10 microseconds */);
+    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 10 microseconds */);
 
     if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 16 /* No other collision within +/- 4 microseconds */);
+    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 4 microseconds */);
 
     if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 17 /* Below min occupancy */);
+    histos.fill(HIST("hEventSelection"), 12 /* Below min occupancy */);
     if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 18 /* Above max occupancy */);
+    histos.fill(HIST("hEventSelection"), 13 /* Above max occupancy */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -1264,49 +1229,24 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
 
-    if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 10 /* No occupancy according to the aggressive cuts */);
-
-    if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 11 /* No occupancy according to the strict cuts */);
-
-    if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 12 /* No occupancy according to the medium cuts */);
-
-    if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 13 /* No occupancy according to the relaxed cuts */);
-
-    if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
-      return;
-    }
-    histos.fill(HIST("hEventSelection"), 14 /* No occupancy according to the gentle cuts */);
-
     if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 15 /* No other collision within +/- 10 microseconds */);
+    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 10 microseconds */);
 
     if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 16 /* No other collision within +/- 4 microseconds */);
+    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 4 microseconds */);
 
     if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 17 /* Below min occupancy */);
+    histos.fill(HIST("hEventSelection"), 12 /* Below min occupancy */);
     if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 18 /* Above max occupancy */);
+    histos.fill(HIST("hEventSelection"), 13 /* Above max occupancy */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -1501,21 +1441,6 @@ struct derivedlambdakzeroanalysis {
           continue;
         }
         if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-          continue;
-        }
-        if (requireNoHighOccupancyAgressive && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyAgressive)) {
-          continue;
-        }
-        if (requireNoHighOccupancyStrict && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyStrict)) {
-          continue;
-        }
-        if (requireNoHighOccupancyMedium && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyMedium)) {
-          continue;
-        }
-        if (requireNoHighOccupancyRelaxed && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyRelaxed)) {
-          continue;
-        }
-        if (requireNoHighOccupancyGentle && !collision.selection_bit(o2::aod::evsel::kNoHighOccupancyGentle)) {
           continue;
         }
         if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
