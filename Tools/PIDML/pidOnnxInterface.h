@@ -78,24 +78,24 @@ struct PidONNXInterface {
   PidONNXInterface& operator=(const PidONNXInterface&) = delete;
   ~PidONNXInterface() = default;
 
-  template <typename T>
-  float applyModel(const T& track, int pid)
+  template <typename Tb, typename T>
+  float applyModel(const Tb& table, const T& track, int pid)
   {
     for (std::size_t i = 0; i < mNPids; i++) {
       if (mModels[i].mPid == pid) {
-        return mModels[i].applyModel(track);
+        return mModels[i].applyModel(table, track);
       }
     }
     LOG(error) << "No suitable PID ML model found for track: " << track.globalIndex() << " from collision: " << track.collision().globalIndex() << " and expected pid: " << pid;
     return -1.0f;
   }
 
-  template <typename T>
-  bool applyModelBoolean(const T& track, int pid)
+  template <typename Tb, typename T>
+  bool applyModelBoolean(const Tb& table, const T& track, int pid)
   {
     for (std::size_t i = 0; i < mNPids; i++) {
       if (mModels[i].mPid == pid) {
-        return mModels[i].applyModelBoolean(track);
+        return mModels[i].applyModelBoolean(table, track);
       }
     }
     LOG(error) << "No suitable PID ML model found for track: " << track.globalIndex() << " from collision: " << track.collision().globalIndex() << " and expected pid: " << pid;

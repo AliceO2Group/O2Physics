@@ -92,26 +92,26 @@ struct KaonPidTask {
     histos.add("hdEdXvsMomentum", ";P_{K^{+}K^{-}}; dE/dx in TPC (keV/cm)", kTH2F, {{100, 0., 4.}, {200, 20., 400.}});
   }
 
-  void process(MyFilteredCollision const& coll, o2::aod::MyTracks const& /*tracks*/)
+  void process(MyFilteredCollision const& coll, o2::aod::MyTracks const& tracks)
   {
     auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     for (auto track : groupPositive) {
       histos.fill(HIST("hChargePos"), track.sign());
-      if (pidModel.get()->applyModelBoolean(track)) {
+      if (pidModel.get()->applyModelBoolean(tracks, track)) {
         histos.fill(HIST("hdEdXvsMomentum"), track.p(), track.tpcSignal());
       }
     }
 
     for (auto track : groupNegative) {
       histos.fill(HIST("hChargeNeg"), track.sign());
-      if (pidModel.get()->applyModelBoolean(track)) {
+      if (pidModel.get()->applyModelBoolean(tracks, track)) {
         histos.fill(HIST("hdEdXvsMomentum"), track.p(), track.tpcSignal());
       }
     }
 
     for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPositive, groupNegative))) {
-      if (!(pidModel.get()->applyModelBoolean(pos)) || !(pidModel.get()->applyModelBoolean(neg))) {
+      if (!(pidModel.get()->applyModelBoolean(tracks, pos)) || !(pidModel.get()->applyModelBoolean(tracks, neg))) {
         continue;
       }
 
