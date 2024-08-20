@@ -84,7 +84,7 @@ struct SimpleApplyOnnxInterface {
 
     for (auto& track : tracks) {
       for (int pid : cfgPids.value) {
-        bool accepted = pidInterface.applyModelBoolean(track, pid);
+        bool accepted = pidInterface.applyModelBoolean(tracks, track, pid);
         LOGF(info, "collision id: %d track id: %d pid: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
              track.collisionId(), track.index(), pid, accepted, track.p(), track.x(), track.y(), track.z());
         pidMLResults(track.index(), pid, accepted);
@@ -97,7 +97,7 @@ struct SimpleApplyOnnxInterface {
   {
     for (auto& track : tracks) {
       for (int pid : cfgPids.value) {
-        bool accepted = pidInterface.applyModelBoolean(track, pid);
+        bool accepted = pidInterface.applyModelBoolean(tracks, track, pid);
         LOGF(info, "collision id: %d track id: %d pid: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
              track.collisionId(), track.index(), pid, accepted, track.p(), track.x(), track.y(), track.z());
         pidMLResults(track.index(), pid, accepted);

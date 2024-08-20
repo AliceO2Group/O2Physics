@@ -19,10 +19,12 @@
 
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <string>
 #include <algorithm>
 #include <map>
+#include <type_traits>
 #include <utility>
 #include <memory>
 #include <vector>
@@ -32,10 +34,15 @@
 #include <onnxruntime_cxx_api.h>
 #endif
 
+#include "Framework/TableBuilder.h"
+#include "Framework/Expressions.h"
+#include "arrow/table.h"
+
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "CCDB/CcdbApi.h"
 #include "Tools/PIDML/pidUtils.h"
+#include "Common/DataModel/PIDResponse.h"
 
 using namespace pidml::pidutils;
 
@@ -72,6 +79,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
   return true;
 }
 } // namespace
+
 
 struct PidONNXModel {
  public:
@@ -135,16 +143,42 @@ struct PidONNXModel {
   PidONNXModel& operator=(const PidONNXModel&) = delete;
   ~PidONNXModel() = default;
 
-  template <typename T>
-  float applyModel(const T& track)
+  template <typename Tb, typename T>
+  float applyModel(const Tb& table, const T& track)
   {
-    return getModelOutput(track);
+    return getModelOutput(table, track);
   }
 
-  template <typename T>
-  bool applyModelBoolean(const T& track)
+  template <typename Tb, typename T>
+  bool applyModelBoolean(const Tb& table, const T& track)
   {
-    return getModelOutput(track) >= mMinCertainty;
+    return getModelOutput(table, track) >= mMinCertainty;
+  }
+
+  template <typename Tb>
+  std::vector<float> batchApplyModel(const Tb& table)
+  {
+    std::vector<float> outputs;
+    outputs.reserve(table.size());
+
+    for (const auto& track : table) {
+      outputs.push_back(applyModel(table, track));
+    }
+
+    return outputs;
+  }
+
+  template <typename Tb>
+  std::vector<bool> batchApplyModelBoolean(const Tb& table)
+  {
+    std::vector<bool> outputs;
+    outputs.reserve(table.size());
+
+    for (const auto& track : table) {
+      outputs.push_back(applyModelBoolean(table, track));
+    }
+
+    return outputs;
   }
 
   int mPid;
@@ -213,52 +247,103 @@ struct PidONNXModel {
     }
   }
 
-  template <typename T>
-  std::vector<float> createInputsSingle(const T& track)
-  {
-    // TODO: Hardcoded for now. Planning to implement RowView extension to get runtime access to selected columns
-    // sign is short, trackType and tpcNClsShared uint8_t
-
-    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
-
-    std::vector<float> inputValues{scaledTPCSignal};
-
-    // When TRD Signal shouldn't be used we pass quiet_NaNs to the network
-    if (!inPLimit(track, mPLimits[kTPCTOFTRD]) || trdMissing(track)) {
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-    } else {
-      float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
-      inputValues.push_back(scaledTRDSignal);
-      inputValues.push_back(track.trdPattern());
+  template <typename... P1, typename ...P2>
+  static constexpr bool is_equal_size(o2::framework::pack<P1...>, o2::framework::pack<P2...>) {
+    if constexpr (sizeof...(P1) == sizeof...(P2)) {
+      return true;
     }
 
-    // When TOF Signal shouldn't be used we pass quiet_NaNs to the network
-    if (!inPLimit(track, mPLimits[kTPCTOF]) || tofMissing(track)) {
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-    } else {
-      float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
-      float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
-      inputValues.push_back(scaledTOFSignal);
-      inputValues.push_back(scaledBeta);
-    }
-
-    float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
-    float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
-    float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
-    float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
-    float scaledTPCNClsShared = (static_cast<float>(track.tpcNClsShared()) - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
-    float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
-    float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
-
-    inputValues.insert(inputValues.end(), {track.p(), track.pt(), track.px(), track.py(), track.pz(), static_cast<float>(track.sign()), scaledX, scaledY, scaledZ, scaledAlpha, static_cast<float>(track.trackType()), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ});
-
-    return inputValues;
+    return false;
   }
 
-  template <typename T>
-  float getModelOutput(const T& track)
+  static float scale(float value, const std::pair<float, float>& scalingParams) {
+    return (value - scalingParams.first) / scalingParams.second;
+  }
+
+  template <typename T, typename C>
+  typename C::type getPersistentValue(arrow::Table* table, const T& rowIterator)
+  {
+    auto colIterator = static_cast<C>(rowIterator).getIterator();
+    uint64_t ci = colIterator.mCurrentChunk;
+    uint64_t ai = *(colIterator.mCurrentPos) - colIterator.mFirstIndex;
+
+    return std::static_pointer_cast<o2::soa::arrow_array_for_t<typename C::type>>(o2::soa::getIndexFromLabel(table, C::columnLabel())->chunk(ci))->raw_values()[ai];
+  }
+
+  template <typename T, typename Tb,  typename... C>
+  std::vector<float> getValues(o2::framework::pack<C...>, const T& track, const Tb& table)
+  {
+    auto arrowTable = table.asArrowTable();
+    std::vector<float> output;
+    output.reserve(mTrainColumns.size());
+    for (const std::string& columnLabel : mTrainColumns) {
+      std::optional<std::pair<float, float>> scalingParams = std::nullopt;
+
+      auto scalingParamsEntry = mScalingParams.find(columnLabel);
+      if(scalingParamsEntry != mScalingParams.end()) {
+        scalingParams = scalingParamsEntry->second;
+      }
+
+      bool isInPLimitTrd = inPLimit(track, mPLimits[kTPCTOFTRD]);
+      bool isInPLimitTof = inPLimit(track, mPLimits[kTPCTOF]);
+      bool isTrdMissing = trdMissing(track);
+      bool isTofMissing = tofMissing(track);
+
+      ([&]() {
+        if constexpr (o2::soa::is_dynamic_v<C> && std::is_arithmetic_v<typename C::type>) {
+          // check if bindings have the same size as lambda parameters (getter do not have additional parameters)
+          if constexpr (is_equal_size(typename C::bindings_t{}, typename C::callable_t::args{})) {
+            std::string label = C::columnLabel();
+
+            // dynamic columns do not have "f" prefix in columnLabel() return string
+            if (std::strcmp(&columnLabel[1], label.data())) {
+              return;
+            }
+
+            float value = static_cast<float>(track.template getDynamicColumn<C>());
+
+            if(scalingParams) {
+              value = scale(value, scalingParams.value());
+            }
+
+            output.push_back(value);
+          }
+        } else if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C> && std::is_arithmetic_v<typename C::type> && !std::is_same_v<typename C::type, bool>) {
+          std::string label = C::columnLabel();
+
+          if (columnLabel != label) {
+            return;
+          }
+
+          if constexpr (std::is_same_v<C, o2::aod::track::TRDSignal> || std::is_same_v<C, o2::aod::track::TRDPattern>) {
+            if(isTrdMissing || !isInPLimitTrd) {
+              output.push_back(std::numeric_limits<float>::quiet_NaN());
+              return;
+            }
+          } else if constexpr (std::is_same_v<C, o2::aod::pidtofsignal::TOFSignal> || std::is_same_v<C, o2::aod::pidtofbeta::Beta>) {
+            if(isTofMissing || !isInPLimitTof) {
+              output.push_back(std::numeric_limits<float>::quiet_NaN());
+              return;
+            }
+          }
+
+          float value = static_cast<float>(getPersistentValue<T, C>(arrowTable.get(), track));
+
+          if(scalingParams) {
+            value = scale(value, scalingParams.value());
+          }
+
+          output.push_back(value);
+        }
+      }(),
+      ...);
+    }
+
+    return output;
+  }
+
+  template <typename Tb, typename T>
+  float getModelOutput(const Tb& table, const T& track)
   {
     // First rank of the expected model input is -1 which means that it is dynamic axis.
     // Axis is exported as dynamic to make it possible to run model inference with the batch of
@@ -268,7 +353,7 @@ struct PidONNXModel {
     auto input_shape = mInputShapes[0];
     input_shape[0] = batch_size;
 
-    std::vector<float> inputTensorValues = createInputsSingle(track);
+    std::vector<float> inputTensorValues = getValues(typename Tb::table_t::columns{}, track, table);
     std::vector<Ort::Value> inputTensors;
 
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
