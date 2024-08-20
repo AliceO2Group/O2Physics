@@ -71,7 +71,8 @@ o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& track
 struct secondaryPidTof {
   // Tables to produce
   Produces<o2::aod::EvTimeTOFFT0> tableEvTime;
-  static constexpr float diamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
+  Produces<o2::aod::EvTimeTOFFT0ForTrack> tableEvTimeForTrack;
+  static constexpr float diamond = 6.0; // Collision diamond used in the estimation of the TOF event time
   static constexpr float errDiamond = diamond * 33.356409f;
   static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
 
@@ -79,9 +80,8 @@ struct secondaryPidTof {
   // Detector response and input parameters
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", false, "Flag to iherit all common configurables from the TOF base task"};
   // CCDB configuration (inherited from TOF signal task)
-  Configurable<std::string> url{"ccdb-url", "", "url of the ccdb repository"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   // Event time configurations
   Configurable<float> minMomentum{"minMomentum", 0.5f, "Minimum momentum to select track sample for TOF event time"};
@@ -99,15 +99,6 @@ struct secondaryPidTof {
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (inheritFromBaseTask.value) {
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
-        LOG(fatal) << "Could not get ccdb-url from tof-signal task";
-      }
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
-        LOG(fatal) << "Could not get ccdb-timestamp from tof-signal task";
-      }
-    }
-
     trackSampleMinMomentum = minMomentum;
     trackSampleMaxMomentum = maxMomentum;
     LOG(info) << "Configuring track sample for TOF ev. time: " << trackSampleMinMomentum << " < p < " << trackSampleMaxMomentum;
@@ -202,7 +193,8 @@ struct secondaryPidTof {
 
   ///
   /// Process function to prepare the event time on Run 2 data
-  void processRun2(aod::Collisions const& collisions)
+  void processRun2(aod::Tracks const& tracks,
+                   aod::Collisions const& collisions)
   {
     if (!enableTable) {
       return;
@@ -210,6 +202,13 @@ struct secondaryPidTof {
 
     for (auto const& collision : collisions) { // Loop on collisions
       tableEvTime(collision.collisionTime() * 1000.f, collision.collisionTimeRes() * 1000.f, 0.f, 999.f, 0.f, 999.f);
+    }
+    for (auto const& track : tracks) {
+      if (!track.has_collision()) { // Track was not assigned, cannot compute event time
+        tableEvTimeForTrack(0.f, 999.f);
+        continue;
+      }
+      tableEvTimeForTrack(track.collision().collisionTime() * 1000.f, track.collision().collisionTimeRes() * 1000.f);
     }
   }
   PROCESS_SWITCH(secondaryPidTof, processRun2, "Process with Run2 data", false);
@@ -231,10 +230,17 @@ struct secondaryPidTof {
 
     for (auto const& collision : collisions) { // Loop on collisions
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
+      if ((sel8TOFEvTime.value == true) && !collision.sel8()) {
+        tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
+        for (int i = 0; i < tracksInCollision.size(); i++) {
+          tableEvTimeForTrack(0.f, 999.f);
+        }
+        continue;
+      }
 
       // First make table for event time
       const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
-      // int nGoodTracksForTOF = 0;
+      int nGoodTracksForTOF = 0; // count for ntrackIndex for removeBias()
       float et = evTimeTOF.mEventTime;
       float erret = evTimeTOF.mEventTimeError;
 
@@ -244,6 +250,15 @@ struct secondaryPidTof {
         erret = errDiamond;
       }
       tableEvTime(et, erret, et, erret, 0.f, 999.f);
+      for (auto const& track : tracksInCollision) {
+        evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(track, nGoodTracksForTOF, et, erret, 2);
+        if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
+        } else {
+          et = 0.f;
+          erret = errDiamond;
+        }
+        tableEvTimeForTrack(et, erret);
+      }
     }
   }
   PROCESS_SWITCH(secondaryPidTof, processNoFT0, "Process without FT0", false);
@@ -261,13 +276,21 @@ struct secondaryPidTof {
 
     for (auto const& collision : collisions) { // Loop on collisions
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
+      if ((sel8TOFEvTime.value == true) && !collision.sel8()) {
+        tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
+        for (int i = 0; i < tracksInCollision.size(); i++) {
+          tableEvTimeForTrack(0.f, 999.f);
+        }
+        continue;
+      }
+
       // Compute the TOF event time
       const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
 
-      float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
       float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
+      float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
 
-      // int nGoodTracksForTOF = 0;
+      int nGoodTracksForTOF = 0; // count for ntrackIndex for removeBias()
       float eventTime = 0.f;
       float sumOfWeights = 0.f;
       float weight = 0.f;
@@ -299,29 +322,68 @@ struct secondaryPidTof {
         sumOfWeights = weightDiamond;
       } else {
       }
-      tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights), t0TOF[0], t0TOF[1], collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
+      tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights), t0TOF[0], t0TOF[1], t0AC[0], t0AC[1]);
+
+      float et = evTimeTOF.mEventTime;
+      float erret = evTimeTOF.mEventTimeError;
+      for (auto const& track : tracksInCollision) {
+        // Reset the event time
+        eventTime = 0.f;
+        sumOfWeights = 0.f;
+        weight = 0.f;
+        // Remove the bias on TOF ev. time
+        evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(track, nGoodTracksForTOF, et, erret, 2);
+        if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
+          weight = 1.f / (t0TOF[1] * t0TOF[1]);
+          eventTime += t0TOF[0] * weight;
+          sumOfWeights += weight;
+        }
+
+        if (collision.has_foundFT0()) { // T0 measurement is available
+          // const auto& ft0 = collision.foundFT0();
+          if (collision.t0ACValid()) {
+            t0AC[0] = collision.t0AC() * 1000.f;
+            t0AC[1] = collision.t0resolution() * 1000.f;
+          }
+
+          weight = 1.f / (t0AC[1] * t0AC[1]);
+          eventTime += t0AC[0] * weight;
+          sumOfWeights += weight;
+        }
+
+        if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
+          eventTime = 0;
+          sumOfWeights = weightDiamond;
+        }
+        tableEvTimeForTrack(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
+      }
     }
   }
   PROCESS_SWITCH(secondaryPidTof, processFT0, "Process with FT0", true);
 
   ///
   /// Process function to prepare the event time on Run 3 data with only the FT0
-  void processOnlyFT0(aod::FT0s const&,
-                      EvTimeCollisionsFT0 const& collisions)
+  void processOnlyFT0(EvTimeCollisionsFT0::iterator const& collision,
+                      TrksEvTime& tracks,
+                      aod::FT0s const&)
   {
     if (!enableTable) {
       return;
     }
 
-    for (auto const& collision : collisions) { // Loop on collisions
-      if (collision.has_foundFT0()) {          // T0 measurement is available
-        // const auto& ft0 = collision.foundFT0();
-        if (collision.t0ACValid()) {
-          tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f, 0.f, 999.f, collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
-          continue;
+    if (collision.has_foundFT0()) { // T0 measurement is available
+      // const auto& ft0 = collision.foundFT0();
+      if (collision.t0ACValid()) {
+        tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f, 0.f, 999.f, collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
+        for (int i = 0; i < tracks.size(); i++) {
+          tableEvTimeForTrack(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
         }
+        return;
       }
-      tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
+    }
+    tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
+    for (int i = 0; i < tracks.size(); i++) {
+      tableEvTimeForTrack(0.f, 999.f);
     }
   }
   PROCESS_SWITCH(secondaryPidTof, processOnlyFT0, "Process only with FT0", false);
@@ -330,6 +392,5 @@ struct secondaryPidTof {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<secondaryPidTof>(cfgc)
-  };
+    adaptAnalysisTask<secondaryPidTof>(cfgc)};
 }
