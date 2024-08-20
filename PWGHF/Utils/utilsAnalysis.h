@@ -18,15 +18,13 @@
 #include <algorithm> // std::upper_bound
 #include <iterator>  // std::distance
 #include <string>    //std::string
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 namespace o2::analysis
 {
-/// Finds pT bin in an array.
-/// \param bins  array of pT bins
-/// \param value  pT
-/// \return index of the pT bin
+/// Finds pt bin in an array.
+/// \param bins  array of pt bins
+/// \param value  pt
+/// \return index of the pt bin
 /// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
 template <typename T1, typename T2>
 int findBin(T1 const& binsPt, T2 value)
@@ -41,9 +39,9 @@ int findBin(T1 const& binsPt, T2 value)
 }
 
 /// Single-track cut on DCAxy and DCAz
-/// \param binsPt pT bins
+/// \param binsPt pt bins
 /// \param cuts cut configuration
-/// \param pt is the prong pT
+/// \param pt is the prong pt
 /// \param dcaXY is the prong dcaXY
 /// \param dcaZ is the prong dcaZ
 /// \return true if track passes all cuts
@@ -111,33 +109,50 @@ bool isSelectedTrackTpcQuality(T const& track, const int tpcNClustersFoundMin, c
   return true;
 }
 
+/// Configurable group to apply trigger specific cuts for HF analysis
 struct HfTriggerCuts : o2::framework::ConfigurableGroup {
-  std::string prefix = "hfMassCut"; // JSON group name
+  std::string prefix = "hfTriggerCuts"; // JSON group name
 
   static constexpr float defaultDeltaMassPars3Prong[1][2] = {{-0.0025f, 0.0001f}};
   static constexpr float defaultSigmaPars3Prong[1][2] = {{0.00796f, 0.00176f}};
-  o2::framework::Configurable<float> nSigma{"nSigma", 2.5, "Number of Sigmas for pT differential mass cut"};
-  o2::framework::Configurable<float> pTMaxDeltaMass{"pTMaxDeltaMass", 10., "Max pT to apply delta mass shift to PDG mass value"};
-  o2::framework::Configurable<float> pTMaxMassCut{"pTMaxMassCut", 8., "Max pT to apply pT differential cut"};
+  static constexpr float defaultDeltaMassPars2Prong[1][2] = {{-0.0025f, 0.0001f}};
+  static constexpr float defaultSigmaPars2Prong[1][2] = {{0.01424f, 0.00178f}};
+  o2::framework::Configurable<float> nSigma3Prong{"nSigma3Prong", 2, "Number of Sigmas for pt differential mass cut for 3 prong candidates"};
+  o2::framework::Configurable<float> nSigma2Prong{"nSigma2Prong", 2, "Number of Sigmas for pt differential mass cut for 2 prong candidates"};
+  o2::framework::Configurable<float> ptDeltaMass3ProngMax{"ptDeltaMass3ProngMax", 10., "Max pt to apply delta mass shift to PDG mass value for 3 prong candidates"};
+  o2::framework::Configurable<float> ptDeltaMass2ProngMax{"ptDeltaMass2ProngMax", 10., "Max pt to apply delta mass shift to PDG mass value for 2 prong candidates"};
+  o2::framework::Configurable<float> ptMassCut3ProngMax{"ptMassCut3ProngMax", 8., "Max pt to apply pt differential cut for 3 prong candidates"};
+  o2::framework::Configurable<float> ptMassCut2ProngMax{"ptMassCut2ProngMax", 8., "Max pt to apply pt differential cut for 2 prong candidates"};
   o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars3Prong{"deltaMassPars3Prong", {defaultDeltaMassPars3Prong[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 3 prong trigger mass cut"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars2Prong{"deltaMassPars2Prong", {defaultDeltaMassPars2Prong[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 2 prong trigger mass cut"};
   o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars3Prong{"sigmaPars3Prong", {defaultSigmaPars3Prong[0], 2, {"constant", "linear"}}, "sigma parameters for HF 3 prong trigger mass cut"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars2Prong{"sigmaPars2Prong", {defaultSigmaPars2Prong[0], 2, {"constant", "linear"}}, "sigma parameters for HF 2 prong trigger mass cut"};
 
-  /// Mass selection of D+ candidates to build B0 candidates
-  /// \param pTrackSameChargeFirst is the first same-charge track momentum
-  /// \param pTrackSameChargeFirst is the second same-charge track momentum
-  /// \param pTrackSameChargeFirst is the opposite charge track momentum
-  /// \param ptD is the pt of the D+ meson candidate
-  /// \return true if D+ passes selection
-  bool isSelectedDplusInMassRange(const float& invMassDplus, const float& ptD)
+  /// Mass selection of 3 prong canidates in triggered data analysis
+  /// \param invMass is the invariant mass of the 3 prong candidate
+  /// \param pdgMass is the pdg Mass of the candidate particle 
+  /// \param pt is the pt of the 3 prong candidate
+  /// \return true if candidate passes selection
+  bool is3ProngInMassRange(const float& invMass, const float& pdgMass, const float& pt)
   {
-    float peakMean = (ptD < pTMaxDeltaMass) ? ((o2::constants::physics::MassDPlus + deltaMassPars3Prong->get("constant")) + deltaMassPars3Prong->get("linear") * ptD) : o2::constants::physics::MassDPlus;
-    float peakWidth = sigmaPars3Prong->get("constant") + sigmaPars3Prong->get("linear") * ptD;
+    float peakMean = (pt < ptDeltaMass3ProngMax) ? ((pdgMass + deltaMassPars3Prong->get("constant")) + deltaMassPars3Prong->get("linear") * pt) : pdgMass;
+    float peakWidth = sigmaPars3Prong->get("constant") + sigmaPars3Prong->get("linear") * pt;
 
-    if (std::fabs(invMassDplus - peakMean) > nSigma * peakWidth && ptD < pTMaxMassCut) {
-      return false;
-    }
-    return true;
+    return (!(std::fabs(invMass - peakMean) > nSigma3Prong * peakWidth && pt < ptMassCut3ProngMax));
   }
+
+/// Mass selection of 2 prong canidates in triggered data analysis
+/// \param invMass is the invariant mass of the 2 prong candidate
+/// \param pdgMass is the pdg Mass of the candidate particle
+/// \param pt is the pt of the 2 prong candidate
+/// \return true if candidate passes selection
+bool is2ProngInMassRange(const float& invMass, const float& pdgMass, const float& pt)
+{
+  float peakMean = (pt < ptDeltaMass2ProngMax) ? ((pdgMass + deltaMassPars2Prong->get("constant")) + deltaMassPars2Prong->get("linear") * pt) : pdgMass;
+  float peakWidth = sigmaPars2Prong->get("constant") + sigmaPars2Prong->get("linear") * pt;
+
+  return (!(std::fabs(invMass - peakMean) > nSigma2Prong * peakWidth && pt < ptMassCut2ProngMax));
+}
 };
 } // namespace o2::analysis
 

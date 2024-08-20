@@ -37,13 +37,14 @@ namespace aod
 namespace hf_reduced_collision
 {
 DECLARE_SOA_COLUMN(Bz, bz, float); //! Magnetic field in z-direction
+DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, uint16_t); //! Bitmask with failed selection criteria
 // keep track of the number of studied events (for normalization purposes)
 DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int); //! Size of COLLISION table processed
 DECLARE_SOA_COLUMN(ZvtxSelectedCollisionCount, zvtxSelectedCollisionCount, int);                                                 //! Number of COLLISIONS with |zvtx| < zvtxMax
 DECLARE_SOA_COLUMN(TriggerSelectedCollisionCount, triggerSelectedCollisionCount, int);                                           //! Number of COLLISIONS with sel8
 DECLARE_SOA_COLUMN(ZvtxAndTriggerSelectedCollisionCount, zvtxAndTriggerSelectedCollisionCount, int);                             //! Number of COLLISIONS with |zvtx| < zvtxMax and sel8
 DECLARE_SOA_COLUMN(ZvtxAndTriggerAndSoftTriggerSelectedCollisionCount, zvtxAndTriggerAndSoftTriggerSelectedCollisionCount, int); //! Number of COLLISIONS with |zvtx| < zvtxMax, sel8, and selected by the software trigger
-DECLARE_SOA_COLUMN(AllSelectionsCollisionCount, allSelectionsCollisionCount, int);                                               //! Number of COLLISIONS that passed all selections
+DECLARE_SOA_COLUMN(AllSelectionsCollisionCount, allSelectionsCollisionCount, int);                                               //! Number of COLLISIONS that passed all selections                                                                                            
 } // namespace hf_reduced_collision
 
 DECLARE_SOA_TABLE(HfRedCollisions, "AOD", "HFREDCOLLISION", //! Table with collision for reduced workflow
@@ -51,6 +52,9 @@ DECLARE_SOA_TABLE(HfRedCollisions, "AOD", "HFREDCOLLISION", //! Table with colli
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  collision::NumContrib,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  hf_reduced_collision::Bz,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfRedCollExtras, "AOD", "HFREDCOLLEXTRA", //! Table with collision extras for reduced workflow
@@ -59,8 +63,8 @@ DECLARE_SOA_TABLE(HfRedCollExtras, "AOD", "HFREDCOLLEXTRA", //! Table with colli
                   collision::CovYY,
                   collision::CovXZ,
                   collision::CovYZ,
-                  collision::CovZZ,
-                  hf_reduced_collision::Bz);
+                  collision::CovZZ
+                  );
 
 using HfRedCollision = HfRedCollisions::iterator;
 
