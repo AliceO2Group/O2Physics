@@ -71,9 +71,11 @@ struct JetFinderV0Task {
   Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
   Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
+  Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<int> jetPtBinWidth{"jetPtBinWidth", 5, "used to define the width of the jetPt bins for the THnSparse"};
   Configurable<bool> fillTHnSparse{"fillTHnSparse", true, "switch to fill the THnSparse"};
+  Configurable<double> jetExtraParam{"jetExtraParam", -99.0, "sets the _extra_param in fastjet"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
@@ -107,6 +109,10 @@ struct JetFinderV0Task {
     jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
     jetFinder.ghostArea = jetGhostArea;
     jetFinder.ghostRepeatN = ghostRepeat;
+    if (DoTriggering) {
+      jetFinder.isTriggering = true;
+    }
+    jetFinder.fastjetExtraParam = jetExtraParam;
 
     if (candPDG == 310) {
       candIndex = 0;

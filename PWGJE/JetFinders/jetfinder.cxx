@@ -79,6 +79,7 @@ struct JetFinderTask {
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<int> jetPtBinWidth{"jetPtBinWidth", 5, "used to define the width of the jetPt bins for the THnSparse"};
   Configurable<bool> fillTHnSparse{"fillTHnSparse", false, "switch to fill the THnSparse"};
+  Configurable<double> jetExtraParam{"jetExtraParam", -99.0, "sets the _extra_param in fastjet"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
@@ -111,6 +112,7 @@ struct JetFinderTask {
     if (DoTriggering) {
       jetFinder.isTriggering = true;
     }
+    jetFinder.fastjetExtraParam = jetExtraParam;
 
     auto jetRadiiBins = (std::vector<double>)jetRadius;
     if (jetRadiiBins.size() > 1) {
