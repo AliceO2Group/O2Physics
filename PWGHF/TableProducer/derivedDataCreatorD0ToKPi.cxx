@@ -205,22 +205,21 @@ struct HfDerivedDataCreatorD0ToKPi {
         y);
     }
 
-    float tpcNSigmaPi = prong0.tpcNSigmaPi();
-    float tpcNSigmaKa = prong1.tpcNSigmaKa();
-    float tofNSigmaPi = prong0.tofNSigmaPi();
-    float tofNSigmaKa = prong1.tofNSigmaKa();
-    float tpcTofNSigmaPi = prong0.tpcTofNSigmaPi();
-    float tpcTofNSigmaKa = prong1.tpcTofNSigmaKa();
-    if (candFlag == 1) {
-      tpcNSigmaPi = prong1.tpcNSigmaPi();
-      tpcNSigmaKa = prong0.tpcNSigmaKa();
-      tofNSigmaPi = prong1.tofNSigmaPi();
-      tofNSigmaKa = prong0.tofNSigmaKa();
-      tpcTofNSigmaPi = prong1.tpcTofNSigmaPi();
-      tpcTofNSigmaKa = prong0.tpcTofNSigmaKa();
-    }
-
     if (fillCandidatePar) {
+      float tpcNSigmaPi = prong0.tpcNSigmaPi();
+      float tpcNSigmaKa = prong1.tpcNSigmaKa();
+      float tofNSigmaPi = prong0.tofNSigmaPi();
+      float tofNSigmaKa = prong1.tofNSigmaKa();
+      float tpcTofNSigmaPi = prong0.tpcTofNSigmaPi();
+      float tpcTofNSigmaKa = prong1.tpcTofNSigmaKa();
+      if (candFlag == 1) {
+        tpcNSigmaPi = prong1.tpcNSigmaPi();
+        tpcNSigmaKa = prong0.tpcNSigmaKa();
+        tofNSigmaPi = prong1.tofNSigmaPi();
+        tofNSigmaKa = prong0.tofNSigmaKa();
+        tpcTofNSigmaPi = prong1.tpcTofNSigmaPi();
+        tpcTofNSigmaKa = prong0.tpcTofNSigmaKa();
+      }
       rowCandidatePar(
         candidate.chi2PCA(),
         candidate.cpa(),
