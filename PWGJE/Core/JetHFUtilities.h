@@ -585,10 +585,10 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
     candidate.impactParameterNormalised0(),
     candidate.impactParameterNormalised1(),
     candidate.nSigTpcPi(),
-    candidate.nSigTpcKa(),
     candidate.nSigTofPi(),
-    candidate.nSigTofKa(),
     candidate.nSigTpcTofPi(),
+    candidate.nSigTpcKa(),
+    candidate.nSigTofKa(),
     candidate.nSigTpcTofKa(),
     candidate.maxNormalisedDeltaIP(),
     candidate.impactParameterProduct());
