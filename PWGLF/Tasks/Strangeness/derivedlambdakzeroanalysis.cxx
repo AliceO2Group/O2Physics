@@ -1269,7 +1269,7 @@ struct derivedlambdakzeroanalysis {
 
       if (!v0.has_v0MCCore())
         continue;
-        
+
       auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
       // fill AP plot for all V0s
@@ -1408,7 +1408,7 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
-      // Check if there is at least one of the reconstructed collisions associated to this MC collision 
+      // Check if there is at least one of the reconstructed collisions associated to this MC collision
       // If so, we consider it
       bool atLeastOne = false;
       int biggestNContribs = -1;
@@ -1467,16 +1467,16 @@ struct derivedlambdakzeroanalysis {
         atLeastOne = true;
       }
       listBestCollisionIdx[mcCollision.globalIndex()] = bestCollisionIndex;
-      
+
       histos.fill(HIST("hCentralityVsNcoll_beforeEvSel"), centrality, groupedCollisions.size());
       histos.fill(HIST("hCentralityVsNcoll_afterEvSel"), centrality, nCollisions);
-      
+
       histos.fill(HIST("hCentralityVsMultMC"), centrality, mcCollision.multMCNParticlesEta05());
 
       if (atLeastOne) {
         histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
 
-        histos.fill(HIST("hGenEventCentrality"), centrality);        
+        histos.fill(HIST("hGenEventCentrality"), centrality);
       }
     }
     return listBestCollisionIdx;

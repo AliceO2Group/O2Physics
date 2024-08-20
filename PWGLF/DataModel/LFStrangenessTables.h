@@ -693,7 +693,7 @@ DECLARE_SOA_TABLE_VERSIONED(V0MCCores_002, "AOD", "V0MCCORE", 2, //! debug infor
                             v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
                             v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
                             v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                            v0data::PxMC, v0data::PyMC, v0data::PzMC, 
+                            v0data::PxMC, v0data::PyMC, v0data::PzMC,
                             v0data::RapidityMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>,
                             v0data::NegativePtMC<v0data::PxNegMC, v0data::PyNegMC>,
                             v0data::PositivePtMC<v0data::PxPosMC, v0data::PyPosMC>,

@@ -181,7 +181,7 @@ struct lambdakzeromcbuilder {
                     // if not, this is not a suitable candidate for one of the decay daughters
                     if (ldau.getProcess() != 4) // see TMCProcess.h
                       continue;
-                    
+
                     if (lMCPosTrack.pdgCode() < 0 && ldau.pdgCode() > 0) { // the positive track needs to be changed
                       thisInfo.pdgCodePositive = ldau.pdgCode();
                       thisInfo.processPositive = ldau.getProcess();
@@ -360,7 +360,7 @@ struct lambdakzeromcbuilder {
               if (dau.getProcess() != 4 )
                 continue;
 
-              if (dau.pdgCode() > 0) { 
+              if (dau.pdgCode() > 0) {
                 thisInfo.pdgCodePositive = dau.pdgCode();
                 thisInfo.processPositive = dau.getProcess();
                 thisInfo.posP[0] = dau.px();

@@ -196,7 +196,7 @@ struct cascadeBuilder {
 
   // for using cascade momentum at prim. vtx
   Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "if enabled, store cascade momentum at prim. vtx instead of decay point (= default)"};
-  
+
 
   // for topo var QA
   struct : ConfigurableGroup {
@@ -1103,7 +1103,7 @@ struct cascadeBuilder {
       cascadecandidate.cascademom[1] = cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1];
       cascadecandidate.cascademom[2] = cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2];
     }
-    
+
     // Calculate masses a priori
     cascadecandidate.mXi = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
     cascadecandidate.mOmega = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassLambda});

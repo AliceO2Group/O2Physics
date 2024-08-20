@@ -291,14 +291,14 @@ struct cascademcbuilder {
                 thisInfo.xyz[2] = dau.vz();
                 thisInfo.mcParticleBachelor = dau.globalIndex();
               }
-              if (TMath::Abs(dau.pdgCode()) == 2212) {              
+              if (TMath::Abs(dau.pdgCode()) == 2212) {
                 thisInfo.pdgCodeV0 = dau.pdgCode();
 
                 for (auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
                   if (v0Dau.getProcess() != 4 )
                     continue;
 
-                  if (v0Dau.pdgCode() > 0) { 
+                  if (v0Dau.pdgCode() > 0) {
                     thisInfo.pdgCodePositive = v0Dau.pdgCode();
                     thisInfo.processPositive = v0Dau.getProcess();
                     thisInfo.posP[0] = v0Dau.px();
@@ -318,7 +318,7 @@ struct cascademcbuilder {
                     thisInfo.mcParticleNegative = v0Dau.globalIndex();
                   }
                 }
-              }    
+              }
             }
           }
 
