@@ -509,7 +509,7 @@ struct highmasslambda {
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (TMath::Abs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
     const float pT = candidate.pt();
@@ -537,7 +537,7 @@ struct highmasslambda {
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
-    if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
+    if (TMath::Abs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
       return false;
     }
     return true;
@@ -556,19 +556,19 @@ struct highmasslambda {
     if (charge > 0 && sign < 0) {
       return false;
     }
-    if (std::abs(eta) > ConfDaughEta) {
+    if (TMath::Abs(eta) > ConfDaughEta) {
       return false;
     }
-    if (std::abs(pt) < ConfDaughPt) {
+    if (TMath::Abs(pt) < ConfDaughPt) {
       return false;
     }
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
+    if (TMath::Abs(dcaXY) < ConfDaughDCAMin) {
       return false;
     }
-    if (std::abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
+    if (TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
       return false;
     }
     return true;
@@ -732,28 +732,28 @@ struct highmasslambda {
           dcasum = v0.dcav0topv() - track1.dcaXY();
         }
         // auto diffangle = Proton.Phi() - Lambdac.Phi();
-        // auto decaylength = std::abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
+        // auto decaylength = TMath::Abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
         // auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
         histos.fill(HIST("hMassvsDecaySum"), Lambdac.M(), dcasum);
         if (fillDefault && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
           if (fillDecayLength) {
             histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcasum);
           }
-          histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+          histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
         }
         if (fillOccupancy) {
           if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
             if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()), occupancy);
+              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()), occupancy);
             }
-            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt(), occupancy);
+            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt(), occupancy);
           }
         } else {
           if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
             if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()));
+              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
             }
-            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
           }
         }
         if (fillRotation) {
@@ -776,26 +776,26 @@ struct highmasslambda {
               v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
             }
             // auto diffangleRot = ProtonRot.Phi() - LambdacRot.Phi();
-            // auto decaylengthRot = std::abs((track1.dcaXY() / TMath::Sin(diffangleRot)) / (Lambdac.P() / 2.286));
+            // auto decaylengthRot = TMath::Abs((track1.dcaXY() / TMath::Sin(diffangleRot)) / (Lambdac.P() / 2.286));
             if (fillDefault && LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
               if (fillDecayLength) {
                 histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum);
               }
-              histos.fill(HIST("hSparseV2SASameEventRotational_V2_new"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), Proton.Pt());
+              histos.fill(HIST("hSparseV2SASameEventRotational_V2_new"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
             }
             if (fillOccupancy) {
               if (LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
                 if (fillDecayLength) {
-                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, std::abs(track1.dcaXY()), occupancy);
+                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, TMath::Abs(track1.dcaXY()), occupancy);
                 }
-                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), Proton.Pt(), occupancy);
+                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt(), occupancy);
               }
             } else {
               if (LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
                 if (fillDecayLength) {
-                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, std::abs(track1.dcaXY()));
+                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, TMath::Abs(track1.dcaXY()));
                 }
-                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), Proton.Pt());
+                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
               }
             }
           }
@@ -909,27 +909,27 @@ struct highmasslambda {
           dcasum = v0.dcav0topv() - track1.dcaXY();
         }
         // auto diffangle = Proton.Phi() - Lambdac.Phi();
-        // auto decaylength = std::abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
+        // auto decaylength = TMath::Abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
         // auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
         if (fillDefault && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
           if (fillDecayLength) {
             histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcasum);
           }
-          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
         }
         if (fillOccupancy) {
           if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
             if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()), occupancy);
+              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()), occupancy);
             }
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt(), occupancy);
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt(), occupancy);
           }
         } else {
           if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
             if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()));
+              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
             }
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
           }
         }
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};
