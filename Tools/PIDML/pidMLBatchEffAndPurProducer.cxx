@@ -227,7 +227,7 @@ struct PidMlBatchEffAndPurProducer {
           fillTrackedHist(mcPart.pdgCode(), track.pt());
 
           for (size_t i = 0; i < cfgPids.value.size(); ++i) {
-            float mlCertainty = models[i].applyModel(track);
+            float mlCertainty = models[i].applyModel(tracks, track);
             nSigma_t nSigma = getNSigma(track, cfgPids.value[i]);
             bool isMCPid = mcPart.pdgCode() == cfgPids.value[i];
 
