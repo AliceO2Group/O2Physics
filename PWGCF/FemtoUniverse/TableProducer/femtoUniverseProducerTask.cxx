@@ -258,6 +258,8 @@ struct femtoUniverseProducerTask {
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> ConfLooseTPCNSigma{"ConfLooseTPCNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
     Configurable<float> ConfLooseTPCNSigmaValue{"ConfLooseTPCNSigmaValue", 10, "Value for the loose TPC N Sigma for Kaon PID."};
+    Configurable<bool> ConfLooseTOFNSigma{"ConfLooseTOFNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
+    Configurable<float> ConfLooseTOFNSigmaValue{"ConfLooseTOFNSigmaValue", 10, "Value for the loose TOF N Sigma for Kaon PID."};
     Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
     Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
     Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
@@ -276,78 +278,113 @@ struct femtoUniverseProducerTask {
   {
 
     if (mom < 0.3) { // 0.0-0.3
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 3.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 2.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 1.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
           return true;
-        } else {
-          return false;
         }
-
       } else {
-        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-          {
-            return true;
-          }
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
-          return true;
-        } else {
-          return false;
-        }
-
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
       } else {
-        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool IsKaonNSigmaTPCLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool IsKaonNSigmaTOFLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
           return true;
-        } else {
-          return false;
         }
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
       }
     } else {
       return false;
@@ -1115,12 +1152,30 @@ struct femtoUniverseProducerTask {
     // lorentz vectors and filling the tables
     for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
       // implementing PID cuts for phi children
-      if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
-        continue;
+      if (ConfPhiSelection.ConfLooseTPCNSigma) {
+        if (!(IsKaonNSigmaTPCLoose(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigmaTPCLoose(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
       }
-      if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
-        continue;
-      } else if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
+      if (ConfPhiSelection.ConfLooseTOFNSigma) {
+        if (!(IsKaonNSigmaTOFLoose(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigmaTOFLoose(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
+      } else {
+        if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
+      }
+      if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
         continue;
       }
 
