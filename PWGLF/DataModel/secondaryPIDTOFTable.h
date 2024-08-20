@@ -90,6 +90,8 @@ class TofPidSecondary
     float expSigma, tofNsigma;
 
     if (originalcol.globalIndex() == correctedcol.globalIndex()) {
+      evTime = track.evTimeForTrack();
+      evTimeErr = track.evTimeErrForTrack();
     } else {
       if (EnableBCAO2D) {
         auto originalbc = originalcol.template bc_as<o2::aod::BCsWithTimestamps>();

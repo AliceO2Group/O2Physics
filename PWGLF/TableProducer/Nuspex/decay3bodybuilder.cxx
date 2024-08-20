@@ -27,6 +27,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
+#include "PWGLF/DataModel/secondaryPIDTOFTable.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -58,9 +59,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+using ColwithEvTimes = o2::soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
-using FullTracksExtPIDIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::EvTimeTOFFT0ForTrack>;
+using FullTracksExtPIDIU = soa::Join<FullTracksExtIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 struct decay3bodyBuilder {
@@ -208,6 +210,7 @@ struct decay3bodyBuilder {
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
+  o2::aod::secondarypid::TofPidSecondary<ColwithEvTimes::iterator, FullTracksExtIU::iterator> secondaryTOFPID;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
   void init(InitContext&)
@@ -390,6 +393,8 @@ struct decay3bodyBuilder {
         mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
       }
     }
+
+    secondaryTOFPID.SetParams(mRespParamsV2);
   }
 
   //------------------------------------------------------------------
@@ -425,7 +430,8 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // 3body candidate builder
-  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
+  template <class TCollisionClass, class TTrackClass, typename TCollisionTable, typename TTrackTable>
+  // void buildVtx3BodyDataTable(TCollisionTable const& /*allcollisions*/, TCollisionTable::iterator const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
 
@@ -497,14 +503,10 @@ struct decay3bodyBuilder {
 
       // Recalculate the TOF PID
       double tofNsigmaDe = -999;
-      static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
 
-      if (t2.hasTOF()) {
-        auto responseDe = o2::pid::tof::ExpTimes<typename TTrackClass::iterator, o2::track::PID::Deuteron>();
-        double bachExpTime = t2.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (t2.tofExpMom() * t2.tofExpMom())) / (kCSPEED * t2.tofExpMom()); // L*E/(p*c) = L/v
-        double tofsignal = t2.trackTime() * 1000 + bachExpTime; // in ps
-        double expSigma = responseDe.GetExpectedSigma(mRespParamsV2, t2, tofsignal, collision.collisionTimeRes());
-        tofNsigmaDe = (tofsignal - collision.collisionTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, t2)) / expSigma;
+      if (t2.has_collision() && t2.hasTOF()) {
+        auto originalcol = t2.template collision_as<TCollisionClass>();
+        tofNsigmaDe = secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, t2, originalcol, collision);
       }
 
       registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNsigmaDe);
@@ -886,13 +888,17 @@ struct decay3bodyBuilder {
   }
 
   //------------------------------------------------------------------
-  void processRun3(aod::Collision const& collision, FullTracksExtIU const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3(ColwithEvTimes const& collisions, FullTracksExtIU const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-    registry.fill(HIST("hEventCounter"), 0.5);
+    for (const auto& collision : collisions) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      registry.fill(HIST("hEventCounter"), 0.5);
 
-    buildVtx3BodyDataTable<FullTracksExtIU>(collision, tracksIU, decay3bodys, bachelorcharge);
+      const auto& d3bodysInCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
+      // buildVtx3BodyDataTable<ColwithEvTimes, FullTracksExtIU>(collisions, collision, tracksIU, d3bodysInCollision, bachelorcharge);
+      buildVtx3BodyDataTable<ColwithEvTimes, FullTracksExtIU>(collision, tracksIU, d3bodysInCollision, bachelorcharge);
+    }
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
