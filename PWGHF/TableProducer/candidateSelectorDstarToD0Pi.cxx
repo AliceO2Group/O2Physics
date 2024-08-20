@@ -112,7 +112,6 @@ struct HfCandidateSelectorDstarToD0Pi {
 
   HfTriggerCuts hfTriggerCuts;
 
-
   void init(InitContext&)
   {
     massPi = MassPiPlus;
