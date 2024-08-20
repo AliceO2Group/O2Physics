@@ -197,7 +197,6 @@ struct cascadeBuilder {
   // for using cascade momentum at prim. vtx
   Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "if enabled, store cascade momentum at prim. vtx instead of decay point (= default)"};
 
-
   // for topo var QA
   struct : ConfigurableGroup {
     ConfigurableAxis axisTopoVarPointingAngle{"axisConfigurations.axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
