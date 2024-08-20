@@ -112,7 +112,7 @@ struct phik0shortanalysis {
   HistogramRegistry PhiPionHist{"PhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MCPhiPionHist{"MCPhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhieffHist{"PhieffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry yaccHist{"yaccHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true}; 
+  HistogramRegistry yaccHist{"yaccHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -1358,7 +1358,7 @@ struct phik0shortanalysis {
       return;
     MCeventHist.fill(HIST("hRecMCEventSelection"), 6); // with at least a gen collision
 
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>(); 
+    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     float genmultiplicity = mcCollision.centFT0M();
     MCeventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
 
