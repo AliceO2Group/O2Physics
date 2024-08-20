@@ -38,9 +38,9 @@ struct v0coresconverter2 {
                     values.pxNegMC(),
                     values.pyNegMC(),
                     values.pzNegMC(),
-                    values.pxPosMC()+values.pxNegMC(),
-                    values.pyPosMC()+values.pyNegMC(),
-                    values.pzPosMC()+values.pzNegMC());
+                    values.pxPosMC() + values.pxNegMC(),
+                    values.pyPosMC() + values.pyNegMC(),
+                    values.pzPosMC() + values.pzNegMC());
     }
   }
 };

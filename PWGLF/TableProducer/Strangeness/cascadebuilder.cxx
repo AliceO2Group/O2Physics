@@ -1096,9 +1096,7 @@ struct cascadeBuilder {
     cascadecandidate.cascDCAz = dcaInfo[1];
     if (useCascadeMomentumAtPrimVtx) {
       lCascadeTrack.getPxPyPzGlo(cascadecandidate.cascademom);
-    }
-    else
-    {
+    } else {
       cascadecandidate.cascademom[0] = cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0];
       cascadecandidate.cascademom[1] = cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1];
       cascadecandidate.cascademom[2] = cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2];

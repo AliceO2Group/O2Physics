@@ -278,7 +278,7 @@ struct cascademcbuilder {
           if (mcParticle.has_daughters()) {
             auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
             for (auto& dau : daughters) {
-              if (dau.getProcess() != 4 ) // check whether the daughter comes from a decay
+              if (dau.getProcess() != 4) // check whether the daughter comes from a decay
                 continue;
 
               if (TMath::Abs(dau.pdgCode()) == 211 || TMath::Abs(dau.pdgCode()) == 321) {
@@ -295,7 +295,7 @@ struct cascademcbuilder {
                 thisInfo.pdgCodeV0 = dau.pdgCode();
 
                 for (auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
-                  if (v0Dau.getProcess() != 4 )
+                  if (v0Dau.getProcess() != 4)
                     continue;
 
                   if (v0Dau.pdgCode() > 0) {
