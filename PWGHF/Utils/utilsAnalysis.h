@@ -130,7 +130,7 @@ struct HfTriggerCuts : o2::framework::ConfigurableGroup {
 
   /// Mass selection of 3 prong canidates in triggered data analysis
   /// \param invMass is the invariant mass of the 3 prong candidate
-  /// \param pdgMass is the pdg Mass of the candidate particle 
+  /// \param pdgMass is the pdg Mass of the candidate particle
   /// \param pt is the pt of the 3 prong candidate
   /// \return true if candidate passes selection
   bool is3ProngInMassRange(const float& invMass, const float& pdgMass, const float& pt)
@@ -141,18 +141,18 @@ struct HfTriggerCuts : o2::framework::ConfigurableGroup {
     return (!(std::fabs(invMass - peakMean) > nSigma3Prong * peakWidth && pt < ptMassCut3ProngMax));
   }
 
-/// Mass selection of 2 prong canidates in triggered data analysis
-/// \param invMass is the invariant mass of the 2 prong candidate
-/// \param pdgMass is the pdg Mass of the candidate particle
-/// \param pt is the pt of the 2 prong candidate
-/// \return true if candidate passes selection
-bool is2ProngInMassRange(const float& invMass, const float& pdgMass, const float& pt)
-{
-  float peakMean = (pt < ptDeltaMass2ProngMax) ? ((pdgMass + deltaMassPars2Prong->get("constant")) + deltaMassPars2Prong->get("linear") * pt) : pdgMass;
-  float peakWidth = sigmaPars2Prong->get("constant") + sigmaPars2Prong->get("linear") * pt;
+  /// Mass selection of 2 prong canidates in triggered data analysis
+  /// \param invMass is the invariant mass of the 2 prong candidate
+  /// \param pdgMass is the pdg Mass of the candidate particle
+  /// \param pt is the pt of the 2 prong candidate
+  /// \return true if candidate passes selection
+  bool is2ProngInMassRange(const float& invMass, const float& pdgMass, const float& pt)
+  {
+    float peakMean = (pt < ptDeltaMass2ProngMax) ? ((pdgMass + deltaMassPars2Prong->get("constant")) + deltaMassPars2Prong->get("linear") * pt) : pdgMass;
+    float peakWidth = sigmaPars2Prong->get("constant") + sigmaPars2Prong->get("linear") * pt;
 
-  return (!(std::fabs(invMass - peakMean) > nSigma2Prong * peakWidth && pt < ptMassCut2ProngMax));
-}
+    return (!(std::fabs(invMass - peakMean) > nSigma2Prong * peakWidth && pt < ptMassCut2ProngMax));
+  }
 };
 } // namespace o2::analysis
 

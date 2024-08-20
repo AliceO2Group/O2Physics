@@ -668,7 +668,7 @@ struct HfDataCreatorCharmResoReduced {
     }
     registry.fill(HIST("hEvents"), 1 + Event::DV0Selected);
     float centrality = -1.f;
-    uint16_t hfRejMap =  hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    uint16_t hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     // fill collision table if it contains a DPi pair a minima
     hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), hfRejMap, bz);
   } // run data creation
