@@ -25,9 +25,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Tools/PIDML/pidOnnxModel.h"
-#include "pidOnnxModel.h"
 #include "Tools/PIDML/pidUtils.h"
-#include "Tools/PIDML/pidML.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -170,7 +168,6 @@ struct PidMlEffAndPurProducer {
       if (track.has_mcParticle()) {
         auto mcPart = track.mcParticle();
         if (mcPart.isPhysicalPrimary()) {
-
           bool mlAccepted = pidModel.applyModelBoolean(track);
           nSigma_t nSigma = GetNSigma(track);
           bool nSigmaAccepted = IsNSigmaAccept(track, nSigma);
