@@ -153,7 +153,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !hfTriggerCuts.isCandidateInMassRange<true>(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand)) {
+    if (useTriggerMassCut && !hfTriggerCuts.isCandidateInMassRange<3>(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand)) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {

@@ -286,7 +286,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       if (std::abs(mInvD0 - massD0) > cutsD0->get(binPt, "m")) {
         return false;
       }
-      if (useTriggerMassCut && !hfTriggerCuts.isCandidateInMassRange<false>(mInvD0, massD0, candidate.pt())) {
+      if (useTriggerMassCut && !hfTriggerCuts.isCandidateInMassRange<2>(mInvD0, massD0, candidate.pt())) {
         return false;
       }
       // cut on daughter pT

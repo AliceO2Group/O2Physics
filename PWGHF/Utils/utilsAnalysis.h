@@ -21,11 +21,11 @@
 
 namespace o2::analysis
 {
-/// Finds pt bin in an array.
-/// \param bins  array of pt bins
-/// \param value  pt
-/// \return index of the pt bin
-/// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
+/// Finds pT bin in an array.
+/// \param bins  array of pT bins
+/// \param value  pT
+/// \return index of the pT bin
+/// \note Accounts for the offset so that pT bin array can be used to also configure a histogram axis.
 template <typename T1, typename T2>
 int findBin(T1 const& binsPt, T2 value)
 {
@@ -39,9 +39,9 @@ int findBin(T1 const& binsPt, T2 value)
 }
 
 /// Single-track cut on DCAxy and DCAz
-/// \param binsPt pt bins
+/// \param binsPt pT bins
 /// \param cuts cut configuration
-/// \param pt is the prong pt
+/// \param pt is the prong pT
 /// \param dcaXY is the prong dcaXY
 /// \param dcaZ is the prong dcaZ
 /// \return true if track passes all cuts
@@ -129,26 +129,42 @@ struct HfTriggerCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars2Prong{"sigmaPars2Prong", {defaultSigmaPars2Prong[0], 2, {"constant", "linear"}}, "sigma parameters for HF 2-prong trigger mass cut"};
 
   /// Mass selection of 2 or 3 prong canidates in triggered data analysis
+  /// \tparam nProngs switch between 2-prong and 3-prong selection
   /// \param invMass is the invariant mass of the candidate
   /// \param pdgMass is the pdg Mass of the candidate particle
-  /// \param pt is the pt of the candidate
+  /// \param pt is the pT of the candidate
   /// \return true if candidate passes selection
-  template <bool is3Prong>
-  bool isCandidateInMassRange(const float& invMass, const float& pdgMass, const float& pt)
+  template <uint8_t nProngs>
+  bool isCandidateInMassRange(const float& invMass, const double& pdgMass, const float& pt)
   {
-    float peakMean{0.};
-    float peakWidth{0.};
     float ptMassCutMax{0.};
-    if constexpr (is3Prong) {
-      peakMean = (pt < ptDeltaMass3ProngMax) ? ((pdgMass + deltaMassPars3Prong->get("constant")) + deltaMassPars3Prong->get("linear") * pt) : pdgMass;
-      peakWidth = sigmaPars3Prong->get("constant") + sigmaPars3Prong->get("linear") * pt;
-      ptMassCutMax = ptMassCut3ProngMax;
-    } else {
-      float peakMean = (pt < ptDeltaMass2ProngMax) ? ((pdgMass + deltaMassPars2Prong->get("constant")) + deltaMassPars2Prong->get("linear") * pt) : pdgMass;
-      float peakWidth = sigmaPars2Prong->get("constant") + sigmaPars2Prong->get("linear") * pt;
+    float ptDeltaMassMax{0.};
+    float nSigmaMax{0.};
+    o2::framework::LabeledArray<float> deltaMassPars;
+    o2::framework::LabeledArray<float> sigmaPars;
+
+    if  constexpr (nProngs == 2){
+      deltaMassPars = deltaMassPars2Prong;
+      sigmaPars = sigmaPars2Prong;
+      ptDeltaMassMax = ptDeltaMass2ProngMax;
       ptMassCutMax = ptMassCut2ProngMax;
+      nSigmaMax = nSigma2ProngMax;
     }
-    return (!(std::fabs(invMass - peakMean) > nSigma3ProngMax * peakWidth && pt < ptMassCutMax));
+    else if constexpr (nProngs == 3) {
+      deltaMassPars = deltaMassPars3Prong;
+      sigmaPars = sigmaPars3Prong;
+      ptDeltaMassMax = ptDeltaMass3ProngMax;
+      ptMassCutMax = ptMassCut3ProngMax;
+      nSigmaMax = nSigma3ProngMax;
+    }
+    else {
+      LOGF(fatal, "nProngs %d not supported!", nProngs);
+    }
+
+    float peakMean = (pt < ptDeltaMassMax) ? ((pdgMass + deltaMassPars.get("constant")) + deltaMassPars.get("linear") * pt) : pdgMass;
+    float peakWidth = sigmaPars.get("constant") + sigmaPars.get("linear") * pt;
+      
+    return (!(std::abs(invMass - peakMean) > nSigma3ProngMax * peakWidth && pt < ptMassCutMax));
   }
 };
 } // namespace o2::analysis
