@@ -34,14 +34,10 @@
 #include <onnxruntime_cxx_api.h>
 #endif
 
-#include "Framework/TableBuilder.h"
-#include "Framework/Expressions.h"
-
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "CCDB/CcdbApi.h"
 #include "Tools/PIDML/pidUtils.h"
-#include "Common/DataModel/PIDResponse.h"
 
 using namespace pidml::pidutils;
 
