@@ -68,7 +68,7 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 14, -1., 13.)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 16, -1., 15.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Omega events with pT_h higher than thrd; min p_{T, trigg} (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
@@ -195,6 +195,8 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(12, aod::filtering::TrackedXi::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(13, aod::filtering::TrackedOmega::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(14, aod::filtering::OmegaHighMult::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(15, aod::filtering::DoubleOmega::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(16, aod::filtering::OmegaXi::columnLabel());
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
@@ -403,14 +405,14 @@ struct strangenessFilter {
 
   void fillTriggerTable(bool keepEvent[])
   {
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9]);
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11]);
   }
 
   void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
-    bool keepEvent[9]{}; // explicitly zero-initialised
+    bool keepEvent[12]{}; // explicitly zero-initialised
 
     if (kint7 && !collision.alias_bit(kINT7)) {
       fillTriggerTable(keepEvent);
@@ -666,7 +668,7 @@ struct strangenessFilter {
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] Omega + high mult event
-    bool keepEvent[10]{}; // explicitly zero-initialised
+    bool keepEvent[12]{}; // explicitly zero-initialised
 
     if (sel8 && !collision.sel8()) {
       fillTriggerTable(keepEvent);
@@ -978,6 +980,15 @@ struct strangenessFilter {
     // Omega trigger definition
     if (omegacounter > 0) {
       keepEvent[0] = true;
+      // OmegaXi trigger definition
+      if (xicounter > 0) {
+        keepEvent[11] = true;
+      }
+    }
+
+    // Double Omega trigger definition
+    if(omegacounter > 1) {
+      keepEvent[10] = true;
     }
 
     bool EvtwhMinPt[11];
@@ -1291,6 +1302,12 @@ struct strangenessFilter {
     }
     if (keepEvent[9]) {
       hProcessedEvents->Fill(12.5);
+    }
+    if (keepEvent[10]) {
+      hProcessedEvents->Fill(13.5);
+    }
+    if (keepEvent[11]) {
+      hProcessedEvents->Fill(14.5);
     }
 
     // Filling the table
