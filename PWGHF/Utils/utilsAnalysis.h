@@ -136,15 +136,14 @@ struct HfTriggerCuts : o2::framework::ConfigurableGroup {
   template <bool is3Prong>
   bool isCandidateInMassRange(const float& invMass, const float& pdgMass, const float& pt)
   {
-    float peakMean {0.};
-    float peakWidth {0.};
-    float ptMassCutMax {0.};
-    if constexpr (is3Prong){
+    float peakMean{0.};
+    float peakWidth{0.};
+    float ptMassCutMax{0.};
+    if constexpr (is3Prong) {
       peakMean = (pt < ptDeltaMass3ProngMax) ? ((pdgMass + deltaMassPars3Prong->get("constant")) + deltaMassPars3Prong->get("linear") * pt) : pdgMass;
       peakWidth = sigmaPars3Prong->get("constant") + sigmaPars3Prong->get("linear") * pt;
       ptMassCutMax = ptMassCut3ProngMax;
-    }
-    else {
+    } else {
       float peakMean = (pt < ptDeltaMass2ProngMax) ? ((pdgMass + deltaMassPars2Prong->get("constant")) + deltaMassPars2Prong->get("linear") * pt) : pdgMass;
       float peakWidth = sigmaPars2Prong->get("constant") + sigmaPars2Prong->get("linear") * pt;
       ptMassCutMax = ptMassCut2ProngMax;
