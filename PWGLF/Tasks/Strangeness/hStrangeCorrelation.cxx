@@ -801,6 +801,10 @@ struct correlateStrangeness {
       }
       histos.add("ClosureTest/hTrigger", "Trigger Tracks", kTH3F, {axisPtQA, axisEta, axisMult});
     }
+
+    // visual inspection of sizes
+    histos.print();
+
     // initialize CCDB *only* if efficiency correction requested
     // skip if not requested, saves a bit of time
     if (applyEfficiencyCorrection) {
