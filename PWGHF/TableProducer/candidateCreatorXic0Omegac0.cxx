@@ -322,9 +322,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto trackCascDauChargedId = casc.bachelorId();                        // pion <- xi track
       auto trackV0Dau0Id = casc.posTrackId();                                // V0 positive daughter track
       auto trackV0Dau1Id = casc.negTrackId();                                // V0 negative daughter track
-      auto trackCascDauCharged = lfTracks.iteratorAt(trackCascDauChargedId); // pion <- xi track
-      auto trackV0Dau0 = lfTracks.iteratorAt(trackV0Dau0Id);                 // V0 positive daughter track
-      auto trackV0Dau1 = lfTracks.iteratorAt(trackV0Dau1Id);                 // V0 negative daughter track
+      auto trackCascDauCharged = lfTracks.rawIteratorAt(trackCascDauChargedId); // pion <- xi track
+      auto trackV0Dau0 = lfTracks.rawIteratorAt(trackV0Dau0Id);                 // V0 positive daughter track
+      auto trackV0Dau1 = lfTracks.rawIteratorAt(trackV0Dau1Id);                 // V0 negative daughter track
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
