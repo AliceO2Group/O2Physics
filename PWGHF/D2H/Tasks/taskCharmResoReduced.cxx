@@ -64,14 +64,12 @@ void init(InitContext&)
     const AxisSpec axisCosThetaStar{configAxisCosThetaStar,"cos(#vartheta*)"};
     const AxisSpec axisBkgBdtScore{configAxisBkgBdtScore,"Bkg BDT Score"};
     const AxisSpec axisNonPromptBdtScore{configAxisNonPromptBdtScore,"Non Prompt BDT Score"};
-
     registry.add("hMass", "Charm resonance candidates inv. mass", {HistType::kTH1F, {axisInvMassReso}});
     registry.add("hMassProng0", "D daughters inv. mass", {HistType::kTH1F, {axisInvMassProng0}});
     registry.add("hMassProng1", "V0 daughter inv. mass", {HistType::kTH1F, {axisInvMassProng1}});
     registry.add("hPt", "Charm resonance candidates pT", {HistType::kTH1F, {axisPt}});
     registry.add("hPtProng0", "D daughters pT", {HistType::kTH1F, {axisPtProng0}});
     registry.add("hPtProng1", "V0 daughter pT", {HistType::kTH1F, {axisPtProng1}});
-
     registry.add("hSparseMl", "THn for production studies with cosThStar and BDT scores", HistType::kTHnSparseF,{axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisInvMassProng1, axisCosThetaStar, axisBkgBdtScore, axisNonPromptBdtScore});
 }
 
@@ -102,15 +100,10 @@ void fillHisto (const Cand& candidate){
 } // fillHisto
 
 // process functions
-void processData(aod::HfRedCollisions const& collisions,
-                 reducedResoWithMl const& candidates)
+void processData(reducedResoWithMl const& candidates)
 {
-for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto candsThisColl = candidates.sliceBy(candsResoPerCollision, thisCollId);
-      for (const auto& cand : candsThisColl){
-        fillHisto<DecayChannel::Ds2StarToDplusK0s>(cand);
-      }
+for (const auto& cand : candidates) {
+  fillHisto<DecayChannel::Ds2StarToDplusK0s>(cand); 
 }
 }
 PROCESS_SWITCH(HfTaskReso, processData, "Process data", true);
