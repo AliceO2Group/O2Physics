@@ -117,16 +117,16 @@ struct HfTriggerCuts : o2::framework::ConfigurableGroup {
   static constexpr float defaultSigmaPars3Prong[1][2] = {{0.00796f, 0.00176f}};
   static constexpr float defaultDeltaMassPars2Prong[1][2] = {{-0.0025f, 0.0001f}};
   static constexpr float defaultSigmaPars2Prong[1][2] = {{0.01424f, 0.00178f}};
-  o2::framework::Configurable<float> nSigma3ProngMax{"nSigma3ProngMax", 2, "Number of Sigmas for pt differential mass cut for 3 prong candidates"};
-  o2::framework::Configurable<float> nSigma2ProngMax{"nSigma2Prong", 2, "Number of Sigmas for pt differential mass cut for 2 prong candidates"};
-  o2::framework::Configurable<float> ptDeltaMass3ProngMax{"ptDeltaMass3ProngMax", 10., "Max pt to apply delta mass shift to PDG mass value for 3 prong candidates"};
-  o2::framework::Configurable<float> ptDeltaMass2ProngMax{"ptDeltaMass2ProngMax", 10., "Max pt to apply delta mass shift to PDG mass value for 2 prong candidates"};
-  o2::framework::Configurable<float> ptMassCut3ProngMax{"ptMassCut3ProngMax", 8., "Max pt to apply pt differential cut for 3 prong candidates"};
-  o2::framework::Configurable<float> ptMassCut2ProngMax{"ptMassCut2ProngMax", 8., "Max pt to apply pt differential cut for 2 prong candidates"};
-  o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars3Prong{"deltaMassPars3Prong", {defaultDeltaMassPars3Prong[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 3 prong trigger mass cut"};
-  o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars2Prong{"deltaMassPars2Prong", {defaultDeltaMassPars2Prong[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 2 prong trigger mass cut"};
-  o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars3Prong{"sigmaPars3Prong", {defaultSigmaPars3Prong[0], 2, {"constant", "linear"}}, "sigma parameters for HF 3 prong trigger mass cut"};
-  o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars2Prong{"sigmaPars2Prong", {defaultSigmaPars2Prong[0], 2, {"constant", "linear"}}, "sigma parameters for HF 2 prong trigger mass cut"};
+  o2::framework::Configurable<float> nSigma3ProngMax{"nSigma3ProngMax", 2, "Maximum number of sigmas for pT-differential mass cut for 3-prong candidates"};
+  o2::framework::Configurable<float> nSigma2ProngMax{"nSigma2ProngMax", 2, "Maximum number of sigmas for pT-differential mass cut for 2-prong candidates"};
+  o2::framework::Configurable<float> ptDeltaMass3ProngMax{"ptDeltaMass3ProngMax", 10., "Max pT to apply delta mass shift to PDG mass value for 3-prong candidates"};
+  o2::framework::Configurable<float> ptDeltaMass2ProngMax{"ptDeltaMass2ProngMax", 10., "Max pT to apply delta mass shift to PDG mass value for 2-prong candidates"};
+  o2::framework::Configurable<float> ptMassCut3ProngMax{"ptMassCut3ProngMax", 8., "Max pT to apply pT-differential cut for 3-prong candidates"};
+  o2::framework::Configurable<float> ptMassCut2ProngMax{"ptMassCut2ProngMax", 8., "Max pT to apply pT-differential cut for 2-prong candidates"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars3Prong{"deltaMassPars3Prong", {defaultDeltaMassPars3Prong[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 3-prong trigger mass cut"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars2Prong{"deltaMassPars2Prong", {defaultDeltaMassPars2Prong[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 2-prong trigger mass cut"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars3Prong{"sigmaPars3Prong", {defaultSigmaPars3Prong[0], 2, {"constant", "linear"}}, "sigma parameters for HF 3-prong trigger mass cut"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars2Prong{"sigmaPars2Prong", {defaultSigmaPars2Prong[0], 2, {"constant", "linear"}}, "sigma parameters for HF 2-prong trigger mass cut"};
 
   /// Mass selection of 2 or 3 prong canidates in triggered data analysis
   /// \param invMass is the invariant mass of the candidate
