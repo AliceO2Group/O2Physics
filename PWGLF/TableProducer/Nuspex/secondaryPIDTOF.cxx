@@ -319,10 +319,6 @@ struct secondaryPidTof {
       float sumOfWeights = 0.f;
       float weight = 0.f;
 
-      // Reset the event time
-      eventTime = 0.f;
-      sumOfWeights = 0.f;
-      weight = 0.f;
       if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
         weight = 1.f / (t0TOF[1] * t0TOF[1]);
         eventTime += t0TOF[0] * weight;
@@ -347,15 +343,13 @@ struct secondaryPidTof {
       }
       tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights), t0TOF[0], t0TOF[1], t0AC[0], t0AC[1]);
 
-      float et = evTimeTOF.mEventTime;
-      float erret = evTimeTOF.mEventTimeError;
       for (auto const& track : tracksInCollision) {
         // Reset the event time
         eventTime = 0.f;
         sumOfWeights = 0.f;
         weight = 0.f;
         // Remove the bias on TOF ev. time
-        evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(track, nGoodTracksForTOF, et, erret, 2);
+        evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(track, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
         if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
           weight = 1.f / (t0TOF[1] * t0TOF[1]);
           eventTime += t0TOF[0] * weight;
