@@ -46,7 +46,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using ColwithEvTimes = o2::soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::EvTimeTOFFT0>;
-
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTOFFullDe, aod::TOFEvTime, aod::TOFSignal, aod::EvTimeTOFFT0ForTrack>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
@@ -163,7 +162,7 @@ struct hypertriton3bodyTrackMcinfo {
       {"hDauPionNsigmaPion", "hDauPionNsigmaPion", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
       {"hDauPionTPCVsPt", "hDauPionTPCVsPt", {HistType::kTH2F, {{20, 0.0f, 2.0f, "#it{p}_{T} (GeV/c)"}, {120, -6.0f, 6.0f, "TPC n#sigma"}}}},
 
-      {"hDeuteronCount", "hDeuteronCount", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
+      {"hDeuteronCount", "hDeuteronCount", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
       {"hDeuteronPt", "hDeuteronPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDeuteronP", "hDeuteronP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDeuteronMcPt", "hDeuteronMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -188,8 +187,9 @@ struct hypertriton3bodyTrackMcinfo {
       {"hDuplicatedH3LDaughers", "hDuplicatedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
 
       // Diff checks always requir hasTOF
-      //{"hDiffTrackTOFSignal", "hDiffTrackTOFSignal", {HistType::kTH1F, {{2000, -1000.0f, 1000.0f}}}},
-      {"hDiffTrackTOFSignal", "hDiffTrackTOFSignal", {HistType::kTH1F, {{2000, -1.0f, 1.0f}}}},
+      {"hDiffTrackTOFSignal", "hDiffTrackTOFSignal", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"hDiffEvTimeForTrack", "hDiffEvTimeForTrack", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"hDiffTrackTOFNSigmaDe", "hDiffTrackTOFNSigmaDe", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hDauDeuteronNewTOFNSigmaVsP", "hDauDeuteronNewTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
       {"hWrongDeuteronTOFNSigmaVsP", "hWrongDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
       {"hWrongDeuteronNewTOFNSigmaVsP", "hWrongDeuteronNewTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
@@ -197,7 +197,6 @@ struct hypertriton3bodyTrackMcinfo {
       {"hDauDeuteronDiffTOFNsigmaDeHasTOF", "hDauDeuteronDiffTOFNsigmaDeHasTOF", {HistType::kTH1F, {{200, -100.0f, 100.0f}}}},
 
       // _v2 for using relinked collision
-      {"hDiffDeuteronTOFSignal_v2", "hDiffDeuteronTOFSignal_v2", {HistType::kTH1F, {{2000, -1000.0f, 1000.0f}}}},
       {"hDauDeuteronTOFNSigmaVsP_CorrectCol", "hDauDeuteronTOFNSigmaVsP_CorrectCol", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
       {"hDauDeuteronNewTOFNSigmaVsP_CorrectCol", "hDauDeuteronNewTOFNSigmaVsP_CorrectCol", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
       {"hDauDeuteronTOFNSigmaVsP_v2", "hDauDeuteronTOFNSigmaVsP_v2", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
@@ -228,7 +227,6 @@ struct hypertriton3bodyTrackMcinfo {
       registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(i + 1, TrackCounterbinLabel[i]);
     }
     registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(7, "DcatoPV");
-    registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(7, "hasTOF");
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(1, "proton");
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(2, "pion");
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(3, "deuteron");
@@ -522,18 +520,20 @@ struct hypertriton3bodyTrackMcinfo {
           float bachExpTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
           float tofsignal = track.trackTime() * 1000 + bachExpTime;                                                                                   // in ps
 
-          // float expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, track.tofSignal(), track.tofEvTimeErr());
           float expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignal, track.tofEvTimeErr());
           // tofNsigmaDe = (track.tofSignal() - track.tofEvTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
           tofNsigmaDe = (tofsignal - track.tofEvTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+          // tofNsigmaDe = (tofsignal - track.evTimeForTrack() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
 
           if (collision.bcId() == collision.foundBCId()) {
             registry.fill(HIST("hDiffColTime"), track.tofEvTime() - collision.collisionTime());
           }
 
-          if ((mcparticle.pdgCode() == 1000010020 || mcparticle.pdgCode() == -1000010020) && track.p() > 1) {
-            registry.fill(HIST("hDiffTrackTOFSignal"), track.tofSignal() - tofsignal);
-          }
+          // Assume deuterons linked to the correct collision, result of secondary TOF PID should be same as the default one
+          registry.fill(HIST("hDiffTrackTOFSignal"), track.tofSignal() - tofsignal);
+          registry.fill(HIST("hDiffEvTimeForTrack"), track.tofEvTime() - track.evTimeForTrack());
+          registry.fill(HIST("hDiffTrackTOFNSigmaDe"), track.tofNSigmaDe() - secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, collision, collision));
+          // registry.fill(HIST("hDiffTrackTOFNSigmaDe"), track.tofExpSigmaDe() - secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, collision, collision));
         }
 
         // Deuteron
@@ -591,10 +591,6 @@ struct hypertriton3bodyTrackMcinfo {
                 continue;
               }
               registry.fill(HIST("hDeuteronCount"), 5.5);
-              if (!track.hasTOF()) {
-                continue;
-              }
-              registry.fill(HIST("hDeuteronCount"), 6.5);
             }
           }
 
@@ -680,34 +676,17 @@ struct hypertriton3bodyTrackMcinfo {
             continue;
           }
 
-          auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-          initCCDB(bc);
+          // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+          //  initCCDB(bc);
           float tofNsigmaDeAO2D = -999;
           float tofNsigmaDeEvSel = -999;
 
           if (track.hasTOF()) {
-            /*o2::InteractionRecord correctedIR = o2::InteractionRecord::long2IR(bc.globalBC());
-            o2::InteractionRecord originalIR = o2::InteractionRecord::long2IR(originalbc.globalBC());
-            o2::InteractionRecord correctedIREvSel = o2::InteractionRecord::long2IR(bcEvSel.globalBC());
-            o2::InteractionRecord originalIREvSel = o2::InteractionRecord::long2IR(originalbcEvSel.globalBC());
-
-            auto responseDe = o2::pid::tof::ExpTimes<MCLabeledTracksIU::iterator, o2::track::PID::Deuteron>();
+            /*auto responseDe = o2::pid::tof::ExpTimes<MCLabeledTracksIU::iterator, o2::track::PID::Deuteron>();
             //float bachExpTime = track.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
-            //float tofsignal = ( originalIR.differenceInBCNS(correctedIR) + track.trackTime()) * 1000.f + bachExpTime; // in ps
-
             float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
             float bachExpTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
-            //float bachExpTime = track.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
-            float tofsignalAO2D = (originalIR.differenceInBCNS(correctedIR) + track.trackTime()) * 1000 + bachExpTime; // in ps
-            float expSigmaAO2D = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignalAO2D, collision.evTimeErr());
-            tofNsigmaDeAO2D = (tofsignalAO2D - collision.evTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigmaAO2D;
-
-            initCCDB(bcEvSel);
-            float tofsignalEvSel = (originalIREvSel.differenceInBCNS(correctedIREvSel) + track.trackTime()) * 1000 + bachExpTime; // in ps
-            float expSigmaEvSel = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignalEvSel, collision.evTimeErr());
-            tofNsigmaDeEvSel = (tofsignalEvSel - collision.evTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigmaEvSel;
-
-            registry.fill(HIST("hDiffDeuteronTOFSignal_v2"), tofsignalAO2D - track.tofSignal());*/
+             */
 
             tofNsigmaDeAO2D = secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, originalcollision, collision);
             tofNsigmaDeEvSel = secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, originalcollision, collision, false);
