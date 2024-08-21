@@ -18,6 +18,7 @@
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
 #include <array>
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <limits>
