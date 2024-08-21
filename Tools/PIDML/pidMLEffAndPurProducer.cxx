@@ -15,7 +15,6 @@
 /// \author Michał Olędzki <m.oledzki@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
-#include <algorithm>
 #include <string>
 
 #include "Framework/AnalysisDataModel.h"
