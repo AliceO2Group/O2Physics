@@ -99,7 +99,7 @@ struct taskJPsiHf {
 
     for (auto& dilepton : dileptons) {
       ptDilepton = RecoDecay::pt(dilepton.px(), dilepton.py());
-      rapDilepton = RecoDecay::y(std::array{dilepton.px(), dilepton.py(), dilepton.pz()}, dilepton.mass());
+      rapDilepton = RecoDecay::y(std::array{dilepton.px(), dilepton.py(), dilepton.pz()}, constants::physics::MassJPsi);
       phiDilepton = RecoDecay::phi(dilepton.px(), dilepton.py());
 
       for (auto& dmeson : dmesons) {
@@ -113,7 +113,7 @@ struct taskJPsiHf {
         }
 
         if (dmeson.massD0() > 0) {
-          rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, dmeson.massD0());
+          rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, constants::physics::MassD0);
           deltaRap = rapDilepton - rapDmeson;
           auto bdtBkg = dmeson.bdtBkgMassHypo0();
           auto bdtPrompt = dmeson.bdtPromptMassHypo0();
@@ -123,12 +123,12 @@ struct taskJPsiHf {
           }
         }
         if (dmeson.massD0bar() > 0) {
-          rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, dmeson.massD0bar());
+          rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, constants::physics::MassD0);
           deltaRap = rapDilepton - rapDmeson;
           auto bdtBkg = dmeson.bdtBkgMassHypo1();
           auto bdtPrompt = dmeson.bdtPromptMassHypo1();
           auto bdtNonPrompt = dmeson.bdtNonpromptMassHypo1();
-          if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax && bdtBkg < cutsDmesBdt->get(ptBinDmesForBdt, "BDT background") && bdtPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT prompt") && bdtNonPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT nonprompt"))) {
+          if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0bar() > massHfCandMin && dmeson.massD0bar() < massHfCandMax && bdtBkg < cutsDmesBdt->get(ptBinDmesForBdt, "BDT background") && bdtPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT prompt") && bdtNonPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT nonprompt"))) {
             redDileptDimesAll(dilepton.mass(), dmeson.massD0bar(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt);
           }
         }
