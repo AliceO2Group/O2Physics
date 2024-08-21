@@ -257,7 +257,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   void runXic0Omegac0Creator(Coll const&,
                              aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
                              MyLFTracksWCov const& lfTracks,
-                             TracksWCovDca const&,
+                             TracksWCovDca const& tracks,
                              MyCascTable const&, CascadesLinked const&,
                              aod::HfCascLf2Prongs const& candidates,
                              Hist& hInvMassCharmBaryon,
@@ -309,7 +309,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       df.setBz(magneticField);
 
-      auto trackCharmBachelor = cand.prong0_as<TracksWCovDca>();
+      auto trackCharmBachelorId = cand.prong0Id();
+      auto trackCharmBachelor = tracks.rawIteratorAt(trackCharmBachelorId);
 
       auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
       hCascadesCounter->Fill(0);
