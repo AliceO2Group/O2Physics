@@ -371,10 +371,10 @@ struct hstrangecorrelationfilter {
         if (v0.v0cosPA() > lambdaCospa)
           bitset(compatibleAntiLambda, 2);
 
-      // simplified handling: calculate NSigma in mass here 
-      float massNSigmaK0Short = TMath::Abs(v0.mK0Short() - fK0Mean->Eval(v0.pt()))/(fK0Width->Eval(v0.pt())+1e-6);
-      float massNSigmaLambda = TMath::Abs(v0.mLambda() - fLambdaMean->Eval(v0.pt()))/(fLambdaWidth->Eval(v0.pt())+1e-6);
-      float massNSigmaAntiLambda = TMath::Abs(v0.mAntiLambda() - fLambdaMean->Eval(v0.pt()))/(fLambdaWidth->Eval(v0.pt())+1e-6);
+      // simplified handling: calculate NSigma in mass here
+      float massNSigmaK0Short = TMath::Abs(v0.mK0Short() - fK0Mean->Eval(v0.pt())) / (fK0Width->Eval(v0.pt()) + 1e-6);
+      float massNSigmaLambda = TMath::Abs(v0.mLambda() - fLambdaMean->Eval(v0.pt())) / (fLambdaWidth->Eval(v0.pt()) + 1e-6);
+      float massNSigmaAntiLambda = TMath::Abs(v0.mAntiLambda() - fLambdaMean->Eval(v0.pt())) / (fLambdaWidth->Eval(v0.pt()) + 1e-6);
 
       if (compatibleK0Short)
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), collision.centFT0M());
@@ -456,8 +456,8 @@ struct hstrangecorrelationfilter {
       if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() > 0)
         bitset(compatibleOmegaPlus, 2);
 
-      float massNSigmaXi = TMath::Abs(casc.mXi() - fXiMean->Eval(casc.pt()))/(fXiWidth->Eval(casc.pt())+1e-6);
-      float massNSigmaOmega = TMath::Abs(casc.mOmega() - fOmegaMean->Eval(casc.pt()))/(fOmegaWidth->Eval(casc.pt())+1e-6);
+      float massNSigmaXi = TMath::Abs(casc.mXi() - fXiMean->Eval(casc.pt())) / (fXiWidth->Eval(casc.pt()) + 1e-6);
+      float massNSigmaOmega = TMath::Abs(casc.mOmega() - fOmegaMean->Eval(casc.pt())) / (fOmegaWidth->Eval(casc.pt()) + 1e-6);
 
       if (compatibleXiMinus)
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), collision.centFT0M());
@@ -471,8 +471,7 @@ struct hstrangecorrelationfilter {
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
             ((compatibleXiMinus > 0 || compatibleXiPlus > 0) && std::abs(massNSigmaXi) < maxMassNSigma) ||
-            ((compatibleOmegaMinus > 0 || compatibleOmegaPlus > 0) && std::abs(massNSigmaOmega) < maxMassNSigma)
-            ) // end major condition check
+            ((compatibleOmegaMinus > 0 || compatibleOmegaPlus > 0) && std::abs(massNSigmaOmega) < maxMassNSigma)) // end major condition check
       ) {
         assocCascades(casc.collisionId(), casc.globalIndex(),
                       compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,

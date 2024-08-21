@@ -65,9 +65,9 @@ DECLARE_SOA_COLUMN(MCTrueK0Short, mcTrueK0Short, bool);               // true K0
 DECLARE_SOA_COLUMN(MCTrueLambda, mcTrueLambda, bool);                 // true Lambda in MC
 DECLARE_SOA_COLUMN(MCTrueAntiLambda, mcTrueAntiLambda, bool);         // true AntiLambda in MC
 DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // true physical primary flag
-DECLARE_SOA_COLUMN(NSigmaMassK0Short, nSigmaMassK0Short, float);        //
-DECLARE_SOA_COLUMN(NSigmaMassLambda, nSigmaMassLambda, float);          //
-DECLARE_SOA_COLUMN(NSigmaMassAntiLambda, nSigmaMassAntiLambda, float);  //
+DECLARE_SOA_COLUMN(NSigmaMassK0Short, nSigmaMassK0Short, float);      //
+DECLARE_SOA_COLUMN(NSigmaMassLambda, nSigmaMassLambda, float);        //
+DECLARE_SOA_COLUMN(NSigmaMassAntiLambda, nSigmaMassAntiLambda, float); //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](int cK0Short, int cLambda, int cAntiLambda, int value, int compatibilityLevel) -> bool {
                              if (value == 0 && bitcheck(cK0Short, compatibilityLevel))
