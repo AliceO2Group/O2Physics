@@ -177,8 +177,8 @@ struct HfCandidateSelectorToXiPi {
   }
 
   void process(aod::HfCandToXiPi const& candidates,
-               TracksSel const&,
-               TracksSelLf const&)
+               TracksSel const& tracks,
+               TracksSelLf const& lfTracks)
   {
 
     double massLambdaFromPDG = o2::constants::physics::MassLambda0;
@@ -189,10 +189,14 @@ struct HfCandidateSelectorToXiPi {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<TracksSelLf>();                 // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<TracksSelLf>();                 // negative V0 daughter
-      auto trackPiFromCasc = candidate.bachelor_as<TracksSelLf>();               // pion <- cascade
-      auto trackPiFromCharm = candidate.bachelorFromCharmBaryon_as<TracksSel>(); // pion <- charm baryon
+      auto trackV0PosDauId = candidate.posTrackId();                   // positive V0 daughter
+      auto trackV0NegDauId = candidate.negTrackId();                   // negative V0 daughter
+      auto trackPiFromCascId = candidate.bachelorId();                 // pion <- cascade
+      auto trackPiFromCharmId = candidate.bachelorFromCharmBaryonId(); // pion <- charm baryon
+      auto trackV0PosDau = lfTracks.rawIteratorAt(trackV0PosDauId);
+      auto trackV0NegDau = lfTracks.rawIteratorAt(trackV0NegDauId);
+      auto trackPiFromCasc = lfTracks.rawIteratorAt(trackPiFromCascId);
+      auto trackPiFromCharm = tracks.rawIteratorAt(trackPiFromCharmId);
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
@@ -289,7 +293,7 @@ struct HfCandidateSelectorToXiPi {
       }
 
       // dcaXY v0 daughters to PV cut
-      if (candidate.dcaXYToPvV0Dau0() < dcaPosToPvMin || candidate.dcaXYToPvV0Dau1() < dcaNegToPvMin) {
+      if (std::abs(candidate.dcaXYToPvV0Dau0()) < dcaPosToPvMin || std::abs(candidate.dcaXYToPvV0Dau1()) < dcaNegToPvMin) {
         resultSelections = false;
         registry.fill(HIST("hSelDcaXYToPvV0Daughters"), 0);
       } else {
@@ -297,7 +301,7 @@ struct HfCandidateSelectorToXiPi {
       }
 
       // dcaXY pi <-- cascade to PV cut
-      if (candidate.dcaXYToPvCascDau() < dcaBachToPvMin) {
+      if (std::abs(candidate.dcaXYToPvCascDau()) < dcaBachToPvMin) {
         resultSelections = false;
         registry.fill(HIST("hSelDcaXYToPvPiFromCasc"), 0);
       } else {
