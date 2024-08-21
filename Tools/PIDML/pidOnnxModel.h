@@ -153,32 +153,6 @@ struct PidONNXModel {
     return getModelOutput(track) >= mMinCertainty;
   }
 
-  template <typename Tb>
-  std::vector<float> batchApplyModel(const Tb& table)
-  {
-    std::vector<float> outputs;
-    outputs.reserve(table.size());
-
-    for (const auto& track : table) {
-      outputs.push_back(applyModel(track));
-    }
-
-    return outputs;
-  }
-
-  template <typename Tb>
-  std::vector<bool> batchApplyModelBoolean(const Tb& table)
-  {
-    std::vector<bool> outputs;
-    outputs.reserve(table.size());
-
-    for (const auto& track : table) {
-      outputs.push_back(applyModelBoolean(track));
-    }
-
-    return outputs;
-  }
-
   int mPid;
   double mMinCertainty;
 
@@ -248,11 +222,7 @@ struct PidONNXModel {
   template <typename... P1, typename... P2>
   static constexpr bool is_equal_size(o2::framework::pack<P1...>, o2::framework::pack<P2...>)
   {
-    if constexpr (sizeof...(P1) == sizeof...(P2)) {
-      return true;
-    }
-
-    return false;
+    return sizeof...(P1) == sizeof...(P2);
   }
 
   static float scale(float value, const std::pair<float, float>& scalingParams)
