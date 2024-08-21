@@ -136,13 +136,13 @@ struct HfCandidateSelectorDplusToPiKPi {
   template <typename T1, typename T2>
   bool selection(const T1& candidate, const T2& trackPion1, const T2& trackKaon, const T2& trackPion2)
   {
-    auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    auto ptCand = candidate.pt();
+    int pTBin = findBin(binsPt, ptCand);
     if (pTBin == -1) {
       return false;
     }
     // check that the candidate pT is within the analysis range
-    if (candpT < ptCandMin || candpT > ptCandMax) {
+    if (ptCand < ptCandMin || ptCand > ptCandMax) {
       return false;
     }
     // cut on daughter pT
@@ -153,7 +153,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !hfTriggerCuts.is3ProngInMassRange(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, candpT)) {
+    if (useTriggerMassCut && !hfTriggerCuts.isCandidateInMassRange<true>(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand)) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {
