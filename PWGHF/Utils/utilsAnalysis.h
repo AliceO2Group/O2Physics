@@ -143,27 +143,25 @@ struct HfTriggerCuts : o2::framework::ConfigurableGroup {
     o2::framework::LabeledArray<float> deltaMassPars;
     o2::framework::LabeledArray<float> sigmaPars;
 
-    if  constexpr (nProngs == 2){
+    if constexpr (nProngs == 2) {
       deltaMassPars = deltaMassPars2Prong;
       sigmaPars = sigmaPars2Prong;
       ptDeltaMassMax = ptDeltaMass2ProngMax;
       ptMassCutMax = ptMassCut2ProngMax;
       nSigmaMax = nSigma2ProngMax;
-    }
-    else if constexpr (nProngs == 3) {
+    } else if constexpr (nProngs == 3) {
       deltaMassPars = deltaMassPars3Prong;
       sigmaPars = sigmaPars3Prong;
       ptDeltaMassMax = ptDeltaMass3ProngMax;
       ptMassCutMax = ptMassCut3ProngMax;
       nSigmaMax = nSigma3ProngMax;
-    }
-    else {
+    } else {
       LOGF(fatal, "nProngs %d not supported!", nProngs);
     }
 
     float peakMean = (pt < ptDeltaMassMax) ? ((pdgMass + deltaMassPars.get("constant")) + deltaMassPars.get("linear") * pt) : pdgMass;
     float peakWidth = sigmaPars.get("constant") + sigmaPars.get("linear") * pt;
-      
+
     return (!(std::abs(invMass - peakMean) > nSigma3ProngMax * peakWidth && pt < ptMassCutMax));
   }
 };
