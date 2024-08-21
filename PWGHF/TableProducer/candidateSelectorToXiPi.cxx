@@ -189,14 +189,14 @@ struct HfCandidateSelectorToXiPi {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDauId = candidate.posTrackId();                 // positive V0 daughter
-      auto trackV0NegDauId = candidate.negTrackId();                 // negative V0 daughter
-      auto trackPiFromCascId = candidate.bachelorId();               // pion <- cascade
+      auto trackV0PosDauId = candidate.posTrackId();                   // positive V0 daughter
+      auto trackV0NegDauId = candidate.negTrackId();                   // negative V0 daughter
+      auto trackPiFromCascId = candidate.bachelorId();                 // pion <- cascade
       auto trackPiFromCharmId = candidate.bachelorFromCharmBaryonId(); // pion <- charm baryon
-      auto trackV0PosDau = lfTracks.rawIteratorAt(trackV0PosDauId); 
-      auto trackV0NegDau = lfTracks.rawIteratorAt(trackV0NegDauId);                 
-      auto trackPiFromCasc = lfTracks.rawIteratorAt(trackPiFromCascId);               
-      auto trackPiFromCharm = tracks.rawIteratorAt(trackPiFromCharmId); 
+      auto trackV0PosDau = lfTracks.rawIteratorAt(trackV0PosDauId);
+      auto trackV0NegDau = lfTracks.rawIteratorAt(trackV0NegDauId);
+      auto trackPiFromCasc = lfTracks.rawIteratorAt(trackPiFromCascId);
+      auto trackPiFromCharm = tracks.rawIteratorAt(trackPiFromCharmId);
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;

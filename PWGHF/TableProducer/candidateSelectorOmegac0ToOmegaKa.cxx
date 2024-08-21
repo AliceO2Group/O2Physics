@@ -204,13 +204,13 @@ struct HfCandidateSelectorToOmegaKa {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDauId = candidate.posTrackId();                 // positive V0 daughter
-      auto trackV0NegDauId = candidate.negTrackId();                 // negative V0 daughter
-      auto trackKaFromCascId = candidate.bachelorId();               // kaon <- cascade
+      auto trackV0PosDauId = candidate.posTrackId();                   // positive V0 daughter
+      auto trackV0NegDauId = candidate.negTrackId();                   // negative V0 daughter
+      auto trackKaFromCascId = candidate.bachelorId();                 // kaon <- cascade
       auto trackKaFromCharmId = candidate.bachelorFromCharmBaryonId(); // pion <- charm baryon
-      auto trackV0PosDau = lfTracks.rawIteratorAt(trackV0PosDauId); 
-      auto trackV0NegDau = lfTracks.rawIteratorAt(trackV0NegDauId);                 
-      auto trackKaFromCasc = lfTracks.rawIteratorAt(trackKaFromCascId);               
+      auto trackV0PosDau = lfTracks.rawIteratorAt(trackV0PosDauId);
+      auto trackV0NegDau = lfTracks.rawIteratorAt(trackV0NegDauId);
+      auto trackKaFromCasc = lfTracks.rawIteratorAt(trackKaFromCascId);
       auto trackKaFromCharm = tracks.rawIteratorAt(trackKaFromCharmId);
 
       auto trackPiFromLam = trackV0NegDau;
