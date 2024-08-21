@@ -324,13 +324,13 @@ struct QaPidML {
     }
   }
 
-  template <std::size_t i, typename Tb, typename T>
-  void pidML(const Tb& tracks, const T& track, const int pdgCodeMC)
+  template <std::size_t i, typename T>
+  void pidML(const T& track, const int pdgCodeMC)
   {
     float pidCertainties[3];
-    pidCertainties[0] = model211.applyModel(tracks, track);
-    pidCertainties[1] = model2212.applyModel(tracks, track);
-    pidCertainties[2] = model321.applyModel(tracks, track);
+    pidCertainties[0] = model211.applyModel(track);
+    pidCertainties[1] = model2212.applyModel(track);
+    pidCertainties[2] = model321.applyModel(track);
     int pid = getParticlePdg(pidCertainties);
     // condition for sign: we want to work only with pi, p and K, without antiparticles
     if (pid == particlesPdgCode[i] && track.sign() == 1) {
@@ -385,7 +385,7 @@ struct QaPidML {
 
       // only 3 particles can be predicted by model
       static_for<0, 2>([&](auto i) {
-        pidML<i>(tracks, track, pdgCodeMC);
+        pidML<i>(track, pdgCodeMC);
       });
     }
   }

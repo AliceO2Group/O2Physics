@@ -98,20 +98,20 @@ struct KaonPidTask {
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     for (auto track : groupPositive) {
       histos.fill(HIST("hChargePos"), track.sign());
-      if (pidModel.get()->applyModelBoolean(tracks, track)) {
+      if (pidModel.get()->applyModelBoolean(track)) {
         histos.fill(HIST("hdEdXvsMomentum"), track.p(), track.tpcSignal());
       }
     }
 
     for (auto track : groupNegative) {
       histos.fill(HIST("hChargeNeg"), track.sign());
-      if (pidModel.get()->applyModelBoolean(tracks, track)) {
+      if (pidModel.get()->applyModelBoolean(track)) {
         histos.fill(HIST("hdEdXvsMomentum"), track.p(), track.tpcSignal());
       }
     }
 
     for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPositive, groupNegative))) {
-      if (!(pidModel.get()->applyModelBoolean(tracks, pos)) || !(pidModel.get()->applyModelBoolean(tracks, neg))) {
+      if (!(pidModel.get()->applyModelBoolean(pos)) || !(pidModel.get()->applyModelBoolean(neg))) {
         continue;
       }
 
