@@ -256,8 +256,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runXic0Omegac0Creator(Coll const&,
                              aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
+                             MyLFTracksWCov const& lfTracks,
                              TracksWCovDca const&,
-                             MyLFTracksWCov const&,
                              MyCascTable const&, CascadesLinked const&,
                              aod::HfCascLf2Prongs const& candidates,
                              Hist& hInvMassCharmBaryon,
@@ -318,10 +318,13 @@ struct HfCandidateCreatorXic0Omegac0 {
         continue;
       }
       auto casc = cascAodElement.cascData_as<MyCascTable>();
-      hCascadesCounter->Fill(1);
-      auto trackCascDauCharged = casc.bachelor_as<MyLFTracksWCov>(); // pion <- xi track
-      auto trackV0Dau0 = casc.posTrack_as<MyLFTracksWCov>();         // V0 positive daughter track
-      auto trackV0Dau1 = casc.negTrack_as<MyLFTracksWCov>();         // V0 negative daughter track
+      hCascadesCounter->Fill(1);      
+      auto trackCascDauChargedId = casc.bachelorId(); // pion <- xi track
+      auto trackV0Dau0Id = casc.posTrackId();         // V0 positive daughter track
+      auto trackV0Dau1Id = casc.negTrackId();         // V0 negative daughter track
+      auto trackCascDauCharged = lfTracks.iteratorAt(trackCascDauChargedId); // pion <- xi track
+      auto trackV0Dau0 = lfTracks.iteratorAt(trackV0Dau0Id);         // V0 positive daughter track
+      auto trackV0Dau1 = lfTracks.iteratorAt(trackV0Dau1Id);         // V0 negative daughter track
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
