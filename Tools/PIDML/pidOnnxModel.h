@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <optional>
 #include <string>
 #include <algorithm>
 #include <map>
@@ -268,11 +269,63 @@ struct PidONNXModel {
   }
 
   template <typename T, typename... C>
-  std::vector<float> getValues(o2::framework::pack<C...>, const T& track)
+  std::optional<float> getColumnValueByLabel(o2::framework::pack<C...>, const T& rowIterator, const std::string& columnLabel)
+  {
+    std::optional<float> value = std::nullopt;
+
+    ([&]() {
+      if (value) {
+        return;
+      }
+
+      if constexpr (o2::soa::is_dynamic_v<C> && std::is_arithmetic_v<typename C::type>) {
+        // check if bindings have the same size as lambda parameters (getter do not have additional parameters)
+        if constexpr (is_equal_size(typename C::bindings_t{}, typename C::callable_t::args{})) {
+          std::string label = C::columnLabel();
+
+          // dynamic columns do not have "f" prefix in columnLabel() return string
+          if (std::strcmp(&columnLabel[1], label.data()) != 0 && columnLabel != label) {
+            return;
+          }
+
+          value = static_cast<float>(rowIterator.template getDynamicColumn<C>());
+        }
+      } else if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C> && std::is_arithmetic_v<typename C::type>) {
+        if (columnLabel != C::columnLabel()) {
+          return;
+        }
+
+        value = static_cast<float>(getPersistentValue<C>(rowIterator));
+      }
+    }(),
+     ...);
+
+    return value;
+  }
+
+  template <typename T>
+  std::optional<float> getColumnValueByLabel(const T& rowIterator, const std::string& columnLabel)
+  {
+    return getColumnValueByLabel(typename T::parent_t::table_t::columns{}, rowIterator, columnLabel);
+  }
+
+  template <typename T>
+  std::vector<float> getValues(const T& track)
   {
     std::vector<float> output;
     output.reserve(mTrainColumns.size());
+
+    bool useTOF = !tofMissing(track) && inPLimit(track, mPLimits[kTPCTOF]);
+    bool useTRD = !trdMissing(track) && inPLimit(track, mPLimits[kTPCTOFTRD]);
+
     for (const std::string& columnLabel : mTrainColumns) {
+      if (
+        ((columnLabel == "fTRDSignal" || columnLabel == "fTRDPattern") && !useTRD) ||
+        ((columnLabel == "fTOFSignal" || columnLabel == "fBeta") && !useTOF)) {
+        output.push_back(std::numeric_limits<float>::quiet_NaN());
+        continue;
+      }
+
       std::optional<std::pair<float, float>> scalingParams = std::nullopt;
 
       auto scalingParamsEntry = mScalingParams.find(columnLabel);
@@ -280,59 +333,17 @@ struct PidONNXModel {
         scalingParams = scalingParamsEntry->second;
       }
 
-      bool isInPLimitTrd = inPLimit(track, mPLimits[kTPCTOFTRD]);
-      bool isInPLimitTof = inPLimit(track, mPLimits[kTPCTOF]);
-      bool isTrdMissing = trdMissing(track);
-      bool isTofMissing = tofMissing(track);
+      std::optional<float> value = getColumnValueByLabel(track, columnLabel);
 
-      ([&]() {
-        if constexpr (o2::soa::is_dynamic_v<C> && std::is_arithmetic_v<typename C::type>) {
-          // check if bindings have the same size as lambda parameters (getter do not have additional parameters)
-          if constexpr (is_equal_size(typename C::bindings_t{}, typename C::callable_t::args{})) {
-            std::string label = C::columnLabel();
+      if (!value) {
+        LOG(fatal) << "Cannot obtain column of name: " << columnLabel;
+      }
 
-            // dynamic columns do not have "f" prefix in columnLabel() return string
-            if (std::strcmp(&columnLabel[1], label.data())) {
-              return;
-            }
+      if (scalingParams) {
+        value = scale(value.value(), scalingParams.value());
+      }
 
-            float value = static_cast<float>(track.template getDynamicColumn<C>());
-
-            if (scalingParams) {
-              value = scale(value, scalingParams.value());
-            }
-
-            output.push_back(value);
-          }
-        } else if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C> && std::is_arithmetic_v<typename C::type>) {
-          std::string label = C::columnLabel();
-
-          if (columnLabel != label) {
-            return;
-          }
-
-          if constexpr (std::is_same_v<C, o2::aod::track::TRDSignal> || std::is_same_v<C, o2::aod::track::TRDPattern>) {
-            if (isTrdMissing || !isInPLimitTrd) {
-              output.push_back(std::numeric_limits<float>::quiet_NaN());
-              return;
-            }
-          } else if constexpr (std::is_same_v<C, o2::aod::pidtofsignal::TOFSignal> || std::is_same_v<C, o2::aod::pidtofbeta::Beta>) {
-            if (isTofMissing || !isInPLimitTof) {
-              output.push_back(std::numeric_limits<float>::quiet_NaN());
-              return;
-            }
-          }
-
-          float value = static_cast<float>(getPersistentValue<C>(track));
-
-          if (scalingParams) {
-            value = scale(value, scalingParams.value());
-          }
-
-          output.push_back(value);
-        }
-      }(),
-       ...);
+      output.push_back(value.value());
     }
 
     return output;
@@ -349,7 +360,7 @@ struct PidONNXModel {
     auto input_shape = mInputShapes[0];
     input_shape[0] = batch_size;
 
-    std::vector<float> inputTensorValues = getValues(typename T::parent_t::table_t::columns{}, track);
+    std::vector<float> inputTensorValues = getValues(track);
     std::vector<Ort::Value> inputTensors;
 
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
