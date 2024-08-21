@@ -209,6 +209,8 @@ struct secondaryPidTof {
     if (!enableTable) {
       return;
     }
+    tableEvTime.reserve(collisions.size());
+    tableEvTimeForTrack.reserve(tracks.size());
 
     for (auto const& collision : collisions) { // Loop on collisions
       tableEvTime(collision.collisionTime() * 1000.f, collision.collisionTimeRes() * 1000.f, 0.f, 999.f, 0.f, 999.f);
@@ -237,6 +239,8 @@ struct secondaryPidTof {
     if (!enableTable) {
       return;
     }
+    tableEvTime.reserve(collisions.size());
+    tableEvTimeForTrack.reserve(tracks.size());
 
     // for tracks not assigned to a collision
     for (auto track : tracks) {
@@ -290,11 +294,18 @@ struct secondaryPidTof {
     if (!enableTable) {
       return;
     }
+    tableEvTime.reserve(collisions.size());
+    tableEvTimeForTrack.reserve(tracks.size());
+    std::vector<float> tEvTimeForTrack;
+    std::vector<float> tEvTimeErrForTrack;
+    tEvTimeForTrack.resize(tracks.size());
+    tEvTimeErrForTrack.resize(tracks.size());
 
     // for tracks not assigned to a collision
     for (auto track : tracks) {
       if (!track.has_collision()) {
-        tableEvTimeForTrack(0.f, 999.f);
+        tEvTimeForTrack[track.globalIndex()] = 0.f;
+        tEvTimeErrForTrack[track.globalIndex()] = 999.f;
       }
     }
 
@@ -302,8 +313,9 @@ struct secondaryPidTof {
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       if ((sel8TOFEvTime.value == true) && !collision.sel8()) {
         tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
-        for (int i = 0; i < tracksInCollision.size(); i++) {
-          tableEvTimeForTrack(0.f, 999.f);
+        for (auto track : tracksInCollision) {
+          tEvTimeForTrack[track.globalIndex()] = 0.f;
+          tEvTimeErrForTrack[track.globalIndex()] = 999.f;
         }
         continue;
       }
@@ -314,7 +326,6 @@ struct secondaryPidTof {
       float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
       float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
 
-      int nGoodTracksForTOF = 0; // count for ntrackIndex for removeBias()
       float eventTime = 0.f;
       float sumOfWeights = 0.f;
       float weight = 0.f;
@@ -343,6 +354,7 @@ struct secondaryPidTof {
       }
       tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights), t0TOF[0], t0TOF[1], t0AC[0], t0AC[1]);
 
+      int nGoodTracksForTOF = 0; // count for ntrackIndex for removeBias()
       for (auto const& track : tracksInCollision) {
         // Reset the event time
         eventTime = 0.f;
@@ -356,13 +368,8 @@ struct secondaryPidTof {
           sumOfWeights += weight;
         }
 
-        if (collision.has_foundFT0()) { // T0 measurement is available
-          // const auto& ft0 = collision.foundFT0();
-          if (collision.t0ACValid()) {
-            t0AC[0] = collision.t0AC() * 1000.f;
-            t0AC[1] = collision.t0resolution() * 1000.f;
-          }
-
+        // Add the contribution from FT0 if it is available, t0AC is already calculated
+        if (collision.has_foundFT0()) {
           weight = 1.f / (t0AC[1] * t0AC[1]);
           eventTime += t0AC[0] * weight;
           sumOfWeights += weight;
@@ -372,8 +379,12 @@ struct secondaryPidTof {
           eventTime = 0;
           sumOfWeights = weightDiamond;
         }
-        tableEvTimeForTrack(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
+        tEvTimeForTrack[track.globalIndex()] = eventTime / sumOfWeights;
+        tEvTimeErrForTrack[track.globalIndex()] = sqrt(1. / sumOfWeights);
       }
+    }
+    for (int i = 0; i < tracks.size(); i++) {
+      tableEvTimeForTrack(tEvTimeForTrack[i], tEvTimeErrForTrack[i]);
     }
   }
   PROCESS_SWITCH(secondaryPidTof, processFT0, "Process with FT0", true);
@@ -387,6 +398,8 @@ struct secondaryPidTof {
     if (!enableTable) {
       return;
     }
+    tableEvTime.reserve(collisions.size());
+    tableEvTimeForTrack.reserve(tracks.size());
 
     // for tracks not assigned to a collision
     for (auto track : tracks) {
