@@ -189,7 +189,7 @@ struct emcalQC {
       }
       fRegistry.fill(HIST("Cluster/after/hNgamma"), ng);
     } // end of collision loop
-  } // end of process
+  }   // end of process
 
   void processDummy(MyCollisions const&) {}
 
