@@ -171,7 +171,7 @@ struct PidMlEffAndPurProducer {
         auto mcPart = track.mcParticle();
         if (mcPart.isPhysicalPrimary()) {
 
-          bool mlAccepted = pidModel.applyModelBoolean(tracks, track);
+          bool mlAccepted = pidModel.applyModelBoolean(track);
           nSigma_t nSigma = GetNSigma(track);
           bool nSigmaAccepted = IsNSigmaAccept(track, nSigma);
 

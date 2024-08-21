@@ -80,7 +80,7 @@ struct SimpleApplyOnnxModel {
     }
 
     for (auto& track : tracks) {
-      bool accepted = pidModel.applyModelBoolean(tracks, track);
+      bool accepted = pidModel.applyModelBoolean(track);
       LOGF(info, "collision id: %d track id: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
            track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
       pidMLResults(track.index(), cfgPid.value, accepted);
@@ -91,7 +91,7 @@ struct SimpleApplyOnnxModel {
   void processTracksOnly(BigTracks const& tracks)
   {
     for (auto& track : tracks) {
-      bool accepted = pidModel.applyModelBoolean(tracks, track);
+      bool accepted = pidModel.applyModelBoolean(track);
       LOGF(info, "collision id: %d track id: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
            track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
       pidMLResults(track.index(), cfgPid.value, accepted);

@@ -142,16 +142,16 @@ struct PidONNXModel {
   PidONNXModel& operator=(const PidONNXModel&) = delete;
   ~PidONNXModel() = default;
 
-  template <typename Tb, typename T>
-  float applyModel(const Tb& table, const T& track)
+  template <typename T>
+  float applyModel(const T& track)
   {
-    return getModelOutput(table, track);
+    return getModelOutput(track);
   }
 
-  template <typename Tb, typename T>
-  bool applyModelBoolean(const Tb& table, const T& track)
+  template <typename T>
+  bool applyModelBoolean(const T& track)
   {
-    return getModelOutput(table, track) >= mMinCertainty;
+    return getModelOutput(track) >= mMinCertainty;
   }
 
   template <typename Tb>
@@ -161,7 +161,7 @@ struct PidONNXModel {
     outputs.reserve(table.size());
 
     for (const auto& track : table) {
-      outputs.push_back(applyModel(table, track));
+      outputs.push_back(applyModel(track));
     }
 
     return outputs;
@@ -174,7 +174,7 @@ struct PidONNXModel {
     outputs.reserve(table.size());
 
     for (const auto& track : table) {
-      outputs.push_back(applyModelBoolean(table, track));
+      outputs.push_back(applyModelBoolean(track));
     }
 
     return outputs;
@@ -261,20 +261,15 @@ struct PidONNXModel {
     return (value - scalingParams.first) / scalingParams.second;
   }
 
-  template <typename T, typename C>
-  typename C::type getPersistentValue(arrow::Table* table, const T& rowIterator)
+  template <typename C, typename T>
+  typename C::type getPersistentValue(const T& rowIterator)
   {
-    auto colIterator = static_cast<C>(rowIterator).getIterator();
-    uint64_t ci = colIterator.mCurrentChunk;
-    uint64_t ai = *(colIterator.mCurrentPos) - colIterator.mFirstIndex;
-
-    return std::static_pointer_cast<o2::soa::arrow_array_for_t<typename C::type>>(o2::soa::getIndexFromLabel(table, C::columnLabel())->chunk(ci))->raw_values()[ai];
+    return *(static_cast<C>(rowIterator).getIterator());
   }
 
-  template <typename T, typename Tb, typename... C>
-  std::vector<float> getValues(o2::framework::pack<C...>, const T& track, const Tb& table)
+  template <typename T, typename... C>
+  std::vector<float> getValues(o2::framework::pack<C...>, const T& track)
   {
-    auto arrowTable = table.asArrowTable();
     std::vector<float> output;
     output.reserve(mTrainColumns.size());
     for (const std::string& columnLabel : mTrainColumns) {
@@ -309,7 +304,7 @@ struct PidONNXModel {
 
             output.push_back(value);
           }
-        } else if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C> && std::is_arithmetic_v<typename C::type> && !std::is_same_v<typename C::type, bool>) {
+        } else if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C> && std::is_arithmetic_v<typename C::type>) {
           std::string label = C::columnLabel();
 
           if (columnLabel != label) {
@@ -328,7 +323,7 @@ struct PidONNXModel {
             }
           }
 
-          float value = static_cast<float>(getPersistentValue<T, C>(arrowTable.get(), track));
+          float value = static_cast<float>(getPersistentValue<C>(track));
 
           if (scalingParams) {
             value = scale(value, scalingParams.value());
@@ -343,8 +338,8 @@ struct PidONNXModel {
     return output;
   }
 
-  template <typename Tb, typename T>
-  float getModelOutput(const Tb& table, const T& track)
+  template <typename T>
+  float getModelOutput(const T& track)
   {
     // First rank of the expected model input is -1 which means that it is dynamic axis.
     // Axis is exported as dynamic to make it possible to run model inference with the batch of
@@ -354,7 +349,7 @@ struct PidONNXModel {
     auto input_shape = mInputShapes[0];
     input_shape[0] = batch_size;
 
-    std::vector<float> inputTensorValues = getValues(typename Tb::table_t::columns{}, track, table);
+    std::vector<float> inputTensorValues = getValues(typename T::parent_t::table_t::columns{}, track);
     std::vector<Ort::Value> inputTensors;
 
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
