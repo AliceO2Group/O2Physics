@@ -23,7 +23,6 @@
 #include <limits>
 #include <optional>
 #include <string>
-#include <algorithm>
 #include <map>
 #include <type_traits>
 #include <utility>
@@ -37,7 +36,6 @@
 
 #include "Framework/TableBuilder.h"
 #include "Framework/Expressions.h"
-#include "arrow/table.h"
 
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
@@ -278,24 +276,26 @@ struct PidONNXModel {
         return;
       }
 
-      if constexpr (o2::soa::is_dynamic_v<C> && std::is_arithmetic_v<typename C::type>) {
-        // check if bindings have the same size as lambda parameters (getter do not have additional parameters)
-        if constexpr (is_equal_size(typename C::bindings_t{}, typename C::callable_t::args{})) {
-          std::string label = C::columnLabel();
+      if constexpr (std::is_arithmetic_v<typename C::type>) {
+        if constexpr (o2::soa::is_dynamic_v<C>) {
+          // check if bindings have the same size as lambda parameters (getter do not have additional parameters)
+          if constexpr (is_equal_size(typename C::bindings_t{}, typename C::callable_t::args{})) {
+            std::string label = C::columnLabel();
 
-          // dynamic columns do not have "f" prefix in columnLabel() return string
-          if (std::strcmp(&columnLabel[1], label.data()) != 0 && columnLabel != label) {
+            // dynamic columns do not have "f" prefix in columnLabel() return string
+            if (std::strcmp(&columnLabel[1], label.data()) != 0 && columnLabel != label) {
+              return;
+            }
+
+            value = static_cast<float>(rowIterator.template getDynamicColumn<C>());
+          }
+        } else if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C>) {
+          if (columnLabel != C::columnLabel()) {
             return;
           }
 
-          value = static_cast<float>(rowIterator.template getDynamicColumn<C>());
+          value = static_cast<float>(getPersistentValue<C>(rowIterator));
         }
-      } else if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C> && std::is_arithmetic_v<typename C::type>) {
-        if (columnLabel != C::columnLabel()) {
-          return;
-        }
-
-        value = static_cast<float>(getPersistentValue<C>(rowIterator));
       }
     }(),
      ...);
