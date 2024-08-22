@@ -821,7 +821,7 @@ struct strangenessFilter {
     if (v0sFromOmegaID.size() > 0 && v0sFromXiID.size() > 0) {
       std::set<std::array<int, 2>> uniqueOmegas = {v0sFromOmegaID.begin(), v0sFromOmegaID.end()};
       std::set<std::array<int, 2>> uniqueXis = {v0sFromXiID.begin(), v0sFromXiID.end()};
-      if (uniqueOmegas.size() != 0 && uniqueXis.size() != 0) {
+      if (uniqueOmegas.size() > 1 || uniqueXis.size() > 1) {
         keepEvent[11] = true;
       } else {
         // keep only if there is at least one non-overlapping v0
