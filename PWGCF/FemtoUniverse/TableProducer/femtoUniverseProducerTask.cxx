@@ -1062,7 +1062,7 @@ struct femtoUniverseProducerTask {
       childIDs[1] = 0;
       auto postrack = hfCand.template prong0_as<TrackType>();
       auto negtrack = hfCand.template prong1_as<TrackType>();
-      
+
       if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
@@ -1094,8 +1094,8 @@ struct femtoUniverseProducerTask {
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
                     -999,
                     childIDs,
-                    postrack.sign(),  // D0 mass -> positive daughter of D0/D0bar
-                    daughFlag); // D0bar mass -> sign that the daugh is from D0 or D0 decay
+                    postrack.sign(), // D0 mass -> positive daughter of D0/D0bar
+                    daughFlag);      // D0bar mass -> sign that the daugh is from D0 or D0 decay
         const int rowOfPosTrack = outputParts.lastIndex();
         if constexpr (isMC) {
           fillMCParticle(postrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
@@ -1117,7 +1117,7 @@ struct femtoUniverseProducerTask {
                     -999,
                     childIDs,
                     negtrack.sign(), // negative daughter of D0/D0bar
-                    daughFlag); // sign that the daugh is from D0 or D0 decay
+                    daughFlag);      // sign that the daugh is from D0 or D0 decay
         const int rowOfNegTrack = outputParts.lastIndex();
         if constexpr (isMC) {
           fillMCParticle(negtrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);

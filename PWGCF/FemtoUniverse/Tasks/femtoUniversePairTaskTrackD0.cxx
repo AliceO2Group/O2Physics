@@ -492,13 +492,13 @@ struct femtoUniversePairTaskTrackD0 {
         qaRegistry.fill(HIST("D0bar_pos_daugh/pt"), daughD0D0bar.pt());
         qaRegistry.fill(HIST("D0bar_pos_daugh/eta"), daughD0D0bar.eta());
         qaRegistry.fill(HIST("D0bar_pos_daugh/phi"), daughD0D0bar.phi());
-      } 
+      }
       // filling QA plots for D0bar mesons' negative daughters (K-)
       if (daughD0D0bar.mLambda() == -1 && daughD0D0bar.mAntiLambda() == -1) {
         qaRegistry.fill(HIST("D0bar_neg_daugh/pt"), daughD0D0bar.pt());
         qaRegistry.fill(HIST("D0bar_neg_daugh/eta"), daughD0D0bar.eta());
         qaRegistry.fill(HIST("D0bar_neg_daugh/phi"), daughD0D0bar.phi());
-      } 
+      }
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processD0mesons, "Enable processing D0 mesons", true);
@@ -757,7 +757,7 @@ struct femtoUniversePairTaskTrackD0 {
       }
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       // if (partsD0.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTrack.size() == 0 ) continue;
-      
+
       switch (ConfChooseD0trackCorr) {
         case 0:
           doMixedEvent<false>(groupPartsTrack, theGroupPartsD0s, parts, magFieldTesla1, multiplicityCol);
