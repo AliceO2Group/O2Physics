@@ -746,8 +746,9 @@ struct tpcElIdMassSpectrum {
           mHistManager.fill(HIST("h_TPCee_MS_pp"), (P1 + P2).M(), (P1 + P2).Pt());
         else
           mHistManager.fill(HIST("h_TPCee_MS_mm"), (P1 + P2).M(), (P1 + P2).Pt());
-      } else
+      } else {
         mHistManager.fill(HIST("h_TPCee_MS_mp"), (P1 + P2).M(), (P1 + P2).Pt());
+      }
     }
 
     for (auto const& track1 : tracks) {
