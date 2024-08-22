@@ -68,6 +68,7 @@ struct JetFinderQATask {
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
   Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
+  Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
 
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
@@ -566,6 +567,9 @@ struct JetFinderQATask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax){
+      return;
+    }
     TRandom3 randomNumber(0);
     float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
     float randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
@@ -942,6 +946,11 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
+    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax){
+      return;
+    }
+    registry.fill(HIST("h_collisions"), 2.5);
+    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 2.5);
     fillTrackHistograms(collision, tracks);
   }
   PROCESS_SWITCH(JetFinderQATask, processTracks, "QA for charged tracks", false);
@@ -958,6 +967,11 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
+    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax){
+      return;
+    }
+    registry.fill(HIST("h_collisions"), 2.5);
+    registry.fill(HIST("h_collisions_weighted"), 2.5);
     fillTrackHistograms(collision, tracks, eventWeight);
   }
   PROCESS_SWITCH(JetFinderQATask, processTracksWeighted, "QA for charged tracks weighted", false);
@@ -966,6 +980,9 @@ struct JetFinderQATask {
                         soa::Filtered<JetTracksSub> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax){
       return;
     }
     for (auto const& track : tracks) {
@@ -979,6 +996,9 @@ struct JetFinderQATask {
   void processRho(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax){
       return;
     }
     int nTracks = 0;
