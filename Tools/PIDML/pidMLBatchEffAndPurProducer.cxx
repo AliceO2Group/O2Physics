@@ -83,7 +83,7 @@ struct PidMlBatchEffAndPurProducer {
                                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu,
                                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu>>;
 
-  // instead of using hasTOF() and hasTRD() dynamic columns in process funcions
+  // instead of using hasTOF() and hasTRD() dynamic columns in process functions
   static constexpr uint8_t withTofAndTrdMask = static_cast<uint8_t>(o2::aod::track::TOF) | static_cast<uint8_t>(o2::aod::track::TRD);
   Partition<BigTracks> tracksOnlyTpc = (aod::track::v001::detectorMap & withTofAndTrdMask) == static_cast<uint8_t>(0);
   Partition<BigTracks> tracksWithTof = (aod::track::v001::detectorMap & static_cast<uint8_t>(o2::aod::track::TOF)) > static_cast<uint8_t>(0);
