@@ -120,10 +120,6 @@ struct phiInJets {
       JEhistos.add("hNResoPerEventWJet", "hNResoPerEventWJet", kTH1F, {{10, 0, 10}});
       JEhistos.add("hNResoPerEventInJet", "hNResoPerEventInJet", kTH1F, {{10, 0, 10}});
 
-      JEhistos.add("hNRealPhiVPhiCand", "hNRealPhiVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
-      JEhistos.add("hNRealPhiWithJetVPhiCand", "hNRealPhiWithJetVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
-      JEhistos.add("hNRealPhiInJetVPhiCand", "hNRealPhiInJetVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
-
 
       JEhistos.add("FJetaHistogram", "FJetaHistogram", kTH1F, {axisEta});
       JEhistos.add("FJphiHistogram", "FJphiHistogram", kTH1F, {axisPhi});
@@ -157,6 +153,9 @@ struct phiInJets {
       JEhistos.add("ptJEHistogramPhi", "ptJEHistogramPhi", kTH1F, {PtAxis});
       JEhistos.add("ptJEHistogramPhi_JetTrigger", "ptJEHistogramPhi_JetTrigger", kTH1F, {PtAxis});
       JEhistos.add("minvJEHistogramPhi", "minvJEHistogramPhi", kTH1F, {MinvAxis});
+      JEhistos.add("hNRealPhiVPhiCand", "hNRealPhiVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
+      JEhistos.add("hNRealPhiWithJetVPhiCand", "hNRealPhiWithJetVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
+      JEhistos.add("hNRealPhiInJetVPhiCand", "hNRealPhiInJetVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
 
       JEhistos.add("hMCRec_nonmatch_hUSS_KtoKangle_v_pt", "hMCRec_nonmatch_hUSS_KtoKangle_v_pt", kTH2F, {axisEta, PtAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_Kangle_v_pt", "hMCRec_nonmatch_hUSS_Kangle_v_pt", kTH2F, {axisEta, PtAxis});
