@@ -470,7 +470,7 @@ struct strangederivedbuilder {
     // Figure out the numbering of the new tracks table
     // assume filling per order
     int nTracks = 0;
-    for (int i = 0; i < trackMap.size(); i++) {
+    for (int i = 0; i < int(trackMap.size()); i++) {
       if (trackMap[i] >= 0) {
         trackMap[i] = nTracks++;
       }
@@ -545,7 +545,7 @@ struct strangederivedbuilder {
     // Figure out the numbering of the new tracks table
     // assume filling per order
     int nTracks = 0;
-    for (int i = 0; i < trackMap.size(); i++) {
+    for (int i = 0; i < int(trackMap.size()); i++) {
       if (trackMap[i] >= 0) {
         trackMap[i] = nTracks++;
       }
@@ -637,7 +637,7 @@ struct strangederivedbuilder {
     // Figure out the numbering of the new mcMother table
     // assume filling per order
     int nParticles = 0;
-    for (int i = 0; i < motherReference.size(); i++) {
+    for (int i = 0; i < int(motherReference.size()); i++) {
       if (motherReference[i] >= 0) {
         motherReference[i] = nParticles++; // count particles of interest
       }
