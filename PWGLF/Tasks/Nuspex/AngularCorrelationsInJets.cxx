@@ -450,7 +450,7 @@ struct AngularCorrelationsInJets {
 
     return delta_phi;
   }
-  
+
   void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
   {
     // Initialization
@@ -522,7 +522,7 @@ struct AngularCorrelationsInJets {
     std::vector<fastjet::PseudoJet> constituents;
     jets.clear();
     constituents.clear();
-    
+
     auto tracks = allTracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
 
     for (const auto& track : tracks) {
@@ -539,13 +539,14 @@ struct AngularCorrelationsInJets {
         registryData.fill(HIST("hTrackProtocol"), 5);
       }
 
-      // double ratioCrossedRowsTPC = track.tpcNClsCrossedRows()/track.tpcNClsFindable();
+      if (track.tpcNClsFindable() != 0) {
+        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows()/track.tpcNClsFindable());
+      }
       registryQA.fill(HIST("hPtFullEvent"), track.pt());
       registryQA.fill(HIST("hEtaFullEvent"), track.eta());
       registryQA.fill(HIST("hCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows());
       registryQA.fill(HIST("hClusterITS"), track.pt(), track.itsNCls());
       registryQA.fill(HIST("hClusterTPC"), track.pt(), track.tpcNClsFound());
-      // registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), ratioCrossedRowsTPC);
       registryQA.fill(HIST("hChi2ITS"), track.pt(), track.itsChi2NCl());
       registryQA.fill(HIST("hChi2TPC"), track.pt(), track.tpcChi2NCl());
       registryQA.fill(HIST("hDCAxyFullEvent"), track.pt(), track.dcaXY());
@@ -736,13 +737,14 @@ struct AngularCorrelationsInJets {
         leadingID = track.globalIndex();
       }
 
-      // double ratioCrossedRowsTPC = track.tpcNClsCrossedRows()/track.tpcNClsFindable();
+      if (track.tpcNClsFindable() != 0) {
+        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows()/track.tpcNClsFindable());
+      }
       registryQA.fill(HIST("hPtFullEvent"), track.pt());
       registryQA.fill(HIST("hEtaFullEvent"), track.eta());
       registryQA.fill(HIST("hCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows());
       registryQA.fill(HIST("hClusterITS"), track.pt(), track.itsNCls());
       registryQA.fill(HIST("hClusterTPC"), track.pt(), track.tpcNClsFound());
-      // registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), ratioCrossedRowsTPC);
       registryQA.fill(HIST("hChi2ITS"), track.pt(), track.itsChi2NCl());
       registryQA.fill(HIST("hChi2TPC"), track.pt(), track.tpcChi2NCl());
       registryQA.fill(HIST("hDCAxyFullEvent"), track.pt(), track.dcaXY());
@@ -821,7 +823,7 @@ struct AngularCorrelationsInJets {
     if (!hardestJet.has_constituents())
       return;
     constituents = hardestJet.constituents();
-    
+
     // QA for comparison with nuclei_in_jets
     TVector3 pJet(hardestJet.px(), hardestJet.py(), hardestJet.pz());
     TVector3 UEAxis1(0.0, 0.0, 0.0);
