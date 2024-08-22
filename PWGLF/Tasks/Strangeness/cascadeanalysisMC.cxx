@@ -108,19 +108,19 @@ struct cascadeGenerated {
     for (auto& particle : mcparts) {
       if (TMath::Abs(particle.y()) > rapidityCut)
         continue;
-      if (particle.pdgCode() == 3312){
+      if (particle.pdgCode() == 3312) {
         registry.fill(HIST("hPtXiMinus"), particle.pt());
         registry.fill(HIST("h2DXiMinus"), particle.pt(), particle.y());
       }
-      if (particle.pdgCode() == -3312){
+      if (particle.pdgCode() == -3312) {
         registry.fill(HIST("hPtXiPlus"), particle.pt());
         registry.fill(HIST("h2DXiPlus"), particle.pt(), particle.y());
       }
-      if (particle.pdgCode() == 3334){
+      if (particle.pdgCode() == 3334) {
         registry.fill(HIST("hPtOmegaMinus"), particle.pt());
         registry.fill(HIST("h2DOmegaMinus"), particle.pt(), particle.y());
       }
-      if (particle.pdgCode() == -3334){
+      if (particle.pdgCode() == -3334) {
         registry.fill(HIST("hPtOmegaPlus"), particle.pt());
         registry.fill(HIST("h2DOmegaPlus"), particle.pt(), particle.y());
       }
