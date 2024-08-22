@@ -83,6 +83,11 @@ struct PidMlBatchEffAndPurProducer {
                                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu,
                                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu>>;
 
+  // instead of using hasTOF() and hasTRD() dynamic columns in process funcions
+  static constexpr uint8_t withTofAndTrdMask = static_cast<uint8_t>(o2::aod::track::TOF) | static_cast<uint8_t>(o2::aod::track::TRD);
+  Partition<BigTracks> tracksOnlyTpc = (aod::track::v001::detectorMap & withTofAndTrdMask) == static_cast<uint8_t>(0);
+  Partition<BigTracks> tracksWithTof = (aod::track::v001::detectorMap & static_cast<uint8_t>(o2::aod::track::TOF)) > static_cast<uint8_t>(0);
+
   void initHistos()
   {
     static const AxisSpec axisPt{50, 0, 3.1, "pt"};
@@ -195,8 +200,8 @@ struct PidMlBatchEffAndPurProducer {
     return nSigma;
   }
 
-  void process(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
-  {
+  template <typename T, typename Mc>
+  void fillDerivedDataResults(aod::Collisions const& collisions, T const& tracks, Mc const& mcParticles) {
     effAndPurPIDResult.reserve(mcParticles.size());
 
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
@@ -235,6 +240,24 @@ struct PidMlBatchEffAndPurProducer {
       }
     }
   }
+
+  void processAll(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
+  {
+    fillDerivedDataResults(collisions, tracks, mcParticles);
+  }
+  PROCESS_SWITCH(PidMlBatchEffAndPurProducer, processAll, "Process all tracks", true);
+
+  void processOnlyTpc(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
+  {
+    fillDerivedDataResults(collisions, tracksOnlyTpc, mcParticles);
+  }
+  PROCESS_SWITCH(PidMlBatchEffAndPurProducer, processOnlyTpc, "Process tracks with only TPC signal out of all detectors", false);
+
+  void processWithTof(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
+  {
+    fillDerivedDataResults(collisions, tracksWithTof, mcParticles);
+  }
+  PROCESS_SWITCH(PidMlBatchEffAndPurProducer, processWithTof, "Process only tracks with TOF signal", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
