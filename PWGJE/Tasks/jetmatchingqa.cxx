@@ -128,7 +128,7 @@ struct JetMatchingQA {
 
         registry.fill(HIST("h_jet_match_geo_pt_zoom"), pjet.pt(), djet.pt());
         registry.fill(HIST("h_jet_match_geo_dpt"), pjet.pt() - djet.pt());
-        registry.fill(HIST("h2_jet_pt_jet_match_geo_dptoverpt"), pjet.pt(), (pjet.pt() - djet.pt()) *1./pjet.pt());
+        registry.fill(HIST("h2_jet_pt_jet_match_geo_dptoverpt"), pjet.pt(), (pjet.pt() - djet.pt()) * 1. / pjet.pt());
         registry.fill(HIST("h_jet_match_geo_phi"), pjet.phi(), djet.phi());
         registry.fill(HIST("h_jet_match_geo_eta"), pjet.eta(), djet.eta());
         registry.fill(HIST("h_jet_match_geo_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());

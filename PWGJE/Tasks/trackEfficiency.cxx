@@ -391,7 +391,7 @@ struct TrackEfficiencyJets {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax){
+    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
@@ -412,7 +412,7 @@ struct TrackEfficiencyJets {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax){
+    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
@@ -422,12 +422,12 @@ struct TrackEfficiencyJets {
   PROCESS_SWITCH(TrackEfficiencyJets, processTracksWeighted, "QA for charged tracks weighted", false);
 
   void processTracksGen(JetMcCollision const& mcCollision,
-                             soa::SmallGroups<JetCollisionsMCD> const& collisions,
-                             soa::Filtered<JetParticles> const& mcparticles)
+                        soa::SmallGroups<JetCollisionsMCD> const& collisions,
+                        soa::Filtered<JetParticles> const& mcparticles)
   {
     registry.fill(HIST("h_mccollisions"), 0.5);
     registry.fill(HIST("h2_centrality_mccollisions"), collisions.begin().centrality(), 0.5);
-  
+
     if (!(abs(mcCollision.posZ()) < vertexZCut)) {
       return;
     }
@@ -471,8 +471,8 @@ struct TrackEfficiencyJets {
   PROCESS_SWITCH(TrackEfficiencyJets, processTracksGen, "QA for charged particles", false);
 
   void processTracksGenWeighted(JetMcCollision const& mcCollision,
-                             soa::SmallGroups<JetCollisionsMCD> const& collisions,
-                             soa::Filtered<JetParticles> const& mcparticles)
+                                soa::SmallGroups<JetCollisionsMCD> const& collisions,
+                                soa::Filtered<JetParticles> const& mcparticles)
   {
     float eventWeight = mcCollision.weight();
     registry.fill(HIST("h_mccollisions"), 0.5);
