@@ -33,6 +33,7 @@
 #include "fastjet/tools/Subtractor.hh"
 #include "fastjet/tools/JetMedianBackgroundEstimator.hh"
 #include "TVector2.h"
+#include "TVector3.h"
 // #include "PWGJE/Core/JetFinder.h"
 // #include "PWGJE/Core/JetFindingUtilities.h"
 
@@ -95,6 +96,10 @@ struct AngularCorrelationsInJets {
   Configurable<float> fAntideuteronTOFnsigHigh{"antideuteronTOFnsigmapTHigh", 10.0, "[antideuteron] max TOF nsigma with high pT"};
 
   Configurable<int> fTrackBufferSize{"trackBufferSize", 2000, "Number of mixed-event tracks being stored"};
+
+  // QC Configurables
+  Configurable<float> fZVtx{"zVtx", 10.0, "max zVertex"};
+  Configurable<float> fRmax{"Rmax", 0.3, "Maximum radius for jet and UE regions"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
@@ -177,9 +182,9 @@ struct AngularCorrelationsInJets {
 
     // QA
     registryQA.add("hTOFmass", "TOF mass", HistType::kTH2F, {ptAxis, {1000, 0, 5, "#it{m} [GeV/#it{c}^{2}]"}});
+    registryQA.get<TH2>(HIST("hTOFmass"))->Sumw2();
     registryQA.add("hPtFullEvent", "p_{T} after basic cuts", HistType::kTH1F, {ptAxis});
     registryQA.add("hEtaFullEvent", "Particle pseudorapidity;#eta", HistType::kTH1F, {{200, -1, 1}});
-    registryQA.get<TH2>(HIST("hTOFmass"))->Sumw2();
     registryQA.add("hCrossedRowsTPC", "Crossed rows TPC", HistType::kTH2I, {ptAxis, {135, 65, 200}});
     registryQA.add("hClusterITS", "ITS clusters", HistType::kTH2I, {ptAxis, {10, 0, 10}});
     registryQA.add("hClusterTPC", "TPC clusters", HistType::kTH2I, {ptAxis, {135, 65, 200}});
@@ -188,6 +193,30 @@ struct AngularCorrelationsInJets {
     registryQA.add("hChi2TPC", "TPC #chi^{2}", HistType::kTH2F, {ptAxis, {50, 0, 5}});
     registryQA.add("hDCAxyFullEvent", "DCA_{xy} of full event", HistType::kTH2F, {ptAxis, dcaxyAxis});
     registryQA.add("hDCAzFullEvent", "DCA_{z} of full event", HistType::kTH2F, {ptAxis, dcazAxis});
+
+    // QA Histograms for Comparison with nuclei_in_jets
+    registryQA.add("hMultiplicityJetPlusUE", "hMultiplicityJetPlusUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
+    registryQA.add("hMultiplicityJet", "hMultiplicityJet", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
+    registryQA.add("hMultiplicityUE", "hMultiplicityUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
+    registryQA.add("hPtLeading", "hPtLeading", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQA.add("hEtaLeading", "hEtaLeading", HistType::kTH1F, {{100, -0.8, 0.8, "#eta"}});
+    registryQA.add("hPhiLeading", "hPhiLeading", HistType::kTH1F, {{100, 0, TMath::TwoPi(), "#phi"}});
+    registryQA.add("hRJet", "hRJet", HistType::kTH1F, {{100, 0.0, 0.5, "#it{R}"}});
+    registryQA.add("hRUE", "hRUE", HistType::kTH1F, {{100, 0.0, 0.5, "#it{R}"}});
+    registryQA.add("hAngleJetLeadingTrack", "hAngleJetLeadingTrack", HistType::kTH1F, {{200, 0.0, 50.0, "#theta"}});
+    registryQA.add("hPtJetPlusUE", "hPtJetPlusUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQA.add("hPtJet", "hPtJet", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQA.add("hPtUE", "hPtUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQA.add("hDeltaEtadeltaPhiJet", "hDeltaEtadeltaPhiJet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQA.add("hDeltaEtadeltaPhiUE", "hDeltaEtadeltaPhiUE", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQA.add("hDeltaEtadeltaPhiLeadingJet", "hDeltaEtadeltaPhiLeadingJet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQA.add("hDeltaJetPt", "hDeltaJetPt", HistType::kTH1F, {{200, -2, 2, "#Delta#it{p}_{T} (GeV/#it{c})"}});
+
+    // QC Histograms for ptJet < ptLeading
+    registryQA.add("hNParticlesClusteredInJet", "hNParticlesClusteredInJet", HistType::kTH1F, {{50, 0, 50, "#it{N}_{ch}"}});
+    registryQA.add("hPtParticlesClusteredInJet", "hPtParticlesClusteredInJet", HistType::kTH1F, {{200, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQA.add("hDeltaEtaDeltaPhiJetAxis", "hDeltaEtaDeltaPhiJetAxis", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQA.add("hDeltaEtaDeltaPhiJetAxisLeading", "hDeltaEtaDeltaPhiJetAxisLeading", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
   }
 
   std::vector<typename FullTracksRun2::iterator> fTrackBufferProtonRun2;
@@ -227,65 +256,6 @@ struct AngularCorrelationsInJets {
       }
     }
     return true;
-  }
-
-  std::vector<fastjet::PseudoJet> findJets(std::vector<fastjet::PseudoJet> jetInput)
-  {
-    std::vector<fastjet::PseudoJet> jets;
-    std::vector<fastjet::PseudoJet> constituents;
-    jets.clear();
-    constituents.clear();
-    fastjet::PseudoJet hardestJet(0., 0., 0., 0.);
-    fastjet::PseudoJet subtractedJet(0., 0., 0., 0.);
-
-    double ghost_maxrap = 1.0;
-    double ghost_area = 0.005;
-    int ghost_repeat = 1;
-    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, fJetR);
-    fastjet::JetDefinition jetDefBkg(fastjet::kt_algorithm, 0.5);
-    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(ghost_maxrap, ghost_repeat, ghost_area));
-    fastjet::AreaDefinition areaDefBkg(fastjet::active_area_explicit_ghosts, fastjet::GhostedAreaSpec(ghost_maxrap));
-    fastjet::ClusterSequenceArea clusterSeq(jetInput, jetDef, areaDef);
-    jets = sorted_by_pt(clusterSeq.inclusive_jets());
-    if (jets.size() == 0)
-      return constituents;
-
-    registryData.fill(HIST("hEventProtocol"), 3);
-
-    hardestJet = jets[0];
-
-    if (hardestJet.pt() < fMinJetPt)
-      return constituents;
-    registryData.fill(HIST("hEventProtocol"), 4);
-    if (hardestJet.constituents().size() < 2)
-      return constituents;
-    registryData.fill(HIST("hEventProtocol"), 5);
-    registryData.fill(HIST("hNumberOfJets"), 0);
-    registryData.fill(HIST("hPtTotalJet"), hardestJet.pt());
-    registryData.fill(HIST("hJetRapidity"), hardestJet.rap());
-    registryData.fill(HIST("hNumPartInJet"), hardestJet.constituents().size());
-
-    for (const auto& constituent : hardestJet.constituents()) {
-      registryData.fill(HIST("hPtJetParticle"), constituent.pt());
-      double DeltaPhi = TVector2::Phi_0_2pi(constituent.phi() - hardestJet.phi());
-      double DeltaEta = constituent.eta() - hardestJet.eta();
-      double Delta = TMath::Sqrt(DeltaPhi * DeltaPhi + DeltaEta * DeltaEta);
-      registryData.fill(HIST("hJetConeRadius"), Delta);
-    }
-
-    fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2)); // TODO: fix subtraction
-    fastjet::JetMedianBackgroundEstimator bkgEst(selector, jetDefBkg, areaDefBkg);
-    fastjet::Subtractor subtractor(&bkgEst);
-    subtractor.set_use_rho_m(true);
-    bkgEst.set_particles(jetInput);
-
-    subtractedJet = subtractor(hardestJet);
-    if (subtractedJet.has_constituents()) {
-      for (const auto& subConstituent : subtractedJet.constituents()) {
-        registryData.fill(HIST("hPtSubtractedJet"), subConstituent.pt());
-      }
-    }
-    return hardestJet.constituents();
   }
 
   template <typename T>
@@ -466,6 +436,70 @@ struct AngularCorrelationsInJets {
     }
   }
 
+  double getDeltaPhi(double a1, double a2)
+  {
+    double delta_phi(0);
+    double phi1 = TVector2::Phi_0_2pi(a1);
+    double phi2 = TVector2::Phi_0_2pi(a2);
+    double diff = TMath::Abs(phi1 - phi2);
+
+    if (diff <= TMath::Pi())
+      delta_phi = diff;
+    if (diff > TMath::Pi())
+      delta_phi = TMath::TwoPi() - diff;
+
+    return delta_phi;
+  }
+  
+  void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
+  {
+    // Initialization
+    double ux(0), uy(0), uz(0);
+
+    // Components of Vector p
+    double px = p.X();
+    double py = p.Y();
+    double pz = p.Z();
+
+    // Protection 1
+    if (px == 0 && py != 0) {
+
+      uy = -(pz * pz) / py;
+      ux = sign * sqrt(py * py - (pz * pz * pz * pz) / (py * py));
+      uz = pz;
+      u.SetXYZ(ux, uy, uz);
+      return;
+    }
+
+    // Protection 2
+    if (py == 0 && px != 0) {
+
+      ux = -(pz * pz) / px;
+      uy = sign * sqrt(px * px - (pz * pz * pz * pz) / (px * px));
+      uz = pz;
+      u.SetXYZ(ux, uy, uz);
+      return;
+    }
+
+    // Equation Parameters
+    double a = px * px + py * py;
+    double b = 2.0 * px * pz * pz;
+    double c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
+    double delta = b * b - 4.0 * a * c;
+
+    // Protection agains delta<0
+    if (delta < 0) {
+      return;
+    }
+
+    // Solutions
+    ux = (-b + sign * sqrt(delta)) / (2.0 * a);
+    uy = (-pz * pz - px * ux) / py;
+    uz = pz;
+    u.SetXYZ(ux, uy, uz);
+    return;
+  }
+
   template <typename T, typename U>
   void fillHistogramsRun2(T const& collision, U const& allTracks)
   {
@@ -482,7 +516,13 @@ struct AngularCorrelationsInJets {
     jetInput.clear();
     particles.clear();
     int index = 0;
-
+    fastjet::PseudoJet hardestJet(0., 0., 0., 0.);
+    fastjet::PseudoJet subtractedJet(0., 0., 0., 0.);
+    std::vector<fastjet::PseudoJet> jets;
+    std::vector<fastjet::PseudoJet> constituents;
+    jets.clear();
+    constituents.clear();
+    
     auto tracks = allTracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
 
     for (const auto& track : tracks) {
@@ -522,11 +562,62 @@ struct AngularCorrelationsInJets {
       return;
     registryData.fill(HIST("hEventProtocol"), 2);
 
-    std::vector<fastjet::PseudoJet> constituents = findJets(jetInput);
-    if (constituents.empty())
+    // Reconstruct Jets
+    double ghost_maxrap = 1.0;
+    double ghost_area = 0.005;
+    int ghost_repeat = 1;
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, fJetR);
+    fastjet::JetDefinition jetDefBkg(fastjet::kt_algorithm, 0.5);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(ghost_maxrap, ghost_repeat, ghost_area));
+    fastjet::AreaDefinition areaDefBkg(fastjet::active_area_explicit_ghosts, fastjet::GhostedAreaSpec(ghost_maxrap));
+    fastjet::ClusterSequenceArea clusterSeq(jetInput, jetDef, areaDef);
+    jets = sorted_by_pt(clusterSeq.inclusive_jets());
+    if (jets.size() == 0)
       return;
 
-    std::vector<typename U::iterator> jetProtons; // replace with IDs?
+    registryData.fill(HIST("hEventProtocol"), 3);
+
+    hardestJet = jets[0];
+
+    if (hardestJet.pt() < fMinJetPt)
+      return;
+
+    registryData.fill(HIST("hEventProtocol"), 4);
+    if (hardestJet.constituents().size() < 2)
+      return;
+
+    registryData.fill(HIST("hEventProtocol"), 5);
+    registryData.fill(HIST("hNumberOfJets"), 0);
+    registryData.fill(HIST("hPtTotalJet"), hardestJet.pt());
+    registryData.fill(HIST("hJetRapidity"), hardestJet.rap());
+    registryData.fill(HIST("hNumPartInJet"), hardestJet.constituents().size());
+
+    for (const auto& constituent : hardestJet.constituents()) {
+      registryData.fill(HIST("hPtJetParticle"), constituent.pt());
+      double DeltaPhi = TVector2::Phi_0_2pi(constituent.phi() - hardestJet.phi());
+      double DeltaEta = constituent.eta() - hardestJet.eta();
+      double Delta = TMath::Sqrt(DeltaPhi * DeltaPhi + DeltaEta * DeltaEta);
+      registryData.fill(HIST("hJetConeRadius"), Delta);
+    }
+
+    fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2)); // TODO: fix subtraction
+    fastjet::JetMedianBackgroundEstimator bkgEst(selector, jetDefBkg, areaDefBkg);
+    fastjet::Subtractor subtractor(&bkgEst);
+    subtractor.set_use_rho_m(true);
+    bkgEst.set_particles(jetInput);
+
+    subtractedJet = subtractor(hardestJet);
+    if (subtractedJet.has_constituents()) {
+      for (const auto& subConstituent : subtractedJet.constituents()) {
+        registryData.fill(HIST("hPtSubtractedJet"), subConstituent.pt());
+      }
+    }
+
+    if (!hardestJet.has_constituents())
+      return;
+    constituents = hardestJet.constituents();
+
+    std::vector<typename U::iterator> jetProtons;
     std::vector<typename U::iterator> jetAntiprotons;
     std::vector<typename U::iterator> jetDeuterons;
     std::vector<typename U::iterator> jetAntideuterons;
@@ -617,6 +708,13 @@ struct AngularCorrelationsInJets {
     jetInput.clear();
     particles.clear();
     int index = 0;
+    int leadingID = 0;
+    std::vector<fastjet::PseudoJet> jets;
+    std::vector<fastjet::PseudoJet> constituents;
+    jets.clear();
+    constituents.clear();
+    fastjet::PseudoJet hardestJet(0., 0., 0., 0.);
+    fastjet::PseudoJet subtractedJet(0., 0., 0., 0.);
 
     auto tracks = allTracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
 
@@ -632,6 +730,10 @@ struct AngularCorrelationsInJets {
       } else {
         mass = 0.139; // pion mass as default, ~80% are pions
         registryData.fill(HIST("hTrackProtocol"), 5);
+      }
+
+      if (track.pt() > fMinLeadingPt) {
+        leadingID = track.globalIndex();
       }
 
       // double ratioCrossedRowsTPC = track.tpcNClsCrossedRows()/track.tpcNClsFindable();
@@ -653,14 +755,156 @@ struct AngularCorrelationsInJets {
       index++;
     } // for (const auto& track : tracks)
 
+    // QA for comparison with nuclei_in_jets
+    const auto& leadingTrack = tracks.iteratorAt(leadingID);
+    TVector3 pLeading(leadingTrack.px(), leadingTrack.py(), leadingTrack.pz());
+    registryQA.fill(HIST("hPtLeading"), leadingTrack.pt());
+    registryQA.fill(HIST("hEtaLeading"), pLeading.Eta());
+    registryQA.fill(HIST("hPhiLeading"), pLeading.Phi());
+
     if (jetInput.size() < 2)
       return;
     registryData.fill(HIST("hEventProtocol"), 2);
 
-    std::vector<fastjet::PseudoJet> constituents = findJets(jetInput);
-    if (constituents.empty())
+    // Reconstruct Jets
+    double ghost_maxrap = 1.0;
+    double ghost_area = 0.005;
+    int ghost_repeat = 1;
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, fJetR);
+    fastjet::JetDefinition jetDefBkg(fastjet::kt_algorithm, 0.5);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(ghost_maxrap, ghost_repeat, ghost_area));
+    fastjet::AreaDefinition areaDefBkg(fastjet::active_area_explicit_ghosts, fastjet::GhostedAreaSpec(ghost_maxrap));
+    fastjet::ClusterSequenceArea clusterSeq(jetInput, jetDef, areaDef);
+    jets = sorted_by_pt(clusterSeq.inclusive_jets());
+
+    if (jets.size() == 0)
       return;
 
+    registryData.fill(HIST("hEventProtocol"), 3);
+
+    hardestJet = jets[0];
+
+    if (hardestJet.pt() < fMinJetPt)
+      return;
+
+    registryData.fill(HIST("hEventProtocol"), 4);
+    if (hardestJet.constituents().size() < 2)
+      return;
+
+    registryData.fill(HIST("hEventProtocol"), 5);
+    registryData.fill(HIST("hNumberOfJets"), 0);
+    registryData.fill(HIST("hPtTotalJet"), hardestJet.pt());
+    registryData.fill(HIST("hJetRapidity"), hardestJet.rap());
+    registryData.fill(HIST("hNumPartInJet"), hardestJet.constituents().size());
+
+    for (const auto& constituent : hardestJet.constituents()) {
+      registryData.fill(HIST("hPtJetParticle"), constituent.pt());
+      double DeltaPhi = TVector2::Phi_0_2pi(constituent.phi() - hardestJet.phi());
+      double DeltaEta = constituent.eta() - hardestJet.eta();
+      double Delta = TMath::Sqrt(DeltaPhi * DeltaPhi + DeltaEta * DeltaEta);
+      registryData.fill(HIST("hJetConeRadius"), Delta);
+    }
+
+    fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2)); // TODO: fix subtraction
+    fastjet::JetMedianBackgroundEstimator bkgEst(selector, jetDefBkg, areaDefBkg);
+    fastjet::Subtractor subtractor(&bkgEst);
+    subtractor.set_use_rho_m(true);
+    bkgEst.set_particles(jetInput);
+
+    subtractedJet = subtractor(hardestJet);
+    if (subtractedJet.has_constituents()) {
+      for (const auto& subConstituent : subtractedJet.constituents()) {
+        registryData.fill(HIST("hPtSubtractedJet"), subConstituent.pt());
+      }
+    }
+
+    if (!hardestJet.has_constituents())
+      return;
+    constituents = hardestJet.constituents();
+    
+    // QA for comparison with nuclei_in_jets
+    TVector3 pJet(hardestJet.px(), hardestJet.py(), hardestJet.pz());
+    TVector3 UEAxis1(0.0, 0.0, 0.0);
+    TVector3 UEAxis2(0.0, 0.0, 0.0);
+    getPerpendicularAxis(pJet, UEAxis1, +1.0);
+    getPerpendicularAxis(pJet, UEAxis2, -1.0);
+    if (UEAxis1.Mag() == 0 || UEAxis2.Mag() == 0)
+      return;
+    double deltaEta = pLeading.Eta() - pJet.Eta();
+    double deltaPhi = getDeltaPhi(pLeading.Phi(), pJet.Phi());
+    registryQA.fill(HIST("hAngleJetLeadingTrack"), (180.0 / TMath::Pi()) * pLeading.Angle(pJet));
+    registryQA.fill(HIST("hDeltaEtadeltaPhiLeadingJet"), deltaEta, deltaPhi);
+
+    double NchJetPlusUE(0);
+    double NchJet(0);
+    double NchUE(0);
+    double ptJetPlusUE(0);
+    double ptJet(0);
+    double ptUE(0);
+
+    for (const auto& [index, track] : particles) { // possible problem?
+      TVector3 particleDir(track.px(), track.py(), track.pz());
+      double deltaEtaJet = particleDir.Eta() - pJet.Eta();
+      double deltaPhiJet = getDeltaPhi(particleDir.Phi(), pJet.Phi());
+      double deltaRJet = sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+      double deltaEtaUE1 = particleDir.Eta() - UEAxis1.Eta();
+      double deltaPhiUE1 = getDeltaPhi(particleDir.Phi(), UEAxis1.Phi());
+      double deltaRUE1 = sqrt(deltaEtaUE1 * deltaEtaUE1 + deltaPhiUE1 * deltaPhiUE1);
+      double deltaEtaUE2 = particleDir.Eta() - UEAxis2.Eta();
+      double deltaPhiUE2 = getDeltaPhi(particleDir.Phi(), UEAxis2.Phi());
+      double deltaRUE2 = sqrt(deltaEtaUE2 * deltaEtaUE2 + deltaPhiUE2 * deltaPhiUE2);
+
+      if (deltaRJet < fRmax) {
+        registryQA.fill(HIST("hDeltaEtadeltaPhiJet"), deltaEtaJet, deltaPhiJet);
+        registryQA.fill(HIST("hRJet"), deltaRJet);
+        NchJetPlusUE++;
+        ptJetPlusUE = ptJetPlusUE + track.pt();
+      }
+      if (deltaRUE1 < fRmax) {
+        registryQA.fill(HIST("hDeltaEtadeltaPhiUE"), deltaEtaUE1, deltaPhiUE1);
+        registryQA.fill(HIST("hRUE"), deltaRUE1);
+        NchUE++;
+        ptUE = ptUE + track.pt();
+      }
+      if (deltaRUE2 < fRmax) {
+        registryQA.fill(HIST("hDeltaEtadeltaPhiUE"), deltaEtaUE2, deltaPhiUE2);
+        registryQA.fill(HIST("hRUE"), deltaRUE2);
+        NchUE++;
+        ptUE = ptUE + track.pt();
+      }
+    } //for (int i = 0; i < nParticles; i++)
+
+    NchJet = NchJetPlusUE - 0.5 * NchUE;
+    ptJet = ptJetPlusUE - 0.5 * ptUE;
+    registryQA.fill(HIST("hMultiplicityJetPlusUE"), NchJetPlusUE);
+    registryQA.fill(HIST("hMultiplicityJet"), NchJet);
+    registryQA.fill(HIST("hMultiplicityUE"), 0.5 * NchUE);
+    registryQA.fill(HIST("hPtJetPlusUE"), ptJetPlusUE);
+    registryQA.fill(HIST("hPtJet"), ptJet);
+    registryQA.fill(HIST("hPtUE"), 0.5 * ptUE);
+    registryQA.fill(HIST("hDeltaJetPt"), hardestJet.pt() - ptJetPlusUE);
+
+    int nPartClusteredJet = static_cast<int>(constituents.size());
+
+    // Fill QA Histograms
+    if (ptJetPlusUE < fMinJetPt) {
+
+      registryQA.fill(HIST("hNParticlesClusteredInJet"), nPartClusteredJet);
+      double dEta = pLeading.Eta() - pJet.Eta();
+      double dPhi = getDeltaPhi(pLeading.Phi(), pJet.Phi());
+      registryQA.fill(HIST("hDeltaEtaDeltaPhiJetAxisLeading"), dEta, dPhi);
+
+      for (const auto& track : constituents) {
+        TVector3 particleDir(track.px(), track.py(), track.pz());
+        double dEta = particleDir.Eta() - pJet.Eta();
+        double dPhi = getDeltaPhi(particleDir.Phi(), pJet.Phi());
+        registryQA.fill(HIST("hPtParticlesClusteredInJet"), track.pt());
+        registryQA.fill(HIST("hDeltaEtaDeltaPhiJetAxis"), dEta, dPhi);
+      }
+    }
+
+
+    // PID
     std::vector<typename U::iterator> jetProtons; // replace with IDs?
     std::vector<typename U::iterator> jetAntiprotons;
     std::vector<typename U::iterator> jetDeuterons;
@@ -755,9 +999,19 @@ struct AngularCorrelationsInJets {
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun2, "process Run 2 data", true);
 
-  void processRun3(aod::Collision const& collision, soa::Filtered<FullTracksRun3> const& tracks)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                   soa::Filtered<FullTracksRun3> const& tracks)
   {
-    fillHistogramsRun3(collision, tracks);
+    for (const auto& collision : collisions) {
+      registryData.fill(HIST("hEventProtocol"), 0);
+      registryData.fill(HIST("hNumberOfEvents"), 0);
+      if (!collision.sel8())
+        continue;
+      registryData.fill(HIST("hEventProtocol"), 1);
+      // if (TMath::Abs(collision.PosZ()) > fZVtx)
+      //   continue;
+      fillHistogramsRun3(collision, tracks);
+    }
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun3, "process Run 3 data", false);
 };
