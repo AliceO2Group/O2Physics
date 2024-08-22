@@ -177,15 +177,15 @@ struct nuclei_in_toward_transv_regions {
   }
 
   template <typename T1, typename T2>
-  bool isTrackInTowardRegion (const T1& track, const T2& leading_track)
+  bool isTrackInTowardRegion(const T1& track, const T2& leading_track)
   {
-    //Initialization
+    // Initialization
     bool isInTowardRegion = false;
 
-    //DeltaPhi
-    double phi_ref = TVector2::Phi_0_2pi (leading_track.phi());
-    double phi_trk = TVector2::Phi_0_2pi (track.phi());
-    double delta_phi = (180.0 / TMath::Pi()) * TVector2::Phi_0_2pi (phi_trk - phi_ref);
+    // DeltaPhi
+    double phi_ref = TVector2::Phi_0_2pi(leading_track.phi());
+    double phi_trk = TVector2::Phi_0_2pi(track.phi());
+    double delta_phi = (180.0 / TMath::Pi()) * TVector2::Phi_0_2pi(phi_trk - phi_ref);
     if (delta_phi >= 0.0 && delta_phi < 60.0)
       isInTowardRegion = true;
     if (delta_phi >= 300.0 && delta_phi <= 360.0)
@@ -195,15 +195,15 @@ struct nuclei_in_toward_transv_regions {
   }
 
   template <typename T3, typename T4>
-  bool isTrackInTransverseRegion (const T3& track, const T4& leading_track)
+  bool isTrackInTransverseRegion(const T3& track, const T4& leading_track)
   {
-    //Initialization
+    // Initialization
     bool isInTransverseRegion = false;
 
-    //DeltaPhi
-    double phi_ref = TVector2::Phi_0_2pi (leading_track.phi());
-    double phi_trk = TVector2::Phi_0_2pi (track.phi());
-    double delta_phi = (180.0 / TMath::Pi()) * TVector2::Phi_0_2pi (phi_trk - phi_ref);
+    // DeltaPhi
+    double phi_ref = TVector2::Phi_0_2pi(leading_track.phi());
+    double phi_trk = TVector2::Phi_0_2pi(track.phi());
+    double delta_phi = (180.0 / TMath::Pi()) * TVector2::Phi_0_2pi(phi_trk - phi_ref);
     if (delta_phi >= 60.0 && delta_phi < 120.0)
       isInTransverseRegion = true;
     if (delta_phi >= 240.0 && delta_phi < 300.0)
@@ -282,7 +282,7 @@ struct nuclei_in_toward_transv_regions {
         continue;
 
       // Jet
-      if (isTrackInTowardRegion(track,leading_track)) {
+      if (isTrackInTowardRegion(track, leading_track)) {
         if (track.pt() < 1.0)
           registryData.fill(HIST("antiproton_jet_tpc"), track.pt(), nsigmaTPCPr);
         if (track.pt() >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
@@ -290,7 +290,7 @@ struct nuclei_in_toward_transv_regions {
       }
 
       // UE
-      if (isTrackInTransverseRegion(track,leading_track)) {
+      if (isTrackInTransverseRegion(track, leading_track)) {
         if (track.pt() < 1.0)
           registryData.fill(HIST("antiproton_ue_tpc"), track.pt(), nsigmaTPCPr);
         if (track.pt() >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
@@ -366,14 +366,14 @@ struct nuclei_in_toward_transv_regions {
           continue;
 
         // Jet
-        if (isTrackInTowardRegion(track,leading_track)) {
+        if (isTrackInTowardRegion(track, leading_track)) {
           registryMC.fill(HIST("antiproton_all_jet"), track.pt());
           if (particle.isPhysicalPrimary()) {
             registryMC.fill(HIST("antiproton_prim_jet"), track.pt());
           }
         }
         // UE
-        if (isTrackInTransverseRegion(track,leading_track)) {
+        if (isTrackInTransverseRegion(track, leading_track)) {
           registryMC.fill(HIST("antiproton_all_ue"), track.pt());
           if (particle.isPhysicalPrimary()) {
             registryMC.fill(HIST("antiproton_prim_ue"), track.pt());
