@@ -184,7 +184,7 @@ struct hJetAnalysis {
 
     for (auto& jet : jets) {
       if (jet.pt() > pTHatMaxMCD * pTHat) {
-        continue;;
+        continue;
       }
       registry.fill(HIST("hJetPt"), jet.pt(), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
@@ -298,7 +298,7 @@ struct hJetAnalysis {
 
     for (auto& jet : jets) {
       if (jet.pt() > pTHatMaxMCP * pTHat) {
-        continue;;
+        continue;
       }
       registry.fill(HIST("hJetPt"), jet.pt(), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
