@@ -56,8 +56,8 @@ template <const int cls_id>
 void fillClusterHistograms(HistogramRegistry* fRegistry, SkimEMCCluster cluster, bool do2DQA)
 {
   static constexpr std::string_view cluster_types[2] = {"before/", "after/"};
-  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hE"), cluster.pt());
-  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hPt"), cluster.e());
+  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hE"), cluster.e());
+  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hPt"), cluster.pt());
   fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hEtaPhi"), cluster.eta(), cluster.phi());
   for (size_t itrack = 0; itrack < cluster.tracketa().size(); itrack++) { // Fill TrackEtaPhi histogram with delta phi and delta eta of all tracks saved in the vectors in skimmerGammaCalo.cxx
     fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hTrackEtaPhi"), cluster.tracketa()[itrack] - cluster.eta(), cluster.trackphi()[itrack] - cluster.phi());

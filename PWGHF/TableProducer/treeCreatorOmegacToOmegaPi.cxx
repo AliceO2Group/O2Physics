@@ -297,61 +297,64 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   template <typename T>
   void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
-    rowKfCandidateFull(
-      candidate.tpcNSigmaPiFromCharmBaryon(),
-      candidate.tofNSigmaPiFromCharmBaryon(),
-      candidate.tpcNSigmaKaFromCasc(),
-      candidate.tofNSigmaKaFromCasc(),
-      candidate.tpcNSigmaPiFromLambda(),
-      candidate.tpcNSigmaPrFromLambda(),
-      candidate.kfDcaXYPiFromOmegac(),
-      candidate.dcaCascDau(),
-      candidate.dcaCharmBaryonDau(),
-      candidate.kfDcaXYCascToPv(),
-      candidate.chi2GeoV0(),
-      candidate.chi2GeoCasc(),
-      candidate.chi2GeoOmegac(),
-      candidate.chi2MassV0(),
-      candidate.chi2MassCasc(),
-      candidate.v0ldl(),
-      candidate.cascldl(),
-      candidate.omegacldl(),
-      candidate.chi2TopoV0ToPv(),
-      candidate.chi2TopoCascToPv(),
-      candidate.chi2TopoPiFromOmegacToPv(),
-      candidate.chi2TopoOmegacToPv(),
-      candidate.chi2TopoV0ToCasc(),
-      candidate.chi2TopoCascToOmegac(),
-      candidate.decayLenXYLambda(),
-      candidate.decayLenXYCasc(),
-      candidate.decayLenXYOmegac(),
-      candidate.cosPaV0ToCasc(),
-      candidate.cosPAV0(),
-      candidate.cosPaCascToOmegac(),
-      candidate.cosPACasc(),
-      candidate.cosPACharmBaryon(),
-      candidate.invMassLambda(),
-      candidate.invMassCascade(),
-      candidate.invMassCharmBaryon(),
-      candidate.kfRapOmegac(),
-      candidate.kfptPiFromOmegac(),
-      candidate.kfptOmegac(),
-      candidate.cosThetaStarPiFromOmegac(),
-      candidate.ctauOmegac(),
-      candidate.etaCharmBaryon(),
-      candidate.v0Ndf(),
-      candidate.cascNdf(),
-      candidate.omegacNdf(),
-      candidate.massV0Ndf(),
-      candidate.massCascNdf(),
-      candidate.v0Chi2OverNdf(),
-      candidate.cascChi2OverNdf(),
-      candidate.omegacChi2OverNdf(),
-      candidate.massV0Chi2OverNdf(),
-      candidate.massCascChi2OverNdf(),
-      flagMc,
-      originMc,
-      collisionMatched);
+    if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
+
+      rowKfCandidateFull(
+        candidate.tpcNSigmaPiFromCharmBaryon(),
+        candidate.tofNSigmaPiFromCharmBaryon(),
+        candidate.tpcNSigmaKaFromCasc(),
+        candidate.tofNSigmaKaFromCasc(),
+        candidate.tpcNSigmaPiFromLambda(),
+        candidate.tpcNSigmaPrFromLambda(),
+        candidate.kfDcaXYPiFromOmegac(),
+        candidate.dcaCascDau(),
+        candidate.dcaCharmBaryonDau(),
+        candidate.kfDcaXYCascToPv(),
+        candidate.chi2GeoV0(),
+        candidate.chi2GeoCasc(),
+        candidate.chi2GeoOmegac(),
+        candidate.chi2MassV0(),
+        candidate.chi2MassCasc(),
+        candidate.v0ldl(),
+        candidate.cascldl(),
+        candidate.omegacldl(),
+        candidate.chi2TopoV0ToPv(),
+        candidate.chi2TopoCascToPv(),
+        candidate.chi2TopoPiFromOmegacToPv(),
+        candidate.chi2TopoOmegacToPv(),
+        candidate.chi2TopoV0ToCasc(),
+        candidate.chi2TopoCascToOmegac(),
+        candidate.decayLenXYLambda(),
+        candidate.decayLenXYCasc(),
+        candidate.decayLenXYOmegac(),
+        candidate.cosPaV0ToCasc(),
+        candidate.cosPAV0(),
+        candidate.cosPaCascToOmegac(),
+        candidate.cosPACasc(),
+        candidate.cosPACharmBaryon(),
+        candidate.invMassLambda(),
+        candidate.invMassCascade(),
+        candidate.invMassCharmBaryon(),
+        candidate.kfRapOmegac(),
+        candidate.kfptPiFromOmegac(),
+        candidate.kfptOmegac(),
+        candidate.cosThetaStarPiFromOmegac(),
+        candidate.ctauOmegac(),
+        candidate.etaCharmBaryon(),
+        candidate.v0Ndf(),
+        candidate.cascNdf(),
+        candidate.omegacNdf(),
+        candidate.massV0Ndf(),
+        candidate.massCascNdf(),
+        candidate.v0Chi2OverNdf(),
+        candidate.cascChi2OverNdf(),
+        candidate.omegacChi2OverNdf(),
+        candidate.massV0Chi2OverNdf(),
+        candidate.massCascChi2OverNdf(),
+        flagMc,
+        originMc,
+        collisionMatched);
+    }
   }
 
   void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
@@ -404,6 +407,23 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC", false);
+
+  void processKFMcFull(MyEventTable const& collisions, MyTrackTable const&,
+                       soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcFull, "Process KF MC", false);
 
 }; // end of struct
 

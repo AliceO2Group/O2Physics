@@ -204,7 +204,22 @@ struct HfDerivedDataCreatorD0ToKPi {
         invMass,
         y);
     }
+
     if (fillCandidatePar) {
+      float tpcNSigmaPi = prong0.tpcNSigmaPi();
+      float tofNSigmaPi = prong0.tofNSigmaPi();
+      float tpcTofNSigmaPi = prong0.tpcTofNSigmaPi();
+      float tofNSigmaKa = prong1.tofNSigmaKa();
+      float tpcNSigmaKa = prong1.tpcNSigmaKa();
+      float tpcTofNSigmaKa = prong1.tpcTofNSigmaKa();
+      if (candFlag == 1) {
+        tpcNSigmaPi = prong1.tpcNSigmaPi();
+        tofNSigmaPi = prong1.tofNSigmaPi();
+        tpcTofNSigmaPi = prong1.tpcTofNSigmaPi();
+        tpcNSigmaKa = prong0.tpcNSigmaKa();
+        tofNSigmaKa = prong0.tofNSigmaKa();
+        tpcTofNSigmaKa = prong0.tpcTofNSigmaKa();
+      }
       rowCandidatePar(
         candidate.chi2PCA(),
         candidate.cpa(),
@@ -219,18 +234,12 @@ struct HfDerivedDataCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
-        prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
-        prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
-        prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcTofNSigmaKa(),
+        tpcNSigmaPi,
+        tofNSigmaPi,
+        tpcTofNSigmaPi,
+        tpcNSigmaKa,
+        tofNSigmaKa,
+        tpcTofNSigmaKa,
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct());
     }

@@ -91,7 +91,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
-  o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma"};
+  o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma. Set None if you want bcs that are not selected by any trigger"};
+  o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
 
   // histogram names
   static constexpr char nameHistCollisions[] = "hCollisions";
@@ -209,12 +210,19 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       int runNumber = bc.runNumber();
       if (runNumber != currentRun) { // We might need to update Zorro from CCDB if the run number changes
         zorro.initCCDB(ccdb.service, runNumber, bc.timestamp(), softwareTrigger.value);
+        zorro.setBCtolerance(bcMarginForSoftwareTrigger);
         currentRun = runNumber;
       }
       zorro.populateHistRegistry(registry, runNumber);
 
-      if (!zorro.isSelected(bc.globalBC())) { /// Just let Zorro do the accounting
-        SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+      if (softwareTrigger.value != "None") {
+        if (!zorro.isSelected(bc.globalBC(), bcMarginForSoftwareTrigger)) { /// Just let Zorro do the accounting
+          SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+        }
+      } else {
+        if (!zorro.isNotSelectedByAny(bc.globalBC(), bcMarginForSoftwareTrigger)) { /// Just let Zorro do the accounting of not selected BCs
+          SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+        }
       }
     }
 

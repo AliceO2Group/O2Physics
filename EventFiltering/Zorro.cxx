@@ -187,3 +187,28 @@ bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance)
   }
   return false;
 }
+
+std::vector<bool> Zorro::getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance)
+{
+  fetch(bcGlobalId, tolerance);
+  return getTriggerOfInterestResults();
+}
+
+std::vector<bool> Zorro::getTriggerOfInterestResults() const
+{
+  std::vector<bool> results(mTOIidx.size(), false);
+  for (size_t i{0}; i < mTOIidx.size(); ++i) {
+    if (mTOIidx[i] < 0) {
+      continue;
+    } else if (mLastResult.test(mTOIidx[i])) {
+      results[i] = true;
+    }
+  }
+  return results;
+}
+
+bool Zorro::isNotSelectedByAny(uint64_t bcGlobalId, uint64_t tolerance)
+{
+  fetch(bcGlobalId, tolerance);
+  return mLastResult.none();
+}

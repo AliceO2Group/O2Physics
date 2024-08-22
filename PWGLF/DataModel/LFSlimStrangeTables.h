@@ -41,6 +41,12 @@ DECLARE_SOA_COLUMN(PzPos, pzPos, float);
 DECLARE_SOA_COLUMN(PxNeg, pxNeg, float);
 DECLARE_SOA_COLUMN(PyNeg, pyNeg, float);
 DECLARE_SOA_COLUMN(PzNeg, pzNeg, float);
+DECLARE_SOA_COLUMN(PxPosMC, pxPosMC, float);
+DECLARE_SOA_COLUMN(PyPosMC, pyPosMC, float);
+DECLARE_SOA_COLUMN(PzPosMC, pzPosMC, float);
+DECLARE_SOA_COLUMN(PxNegMC, pxNegMC, float);
+DECLARE_SOA_COLUMN(PyNegMC, pyNegMC, float);
+DECLARE_SOA_COLUMN(PzNegMC, pzNegMC, float);
 DECLARE_SOA_COLUMN(GenPt, gentPt, float);
 DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(GenCt, genCt, float);
@@ -125,6 +131,12 @@ DECLARE_SOA_TABLE(McV0TableAP, "AOD", "MCV0TABLEAP",
                   SlimLambdaTables::PxNeg,
                   SlimLambdaTables::PyNeg,
                   SlimLambdaTables::PzNeg,
+                  SlimLambdaTables::PxPosMC,
+                  SlimLambdaTables::PyPosMC,
+                  SlimLambdaTables::PzPosMC,
+                  SlimLambdaTables::PxNegMC,
+                  SlimLambdaTables::PyNegMC,
+                  SlimLambdaTables::PzNegMC,
                   SlimLambdaTables::Radius,
                   SlimLambdaTables::DcaV0PV,
                   SlimLambdaTables::DcaPosPV,
