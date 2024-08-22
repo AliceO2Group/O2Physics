@@ -27,7 +27,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
-#include "PWGLF/DataModel/secondaryPIDTOFTable.h"
+#include "PWGLF/DataModel/pidTOFGeneric.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -210,7 +210,7 @@ struct decay3bodyBuilder {
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
-  o2::aod::secondarypid::TofPidSecondary<ColwithEvTimes::iterator, FullTracksExtIU::iterator> secondaryTOFPID;
+  o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, FullTracksExtIU::iterator> bachelorTOFPID;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
   void init(InitContext&)
@@ -394,7 +394,7 @@ struct decay3bodyBuilder {
       }
     }
 
-    secondaryTOFPID.SetParams(mRespParamsV2);
+    bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
   //------------------------------------------------------------------
@@ -506,7 +506,7 @@ struct decay3bodyBuilder {
 
       if (t2.has_collision() && t2.hasTOF()) {
         auto originalcol = t2.template collision_as<TCollisionClass>();
-        tofNsigmaDe = secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, t2, originalcol, collision);
+        tofNsigmaDe = bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, t2, originalcol, collision);
       }
 
       registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNsigmaDe);

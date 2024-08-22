@@ -10,10 +10,10 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   secondaryPIDTOF.cxx
+/// \file   pidTOFGeneric.cxx
 /// \origin Based on pidTOFBase.cxx
 /// \brief  Task to produce event Time obtained from TOF and FT0.
-///         In order to redo TOF PID for secondaries which are linked to wrong collisions
+///         In order to redo TOF PID for tracks which are linked to wrong collisions
 ///
 
 #include <utility>
@@ -37,7 +37,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PID/ParamBase.h"
 #include "PID/PIDTOF.h"
-#include "PWGLF/DataModel/secondaryPIDTOFTable.h"
+#include "PWGLF/DataModel/pidTOFGeneric.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -67,12 +67,12 @@ o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& track
   return o2::tof::evTimeMakerFromParam<trackTypeContainer, trackType, trackFilter, response, responseParametersType>(tracks, responseParameters, diamond);
 }
 
-/// Task to produce the event time table for TOF PID of secondaries
-struct secondaryPidTof {
+/// Task to produce the event time tables for generic TOF PID
+struct pidTOFGeneric {
   // Tables to produce
-  Produces<o2::aod::EvTimeTOFFT0> tableEvTime;
-  Produces<o2::aod::EvTimeTOFFT0ForTrack> tableEvTimeForTrack;
-  static constexpr float diamond = 6.0; // Collision diamond used in the estimation of the TOF event time
+  Produces<o2::aod::EvTimeTOFFT0> tableEvTime;                 // Table for global event time
+  Produces<o2::aod::EvTimeTOFFT0ForTrack> tableEvTimeForTrack; // Table for event time after removing bias from the track
+  static constexpr float diamond = 6.0;                        // Collision diamond used in the estimation of the TOF event time
   static constexpr float errDiamond = diamond * 33.356409f;
   static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
 
@@ -132,7 +132,7 @@ struct secondaryPidTof {
     // Checking that the table is requested in the workflow and enabling it
     enableTable = isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0");
     if (!enableTable) {
-      LOG(info) << "Table for Event time used for secondaries is not required, disabling it";
+      LOG(info) << "Table for global Event time is not required, disabling it";
       return;
     }
     LOG(info) << "Table EvTimeTOFFT0 enabled!";
@@ -254,7 +254,7 @@ struct secondaryPidTof {
       }
     }
   }
-  PROCESS_SWITCH(secondaryPidTof, processNoFT0, "Process without FT0", false);
+  PROCESS_SWITCH(pidTOFGeneric, processNoFT0, "Process without FT0", false);
 
   ///
   /// Process function to prepare the event for each track on Run 3 data with the FT0
@@ -359,7 +359,7 @@ struct secondaryPidTof {
       tableEvTimeForTrack(tEvTimeForTrack[i], tEvTimeErrForTrack[i]);
     }
   }
-  PROCESS_SWITCH(secondaryPidTof, processFT0, "Process with FT0", true);
+  PROCESS_SWITCH(pidTOFGeneric, processFT0, "Process with FT0", true);
 
   ///
   /// Process function to prepare the event time on Run 3 data with only the FT0
@@ -398,11 +398,11 @@ struct secondaryPidTof {
       }
     }
   }
-  PROCESS_SWITCH(secondaryPidTof, processOnlyFT0, "Process only with FT0", false);
+  PROCESS_SWITCH(pidTOFGeneric, processOnlyFT0, "Process only with FT0", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<secondaryPidTof>(cfgc)};
+    adaptAnalysisTask<pidTOFGeneric>(cfgc)};
 }

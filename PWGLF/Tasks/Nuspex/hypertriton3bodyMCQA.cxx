@@ -31,7 +31,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/secondaryPIDTOFTable.h"
+#include "PWGLF/DataModel/pidTOFGeneric.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
@@ -267,7 +267,7 @@ struct hypertriton3bodyTrackMcinfo {
   Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
 
-  o2::aod::secondarypid::TofPidSecondary<ColwithEvTimes::iterator, MCLabeledTracksIU::iterator> secondaryTOFPID;
+  o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, MCLabeledTracksIU::iterator> bachelorTOFPID;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -330,7 +330,7 @@ struct hypertriton3bodyTrackMcinfo {
       }
     }
 
-    secondaryTOFPID.SetParams(mRespParamsV2);
+    bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
   struct Indexdaughters { // check duplicated paired daughters
@@ -529,11 +529,11 @@ struct hypertriton3bodyTrackMcinfo {
             registry.fill(HIST("hDiffColTime"), track.tofEvTime() - collision.collisionTime());
           }
 
-          // Assume deuterons linked to the correct collision, result of secondary TOF PID should be same as the default one
+          // Assume deuterons linked to the correct collision, result of new TOF PID should be same as the default one
           registry.fill(HIST("hDiffTrackTOFSignal"), track.tofSignal() - tofsignal);
           registry.fill(HIST("hDiffEvTimeForTrack"), track.tofEvTime() - track.evTimeForTrack());
-          registry.fill(HIST("hDiffTrackTOFNSigmaDe"), track.tofNSigmaDe() - secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, collision, collision));
-          // registry.fill(HIST("hDiffTrackTOFNSigmaDe"), track.tofExpSigmaDe() - secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, collision, collision));
+          registry.fill(HIST("hDiffTrackTOFNSigmaDe"), track.tofNSigmaDe() - bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, collision, collision));
+          // registry.fill(HIST("hDiffTrackTOFNSigmaDe"), track.tofExpSigmaDe() - bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, collision, collision));
         }
 
         // Deuteron
@@ -643,7 +643,7 @@ struct hypertriton3bodyTrackMcinfo {
       }
     }
 
-    // Check for recalculated TOF PID for secondaries
+    // Check for recalculated TOF PID for secondary deuterons
 
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
@@ -688,8 +688,8 @@ struct hypertriton3bodyTrackMcinfo {
             float bachExpTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
              */
 
-            tofNsigmaDeAO2D = secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, originalcollision, collision);
-            tofNsigmaDeEvSel = secondaryTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, originalcollision, collision, false);
+            tofNsigmaDeAO2D = bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, originalcollision, collision);
+            tofNsigmaDeEvSel = bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, originalcollision, collision, false);
 
             if (collision.globalIndex() == originalcollision.globalIndex()) {
               registry.fill(HIST("hDauDeuteronTOFNSigmaVsP_CorrectCol"), track.sign() * track.p(), track.tofNSigmaDe());

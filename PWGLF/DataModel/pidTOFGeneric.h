@@ -9,10 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Table for the event time. One entry per collision
-
-#ifndef SECONDARYPIDTOFTABLE_H_
-#define SECONDARYPIDTOFTABLE_H_
+#ifndef PIDTOFGENERIC_H_
+#define PIDTOFGENERIC_H_
 #include "CommonDataFormat/InteractionRecord.h"
 #include "Common/Core/PID/PIDTOF.h"
 
@@ -48,17 +46,17 @@ DECLARE_SOA_TABLE(EvTimeTOFFT0ForTrack, "AOD", "EvTimeForTrack", //! Table of th
                   tracktime::EvTimeForTrack,
                   tracktime::EvTimeErrForTrack);
 
-namespace secondarypid
+namespace pidtofgeneric
 {
 
 static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
 
 template <typename TCollision, typename TTrack>
-class TofPidSecondary
+class TofPidNewCollision
 {
  public:
-  TofPidSecondary() = default;
-  ~TofPidSecondary() = default;
+  TofPidNewCollision() = default;
+  ~TofPidNewCollision() = default;
 
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
@@ -154,7 +152,7 @@ class TofPidSecondary
   }
 };
 
-} // namespace secondarypid
+} // namespace pidtofgeneric
 } // namespace o2::aod
 
 #endif
