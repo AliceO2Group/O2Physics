@@ -342,7 +342,7 @@ struct nuclei_in_toward_transv_regions {
       auto const& leading_track = tracks_per_coll.iteratorAt(leading_ID);
 
       // Loop over Reconstructed Tracks
-      for (auto track : tracks) {
+      for (auto track : tracks_per_coll) {
 
         if (!passedTrackSelection(track))
           continue;
