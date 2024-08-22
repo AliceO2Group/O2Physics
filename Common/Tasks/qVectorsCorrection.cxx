@@ -52,7 +52,6 @@ using namespace o2::framework;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
 
-
 struct qVectorsCorrection {
   // No correction = recenter, recentered Qvectors = twist, twisted Qvectors = rescale.
   // NOTE: As of no, the twist gets both twist and rescale correction constants.
@@ -85,7 +84,7 @@ struct qVectorsCorrection {
 
   ConfigurableAxis cfgaxiscos{"cfgaxiscos", {102, -1.02, 1.02}, ""};
   ConfigurableAxis cfgaxispt{"cfgaxispt", {100, 0, 10}, ""};
-  ConfigurableAxis cfgaxisCentMerged{"cfgaxisCentMerged",{20, 0, 100}, ""};
+  ConfigurableAxis cfgaxisCentMerged{"cfgaxisCentMerged", {20, 0, 100}, ""};
   ConfigurableAxis cfgaxisAzimuth{"cfgaxisAzimuth", {72, 0, 2.0 * constants::math::PI}, ""};
 
   // Helper variables.
