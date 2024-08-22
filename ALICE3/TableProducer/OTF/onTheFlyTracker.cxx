@@ -962,7 +962,7 @@ struct OnTheFlyTracker {
 
       bool reconstructed = true;
       if (enablePrimarySmearing) {
-        bool reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+        reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
       }
 
       if (!reconstructed && !processUnreconstructedTracks) {

@@ -342,7 +342,7 @@ struct alice3multicharm {
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindXiCC(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const& mcParticles, aod::UpgradeCascades const& cascades)
+  void processFindXiCC(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
   {
     // group with this collision
     // n.b. cascades do not need to be grouped, being used directly in iterator-grouping
