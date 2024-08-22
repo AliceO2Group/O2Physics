@@ -58,8 +58,8 @@ struct ChJetTriggerQATask {
 
   Configurable<std::string> evSel{"evSel", "sel8", "choose event selection"};
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0, "Accepted z-vertex range"};
-  Configurable<float> cfgTPCVolume{"cfgTPCVolume", 0.9, "Full eta range"}; // eta range of TPC
-  Configurable<float> cfgJetR{"cfgJetR", 0.4, "jet resolution parameter"}; // jet cone radius
+  Configurable<float> cfgTPCVolume{"cfgTPCVolume", 0.9, "Full eta range"};                // eta range of TPC
+  Configurable<float> cfgJetR{"cfgJetR", 0.4, "jet resolution parameter"};                // jet cone radius
   Configurable<float> cfgJetPtMin{"cfgJetPtMin", 0.15, "minimum jet pT constituent cut"}; // minimum jet constituent pT
 
   Configurable<float> cfgTrackPhiMinCut{"cfgTrackPhiMinCut", -999, "track min phi cut"};
@@ -74,8 +74,8 @@ struct ChJetTriggerQATask {
 
   Configurable<float> phiAngleRestriction{"phiAngleRestriction", 0.3, "angle to restrict track phi for plotting tpc momentum"};
 
-  ConfigurableAxis dcaXY_Binning{"dcaXY_Binning", {100, -5., 5.}, ""}; 
-  ConfigurableAxis dcaZ_Binning{"dcaZ_Binning", {100, -5., 5.}, ""}; 
+  ConfigurableAxis dcaXY_Binning{"dcaXY_Binning", {100, -5., 5.}, ""};
+  ConfigurableAxis dcaZ_Binning{"dcaZ_Binning", {100, -5., 5.}, ""};
 
   float fiducialVolume; // 0.9 - jetR
 
@@ -84,7 +84,8 @@ struct ChJetTriggerQATask {
   int eventSelection = -1;
   int trackSelection = -1;
 
-  void init(InitContext&) {
+  void init(InitContext&)
+  {
     fiducialVolume = static_cast<float>(cfgTPCVolume) - static_cast<float>(cfgJetR);
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
@@ -140,13 +141,13 @@ struct ChJetTriggerQATask {
 
   // declare filters on jets
   Filter jetRadiusSelection = (aod::jet::r == nround(cfgJetR.node() * 100.0f));
-    
+
   using filteredColl = soa::Filtered<soa::Join<JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
   using filteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs>>;
   // using Tracks = soa::Join<aod::Tracks, aod::TracksExtra>; // could be deleted? it is not iterator
   using filteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 
-  void process(filteredColl const& collision, filteredJTracks const& tracks, filteredJets const& jets/*, Tracks const&*/)
+  void process(filteredColl const& collision, filteredJTracks const& tracks, filteredJets const& jets /*, Tracks const&*/)
   {
 
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -195,7 +196,7 @@ struct ChJetTriggerQATask {
           continue;
         }
 
-        if(originalTrack.itsNCls() >= 4){ // correspond to number of track hits in ITS layers 
+        if (originalTrack.itsNCls() >= 4) { // correspond to number of track hits in ITS layers
           auto dcaX = originalTrack.x() - collision.posX();
           auto dcaY = originalTrack.y() - collision.posY();
           spectra.fill(HIST("DCAx_track_Phi_pT"), dcaX, trk.phi(), trk.pt());
