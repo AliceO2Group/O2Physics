@@ -120,6 +120,7 @@ struct AnalysisEventSelection {
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
   Configurable<bool> fConfigOnlyInjectedEvents{"cfgOnlyInjectedEvents", false, "Use only on Non-skimmed data! If true, select only injected events"};
+  Configurable<std::vector<int>> fSubGenIDs{"cfgSubGenIDs", {0, 1, 2, 3}, "Use only on Non-skimmed data! Provide a comma separated list of subGenIDs to select, e.g. 0,1,2,3"};
 
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
@@ -165,7 +166,9 @@ struct AnalysisEventSelection {
       }
     }
 
-    if (fConfigOnlyInjectedEvents && (subGeneratorID == 0)) {
+    // check if SubGeneratorID is part of list
+    // if SubGenerator is not part of it, rejct event, return
+    if (fConfigOnlyInjectedEvents && !(std::find(fSubGenIDs->begin(), fSubGenIDs->end(), subGeneratorID) != fSubGenIDs->end())) {
       eventSel(0);
       return;
     }

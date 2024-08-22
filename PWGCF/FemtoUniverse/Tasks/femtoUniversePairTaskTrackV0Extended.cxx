@@ -48,6 +48,9 @@ struct femtoUniversePairTaskTrackV0Extended {
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
+  using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
+  Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
+
   /// To apply narrow cut
   Configurable<float> ConfZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
   Configurable<float> ConfEta{"ConfEta", 0.8, "Eta cut for the global track"};
@@ -71,6 +74,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   /// Partition for particle 1
   Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == ConfChargePart1) && (nabs(aod::femtouniverseparticle::eta) < ConfEta) && (aod::femtouniverseparticle::pt < ConfHPtPart1) && (aod::femtouniverseparticle::pt > ConfLPtPart1);
   Partition<FemtoFullParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < ConfEta) && (aod::femtouniverseparticle::pt < ConfHPtPart1) && (aod::femtouniverseparticle::pt > ConfLPtPart1);
+  Partition<FemtoRecoParticles> partsOneMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == ConfChargePart1) && (nabs(aod::femtouniverseparticle::eta) < ConfEta) && (aod::femtouniverseparticle::pt < ConfHPtPart1) && (aod::femtouniverseparticle::pt > ConfLPtPart1);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
@@ -92,6 +96,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   /// Partition for particle 2
   Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfHPtPart2) && (aod::femtouniverseparticle::pt > ConfLPtPart2);
   Partition<FemtoFullParticles> partsTwoMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < ConfHPtPart2) && (aod::femtouniverseparticle::pt > ConfLPtPart2);
+  Partition<FemtoRecoParticles> partsTwoMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfHPtPart2) && (aod::femtouniverseparticle::pt > ConfLPtPart2);
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0, 2> trackHistoPartTwo;
@@ -288,12 +293,11 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
   /// This function processes the same event for track - V0
-  void processSameEvent(FilteredFDCollision& col, FemtoFullParticles& parts)
+  template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
+  void doSameEvent(FilteredFDCollision& col, PartType& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
     const auto& magFieldTesla = col.magField();
 
-    auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     const int multCol = ConfUseCent ? col.multV0M() : col.multNtr();
 
     eventHisto.fillQA(col);
@@ -358,11 +362,28 @@ struct femtoUniversePairTaskTrackV0Extended {
       float weight = 1.0f;
       if (plocalEffp1)
         weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
-      sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D, weight);
+      if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
+        sameEventCont.setPair<true>(p1, p2, multCol, ConfUse3D, weight);
+      else
+        sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D, weight);
     }
   }
 
+  void processSameEvent(FilteredFDCollision& col, FemtoFullParticles& parts)
+  {
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    doSameEvent(col, parts, groupPartsOne, groupPartsTwo);
+  }
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event for track - V0", false);
+
+  void processSameEventMCReco(FilteredFDCollision& col, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts)
+  {
+    auto groupPartsOne = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    doSameEvent(col, parts, groupPartsOne, groupPartsTwo, mcparts);
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventMCReco, "Enable processing same event for track - V0 MC Reco", false);
 
   /// This function processes the same event for V0 - V0
   void processSameEventV0(FilteredFDCollision& col, FemtoFullParticles& parts)
@@ -395,69 +416,45 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
     }
 
+    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+      // Lambda invariant mass cut for p1
+      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+        return;
+      // Lambda invariant mass cut for p2
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        return;
+      // track cleaning
+      if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
+        return;
+      }
+      if (ConfIsCPR.value) {
+        if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+          return;
+        }
+      }
+      const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
+      const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
+      /// Daughters that do not pass this condition are not selected
+      if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
+        return;
+
+      const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
+      const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
+      /// Daughters that do not pass this condition are not selected
+      if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
+        return;
+
+      sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+    };
     if (ConfV0Type1 == ConfV0Type2) {
       /// Now build the combinations for identical V0s
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-        // Lambda invariant mass cut for p1
-        if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
-          continue;
-        // Lambda invariant mass cut for p2
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
-          continue;
-        // track cleaning
-        if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
-          continue;
-        }
-        if (ConfIsCPR.value) {
-          if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
-            continue;
-          }
-        }
-        const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
-        const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
-        /// Daughters that do not pass this condition are not selected
-        if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
-          continue;
-
-        const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
-        const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
-        /// Daughters that do not pass this condition are not selected
-        if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
-          continue;
-
-        sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+        pairProcessFunc(p1, p2);
       }
     } else {
       /// Now build the combinations for not identical identical V0s
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-        // Lambda invariant mass cut for p1
-        if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
-          continue;
-        // Lambda invariant mass cut for p2
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
-          continue;
-        // track cleaning
-        if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
-          continue;
-        }
-        if (ConfIsCPR.value) {
-          if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
-            continue;
-          }
-        }
-        const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
-        const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
-        /// Daughters that do not pass this condition are not selected
-        if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
-          continue;
-
-        const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
-        const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
-        /// Daughters that do not pass this condition are not selected
-        if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
-          continue;
-
-        sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+        pairProcessFunc(p1, p2);
       }
     }
   }
@@ -518,7 +515,8 @@ struct femtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCSameEvent, "Enable processing same event for MC truth track - V0", false);
 
   /// This function processes the mixed event for track - V0
-  void processMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts)
+  template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
+  void doMixedEvent(FilteredFDCollisions& cols, PartType& parts, PartitionType& partitionOne, PartitionType& partitionTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
@@ -526,8 +524,8 @@ struct femtoUniversePairTaskTrackV0Extended {
 
       const int multCol = ConfUseCent ? collision1.multV0M() : collision1.multNtr();
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsOne = partitionOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partitionTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -562,12 +560,26 @@ struct femtoUniversePairTaskTrackV0Extended {
         float weight = 1.0f;
         if (plocalEffp1)
           weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
-        mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D, weight);
+
+        if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
+          mixedEventCont.setPair<true>(p1, p2, multCol, ConfUse3D, weight);
+        else
+          mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D, weight);
       }
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed events for track - V0", false);
+  void processMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts)
+  {
+    doMixedEvent(cols, parts, partsOne, partsTwo);
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed event for track - V0", false);
+
+  void processMixedEventMCReco(FilteredFDCollisions& cols, FemtoRecoParticles& parts, aod::FDMCParticles const& mcparts)
+  {
+    doMixedEvent(cols, parts, partsOneMCReco, partsTwoMCReco, mcparts);
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventMCReco, "Enable processing mixed event for track - V0 for MC Reco", false);
 
   /// This function processes the mixed event for V0 - V0
   void processMixedEventV0(FilteredFDCollisions& cols, FemtoFullParticles& parts)
@@ -621,7 +633,6 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
     }
   }
-
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventV0, "Enable processing mixed events for V0 - V0", false);
 
   void processMCMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts)
@@ -660,8 +671,6 @@ struct femtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCMixedEvent, "Enable processing mixed events for MC truth track - V0", false);
 
   ///--------------------------------------------MC-------------------------------------------------///
-
-  using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
 
   /// This function fills MC truth particles from derived MC table
   void processMCTruth(aod::FDParticles const& parts)
