@@ -114,10 +114,6 @@ struct secondaryPidTof {
     LOG(info) << "Configuring track sample for TOF ev. time: " << trackSampleMinMomentum << " < p < " << trackSampleMaxMomentum;
     // Check that both processes are not enabled
     int nEnabled = 0;
-    if (doprocessRun2 == true) {
-      LOGF(info, "Enabling process function: processRun2");
-      nEnabled++;
-    }
     if (doprocessNoFT0 == true) {
       LOGF(info, "Enabling process function: processNoFT0");
       nEnabled++;
@@ -200,30 +196,6 @@ struct secondaryPidTof {
     o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
     o2::tof::eventTimeContainer::printConfig();
   }
-
-  ///
-  /// Process function to prepare the event time on Run 2 data
-  void processRun2(aod::Tracks const& tracks,
-                   aod::Collisions const& collisions)
-  {
-    if (!enableTable) {
-      return;
-    }
-    tableEvTime.reserve(collisions.size());
-    tableEvTimeForTrack.reserve(tracks.size());
-
-    for (auto const& collision : collisions) { // Loop on collisions
-      tableEvTime(collision.collisionTime() * 1000.f, collision.collisionTimeRes() * 1000.f, 0.f, 999.f, 0.f, 999.f);
-    }
-    for (auto const& track : tracks) {
-      if (!track.has_collision()) { // Track was not assigned, cannot compute event time
-        tableEvTimeForTrack(0.f, 999.f);
-        continue;
-      }
-      tableEvTimeForTrack(track.collision().collisionTime() * 1000.f, track.collision().collisionTimeRes() * 1000.f);
-    }
-  }
-  PROCESS_SWITCH(secondaryPidTof, processRun2, "Process with Run2 data", false);
 
   ///
   /// Process function to prepare the event time on Run 3 data without the FT0
