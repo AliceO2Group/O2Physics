@@ -244,7 +244,7 @@ struct qVectorsCorrection {
       if (std::abs(trk.eta()) > 0.8) {
         continue;
       }
-      
+
       if (nmode == 2) {
         histosQA.fill(HIST("hist_EP_cos_Det_v2"), coll.cent(), trk.pt(), std::cos(2.0 * (trk.phi() - helperEP.GetEventPlane(coll.qvecRe()[DetInd + 3], coll.qvecIm()[DetInd + 3], nmode))));
         histosQA.fill(HIST("hist_EP_sin_Det_v2"), coll.cent(), trk.pt(), std::sin(2.0 * (trk.phi() - helperEP.GetEventPlane(coll.qvecRe()[DetInd + 3], coll.qvecIm()[DetInd + 3], nmode))));
