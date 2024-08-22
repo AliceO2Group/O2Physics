@@ -372,7 +372,7 @@ struct alice3multicharm {
       auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
       if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
-      
+
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
           continue;
