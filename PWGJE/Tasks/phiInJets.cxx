@@ -120,7 +120,6 @@ struct phiInJets {
       JEhistos.add("hNResoPerEventWJet", "hNResoPerEventWJet", kTH1F, {{10, 0, 10}});
       JEhistos.add("hNResoPerEventInJet", "hNResoPerEventInJet", kTH1F, {{10, 0, 10}});
 
-
       JEhistos.add("FJetaHistogram", "FJetaHistogram", kTH1F, {axisEta});
       JEhistos.add("FJphiHistogram", "FJphiHistogram", kTH1F, {axisPhi});
       JEhistos.add("FJptHistogram", "FJptHistogram", kTH1F, {axisPt});
@@ -153,9 +152,9 @@ struct phiInJets {
       JEhistos.add("ptJEHistogramPhi", "ptJEHistogramPhi", kTH1F, {PtAxis});
       JEhistos.add("ptJEHistogramPhi_JetTrigger", "ptJEHistogramPhi_JetTrigger", kTH1F, {PtAxis});
       JEhistos.add("minvJEHistogramPhi", "minvJEHistogramPhi", kTH1F, {MinvAxis});
-      JEhistos.add("hNRealPhiVPhiCand", "hNRealPhiVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
-      JEhistos.add("hNRealPhiWithJetVPhiCand", "hNRealPhiWithJetVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
-      JEhistos.add("hNRealPhiInJetVPhiCand", "hNRealPhiInJetVPhiCand", kTH2F, {{10, 0, 10},{10, 0, 10}});
+      JEhistos.add("hNRealPhiVPhiCand", "hNRealPhiVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
+      JEhistos.add("hNRealPhiWithJetVPhiCand", "hNRealPhiWithJetVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
+      JEhistos.add("hNRealPhiInJetVPhiCand", "hNRealPhiInJetVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
 
       JEhistos.add("hMCRec_nonmatch_hUSS_KtoKangle_v_pt", "hMCRec_nonmatch_hUSS_KtoKangle_v_pt", kTH2F, {axisEta, PtAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_Kangle_v_pt", "hMCRec_nonmatch_hUSS_Kangle_v_pt", kTH2F, {axisEta, PtAxis});
@@ -709,7 +708,7 @@ struct phiInJets {
     double RealPhiCand = 0;
     double RealPhiCandWithJet = 0;
     double RealPhiCandInJet = 0;
-    
+
     // Track Eff
     for (const auto& track : tracks) {
       auto originalTrack = track.track_as<myCompleteTracks>();
@@ -748,19 +747,19 @@ struct phiInJets {
         if (fabs(originalTrack.eta()) > cfgtrkMaxEta || fabs(originalTrack2.eta()) > cfgtrkMaxEta)
           continue;
 
-	TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-	lDecayDaughter1.SetXYZM(originalTrack.px(), originalTrack.py(), originalTrack.pz(), massKa);
-	if (!cfgIsKstar)
-	  lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massKa);
-	else
-	  lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);
-	lResonance = lDecayDaughter1 + lDecayDaughter2;
+        TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+        lDecayDaughter1.SetXYZM(originalTrack.px(), originalTrack.py(), originalTrack.pz(), massKa);
+        if (!cfgIsKstar)
+          lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massKa);
+        else
+          lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);
+        lResonance = lDecayDaughter1 + lDecayDaughter2;
 
-	if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
-	  continue;
-	
-	if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
-	  PhiCand++;
+        if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
+          continue;
+
+        if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+          PhiCand++;
 
         // check PID
         if (track.has_mcParticle() && track2.has_mcParticle()) {
@@ -815,8 +814,8 @@ struct phiInJets {
           JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_KtoKangle_v_pt"), R_Kaons, lResonance.Pt());
           JEhistos.fill(HIST("ptJEHistogramPhi"), lResonance.Pt());
 
-	  if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
-	    RealPhiCand++;
+          if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+            RealPhiCand++;
 
           // Now we do jets
           bool jetFlag = false;
@@ -824,11 +823,11 @@ struct phiInJets {
           double jetpt = 0;
 
           for (int i = 0; i < mcd_pt.size(); i++) {
-	    if(i==0){
-	      if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
-		RealPhiCandWithJet++;
-	      }
-	    }	    
+            if (i == 0) {
+              if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
+                RealPhiCandWithJet++;
+              }
+            }
             double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
             double etadiff = mcd_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -848,15 +847,15 @@ struct phiInJets {
               jetpt = mcd_pt[i];
               goodjets++;
             }
-          }// R check for jets
+          } // R check for jets
 
           if (cfgSingleJet)
             if (goodjets > 1)
               jetpt = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
 
           if (jetFlag) {
-	    if (lResonance.M() > 1.005 && lResonance.M() < 1.035) 
-	      RealPhiCandInJet++;
+            if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+              RealPhiCandInJet++;
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D"), lResonance.M());
             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
@@ -878,7 +877,6 @@ struct phiInJets {
     JEhistos.fill(HIST("hNRealPhiWithJetVPhiCand"), PhiCand, RealPhiCandWithJet);
     JEhistos.fill(HIST("hNRealPhiInJetVPhiCand"), PhiCand, RealPhiCandInJet);
 
-    
     // Jet Eff
   }
   PROCESS_SWITCH(phiInJets, processRec, "pikp detector level MC JE", true);
