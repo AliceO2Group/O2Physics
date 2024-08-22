@@ -409,11 +409,13 @@ struct strangenessFilter {
   }
 
   void process(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/,
-                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
+               aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] Omega + high mult event
     bool keepEvent[12]{}; // explicitly zero-initialised
+    std::vector<std::array<int, 2>> v0sFromOmegaID;
+    std::vector<std::array<int, 2>> v0sFromXiID;
 
     if (sel8 && !collision.sel8()) {
       fillTriggerTable(keepEvent);
@@ -657,6 +659,7 @@ struct strangenessFilter {
 
         // Count number of Xi candidates
         xicounter++;
+        v0sFromXiID.push_back({casc.posTrackId(), casc.negTrackId()});
 
         // Plot for estimates
         for (auto track : tracks) { // start loop over tracks
@@ -715,6 +718,7 @@ struct strangenessFilter {
 
         // Count number of Omega candidates
         omegacounter++;
+        v0sFromOmegaID.push_back({casc.posTrackId(), casc.negTrackId()});
       }
       if (isOmegalargeR) {
         omegalargeRcounter++;
@@ -725,15 +729,6 @@ struct strangenessFilter {
     // Omega trigger definition
     if (omegacounter > 0) {
       keepEvent[0] = true;
-      // OmegaXi trigger definition
-      if (xicounter > 0) {
-        keepEvent[11] = true;
-      }
-    }
-
-    // Double Omega trigger definition
-    if(omegacounter > 1) {
-      keepEvent[10] = true;
     }
 
     bool EvtwhMinPt[11];
@@ -800,19 +795,43 @@ struct strangenessFilter {
         hEvtvshMinPt->Fill(i + 0.5);
     }
 
-    // 2Xi trigger definition
-    if (xicounter > 1) {
-      keepEvent[2] = true;
+    // Double/triple/quad Xi trigger definition
+    if (v0sFromXiID.size() > 0) {
+      std::set<std::array<int, 2>> uniqueXis = {v0sFromXiID.begin(), v0sFromXiID.end()};
+      if (uniqueXis.size() > 1) {
+        keepEvent[2] = true;
+      }
+      if (uniqueXis.size() > 2) {
+        keepEvent[3] = true;
+      }
+      if (uniqueXis.size() > 3) {
+        keepEvent[4] = true;
+      }
     }
 
-    // 3Xi trigger definition
-    if (xicounter > 2) {
-      keepEvent[3] = true;
+    // Double Omega trigger definition
+    if (v0sFromOmegaID.size() > 0) {
+      std::set<std::array<int, 2>> uniqueOmegas = {v0sFromOmegaID.begin(), v0sFromOmegaID.end()};
+      if (uniqueOmegas.size() > 1) {
+        keepEvent[10] = true;
+      }
     }
 
-    // 4Xi trigger definition
-    if (xicounter > 3) {
-      keepEvent[4] = true;
+    // Omega + Xi trigger definition
+    if (v0sFromOmegaID.size() > 0 && v0sFromXiID.size() > 0) {
+      std::set<std::array<int, 2>> uniqueOmegas = {v0sFromOmegaID.begin(), v0sFromOmegaID.end()};
+      std::set<std::array<int, 2>> uniqueXis = {v0sFromXiID.begin(), v0sFromXiID.end()};
+      if (uniqueOmegas.size() != 0 && uniqueXis.size() != 0) {
+        keepEvent[11] = true;
+      } else {
+        // keep only if there is at least one non-overlapping v0
+        for (auto v0Omega : uniqueOmegas) {
+          if (uniqueXis.find(v0Omega) == uniqueXis.end()) {
+            keepEvent[11] = true;
+            break;
+          }
+        }
+      }
     }
 
     // Single-Xi (YN) trigger definition
