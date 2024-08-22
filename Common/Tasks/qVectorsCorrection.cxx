@@ -63,10 +63,11 @@ struct qVectorsCorrection {
   Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number"};
+  Configurable<int> cfgNbinsEP{"cfgNbinsEP", 360, "nbins for EP histograms"};
 
   ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {300, -1, 1}, ""};
   ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
-  ConfigurableAxis cfgaxisCent{"cfgaxisCent", {90, 0, 90}, ""};
+  ConfigurableAxis cfgaxisCent{"cfgaxisCent", {100, 0, 100}, ""};
 
   Configurable<bool> cfgQAAll{"cfgQAAll", false, "draw all q-vector steps"};
   Configurable<bool> cfgQAFinal{"cfgQAFinal", false, "draw final q-vector steps"};
@@ -120,7 +121,7 @@ struct qVectorsCorrection {
     AxisSpec axisCent{cfgaxisCent, "centrality"};
     AxisSpec axisQvec{cfgaxisQvec, "Q"};
     AxisSpec axisQvecF{cfgaxisQvecF, "Q"};
-    AxisSpec axisEvtPl{360, -constants::math::PI, constants::math::PI};
+    AxisSpec axisEvtPl{cfgNbinsEP, -constants::math::PI, constants::math::PI};
 
     histosQA.add("histCentFull", "Centrality distribution for valid events",
                  HistType::kTH1F, {axisCent});
@@ -138,6 +139,10 @@ struct qVectorsCorrection {
         histosQA.add(Form("histQvecFinalV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
         histosQA.add(Form("histQvecRefAFinalV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
         histosQA.add(Form("histQvecRefBFinalV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
+
+        histosQA.add(Form("histQvecRes_SigRefAV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisQvecF, axisCent}});
+        histosQA.add(Form("histQvecRes_SigRefBV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisQvecF, axisCent}});
+        histosQA.add(Form("histQvecRes_RefARefBV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisQvecF, axisCent}});
 
         histosQA.add(Form("histEvtPlFinalV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
         histosQA.add(Form("histEvtPlRefAFinalV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
@@ -224,6 +229,10 @@ struct qVectorsCorrection {
         }
       }
       if (vec.qvecAmp()[DetId] > 1e-8 && vec.qvecAmp()[RefAId] > 1e-8 && vec.qvecAmp()[RefBId] > 1e-8 && cfgQAFinal) {
+        histosQA.fill(HIST("histQvecRes_SigRefAV2"), vec.qvecRe()[DetInd + 3] * vec.qvecRe()[RefAInd + 3] + vec.qvecIm()[DetInd + 3] * vec.qvecIm()[RefAInd + 3], vec.cent());
+        histosQA.fill(HIST("histQvecRes_SigRefBV2"), vec.qvecRe()[DetInd + 3] * vec.qvecRe()[RefBInd + 3] + vec.qvecIm()[DetInd + 3] * vec.qvecIm()[RefBInd + 3], vec.cent());
+        histosQA.fill(HIST("histQvecRes_RefARefBV2"), vec.qvecRe()[RefAInd + 3] * vec.qvecRe()[RefBInd + 3] + vec.qvecIm()[RefAInd + 3] * vec.qvecIm()[RefBInd + 3], vec.cent());
+
         histosQA.fill(HIST("histEvtPlRes_SigRefAV2"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), nmode), vec.cent());
         histosQA.fill(HIST("histEvtPlRes_SigRefBV2"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), nmode), vec.cent());
         histosQA.fill(HIST("histEvtPlRes_RefARefBV2"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), nmode), vec.cent());
@@ -275,6 +284,10 @@ struct qVectorsCorrection {
         }
       }
       if (vec.qvecAmp()[DetId] > 1e-8 && vec.qvecAmp()[RefAId] > 1e-8 && vec.qvecAmp()[RefBId] > 1e-8 && cfgQAFinal) {
+        histosQA.fill(HIST("histQvecRes_SigRefAV3"), vec.qvecRe()[DetInd + 3] * vec.qvecRe()[RefAInd + 3] + vec.qvecIm()[DetInd + 3] * vec.qvecIm()[RefAInd + 3], vec.cent());
+        histosQA.fill(HIST("histQvecRes_SigRefBV3"), vec.qvecRe()[DetInd + 3] * vec.qvecRe()[RefBInd + 3] + vec.qvecIm()[DetInd + 3] * vec.qvecIm()[RefBInd + 3], vec.cent());
+        histosQA.fill(HIST("histQvecRes_RefARefBV3"), vec.qvecRe()[RefAInd + 3] * vec.qvecRe()[RefBInd + 3] + vec.qvecIm()[RefAInd + 3] * vec.qvecIm()[RefBInd + 3], vec.cent());
+
         histosQA.fill(HIST("histEvtPlRes_SigRefAV3"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), nmode), vec.cent());
         histosQA.fill(HIST("histEvtPlRes_SigRefBV3"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), nmode), vec.cent());
         histosQA.fill(HIST("histEvtPlRes_RefARefBV3"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), nmode), vec.cent());
@@ -326,6 +339,10 @@ struct qVectorsCorrection {
         }
       }
       if (vec.qvecAmp()[DetId] > 1e-8 && vec.qvecAmp()[RefAId] > 1e-8 && vec.qvecAmp()[RefBId] > 1e-8 && cfgQAFinal) {
+        histosQA.fill(HIST("histQvecRes_SigRefAV4"), vec.qvecRe()[DetInd + 3] * vec.qvecRe()[RefAInd + 3] + vec.qvecIm()[DetInd + 3] * vec.qvecIm()[RefAInd + 3], vec.cent());
+        histosQA.fill(HIST("histQvecRes_SigRefBV4"), vec.qvecRe()[DetInd + 3] * vec.qvecRe()[RefBInd + 3] + vec.qvecIm()[DetInd + 3] * vec.qvecIm()[RefBInd + 3], vec.cent());
+        histosQA.fill(HIST("histQvecRes_RefARefBV4"), vec.qvecRe()[RefAInd + 3] * vec.qvecRe()[RefBInd + 3] + vec.qvecIm()[RefAInd + 3] * vec.qvecIm()[RefBInd + 3], vec.cent());
+
         histosQA.fill(HIST("histEvtPlRes_SigRefAV4"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), nmode), vec.cent());
         histosQA.fill(HIST("histEvtPlRes_SigRefBV4"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), nmode), vec.cent());
         histosQA.fill(HIST("histEvtPlRes_RefARefBV4"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), nmode), vec.cent());
