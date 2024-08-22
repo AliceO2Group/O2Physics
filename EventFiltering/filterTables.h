@@ -60,6 +60,10 @@ DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);               //! SigmaC(
 DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);               //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
 DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);       //! photon with 2-prong charm hadron
 DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);       //! photon with 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);       //! 2-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleCharm3P, hasHfSingleCharm3P, bool);       //! 3-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleNonPromptCharm2P, hasHfSingleNonPromptCharm2P, bool); //! 2-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleNonPromptCharm3P, hasHfSingleNonPromptCharm3P, bool); //! 3-prong charm hadron (for efficiency studies)
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
@@ -180,7 +184,26 @@ using DqFilter = DqFilters::iterator;
 
 // heavy flavours
 DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
-                  filtering::HfHighPt2P, filtering::HfHighPt3P, filtering::HfBeauty3P, filtering::HfBeauty4P, filtering::HfFemto2P, filtering::HfFemto3P, filtering::HfDoubleCharm2P, filtering::HfDoubleCharm3P, filtering::HfDoubleCharmMix, filtering::HfV0Charm2P, filtering::HfV0Charm3P, filtering::HfCharmBarToXiBach, filtering::HfSigmaCPPK, filtering::HfSigmaC0K0, filtering::HfPhotonCharm2P, filtering::HfPhotonCharm3P);
+                  filtering::HfHighPt2P,
+                  filtering::HfHighPt3P,
+                  filtering::HfBeauty3P,
+                  filtering::HfBeauty4P,
+                  filtering::HfFemto2P,
+                  filtering::HfFemto3P,
+                  filtering::HfDoubleCharm2P,
+                  filtering::HfDoubleCharm3P,
+                  filtering::HfDoubleCharmMix,
+                  filtering::HfV0Charm2P,
+                  filtering::HfV0Charm3P,
+                  filtering::HfCharmBarToXiBach,
+                  filtering::HfSigmaCPPK,
+                  filtering::HfSigmaC0K0,
+                  filtering::HfPhotonCharm2P,
+                  filtering::HfPhotonCharm3P,
+                  filtering::HfSingleCharm2P,
+                  filtering::HfSingleCharm3P,
+                  filtering::HfSingleNonPromptCharm2P,
+                  filtering::HfSingleNonPromptCharm3P);
 
 using HfFilter = HfFilters::iterator;
 
