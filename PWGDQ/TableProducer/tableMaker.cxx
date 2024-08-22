@@ -174,9 +174,11 @@ struct TableMaker {
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
   Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
   Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
-  Configurable<string> fConfigCcdbPathZorro{"ccdb-path-zorro", "Users/r/rlietava/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
+  struct : ConfigurableGroup {
+    Configurable<string> fConfigCcdbUrl{"useCCDBConfigurations.ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<string> fConfigCcdbPathTPC{"useCCDBConfigurations.ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+    Configurable<string> fConfigCcdbPathZorro{"useCCDBConfigurations.ccdb-path-zorro", "Users/r/rlietava/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
+  } useCCDBConfigurations;
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
@@ -187,11 +189,16 @@ struct TableMaker {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> grpmagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
+  struct : ConfigurableGroup {
+    Configurable<int> useMatCorrType{"useMatConfigurations.useMatCorrType", 1, "materialCorrType: 0: none, 1: TGeo, 2: LUT"};
+    Configurable<std::string> lutPath{"useMatConfigurations.lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  } useMatConfigurations;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
   o2::parameters::GRPObject* grpmagrun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* grpmag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
@@ -213,11 +220,19 @@ struct TableMaker {
   void init(o2::framework::InitContext& context)
   {
     DefineCuts();
-    fCCDB->setURL(fConfigCcdbUrl);
+    fCCDB->setURL(useCCDBConfigurations.fConfigCcdbUrl);
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      fCCDB->get<TGeoManager>(geoPath);
+    if (useMatConfigurations.useMatCorrType == 1) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        fCCDB->get<TGeoManager>(geoPath);
+      }
+    }
+    if (useMatConfigurations.useMatCorrType == 2) {
+      LOGF(info, "LUT correction requested, loading LUT");
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(fCCDB->get<o2::base::MatLayerCylSet>(useMatConfigurations.lutPath));
+      LOGF(info, "LUT load done!");
     }
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -304,7 +319,7 @@ struct TableMaker {
     fOutputList.setObject(fHistMan->GetMainHistogramList());
     // CCDB configuration
     if (fConfigComputeTPCpostCalib) {
-      fCCDB->setURL(fConfigCcdbUrl.value);
+      fCCDB->setURL(useCCDBConfigurations.fConfigCcdbUrl.value);
       fCCDB->setCaching(true);
       fCCDB->setLocalObjectValidityChecking();
       // Not later than now objects
@@ -347,7 +362,7 @@ struct TableMaker {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (fCurrentRun != bc.runNumber()) {
       if (fConfigComputeTPCpostCalib) {
-        auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+        auto calibList = fCCDB->getForTimeStamp<TList>(useCCDBConfigurations.fConfigCcdbPathTPC.value, bc.timestamp());
         VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
         VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
         VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
@@ -371,6 +386,11 @@ struct TableMaker {
         }
         if (fPropMuon) {
           VarManager::SetupMuonMagField();
+        }
+        if (useMatConfigurations.useMatCorrType == 2) {
+          // setMatLUT only after magfield has been initalized
+          // (setMatLUT has implicit and problematic init field call if not)
+          o2::base::Propagator::Instance()->setMatLUT(lut);
         }
       }
       fCurrentRun = bc.runNumber();
@@ -413,7 +433,7 @@ struct TableMaker {
     (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
     if (fConfigRunZorro) {
-      zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
+      zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
       zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
       if (zorro.isSelected(bc.globalBC())) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
@@ -795,7 +815,7 @@ struct TableMaker {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (fCurrentRun != bc.runNumber()) {
       if (fConfigComputeTPCpostCalib) {
-        auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+        auto calibList = fCCDB->getForTimeStamp<TList>(useCCDBConfigurations.fConfigCcdbPathTPC.value, bc.timestamp());
         VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
         VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
         VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
@@ -819,6 +839,11 @@ struct TableMaker {
         }
         if constexpr (static_cast<bool>(TMuonFillMap)) {
           VarManager::SetupMuonMagField();
+        }
+        if (useMatConfigurations.useMatCorrType == 2) {
+          // setMatLUT only after magfield has been initalized
+          // (setMatLUT has implicit and problematic init field call if not)
+          o2::base::Propagator::Instance()->setMatLUT(lut);
         }
       }
       fCurrentRun = bc.runNumber();
@@ -862,7 +887,7 @@ struct TableMaker {
     (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
     if (fConfigRunZorro) {
-      zorro.setBaseCCDBPath(fConfigCcdbPathZorro.value);
+      zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
       zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
       if (zorro.isSelected(bc.globalBC())) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb

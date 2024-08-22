@@ -420,7 +420,7 @@ struct phiInJets {
 
     double best_R = 0;
     double best_jetpt = 0;
-    for (int i = 0; i < jet_pt.size(); i++) {
+    for (std::vector<double>::size_type i = 0; i < jet_pt.size(); i++) {
       double phidiff = TVector2::Phi_mpi_pi(jet_phi[i] - lResonance.Phi());
       double etadiff = jet_eta[i] - lResonance.Eta();
       double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -822,6 +822,7 @@ struct phiInJets {
           bool jetFlag = false;
           int goodjets = 0;
           double jetpt = 0;
+
           for (int i = 0; i < mcd_pt.size(); i++) {
 	    if(i==0){
 	      if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
@@ -990,7 +991,7 @@ struct phiInJets {
           TLorentzVector lResonance;
           lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
           bool jetFlag = false;
-          for (int i = 0; i < mcp_pt.size(); i++) {
+          for (std::vector<double>::size_type i = 0; i < mcp_pt.size(); i++) {
             double phidiff = TVector2::Phi_mpi_pi(mcp_phi[i] - lResonance.Phi());
             double etadiff = mcp_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -1225,7 +1226,7 @@ struct phiInJets {
         //     std::cout << "Reconstructed level phi pT: " << lResonance_REC.Pt() << std::endl;
 
         bool jetFlag = false;
-        for (int i = 0; i < mcp_pt.size(); i++) {
+        for (std::vector<double>::size_type i = 0; i < mcp_pt.size(); i++) {
           double phidiff = TVector2::Phi_mpi_pi(mcp_phi[i] - lResonance.Phi());
           double etadiff = mcp_eta[i] - lResonance.Eta();
           double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -1451,7 +1452,7 @@ struct phiInJets {
             int goodjets = 0;
             double jetpt_mcp = 0;
             double jetpt_mcd = 0;
-            for (int i = 0; i < mcd_pt.size(); i++) {
+            for (std::vector<double>::size_type i = 0; i < mcd_pt.size(); i++) {
               double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
               double etadiff = mcd_eta[i] - lResonance.Eta();
               double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));

@@ -65,9 +65,9 @@ DECLARE_SOA_COLUMN(MCTrueK0Short, mcTrueK0Short, bool);               // true K0
 DECLARE_SOA_COLUMN(MCTrueLambda, mcTrueLambda, bool);                 // true Lambda in MC
 DECLARE_SOA_COLUMN(MCTrueAntiLambda, mcTrueAntiLambda, bool);         // true AntiLambda in MC
 DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // true physical primary flag
-DECLARE_SOA_COLUMN(MassRegionK0Short, massRegionK0Short, int);        //
-DECLARE_SOA_COLUMN(MassRegionLambda, massRegionLambda, int);          //
-DECLARE_SOA_COLUMN(MassRegionAntiLambda, massRegionAntiLambda, int);  //
+DECLARE_SOA_COLUMN(NSigmaMassK0Short, nSigmaMassK0Short, float);      //
+DECLARE_SOA_COLUMN(NSigmaMassLambda, nSigmaMassLambda, float);        //
+DECLARE_SOA_COLUMN(NSigmaMassAntiLambda, nSigmaMassAntiLambda, float); //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](int cK0Short, int cLambda, int cAntiLambda, int value, int compatibilityLevel) -> bool {
                              if (value == 0 && bitcheck(cK0Short, compatibilityLevel))
@@ -78,25 +78,15 @@ DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check 
                                return true;
                              return false;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegionCheck, invMassRegionCheck,
-                           [](int rK0Short, int rLambda, int rAntiLambda, int value, int region) -> bool {
-                             if (value == 0 && rK0Short == region)
-                               return true;
-                             if (value == 1 && rLambda == region)
-                               return true;
-                             if (value == 2 && rAntiLambda == region)
-                               return true;
-                             return false;
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegion, invMassRegion,
-                           [](int rK0Short, int rLambda, int rAntiLambda, int value) -> int {
+DECLARE_SOA_DYNAMIC_COLUMN(InvMassNSigma, invMassNSigma,
+                           [](float rK0Short, float rLambda, float rAntiLambda, int value) -> float {
                              if (value == 0)
                                return rK0Short;
                              if (value == 1)
                                return rLambda;
                              if (value == 2)
                                return rAntiLambda;
-                             return -1;
+                             return 1000.0f;
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(MCTrue, mcTrue,
                            [](int mcTrueK0Short, int mcTrueLambda, int mcTrueAntiLambda, int value) -> bool {
@@ -118,12 +108,11 @@ DECLARE_SOA_TABLE(AssocV0s, "AOD", "ASSOCV0S", o2::soa::Index<>,
                   assocV0s::MCTrueLambda,
                   assocV0s::MCTrueAntiLambda,
                   assocV0s::MCPhysicalPrimary,
-                  assocV0s::MassRegionK0Short,
-                  assocV0s::MassRegionLambda,
-                  assocV0s::MassRegionAntiLambda,
+                  assocV0s::NSigmaMassK0Short,
+                  assocV0s::NSigmaMassLambda,
+                  assocV0s::NSigmaMassAntiLambda,
+                  assocV0s::InvMassNSigma<assocV0s::NSigmaMassK0Short, assocV0s::NSigmaMassLambda, assocV0s::NSigmaMassAntiLambda>,
                   assocV0s::Compatible<assocV0s::CompatibleK0Short, assocV0s::CompatibleLambda, assocV0s::CompatibleAntiLambda>,
-                  assocV0s::InvMassRegionCheck<assocV0s::MassRegionK0Short, assocV0s::MassRegionLambda, assocV0s::MassRegionAntiLambda>,
-                  assocV0s::InvMassRegion<assocV0s::MassRegionK0Short, assocV0s::MassRegionLambda, assocV0s::MassRegionAntiLambda>,
                   assocV0s::MCTrue<assocV0s::MCTrueK0Short, assocV0s::MCTrueLambda, assocV0s::MCTrueAntiLambda>);
 /// _________________________________________
 /// Table for storing associated casc indices
@@ -143,8 +132,8 @@ DECLARE_SOA_COLUMN(MCTrueXiPlus, mcTrueXiPlus, bool);                 // true Xi
 DECLARE_SOA_COLUMN(MCTrueOmegaMinus, mcTrueOmegaMinus, bool);         // true OmegaMinus in mc
 DECLARE_SOA_COLUMN(MCTrueOmegaPlus, mcTrueOmegaPlus, bool);           // true OmegaPlus in mc
 DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // physical primary in MC
-DECLARE_SOA_COLUMN(MassRegionXi, massRegionXi, int);                  //
-DECLARE_SOA_COLUMN(MassRegionOmega, massRegionOmega, int);            //
+DECLARE_SOA_COLUMN(NSigmaMassXi, nSigmaMassXi, float);                //
+DECLARE_SOA_COLUMN(NSigmaMassOmega, nSigmaMassOmega, float);          //
 DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](int cXiMinus, int cXiPlus, int cOmegaMinus, int cOmegaPlus, int value, int compatibilityLevel) -> bool {
                              if (value == 0 && bitcheck(cXiMinus, compatibilityLevel))
@@ -157,25 +146,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check 
                                return true;
                              return false;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegionCheck, invMassRegionCheck,
-                           [](int rXi, int rOmega, int value, int region) -> bool {
-                             if (value == 0 && rXi == region)
-                               return true;
-                             if (value == 1 && rXi == region)
-                               return true;
-                             if (value == 2 && rOmega == region)
-                               return true;
-                             if (value == 3 && rOmega == region)
-                               return true;
-                             return false;
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(InvMassRegion, invMassRegion,
-                           [](int rXi, int rOmega, int value) -> int {
+DECLARE_SOA_DYNAMIC_COLUMN(InvMassNSigma, invMassNSigma,
+                           [](float rXi, float rOmega, int value) -> float {
                              if (value == 0 || value == 1)
                                return rXi;
                              if (value == 2 || value == 3)
                                return rOmega;
-                             return -1;
+                             return 1000.0f;
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(MCTrue, mcTrue,
                            [](int mcTrueXiMinus, int mcTrueXiPlus, int mcTrueOmegaMinus, int mcTrueOmegaPlus, int value) -> bool {
@@ -200,11 +177,10 @@ DECLARE_SOA_TABLE(AssocCascades, "AOD", "ASSOCCASCADES", o2::soa::Index<>, assoc
                   assocCascades::MCTrueOmegaMinus,
                   assocCascades::MCTrueOmegaPlus,
                   assocCascades::MCPhysicalPrimary,
-                  assocCascades::MassRegionXi,
-                  assocCascades::MassRegionOmega,
+                  assocCascades::NSigmaMassXi,
+                  assocCascades::NSigmaMassOmega,
+                  assocCascades::InvMassNSigma<assocCascades::NSigmaMassXi, assocCascades::NSigmaMassOmega>,
                   assocCascades::Compatible<assocCascades::CompatibleXiMinus, assocCascades::CompatibleXiPlus, assocCascades::CompatibleOmegaMinus, assocCascades::CompatibleOmegaPlus>,
-                  assocCascades::InvMassRegionCheck<assocCascades::MassRegionXi, assocCascades::MassRegionOmega>,
-                  assocCascades::InvMassRegion<assocCascades::MassRegionXi, assocCascades::MassRegionOmega>,
                   assocCascades::MCTrue<assocCascades::MCTrueXiMinus, assocCascades::MCTrueXiPlus, assocCascades::MCTrueOmegaMinus, assocCascades::MCTrueOmegaPlus>);
 } // namespace o2::aod
 

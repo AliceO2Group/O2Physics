@@ -202,6 +202,14 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
 // iterators
 using V0Leg = V0Legs::iterator;
 
+namespace emevent
+{
+DECLARE_SOA_COLUMN(NgPCM, ngpcm, int);
+} // namespace emevent
+
+DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgPCM); // joinable to EMEvents or aod::Collisions
+using EMEventNgPCM = EMEventsNgPCM::iterator;
+
 namespace v0photonkf
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                             //!

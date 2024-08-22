@@ -70,6 +70,7 @@ struct kstarqa {
   Configurable<bool> onlyTPC{"onlyTPC", true, "only TPC tracks"};
 
   // Configurables for track selections
+  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -110,6 +111,7 @@ struct kstarqa {
   Configurable<bool> AllGenCollisions{"AllGenCollisions", true, "To fill all generated collisions for the signal loss calculations"};
   ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
   ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
+  ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
 
   // Event plane configurables
   Configurable<bool> boost_daugter1{"boost_daugter1", false, "Boost daughter Kaon in the COM frame"};
@@ -172,9 +174,9 @@ struct kstarqa {
 
     // Multplicity distribution
     if (QAevents) {
-      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {axisMultdist});
+      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {axisMultdist});
+      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {axisMultdist});
       histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
       histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
       histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
@@ -425,7 +427,7 @@ struct kstarqa {
             histos.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
 
             for (int i = 0; i < c_nof_rotations; i++) {
-              float theta2 = rn->Uniform(0, TMath::Pi());
+              float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
               lv4.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi() + theta2, massKa); // for rotated background
               lv5 = lv2 + lv4;
               histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity);

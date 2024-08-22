@@ -70,7 +70,7 @@ class FemtoUniverseParticleHisto
   void init_debug(std::string folderName)
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverseMCparticle::MCTypeName[mc]).c_str();
-    if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
+    if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
       mHistogramRegistry->add((folderName + folderSuffix + "/hCharge").c_str(), "; Charge; Entries", kTH1F, {{5, -2.5, 2.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfound").c_str(), "; TPC found clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
@@ -125,7 +125,7 @@ class FemtoUniverseParticleHisto
 
     mHistogramRegistry->add((folderName + folderSuffix + "/hPt_ReconNoFake").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
 
-    if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
+    if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
       /// Track histograms
       mHistogramRegistry->add((folderName + folderSuffix + "/hPDG").c_str(), "; PDG; Entries", kTH1I, {{6001, -3000, 3000}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hOrigin_MC").c_str(), "; Origin; Entries", kTH1I, {{7, 0, 7}});
@@ -168,7 +168,7 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry = registry;
       /// The folder names are defined by the type of the object and the suffix (if applicable)
       std::string tempFitVarAxisTitle;
-      if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child) {
+      if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor) {
         /// Track histograms
         tempFitVarAxisTitle = "DCA_{xy} (cm)";
       } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
@@ -231,7 +231,7 @@ class FemtoUniverseParticleHisto
   void fillQA_debug(T const& part, H const& histFolder)
   {
     // Histograms holding further debug information
-    if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
+    if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/hCharge"), part.sign());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/hTPCfindable"), part.tpcNClsFindable());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/hTPCfound"), part.tpcNClsFound());
@@ -289,7 +289,7 @@ class FemtoUniverseParticleHisto
         mHistogramRegistry->fill(histFolder + HIST("_MC/hPt_ReconNoFake"), part.pt());
       }
 
-      if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
+      if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
         /// Track histograms
         switch (mctruthorigin) {
           case (o2::aod::femtouniverseMCparticle::kPrimary):

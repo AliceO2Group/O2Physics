@@ -52,10 +52,19 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jv0indices
 
+namespace v0bccounter
+{
+DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndITSROFBAndNoTFB, readCountsWithTVXAndITSROFBAndNoTFB, std::vector<int>);
+} // namespace v0bccounter
+
 namespace v0collisioncounter
 {
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelection, readCountsWithTVXAndSelection, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelectionAndZVertex, readCountsWithTVXAndSelectionAndZVertex, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 } // namespace v0collisioncounter
 
@@ -78,15 +87,16 @@ DECLARE_SOA_TABLE(JV0Ids, "AOD", "JV0ID",
                   jv0indices::PosTrackId,
                   jv0indices::NegTrackId);
 
-DECLARE_SOA_TABLE(StoredJV0Ids, "AOD1", "JV0ID",
-                  jv0indices::JCollisionId,
-                  jv0indices::PosTrackId,
-                  jv0indices::NegTrackId,
-                  o2::soa::Marker<1>);
+DECLARE_SOA_TABLE(V0BCCounts, "AOD", "V0BCCOUNT",
+                  v0bccounter::ReadCounts,
+                  v0bccounter::ReadCountsWithTVX,
+                  v0bccounter::ReadCountsWithTVXAndITSROFBAndNoTFB);
 
 DECLARE_SOA_TABLE(V0CollisionCounts, "AOD", "V0COLLCOUNT",
                   v0collisioncounter::ReadCounts,
-                  v0collisioncounter::ReadSelectedCounts,
+                  v0collisioncounter::ReadCountsWithTVX,
+                  v0collisioncounter::ReadCountsWithTVXAndSelection,
+                  v0collisioncounter::ReadCountsWithTVXAndSelectionAndZVertex,
                   v0collisioncounter::WrittenCounts);
 
 namespace jv0mc
