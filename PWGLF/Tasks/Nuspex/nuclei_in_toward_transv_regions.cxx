@@ -104,7 +104,7 @@ struct nuclei_in_toward_transv_regions {
     registryData.add("antiproton_jet_tof", "antiproton_jet_tof", HistType::kTH2F, {{120, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
     registryData.add("antiproton_ue_tpc", "antiproton_ue_tpc", HistType::kTH2F, {{120, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
     registryData.add("antiproton_ue_tof", "antiproton_ue_tof", HistType::kTH2F, {{120, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
- 
+
     // MC
     registryMC.add("antiproton_prim_jet", "antiproton_prim_jet", HistType::kTH1F, {{120, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("antiproton_all_jet", "antiproton_all_jet", HistType::kTH1F, {{120, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}});
@@ -255,7 +255,7 @@ struct nuclei_in_toward_transv_regions {
     if (pt_max < min_pt_leading)
       return;
     registryData.fill(HIST("number_of_events_data"), 3.5);
-      
+
     // Momentum of the Leading Particle
     auto const& leading_track = tracks.iteratorAt(leading_ID);
 
