@@ -201,7 +201,8 @@ struct PidMlBatchEffAndPurProducer {
   }
 
   template <typename T, typename Mc>
-  void fillDerivedDataResults(aod::Collisions const& collisions, T const& tracks, Mc const& mcParticles) {
+  void fillDerivedDataResults(aod::Collisions const& collisions, T const& tracks, Mc const& mcParticles)
+  {
     effAndPurPIDResult.reserve(mcParticles.size());
 
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
