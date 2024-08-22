@@ -162,7 +162,7 @@ struct HfTriggerCuts : o2::framework::ConfigurableGroup {
     float peakMean = (pt < ptDeltaMassMax) ? ((pdgMass + deltaMassPars.get("constant")) + deltaMassPars.get("linear") * pt) : pdgMass;
     float peakWidth = sigmaPars.get("constant") + sigmaPars.get("linear") * pt;
 
-    return (!(std::abs(invMass - peakMean) > nSigma3ProngMax * peakWidth && pt < ptMassCutMax));
+    return (!(std::abs(invMass - peakMean) > nSigmaMax * peakWidth && pt < ptMassCutMax));
   }
 };
 } // namespace o2::analysis
