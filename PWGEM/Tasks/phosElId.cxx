@@ -805,8 +805,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{
     adaptAnalysisTask<phosElId>(cfgc),
-    // adaptAnalysisTask<tpcTest>(cfgc),
-    // adaptAnalysisTask<tpcTest2>(cfgc),
     adaptAnalysisTask<tpcElIdMassSpectrum>(cfgc)};
   return workflow;
 }
