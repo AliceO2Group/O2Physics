@@ -62,8 +62,8 @@ DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);       //! photon 
 DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);       //! photon with 3-prong charm hadron
 DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);       //! 2-prong charm hadron (for efficiency studies)
 DECLARE_SOA_COLUMN(HfSingleCharm3P, hasHfSingleCharm3P, bool);       //! 3-prong charm hadron (for efficiency studies)
-DECLARE_SOA_COLUMN(HfSingleNonPromptCharm2P, hasHfSingleNonPromptCharm2P, bool);       //! 2-prong charm hadron (for efficiency studies)
-DECLARE_SOA_COLUMN(HfSingleNonPromptCharm3P, hasHfSingleNonPromptCharm3P, bool);       //! 3-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleNonPromptCharm2P, hasHfSingleNonPromptCharm2P, bool); //! 2-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleNonPromptCharm3P, hasHfSingleNonPromptCharm3P, bool); //! 3-prong charm hadron (for efficiency studies)
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
