@@ -153,7 +153,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !isCandidateInMassRange(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand, hfTriggerCuts.deltaMassPars3Prong, hfTriggerCuts.sigmaPars3Prong, hfTriggerCuts.ptDeltaMass3ProngMax, hfTriggerCuts.ptMassCut3ProngMax, hfTriggerCuts.nSigma3ProngMax)) {
+    if (useTriggerMassCut && !isCandidateInMassRange(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand, hfTriggerCuts)) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {

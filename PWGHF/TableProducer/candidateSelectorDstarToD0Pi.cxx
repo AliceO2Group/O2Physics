@@ -286,7 +286,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       if (std::abs(mInvD0 - massD0) > cutsD0->get(binPt, "m")) {
         return false;
       }
-      if (useTriggerMassCut && !isCandidateInMassRange(mInvD0, massD0, candidate.ptD0(), hfTriggerCuts.deltaMassPars2Prong, hfTriggerCuts.sigmaPars2Prong, hfTriggerCuts.ptDeltaMass2ProngMax, hfTriggerCuts.ptMassCut2ProngMax, hfTriggerCuts.nSigma2ProngMax)) {
+      if (useTriggerMassCut && !isCandidateInMassRange(mInvD0, massD0, candidate.ptD0(), hfTriggerCuts)) {
         return false;
       }
       // cut on daughter pT
@@ -314,7 +314,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       if (std::abs(mInvD0Bar - massD0) > cutsD0->get(binPt, "m")) {
         return false;
       }
-      if (useTriggerMassCut && !isCandidateInMassRange(mInvD0Bar, massD0, candidate.ptD0(), hfTriggerCuts.deltaMassPars2Prong, hfTriggerCuts.sigmaPars2Prong, hfTriggerCuts.ptDeltaMass2ProngMax, hfTriggerCuts.ptMassCut2ProngMax, hfTriggerCuts.nSigma2ProngMax)) {
+      if (useTriggerMassCut && !isCandidateInMassRange(mInvD0Bar, massD0, candidate.ptD0(), hfTriggerCuts)) {
         return false;
       }
       // cut on daughter pT
