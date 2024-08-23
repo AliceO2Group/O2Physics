@@ -858,7 +858,6 @@ class VarManager : public TObject
     fgFitterThreeProngBarrel.setMinParamChange(minParamChange);
     fgFitterThreeProngBarrel.setMinRelChi2Change(minRelChi2Change);
     fgFitterThreeProngBarrel.setUseAbsDCA(useAbsDCA);
-    cout << "!!! fgFitterThreeProngBarrel bz = " << fgFitterThreeProngBarrel.getBz() << endl;
     fgUsedKF = false;
   }
 
