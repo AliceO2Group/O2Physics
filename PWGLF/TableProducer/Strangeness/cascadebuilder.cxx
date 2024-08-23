@@ -194,6 +194,8 @@ struct cascadeBuilder {
   Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for V0"};
   Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for Xi"};
 
+  // for using cascade momentum at prim. vtx
+  Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "if enabled, store cascade momentum at prim. vtx instead of decay point (= default)"};
   // for topo var QA
   struct : ConfigurableGroup {
     ConfigurableAxis axisTopoVarPointingAngle{"axisConfigurations.axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
@@ -1090,6 +1092,13 @@ struct cascadeBuilder {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorrCascade, &dcaInfo);
     cascadecandidate.cascDCAxy = dcaInfo[0];
     cascadecandidate.cascDCAz = dcaInfo[1];
+    if (useCascadeMomentumAtPrimVtx) {
+      lCascadeTrack.getPxPyPzGlo(cascadecandidate.cascademom);
+    } else {
+      cascadecandidate.cascademom[0] = cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0];
+      cascadecandidate.cascademom[1] = cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1];
+      cascadecandidate.cascademom[2] = cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2];
+    }
 
     // Calculate masses a priori
     cascadecandidate.mXi = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
@@ -1555,9 +1564,7 @@ struct cascadeBuilder {
              cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
              cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
              cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-             cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
-             cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
-             cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
+             cascadecandidate.cascademom[0], cascadecandidate.cascademom[1], cascadecandidate.cascademom[2],
              cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
              cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
              cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
