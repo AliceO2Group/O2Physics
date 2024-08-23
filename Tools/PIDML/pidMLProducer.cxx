@@ -205,13 +205,13 @@ struct PidMlProducer {
   template <typename T>
   float getTRDSignal(T const& track)
   {
-    return tofMissing(track) ? std::numeric_limits<float>::quiet_NaN() : track.trdSignal();
+    return trdMissing(track) ? std::numeric_limits<float>::quiet_NaN() : track.trdSignal();
   }
 
   template <typename T>
   float getTRDPattern(T const& track)
   {
-    return tofMissing(track) ? std::numeric_limits<float>::quiet_NaN() : track.trdPattern();
+    return trdMissing(track) ? std::numeric_limits<float>::quiet_NaN() : track.trdPattern();
   }
 
   void processDataML(MyCollisionML const& /*collision*/, BigTracksDataML const& tracks)
