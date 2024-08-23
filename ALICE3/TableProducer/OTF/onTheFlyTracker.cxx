@@ -56,6 +56,7 @@
 #include "ITStracking/VertexerTraits.h"
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
@@ -118,19 +119,6 @@ struct OnTheFlyTracker {
   Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
   Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
 
-  Configurable<std::string> lutPi0{"lutPi0", "lutCovm.pi.20kG.rmin20.geometry_v0.dat", "LUT for pions without layer 0"};
-  Configurable<std::string> lutPi1{"lutPi1", "lutCovm.pi.20kG.rmin20.geometry_v1.dat", "LUT for pions without layer 1"};
-  Configurable<std::string> lutPi2{"lutPi2", "lutCovm.pi.20kG.rmin20.geometry_v2.dat", "LUT for pions without layer 2"};
-  Configurable<std::string> lutPi3{"lutPi3", "lutCovm.pi.20kG.rmin20.geometry_v3.dat", "LUT for pions without layer 3"};
-  Configurable<std::string> lutPi4{"lutPi4", "lutCovm.pi.20kG.rmin20.geometry_v4.dat", "LUT for pions without layer 4"};
-  Configurable<std::string> lutPi5{"lutPi5", "lutCovm.pi.20kG.rmin20.geometry_v5.dat", "LUT for pions without layer 5"};
-  Configurable<std::string> lutPr0{"lutPr0", "lutCovm.pr.20kG.rmin20.geometry_v0.dat", "LUT for protons without layer 0"};
-  Configurable<std::string> lutPr1{"lutPr1", "lutCovm.pr.20kG.rmin20.geometry_v1.dat", "LUT for protons without layer 1"};
-  Configurable<std::string> lutPr2{"lutPr2", "lutCovm.pr.20kG.rmin20.geometry_v2.dat", "LUT for protons without layer 2"};
-  Configurable<std::string> lutPr3{"lutPr3", "lutCovm.pr.20kG.rmin20.geometry_v3.dat", "LUT for protons without layer 3"};
-  Configurable<std::string> lutPr4{"lutPr4", "lutCovm.pr.20kG.rmin20.geometry_v4.dat", "LUT for protons without layer 4"};
-  Configurable<std::string> lutPr5{"lutPr5", "lutCovm.pr.20kG.rmin20.geometry_v5.dat", "LUT for protons without layer 5"};
-
   ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
   ConfigurableAxis axisNVertices{"axisNVertices", {20, -0.5, 19.5}, "N_{vertices}"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {100, -0.5, 99.5}, "N_{contributors}"};
@@ -144,10 +132,20 @@ struct OnTheFlyTracker {
   ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -1.0f, +1.0f}, "#Delta p_{T}"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {200, -0.5f, +0.5f}, "#Delta #eta"};
 
+  // for topo var QA
+  struct : ConfigurableGroup {
+    std::string prefix = "fastTrackerSettings"; // JSON group name
+    Configurable<int> minSiliconHits{"minSiliconHits", 4, "minimum number of silicon hits to accept track"};
+    Configurable<int> alice3detector{"alice3detector", 0, "0: ALICE 3 v1, 1: ALICE 3 v4"};
+  } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
+
   using PVertex = o2::dataformats::PrimaryVertex;
 
   // for secondary vertex finding
   o2::vertexing::DCAFitterN<2> fitter;
+
+  // FastTracker machinery
+  o2::fastsim::FastTracker fastTracker;
 
   // Class to hold the track information for the O2 vertexing
   class TrackAlice3 : public o2::track::TrackParCov
@@ -264,103 +262,6 @@ struct OnTheFlyTracker {
 
       // smear un-reco'ed tracks if asked to do so
       mSmearer.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
-
-      if (treatXi) {
-        std::map<int, const char*> mapPdgLut0;
-        const char* lutPiChar0 = lutPi0->c_str();
-        const char* lutPrChar0 = lutPr0->c_str();
-        LOGF(info, "Load more pion lut files .....: %s", lutPiChar0);
-        LOGF(info, "Load more proton lut files ...: %s", lutPrChar0);
-        mapPdgLut0.insert(std::make_pair(211, lutPiChar0));
-        mapPdgLut0.insert(std::make_pair(2212, lutPrChar0));
-
-        std::map<int, const char*> mapPdgLut1;
-        const char* lutPiChar1 = lutPi1->c_str();
-        const char* lutPrChar1 = lutPr1->c_str();
-        LOGF(info, "Load more pion lut files .....: %s", lutPiChar1);
-        LOGF(info, "Load more proton lut files ...: %s", lutPrChar1);
-        mapPdgLut1.insert(std::make_pair(211, lutPiChar1));
-        mapPdgLut1.insert(std::make_pair(2212, lutPrChar1));
-
-        std::map<int, const char*> mapPdgLut2;
-        const char* lutPiChar2 = lutPi2->c_str();
-        const char* lutPrChar2 = lutPr2->c_str();
-        LOGF(info, "Load more pion lut files .....: %s", lutPiChar2);
-        LOGF(info, "Load more proton lut files ...: %s", lutPrChar2);
-        mapPdgLut2.insert(std::make_pair(211, lutPiChar2));
-        mapPdgLut2.insert(std::make_pair(2212, lutPrChar2));
-
-        std::map<int, const char*> mapPdgLut3;
-        const char* lutPiChar3 = lutPi3->c_str();
-        const char* lutPrChar3 = lutPr3->c_str();
-        LOGF(info, "Load more pion lut files .....: %s", lutPiChar3);
-        LOGF(info, "Load more proton lut files ...: %s", lutPrChar3);
-        mapPdgLut3.insert(std::make_pair(211, lutPiChar3));
-        mapPdgLut3.insert(std::make_pair(2212, lutPrChar3));
-
-        std::map<int, const char*> mapPdgLut4;
-        const char* lutPiChar4 = lutPi4->c_str();
-        const char* lutPrChar4 = lutPr4->c_str();
-        LOGF(info, "Load more pion lut files .....: %s", lutPiChar4);
-        LOGF(info, "Load more proton lut files ...: %s", lutPrChar4);
-        mapPdgLut4.insert(std::make_pair(211, lutPiChar4));
-        mapPdgLut4.insert(std::make_pair(2212, lutPrChar4));
-
-        std::map<int, const char*> mapPdgLut5;
-        const char* lutPiChar5 = lutPi5->c_str();
-        const char* lutPrChar5 = lutPr5->c_str();
-        LOGF(info, "Load more pion lut files .....: %s", lutPiChar5);
-        LOGF(info, "Load more proton lut files ...: %s", lutPrChar5);
-        mapPdgLut5.insert(std::make_pair(211, lutPiChar5));
-        mapPdgLut5.insert(std::make_pair(2212, lutPrChar5));
-
-        for (auto e : mapPdgLut0) {
-          if (!mSmearer0.loadTable(e.first, e.second)) {
-            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
-          }
-        }
-        for (auto e : mapPdgLut1) {
-          if (!mSmearer1.loadTable(e.first, e.second)) {
-            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
-          }
-        }
-        for (auto e : mapPdgLut2) {
-          if (!mSmearer2.loadTable(e.first, e.second)) {
-            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
-          }
-        }
-        for (auto e : mapPdgLut3) {
-          if (!mSmearer3.loadTable(e.first, e.second)) {
-            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
-          }
-        }
-        for (auto e : mapPdgLut4) {
-          if (!mSmearer4.loadTable(e.first, e.second)) {
-            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
-          }
-        }
-        for (auto e : mapPdgLut5) {
-          if (!mSmearer5.loadTable(e.first, e.second)) {
-            LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
-          }
-        }
-
-        // interpolate efficiencies if requested to do so
-        mSmearer0.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
-        mSmearer1.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
-        mSmearer2.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
-        mSmearer3.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
-        mSmearer4.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
-        mSmearer5.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
-
-        // smear un-reco'ed tracks if asked to do so
-        mSmearer0.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
-        mSmearer1.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
-        mSmearer2.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
-        mSmearer3.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
-        mSmearer4.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
-        mSmearer5.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
-      }
     }
 
     // Basic QA
@@ -475,6 +376,19 @@ struct OnTheFlyTracker {
 
     // Set seed for TGenPhaseSpace
     rand.SetSeed(seed);
+
+    // configure FastTracker
+    fastTracker.magneticField = magneticField;
+    if(fastTrackerSettings.alice3detector == 0){
+      fastTracker.AddSiliconALICE3v1();
+    }
+    if(fastTrackerSettings.alice3detector == 1){
+      fastTracker.AddSiliconALICE3v4();
+      fastTracker.AddTPC(0.1, 0.1);
+    }
+
+    // print fastTracker settings 
+    fastTracker.Print();
   }
 
   /// Function to decay the xi
@@ -691,8 +605,10 @@ struct OnTheFlyTracker {
 
       multiplicityCounter++;
       const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
-      std::vector<o2::track::TrackParCov> xiDaughterTrackParCovs(3);
+      std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsPerfect(3);
+      std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsTracked(3);
       std::vector<bool> isReco(3);
+      std::vector<int> nHits(3);
       std::vector<o2::delphes::DelphesO2TrackSmearer> smearer = {mSmearer0, mSmearer1, mSmearer2, mSmearer3, mSmearer4, mSmearer5};
       if (treatXi && mcParticle.pdgCode() == 3312) {
         histos.fill(HIST("hXiBuilding"), 0.0f);
@@ -700,65 +616,25 @@ struct OnTheFlyTracker {
           continue;
         }
 
-        histos.fill(HIST("hXiBuilding"), 1.0f);
-        convertTLorentzVectorToO2Track(-211, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovs[0]);
-        convertTLorentzVectorToO2Track(-211, decayProducts[1], l0DecayVertex, xiDaughterTrackParCovs[1]);
-        convertTLorentzVectorToO2Track(2212, decayProducts[2], l0DecayVertex, xiDaughterTrackParCovs[2]);
+        convertTLorentzVectorToO2Track(-211, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0]);
+        convertTLorentzVectorToO2Track(-211, decayProducts[1], l0DecayVertex, xiDaughterTrackParCovsPerfect[1]);
+        convertTLorentzVectorToO2Track(2212, decayProducts[2], l0DecayVertex, xiDaughterTrackParCovsPerfect[2]);
 
-        // Map daughter to smearer
-        if (enableSecondarySmearing) {
-          int firstSmearerIndex = -1;
-          int secondSmearerIndex = -1;
-          for (unsigned i = 0; i < layers.size(); i++) {
-            if (xiDecayRadius2D > layers[i]) {
-              firstSmearerIndex = i;
-            }
-            if (l0DecayRadius2D > layers[i]) {
-              secondSmearerIndex = i;
-            }
-          }
-          if (firstSmearerIndex > 5) {
-            isReco[0] = false;
-          } else if (firstSmearerIndex == -1) {
-            isReco[0] = mSmearer.smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
-          } else {
-            isReco[0] = smearer[firstSmearerIndex].smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
-          }
-          if (secondSmearerIndex > 5) {
-            isReco[1] = false;
-            isReco[2] = false;
-          } else if (secondSmearerIndex == -1) {
-            isReco[1] = mSmearer.smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
-            isReco[2] = mSmearer.smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
-          } else {
-            isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
-            isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
-          }
-        } else {
-          isReco[0] = true;
-          isReco[1] = true;
-          isReco[2] = true;
-        }
         for (int i = 0; i < 3; i++) {
-          if (decayProducts[i].Pt() < minPt) {
-            isReco[i] = false;
+          nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i]);
+          isReco[i] = false;
+          if(nHits[i]>=fastTrackerSettings.minSiliconHits){ 
+            isReco[i] = true;
           }
-          if (!isReco[i] && !processUnreconstructedTracks) {
-            continue;
-          }
-          if (TMath::IsNaN(xiDaughterTrackParCovs[i].getZ())) {
-            histos.fill(HIST("hNaNBookkeeping"), i + 1, 0.0f);
-            LOGF(info, "Issues with track parametrization %i ! inspect track:", i);
-            xiDaughterTrackParCovs[i].print();
-            isReco[i] = false; // not acceptable
+          if (TMath::IsNaN(xiDaughterTrackParCovsTracked[i].getZ())) {
             continue;
           } else {
             histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           }
           if (isReco[i]) {
-            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
+            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
           } else {
-            ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
+            ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
           }
         }
 
@@ -793,7 +669,7 @@ struct OnTheFlyTracker {
           int nCand = 0;
           bool dcaFitterOK_V0 = true;
           try {
-            nCand = fitter.process(xiDaughterTrackParCovs[1], xiDaughterTrackParCovs[2]);
+            nCand = fitter.process(xiDaughterTrackParCovsTracked[1], xiDaughterTrackParCovsTracked[2]);
           } catch (...) {
             // LOG(error) << "Exception caught in DCA fitter process call!";
             dcaFitterOK_V0 = false;
@@ -845,7 +721,7 @@ struct OnTheFlyTracker {
             nCand = 0;
             bool dcaFitterOK_Cascade = true;
             try {
-              nCand = fitter.process(v0Track, xiDaughterTrackParCovs[0]);
+              nCand = fitter.process(v0Track, xiDaughterTrackParCovsTracked[0]);
             } catch (...) {
               // LOG(error) << "Exception caught in DCA fitter process call!";
               dcaFitterOK_Cascade = false;
