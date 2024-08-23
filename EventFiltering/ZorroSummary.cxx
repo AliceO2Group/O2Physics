@@ -13,11 +13,13 @@
 
 #include "TCollection.h"
 
-void ZorroSummary::Copy(TObject& c) const {
+void ZorroSummary::Copy(TObject& c) const
+{
   static_cast<ZorroSummary&>(c) = *this;
 }
 
-Long64_t ZorroSummary::Merge(TCollection* list) {
+Long64_t ZorroSummary::Merge(TCollection* list)
+{
   if (!list) {
     return 0;
   }
@@ -49,7 +51,8 @@ Long64_t ZorroSummary::Merge(TCollection* list) {
   return n;
 }
 
-double ZorroSummary::getNormalisationFactor(int toiId) const {
+double ZorroSummary::getNormalisationFactor(int toiId) const
+{
   double totalTOI{0.}, totalTVX{0.};
   ULong64_t totalAnalysedTOI{0};
   for (const auto& [runNumber, toiCounters] : mTOIcounters) {
