@@ -217,7 +217,7 @@ struct PidMlProducer {
   void processDataML(MyCollisionML const& /*collision*/, BigTracksDataML const& tracks)
   {
     for (const auto& track : tracks) {
-      if(!track.hasTPC()) {
+      if (!track.hasTPC()) {
         continue;
       }
 
@@ -239,7 +239,7 @@ struct PidMlProducer {
   void processDataAll(MyCollision const& collision, BigTracksData const& tracks)
   {
     for (const auto& track : tracks) {
-      if(!track.hasTPC()) {
+      if (!track.hasTPC()) {
         continue;
       }
 
