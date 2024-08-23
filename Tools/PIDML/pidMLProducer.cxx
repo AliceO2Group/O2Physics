@@ -209,9 +209,9 @@ struct PidMlProducer {
   }
 
   template <typename T>
-  float getTRDPattern(T const& track)
+  uint8_t getTRDPattern(T const& track)
   {
-    return trdMissing(track) ? std::numeric_limits<float>::quiet_NaN() : track.trdPattern();
+    return trdMissing(track) ? static_cast<uint8_t>(0U) : track.trdPattern();
   }
 
   void processDataML(MyCollisionML const& /*collision*/, BigTracksDataML const& tracks)
