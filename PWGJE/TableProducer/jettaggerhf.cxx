@@ -93,9 +93,9 @@ struct JetTaggerHFTask {
   std::unique_ptr<TF1> fSignImpXYSigBeautyJetMC = nullptr;
   std::unique_ptr<TF1> fSignImpXYSigLfJetMC = nullptr;
 
-
   template <typename T, typename U>
-  void calculateJetProbabilityMCD(int origin, T const& collision, U const& mcdjet, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, std::vector<float>& jetProb) {
+  void calculateJetProbabilityMCD(int origin, T const& collision, U const& mcdjet, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, std::vector<float>& jetProb)
+  {
     jetProb.clear();
     jetProb.reserve(maxOrder);
     for (int order = 0; order < maxOrder; order++) {
@@ -116,11 +116,14 @@ struct JetTaggerHFTask {
   }
 
   template <typename T, typename U>
-  void evaluateTrackProbQA(int origin, T const& collision, U const& mcdjet, JetTagTracksMCD const& /*jtracks*/, OriTracksMCD const& /*tracks*/) {
+  void evaluateTrackProbQA(int origin, T const& collision, U const& mcdjet, JetTagTracksMCD const& /*jtracks*/, OriTracksMCD const& /*tracks*/)
+  {
     for (auto& jtrack : mcdjet.template tracks_as<JetTagTracksMCD>()) {
       auto track = jtrack.template track_as<OriTracksMCD>();
-      if (!track.has_mcParticle()) continue;
-      if (!jettaggingutilities::trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax)) continue;
+      if (!track.has_mcParticle())
+        continue;
+      if (!jettaggingutilities::trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
+        continue;
       auto geoSign = jettaggingutilities::getGeoSign(collision, mcdjet, track);
       float probTrack = -1;
       if (useResoFuncFromIncJet) {
@@ -143,7 +146,6 @@ struct JetTaggerHFTask {
       }
     }
   }
-
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext const&)

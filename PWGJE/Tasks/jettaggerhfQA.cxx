@@ -325,7 +325,8 @@ struct JetTaggerHFQA {
         auto track = jtrack.template track_as<W>();
         if (!trackAcceptance(track))
           continue;
-        if (!jettaggingutilities::trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax)) continue;
+        if (!jettaggingutilities::trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
+          continue;
         // General parameters
         registry.fill(HIST("h3_jet_pt_track_pt_track_eta"), jet.pt(), track.pt(), track.eta());
         registry.fill(HIST("h3_jet_pt_track_pt_track_phi"), jet.pt(), track.pt(), track.phi());
@@ -423,7 +424,8 @@ struct JetTaggerHFQA {
         auto track = jtrack.template track_as<W>();
         if (!trackAcceptance(track))
           continue;
-        if (!jettaggingutilities::trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax)) continue;
+        if (!jettaggingutilities::trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
+          continue;
 
         // General parameters
         registry.fill(HIST("h3_jet_pt_track_pt_flavour"), mcdjet.pt(), track.pt(), jetflavour);
@@ -577,7 +579,7 @@ struct JetTaggerHFQA {
       float eventWeight = mcdjet.eventWeight();
       int jetflavour = mcdjet.origin();
       int jetflavourRun2Def = -1;
-      //if (!mcdjet.has_matchedJetGeo()) continue;
+      // if (!mcdjet.has_matchedJetGeo()) continue;
       for (auto& mcpjet : mcdjet.template matchedJetGeo_as<V>()) {
         jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
         registry.fill(HIST("h3_response_matrix_jet_pt_jet_pt_part_flavour"), mcdjet.pt(), mcpjet.pt(), jetflavour, eventWeight);
@@ -689,7 +691,8 @@ struct JetTaggerHFQA {
       }
       auto origin = mcdjet.origin();
       registry.fill(HIST("h2_2prong_nprongs_flavour"), mcdjet.template secondaryVertices_as<V>().size(), origin);
-      if (mcdjet.template secondaryVertices_as<V>().size() < 1) continue;
+      if (mcdjet.template secondaryVertices_as<V>().size() < 1)
+        continue;
       for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
         auto Lxy = prong.decayLengthXY();
         auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
@@ -722,7 +725,8 @@ struct JetTaggerHFQA {
       }
       auto origin = mcdjet.origin();
       registry.fill(HIST("h2_3prong_nprongs_flavour"), mcdjet.template secondaryVertices_as<V>().size(), origin);
-      if (mcdjet.template secondaryVertices_as<V>().size() < 1) continue;
+      if (mcdjet.template secondaryVertices_as<V>().size() < 1)
+        continue;
       for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
         auto Lxy = prong.decayLengthXY();
         auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
