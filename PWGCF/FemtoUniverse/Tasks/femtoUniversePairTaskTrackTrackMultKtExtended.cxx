@@ -70,8 +70,8 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
     Configurable<float> ConfNsigmaTPC{"ConfNsigmaTPC", 3.0f, "TPC Pion Sigma for momentum < ConfTOFpMin"};
     Configurable<float> ConfNsigmaTPCDe{"ConfNsigmaTPCDe", 2.0f, "TPC Deuteron Sigma for momentum < ConfTOFpMin"};
     Configurable<float> ConfNsigmaTOFDe{"ConfNsigmaTOFDe", 2.0f, "TOF Deuteron Sigma"};
-    Configurable<float> ConfTOFpMin{"ConfTOFpMin", 0.5f, "Min. Pt for which TOF is required for PID."};
-    Configurable<float> ConfTOFpMinDe{"ConfTOFpMinDe", 0.5f, "Min. Pt for De for which TOF is required for PID."};
+    Configurable<float> ConfTOFpMin{"ConfTOFpMin", 0.5f, "Min. momentum for which TOF is required for PID."};
+    Configurable<float> ConfTOFpMinDe{"ConfTOFpMinDe", 0.5f, "Min. momentum for De for which TOF is required for PID."};
     Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
 
     Configurable<LabeledArray<float>> ConfCutTable{"ConfCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
@@ -265,34 +265,18 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   {
     if (twotracksconfigs.IsKaonNsigma == true) {
       if (mom < 0.5) {
-        if (TMath::Abs(nsigmaTPCK) < 2) {
-          return true;
-        } else {
-          return false;
-        }
+        return TMath::Abs(nsigmaTPCK) < 2;
       } else if (mom > 0.5 && mom < 0.8) {
-        if (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 2) {
-          return true;
-        } else {
-          return false;
-        }
+        return (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 2);
       } else if (mom > 0.8 && mom < 1.0) {
-        if (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 1.5) {
-          return true;
-        } else {
-          return false;
-        }
+        return (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 1.5);
       } else if (mom > 1.0 && mom < 1.5) {
-        if (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 1.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 1.0);
       } else {
         return false;
       }
     } else {
-      IsNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+      return IsNSigma(mom, nsigmaTPCK, nsigmaTOFK);
     }
   }
 
