@@ -39,10 +39,18 @@ struct JetTaggerHFTask {
   Produces<JetTaggingTableData> taggingTableData;
   Produces<JetTaggingTableMCD> taggingTableMCD;
 
+  // configuration topological cut for track and sv
+  Configurable<float> trackDcaXYMax{"trackDcaXYMax", 1, "minimum DCA xy acceptance for tracks [cm]"};
+  Configurable<float> trackDcaZMax{"trackDcaZMax", 2, "minimum DCA z acceptance for tracks [cm]"};
+  Configurable<float> prongsigmaLxyMax{"prongsigmaLxyMax", 100, "maximum sigma of decay length of prongs on xy plane"};
+  Configurable<float> prongsigmaLxyzMax{"prongsigmaLxyzMax", 100, "maximum sigma of decay length of prongs on xyz plane"};
+  Configurable<float> prongChi2PCAMax{"prongChi2PCAMax", 10, "maximum Chi2 PCA of decay length of prongs"};
+
   // jet flavour definition
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
   Configurable<bool> removeGluonShower{"removeGluonShower", true, "find jet origin removed gluon spliting"}; // true:: remove gluon spliting
   Configurable<bool> searchUpToQuark{"searchUpToQuark", true, "Finding first mother in particles to quark"};
+
   // configuration about IP method
   Configurable<bool> useJetProb{"useJetProb", false, "fill table for track counting algorithm"};
   Configurable<bool> trackProbQA{"trackProbQA", false, "fill track probability histograms separately for geometric positive and negative tracks for QA"};
@@ -55,17 +63,18 @@ struct JetTaggerHFTask {
   Configurable<std::vector<float>> paramsResoFuncLfJetMC{"paramsResoFuncLfJetMC", std::vector<float>{1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<float> minSignImpXYSig{"minsIPs", -40.0, "minimum of signed impact parameter significance"};
   Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
-  Configurable<float> minIPCount{"minSipCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
+  Configurable<int> minIPCount{"minSipCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
   // configuration about SV method
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
-  Configurable<float> minDecayLengthCount{"minDecayLengthCount", 1, "Select at least N decay length significance in jets"}; // default 1
+  Configurable<bool> useXYZForTagging{"useXYZForTagging", false, "Enable tagging decision using full XYZ DCA for secondary vertex algorithm"};
+  Configurable<float> tagPointForSV{"tagPointForSV", 15, "tagging working point for SV"};
 
   // axis spec
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
 
-  using JetTagTracksData = soa::Join<JetTracks, aod::JTrackPIs, aod::JTracksTag>;
-  using JetTagTracksMCD = soa::Join<JetTracksMCD, aod::JTrackPIs, aod::JTracksTag>;
+  using JetTagTracksData = soa::Join<JetTracks, aod::JTrackPIs>;
+  using JetTagTracksMCD = soa::Join<JetTracksMCD, aod::JTrackPIs>;
   using OriTracksData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection>;
   using OriTracksMCD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::McTrackLabels>;
 
@@ -83,6 +92,58 @@ struct JetTaggerHFTask {
   std::unique_ptr<TF1> fSignImpXYSigCharmJetMC = nullptr;
   std::unique_ptr<TF1> fSignImpXYSigBeautyJetMC = nullptr;
   std::unique_ptr<TF1> fSignImpXYSigLfJetMC = nullptr;
+
+
+  template <typename T, typename U>
+  void calculateJetProbabilityMCD(int origin, T const& collision, U const& mcdjet, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, std::vector<float>& jetProb) {
+    jetProb.clear();
+    jetProb.reserve(maxOrder);
+    for (int order = 0; order < maxOrder; order++) {
+      if (useResoFuncFromIncJet) {
+        jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigIncJetMC, collision, mcdjet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
+      } else {
+        if (origin == JetTaggingSpecies::charm) {
+          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigCharmJetMC, collision, mcdjet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
+        }
+        if (origin == JetTaggingSpecies::beauty) {
+          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigBeautyJetMC, collision, mcdjet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
+        }
+        if (origin == JetTaggingSpecies::lightflavour) {
+          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, collision, mcdjet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
+        }
+      }
+    }
+  }
+
+  template <typename T, typename U>
+  void evaluateTrackProbQA(int origin, T const& collision, U const& mcdjet, JetTagTracksMCD const& /*jtracks*/, OriTracksMCD const& /*tracks*/) {
+    for (auto& jtrack : mcdjet.template tracks_as<JetTagTracksMCD>()) {
+      auto track = jtrack.template track_as<OriTracksMCD>();
+      if (!track.has_mcParticle()) continue;
+      if (!jettaggingutilities::trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax)) continue;
+      auto geoSign = jettaggingutilities::getGeoSign(collision, mcdjet, track);
+      float probTrack = -1;
+      if (useResoFuncFromIncJet) {
+        probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigIncJetMC, track, minSignImpXYSig);
+      } else {
+        if (origin == JetTaggingSpecies::charm) {
+          probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigCharmJetMC, track, minSignImpXYSig);
+        }
+        if (origin == JetTaggingSpecies::beauty) {
+          probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigBeautyJetMC, track, minSignImpXYSig);
+        }
+        if (origin == JetTaggingSpecies::lightflavour) {
+          probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigLfJetMC, track, minSignImpXYSig);
+        }
+      }
+      if (geoSign > 0) {
+        registry.fill(HIST("h2_pos_track_probability_flavour"), probTrack, origin);
+      } else {
+        registry.fill(HIST("h2_neg_track_probability_flavour"), probTrack, origin);
+      }
+    }
+  }
+
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext const&)
@@ -159,83 +220,90 @@ struct JetTaggerHFTask {
   void processData(JetCollision const& collision, JetTableData const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks)
   {
     for (auto& jet : jets) {
-  int flagbJetForIP = 0;
-  int flagbJetForSV = 0;
+      bool flagtaggedjetIP = 0;
+      bool flagtaggedjetSV = 0;
       if (useJetProb) {
         jetProb.clear();
         jetProb.reserve(maxOrder);
         for (int order = 0; order < maxOrder; order++) {
-          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigData, collision, jet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
+          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigData, collision, jet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
         }
       }
-      // if (doSV) flagbJetForSV = jettaggingutilities::FlagbJetForSV((mcdjet, tracks);
-      taggingTableData(0, jetProb, flagbJetForIP, flagbJetForSV);
+      if (jettaggingutilities::isGreaterThanTaggingPoint(collision, jet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
+        flagtaggedjetIP = true;
+      taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processData, "Fill tagging decision for data jets", false);
 
+  void processDataWithSV(JetCollision const& collision, soa::Join<JetTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks, aod::DataSecondaryVertex3Prongs const& prongs)
+  {
+    for (auto& jet : jets) {
+      bool flagtaggedjetIP = 0;
+      bool flagtaggedjetSV = 0;
+      if (useJetProb) {
+        jetProb.clear();
+        jetProb.reserve(maxOrder);
+        for (int order = 0; order < maxOrder; order++) {
+          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigData, collision, jet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
+        }
+      }
+      if (jettaggingutilities::isGreaterThanTaggingPoint(collision, jet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
+        flagtaggedjetIP = true;
+      flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, useXYZForTagging, tagPointForSV);
+      taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processDataWithSV, "Fill tagging decision for data jets", false);
+
   void processMCD(JetCollision const& collision, JetTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
-  int flagbJetForIP = 0;
-  int flagbJetForSV = 0;
+      bool flagtaggedjetIP = 0;
+      bool flagtaggedjetSV = 0;
       typename JetTagTracksMCD::iterator hftrack;
       int origin = 0;
       if (removeGluonShower)
         origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark);
       else
         origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack, searchUpToQuark);
-      //if (origin==JetTaggingSpecies::beauty || jettaggingutilities::isGreaterThanTaggingPoint(collision, mcdjet, jtracks, tracks, tagPointForIP, minIPCount))
-        //flagbJetForIP = 1;
       if (useJetProb) {
-        jetProb.clear();
-        jetProb.reserve(maxOrder);
-        for (int order = 0; order < maxOrder; order++) {
-          if (useResoFuncFromIncJet) {
-            jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigIncJetMC, collision, mcdjet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
-          } else {
-            if (origin == JetTaggingSpecies::charm) {
-              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigCharmJetMC, collision, mcdjet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
-            }
-            if (origin == JetTaggingSpecies::beauty) {
-              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigBeautyJetMC, collision, mcdjet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
-            }
-            if (origin == JetTaggingSpecies::lightflavour) {
-              jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, collision, mcdjet, jtracks, tracks, order, tagPointForIP, minSignImpXYSig));
-            }
-          }
-        }
+        calculateJetProbabilityMCD(origin, collision, mcdjet, jtracks, tracks, jetProb);
         if (trackProbQA) {
-          for (auto& jtrack : mcdjet.template tracks_as<JetTagTracksMCD>()) {
-            auto track = jtrack.template track_as<OriTracksMCD>();
-            auto geoSign = jettaggingutilities::getGeoSign(collision, mcdjet, track);
-            float probTrack = -1;
-            if (useResoFuncFromIncJet) {
-              probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigIncJetMC, track, minSignImpXYSig);
-            } else {
-              if (origin == JetTaggingSpecies::charm) {
-                probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigCharmJetMC, track, minSignImpXYSig);
-              }
-              if (origin == JetTaggingSpecies::beauty) {
-                probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigBeautyJetMC, track, minSignImpXYSig);
-              }
-              if (origin == JetTaggingSpecies::lightflavour) {
-                probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigLfJetMC, track, minSignImpXYSig);
-              }
-            }
-            if (geoSign > 0) {
-              registry.fill(HIST("h2_pos_track_probability_flavour"), probTrack, origin);
-            } else {
-              registry.fill(HIST("h2_neg_track_probability_flavour"), probTrack, origin);
-            }
-          }
+          evaluateTrackProbQA(origin, collision, mcdjet, jtracks, tracks);
         }
       }
-      // if (doSV) flagbJetForSV = jettaggingutilities::FlagbJetForSV((mcdjet, tracks);
-      taggingTableMCD(origin, jetProb, flagbJetForIP, flagbJetForSV);
+      if (jettaggingutilities::isGreaterThanTaggingPoint(collision, mcdjet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
+        flagtaggedjetIP = true;
+      taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCD, "Fill tagging decision for mcd jets", false);
+
+  void processMCDWithSV(JetCollision const& collision, soa::Join<JetTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, aod::MCDSecondaryVertex3Prongs const& prongs, JetParticles const& particles)
+  {
+    for (auto& mcdjet : mcdjets) {
+      bool flagtaggedjetIP = 0;
+      bool flagtaggedjetSV = 0;
+      typename JetTagTracksMCD::iterator hftrack;
+      int origin = 0;
+      if (removeGluonShower)
+        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark);
+      else
+        origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack, searchUpToQuark);
+      if (useJetProb) {
+        calculateJetProbabilityMCD(origin, collision, mcdjet, jtracks, tracks, jetProb);
+        if (trackProbQA) {
+          evaluateTrackProbQA(origin, collision, mcdjet, jtracks, tracks);
+        }
+      }
+      if (jettaggingutilities::isGreaterThanTaggingPoint(collision, mcdjet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
+        flagtaggedjetIP = true;
+      flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, useXYZForTagging, tagPointForSV);
+      taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processMCDWithSV, "Fill tagging decision for mcd jets with sv", false);
 
   void processTraining(JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
   {
