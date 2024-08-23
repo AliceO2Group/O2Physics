@@ -1,0 +1,50 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+///
+/// \file   DetLayer.h
+/// \author David Dobrigkeit Chinellato
+/// \since  11/03/2021
+/// \brief  Basic struct to hold information regarding a detector layer to be used in fast simulation
+///
+
+#ifndef O2_ANALYSIS_DETLAYER_H_
+#define O2_ANALYSIS_DETLAYER_H_
+
+#include "TString.h"
+
+namespace o2::fastsim
+{
+
+struct DetLayer
+{
+  // TString for holding name
+  TString name;
+
+  // position variables
+  float r; // radius in centimeters
+  float z; // z dimension in centimeters
+
+  // material variables
+  float x0; // radiation length
+  float xrho; // density
+
+  // resolution variables for active layers
+  float resRPhi; // RPhi resolution in centimeters
+  float resZ;    // Z resolution in centimeters
+
+  // efficiency 
+  float eff; // detection efficiency
+};
+
+} // namespace o2::fastsim
+
+#endif

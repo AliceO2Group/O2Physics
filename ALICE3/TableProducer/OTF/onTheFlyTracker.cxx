@@ -119,24 +119,30 @@ struct OnTheFlyTracker {
   Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
   Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
 
-  ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
-  ConfigurableAxis axisNVertices{"axisNVertices", {20, -0.5, 19.5}, "N_{vertices}"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {100, -0.5, 99.5}, "N_{contributors}"};
-  ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
-  ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
-  ConfigurableAxis axisX{"axisX", {250, -50, 200}, "track X (cm)"};
-  ConfigurableAxis axisRadius{"axisRadius", {55, 0.01, 100}, "decay radius"};
-  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
-  ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, ""};
+  struct : ConfigurableGroup {
+    ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
+    ConfigurableAxis axisNVertices{"axisNVertices", {20, -0.5, 19.5}, "N_{vertices}"};
+    ConfigurableAxis axisMultiplicity{"axisMultiplicity", {100, -0.5, 99.5}, "N_{contributors}"};
+    ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
+    ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
+    ConfigurableAxis axisX{"axisX", {250, -50, 200}, "track X (cm)"};
+    ConfigurableAxis axisDecayRadius{"axisDecayRadius", {55, 0.01, 100}, "decay radius"};
+    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
+    ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, ""};
 
-  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -1.0f, +1.0f}, "#Delta p_{T}"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {200, -0.5f, +0.5f}, "#Delta #eta"};
+    ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -1.0f, +1.0f}, "#Delta p_{T}"};
+    ConfigurableAxis axisDeltaEta{"axisDeltaEta", {200, -0.5f, +0.5f}, "#Delta #eta"};
+
+    ConfigurableAxis axisRadius{"axisRadius", {2500, 0.0f, +250.0f}, "R (cm)"};
+    ConfigurableAxis axisZ{"axisZ", {100, -250.0f, +250.0f}, "Z (cm)"};
+  } axes; 
 
   // for topo var QA
   struct : ConfigurableGroup {
     std::string prefix = "fastTrackerSettings"; // JSON group name
     Configurable<int> minSiliconHits{"minSiliconHits", 4, "minimum number of silicon hits to accept track"};
     Configurable<int> alice3detector{"alice3detector", 0, "0: ALICE 3 v1, 1: ALICE 3 v4"};
+    Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
   using PVertex = o2::dataformats::PrimaryVertex;
@@ -275,60 +281,62 @@ struct OnTheFlyTracker {
     hNaN->GetYaxis()->SetBinLabel(1, "Smear NaN");
     hNaN->GetYaxis()->SetBinLabel(2, "Smear OK");
 
-    histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
-    histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axisMomentum});
-    histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axisMomentum});
-    histos.add("hPtGeneratedKa", "hPtGeneratedKa", kTH1F, {axisMomentum});
-    histos.add("hPtGeneratedPr", "hPtGeneratedPr", kTH1F, {axisMomentum});
-    histos.add("hPtReconstructed", "hPtReconstructed", kTH1F, {axisMomentum});
-    histos.add("hPtReconstructedEl", "hPtReconstructedEl", kTH1F, {axisMomentum});
-    histos.add("hPtReconstructedPi", "hPtReconstructedPi", kTH1F, {axisMomentum});
-    histos.add("hPtReconstructedKa", "hPtReconstructedKa", kTH1F, {axisMomentum});
-    histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axisMomentum});
+    histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axes.axisMomentum});
+    histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axes.axisMomentum});
+    histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axes.axisMomentum});
+    histos.add("hPtGeneratedKa", "hPtGeneratedKa", kTH1F, {axes.axisMomentum});
+    histos.add("hPtGeneratedPr", "hPtGeneratedPr", kTH1F, {axes.axisMomentum});
+    histos.add("hPtReconstructed", "hPtReconstructed", kTH1F, {axes.axisMomentum});
+    histos.add("hPtReconstructedEl", "hPtReconstructedEl", kTH1F, {axes.axisMomentum});
+    histos.add("hPtReconstructedPi", "hPtReconstructedPi", kTH1F, {axes.axisMomentum});
+    histos.add("hPtReconstructedKa", "hPtReconstructedKa", kTH1F, {axes.axisMomentum});
+    histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axes.axisMomentum});
 
     // Collision QA
-    histos.add("hPVz", "hPVz", kTH1F, {axisVertexZ});
-    histos.add("hLUTMultiplicity", "hLUTMultiplicity", kTH1F, {axisMultiplicity});
-    histos.add("hSimMultiplicity", "hSimMultiplicity", kTH1F, {axisMultiplicity});
-    histos.add("hRecoMultiplicity", "hRecoMultiplicity", kTH1F, {axisMultiplicity});
+    histos.add("hPVz", "hPVz", kTH1F, {axes.axisVertexZ});
+    histos.add("hLUTMultiplicity", "hLUTMultiplicity", kTH1F, {axes.axisMultiplicity});
+    histos.add("hSimMultiplicity", "hSimMultiplicity", kTH1F, {axes.axisMultiplicity});
+    histos.add("hRecoMultiplicity", "hRecoMultiplicity", kTH1F, {axes.axisMultiplicity});
 
     if (doExtraQA) {
-      histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axisMultiplicity, axisNVertices});
-      histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axisMultiplicity, axisMultiplicity});
-      histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axisMomentum, axisDCA});
+      histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axes.axisMultiplicity, axes.axisNVertices});
+      histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axes.axisMultiplicity, axes.axisMultiplicity});
+      histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axes.axisMomentum, axes.axisDCA});
 
-      histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axisX});
-      histos.add("hRecoTrackX", "hRecoTrackX", kTH1F, {axisX});
-      histos.add("hTrackXatDCA", "hTrackXatDCA", kTH1F, {axisX});
+      histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axes.axisX});
+      histos.add("hRecoTrackX", "hRecoTrackX", kTH1F, {axes.axisX});
+      histos.add("hTrackXatDCA", "hTrackXatDCA", kTH1F, {axes.axisX});
     }
 
     if (doXiQA) {
       histos.add("hXiBuilding", "hXiBuilding", kTH1F, {{10, -0.5f, 9.5f}});
 
-      histos.add("hGenXi", "hGenXi", kTH2F, {axisRadius, axisMomentum});
-      histos.add("hRecoXi", "hRecoXi", kTH2F, {axisRadius, axisMomentum});
+      histos.add("hGenXi", "hGenXi", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("hRecoXi", "hRecoXi", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
 
-      histos.add("hGenPiFromXi", "hGenPiFromXi", kTH2F, {axisRadius, axisMomentum});
-      histos.add("hGenPiFromL0", "hGenPiFromL0", kTH2F, {axisRadius, axisMomentum});
-      histos.add("hGenPrFromL0", "hGenPrFromL0", kTH2F, {axisRadius, axisMomentum});
-      histos.add("hRecoPiFromXi", "hRecoPiFromXi", kTH2F, {axisRadius, axisMomentum});
-      histos.add("hRecoPiFromL0", "hRecoPiFromL0", kTH2F, {axisRadius, axisMomentum});
-      histos.add("hRecoPrFromL0", "hRecoPrFromL0", kTH2F, {axisRadius, axisMomentum});
+      histos.add("hGenPiFromXi", "hGenPiFromXi", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("hGenPiFromL0", "hGenPiFromL0", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("hGenPrFromL0", "hGenPrFromL0", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("hRecoPiFromXi", "hRecoPiFromXi", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("hRecoPiFromL0", "hRecoPiFromL0", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("hRecoPrFromL0", "hRecoPrFromL0", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
 
       // basic mass histograms to see if we're in business
-      histos.add("hMassLambda", "hMassLambda", kTH1F, {axisLambdaMass});
-      histos.add("hMassXi", "hMassXi", kTH1F, {axisXiMass});
+      histos.add("hMassLambda", "hMassLambda", kTH1F, {axes.axisLambdaMass});
+      histos.add("hMassXi", "hMassXi", kTH1F, {axes.axisXiMass});
 
       // OTF strangeness tracking QA
       histos.add("hFoundVsFindable", "hFoundVsFindable", kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}});
 
-      histos.add("h2dDCAxyCascade", "h2dDCAxyCascade", kTH2F, {axisMomentum, axisDCA});
-      histos.add("h2dDCAxyCascadeBachelor", "h2dDCAxyCascadeBachelor", kTH2F, {axisMomentum, axisDCA});
-      histos.add("h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative", kTH2F, {axisMomentum, axisDCA});
-      histos.add("h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive", kTH2F, {axisMomentum, axisDCA});
+      histos.add("h2dDCAxyCascade", "h2dDCAxyCascade", kTH2F, {axes.axisMomentum, axes.axisDCA});
+      histos.add("h2dDCAxyCascadeBachelor", "h2dDCAxyCascadeBachelor", kTH2F, {axes.axisMomentum, axes.axisDCA});
+      histos.add("h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative", kTH2F, {axes.axisMomentum, axes.axisDCA});
+      histos.add("h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive", kTH2F, {axes.axisMomentum, axes.axisDCA});
 
-      histos.add("h2dDeltaPtVsPt", "h2dDeltaPtVsPt", kTH2F, {axisMomentum, axisDeltaPt});
-      histos.add("h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt", kTH2F, {axisMomentum, axisDeltaEta});
+      histos.add("h2dDeltaPtVsPt", "h2dDeltaPtVsPt", kTH2F, {axes.axisMomentum, axes.axisDeltaPt});
+      histos.add("h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt", kTH2F, {axes.axisMomentum, axes.axisDeltaEta});
+
+      histos.add("hFastTrackerHits", "hFastTrackerHits", kTH2F, {axes.axisZ, axes.axisRadius});
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -379,6 +387,8 @@ struct OnTheFlyTracker {
 
     // configure FastTracker
     fastTracker.magneticField = magneticField;
+    fastTracker.applyZacceptance = fastTrackerSettings.applyZacceptance;
+
     if(fastTrackerSettings.alice3detector == 0){
       fastTracker.AddSiliconALICE3v1();
     }
@@ -621,11 +631,24 @@ struct OnTheFlyTracker {
         convertTLorentzVectorToO2Track(2212, decayProducts[2], l0DecayVertex, xiDaughterTrackParCovsPerfect[2]);
 
         for (int i = 0; i < 3; i++) {
-          nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i]);
           isReco[i] = false;
-          if(nHits[i]>=fastTrackerSettings.minSiliconHits){ 
+          if(enableSecondarySmearing){
+            
+            nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i]);
+          
+            if(nHits[i]>=fastTrackerSettings.minSiliconHits){ 
+              isReco[i] = true;
+            }else{
+              continue; // extra sure
+            }
+            for(uint32_t ih=0; ih<fastTracker.hits.size(); ih++){ 
+              histos.fill(HIST("hFastTrackerHits"), fastTracker.hits[ih][2], std::hypot(fastTracker.hits[ih][0], fastTracker.hits[ih][1]));
+            }
+          }else{
             isReco[i] = true;
+            xiDaughterTrackParCovsTracked[i] = xiDaughterTrackParCovsPerfect[i];
           }
+
           if (TMath::IsNaN(xiDaughterTrackParCovsTracked[i].getZ())) {
             continue;
           } else {
