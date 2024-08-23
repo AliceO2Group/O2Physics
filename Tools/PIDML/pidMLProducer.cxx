@@ -217,6 +217,10 @@ struct PidMlProducer {
   void processDataML(MyCollisionML const& /*collision*/, BigTracksDataML const& tracks)
   {
     for (const auto& track : tracks) {
+      if(!track.hasTPC()) {
+        continue;
+      }
+
       pidTracksTableDataML(track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
                            getTOFSignal(track), getTOFBeta(track),
                            track.p(), track.pt(), track.px(), track.py(), track.pz(),
@@ -235,6 +239,10 @@ struct PidMlProducer {
   void processDataAll(MyCollision const& collision, BigTracksData const& tracks)
   {
     for (const auto& track : tracks) {
+      if(!track.hasTPC()) {
+        continue;
+      }
+
       pidTracksTableData(collision.centRun2V0M(),
                          collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
                          collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
@@ -269,7 +277,7 @@ struct PidMlProducer {
   void processMcMl(MyCollisionML const& /*collision*/, BigTracksMCML const& tracks, aod::McParticles const& /*mctracks*/)
   {
     for (const auto& track : tracks) {
-      if (!track.has_mcParticle()) {
+      if (!track.has_mcParticle() || !track.hasTPC()) {
         continue;
       }
       const auto mcParticle = track.mcParticle_as<aod::McParticles>();
@@ -295,7 +303,7 @@ struct PidMlProducer {
   void processMcAll(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles const& /*mctracks*/)
   {
     for (const auto& track : tracks) {
-      if (!track.has_mcParticle()) {
+      if (!track.has_mcParticle() || !track.hasTPC()) {
         continue;
       }
       const auto mcParticle = track.mcParticle_as<aod::McParticles>();
