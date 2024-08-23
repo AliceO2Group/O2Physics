@@ -19,19 +19,22 @@
 #include <unordered_map>
 #include <vector>
 
-class ZorroSummary : public TNamed {
-public:
+class ZorroSummary : public TNamed
+{
+ public:
   ZorroSummary() = default;
   ZorroSummary(const char* name, const char* objTitle) : TNamed(name, objTitle) {}
-  virtual ~ZorroSummary() = default; // NOLINT: Making this override breaks compilation for unknown reason
+  virtual ~ZorroSummary() = default;   // NOLINT: Making this override breaks compilation for unknown reason
   virtual void Copy(TObject& c) const; // NOLINT: Making this override breaks compilation for unknown reason
   virtual Long64_t Merge(TCollection* list);
 
-  void setupTOIs(int ntois, const std::string& toinames) {
+  void setupTOIs(int ntois, const std::string& toinames)
+  {
     mNtois = ntois;
     mTOInames = toinames;
   }
-  void setupRun(int runNumber, double tvxCountes, const std::vector<double>& toiCounters) {
+  void setupRun(int runNumber, double tvxCountes, const std::vector<double>& toiCounters)
+  {
     if (mRunNumber == runNumber) {
       return;
     }
@@ -44,7 +47,8 @@ public:
     mCurrentAnalysedTOIcounters = &mAnalysedTOIcounters[runNumber];
   }
   double getNormalisationFactor(int toiId) const;
-  void increaseTOIcounter(int runNumber, int toiId) {
+  void increaseTOIcounter(int runNumber, int toiId)
+  {
     if (runNumber != mRunNumber) {
       return;
     }
@@ -56,8 +60,8 @@ public:
   const auto& getTVXcounters() const { return mTVXcounters; }
   const auto& getAnalysedTOIcounters() const { return mAnalysedTOIcounters; }
 
-private:
-  int mRunNumber = 0; //! Run currently being analysed
+ private:
+  int mRunNumber = 0;                                            //! Run currently being analysed
   std::vector<ULong64_t>* mCurrentAnalysedTOIcounters = nullptr; //! Analysed TOI counters for the current run
 
   int mNtois = 0;

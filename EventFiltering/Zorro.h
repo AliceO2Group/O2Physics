@@ -57,6 +57,7 @@ class Zorro
   void setBCtolerance(int tolerance) { mBCtolerance = tolerance; }
 
   ZorroSummary* getZorroSummary() { return &mZorroSummary; }
+
  private:
   ZorroSummary mZorroSummary{"ZorroSummary", "ZorroSummary"};
 
