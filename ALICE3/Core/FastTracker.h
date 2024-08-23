@@ -23,7 +23,7 @@ namespace fastsim
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
-// this class implements a synthetic smearer that allows 
+// this class implements a synthetic smearer that allows
 // for on-demand smearing of TrackParCovs in a certain flexible t
 // detector layout.
 class FastTracker
@@ -46,11 +46,11 @@ class FastTracker
   std::vector<DetLayer> layers;
   std::vector<std::vector<float>> hits; // bookkeep last added hits
 
-  // operational 
-  float magneticField; // in kiloGauss (5 = 0.5T, etc)
+  // operational
+  float magneticField;   // in kiloGauss (5 = 0.5T, etc)
   bool applyZacceptance; // check z acceptance or not
-  float covMatFactor; // covmat off-diagonal factor to use for covmat fix (negative: no factor)
-  int verboseLevel; // 0: not verbose, >0 more verbose
+  float covMatFactor;    // covmat off-diagonal factor to use for covmat fix (negative: no factor)
+  int verboseLevel;      // 0: not verbose, >0 more verbose
 
   ClassDef(FastTracker, 1);
 };

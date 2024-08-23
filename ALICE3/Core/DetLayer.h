@@ -24,8 +24,7 @@
 namespace o2::fastsim
 {
 
-struct DetLayer
-{
+struct DetLayer {
   // TString for holding name
   TString name;
 
@@ -34,14 +33,14 @@ struct DetLayer
   float z; // z dimension in centimeters
 
   // material variables
-  float x0; // radiation length
+  float x0;   // radiation length
   float xrho; // density
 
   // resolution variables for active layers
   float resRPhi; // RPhi resolution in centimeters
   float resZ;    // Z resolution in centimeters
 
-  // efficiency 
+  // efficiency
   float eff; // detection efficiency
 };
 

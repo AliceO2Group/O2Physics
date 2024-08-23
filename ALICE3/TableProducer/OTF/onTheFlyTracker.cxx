@@ -135,7 +135,7 @@ struct OnTheFlyTracker {
 
     ConfigurableAxis axisRadius{"axisRadius", {2500, 0.0f, +250.0f}, "R (cm)"};
     ConfigurableAxis axisZ{"axisZ", {100, -250.0f, +250.0f}, "Z (cm)"};
-  } axes; 
+  } axes;
 
   // for topo var QA
   struct : ConfigurableGroup {
@@ -389,15 +389,15 @@ struct OnTheFlyTracker {
     fastTracker.magneticField = magneticField;
     fastTracker.applyZacceptance = fastTrackerSettings.applyZacceptance;
 
-    if(fastTrackerSettings.alice3detector == 0){
+    if (fastTrackerSettings.alice3detector == 0) {
       fastTracker.AddSiliconALICE3v1();
     }
-    if(fastTrackerSettings.alice3detector == 1){
+    if (fastTrackerSettings.alice3detector == 1) {
       fastTracker.AddSiliconALICE3v4();
       fastTracker.AddTPC(0.1, 0.1);
     }
 
-    // print fastTracker settings 
+    // print fastTracker settings
     fastTracker.Print();
   }
 
@@ -632,19 +632,19 @@ struct OnTheFlyTracker {
 
         for (int i = 0; i < 3; i++) {
           isReco[i] = false;
-          if(enableSecondarySmearing){
-            
+          if (enableSecondarySmearing) {
+
             nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i]);
-          
-            if(nHits[i]>=fastTrackerSettings.minSiliconHits){ 
+
+            if (nHits[i] >= fastTrackerSettings.minSiliconHits) {
               isReco[i] = true;
-            }else{
+            } else {
               continue; // extra sure
             }
-            for(uint32_t ih=0; ih<fastTracker.hits.size(); ih++){ 
+            for (uint32_t ih = 0; ih < fastTracker.hits.size(); ih++) {
               histos.fill(HIST("hFastTrackerHits"), fastTracker.hits[ih][2], std::hypot(fastTracker.hits[ih][0], fastTracker.hits[ih][1]));
             }
-          }else{
+          } else {
             isReco[i] = true;
             xiDaughterTrackParCovsTracked[i] = xiDaughterTrackParCovsPerfect[i];
           }
