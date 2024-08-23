@@ -44,6 +44,11 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+using filteredColl = soa::Filtered<soa::Join<JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
+using filteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackExtras>>;
+using filteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
+using joinedTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
+
 // What this task should do
 // Event by event fill
 // 1) pT spectrum of tracks in TPC volume
@@ -142,12 +147,7 @@ struct ChJetTriggerQATask {
   // declare filters on jets
   Filter jetRadiusSelection = (aod::jet::r == nround(cfgJetR.node() * 100.0f));
 
-  using filteredColl = soa::Filtered<soa::Join<JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
-  using filteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackExtras>>;
-  using filteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
-  // using Tracks = soa::Join<aod::Tracks, aod::TracksExtra>; // could be deleted? it is not iterator
-
-  void process(filteredColl const& collision, filteredJTracks const& tracks, filteredJets const& jets /*, Tracks const&*/)
+  void process(filteredColl const& collision, filteredJTracks const& tracks, filteredJets const& jets, joinedTracks const&)
   {
 
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -184,7 +184,7 @@ struct ChJetTriggerQATask {
 
       for (auto const& track : tracks) { // loop over filtered tracks in full TPC volume having pT > 100 MeV
 
-        auto const& originalTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
+        auto const& originalTrack = track.track_as<joinedTracks>();
 
         spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts"), track.p(), track.p() - originalTrack.tpcInnerParam());
 
