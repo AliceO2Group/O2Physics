@@ -50,7 +50,8 @@ enum SpeciesAndDecay { DsToKKPi = 0,
                        kSpeciesAndDecay };
 
 template <typename T>
-concept hasDsMlInfo = requires(T candidate) {
+concept hasDsMlInfo = requires(T candidate)
+{
   candidate.mlProbDsToKKPi();
   candidate.mlProbDsToPiKK();
 };
