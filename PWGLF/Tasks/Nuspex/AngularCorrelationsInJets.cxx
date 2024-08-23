@@ -63,42 +63,84 @@ struct AngularCorrelationsInJets {
   Configurable<float> fProtonDCAxy{"protonDCAxy", 0.5, "[proton] DCAxy cut"};
   Configurable<float> fProtonDCAz{"protonDCAz", 1.0, "[proton] DCAz cut"};
   Configurable<float> fProtonTPCTOFpT{"protonTPCTOFswitchpT", 0.7, "[proton] pT for switch in TPC/TOF nsigma"};
-  Configurable<float> fProtonTPCnsigLow{"protonTPCnsigmapTLow", 5.0, "[proton] max TPC nsigma with low pT"};
-  Configurable<float> fProtonTPCnsigHigh{"protonTPCnsigmapTHigh", 4.0, "[proton] max TPC nsigma with high pT"};
-  Configurable<float> fProtonTOFnsigLow{"protonTOFnsigmapTLow", 10.0, "[proton] max TOF nsigma with low pT"};
-  Configurable<float> fProtonTOFnsigHigh{"protonTOFnsigmapTHigh", 10.0, "[proton] max TOF nsigma with high pT"};
+  Configurable<float> fProtonTPCnsigLowMin{"protonTPCnsigmaLowPtMin", -4.0, "[proton] min TPC nsigma with low pT"};
+  Configurable<float> fProtonTPCnsigHighMin{"protonTPCnsigmaHighPtMin", -4.0, "[proton] min TPC nsigma with high pT"};
+  Configurable<float> fProtonTPCnsigLowMax{"protonTPCnsigmaLowPtMax", 4.0, "[proton] max TPC nsigma with low pT"};
+  Configurable<float> fProtonTPCnsigHighMax{"protonTPCnsigmaHighPtMax", 4.0, "[proton] max TPC nsigma with high pT"};
+  Configurable<float> fProtonTOFnsigLowMin{"protonTOFnsigmaLowPtMin", -15.0, "[proton] min TOF nsigma with low pT"};
+  Configurable<float> fProtonTOFnsigHighMin{"protonTOFnsigmaHighPtMin", -15.0, "[proton] min TOF nsigma with high pT"};
+  Configurable<float> fProtonTOFnsigLowMax{"protonTOFnsigmaLowPtMax", 15.0, "[proton] max TOF nsigma with low pT"};
+  Configurable<float> fProtonTOFnsigHighMax{"protonTOFnsigmaHighPtMax", 15.0, "[proton] max TOF nsigma with high pT"};
 
   // Antiproton Cuts
   Configurable<float> fAntiprotonDCAxy{"antiprotonDCAxy", 0.5, "[antiproton] DCAxy cut"};
   Configurable<float> fAntiprotonDCAz{"antiprotonDCAz", 1.0, "[antiproton] DCAz cut"};
   Configurable<float> fAntiprotonTPCTOFpT{"antiprotonTPCTOFswitchpT", 0.7, "[antiproton] pT for switch in TPC/TOF nsigma"};
-  Configurable<float> fAntiprotonTPCnsigLow{"antiprotonTPCnsigmapTLow", 5.0, "[antiproton] max TPC nsigma with low pT"};
-  Configurable<float> fAntiprotonTPCnsigHigh{"antiprotonTPCnsigmapTHigh", 4.0, "[antiproton] max TPC nsigma with high pT"};
-  Configurable<float> fAntiprotonTOFnsigLow{"antiprotonTOFnsigmapTLow", 10.0, "[antiproton] max TOF nsigma with low pT"};
-  Configurable<float> fAntiprotonTOFnsigHigh{"antiprotonTOFnsigmapTHigh", 10.0, "[antiproton] max TOF nsigma with high pT"};
+  Configurable<float> fAntiprotonTPCnsigLowMin{"antiprotonTPCnsigmaLowPtMin", -4.0, "[antiproton] min TPC nsigma with low pT"};
+  Configurable<float> fAntiprotonTPCnsigHighMin{"antiprotonTPCnsigmaHighPtMin", -4.0, "[antiproton] min TPC nsigma with high pT"};
+  Configurable<float> fAntiprotonTPCnsigLowMax{"antiprotonTPCnsigmaLowPtMax", 4.0, "[antiproton] max TPC nsigma with low pT"};
+  Configurable<float> fAntiprotonTPCnsigHighMax{"antiprotonTPCnsigmaHighPtMax", 4.0, "[antiproton] max TPC nsigma with high pT"};
+  Configurable<float> fAntiprotonTOFnsigLowMin{"antiprotonTOFnsigmaLowPtMin", -15.0, "[antiproton] min TOF nsigma with low pT"};
+  Configurable<float> fAntiprotonTOFnsigHighMin{"antiprotonTOFnsigmaHighPtMin", -15.0, "[antiproton] min TOF nsigma with high pT"};
+  Configurable<float> fAntiprotonTOFnsigLowMax{"antiprotonTOFnsigmaLowPtMax", 15.0, "[antiproton] max TOF nsigma with low pT"};
+  Configurable<float> fAntiprotonTOFnsigHighMax{"antiprotonTOFnsigmaHighPtMax", 15.0, "[antiproton] max TOF nsigma with high pT"};
 
   // Deuteron Cuts
   Configurable<float> fDeuteronDCAxy{"deuteronDCAxy", 0.5, "[deuteron] DCAxy cut"};
   Configurable<float> fDeuteronDCAz{"deuteronDCAz", 1.0, "[deuteron] DCAz cut"};
   Configurable<float> fDeuteronTPCTOFpT{"deuteronTPCTOFswitchpT", 0.7, "[deuteron] pT for switch in TPC/TOF nsigma"};
-  Configurable<float> fDeuteronTPCnsigLow{"deuteronTPCnsigmapTLow", 5.0, "[deuteron] max TPC nsigma with low pT"};
-  Configurable<float> fDeuteronTPCnsigHigh{"deuteronTPCnsigmapTHigh", 4.0, "[deuteron] max TPC nsigma with high pT"};
-  Configurable<float> fDeuteronTOFnsigLow{"deuteronTOFnsigmapTLow", 10.0, "[deuteron] max TOF nsigma with low pT"};
-  Configurable<float> fDeuteronTOFnsigHigh{"deuteronTOFnsigmapTHigh", 10.0, "[deuteron] max TOF nsigma with high pT"};
+  Configurable<float> fDeuteronTPCnsigLowMin{"deuteronTPCnsigmaLowPtMin", -4.0, "[deuteron] min TPC nsigma with low pT"};
+  Configurable<float> fDeuteronTPCnsigHighMin{"deuteronTPCnsigmaHighPtMin", -4.0, "[deuteron] min TPC nsigma with high pT"};
+  Configurable<float> fDeuteronTPCnsigLowMax{"deuteronTPCnsigmaLowPtMax", 4.0, "[deuteron] max TPC nsigma with low pT"};
+  Configurable<float> fDeuteronTPCnsigHighMax{"deuteronTPCnsigmaHighPtMax", 4.0, "[deuteron] max TPC nsigma with high pT"};
+  Configurable<float> fDeuteronTOFnsigLowMin{"deuteronTOFnsigmaLowPtMin", -15.0, "[deuteron] min TOF nsigma with low pT"};
+  Configurable<float> fDeuteronTOFnsigHighMin{"deuteronTOFnsigmaHighPtMin", -15.0, "[deuteron] min TOF nsigma with high pT"};
+  Configurable<float> fDeuteronTOFnsigLowMax{"deuteronTOFnsigmaLowPtMax", 15.0, "[deuteron] max TOF nsigma with low pT"};
+  Configurable<float> fDeuteronTOFnsigHighMax{"deuteronTOFnsigmaHighPtMax", 15.0, "[deuteron] max TOF nsigma with high pT"};
 
   // Antideuteron Cuts
   Configurable<float> fAntideuteronDCAxy{"antideuteronDCAxy", 0.5, "[antideuteron] DCAxy cut"};
   Configurable<float> fAntideuteronDCAz{"antideuteronDCAz", 1.0, "[antideuteron] DCAz cut"};
   Configurable<float> fAntideuteronTPCTOFpT{"antideuteronTPCTOFswitchpT", 0.7, "[antideuteron] pT for switch in TPC/TOF nsigma"};
-  Configurable<float> fAntideuteronTPCnsigLow{"antideuteronTPCnsigmapTLow", 5.0, "[antideuteron] max TPC nsigma with low pT"};
-  Configurable<float> fAntideuteronTPCnsigHigh{"antideuteronTPCnsigmapTHigh", 4.0, "[antideuteron] max TPC nsigma with high pT"};
-  Configurable<float> fAntideuteronTOFnsigLow{"antideuteronTOFnsigmapTLow", 10.0, "[antideuteron] max TOF nsigma with low pT"};
-  Configurable<float> fAntideuteronTOFnsigHigh{"antideuteronTOFnsigmapTHigh", 10.0, "[antideuteron] max TOF nsigma with high pT"};
+  Configurable<float> fAntideuteronTPCnsigLowMin{"antideuteronTPCnsigmaLowPtMin", -4.0, "[antideuteron] min TPC nsigma with low pT"};
+  Configurable<float> fAntideuteronTPCnsigHighMin{"antideuteronTPCnsigmaHighPtMin", -4.0, "[antideuteron] min TPC nsigma with high pT"};
+  Configurable<float> fAntideuteronTPCnsigLowMax{"antideuteronTPCnsigmaLowPtMax", 4.0, "[antideuteron] max TPC nsigma with low pT"};
+  Configurable<float> fAntideuteronTPCnsigHighMax{"antideuteronTPCnsigmaHighPtMax", 4.0, "[antideuteron] max TPC nsigma with high pT"};
+  Configurable<float> fAntideuteronTOFnsigLowMin{"antideuteronTOFnsigmaLowPtMin", -15.0, "[antideuteron] min TOF nsigma with low pT"};
+  Configurable<float> fAntideuteronTOFnsigHighMin{"antideuteronTOFnsigmaHighPtMin", -15.0, "[antideuteron] min TOF nsigma with high pT"};
+  Configurable<float> fAntideuteronTOFnsigLowMax{"antideuteronTOFnsigmaLowPtMax", 15.0, "[antideuteron] max TOF nsigma with low pT"};
+  Configurable<float> fAntideuteronTOFnsigHighMax{"antideuteronTOFnsigmaHighPtMax", 15.0, "[antideuteron] max TOF nsigma with high pT"};
+
+  // Helium-3 Cuts
+  Configurable<float> fHeliumDCAxy{"heliumDCAxy", 0.5, "[helium] DCAxy cut"};
+  Configurable<float> fHeliumDCAz{"heliumDCAz", 1.0, "[helium] DCAz cut"};
+  Configurable<float> fHeliumTPCTOFpT{"heliumTPCTOFswitchpT", 0.7, "[helium] pT for switch in TPC/TOF nsigma"};
+  Configurable<float> fHeliumTPCnsigLowMin{"heliumTPCnsigmaLowPtMin", -4.0, "[helium] min TPC nsigma with low pT"};
+  Configurable<float> fHeliumTPCnsigHighMin{"heliumTPCnsigmaHighPtMin", -4.0, "[helium] min TPC nsigma with high pT"};
+  Configurable<float> fHeliumTPCnsigLowMax{"heliumTPCnsigmaLowPtMax", 4.0, "[helium] max TPC nsigma with low pT"};
+  Configurable<float> fHeliumTPCnsigHighMax{"heliumTPCnsigmaHighPtMax", 4.0, "[helium] max TPC nsigma with high pT"};
+  Configurable<float> fHeliumTOFnsigLowMin{"heliumTOFnsigmaLowPtMin", -15.0, "[helium] min TOF nsigma with low pT"};
+  Configurable<float> fHeliumTOFnsigHighMin{"heliumTOFnsigmaHighPtMin", -15.0, "[helium] min TOF nsigma with high pT"};
+  Configurable<float> fHeliumTOFnsigLowMax{"heliumTOFnsigmaLowPtMax", 15.0, "[helium] max TOF nsigma with low pT"};
+  Configurable<float> fHeliumTOFnsigHighMax{"heliumTOFnsigmaHighPtMax", 15.0, "[helium] max TOF nsigma with high pT"};
+
+  // Antihelium-3 Cuts
+  Configurable<float> fAntiheliumDCAxy{"antiheliumDCAxy", 0.5, "[antihelium] DCAxy cut"};
+  Configurable<float> fAntiheliumDCAz{"antiheliumDCAz", 1.0, "[antihelium] DCAz cut"};
+  Configurable<float> fAntiheliumTPCTOFpT{"antiheliumTPCTOFswitchpT", 0.7, "[antihelium] pT for switch in TPC/TOF nsigma"};
+  Configurable<float> fAntiheliumTPCnsigLowMin{"antiheliumTPCnsigmaLowPtMin", -4.0, "[antihelium] min TPC nsigma with low pT"};
+  Configurable<float> fAntiheliumTPCnsigHighMin{"antiheliumTPCnsigmaHighPtMin", -4.0, "[antihelium] min TPC nsigma with high pT"};
+  Configurable<float> fAntiheliumTPCnsigLowMax{"antiheliumTPCnsigmaLowPtMax", 4.0, "[antihelium] max TPC nsigma with low pT"};
+  Configurable<float> fAntiheliumTPCnsigHighMax{"antiheliumTPCnsigmaHighPtMax", 4.0, "[antihelium] max TPC nsigma with high pT"};
+  Configurable<float> fAntiheliumTOFnsigLowMin{"antiheliumTOFnsigmaLowPtMin", -15.0, "[antihelium] min TOF nsigma with low pT"};
+  Configurable<float> fAntiheliumTOFnsigHighMin{"antiheliumTOFnsigmaHighPtMin", -15.0, "[antihelium] min TOF nsigma with high pT"};
+  Configurable<float> fAntiheliumTOFnsigLowMax{"antiheliumTOFnsigmaLowPtMax", 15.0, "[antihelium] max TOF nsigma with low pT"};
+  Configurable<float> fAntiheliumTOFnsigHighMax{"antiheliumTOFnsigmaHighPtMax", 15.0, "[antihelium] max TOF nsigma with high pT"};
 
   Configurable<int> fTrackBufferSize{"trackBufferSize", 2000, "Number of mixed-event tracks being stored"};
 
   // QC Configurables
-  Configurable<float> fZVtx{"zVtx", 10.0, "max zVertex"};
+  Configurable<float> fZVtx{"zVtx", 0.0, "max zVertex"};
   Configurable<float> fRmax{"Rmax", 0.3, "Maximum radius for jet and UE regions"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -353,9 +395,9 @@ struct AngularCorrelationsInJets {
       return isAntideuteron;
 
     // TPC
-    if (track.pt() < fAntideuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fAntideuteronTPCnsigLow)
+    if (track.pt() < fAntideuteronTPCTOFpT && track.tpcNSigmaDe() > fAntideuteronTPCnsigLowMin && track.tpcNSigmaDe() < fAntideuteronTPCnsigLowMax)
       isAntideuteron = true;
-    if (track.pt() > fAntideuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe()) < fAntideuteronTPCnsigHigh)
+    if (track.pt() > fAntideuteronTPCTOFpT && track.tpcNSigmaDe() > fAntideuteronTPCnsigHighMin && track.tpcNSigmaDe() < fAntideuteronTPCnsigHighMax)
       isAntideuteron = true;
 
     registryData.fill(HIST("hDCAzJetAntideuteron"), track.pt() * track.sign(), track.dcaZ());
@@ -366,9 +408,9 @@ struct AngularCorrelationsInJets {
       return false;
 
     // TOF
-    if (track.pt() < fAntideuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fAntideuteronTOFnsigLow)
+    if (track.pt() < fAntideuteronTPCTOFpT && track.tofNSigmaDe() > fAntideuteronTOFnsigLowMin && track.tofNSigmaDe() < fAntideuteronTOFnsigLowMax)
       isAntideuteron = true;
-    if (track.pt() > fAntideuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe()) < fAntideuteronTOFnsigHigh)
+    if (track.pt() > fAntideuteronTPCTOFpT && track.tofNSigmaDe() > fAntideuteronTOFnsigHighMin && track.tofNSigmaDe() < fAntideuteronTOFnsigHighMax)
       isAntideuteron = true;
 
     return isAntideuteron;
@@ -1010,8 +1052,8 @@ struct AngularCorrelationsInJets {
       if (!collision.sel8())
         continue;
       registryData.fill(HIST("hEventProtocol"), 1);
-      // if (TMath::Abs(collision.PosZ()) > fZVtx)
-      //   continue;
+      if (TMath::Abs(collision.PosZ()) > fZVtx)
+        continue;
       fillHistogramsRun3(collision, tracks);
     }
   }
