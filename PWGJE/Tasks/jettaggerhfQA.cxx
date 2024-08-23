@@ -644,9 +644,9 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h2_jet_pt_2prong_sigmaLxy"), jet.pt(), prong.errorDecayLengthXY());
         registry.fill(HIST("h2_jet_pt_2prong_sigmaLxyz"), jet.pt(), prong.errorDecayLength());
       }
-      auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet);
+      auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet, prongChi2PCAMax, prongsigmaLxyMax);
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
-      auto bjetCandForXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet, true);
+      auto bjetCandForXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet, prongChi2PCAMax, prongsigmaLxyzMax, true);
       auto maxSxyz = bjetCandForXYZ.decayLength() / bjetCandForXYZ.errorDecayLength();
       registry.fill(HIST("h2_jet_pt_2prong_Sxy_N1"), jet.pt(), maxSxy);
       registry.fill(HIST("h2_jet_pt_2prong_Sxyz_N1"), jet.pt(), maxSxyz);
@@ -673,9 +673,9 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h2_jet_pt_3prong_sigmaLxy"), jet.pt(), prong.errorDecayLengthXY());
         registry.fill(HIST("h2_jet_pt_3prong_sigmaLxyz"), jet.pt(), prong.errorDecayLength());
       }
-      auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet);
+      auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet, prongChi2PCAMax, prongsigmaLxyMax);
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
-      auto bjetCandForXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet, true);
+      auto bjetCandForXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet, prongChi2PCAMax, prongsigmaLxyzMax, true);
       auto maxSxyz = bjetCandForXYZ.decayLength() / bjetCandForXYZ.errorDecayLength();
       registry.fill(HIST("h2_jet_pt_3prong_Sxy_N1"), jet.pt(), maxSxy);
       registry.fill(HIST("h2_jet_pt_3prong_Sxyz_N1"), jet.pt(), maxSxyz);
@@ -705,10 +705,10 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h3_jet_pt_2prong_sigmaLxy_flavour"), mcdjet.pt(), prong.errorDecayLengthXY(), origin);
         registry.fill(HIST("h3_jet_pt_2prong_sigmaLxyz_flavour"), mcdjet.pt(), prong.errorDecayLength(), origin);
       }
-      auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet);
+      auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet, prongChi2PCAMax, prongsigmaLxyMax);
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
       auto massSV = bjetCand.m();
-      auto bjetCandForXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet, true);
+      auto bjetCandForXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet, prongChi2PCAMax, prongsigmaLxyzMax, true);
       auto maxSxyz = bjetCandForXYZ.decayLength() / bjetCandForXYZ.errorDecayLength();
       registry.fill(HIST("h3_jet_pt_2prong_Sxy_N1_flavour"), mcdjet.pt(), maxSxy, origin);
       registry.fill(HIST("h3_jet_pt_2prong_Sxyz_N1_flavour"), mcdjet.pt(), maxSxyz, origin);
@@ -739,10 +739,10 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h3_jet_pt_3prong_sigmaLxy_flavour"), mcdjet.pt(), prong.errorDecayLengthXY(), origin);
         registry.fill(HIST("h3_jet_pt_3prong_sigmaLxyz_flavour"), mcdjet.pt(), prong.errorDecayLength(), origin);
       }
-      auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet);
+      auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet, prongChi2PCAMax, prongsigmaLxyMax);
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
       auto massSV = bjetCand.m();
-      auto bjetCandForXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet, true);
+      auto bjetCandForXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet, prongChi2PCAMax, prongsigmaLxyzMax, true);
       auto maxSxyz = bjetCandForXYZ.decayLength() / bjetCandForXYZ.errorDecayLength();
       registry.fill(HIST("h3_jet_pt_3prong_Sxy_N1_flavour"), mcdjet.pt(), maxSxy, origin);
       registry.fill(HIST("h3_jet_pt_3prong_Sxyz_N1_flavour"), mcdjet.pt(), maxSxyz, origin);

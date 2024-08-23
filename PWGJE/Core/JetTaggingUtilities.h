@@ -340,12 +340,17 @@ bool trackAcceptanceWithDca(T const& track, float trackDcaXYMax, float trackDcaZ
  * retrun acceptance of prong about chi2 and error of decay length due to cut for high quality secondary vertex
  */
 template <typename T>
-bool prongAcceptance(T const& prong, float prongChi2PCAMax, float prongsigmaLxyMax)
+bool prongAcceptance(T const& prong, float prongChi2PCAMax, float prongsigmaLxyMax, bool doXYZ)
 {
   if (prong.chi2PCA() > prongChi2PCAMax)
     return false;
-  if (prong.errorDecayLengthXY() > prongsigmaLxyMax)
-    return false;
+  if (!doXYZ) {
+    if (prong.errorDecayLengthXY() > prongsigmaLxyMax)
+      return false;
+  } else {
+    if (prong.errorDecayLength() > prongsigmaLxyMax)
+      return false;
+  }
   return true;
 }
 
@@ -578,7 +583,7 @@ class bjetCandSV
 };
 
 template <typename ProngType, typename JetType>
-bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, bool doXYZ = false)
+bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, const bool& doXYZ = false)
 {
   float xPVertex = 0.0f;
   float yPVertex = 0.0f;
@@ -618,7 +623,8 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, bool doXYZ = false)
     } else {
       Sxy = prong.decayLength() / prong.errorDecayLength();
     }
-    // if (!prongAcceptance(prong, doXYZ)) continue;
+    if (!prongAcceptance(prong, prongChi2PCAMax, prongsigmaLxyMax, doXYZ))
+      continue;
 
     if (maxSxy < Sxy) {
       maxSxy = Sxy;
@@ -666,9 +672,9 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, bool doXYZ = false)
 }
 
 template <typename T, typename U>
-bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& doXYZ = false, float const& tagPointForSV = 15.)
+bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
 {
-  auto bjetCand = jetFromProngMaxDecayLength<U>(jet);
+  auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMax, prongsigmaLxyMax, doXYZ);
   if (!doXYZ) {
     auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
     if (maxSxy < tagPointForSV)

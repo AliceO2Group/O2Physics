@@ -252,7 +252,11 @@ struct JetTaggerHFTask {
       }
       if (jettaggingutilities::isGreaterThanTaggingPoint(collision, jet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
         flagtaggedjetIP = true;
-      flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, useXYZForTagging, tagPointForSV);
+      if (!useXYZForTagging) {
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMax, prongsigmaLxyMax, useXYZForTagging, tagPointForSV);
+      } else {
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMax, prongsigmaLxyzMax, useXYZForTagging, tagPointForSV);
+      }
       taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
   }
@@ -301,7 +305,11 @@ struct JetTaggerHFTask {
       }
       if (jettaggingutilities::isGreaterThanTaggingPoint(collision, mcdjet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
         flagtaggedjetIP = true;
-      flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, useXYZForTagging, tagPointForSV);
+      if (!useXYZForTagging) {
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMax, prongsigmaLxyMax, useXYZForTagging, tagPointForSV);
+      } else {
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMax, prongsigmaLxyzMax, useXYZForTagging, tagPointForSV);
+      }
       taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
   }
