@@ -23,6 +23,7 @@
 #include "CommonDataFormat/IRFrame.h"
 #include "Framework/HistogramRegistry.h"
 #include "ZorroHelper.h"
+#include "ZorroSummary.h"
 
 namespace o2
 {
@@ -55,7 +56,11 @@ class Zorro
   void setBaseCCDBPath(std::string path) { mBaseCCDBPath = path; }
   void setBCtolerance(int tolerance) { mBCtolerance = tolerance; }
 
+  ZorroSummary* getZorroSummary() { return &mZorroSummary; }
+
  private:
+  ZorroSummary mZorroSummary{"ZorroSummary", "ZorroSummary"};
+
   std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
   int mRunNumber = 0;
   TH1* mAnalysedTriggers;           /// Accounting for all triggers in the current run
