@@ -79,7 +79,8 @@ struct highmasslambda {
   Configurable<bool> additionalEvSel{"additionalEvSel", true, "additionalEvSel"};
   Configurable<bool> additionalEvSel2{"additionalEvSel2", false, "additionalEvSel2"};
   Configurable<bool> fillDefault{"fillDefault", false, "fill Occupancy"};
-  Configurable<bool> fillOccupancy{"fillOccupancy", false, "fill Occupancy"};
+  Configurable<bool> fillOccupancy{"fillOccupancy", true, "fill Occupancy"};
+  Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 2500, "Occupancy cut"};
   Configurable<bool> fillDecayLength{"fillDecayLength", true, "fill decay length"};
   Configurable<bool> fillPolarization{"fillPolarization", false, "fill polarization"};
   Configurable<bool> fillRotation{"fillRotation", false, "fill rotation"};
@@ -109,7 +110,7 @@ struct highmasslambda {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<int> PIDstrategy{"PIDstrategy", 0, "0: TOF Veto, 1: TOF Veto opti, 2: TOF, 3: TOF loose 1, 4: TOF loose 2, 5: old pt dep"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
-  Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
+  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "TPC TOF combined PID"};
   Configurable<float> nsigmaCutTPCPre{"nsigmacutTPCPre", 3.0, "Value of the TPC Nsigma cut Pre filter"};
   Configurable<float> kaonrejpar{"kaonrejpar", 1.0, "Kaon rej. par"};
   // Configs for V0
@@ -208,9 +209,23 @@ struct highmasslambda {
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{1000, -0.5f, 0.5f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{1000, -0.5f, 0.5f}});
     histos.add("hNsigmaProtonTPCDiff", "Difference NsigmaProton NsigmaKaon TPC distribution", kTH3F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {80, 0.0f, 8.0f}});
+
     histos.add("hNsigmaProtonElectronTPC", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonPionTPC", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonKaonTPC", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+
+    histos.add("hNsigmaProtonElectronTPC_afterPi", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+    histos.add("hNsigmaProtonPionTPC_afterPi", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+    histos.add("hNsigmaProtonKaonTPC_afterPi", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+
+    histos.add("hNsigmaProtonElectronTPC_afterEl", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+    histos.add("hNsigmaProtonPionTPC_afterEl", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+    histos.add("hNsigmaProtonKaonTPC_afterEl", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+
+    histos.add("hNsigmaProtonElectronTPC_afterKa", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+    histos.add("hNsigmaProtonPionTPC_afterKa", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+    histos.add("hNsigmaProtonKaonTPC_afterKa", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
+
     histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTOF", "NsigmaProton TOF distribution", kTH2F, {{1000, -50.0f, 50.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTOFPre", "NsigmaProton TOF distribution Pre sel", kTH2F, {{1000, -50.0f, 50.0f}, {60, 0.0f, 6.0f}});
@@ -232,13 +247,13 @@ struct highmasslambda {
     }
     if (fillOccupancy) {
       if (fillDecayLength) {
-        histos.add("hSparseV2SASameEvent_V2_occupancy", "hSparseV2SASameEvent_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis, occupancyAxis});
-        histos.add("hSparseV2SASameEventRotational_V2_occupancy", "hSparseV2SASameEventRotational_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis, occupancyAxis});
-        histos.add("hSparseV2SAMixedEvent_V2_occupancy", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis, occupancyAxis});
+        histos.add("hSparseV2SASameEvent_V2_occupancy", "hSparseV2SASameEvent_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
+        histos.add("hSparseV2SASameEventRotational_V2_occupancy", "hSparseV2SASameEventRotational_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
+        histos.add("hSparseV2SAMixedEvent_V2_occupancy", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
       }
-      histos.add("hSparseV2SASameEvent_V2_new_occupancy", "hSparseV2SASameEvent_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
-      histos.add("hSparseV2SASameEventRotational_V2_new_occupancy", "hSparseV2SASameEventRotational_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
-      histos.add("hSparseV2SAMixedEvent_V2_new_occupancy", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
+      histos.add("hSparseV2SASameEvent_V2_new_occupancy", "hSparseV2SASameEvent_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+      histos.add("hSparseV2SASameEventRotational_V2_new_occupancy", "hSparseV2SASameEventRotational_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+      histos.add("hSparseV2SAMixedEvent_V2_new_occupancy", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
     } else {
       if (fillDecayLength) {
         histos.add("hSparseV2SASameEvent_V2_occupancy", "hSparseV2SASameEvent_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
@@ -324,123 +339,162 @@ struct highmasslambda {
     return true;
   }
 
-  // TOF Veto
+  template <typename T>
+  bool rejectPi(const T& candidate)
+  {
+    if (candidate.tpcInnerParam() > 0.9 && candidate.tpcInnerParam() < 1.0 && candidate.tpcNSigmaPi() < 6.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.0 && candidate.tpcInnerParam() < 1.1 && candidate.tpcNSigmaPi() < 4.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.1 && candidate.tpcInnerParam() < 1.2 && candidate.tpcNSigmaPi() < 3.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.2 && candidate.tpcInnerParam() < 1.4 && candidate.tpcNSigmaPi() < 1.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.4 && candidate.tpcInnerParam() < 1.5 && candidate.tpcNSigmaPi() < 0.5) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T>
+  bool rejectEl(const T& candidate)
+  {
+
+    if (candidate.tpcInnerParam() > 0.7 && candidate.tpcInnerParam() < 0.8 && candidate.tpcNSigmaEl() < 2.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 0.8 && candidate.tpcInnerParam() < 0.9 && candidate.tpcNSigmaEl() < 0.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 0.9 && candidate.tpcInnerParam() < 1.0 && candidate.tpcNSigmaEl() < -1.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.0 && candidate.tpcInnerParam() < 1.1 && candidate.tpcNSigmaEl() < -2.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.1 && candidate.tpcInnerParam() < 1.2 && candidate.tpcNSigmaEl() < -3.0) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename T>
+  bool rejectKa(const T& candidate)
+  {
+    if (candidate.tpcInnerParam() > 0.7 && candidate.tpcInnerParam() < 0.8 && candidate.tpcNSigmaKa() < 7.5) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 0.8 && candidate.tpcInnerParam() < 0.9 && candidate.tpcNSigmaKa() < 6.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 0.9 && candidate.tpcInnerParam() < 1.1 && candidate.tpcNSigmaKa() < 5.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.1 && candidate.tpcInnerParam() < 1.2 && candidate.tpcNSigmaKa() < 3.5) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.2 && candidate.tpcInnerParam() < 1.4 && candidate.tpcNSigmaKa() < 3.0) {
+      return false;
+    }
+    if (candidate.tpcInnerParam() > 1.4 && candidate.tpcInnerParam() < 1.5 && candidate.tpcNSigmaKa() < 2.5) {
+      return false;
+    }
+    return true;
+  }
+
+  // TPC TOF
   template <typename T>
   bool selectionPID1(const T& candidate)
   {
-    if (candidate.hasTOF()) {
-      if (candidate.tpcInnerParam() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 2.0 && candidate.tpcInnerParam() < 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 2.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
+    if (candidate.tpcInnerParam() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+      return true;
     }
-    if (!candidate.hasTOF()) {
-      if (candidate.tpcInnerParam() < 1.2 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-        return true;
+    if (candidate.tpcInnerParam() >= 0.7) {
+      // printf("I am here: %.3f\n", candidate.tpcInnerParam());
+      if (candidate.hasTOF()) {
+        auto combinedPID = TMath::Sqrt(candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) / TMath::Sqrt(2.0);
+        // printf("combine PIDA: %.3f\n", combinedPID);
+        if (combinedPID < nsigmaCutCombined) {
+          return true;
+        }
       }
-      if (candidate.tpcInnerParam() >= 1.2 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-        return true;
+      if (!candidate.hasTOF()) {
+        if (candidate.tpcInnerParam() < 1.5 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+          return true;
+        }
+        if (candidate.tpcInnerParam() >= 1.5 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 2.0) {
+          return true;
+        }
       }
     }
     return false;
   }
 
-  // TOF Veto Opti
+  // TOF Veto
   template <typename T>
   bool selectionPID2(const T& candidate)
   {
-    if (candidate.hasTOF()) {
-      if (candidate.tpcInnerParam() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 2.0 && candidate.tpcInnerParam() < 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 2.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
+    if (candidate.tpcInnerParam() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+      return true;
     }
-    if (!candidate.hasTOF()) {
-
-      if (candidate.tpcInnerParam() < 0.8 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-        return true;
-      }
-
-      if (candidate.tpcInnerParam() >= 0.8 && candidate.tpcInnerParam() < 1.2 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-        if (candidate.tpcNSigmaKa() > 2 && candidate.tpcNSigmaPi() > 2 && candidate.tpcNSigmaEl() > -3) {
+    if (candidate.tpcInnerParam() >= 0.7) {
+      if (candidate.hasTOF()) {
+        auto combinedPID = TMath::Sqrt(candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) / TMath::Sqrt(2.0);
+        if (combinedPID < nsigmaCutCombined) {
           return true;
         }
-      }
-
-      if (candidate.tpcInnerParam() >= 1.2 && candidate.tpcInnerParam() < 1.6 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-        if (candidate.tpcNSigmaKa() > 0 && candidate.tpcNSigmaPi() > 1) {
-          return true;
-        }
-      }
-
-      if (candidate.tpcInnerParam() >= 1.6 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 2.0) {
-        return true;
       }
     }
     return false;
   }
 
-  // TOF
+  // TOF veto loose
   template <typename T>
   bool selectionPID3(const T& candidate)
   {
-    if (candidate.hasTOF()) {
-      if (candidate.tpcInnerParam() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 2.0 && candidate.tpcInnerParam() < 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 2.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
+    if (candidate.tpcInnerParam() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+      return true;
     }
-    if (!candidate.hasTOF()) {
-
-      if (candidate.tpcInnerParam() < 0.8 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-        return true;
+    if (candidate.tpcInnerParam() >= 0.7) {
+      if (candidate.hasTOF()) {
+        auto combinedPID = TMath::Sqrt(candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) / TMath::Sqrt(2.0);
+        if (combinedPID < nsigmaCutCombined) {
+          return true;
+        }
+      }
+      if (!candidate.hasTOF()) {
+        if (candidate.tpcInnerParam() < 1.5 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+          return true;
+        }
       }
     }
     return false;
   }
 
-  // TOF loose
+  // TOF veto very loose
   template <typename T>
   bool selectionPID4(const T& candidate)
   {
-    if (candidate.hasTOF()) {
-      if (candidate.tpcInnerParam() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 2.0 && candidate.tpcInnerParam() < 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 2.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
+    if (candidate.tpcInnerParam() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+      return true;
     }
-    if (!candidate.hasTOF()) {
-      if (candidate.tpcInnerParam() < 0.8 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() >= 0.8 && candidate.tpcInnerParam() < 1.2 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-        if (candidate.tpcNSigmaKa() > 2 && candidate.tpcNSigmaPi() > 2 && candidate.tpcNSigmaEl() > -3) {
+    if (candidate.tpcInnerParam() >= 0.7) {
+      if (candidate.hasTOF()) {
+        auto combinedPID = TMath::Sqrt(candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) / TMath::Sqrt(2.0);
+        if (combinedPID < nsigmaCutCombined) {
           return true;
         }
       }
-
-      if (candidate.tpcInnerParam() >= 1.2 && candidate.tpcInnerParam() < 1.6 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-        if (candidate.tpcNSigmaKa() > 0 && candidate.tpcNSigmaPi() > 1) {
+      if (!candidate.hasTOF()) {
+        if (candidate.tpcInnerParam() < 1.5 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+          return true;
+        }
+        if (candidate.tpcInnerParam() >= 1.5 && candidate.tpcInnerParam() < 1.8 && candidate.tpcNSigmaPr() > -1.5 && candidate.tpcNSigmaPr() < 2.0) {
           return true;
         }
       }
@@ -448,68 +502,10 @@ struct highmasslambda {
     return false;
   }
 
-  // TOF loose2
-  template <typename T>
-  bool selectionPID5(const T& candidate)
-  {
-    if (candidate.hasTOF()) {
-      if (candidate.tpcInnerParam() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 2.0 && candidate.tpcInnerParam() < 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() > 4.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 2.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-        return true;
-      }
-    }
-    if (!candidate.hasTOF()) {
-      if (candidate.tpcInnerParam() < 0.8 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-        return true;
-      }
-      if (candidate.tpcInnerParam() >= 0.8 && candidate.tpcInnerParam() < 1.2 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-        if (candidate.tpcNSigmaKa() > 2 && candidate.tpcNSigmaPi() > 2 && candidate.tpcNSigmaEl() > -3) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  // old PID
-  template <typename T>
-  bool selectionPID6(const T& candidate)
-  {
-    if (candidate.tpcInnerParam() < 0.7 && !candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.7 && !candidate.hasTOF() && candidate.tpcInnerParam() < 0.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() < 0.8 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 10.0) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.8 && candidate.tpcInnerParam() < 1.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -1.5 && candidate.tpcNSigmaPr() < 3.0) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.8 && candidate.tpcInnerParam() < 3.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 3.0 && candidate.tpcInnerParam() < 4.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 4.0) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 4.0 && candidate.tpcInnerParam() < 5.0 && candidate.hasTOF() && candidate.tofNSigmaPr() > -2.0) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 5.0 && candidate.hasTOF() && candidate.tofNSigmaPr() > -1.5) {
-      return true;
-    }
-    return false;
-  }
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (TMath::Abs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
     const float pT = candidate.pt();
@@ -537,7 +533,7 @@ struct highmasslambda {
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
-    if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
+    if (TMath::Abs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
       return false;
     }
     return true;
@@ -556,19 +552,19 @@ struct highmasslambda {
     if (charge > 0 && sign < 0) {
       return false;
     }
-    if (std::abs(eta) > ConfDaughEta) {
+    if (TMath::Abs(eta) > ConfDaughEta) {
       return false;
     }
-    if (std::abs(pt) < ConfDaughPt) {
+    if (TMath::Abs(pt) < ConfDaughPt) {
       return false;
     }
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
+    if (TMath::Abs(dcaXY) < ConfDaughDCAMin) {
       return false;
     }
-    if (std::abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
+    if (TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
       return false;
     }
     return true;
@@ -648,12 +644,33 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
-      histos.fill(HIST("hNsigmaProtonElectronTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-      histos.fill(HIST("hNsigmaProtonPionTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-      histos.fill(HIST("hNsigmaProtonKaonTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
       if (track1.hasTOF()) {
         histos.fill(HIST("hNsigmaProtonTOFPre"), track1.tofNSigmaPr(), track1.pt());
       }
+      if (!track1.hasTOF()) {
+        histos.fill(HIST("hNsigmaProtonElectronTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
+        histos.fill(HIST("hNsigmaProtonPionTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
+        histos.fill(HIST("hNsigmaProtonKaonTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
+        if (!rejectPi(track1)) {
+          continue;
+        }
+        histos.fill(HIST("hNsigmaProtonElectronTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
+        histos.fill(HIST("hNsigmaProtonPionTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
+        histos.fill(HIST("hNsigmaProtonKaonTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
+        if (!rejectEl(track1)) {
+          continue;
+        }
+        histos.fill(HIST("hNsigmaProtonElectronTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
+        histos.fill(HIST("hNsigmaProtonPionTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
+        histos.fill(HIST("hNsigmaProtonKaonTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
+        if (!rejectKa(track1)) {
+          continue;
+        }
+        histos.fill(HIST("hNsigmaProtonElectronTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
+        histos.fill(HIST("hNsigmaProtonPionTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
+        histos.fill(HIST("hNsigmaProtonKaonTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
+      }
+
       // PID check
       if (PIDstrategy == 0 && !selectionPID1(track1)) {
         continue;
@@ -667,12 +684,7 @@ struct highmasslambda {
       if (PIDstrategy == 3 && !selectionPID4(track1)) {
         continue;
       }
-      if (PIDstrategy == 4 && !selectionPID5(track1)) {
-        continue;
-      }
-      if (PIDstrategy == 5 && !selectionPID6(track1)) {
-        continue;
-      }
+
       histos.fill(HIST("hMomCorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
@@ -711,8 +723,11 @@ struct highmasslambda {
         }
         firstprimarytrack = firstprimarytrack + 1;
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
-        Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), massK0s);
+        Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
         Lambdac = Proton + Kshort;
+        if (Lambdac.Pt() > 6.0 || Lambdac.Pt() < 2.0) {
+          continue;
+        }
         if (TMath::Abs(Lambdac.Rapidity()) > confRapidity) {
           continue;
         }
@@ -731,36 +746,32 @@ struct highmasslambda {
         if (!useSignDCAV0) {
           dcasum = v0.dcav0topv() - track1.dcaXY();
         }
-        // auto diffangle = Proton.Phi() - Lambdac.Phi();
-        // auto decaylength = std::abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
-        // auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
         histos.fill(HIST("hMassvsDecaySum"), Lambdac.M(), dcasum);
         if (fillDefault && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
           if (fillDecayLength) {
             histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcasum);
           }
-          histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+          histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
         }
-        if (fillOccupancy) {
+        if (fillOccupancy && occupancy < cfgOccupancyCut) {
           if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
             if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()), occupancy);
+              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
             }
-            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt(), occupancy);
+            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
           }
         } else {
           if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
             if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()));
+              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
             }
-            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
           }
         }
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
             auto anglestart = confMinRot;
             auto angleend = confMaxRot;
-            // auto anglestep = nrotbkg * (TMath::Pi() / nBkgRotations);
             auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
             auto rotangle = anglestart + nrotbkg * anglestep;
             histos.fill(HIST("hRotation"), rotangle);
@@ -775,27 +786,25 @@ struct highmasslambda {
             if (!useSP) {
               v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
             }
-            // auto diffangleRot = ProtonRot.Phi() - LambdacRot.Phi();
-            // auto decaylengthRot = std::abs((track1.dcaXY() / TMath::Sin(diffangleRot)) / (Lambdac.P() / 2.286));
             if (fillDefault && LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
               if (fillDecayLength) {
                 histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum);
               }
-              histos.fill(HIST("hSparseV2SASameEventRotational_V2_new"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), Proton.Pt());
+              histos.fill(HIST("hSparseV2SASameEventRotational_V2_new"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
             }
-            if (fillOccupancy) {
+            if (fillOccupancy && occupancy < cfgOccupancyCut) {
               if (LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
                 if (fillDecayLength) {
-                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, std::abs(track1.dcaXY()), occupancy);
+                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, TMath::Abs(track1.dcaXY()));
                 }
-                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), Proton.Pt(), occupancy);
+                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
               }
             } else {
               if (LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
                 if (fillDecayLength) {
-                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, std::abs(track1.dcaXY()));
+                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, TMath::Abs(track1.dcaXY()));
                 }
-                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), Proton.Pt());
+                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
               }
             }
           }
@@ -855,6 +864,18 @@ struct highmasslambda {
         if (!selectionTrack(track1)) {
           continue;
         }
+        if (!track1.hasTOF()) {
+          if (!rejectPi(track1)) {
+            continue;
+          }
+          if (!rejectEl(track1)) {
+            continue;
+          }
+          if (!rejectKa(track1)) {
+            continue;
+          }
+        }
+
         // PID check
         if (PIDstrategy == 0 && !selectionPID1(track1)) {
           continue;
@@ -868,12 +889,7 @@ struct highmasslambda {
         if (PIDstrategy == 3 && !selectionPID4(track1)) {
           continue;
         }
-        if (PIDstrategy == 4 && !selectionPID5(track1)) {
-          continue;
-        }
-        if (PIDstrategy == 5 && !selectionPID6(track1)) {
-          continue;
-        }
+
         if (!SelectionV0(collision2, v0)) {
           continue;
         }
@@ -885,10 +901,12 @@ struct highmasslambda {
         if (!isSelectedV0Daughter(negtrack, -1)) {
           continue;
         }
-
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
-        Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), massK0s);
+        Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
         Lambdac = Proton + Kshort;
+        if (Lambdac.Pt() > 6.0 || Lambdac.Pt() < 2.0) {
+          continue;
+        }
         if (TMath::Abs(Lambdac.Rapidity()) > confRapidity) {
           continue;
         }
@@ -909,27 +927,27 @@ struct highmasslambda {
           dcasum = v0.dcav0topv() - track1.dcaXY();
         }
         // auto diffangle = Proton.Phi() - Lambdac.Phi();
-        // auto decaylength = std::abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
+        // auto decaylength = TMath::Abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
         // auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
         if (fillDefault && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
           if (fillDecayLength) {
             histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcasum);
           }
-          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
         }
-        if (fillOccupancy) {
+        if (fillOccupancy && occupancy < cfgOccupancyCut) {
           if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
             if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()), occupancy);
+              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
             }
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt(), occupancy);
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
           }
         } else {
           if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
             if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()));
+              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
             }
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
           }
         }
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};

@@ -139,45 +139,25 @@ struct HfTaskDs {
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
     AxisSpec centralitybins = {100, 0., 100., "Centrality"};
 
-    if (!(doprocessData || doprocessMc || doprocessDataWithMl || doprocessMcWithMl)) { // If using centrality tables
-      histosPtr[DataType::Data]["hNPvContribAll"] = registry.add<TH2>((folders[DataType::Data] + "hNPvContribAll").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, {100, 0., 100}});
-    }
+    histosPtr[DataType::Data]["hNPvContribAll"] = registry.add<TH2>((folders[DataType::Data] + "hNPvContribAll").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, {100, 0., 100}});
 
     for (auto i = 0; i < DataType::kDataTypes; ++i) {
-      if (doprocessDataWithCentFT0C || doprocessDataWithCentFT0M || doprocessDataWithCentNTracksPV ||
-          doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV) {
+      if (doprocessDataWithCentFT0C || doprocessDataWithCentFT0M || doprocessDataWithCentNTracksPV || doprocessData || doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV || doprocessMc) {
         if (i == DataType::Data) { // If data do not fill PV contributors in sparse
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins});
         } else {
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisNPvContributors});
         }
-
-        histosPtr[i]["hNPvContribCands"] = registry.add<TH2>((folders[i] + "hNPvContribCands").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
-        histosPtr[i]["hNPvContribCandsInSignalRegionDs"] = registry.add<TH2>((folders[i] + "hNPvContribCandsInSignalRegionDs").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
-        histosPtr[i]["hNPvContribCandsInSignalRegionDplus"] = registry.add<TH2>((folders[i] + "hNPvContribCandsInSignalRegionDplus").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
-      } else if (doprocessDataWithMlAndCentFT0C || doprocessDataWithMlAndCentFT0M || doprocessDataWithMlAndCentNTracksPV ||
-                 doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV) {
+      } else if (doprocessDataWithMlAndCentFT0C || doprocessDataWithMlAndCentFT0M || doprocessDataWithMlAndCentNTracksPV || doprocessDataWithMl || doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV || doprocessMcWithMl) {
         if (i == DataType::Data) { // If data do not fill PV contributors in sparse
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisMlScore0, axisMlScore1, axisMlScore2});
         } else {
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisMlScore0, axisMlScore1, axisMlScore2, axisNPvContributors});
         }
-        histosPtr[i]["hNPvContribCands"] = registry.add<TH2>((folders[i] + "hNPvContribCands").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
-        histosPtr[i]["hNPvContribCandsInSignalRegionDs"] = registry.add<TH2>((folders[i] + "hNPvContribCandsInSignalRegionDs").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
-        histosPtr[i]["hNPvContribCandsInSignalRegionDplus"] = registry.add<TH2>((folders[i] + "hNPvContribCandsInSignalRegionDplus").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
-      } else if (doprocessData || doprocessMc) {
-        if (i == DataType::Data) { // If data do not fill PV contributors in sparse
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins});
-        } else {
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, axisNPvContributors});
-        }
-      } else if (doprocessDataWithMl || doprocessMcWithMl) {
-        if (i == DataType::Data) { // If data do not fill PV contributors in sparse
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, axisMlScore0, axisMlScore1, axisMlScore2});
-        } else {
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, axisMlScore0, axisMlScore1, axisMlScore2, axisNPvContributors});
-        }
       }
+      histosPtr[i]["hNPvContribCands"] = registry.add<TH2>((folders[i] + "hNPvContribCands").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
+      histosPtr[i]["hNPvContribCandsInSignalRegionDs"] = registry.add<TH2>((folders[i] + "hNPvContribCandsInSignalRegionDs").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
+      histosPtr[i]["hNPvContribCandsInSignalRegionDplus"] = registry.add<TH2>((folders[i] + "hNPvContribCandsInSignalRegionDplus").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
       histosPtr[i]["hPt"] = registry.add<TH1>((folders[i] + "hPt").c_str(), "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       histosPtr[i]["hPtProng0"] = registry.add<TH1>((folders[i] + "hPtProng0").c_str(), "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       histosPtr[i]["hPtProng1"] = registry.add<TH1>((folders[i] + "hPtProng1").c_str(), "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
@@ -256,40 +236,28 @@ struct HfTaskDs {
     return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
   }
 
-  /// Evaluate centrality/multiplicity percentile
+  /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
   /// \param candidate is candidate
   /// \return centrality/multiplicity percentile of the collision
-  template <CentralityEstimator centDetector, typename Coll>
-  int evaluateCentralityColl(const Coll& collision)
+  template <typename Coll>
+  float evaluateCentralityColl(const Coll& collision)
   {
-    if constexpr (centDetector == CentralityEstimator::FT0C) {
-      return collision.centFT0C();
-    } else if constexpr (centDetector == CentralityEstimator::FT0M) {
-      return collision.centFT0M();
-    } else if constexpr (centDetector == CentralityEstimator::NTracksPV) {
-      return collision.centNTPV();
-    }
+    return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
   /// Evaluate centrality/multiplicity percentile
   /// \param candidate is candidate
   /// \return centrality/multiplicity percentile of the collision associated to the candidate
-  template <CentralityEstimator centDetector, typename Coll, typename T1>
-  int evaluateCentralityCand(const T1& candidate)
+  template <typename Coll, typename T1>
+  float evaluateCentralityCand(const T1& candidate)
   {
-    if constexpr (centDetector == CentralityEstimator::FT0C) {
-      return evaluateCentralityColl<CentralityEstimator::FT0C>(candidate.template collision_as<Coll>());
-    } else if constexpr (centDetector == CentralityEstimator::FT0M) {
-      return evaluateCentralityColl<CentralityEstimator::FT0M>(candidate.template collision_as<Coll>());
-    } else if constexpr (centDetector == CentralityEstimator::NTracksPV) {
-      return evaluateCentralityColl<CentralityEstimator::NTracksPV>(candidate.template collision_as<Coll>());
-    }
+    return evaluateCentralityColl(candidate.template collision_as<Coll>());
   }
 
   /// Fill histograms of quantities independent from the daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <CentralityEstimator centDetector, typename Coll, typename T1>
+  template <typename T1>
   void fillHisto(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
@@ -322,7 +290,7 @@ struct HfTaskDs {
   /// Fill histograms of quantities for the KKPi daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <CentralityEstimator centDetector, bool useMl, typename Coll, typename T1>
+  template <bool useMl, typename Coll, typename T1>
   void fillHistoKKPi(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
@@ -335,17 +303,9 @@ struct HfTaskDs {
           }
           outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
         }
-        if constexpr (centDetector != CentralityEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<centDetector, Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
-        } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
-        }
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
       } else {
-        if constexpr (centDetector != CentralityEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<centDetector, Coll>(candidate));
-        } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt);
-        }
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<Coll>(candidate));
       }
     } else {
       if constexpr (useMl) {
@@ -356,17 +316,9 @@ struct HfTaskDs {
           }
           outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
         }
-        if constexpr (centDetector != CentralityEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<centDetector, Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
-        } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
-        }
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
       } else {
-        if constexpr (centDetector != CentralityEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<centDetector, Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
-        } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, candidate.template collision_as<Coll>().numContrib());
-        }
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
       }
     }
 
@@ -381,7 +333,7 @@ struct HfTaskDs {
   /// Fill histograms of quantities for the PiKK daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <CentralityEstimator centDetector, bool useMl, typename Coll, typename T1>
+  template <bool useMl, typename Coll, typename T1>
   void fillHistoPiKK(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
@@ -395,17 +347,9 @@ struct HfTaskDs {
           }
           outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
         }
-        if constexpr (centDetector != CentralityEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<centDetector, Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
-        } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
-        }
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
       } else {
-        if constexpr (centDetector != CentralityEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<centDetector, Coll>(candidate));
-        } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt);
-        }
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<Coll>(candidate));
       }
     } else {
       if constexpr (useMl) {
@@ -416,17 +360,9 @@ struct HfTaskDs {
           }
           outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
         }
-        if constexpr (centDetector != CentralityEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<centDetector, Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
-        } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
-        }
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
       } else {
-        if constexpr (centDetector != CentralityEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<centDetector, Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
-        } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, candidate.template collision_as<Coll>().numContrib());
-        }
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
       }
     }
 
@@ -442,7 +378,7 @@ struct HfTaskDs {
   /// \param candidate is candidate
   /// \param mcParticles are particles with MC information
   /// \param whichSpeciesDecay defines which histogram to fill
-  template <CentralityEstimator centDetector, bool useMl, typename Coll, typename T1>
+  template <bool useMl, typename Coll, typename T1>
   void fillHistoMCRec(const T1& candidate, const CandDsMcGen& mcParticles, DataType dataType)
   {
 
@@ -470,12 +406,12 @@ struct HfTaskDs {
       auto pt = candidate.pt(); // rec. level pT
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
-        fillHisto<centDetector, Coll>(candidate, dataType);
-        fillHistoKKPi<centDetector, useMl, Coll>(candidate, dataType);
+        fillHisto(candidate, dataType);
+        fillHistoKKPi<useMl, Coll>(candidate, dataType);
       }
       if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
-        fillHisto<centDetector, Coll>(candidate, dataType);
-        fillHistoPiKK<centDetector, useMl, Coll>(candidate, dataType);
+        fillHisto(candidate, dataType);
+        fillHistoPiKK<useMl, Coll>(candidate, dataType);
       }
 
       std::get<TH1_ptr>(histosPtr[dataType]["hPtRecSig"])->Fill(pt);
@@ -493,23 +429,23 @@ struct HfTaskDs {
     return;
   }
 
-  template <FinalState decayChannel, CentralityEstimator centDetector, bool useMl, typename Coll, typename CandDs>
+  template <FinalState decayChannel, bool useMl, typename Coll, typename CandDs>
   void runDataAnalysis(CandDs const& candidate)
   {
     if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
       return;
     }
     if constexpr (decayChannel == FinalState::KKPi) { // KKPi
-      fillHisto<centDetector, Coll>(candidate, DataType::Data);
-      fillHistoKKPi<centDetector, useMl, Coll>(candidate, DataType::Data);
+      fillHisto(candidate, DataType::Data);
+      fillHistoKKPi<useMl, Coll>(candidate, DataType::Data);
     }
     if constexpr (decayChannel == FinalState::PiKK) { // PiKK
-      fillHisto<centDetector, Coll>(candidate, DataType::Data);
-      fillHistoPiKK<centDetector, useMl, Coll>(candidate, DataType::Data);
+      fillHisto(candidate, DataType::Data);
+      fillHistoPiKK<useMl, Coll>(candidate, DataType::Data);
     }
   }
 
-  template <CentralityEstimator centDetector, bool useMl, typename Coll, typename CandDs>
+  template <bool useMl, typename Coll, typename CandDs>
   void runMcAnalysis(CandDs const& candidate,
                      CandDsMcGen const& mcParticles)
   {
@@ -525,7 +461,7 @@ struct HfTaskDs {
     for (int i = DataType::McDsPrompt; i <= DataType::McDplusBkg; i++) { // Check what type of MC signal candidate it is, and fill the corresponding histograms
       if ((this->*isOfType[i - DataType::McDsPrompt])(candidate)) {
         isBkg = false;
-        fillHistoMCRec<centDetector, useMl, Coll>(candidate, mcParticles, static_cast<DataType>(i));
+        fillHistoMCRec<useMl, Coll>(candidate, mcParticles, static_cast<DataType>(i));
         break;
       }
     }
@@ -536,12 +472,12 @@ struct HfTaskDs {
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs) {
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
-          fillHisto<centDetector, Coll>(candidate, DataType::McBkg);
-          fillHistoKKPi<centDetector, useMl, Coll>(candidate, DataType::McBkg);
+          fillHisto(candidate, DataType::McBkg);
+          fillHistoKKPi<useMl, Coll>(candidate, DataType::McBkg);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
-          fillHisto<centDetector, Coll>(candidate, DataType::McBkg);
-          fillHistoPiKK<centDetector, useMl, Coll>(candidate, DataType::McBkg);
+          fillHisto(candidate, DataType::McBkg);
+          fillHistoPiKK<useMl, Coll>(candidate, DataType::McBkg);
         }
       }
     }
@@ -691,23 +627,23 @@ struct HfTaskDs {
     }
   }
 
-  template <CentralityEstimator centDetector, typename Coll>
+  template <typename Coll>
   void fillNPvContribHisto(const Coll& collision,
                            std::array<int, DataType::kDataTypes>& nCandsPerType,
                            std::array<int, DataType::kDataTypes>& nCandsInSignalRegionDsPerType,
                            std::array<int, DataType::kDataTypes>& nCandsInSignalRegionDplusPerType)
   {
     int numPvContributors = collision.numContrib();
-    std::get<TH2_ptr>(histosPtr[DataType::Data]["hNPvContribAll"])->Fill(numPvContributors, evaluateCentralityColl<centDetector>(collision));
+    std::get<TH2_ptr>(histosPtr[DataType::Data]["hNPvContribAll"])->Fill(numPvContributors, evaluateCentralityColl(collision));
     for (int i = 0; i < DataType::kDataTypes; i++) {
       if (nCandsPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCands"])->Fill(numPvContributors, evaluateCentralityColl<centDetector>(collision));
+        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCands"])->Fill(numPvContributors, evaluateCentralityColl(collision));
       }
       if (nCandsInSignalRegionDsPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDs"])->Fill(numPvContributors, evaluateCentralityColl<centDetector>(collision));
+        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDs"])->Fill(numPvContributors, evaluateCentralityColl(collision));
       }
       if (nCandsInSignalRegionDplusPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDplus"])->Fill(numPvContributors, evaluateCentralityColl<centDetector>(collision));
+        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDplus"])->Fill(numPvContributors, evaluateCentralityColl(collision));
       }
     }
   }
@@ -730,13 +666,13 @@ struct HfTaskDs {
         incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, false /*useMl*/, CollisionsWithFT0C>(candidate);
+          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsWithFT0C>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, false /*useMl*/, CollisionsWithFT0C>(candidate);
+          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsWithFT0C>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::FT0C>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithCentFT0C, "Process data w/o ML information on Ds, with information on centrality from FT0C", false);
@@ -759,13 +695,13 @@ struct HfTaskDs {
         incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, false /*useMl*/, CollisionsWithFT0M>(candidate);
+          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsWithFT0M>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, false /*useMl*/, CollisionsWithFT0M>(candidate);
+          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsWithFT0M>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::FT0M>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithCentFT0M, "Process data w/o ML information on Ds, with information on centrality from FT0M", false);
@@ -788,13 +724,13 @@ struct HfTaskDs {
         incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, false /*useMl*/, CollisionsWithNTracksPV>(candidate);
+          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsWithNTracksPV>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, false /*useMl*/, CollisionsWithNTracksPV>(candidate);
+          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsWithNTracksPV>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::NTracksPV>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithCentNTracksPV, "Process data w/o ML information on Ds, with information on centrality from NTracksPV", false);
@@ -812,10 +748,10 @@ struct HfTaskDs {
         }
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, false /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
+          runDataAnalysis<FinalState::KKPi, false /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, false /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
+          runDataAnalysis<FinalState::PiKK, false /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
         }
       }
     }
@@ -840,13 +776,13 @@ struct HfTaskDs {
         incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, true /*useMl*/, CollisionsWithFT0C>(candidate);
+          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsWithFT0C>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, true /*useMl*/, CollisionsWithFT0C>(candidate);
+          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsWithFT0C>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::FT0C>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentFT0C, "Process data with ML information on Ds, with information on centrality from FT0C", false);
@@ -869,13 +805,13 @@ struct HfTaskDs {
         incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, true /*useMl*/, CollisionsWithFT0M>(candidate);
+          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsWithFT0M>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, true /*useMl*/, CollisionsWithFT0M>(candidate);
+          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsWithFT0M>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::FT0M>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentFT0M, "Process data with ML information on Ds, with information on centrality from FT0M", false);
@@ -898,13 +834,13 @@ struct HfTaskDs {
         incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, true /*useMl*/, CollisionsWithNTracksPV>(candidate);
+          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsWithNTracksPV>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, true /*useMl*/, CollisionsWithNTracksPV>(candidate);
+          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsWithNTracksPV>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::NTracksPV>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentNTracksPV, "Process data with ML information on Ds, with information on centrality", false);
@@ -922,10 +858,10 @@ struct HfTaskDs {
         }
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, false /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
+          runDataAnalysis<FinalState::KKPi, true /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, false /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
+          runDataAnalysis<FinalState::PiKK, true /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
         }
       }
     }
@@ -951,16 +887,16 @@ struct HfTaskDs {
 
         incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
-        runMcAnalysis<CentralityEstimator::FT0C, false /*useMl*/, CollisionsMcWithFT0C, CandDsMcReco::iterator>(candidate, mcParticles);
+        runMcAnalysis<false /*useMl*/, CollisionsMcWithFT0C, CandDsMcReco::iterator>(candidate, mcParticles);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, false /*useMl*/, CollisionsMcWithFT0C>(candidate);
+          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsMcWithFT0C>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, false /*useMl*/, CollisionsMcWithFT0C>(candidate);
+          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsMcWithFT0C>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::FT0C, CollisionsMcWithFT0C::iterator>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto<CollisionsMcWithFT0C::iterator>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
     fillMcGenHistos<CentralityEstimator::FT0C>(mcParticles, collisions);
   }
@@ -985,16 +921,16 @@ struct HfTaskDs {
 
         incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
-        runMcAnalysis<CentralityEstimator::FT0M, false /*useMl*/, CollisionsMcWithFT0M>(candidate, mcParticles);
+        runMcAnalysis<false /*useMl*/, CollisionsMcWithFT0M>(candidate, mcParticles);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, false /*useMl*/, CollisionsMcWithFT0M>(candidate);
+          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsMcWithFT0M>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, false /*useMl*/, CollisionsMcWithFT0M>(candidate);
+          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsMcWithFT0M>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::FT0M>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
     fillMcGenHistos<CentralityEstimator::FT0M>(mcParticles, collisions);
   }
@@ -1019,16 +955,16 @@ struct HfTaskDs {
 
         incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
-        runMcAnalysis<CentralityEstimator::NTracksPV, false /*useMl*/, CollisionsMcWithNTracksPV>(candidate, mcParticles);
+        runMcAnalysis<false /*useMl*/, CollisionsMcWithNTracksPV>(candidate, mcParticles);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, false /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
+          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, false /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
+          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::NTracksPV>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
     fillMcGenHistos<CentralityEstimator::NTracksPV>(mcParticles, collisions);
   }
@@ -1048,17 +984,17 @@ struct HfTaskDs {
           continue;
         }
 
-        runMcAnalysis<CentralityEstimator::None, false /*useMl*/, CollisionsMc>(candidate, mcParticles);
+        runMcAnalysis<false /*useMl*/, CollisionsMc>(candidate, mcParticles);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, false /*useMl*/, CollisionsMc>(candidate);
+          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsMc>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, false /*useMl*/, CollisionsMc>(candidate);
+          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsMc>(candidate);
         }
       }
     }
-    fillMcGenHistos<CentralityEstimator::FT0C>(mcParticles, collisions);
+    fillMcGenHistos<CentralityEstimator::None>(mcParticles, collisions);
   }
   PROCESS_SWITCH(HfTaskDs, processMc, "Process MC w/o ML information on Ds, w/o information on centrality", false);
 
@@ -1081,16 +1017,16 @@ struct HfTaskDs {
 
         incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
-        runMcAnalysis<CentralityEstimator::FT0C, true, CollisionsMcWithFT0C>(candidate, mcParticles);
+        runMcAnalysis<true, CollisionsMcWithFT0C>(candidate, mcParticles);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, true /*useMl*/, CollisionsMcWithFT0C>(candidate);
+          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsMcWithFT0C>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, true /*useMl*/, CollisionsMcWithFT0C>(candidate);
+          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsMcWithFT0C>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::FT0C>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
     fillMcGenHistos<CentralityEstimator::FT0C>(mcParticles, collisions);
   }
@@ -1115,16 +1051,16 @@ struct HfTaskDs {
 
         incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
-        runMcAnalysis<CentralityEstimator::FT0M, true, CollisionsMcWithFT0M>(candidate, mcParticles);
+        runMcAnalysis<true, CollisionsMcWithFT0M>(candidate, mcParticles);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, true /*useMl*/, CollisionsMcWithFT0M>(candidate);
+          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsMcWithFT0M>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, true /*useMl*/, CollisionsMcWithFT0M>(candidate);
+          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsMcWithFT0M>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::FT0M>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
     fillMcGenHistos<CentralityEstimator::FT0M>(mcParticles, collisions);
   }
@@ -1149,16 +1085,16 @@ struct HfTaskDs {
 
         incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
 
-        runMcAnalysis<CentralityEstimator::NTracksPV, true, CollisionsMcWithNTracksPV>(candidate, mcParticles);
+        runMcAnalysis<true, CollisionsMcWithNTracksPV>(candidate, mcParticles);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, true /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
+          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, true /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
+          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
         }
       }
-      fillNPvContribHisto<CentralityEstimator::NTracksPV>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
     fillMcGenHistos<CentralityEstimator::NTracksPV>(mcParticles, collisions);
   }
@@ -1178,13 +1114,13 @@ struct HfTaskDs {
           continue;
         }
 
-        runMcAnalysis<CentralityEstimator::None, true /*useMl*/, CollisionsMc>(candidate, mcParticles);
+        runMcAnalysis<true /*useMl*/, CollisionsMc>(candidate, mcParticles);
 
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, true /*useMl*/, CollisionsMc>(candidate);
+          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsMc>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, true /*useMl*/, CollisionsMc>(candidate);
+          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsMc>(candidate);
         }
       }
     }

@@ -106,7 +106,7 @@ struct PhotonHBT {
   Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 5, "difference in global BC required in mixed events"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
-  ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
+  ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
@@ -188,6 +188,9 @@ struct PhotonHBT {
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
     Configurable<float> cfg_min_TOFbeta{"cfg_min_TOFbeta", 0.985, "min TOF beta for single track"}; //|beta - 1| < 0.015 corresponds to 3 sigma in pp
     Configurable<float> cfg_max_TOFbeta{"cfg_max_TOFbeta", 1.015, "max TOF beta for single track"}; //|beta - 1| < 0.015 corresponds to 3 sigma in pp
+    Configurable<float> cfg_min_its_cluster_size{"cfg_min_its_cluster_size", 0.f, "min ITS cluster size"};
+    Configurable<float> cfg_max_its_cluster_size{"cfg_max_its_cluster_size", 16.f, "max ITS cluster size"};
+    Configurable<float> cfg_max_p_its_cluster_size{"cfg_max_p_its_cluster_size", 0.2, "max p to apply ITS cluster size cut"};
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -257,17 +260,73 @@ struct PhotonHBT {
 
   void init(InitContext& /*context*/)
   {
-    zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
-    zvtx_bin_edges.erase(zvtx_bin_edges.begin());
+    if (ConfVtxBins.value[0] == VARIABLE_WIDTH) {
+      zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
+      zvtx_bin_edges.erase(zvtx_bin_edges.begin());
+      for (auto& edge : zvtx_bin_edges) {
+        LOGF(info, "VARIABLE_WIDTH: zvtx_bin_edges = %f", edge);
+      }
+    } else {
+      int nbins = static_cast<int>(ConfVtxBins.value[0]);
+      float xmin = static_cast<float>(ConfVtxBins.value[1]);
+      float xmax = static_cast<float>(ConfVtxBins.value[2]);
+      zvtx_bin_edges.resize(nbins + 1);
+      for (int i = 0; i < nbins + 1; i++) {
+        zvtx_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+        LOGF(info, "FIXED_WIDTH: zvtx_bin_edges[%d] = %f", i, zvtx_bin_edges[i]);
+      }
+    }
 
-    cent_bin_edges = std::vector<float>(ConfCentBins.value.begin(), ConfCentBins.value.end());
-    cent_bin_edges.erase(cent_bin_edges.begin());
+    if (ConfCentBins.value[0] == VARIABLE_WIDTH) {
+      cent_bin_edges = std::vector<float>(ConfCentBins.value.begin(), ConfCentBins.value.end());
+      cent_bin_edges.erase(cent_bin_edges.begin());
+      for (auto& edge : cent_bin_edges) {
+        LOGF(info, "VARIABLE_WIDTH: cent_bin_edges = %f", edge);
+      }
+    } else {
+      int nbins = static_cast<int>(ConfCentBins.value[0]);
+      float xmin = static_cast<float>(ConfCentBins.value[1]);
+      float xmax = static_cast<float>(ConfCentBins.value[2]);
+      cent_bin_edges.resize(nbins + 1);
+      for (int i = 0; i < nbins + 1; i++) {
+        cent_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+        LOGF(info, "FIXED_WIDTH: cent_bin_edges[%d] = %f", i, cent_bin_edges[i]);
+      }
+    }
 
-    ep_bin_edges = std::vector<float>(ConfEPBins.value.begin(), ConfEPBins.value.end());
-    ep_bin_edges.erase(ep_bin_edges.begin());
+    if (ConfEPBins.value[0] == VARIABLE_WIDTH) {
+      ep_bin_edges = std::vector<float>(ConfEPBins.value.begin(), ConfEPBins.value.end());
+      ep_bin_edges.erase(ep_bin_edges.begin());
+      for (auto& edge : ep_bin_edges) {
+        LOGF(info, "VARIABLE_WIDTH: ep_bin_edges = %f", edge);
+      }
+    } else {
+      int nbins = static_cast<int>(ConfEPBins.value[0]);
+      float xmin = static_cast<float>(ConfEPBins.value[1]);
+      float xmax = static_cast<float>(ConfEPBins.value[2]);
+      ep_bin_edges.resize(nbins + 1);
+      for (int i = 0; i < nbins + 1; i++) {
+        ep_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+        LOGF(info, "FIXED_WIDTH: ep_bin_edges[%d] = %f", i, ep_bin_edges[i]);
+      }
+    }
 
-    occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
-    occ_bin_edges.erase(occ_bin_edges.begin());
+    if (ConfOccupancyBins.value[0] == VARIABLE_WIDTH) {
+      occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
+      occ_bin_edges.erase(occ_bin_edges.begin());
+      for (auto& edge : occ_bin_edges) {
+        LOGF(info, "VARIABLE_WIDTH: occ_bin_edges = %f", edge);
+      }
+    } else {
+      int nbins = static_cast<int>(ConfOccupancyBins.value[0]);
+      float xmin = static_cast<float>(ConfOccupancyBins.value[1]);
+      float xmax = static_cast<float>(ConfOccupancyBins.value[2]);
+      occ_bin_edges.resize(nbins + 1);
+      for (int i = 0; i < nbins + 1; i++) {
+        occ_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+        LOGF(info, "FIXED_WIDTH: occ_bin_edges[%d] = %f", i, occ_bin_edges[i]);
+      }
+    }
 
     emh1 = new MyEMH(ndepth);
     emh2 = new MyEMH(ndepth);
@@ -351,7 +410,7 @@ struct PhotonHBT {
 
     if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
       fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_qinv, axis_qabs_lcms, axis_kt}, true);
-    } else { // identical particle femtoscopy
+    } else { // non-identical particle femtoscopy
       fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_kstar, axis_qabs_lcms, axis_kt}, true);
     }
 
@@ -463,7 +522,7 @@ struct PhotonHBT {
     fDielectronCut.SetChi2PerClusterTPC(0.0, dielectroncuts.cfg_max_chi2tpc);
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
-    fDielectronCut.SetMeanClusterSizeITSob(0, 16);
+    fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size, dielectroncuts.cfg_max_p_its_cluster_size);
     fDielectronCut.SetMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
     fDielectronCut.SetMaxDcaZ(dielectroncuts.cfg_max_dcaz);
 

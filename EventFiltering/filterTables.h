@@ -60,6 +60,10 @@ DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);               //! SigmaC(
 DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);               //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
 DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);       //! photon with 2-prong charm hadron
 DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);       //! photon with 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);       //! 2-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleCharm3P, hasHfSingleCharm3P, bool);       //! 3-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleNonPromptCharm2P, hasHfSingleNonPromptCharm2P, bool); //! 2-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleNonPromptCharm3P, hasHfSingleNonPromptCharm3P, bool); //! 3-prong charm hadron (for efficiency studies)
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
@@ -104,6 +108,8 @@ DECLARE_SOA_COLUMN(hadronOmega, hashadronOmega, bool);           //! at least 1 
 DECLARE_SOA_COLUMN(DoubleXi, hasDoubleXi, bool);                 //! at least 2 Xi
 DECLARE_SOA_COLUMN(TripleXi, hasTripleXi, bool);                 //! at least 3 Xi
 DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool);           //! at least 4 Xi
+DECLARE_SOA_COLUMN(DoubleOmega, hasDoubleOmega, bool);           //! at least 2 Omega
+DECLARE_SOA_COLUMN(OmegaXi, hasOmegaXi, bool);                   //! at least 1 Omega + 1 Xi
 DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);             //! at least 1 Xi with high radius (YN interactions)
 DECLARE_SOA_COLUMN(OmegaLargeRadius, hasOmegaLargeRadius, bool); //! at least 1 Omega with high radius
 DECLARE_SOA_COLUMN(TrackedCascade, hasTrackedCascade, bool);     //! at least 1 tracked cascade
@@ -180,7 +186,26 @@ using DqFilter = DqFilters::iterator;
 
 // heavy flavours
 DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
-                  filtering::HfHighPt2P, filtering::HfHighPt3P, filtering::HfBeauty3P, filtering::HfBeauty4P, filtering::HfFemto2P, filtering::HfFemto3P, filtering::HfDoubleCharm2P, filtering::HfDoubleCharm3P, filtering::HfDoubleCharmMix, filtering::HfV0Charm2P, filtering::HfV0Charm3P, filtering::HfCharmBarToXiBach, filtering::HfSigmaCPPK, filtering::HfSigmaC0K0, filtering::HfPhotonCharm2P, filtering::HfPhotonCharm3P);
+                  filtering::HfHighPt2P,
+                  filtering::HfHighPt3P,
+                  filtering::HfBeauty3P,
+                  filtering::HfBeauty4P,
+                  filtering::HfFemto2P,
+                  filtering::HfFemto3P,
+                  filtering::HfDoubleCharm2P,
+                  filtering::HfDoubleCharm3P,
+                  filtering::HfDoubleCharmMix,
+                  filtering::HfV0Charm2P,
+                  filtering::HfV0Charm3P,
+                  filtering::HfCharmBarToXiBach,
+                  filtering::HfSigmaCPPK,
+                  filtering::HfSigmaC0K0,
+                  filtering::HfPhotonCharm2P,
+                  filtering::HfPhotonCharm3P,
+                  filtering::HfSingleCharm2P,
+                  filtering::HfSingleCharm3P,
+                  filtering::HfSingleNonPromptCharm2P,
+                  filtering::HfSingleNonPromptCharm3P);
 
 using HfFilter = HfFilters::iterator;
 
@@ -212,7 +237,7 @@ using FullJetFilter = FullJetFilters::iterator;
 
 // strangeness (lf)
 DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
-                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega, filtering::OmegaHighMult);
+                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega, filtering::OmegaHighMult, filtering::DoubleOmega, filtering::OmegaXi);
 
 using StrangenessFilter = StrangenessFilters::iterator;
 

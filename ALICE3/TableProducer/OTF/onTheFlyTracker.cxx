@@ -89,6 +89,8 @@ struct OnTheFlyTracker {
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
+  Configurable<bool> enablePrimarySmearing{"enablePrimarySmearing", false, "Enable smearing of primary particles"};
+  Configurable<bool> enableSecondarySmearing{"enableSecondarySmearing", false, "Enable smearing of weak decay daughters"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
   Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
@@ -138,6 +140,9 @@ struct OnTheFlyTracker {
   ConfigurableAxis axisRadius{"axisRadius", {55, 0.01, 100}, "decay radius"};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, ""};
+
+  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -1.0f, +1.0f}, "#Delta p_{T}"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {200, -0.5f, +0.5f}, "#Delta #eta"};
 
   using PVertex = o2::dataformats::PrimaryVertex;
 
@@ -215,6 +220,9 @@ struct OnTheFlyTracker {
   o2::steer::InteractionSampler irSampler;
   o2::vertexing::PVertexer vertexer;
   std::vector<cascadecandidate> cascadesAlice3;
+
+  // For TGenPhaseSpace seed
+  TRandom3 rand;
 
   void init(o2::framework::InitContext&)
   {
@@ -356,6 +364,16 @@ struct OnTheFlyTracker {
     }
 
     // Basic QA
+    auto hNaN = histos.add<TH2>("hNaNBookkeeping", "hNaNBookkeeping", kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}});
+
+    hNaN->GetXaxis()->SetBinLabel(1, "Primary");
+    hNaN->GetXaxis()->SetBinLabel(2, "Bachelor");
+    hNaN->GetXaxis()->SetBinLabel(3, "Pi from La");
+    hNaN->GetXaxis()->SetBinLabel(4, "Pr from La");
+
+    hNaN->GetYaxis()->SetBinLabel(1, "Smear NaN");
+    hNaN->GetYaxis()->SetBinLabel(2, "Smear OK");
+
     histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axisMomentum});
@@ -384,6 +402,8 @@ struct OnTheFlyTracker {
     }
 
     if (doXiQA) {
+      histos.add("hXiBuilding", "hXiBuilding", kTH1F, {{10, -0.5f, 9.5f}});
+
       histos.add("hGenXi", "hGenXi", kTH2F, {axisRadius, axisMomentum});
       histos.add("hRecoXi", "hRecoXi", kTH2F, {axisRadius, axisMomentum});
 
@@ -405,6 +425,9 @@ struct OnTheFlyTracker {
       histos.add("h2dDCAxyCascadeBachelor", "h2dDCAxyCascadeBachelor", kTH2F, {axisMomentum, axisDCA});
       histos.add("h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative", kTH2F, {axisMomentum, axisDCA});
       histos.add("h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive", kTH2F, {axisMomentum, axisDCA});
+
+      histos.add("h2dDeltaPtVsPt", "h2dDeltaPtVsPt", kTH2F, {axisMomentum, axisDeltaPt});
+      histos.add("h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt", kTH2F, {axisMomentum, axisDeltaEta});
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -449,60 +472,49 @@ struct OnTheFlyTracker {
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE); // such a light detector here
+
+    // Set seed for TGenPhaseSpace
+    rand.SetSeed(seed);
   }
 
   /// Function to decay the xi
   /// \param particle the particle to decay
+  /// \param track track of particle to decay
   /// \param decayDaughters the address of resulting daughters
   /// \param xiDecayVertex the address of the xi decay vertex
   /// \param l0DecayVertex the address of the l0 decay vertex
   template <typename McParticleType>
-  void decayParticle(McParticleType particle, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& l0DecayVertex)
+  void decayParticle(McParticleType particle, o2::track::TrackParCov track, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& l0DecayVertex)
   {
-    std::vector<double> xiVelocity(3);
-    std::vector<double> l0Velocity(3);
-    std::vector<double> xiMomentum = {particle.px(), particle.py(), particle.pz()};
-    std::vector<double> xiProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
-    double bz = magneticField * 0.1; // To tesla
-    TRandom3 rand;
-    rand.SetSeed(seed);
     double u = rand.Uniform(0, 1);
-    for (int i = 0; i < 3; i++) {
-      xiVelocity[i] = xiMomentum[i] / particle.e();
-    }
-    double xi_v_tot = particle.p() / particle.e();
     double xi_ctau = 4.91; // xi
-    double xi_charge = -1.6022e-19;
-    double speedOfLight = 3e+8;
-    double xi_v_xy = speedOfLight * sqrt(xiVelocity[0] * xiVelocity[0] + xiVelocity[1] * xiVelocity[1]);
-    double xi_lifetime = (-xi_ctau * log(1 - u)) / xi_v_tot;
-    double xi_kgMass = 1.32171 * 1.78e-27;
-    double xi_r = (xi_kgMass * xi_v_xy) / (xi_charge * bz);
-    double xi_theta = ((xi_lifetime / speedOfLight) * xi_charge * bz) / xi_kgMass;
-    double xi_phi = TMath::ATan2(xiVelocity[1], xiVelocity[0]);
-    xiDecayVertex.push_back(xiProductionVertex[0] + xi_r * (std::sin(xi_theta) * std::cos(xi_phi) - (1 - std::cos(xi_theta)) * std::sin(xi_phi)));
-    xiDecayVertex.push_back(xiProductionVertex[1] + xi_r * ((1 - std::cos(xi_theta)) * std::cos(xi_phi) + std::sin(xi_theta) * std::sin(xi_phi)));
-    xiDecayVertex.push_back(xiProductionVertex[2] + xi_lifetime * xiVelocity[2]);
-    std::vector<double> xiDaughters = {1.115, 0.139};
-    double px = (xi_v_xy * std::cos(xi_theta + xi_phi) * particle.e()) / speedOfLight;
-    double py = (xi_v_xy * std::sin(xi_theta + xi_phi) * particle.e()) / speedOfLight;
+    double xi_rxyz = (-xi_ctau * log(1 - u));
+    float sna, csa;
+    o2::math_utils::CircleXYf_t xi_circle;
+    track.getCircleParams(magneticField, xi_circle, sna, csa);
+    double xi_rxy = xi_rxyz / sqrt(1. + track.getTgl() * track.getTgl());
+    double theta = xi_rxy / xi_circle.rC;
+    double newX = ((particle.vx() - xi_circle.xC) * std::cos(theta) - (particle.vy() - xi_circle.yC) * std::sin(theta)) + xi_circle.xC;
+    double newY = ((particle.vy() - xi_circle.yC) * std::cos(theta) + (particle.vx() - xi_circle.xC) * std::sin(theta)) + xi_circle.yC;
+    double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
+    double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
+    xiDecayVertex.push_back(newX);
+    xiDecayVertex.push_back(newY);
+    xiDecayVertex.push_back(particle.vz() + xi_rxyz * (particle.pz() / particle.p()));
 
-    TLorentzVector xi(px, py, particle.pz(), particle.e());
+    std::vector<double> xiDaughters = {1.115, 0.139570};
+    TLorentzVector xi(newPx, newPy, particle.pz(), particle.e());
     TGenPhaseSpace xiDecay;
     xiDecay.SetDecay(xi, 2, xiDaughters.data());
     xiDecay.Generate();
     decayDaughters.push_back(*xiDecay.GetDecay(1));
 
     double l0_ctau = 7.89; // lambda
-    double l0_v_tot = xiDecay.GetDecay(0)->P() / xiDecay.GetDecay(0)->E();
-    std::vector<double> l0Daughters = {0.139, 0.938};
-    l0Velocity[0] = xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->E();
-    l0Velocity[1] = xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->E();
-    l0Velocity[2] = xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->E();
-    double l0_lifetime = (-l0_ctau * log(1 - u)) / l0_v_tot;
-    for (int i = 0; i < 3; i++) {
-      l0DecayVertex.push_back(xiDecayVertex[i] + l0_lifetime * l0Velocity[i]);
-    }
+    std::vector<double> l0Daughters = {0.139570, 0.938272};
+    double l0_rxyz = (-l0_ctau * log(1 - u));
+    l0DecayVertex.push_back(xiDecayVertex[0] + l0_rxyz * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
+    l0DecayVertex.push_back(xiDecayVertex[1] + l0_rxyz * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
+    l0DecayVertex.push_back(xiDecayVertex[2] + l0_rxyz * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
 
     TLorentzVector l0 = *xiDecay.GetDecay(0);
     TGenPhaseSpace l0Decay;
@@ -568,7 +580,7 @@ struct OnTheFlyTracker {
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    int lastTrackIndex = tracksParCov.lastIndex(); // bookkeep the last added track
+    int lastTrackIndex = tracksParCov.lastIndex() + 1; // bookkeep the last added track
 
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
@@ -622,7 +634,9 @@ struct OnTheFlyTracker {
       std::vector<double> layers = {0.50, 1.20, 2.50, 3.75, 7.00, 12.0, 20.0};
       if (treatXi) {
         if (mcParticle.pdgCode() == 3312) {
-          decayParticle(mcParticle, decayProducts, xiDecayVertex, l0DecayVertex);
+          o2::track::TrackParCov xiTrackParCov;
+          convertMCParticleToO2Track(mcParticle, xiTrackParCov);
+          decayParticle(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, l0DecayVertex);
           xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]);
           l0DecayRadius2D = sqrt(l0DecayVertex[0] * l0DecayVertex[0] + l0DecayVertex[1] * l0DecayVertex[1]);
         }
@@ -681,41 +695,49 @@ struct OnTheFlyTracker {
       std::vector<bool> isReco(3);
       std::vector<o2::delphes::DelphesO2TrackSmearer> smearer = {mSmearer0, mSmearer1, mSmearer2, mSmearer3, mSmearer4, mSmearer5};
       if (treatXi && mcParticle.pdgCode() == 3312) {
+        histos.fill(HIST("hXiBuilding"), 0.0f);
         if (xiDecayRadius2D > 20) {
           continue;
         }
 
+        histos.fill(HIST("hXiBuilding"), 1.0f);
         convertTLorentzVectorToO2Track(-211, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovs[0]);
         convertTLorentzVectorToO2Track(-211, decayProducts[1], l0DecayVertex, xiDaughterTrackParCovs[1]);
         convertTLorentzVectorToO2Track(2212, decayProducts[2], l0DecayVertex, xiDaughterTrackParCovs[2]);
 
         // Map daughter to smearer
-        int firstSmearerIndex = -1;
-        int secondSmearerIndex = -1;
-        for (unsigned i = 0; i < layers.size(); i++) {
-          if (xiDecayRadius2D > layers[i]) {
-            firstSmearerIndex = i;
+        if (enableSecondarySmearing) {
+          int firstSmearerIndex = -1;
+          int secondSmearerIndex = -1;
+          for (unsigned i = 0; i < layers.size(); i++) {
+            if (xiDecayRadius2D > layers[i]) {
+              firstSmearerIndex = i;
+            }
+            if (l0DecayRadius2D > layers[i]) {
+              secondSmearerIndex = i;
+            }
           }
-          if (l0DecayRadius2D > layers[i]) {
-            secondSmearerIndex = i;
+          if (firstSmearerIndex > 5) {
+            isReco[0] = false;
+          } else if (firstSmearerIndex == -1) {
+            isReco[0] = mSmearer.smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
+          } else {
+            isReco[0] = smearer[firstSmearerIndex].smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
           }
-        }
-        if (firstSmearerIndex > 5) {
-          isReco[0] = false;
-        } else if (firstSmearerIndex == -1) {
-          isReco[0] = mSmearer.smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
+          if (secondSmearerIndex > 5) {
+            isReco[1] = false;
+            isReco[2] = false;
+          } else if (secondSmearerIndex == -1) {
+            isReco[1] = mSmearer.smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
+            isReco[2] = mSmearer.smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+          } else {
+            isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
+            isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+          }
         } else {
-          isReco[0] = smearer[firstSmearerIndex].smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
-        }
-        if (secondSmearerIndex > 5) {
-          isReco[1] = false;
-          isReco[2] = false;
-        } else if (secondSmearerIndex == -1) {
-          isReco[1] = mSmearer.smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
-          isReco[2] = mSmearer.smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
-        } else {
-          isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
-          isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+          isReco[0] = true;
+          isReco[1] = true;
+          isReco[2] = true;
         }
         for (int i = 0; i < 3; i++) {
           if (decayProducts[i].Pt() < minPt) {
@@ -725,7 +747,13 @@ struct OnTheFlyTracker {
             continue;
           }
           if (TMath::IsNaN(xiDaughterTrackParCovs[i].getZ())) {
+            histos.fill(HIST("hNaNBookkeeping"), i + 1, 0.0f);
+            LOGF(info, "Issues with track parametrization %i ! inspect track:", i);
+            xiDaughterTrackParCovs[i].print();
+            isReco[i] = false; // not acceptable
             continue;
+          } else {
+            histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           }
           if (isReco[i]) {
             tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
@@ -735,8 +763,10 @@ struct OnTheFlyTracker {
         }
 
         if (doXiQA && mcParticle.pdgCode() == 3312) {
-          if (isReco[0] && isReco[1] && isReco[2])
+          if (isReco[0] && isReco[1] && isReco[2]) {
+            histos.fill(HIST("hXiBuilding"), 2.0f);
             histos.fill(HIST("hRecoXi"), xiDecayRadius2D, mcParticle.pt());
+          }
           if (isReco[0])
             histos.fill(HIST("hRecoPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
           if (isReco[1])
@@ -749,6 +779,7 @@ struct OnTheFlyTracker {
         // combine particles into actual Xi candidate
         // cascade building starts here
         if (findXi && mcParticle.pdgCode() == 3312 && isReco[0] && isReco[1] && isReco[2]) {
+          histos.fill(HIST("hXiBuilding"), 3.0f);
           // assign indices of the particles we've used
           // they should be the last ones to be filled, in order:
           // n-1: proton from lambda
@@ -772,6 +803,7 @@ struct OnTheFlyTracker {
           }
           // V0 found successfully
           if (dcaFitterOK_V0) {
+            histos.fill(HIST("hXiBuilding"), 4.0f);
             std::array<float, 3> pos;
             std::array<float, 3> posCascade;
             std::array<float, 3> posP;
@@ -824,6 +856,7 @@ struct OnTheFlyTracker {
 
             // Cascade found successfully
             if (dcaFitterOK_Cascade) {
+              histos.fill(HIST("hXiBuilding"), 5.0f);
               o2::track::TrackParCov bachelorTrackAtPCA = fitter.getTrack(1);
 
               const auto& vtxCascade = fitter.getPCACandidate();
@@ -898,10 +931,16 @@ struct OnTheFlyTracker {
               }
 
               // add cascade track
+
+              histos.fill(HIST("hXiBuilding"), 6.0f);
               thisCascade.cascadeTrackId = lastTrackIndex + tracksAlice3.size(); // this is the next index to be filled -> should be it
+
               tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, false, false, 1});
 
               if (doXiQA) {
+                histos.fill(HIST("h2dDeltaPtVsPt"), trackParCov.getPt(), cascadeTrack.getPt() - trackParCov.getPt());
+                histos.fill(HIST("h2dDeltaEtaVsPt"), trackParCov.getPt(), cascadeTrack.getEta() - trackParCov.getEta());
+
                 histos.fill(HIST("hMassLambda"), thisCascade.mLambda);
                 histos.fill(HIST("hMassXi"), thisCascade.mXi);
                 histos.fill(HIST("hFoundVsFindable"), thisCascade.findableClusters, thisCascade.foundClusters);
@@ -921,13 +960,20 @@ struct OnTheFlyTracker {
         histos.fill(HIST("hSimTrackX"), trackParCov.getX());
       }
 
-      bool reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      bool reconstructed = true;
+      if (enablePrimarySmearing) {
+        reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      }
+
       if (!reconstructed && !processUnreconstructedTracks) {
         continue;
       }
       if (TMath::IsNaN(trackParCov.getZ())) {
         // capture rare smearing mistakes / corrupted tracks
+        histos.fill(HIST("hNaNBookkeeping"), 0.0f, 0.0f);
         continue;
+      } else {
+        histos.fill(HIST("hNaNBookkeeping"), 0.0f, 1.0f); // ok!
       }
 
       // Base QA (note: reco pT here)

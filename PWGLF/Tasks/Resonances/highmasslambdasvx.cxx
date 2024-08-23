@@ -327,13 +327,13 @@ struct highmasslambdasvx {
     float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
     float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
 
-    if (fabs(CtauK0s) < 2.0 || fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
+    if (TMath::Abs(CtauK0s) < 2.0 || TMath::Abs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
       return false;
     }
     if (dcaDaughv0 > ConfV0DCADaughMax) {
       return false;
     }
-    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (TMath::Abs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
     if (cpav0 < ConfV0CPAMin) {
@@ -361,19 +361,19 @@ struct highmasslambdasvx {
     if (charge > 0 && sign < 0) {
       return false;
     }
-    if (std::abs(eta) > 0.8) {
+    if (TMath::Abs(eta) > 0.8) {
       return false;
     }
-    if (std::abs(pt) < ConfDaughPt) {
+    if (TMath::Abs(pt) < ConfDaughPt) {
       return false;
     }
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
+    if (TMath::Abs(dcaXY) < ConfDaughDCAMin) {
       return false;
     }
-    if (std::abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
+    if (TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
       return false;
     }
     return true;
@@ -750,19 +750,19 @@ struct highmasslambdasvx {
           dcasum = TMath::Sqrt((track1.dcaXY() + (v0.dcav0topv())) * (track1.dcaXY() + (v0.dcav0topv())));
         }
         // auto diffangle = Proton.Phi() - Lambdac.Phi();
-        // auto decaylength = std::abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
+        // auto decaylength = TMath::Abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
         // auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
         if (fillDefault && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
           if (fillDecayLength) {
             histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcasum);
           }
-          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
         }
         if (fillOccupancy && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
           if (fillDecayLength) {
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, std::abs(track1.dcaXY()), occupancy);
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()), occupancy);
           }
-          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt(), occupancy);
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt(), occupancy);
         }
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};
         fourVecDauCM = boost(Kshort);

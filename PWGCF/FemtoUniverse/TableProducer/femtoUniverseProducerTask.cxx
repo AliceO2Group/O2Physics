@@ -196,17 +196,22 @@ struct femtoUniverseProducerTask {
     Configurable<float> ConfPtLowFilterCut{"ConfPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
     Configurable<float> ConfPtHighFilterCut{"ConfPtHighFilterCut", 5.0, "Higher limit for Pt for the global track"}; // pT high
     Configurable<float> ConfEtaFilterCut{"ConfEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
-    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"};      // max dca to vertex XY
-    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};         // max dca to vertex Z
+    Configurable<bool> ConfDxaXYCustom0Cut{"ConfDxaXYCustom0Cut", false, "Enable Custom Dcaxy < [0] cut."};
+    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"}; // max dca to vertex XY
+    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};    // max dca to vertex Z
+    Configurable<bool> ConfDcaXYCustom1Cut{"ConfDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
+    Configurable<float> ConfDcaXYCustom11FilterCut{"ConfDcaXY1FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> ConfDcaXYCustom12FilterCut{"ConfDcaXY2FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
   } ConfFilterCuts;
 
-  Filter GlobalCutFilter = requireGlobalTrackInFilter();
+  Filter GlobalCutFilter = requireGlobalTrackWoDCAInFilter();
 
   Filter CustomTrackFilter = (aod::track::pt > ConfFilterCuts.ConfPtLowFilterCut) &&
                              (aod::track::pt < ConfFilterCuts.ConfPtHighFilterCut) &&
                              (nabs(aod::track::eta) < ConfFilterCuts.ConfEtaFilterCut) &&
-                             (aod::track::dcaXY < ConfFilterCuts.ConfDcaXYFilterCut) &&
-                             (aod::track::dcaZ < ConfFilterCuts.ConfDcaZFilterCut);
+                             (!ConfFilterCuts.ConfDxaXYCustom0Cut || (aod::track::dcaXY < ConfFilterCuts.ConfDcaXYFilterCut)) &&
+                             (aod::track::dcaZ < ConfFilterCuts.ConfDcaZFilterCut) &&
+                             (!ConfFilterCuts.ConfDcaXYCustom1Cut || (nabs(aod::track::dcaXY) < ConfFilterCuts.ConfDcaXYCustom11FilterCut + ConfFilterCuts.ConfDcaXYCustom12FilterCut / aod::track::pt));
 
   // CASCADE
   FemtoUniverseCascadeSelection cascadeCuts;
@@ -253,6 +258,8 @@ struct femtoUniverseProducerTask {
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> ConfLooseTPCNSigma{"ConfLooseTPCNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
     Configurable<float> ConfLooseTPCNSigmaValue{"ConfLooseTPCNSigmaValue", 10, "Value for the loose TPC N Sigma for Kaon PID."};
+    Configurable<bool> ConfLooseTOFNSigma{"ConfLooseTOFNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
+    Configurable<float> ConfLooseTOFNSigmaValue{"ConfLooseTOFNSigmaValue", 10, "Value for the loose TOF N Sigma for Kaon PID."};
     Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
     Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
     Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
@@ -271,78 +278,113 @@ struct femtoUniverseProducerTask {
   {
 
     if (mom < 0.3) { // 0.0-0.3
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 3.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 2.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 1.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
           return true;
-        } else {
-          return false;
         }
-
       } else {
-        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-          {
-            return true;
-          }
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
-          return true;
-        } else {
-          return false;
-        }
-
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
       } else {
-        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool IsKaonNSigmaTPCLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool IsKaonNSigmaTOFLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
           return true;
-        } else {
-          return false;
         }
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
       }
     } else {
       return false;
@@ -996,6 +1038,7 @@ struct femtoUniverseProducerTask {
     double invMassD0 = 0.0;
     double invMassD0bar = 0.0;
     bool isD0D0bar = false;
+    uint8_t daughFlag = 0; // flag = 0 (daugh of D0 or D0bar), 1 (daug of D0), -1 (daugh of D0bar)
 
     for (auto const& hfCand : hfCands) {
 
@@ -1024,14 +1067,17 @@ struct femtoUniverseProducerTask {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
         isD0D0bar = true;
+        daughFlag = 1;
       } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
         invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
         isD0D0bar = true;
+        daughFlag = -1;
       } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
         isD0D0bar = true;
+        daughFlag = 0;
       } else {
         invMassD0 = 0.0;
         invMassD0bar = 0.0;
@@ -1048,8 +1094,8 @@ struct femtoUniverseProducerTask {
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
                     -999,
                     childIDs,
-                    0,  // D0 mass
-                    0); // D0bar mass
+                    postrack.sign(), // D0 mass -> positive daughter of D0/D0bar
+                    daughFlag);      // D0bar mass -> sign that the daugh is from D0 or D0 decay
         const int rowOfPosTrack = outputParts.lastIndex();
         if constexpr (isMC) {
           fillMCParticle(postrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
@@ -1070,8 +1116,8 @@ struct femtoUniverseProducerTask {
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
                     -999,
                     childIDs,
-                    0,
-                    0);
+                    negtrack.sign(), // negative daughter of D0/D0bar
+                    daughFlag);      // sign that the daugh is from D0 or D0 decay
         const int rowOfNegTrack = outputParts.lastIndex();
         if constexpr (isMC) {
           fillMCParticle(negtrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
@@ -1110,12 +1156,30 @@ struct femtoUniverseProducerTask {
     // lorentz vectors and filling the tables
     for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
       // implementing PID cuts for phi children
-      if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
-        continue;
+      if (ConfPhiSelection.ConfLooseTPCNSigma) {
+        if (!(IsKaonNSigmaTPCLoose(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigmaTPCLoose(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
       }
-      if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
-        continue;
-      } else if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
+      if (ConfPhiSelection.ConfLooseTOFNSigma) {
+        if (!(IsKaonNSigmaTOFLoose(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigmaTOFLoose(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
+      } else {
+        if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
+      }
+      if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
         continue;
       }
 

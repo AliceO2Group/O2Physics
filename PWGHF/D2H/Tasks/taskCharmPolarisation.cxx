@@ -72,6 +72,7 @@ DECLARE_SOA_COLUMN(MassKPi, massKPi, float);
 DECLARE_SOA_COLUMN(MassKProton, massKProton, float);
 DECLARE_SOA_COLUMN(MassPiProton, massPiProton, float);
 DECLARE_SOA_COLUMN(BdtBkgScore, bdtBkgScore, float);
+DECLARE_SOA_COLUMN(BdtNonPromptScore, bdtNonPromptScore, float);
 DECLARE_SOA_COLUMN(IsRealPKPi, isRealPKPi, int8_t);
 DECLARE_SOA_COLUMN(IsRealLcPKPi, isRealLcPKPi, int8_t);
 DECLARE_SOA_COLUMN(IsReflected, isReflected, int8_t);
@@ -91,6 +92,7 @@ DECLARE_SOA_TABLE(HfLcPolBkg, "AOD", "HFLCPOLBKG",
                   charm_polarisation::MassKProton,
                   charm_polarisation::MassPiProton,
                   charm_polarisation::BdtBkgScore,
+                  charm_polarisation::BdtNonPromptScore,
                   charm_polarisation::IsRealPKPi,
                   charm_polarisation::IsRealLcPKPi,
                   charm_polarisation::IsReflected);
@@ -1158,7 +1160,7 @@ struct TaskPolarisationCharmHadrons {
                        cosThetaStarForTable,
                        pdgMotherProng0, pdgMotherProng1, pdgMotherProng2,
                        massKPi, massKProton, massPiProton,
-                       outputMl.at(0),
+                       outputMl.at(0), outputMl.at(2),
                        isRealPKPi, isRealLcPKPi, isReflected);
         } // end studyLcPKPiBkgMc
       }   // end table for Lc->pKpi background studies

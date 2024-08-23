@@ -152,6 +152,9 @@ struct phiInJets {
       JEhistos.add("ptJEHistogramPhi", "ptJEHistogramPhi", kTH1F, {PtAxis});
       JEhistos.add("ptJEHistogramPhi_JetTrigger", "ptJEHistogramPhi_JetTrigger", kTH1F, {PtAxis});
       JEhistos.add("minvJEHistogramPhi", "minvJEHistogramPhi", kTH1F, {MinvAxis});
+      JEhistos.add("hNRealPhiVPhiCand", "hNRealPhiVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
+      JEhistos.add("hNRealPhiWithJetVPhiCand", "hNRealPhiWithJetVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
+      JEhistos.add("hNRealPhiInJetVPhiCand", "hNRealPhiInJetVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
 
       JEhistos.add("hMCRec_nonmatch_hUSS_KtoKangle_v_pt", "hMCRec_nonmatch_hUSS_KtoKangle_v_pt", kTH2F, {axisEta, PtAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_Kangle_v_pt", "hMCRec_nonmatch_hUSS_Kangle_v_pt", kTH2F, {axisEta, PtAxis});
@@ -701,6 +704,11 @@ struct phiInJets {
     if (hasJets)
       JEhistos.fill(HIST("nEvents_MCRec"), 2.5);
 
+    double PhiCand = 0;
+    double RealPhiCand = 0;
+    double RealPhiCandWithJet = 0;
+    double RealPhiCandInJet = 0;
+
     // Track Eff
     for (const auto& track : tracks) {
       auto originalTrack = track.track_as<myCompleteTracks>();
@@ -739,8 +747,21 @@ struct phiInJets {
         if (fabs(originalTrack.eta()) > cfgtrkMaxEta || fabs(originalTrack2.eta()) > cfgtrkMaxEta)
           continue;
 
-        // check PID
+        TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+        lDecayDaughter1.SetXYZM(originalTrack.px(), originalTrack.py(), originalTrack.pz(), massKa);
+        if (!cfgIsKstar)
+          lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massKa);
+        else
+          lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);
+        lResonance = lDecayDaughter1 + lDecayDaughter2;
 
+        if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
+          continue;
+
+        if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+          PhiCand++;
+
+        // check PID
         if (track.has_mcParticle() && track2.has_mcParticle()) {
           auto part1 = track.mcParticle();
           auto part2 = track2.mcParticle();
@@ -787,27 +808,26 @@ struct phiInJets {
           if (mothers1[0] != mothers2[0])
             continue; // Kaons not from the same phi
 
-          TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-          lDecayDaughter1.SetXYZM(originalTrack.px(), originalTrack.py(), originalTrack.pz(), massKa);
-          if (!cfgIsKstar)
-            lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massKa);
-          else
-            lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);
-          lResonance = lDecayDaughter1 + lDecayDaughter2;
-
           double phidiff_Kaons = TVector2::Phi_mpi_pi(lDecayDaughter2.Phi() - lDecayDaughter1.Phi());
           double etadiff_Kaons = lDecayDaughter2.Eta() - lDecayDaughter1.Eta();
           double R_Kaons = TMath::Sqrt((etadiff_Kaons * etadiff_Kaons) + (phidiff_Kaons * phidiff_Kaons));
-          if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
-            continue;
           JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_KtoKangle_v_pt"), R_Kaons, lResonance.Pt());
           JEhistos.fill(HIST("ptJEHistogramPhi"), lResonance.Pt());
+
+          if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+            RealPhiCand++;
 
           // Now we do jets
           bool jetFlag = false;
           int goodjets = 0;
           double jetpt = 0;
-          for (std::vector<double>::size_type i = 0; i < mcd_pt.size(); i++) {
+
+          for (int i = 0; i < mcd_pt.size(); i++) {
+            if (i == 0) {
+              if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
+                RealPhiCandWithJet++;
+              }
+            }
             double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
             double etadiff = mcd_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -827,35 +847,21 @@ struct phiInJets {
               jetpt = mcd_pt[i];
               goodjets++;
             }
-          }
+          } // R check for jets
 
           if (cfgSingleJet)
             if (goodjets > 1)
               jetpt = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
 
           if (jetFlag) {
+            if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+              RealPhiCandInJet++;
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D"), lResonance.M());
             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
               JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE"), jetpt, lResonance.Pt(), lResonance.M());
           }
-          //  else if (!jetFlag && mcd_pt.size() > 0) {
-          //    JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
-
-          //    if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-          //      JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3"), lResonance.M());
-
-          //    JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG"), jetpt, lResonance.Pt(), lResonance.M());
-
-          //  } else if (!jetFlag) {
-          //    JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_1D"), lResonance.M());
-
-          //    if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-          //      JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
-
-          //    JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-          //  } //! jetflag
 
           if (hasJets) {
             JEhistos.fill(HIST("ptJEHistogramPhi_JetTrigger"), lResonance.Pt());
@@ -867,6 +873,10 @@ struct phiInJets {
         } // mcpart check
       }   // tracks2
     }     // tracks1
+    JEhistos.fill(HIST("hNRealPhiVPhiCand"), PhiCand, RealPhiCand);
+    JEhistos.fill(HIST("hNRealPhiWithJetVPhiCand"), PhiCand, RealPhiCandWithJet);
+    JEhistos.fill(HIST("hNRealPhiInJetVPhiCand"), PhiCand, RealPhiCandInJet);
+
     // Jet Eff
   }
   PROCESS_SWITCH(phiInJets, processRec, "pikp detector level MC JE", true);

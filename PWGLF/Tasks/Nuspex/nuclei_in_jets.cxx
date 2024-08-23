@@ -79,7 +79,7 @@ struct nuclei_in_jets {
     true};
 
   // Global Parameters
-  Configurable<double> min_pt_leading{"min_pt_leading", 5.0, "Minimum pt of leading particle"};
+  Configurable<double> min_pt_leading{"min_pt_leading", 0.1, "Minimum pt of leading particle"};
   Configurable<double> min_jet_pt{"min_jet_pt", 10.0, "Minimum pt of the jet"};
   Configurable<double> Rjet{"Rjet", 0.3, "Jet resolution parameter R"};
   Configurable<double> Rmax{"Rmax", 0.3, "Maximum radius for jet and UE regions"};
@@ -104,7 +104,7 @@ struct nuclei_in_jets {
   Configurable<double> min_nsigmaTOF{"min_nsigmaTOF", -3.0, "Minimum nsigma TOF"};
   Configurable<double> max_nsigmaTOF{"max_nsigmaTOF", +3.5, "Maximum nsigma TOF"};
   Configurable<bool> require_PV_contributor{"require_PV_contributor", true, "require that the track is a PV contributor"};
-  Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", false, "require pt dependent selection on DCAxy"};
+  Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", true, "require pt dependent selection on DCAxy"};
 
   void init(InitContext const&)
   {
@@ -134,6 +134,7 @@ struct nuclei_in_jets {
 
     // DCA
     registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
 
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
@@ -408,6 +409,7 @@ struct nuclei_in_jets {
       if (!passedTrackSelectionForJetReconstruction(track))
         continue;
       registryQC.fill(HIST("dcaxy_vs_pt"), track.pt(), track.dcaXY());
+      registryQC.fill(HIST("dcaz_vs_pt"), track.pt(), track.dcaZ());
 
       if (track.pt() > pt_max) {
         leading_ID = i;

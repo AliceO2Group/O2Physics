@@ -119,6 +119,8 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
+  Configurable<bool> fConfigOnlyInjectedEvents{"cfgOnlyInjectedEvents", false, "Use only on Non-skimmed data! If true, select only injected events"};
+  Configurable<std::vector<int>> fSubGenIDs{"cfgSubGenIDs", {0, 1, 2, 3}, "Use only on Non-skimmed data! Provide a comma separated list of subGenIDs to select, e.g. 0,1,2,3"};
 
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
@@ -148,17 +150,29 @@ struct AnalysisEventSelection {
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     bool pass = true;
 
+    int32_t subGeneratorID = -999;
     VarManager::FillEvent<TEventFillMap>(event);
     if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
+      // TODO: Get access to subgenerator ID in skimmed data
+      // generatorID = event.reducedMCevent().generatorsID();
     }
     if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       if (!event.has_mcCollision()) {
         pass = false;
       } else {
         VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
+        subGeneratorID = event.mcCollision().getSubGeneratorId();
       }
     }
+
+    // check if SubGeneratorID is part of list
+    // if SubGenerator is not part of it, rejct event, return
+    if (fConfigOnlyInjectedEvents && !(std::find(fSubGenIDs->begin(), fSubGenIDs->end(), subGeneratorID) != fSubGenIDs->end())) {
+      eventSel(0);
+      return;
+    }
+
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
     }
@@ -482,7 +496,7 @@ struct AnalysisTrackSelection {
     AxisSpec axisPhi{phiBins, "#it{#varphi}_{e} (rad)"};
     AxisSpec axisPt{ptBins, "#it{p}_{T,e} (GeV/#it{c})"};
     AxisSpec axisMCColl = {3, -0.5, 2.5, "MCcoll info"};
-    AxisSpec axisAmbig = {2, -0.5, 1.5, "Ambiguous info"};
+    AxisSpec axisDoubleCount = {2, -0.5, 1.5, "Double count info"};
 
     // List of track cuts
     TString cutNamesStr = fConfigCuts.value;
@@ -557,15 +571,15 @@ struct AnalysisTrackSelection {
             fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
             fHistRecPosSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_SingleRec_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
             fHistRecNegSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_SingleRec_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
-            fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisAmbig}, true));
-            fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisAmbig}, true));
+            fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisDoubleCount}, true));
+            fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisDoubleCount}, true));
           } else {
             fHistRecPosPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
             fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
             fHistRecPosSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_SingleRec_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
             fHistRecNegSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_SingleRec_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
-            fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisAmbig}, true));
-            fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisAmbig}, true));
+            fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
+            fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
           }
         }
       }
@@ -577,16 +591,16 @@ struct AnalysisTrackSelection {
           fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
           fHistRecPosSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_SingleRec_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
           fHistRecNegSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_SingleRec_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
-          fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisAmbig}, true));
-          fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisAmbig}, true));
+          fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisDoubleCount}, true));
+          fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisDoubleCount}, true));
 
         } else {
           fHistRecPosPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
           fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
           fHistRecPosSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_SingleRec_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
           fHistRecNegSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_SingleRec_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
-          fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisAmbig}, true));
-          fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisAmbig}, true));
+          fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
+          fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
         }
       }
     }
