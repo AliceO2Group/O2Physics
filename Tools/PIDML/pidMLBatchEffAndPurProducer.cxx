@@ -45,11 +45,13 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                   //! particle's pt
 DECLARE_SOA_COLUMN(MlCertainty, mlCertainty, float); //! Machine learning model certainty value for track and pid
 DECLARE_SOA_COLUMN(NSigma, nSigma, float);           //! nSigma value for track and pid
 DECLARE_SOA_COLUMN(IsPidMC, isPidMc, bool);          //! Is track's mcParticle recognized as "Pid"
+DECLARE_SOA_COLUMN(HasTOF, hasTof, bool);            //! Does track have TOF detector signal
+DECLARE_SOA_COLUMN(HasTRD, hasTrd, bool);            //! Does track have TRD detector signal
 } // namespace effandpurpidresult
 
 DECLARE_SOA_TABLE(EffAndPurPidResult, "AOD", "PIDEFFANDPURRES", o2::soa::Index<>,
                   effandpurpidresult::TrackId, effandpurpidresult::Pid, effandpurpidresult::Pt, effandpurpidresult::MlCertainty,
-                  effandpurpidresult::NSigma, effandpurpidresult::IsPidMC);
+                  effandpurpidresult::NSigma, effandpurpidresult::IsPidMC, effandpurpidresult::HasTOF, effandpurpidresult::HasTRD);
 } // namespace o2::aod
 
 struct PidMlBatchEffAndPurProducer {
@@ -82,11 +84,6 @@ struct PidMlBatchEffAndPurProducer {
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels,
                                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu,
                                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu>>;
-
-  // instead of using hasTOF() and hasTRD() dynamic columns in process functions
-  static constexpr uint8_t withTofAndTrdMask = static_cast<uint8_t>(o2::aod::track::TOF) | static_cast<uint8_t>(o2::aod::track::TRD);
-  Partition<BigTracks> tracksOnlyTpc = (aod::track::v001::detectorMap & withTofAndTrdMask) == static_cast<uint8_t>(0);
-  Partition<BigTracks> tracksWithTof = (aod::track::v001::detectorMap & static_cast<uint8_t>(o2::aod::track::TOF)) > static_cast<uint8_t>(0);
 
   void initHistos()
   {
@@ -200,8 +197,7 @@ struct PidMlBatchEffAndPurProducer {
     return nSigma;
   }
 
-  template <typename T, typename Mc>
-  void fillDerivedDataResults(aod::Collisions const& collisions, T const& tracks, Mc const& mcParticles)
+  void process(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
   {
     effAndPurPIDResult.reserve(mcParticles.size());
 
@@ -235,30 +231,12 @@ struct PidMlBatchEffAndPurProducer {
             nSigma_t nSigma = getNSigma(track, cfgPids.value[i]);
             bool isMCPid = mcPart.pdgCode() == cfgPids.value[i];
 
-            effAndPurPIDResult(track.index(), cfgPids.value[i], track.pt(), mlCertainty, nSigma.composed, isMCPid);
+            effAndPurPIDResult(track.index(), cfgPids.value[i], track.pt(), mlCertainty, nSigma.composed, isMCPid, track.hasTOF(), track.hasTRD());
           }
         }
       }
     }
   }
-
-  void processAll(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
-  {
-    fillDerivedDataResults(collisions, tracks, mcParticles);
-  }
-  PROCESS_SWITCH(PidMlBatchEffAndPurProducer, processAll, "Process all tracks", true);
-
-  void processOnlyTpc(aod::Collisions const& collisions, BigTracks const& /*tracks*/, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
-  {
-    fillDerivedDataResults(collisions, tracksOnlyTpc, mcParticles);
-  }
-  PROCESS_SWITCH(PidMlBatchEffAndPurProducer, processOnlyTpc, "Process tracks with only TPC signal out of all detectors", false);
-
-  void processWithTof(aod::Collisions const& collisions, BigTracks const& /*tracks*/, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
-  {
-    fillDerivedDataResults(collisions, tracksWithTof, mcParticles);
-  }
-  PROCESS_SWITCH(PidMlBatchEffAndPurProducer, processWithTof, "Process only tracks with TOF signal", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
