@@ -123,8 +123,8 @@ JETSV_TABLES_DEF(Charged, SecondaryVertex2Prong, "2PRONG");
   {                                                             \
     DECLARE_SOA_COLUMN(Origin, origin, int);                    \
     DECLARE_SOA_COLUMN(JetProb, jetProb, std::vector<float>);   \
-    DECLARE_SOA_COLUMN(FlagtaggedjetIP, flagtaggedjetIP, bool);      \
-    DECLARE_SOA_COLUMN(FlagtaggedjetSV, flagtaggedjetSV, bool);      \
+    DECLARE_SOA_COLUMN(FlagtaggedjetIP, flagtaggedjetIP, bool); \
+    DECLARE_SOA_COLUMN(FlagtaggedjetSV, flagtaggedjetSV, bool); \
   }                                                             \
   DECLARE_SOA_TABLE(_jet_type_##Tags, "AOD", _description_ "Tags", _name_##tagging::Origin, _name_##tagging::JetProb, _name_##tagging::FlagtaggedjetIP, _name_##tagging::FlagtaggedjetSV);
 
