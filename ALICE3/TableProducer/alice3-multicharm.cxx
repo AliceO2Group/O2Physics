@@ -56,7 +56,7 @@ using std::array;
 // simple checkers
 // #define biton(var, nbit) ((var) |= (static_cast<uint32_t>(1) << (nbit)))
 #define bitoff(var, nbit) ((var) &= ~(static_cast<uint32_t>(1) << (nbit))) //((a) &= ~(1ULL<<(b)))
-// #define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
+#define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 
@@ -90,6 +90,9 @@ struct alice3multicharm {
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.221f, 1.421f}, "Xi Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCMass{"axisXiCMass", {200, 2.368f, 2.568f}, "XiC Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCCMass{"axisXiCCMass", {200, 3.521f, 3.721f}, "XiCC Inv Mass (GeV/c^{2})"};
+
+  ConfigurableAxis axisDCAXiCDaughters{"axisDCAXiCDaughters", {200, 0, 100}, "DCA (cm)"};
+  ConfigurableAxis axisDCAXiCCDaughters{"axisDCAXiCCDaughters", {200, 0, 100}, "DCA (cm)"};
 
   ConfigurableAxis axisNConsidered{"axisNConsidered", {200, -0.5f, 199.5f}, "Number of considered track combinations"};
 
@@ -297,6 +300,12 @@ struct alice3multicharm {
     fitter3.setBz(magneticField);
     fitter3.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
+    // This histogram bookkeeps the attempts at DCA minimization and their eventual
+    // failure rates.
+    // --- 0: attempt XiC, 1: success XiC
+    // --- 2: attempt XiCC, 3: success XiCC
+    histos.add("hCharmBuilding", "hCharmBuilding", kTH1F, {{10, -0.5, 9.5f}});
+
     histos.add("h2dGenXi", "h2dGenXi", kTH2F, {axisPt, axisEta});
     histos.add("h2dGenXiC", "h2dGenXiC", kTH2F, {axisPt, axisEta});
     histos.add("h2dGenXiCC", "h2dGenXiCC", kTH2F, {axisPt, axisEta});
@@ -305,6 +314,12 @@ struct alice3multicharm {
     histos.add("hMassXiC", "hMassXiC", kTH1F, {axisXiCMass});
     histos.add("hMassXiCC", "hMassXiCC", kTH1F, {axisXiCCMass});
 
+    histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1F, {axisDCAXiCDaughters});
+    histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1F, {axisDCAXiCCDaughters});
+
+    // These histograms bookkeep the exact number of combinations attempted
+    // CombinationsXiC: triplets Xi-pi-pi considered per Xi
+    // CombinationsXiCC: doublets XiC-pi considered per XiC
     histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1F, {axisNConsidered});
     histos.add("hCombinationsXiCC", "hCombinationsXiCC", kTH1F, {axisNConsidered});
 
@@ -327,7 +342,7 @@ struct alice3multicharm {
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindXiCC(aod::Collision const& collision, alice3tracks const&, aod::McParticles const&, aod::UpgradeCascades const& cascades)
+  void processFindXiCC(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
   {
     // group with this collision
     // n.b. cascades do not need to be grouped, being used directly in iterator-grouping
@@ -343,18 +358,21 @@ struct alice3multicharm {
           LOGF(info, "Damn, something is wrong");
         }
       }
-      for (auto const& track : tracksPiFromXiCgrouped)
-        histos.fill(HIST("h2dDCAxyVsPtPiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
-      for (auto const& track : tracksPiFromXiCCgrouped)
-        histos.fill(HIST("h2dDCAxyVsPtPiFromXiCC"), track.pt(), track.dcaXY() * 1e+4);
+      for (auto const& track : tracks) {
+        if (bitcheck(track.decayMap(), kTruePiFromXiC))
+          histos.fill(HIST("h2dDCAxyVsPtPiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
+        if (bitcheck(track.decayMap(), kTruePiFromXiCC))
+          histos.fill(HIST("h2dDCAxyVsPtPiFromXiCC"), track.pt(), track.dcaXY() * 1e+4);
+      }
     }
 
     for (auto const& xiCand : cascades) {
       histos.fill(HIST("hMassXi"), xiCand.mXi());
-      auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
       uint32_t nCombinationsC = 0;
+      auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
+      if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
+        continue;
 
-      // first pion from XiC decay for starts here
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
           continue;
@@ -374,8 +392,10 @@ struct alice3multicharm {
           // will now attempt to build a three-body decay candidate with these three track rows.
 
           nCombinationsC++;
+          histos.fill(HIST("hCharmBuilding"), 0.0f);
           if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
             continue; // failed at building candidate
+          histos.fill(HIST("hCharmBuilding"), 1.0f);
 
           const std::array<float, 3> momentumC = {
             thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0],
@@ -385,6 +405,7 @@ struct alice3multicharm {
           o2::track::TrackParCov xicTrack(thisCandidate.xyz, momentumC, thisCandidate.parentTrackCovMatrix, +1);
 
           histos.fill(HIST("hMassXiC"), thisCandidate.mass);
+          histos.fill(HIST("hDCAXiCDaughters"), thisCandidate.dca);
 
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
@@ -393,13 +414,15 @@ struct alice3multicharm {
               continue; // avoid using any track that was already used
 
             // to-do: check same mother here
-
-            nCombinationsCC++;
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
+            nCombinationsCC++;
+            histos.fill(HIST("hCharmBuilding"), 2.0f);
             if (!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
               continue; // failed at building candidate
+            histos.fill(HIST("hCharmBuilding"), 3.0f);
 
             histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
+            histos.fill(HIST("hDCAXiCCDaughters"), thisCandidate.dca);
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
         }

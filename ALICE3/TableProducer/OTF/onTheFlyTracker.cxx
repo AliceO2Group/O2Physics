@@ -89,6 +89,8 @@ struct OnTheFlyTracker {
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
   Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
+  Configurable<bool> enablePrimarySmearing{"enablePrimarySmearing", false, "Enable smearing of primary particles"};
+  Configurable<bool> enableSecondarySmearing{"enableSecondarySmearing", false, "Enable smearing of weak decay daughters"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
   Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
@@ -138,6 +140,9 @@ struct OnTheFlyTracker {
   ConfigurableAxis axisRadius{"axisRadius", {55, 0.01, 100}, "decay radius"};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, ""};
+
+  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -1.0f, +1.0f}, "#Delta p_{T}"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {200, -0.5f, +0.5f}, "#Delta #eta"};
 
   using PVertex = o2::dataformats::PrimaryVertex;
 
@@ -359,6 +364,16 @@ struct OnTheFlyTracker {
     }
 
     // Basic QA
+    auto hNaN = histos.add<TH2>("hNaNBookkeeping", "hNaNBookkeeping", kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}});
+
+    hNaN->GetXaxis()->SetBinLabel(1, "Primary");
+    hNaN->GetXaxis()->SetBinLabel(2, "Bachelor");
+    hNaN->GetXaxis()->SetBinLabel(3, "Pi from La");
+    hNaN->GetXaxis()->SetBinLabel(4, "Pr from La");
+
+    hNaN->GetYaxis()->SetBinLabel(1, "Smear NaN");
+    hNaN->GetYaxis()->SetBinLabel(2, "Smear OK");
+
     histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axisMomentum});
     histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axisMomentum});
@@ -387,6 +402,8 @@ struct OnTheFlyTracker {
     }
 
     if (doXiQA) {
+      histos.add("hXiBuilding", "hXiBuilding", kTH1F, {{10, -0.5f, 9.5f}});
+
       histos.add("hGenXi", "hGenXi", kTH2F, {axisRadius, axisMomentum});
       histos.add("hRecoXi", "hRecoXi", kTH2F, {axisRadius, axisMomentum});
 
@@ -408,6 +425,9 @@ struct OnTheFlyTracker {
       histos.add("h2dDCAxyCascadeBachelor", "h2dDCAxyCascadeBachelor", kTH2F, {axisMomentum, axisDCA});
       histos.add("h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative", kTH2F, {axisMomentum, axisDCA});
       histos.add("h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive", kTH2F, {axisMomentum, axisDCA});
+
+      histos.add("h2dDeltaPtVsPt", "h2dDeltaPtVsPt", kTH2F, {axisMomentum, axisDeltaPt});
+      histos.add("h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt", kTH2F, {axisMomentum, axisDeltaEta});
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -675,41 +695,49 @@ struct OnTheFlyTracker {
       std::vector<bool> isReco(3);
       std::vector<o2::delphes::DelphesO2TrackSmearer> smearer = {mSmearer0, mSmearer1, mSmearer2, mSmearer3, mSmearer4, mSmearer5};
       if (treatXi && mcParticle.pdgCode() == 3312) {
+        histos.fill(HIST("hXiBuilding"), 0.0f);
         if (xiDecayRadius2D > 20) {
           continue;
         }
 
+        histos.fill(HIST("hXiBuilding"), 1.0f);
         convertTLorentzVectorToO2Track(-211, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovs[0]);
         convertTLorentzVectorToO2Track(-211, decayProducts[1], l0DecayVertex, xiDaughterTrackParCovs[1]);
         convertTLorentzVectorToO2Track(2212, decayProducts[2], l0DecayVertex, xiDaughterTrackParCovs[2]);
 
         // Map daughter to smearer
-        int firstSmearerIndex = -1;
-        int secondSmearerIndex = -1;
-        for (unsigned i = 0; i < layers.size(); i++) {
-          if (xiDecayRadius2D > layers[i]) {
-            firstSmearerIndex = i;
+        if (enableSecondarySmearing) {
+          int firstSmearerIndex = -1;
+          int secondSmearerIndex = -1;
+          for (unsigned i = 0; i < layers.size(); i++) {
+            if (xiDecayRadius2D > layers[i]) {
+              firstSmearerIndex = i;
+            }
+            if (l0DecayRadius2D > layers[i]) {
+              secondSmearerIndex = i;
+            }
           }
-          if (l0DecayRadius2D > layers[i]) {
-            secondSmearerIndex = i;
+          if (firstSmearerIndex > 5) {
+            isReco[0] = false;
+          } else if (firstSmearerIndex == -1) {
+            isReco[0] = mSmearer.smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
+          } else {
+            isReco[0] = smearer[firstSmearerIndex].smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
           }
-        }
-        if (firstSmearerIndex > 5) {
-          isReco[0] = false;
-        } else if (firstSmearerIndex == -1) {
-          isReco[0] = mSmearer.smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
+          if (secondSmearerIndex > 5) {
+            isReco[1] = false;
+            isReco[2] = false;
+          } else if (secondSmearerIndex == -1) {
+            isReco[1] = mSmearer.smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
+            isReco[2] = mSmearer.smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+          } else {
+            isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
+            isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+          }
         } else {
-          isReco[0] = smearer[firstSmearerIndex].smearTrack(xiDaughterTrackParCovs[0], 211, dNdEta);
-        }
-        if (secondSmearerIndex > 5) {
-          isReco[1] = false;
-          isReco[2] = false;
-        } else if (secondSmearerIndex == -1) {
-          isReco[1] = mSmearer.smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
-          isReco[2] = mSmearer.smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
-        } else {
-          isReco[1] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[1], 211, dNdEta);
-          isReco[2] = smearer[secondSmearerIndex].smearTrack(xiDaughterTrackParCovs[2], 2212, dNdEta);
+          isReco[0] = true;
+          isReco[1] = true;
+          isReco[2] = true;
         }
         for (int i = 0; i < 3; i++) {
           if (decayProducts[i].Pt() < minPt) {
@@ -719,7 +747,13 @@ struct OnTheFlyTracker {
             continue;
           }
           if (TMath::IsNaN(xiDaughterTrackParCovs[i].getZ())) {
+            histos.fill(HIST("hNaNBookkeeping"), i + 1, 0.0f);
+            LOGF(info, "Issues with track parametrization %i ! inspect track:", i);
+            xiDaughterTrackParCovs[i].print();
+            isReco[i] = false; // not acceptable
             continue;
+          } else {
+            histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           }
           if (isReco[i]) {
             tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovs[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
@@ -729,8 +763,10 @@ struct OnTheFlyTracker {
         }
 
         if (doXiQA && mcParticle.pdgCode() == 3312) {
-          if (isReco[0] && isReco[1] && isReco[2])
+          if (isReco[0] && isReco[1] && isReco[2]) {
+            histos.fill(HIST("hXiBuilding"), 2.0f);
             histos.fill(HIST("hRecoXi"), xiDecayRadius2D, mcParticle.pt());
+          }
           if (isReco[0])
             histos.fill(HIST("hRecoPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
           if (isReco[1])
@@ -743,6 +779,7 @@ struct OnTheFlyTracker {
         // combine particles into actual Xi candidate
         // cascade building starts here
         if (findXi && mcParticle.pdgCode() == 3312 && isReco[0] && isReco[1] && isReco[2]) {
+          histos.fill(HIST("hXiBuilding"), 3.0f);
           // assign indices of the particles we've used
           // they should be the last ones to be filled, in order:
           // n-1: proton from lambda
@@ -766,6 +803,7 @@ struct OnTheFlyTracker {
           }
           // V0 found successfully
           if (dcaFitterOK_V0) {
+            histos.fill(HIST("hXiBuilding"), 4.0f);
             std::array<float, 3> pos;
             std::array<float, 3> posCascade;
             std::array<float, 3> posP;
@@ -818,6 +856,7 @@ struct OnTheFlyTracker {
 
             // Cascade found successfully
             if (dcaFitterOK_Cascade) {
+              histos.fill(HIST("hXiBuilding"), 5.0f);
               o2::track::TrackParCov bachelorTrackAtPCA = fitter.getTrack(1);
 
               const auto& vtxCascade = fitter.getPCACandidate();
@@ -892,10 +931,16 @@ struct OnTheFlyTracker {
               }
 
               // add cascade track
+
+              histos.fill(HIST("hXiBuilding"), 6.0f);
               thisCascade.cascadeTrackId = lastTrackIndex + tracksAlice3.size(); // this is the next index to be filled -> should be it
+
               tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, false, false, 1});
 
               if (doXiQA) {
+                histos.fill(HIST("h2dDeltaPtVsPt"), trackParCov.getPt(), cascadeTrack.getPt() - trackParCov.getPt());
+                histos.fill(HIST("h2dDeltaEtaVsPt"), trackParCov.getPt(), cascadeTrack.getEta() - trackParCov.getEta());
+
                 histos.fill(HIST("hMassLambda"), thisCascade.mLambda);
                 histos.fill(HIST("hMassXi"), thisCascade.mXi);
                 histos.fill(HIST("hFoundVsFindable"), thisCascade.findableClusters, thisCascade.foundClusters);
@@ -915,13 +960,20 @@ struct OnTheFlyTracker {
         histos.fill(HIST("hSimTrackX"), trackParCov.getX());
       }
 
-      bool reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      bool reconstructed = true;
+      if (enablePrimarySmearing) {
+        reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      }
+
       if (!reconstructed && !processUnreconstructedTracks) {
         continue;
       }
       if (TMath::IsNaN(trackParCov.getZ())) {
         // capture rare smearing mistakes / corrupted tracks
+        histos.fill(HIST("hNaNBookkeeping"), 0.0f, 0.0f);
         continue;
+      } else {
+        histos.fill(HIST("hNaNBookkeeping"), 0.0f, 1.0f); // ok!
       }
 
       // Base QA (note: reco pT here)
