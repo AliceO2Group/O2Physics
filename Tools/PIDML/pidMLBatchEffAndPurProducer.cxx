@@ -248,13 +248,13 @@ struct PidMlBatchEffAndPurProducer {
   }
   PROCESS_SWITCH(PidMlBatchEffAndPurProducer, processAll, "Process all tracks", true);
 
-  void processOnlyTpc(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
+  void processOnlyTpc(aod::Collisions const& collisions, BigTracks const& /*tracks*/, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
   {
     fillDerivedDataResults(collisions, tracksOnlyTpc, mcParticles);
   }
   PROCESS_SWITCH(PidMlBatchEffAndPurProducer, processOnlyTpc, "Process tracks with only TPC signal out of all detectors", false);
 
-  void processWithTof(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
+  void processWithTof(aod::Collisions const& collisions, BigTracks const& /*tracks*/, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
   {
     fillDerivedDataResults(collisions, tracksWithTof, mcParticles);
   }
