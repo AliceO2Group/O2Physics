@@ -323,13 +323,14 @@ struct HfTaskDs {
   {
     auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
     auto pt = candidate.pt();
+    auto mlScore = finalState == FinalState::KKPi ? candidate.mlProbDsToKKPi() : candidate.mlProbDsToPiKK();
 
     std::vector<float> outputMl = {-999., -999., -999.};
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
-      if (candidate.mlProbDsToKKPi().size() == 0) {
+      if (mlScore.size() == 0) {
         continue;
       }
-      outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
+      outputMl[iclass] = mlScore[classMl->at(iclass)];
     }
 
     if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
