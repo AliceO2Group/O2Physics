@@ -46,4 +46,4 @@ struct DetLayer {
 
 } // namespace o2::fastsim
 
-#endif  // ALICE3_CORE_DETLAYER_H_
+#endif // ALICE3_CORE_DETLAYER_H_
