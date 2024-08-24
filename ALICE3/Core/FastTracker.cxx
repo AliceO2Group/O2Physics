@@ -29,6 +29,8 @@ FastTracker::FastTracker()
   applyZacceptance = false;
   covMatFactor = 0.99f;
   verboseLevel = 0;
+  covMatOK = 0;
+  covMatNotOK = 0;
 }
 
 void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff)
