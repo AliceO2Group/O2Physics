@@ -281,6 +281,10 @@ struct OnTheFlyTracker {
     hNaN->GetYaxis()->SetBinLabel(1, "Smear NaN");
     hNaN->GetYaxis()->SetBinLabel(2, "Smear OK");
 
+    auto hCovMatOK = histos.add<TH1>("hCovMatOK", "hCovMatOK", kTH1D, {{2, -0.5f, 1.5f}});
+    hCovMatOK->GetXaxis()->SetBinLabel(1, "Not OK");
+    hCovMatOK->GetXaxis()->SetBinLabel(2, "OK");
+
     histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axes.axisMomentum});
     histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axes.axisMomentum});
     histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axes.axisMomentum});
@@ -1091,7 +1095,12 @@ struct OnTheFlyTracker {
         cascade.findableClusters,
         cascade.foundClusters);
     }
-  }
+
+    // do bookkeeping of fastTracker tracking
+    histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker.covMatNotOK);
+    histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker.covMatOK);
+
+  } // end process
 };
 
 /// Extends TracksExtra if necessary

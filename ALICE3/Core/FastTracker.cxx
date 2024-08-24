@@ -31,8 +31,6 @@ FastTracker::FastTracker()
   verboseLevel = 0;
 }
 
-FastTracker::~FastTracker(){};
-
 void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff)
 {
   DetLayer newLayer{name.Data(), r, z, x0, xrho, resRPhi, resZ, eff};
@@ -44,7 +42,7 @@ void FastTracker::Print()
   // print out layer setup
   LOG(info) << "+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+";
   LOG(info) << " Printing detector layout with " << layers.size() << " effective elements: ";
-  for (int il = 0; il < layers.size(); il++) {
+  for (uint32_t il = 0; il < layers.size(); il++) {
     LOG(info) << " Layer #" << il << "\t" << layers[il].name.Data() << "\tr = " << Form("%.2f", layers[il].r) << "cm\tz = " << layers[il].z << "\t"
               << "x0 = " << layers[il].x0 << "\txrho = " << layers[il].xrho << "\tresRPhi = " << layers[il].resRPhi << "\tresZ = " << layers[il].resZ << "\teff = " << layers[il].eff;
   }
@@ -167,7 +165,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   // Outward pass to find intercepts
   int firstLayerReached = -1;
   int lastLayerReached = -1;
-  for (int il = 0; il < layers.size(); il++) {
+  for (uint32_t il = 0; il < layers.size(); il++) {
     // check if layer is doable
     if (layers[il].r < initialRadius)
       continue; // this layer should not be attempted, but go ahead
@@ -304,7 +302,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   }
 
   // evaluate ruben's conditional, regularise
-  bool makePositiveDefinite = (covMatFactor > 0.0f); // apply fix
+  bool makePositiveDefinite = (covMatFactor > -1e-5); // apply fix
   bool rubenConditional = false;
   for (int ii = 0; ii < 5; ii++) {
     for (int jj = 0; jj < 5; jj++) {
@@ -338,9 +336,11 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       LOG(info) << "Cov matrix: ";
       m.Print();
     }
+    covMatNotOK++;
     nIntercepts = -1; // mark as problematic so that it isn't used
     return -1;
   }
+  covMatOK++;
 
   // transform parameter vector and smear
   double params_[5];

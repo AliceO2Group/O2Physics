@@ -31,7 +31,7 @@ class FastTracker
  public:
   // Constructor/destructor
   FastTracker();
-  ~FastTracker();
+  virtual ~FastTracker(){};
 
   void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f);
 
@@ -51,6 +51,9 @@ class FastTracker
   bool applyZacceptance; // check z acceptance or not
   float covMatFactor;    // covmat off-diagonal factor to use for covmat fix (negative: no factor)
   int verboseLevel;      // 0: not verbose, >0 more verbose
+
+  uint64_t covMatOK; // cov mat has negative eigenvals
+  uint64_t covMatNotOK; // cov mat has negative eigenvals
 
   ClassDef(FastTracker, 1);
 };
