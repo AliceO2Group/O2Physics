@@ -18,4 +18,4 @@
 
 #pragma link C++ class o2::fastsim::FastTracker + ;
 
-#endif  // ALICE3_CORE_FASTTRACKERLINKDEF_H_
+#endif // ALICE3_CORE_FASTTRACKERLINKDEF_H_
