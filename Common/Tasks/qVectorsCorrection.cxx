@@ -233,7 +233,7 @@ struct qVectorsCorrection {
   template <typename CollType, typename TrackType>
   void fillHistosFlow(const CollType& coll, const TrackType& track, int nmode)
   {
-    if (coll.qvecAmp()[DetId] < 1e-8 || coll.qvecAmp()[RefAId] > 1e-8 || coll.qvecAmp()[RefBId] > 1e-8) {
+    if (coll.qvecAmp()[DetId] < 1e-8 || coll.qvecAmp()[RefAId] < 1e-8 || coll.qvecAmp()[RefBId] < 1e-8) {
       return;
     }
     int DetInd = DetId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
