@@ -764,6 +764,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("posPrimaryTrack_DCAz")) {
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("negPrimaryTrack_DCAz")) {
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
   if (!nameStr.compare("pionPosPrimaryNoPID")) {
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));
     cut->AddCut(GetAnalysisCut("posTrack"));

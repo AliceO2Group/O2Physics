@@ -9,10 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#ifndef ALICE3_CORE_FASTTRACKERLINKDEF_H_
+#define ALICE3_CORE_FASTTRACKERLINKDEF_H_
+
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class ZorroHelper + ;
-#pragma link C++ class ZorroSummary + ;
-#pragma link C++ class std::vector < ZorroHelper> + ;
+#pragma link C++ class o2::fastsim::FastTracker + ;
+
+#endif // ALICE3_CORE_FASTTRACKERLINKDEF_H_
