@@ -282,12 +282,14 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracksWithCollisionAssociator, "produces derived track table taking into account track-to-collision associations", false);
 
-  void processMcTrackLabels(soa::Join<aod::Tracks, aod::McTrackLabels>::iterator const& track)
+  void processMcTrackLabels(aod::Collision const&, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks)
   {
-    if (track.has_mcParticle()) {
-      jMcTracksLabelTable(track.mcParticleId());
-    } else {
-      jMcTracksLabelTable(-1);
+    for (auto const& track : tracks) {
+      if (track.has_mcParticle()) {
+        jMcTracksLabelTable(track.mcParticleId());
+      } else {
+        jMcTracksLabelTable(-1);
+      }
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcTrackLabels, "produces derived track labels table", false);

@@ -45,6 +45,7 @@
 #include "DetectorsBase/Propagator.h"
 
 #include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -232,6 +233,7 @@ struct nucleiSpectra {
   Produces<o2::aod::NucleiTableFlow> nucleiTableFlow;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   TrackTuner trackTunerObj;
 
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
@@ -370,6 +372,7 @@ struct nucleiSpectra {
 
   void init(o2::framework::InitContext&)
   {
+    zorroSummary.setObject(zorro.getZorroSummary());
     ccdb->setURL(cfgCCDBurl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

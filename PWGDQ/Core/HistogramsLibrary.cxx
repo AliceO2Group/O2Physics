@@ -1259,7 +1259,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhi);
       hm->AddHistogram(histClass, "DeltaEta_DeltaPhiSym", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhiSym);
     }
-    if (!groupStr.Contains("dilepton-hadron-array-correlation")) {
+    if (subGroupStr.Contains("dilepton-hadron-array-correlation")) {
       const int kInvMassBins = 500;
       double InvMassBinLims[kInvMassBins + 1];
       for (int i = 0; i <= kInvMassBins; i++)
