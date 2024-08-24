@@ -12,6 +12,7 @@
 #ifndef ALICE3_CORE_FASTTRACKER_H_
 #define ALICE3_CORE_FASTTRACKER_H_
 
+#include <vector>
 #include "DetLayer.h"
 #include <fairlogger/Logger.h>
 #include "ReconstructionDataFormats/Track.h"
