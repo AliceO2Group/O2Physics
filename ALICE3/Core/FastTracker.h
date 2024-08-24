@@ -12,9 +12,9 @@
 #ifndef ALICE3_CORE_FASTTRACKER_H_
 #define ALICE3_CORE_FASTTRACKER_H_
 
+#include <fairlogger/Logger.h> // not a system header but megalinter thinks so
 #include <vector>
 #include "DetLayer.h"
-#include <fairlogger/Logger.h>
 #include "ReconstructionDataFormats/Track.h"
 
 namespace o2
