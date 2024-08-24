@@ -52,7 +52,7 @@ class FastTracker
   float covMatFactor;    // covmat off-diagonal factor to use for covmat fix (negative: no factor)
   int verboseLevel;      // 0: not verbose, >0 more verbose
 
-  uint64_t covMatOK; // cov mat has negative eigenvals
+  uint64_t covMatOK;    // cov mat has negative eigenvals
   uint64_t covMatNotOK; // cov mat has negative eigenvals
 
   ClassDef(FastTracker, 1);
