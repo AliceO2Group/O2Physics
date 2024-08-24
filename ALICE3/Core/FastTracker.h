@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_FASTTRACKER_H_
-#define O2_ANALYSIS_FASTTRACKER_H_
+#ifndef ALICE3_CORE_FASTTRACKER_H_
+#define ALICE3_CORE_FASTTRACKER_H_
 
 #include "DetLayer.h"
 #include <fairlogger/Logger.h>
@@ -31,7 +31,7 @@ class FastTracker
  public:
   // Constructor/destructor
   FastTracker();
-  virtual ~FastTracker(){};
+  virtual ~FastTracker(){}
 
   void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f);
 
@@ -63,4 +63,4 @@ class FastTracker
 } // namespace fastsim
 } // namespace o2
 
-#endif /* O2_ANALYSIS_FASTTRACKER_H_ */
+#endif  // ALICE3_CORE_FASTTRACKER_H_

@@ -16,8 +16,8 @@
 /// \brief  Basic struct to hold information regarding a detector layer to be used in fast simulation
 ///
 
-#ifndef O2_ANALYSIS_DETLAYER_H_
-#define O2_ANALYSIS_DETLAYER_H_
+#ifndef ALICE3_CORE_DETLAYER_H_
+#define ALICE3_CORE_DETLAYER_H_
 
 #include "TString.h"
 
@@ -46,4 +46,4 @@ struct DetLayer {
 
 } // namespace o2::fastsim
 
-#endif
+#endif  // ALICE3_CORE_DETLAYER_H_

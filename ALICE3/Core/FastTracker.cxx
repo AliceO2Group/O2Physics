@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <vector>
 #include "TMath.h"
 #include "TMatrixD.h"
 #include "TRandom.h"
@@ -320,7 +321,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   }
 
   // Should have a valid cov matrix now
-  m.SetMatrixArray((double*)fcovm);
+  m.SetMatrixArray(reinterpret_cast<double*>(fcovm));
   TMatrixDSymEigen eigen(m);
   TMatrixD eigVec = eigen.GetEigenVectors();
   TVectorD eigVal = eigen.GetEigenValues();
