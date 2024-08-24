@@ -1721,14 +1721,14 @@ struct AnalysisAsymmetricPairing {
       }
     }
     // Check that the leg cut masks make sense
-    if (int(TMath::Log2(fLegAFilterMask)) + 1 > objArray->GetEntries()) {
-      LOGF(fatal, "fConfigLegAFilterMask has highest bit at position %d, but track-selection only has %d cuts!", int(TMath::Log2(fLegAFilterMask)) + 1, objArray->GetEntries());
+    if (static_cast<int>(std::floor(TMath::Log2(fLegAFilterMask))) + 1 > objArray->GetEntries()) {
+      LOGF(fatal, "fConfigLegAFilterMask has highest bit at position %d, but track-selection only has %d cuts!", static_cast<int>(std::floor(TMath::Log2(fLegAFilterMask))) + 1, objArray->GetEntries());
     }
-    if (int(TMath::Log2(fLegBFilterMask)) + 1 > objArray->GetEntries()) {
-      LOGF(fatal, "fConfigLegBFilterMask has highest bit at position %d, but track-selection only has %d cuts!", int(TMath::Log2(fLegBFilterMask)) + 1, objArray->GetEntries());
+    if (static_cast<int>(std::floor(TMath::Log2(fLegBFilterMask))) + 1 > objArray->GetEntries()) {
+      LOGF(fatal, "fConfigLegBFilterMask has highest bit at position %d, but track-selection only has %d cuts!", static_cast<int>(std::floor(TMath::Log2(fLegBFilterMask))) + 1, objArray->GetEntries());
     }
-    if (int(TMath::Log2(fLegCFilterMask)) + 1 > objArray->GetEntries()) {
-      LOGF(fatal, "fConfigLegCFilterMask has highest bit at position %d, but track-selection only has %d cuts!", int(TMath::Log2(fLegCFilterMask)) + 1, objArray->GetEntries());
+    if (static_cast<int>(std::floor(TMath::Log2(fLegCFilterMask))) + 1 > objArray->GetEntries()) {
+      LOGF(fatal, "fConfigLegCFilterMask has highest bit at position %d, but track-selection only has %d cuts!", static_cast<int>(std::floor(TMath::Log2(fLegCFilterMask))) + 1, objArray->GetEntries());
     }
 
     // Get the cuts defining the legs
