@@ -101,7 +101,7 @@ struct TrackEfficiencyJets {
   }
 
   template <typename T, typename U>
-  void fillTrackGenHistograms(T const& collision, U const& mcparticles, float weight = 1.0)
+  void fillParticlesHistograms(T const& collision, U const& mcparticles, float weight = 1.0)
   {
     for (auto const& mcparticle : mcparticles) {
       registry.fill(HIST("h2_centrality_particle_pt"), collision.centrality(), mcparticle.pt(), weight);
@@ -190,7 +190,7 @@ struct TrackEfficiencyJets {
       registry.add("h2_track_pt_high_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {1000, 0.0, 10.0}}});
     }
 
-    if (doprocessTracksGen || doprocessTracksGenWeighted) {
+    if (doprocessParticles || doprocessParticlesWeighted) {
       AxisSpec centAxis = {121, -10., 111., "centrality (%)"};
       registry.add("h2_centrality_particle_pt", "centrality vs track pT; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {centAxis, {200, 0., 200.}}});
       registry.add("h2_centrality_particle_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {centAxis, {100, -1.0, 1.0}}});
@@ -203,13 +203,13 @@ struct TrackEfficiencyJets {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
     }
-    if (doprocessTracksGen || doprocessTracksGenWeighted) {
+    if (doprocessParticles || doprocessParticlesWeighted) {
       registry.add("h_mccollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     }
     if (doprocessTracksWeighted) {
       registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     }
-    if (doprocessTracksGenWeighted) {
+    if (doprocessParticlesWeighted) {
       registry.add("h_mccollisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     }
   }
@@ -421,7 +421,7 @@ struct TrackEfficiencyJets {
   }
   PROCESS_SWITCH(TrackEfficiencyJets, processTracksWeighted, "QA for charged tracks weighted", false);
 
-  void processTracksGen(JetMcCollision const& mcCollision,
+  void processParticles(JetMcCollision const& mcCollision,
                         soa::SmallGroups<JetCollisionsMCD> const& collisions,
                         soa::Filtered<JetParticles> const& mcparticles)
   {
@@ -466,11 +466,11 @@ struct TrackEfficiencyJets {
 
     registry.fill(HIST("h_mccollisions"), 1.5);
     registry.fill(HIST("h2_centrality_mccollisions"), collisions.begin().centrality(), 1.5);
-    fillTrackGenHistograms(collisions.begin(), mcparticles);
+    fillParticlesHistograms(collisions.begin(), mcparticles);
   }
-  PROCESS_SWITCH(TrackEfficiencyJets, processTracksGen, "QA for charged particles", false);
+  PROCESS_SWITCH(TrackEfficiencyJets, processParticles, "QA for charged particles", false);
 
-  void processTracksGenWeighted(JetMcCollision const& mcCollision,
+  void processParticlesWeighted(JetMcCollision const& mcCollision,
                                 soa::SmallGroups<JetCollisionsMCD> const& collisions,
                                 soa::Filtered<JetParticles> const& mcparticles)
   {
@@ -516,9 +516,9 @@ struct TrackEfficiencyJets {
 
     registry.fill(HIST("h_mccollisions"), 1.5);
     registry.fill(HIST("h_mccollisions_weighted"), 1.5, eventWeight);
-    fillTrackGenHistograms(collisions.begin(), mcparticles, eventWeight);
+    fillParticlesHistograms(collisions.begin(), mcparticles, eventWeight);
   }
-  PROCESS_SWITCH(TrackEfficiencyJets, processTracksGenWeighted, "QA for charged particles weighted", false);
+  PROCESS_SWITCH(TrackEfficiencyJets, processParticlesWeighted, "QA for charged particles weighted", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<TrackEfficiencyJets>(cfgc, TaskName{"track-efficiency"})}; }
