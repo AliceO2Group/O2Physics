@@ -111,7 +111,7 @@ struct eventQC {
   {
     // event info
 
-    const int nbin_ev = 14;
+    const int nbin_ev = 13;
     auto hCollisionCounter = fRegistry.add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{nbin_ev, 0.5, nbin_ev + 0.5}}, false);
     hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
     hCollisionCounter->GetXaxis()->SetBinLabel(2, "FT0AND");
@@ -125,8 +125,7 @@ struct eventQC {
     hCollisionCounter->GetXaxis()->SetBinLabel(10, "sel8");
     hCollisionCounter->GetXaxis()->SetBinLabel(11, "|Z_{vtx}| < 10 cm");
     hCollisionCounter->GetXaxis()->SetBinLabel(12, "NoCollInTimeRangeStandard");
-    hCollisionCounter->GetXaxis()->SetBinLabel(13, "Calibrated Q vector");
-    hCollisionCounter->GetXaxis()->SetBinLabel(14, "accepted");
+    hCollisionCounter->GetXaxis()->SetBinLabel(13, "accepted");
 
     fRegistry.add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
     fRegistry.add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
@@ -334,6 +333,11 @@ struct eventQC {
     std::array<float, 2> qbpos = {qxbpos, qybpos};
     std::array<float, 2> qbneg = {qxbneg, qybneg};
     std::array<float, 2> qbtot = {qxbtot, qybtot};
+    std::vector<std::array<float, 2>> qvectors = {qft0m, qft0a, qft0c, qbpos, qbneg, qbtot};
+
+    if (!isGoodQvector(qvectors)) {
+      return;
+    }
 
     if constexpr (nmod == 2) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2xFT0M_CentFT0C"), collision.centFT0C(), qxft0m);
@@ -436,6 +440,19 @@ struct eventQC {
     return std::atan2(qy, qx) / static_cast<float>(nmod);
   }
 
+  template <typename TQvectors>
+  bool isGoodQvector(TQvectors const& qvectors)
+  {
+    bool is_good = true;
+    for (auto& qvec : qvectors) {
+      if (abs(qvec[0]) > 100.f || abs(qvec[1]) > 100.f) {
+        is_good = false;
+        break;
+      }
+    }
+    return is_good;
+  }
+
   template <typename TTrack>
   bool isSelectedTrack(TTrack const& track)
   {
@@ -480,15 +497,19 @@ struct eventQC {
     if (eventcuts.cfgRequireNoTFB && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
+
     if (eventcuts.cfgRequireNoITSROFB && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
+
     if (eventcuts.cfgRequireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
+
     if (eventcuts.cfgRequireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
+
     if (eventcuts.cfgRequireNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
@@ -532,8 +553,8 @@ struct eventQC {
         continue;
       }
       fillEventInfo<1>(collision);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 14); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 14);  // accepted
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 13); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 13);  // accepted
 
       int nGlobalTracks = 0, nGlobalTracksPV = 0;
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
