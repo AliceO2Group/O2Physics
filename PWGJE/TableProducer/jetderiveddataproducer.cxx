@@ -121,6 +121,7 @@ struct JetDerivedDataProducerTask {
   Zorro triggerDecider;
 
   int runNumber;
+  bool withCollisionAssociator;
   void init(InitContext const&)
   {
     if (doprocessTracksWithCollisionAssociator || includeTriggers) {
@@ -129,7 +130,10 @@ struct JetDerivedDataProducerTask {
       ccdb->setLocalObjectValidityChecking();
       runNumber = 0;
       if (doprocessTracksWithCollisionAssociator) {
+        withCollisionAssociator = true;
         lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+      } else {
+        withCollisionAssociator = false;
       }
     }
   }
@@ -400,10 +404,14 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0McCollisions, "produces derived index for D0 MC collisions", false);
 
-  void processD0(aod::HfD0Ids::iterator const& D0)
+  void processD0(aod::HfD0Ids::iterator const& D0, aod::Tracks const&)
   {
-    auto JProng0ID = trackCollisionMapping.find({D0.prong0Id(), D0.collisionId()});
-    auto JProng1ID = trackCollisionMapping.find({D0.prong1Id(), D0.collisionId()});
+    auto JProng0ID = trackCollisionMapping.find({D0.prong0Id(), D0.prong0_as<aod::Tracks>().collisionId()});
+    auto JProng1ID = trackCollisionMapping.find({D0.prong1Id(), D0.prong1_as<aod::Tracks>().collisionId()});
+    if (withCollisionAssociator) {
+      JProng0ID = trackCollisionMapping.find({D0.prong0Id(), D0.collisionId()});
+      JProng1ID = trackCollisionMapping.find({D0.prong1Id(), D0.collisionId()});
+    }
     jD0IdsTable(D0.collisionId(), JProng0ID->second, JProng1ID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0, "produces derived index for D0 candidates", false);
@@ -426,11 +434,16 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMcCollisions, "produces derived index for Lc MC collisions", false);
 
-  void processLc(aod::Hf3PIds::iterator const& Lc)
+  void processLc(aod::Hf3PIds::iterator const& Lc, aod::Tracks const&)
   {
-    auto JProng0ID = trackCollisionMapping.find({Lc.prong0Id(), Lc.collisionId()});
-    auto JProng1ID = trackCollisionMapping.find({Lc.prong1Id(), Lc.collisionId()});
-    auto JProng2ID = trackCollisionMapping.find({Lc.prong2Id(), Lc.collisionId()});
+    auto JProng0ID = trackCollisionMapping.find({Lc.prong0Id(), Lc.prong0_as<aod::Tracks>().collisionId()});
+    auto JProng1ID = trackCollisionMapping.find({Lc.prong1Id(), Lc.prong1_as<aod::Tracks>().collisionId()});
+    auto JProng2ID = trackCollisionMapping.find({Lc.prong2Id(), Lc.prong2_as<aod::Tracks>().collisionId()});
+    if (withCollisionAssociator) {
+      JProng0ID = trackCollisionMapping.find({Lc.prong0Id(), Lc.collisionId()});
+      JProng1ID = trackCollisionMapping.find({Lc.prong1Id(), Lc.collisionId()});
+      JProng2ID = trackCollisionMapping.find({Lc.prong2Id(), Lc.collisionId()});
+    }
     jLcIdsTable(Lc.collisionId(), JProng0ID->second, JProng1ID->second, JProng2ID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLc, "produces derived index for Lc candidates", false);
@@ -441,10 +454,14 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMC, "produces derived index for Lc particles", false);
 
-  void processV0(aod::V0Indices::iterator const& V0)
+  void processV0(aod::V0Indices::iterator const& V0, aod::Tracks const&)
   {
-    auto JPosTrackID = trackCollisionMapping.find({V0.posTrackId(), V0.collisionId()});
-    auto JNegTrackID = trackCollisionMapping.find({V0.negTrackId(), V0.collisionId()});
+    auto JPosTrackID = trackCollisionMapping.find({V0.posTrackId(), V0.posTrack_as<aod::Tracks>().collisionId()});
+    auto JNegTrackID = trackCollisionMapping.find({V0.negTrackId(), V0.negTrack_as<aod::Tracks>().collisionId()});
+    if (withCollisionAssociator) {
+      JPosTrackID = trackCollisionMapping.find({V0.posTrackId(), V0.collisionId()});
+      JNegTrackID = trackCollisionMapping.find({V0.negTrackId(), V0.collisionId()});
+    }
     jV0IdsTable(V0.collisionId(), JPosTrackID->second, JNegTrackID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processV0, "produces derived index for V0 candidates", false);
@@ -491,10 +508,14 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processDielectronCollisions, "produces derived index for Dielectron collisions", false);
 
-  void processDielectron(aod::DielectronInfo const& Dielectron)
+  void processDielectron(aod::DielectronInfo const& Dielectron, aod::Tracks const&)
   {
-    auto JProng0ID = trackCollisionMapping.find({Dielectron.prong0Id(), Dielectron.collisionId()});
-    auto JProng1ID = trackCollisionMapping.find({Dielectron.prong1Id(), Dielectron.collisionId()});
+    auto JProng0ID = trackCollisionMapping.find({Dielectron.prong0Id(), Dielectron.prong0_as<aod::Tracks>().collisionId()});
+    auto JProng1ID = trackCollisionMapping.find({Dielectron.prong1Id(), Dielectron.prong1_as<aod::Tracks>().collisionId()});
+    if (withCollisionAssociator) {
+      JProng0ID = trackCollisionMapping.find({Dielectron.prong0Id(), Dielectron.collisionId()});
+      JProng1ID = trackCollisionMapping.find({Dielectron.prong1Id(), Dielectron.collisionId()});
+    }
     jDielectronIdsTable(Dielectron.collisionId(), JProng0ID->second, JProng1ID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processDielectron, "produces derived index for Dielectron candidates", false);
