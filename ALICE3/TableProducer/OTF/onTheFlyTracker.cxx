@@ -142,6 +142,8 @@ struct OnTheFlyTracker {
   struct : ConfigurableGroup {
     std::string prefix = "fastTrackerSettings"; // JSON group name
     Configurable<int> minSiliconHits{"minSiliconHits", 4, "minimum number of silicon hits to accept track"};
+    Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
+    Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
     Configurable<int> alice3detector{"alice3detector", 0, "0: ALICE 3 v1, 1: ALICE 3 v4"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
@@ -659,7 +661,7 @@ struct OnTheFlyTracker {
             nSiliconHits[i] = fastTracker.nSiliconPoints;
             nTPCHits[i] = fastTracker.nGasPoints;
 
-            if (nHits[i] >= fastTrackerSettings.minSiliconHits) {
+            if (nSiliconHits[i] >= fastTrackerSettings.minSiliconHits || (nSiliconHits[i]>=fastTrackerSettings.minSiliconHitsIfTPCUsed && nTPCHits[i]>=fastTrackerSettings.minTPCClusters)) {
               isReco[i] = true;
             } else {
               continue; // extra sure
@@ -1035,6 +1037,7 @@ struct OnTheFlyTracker {
                             trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                             trackParCov.getSigma1Pt2());
       tracksLabels(trackParCov.mcLabel, 0);
+      TracksExtraA3(trackParCov.nSiliconHits,trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
@@ -1082,6 +1085,7 @@ struct OnTheFlyTracker {
                             trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                             trackParCov.getSigma1Pt2());
       tracksLabels(trackParCov.mcLabel, 0);
+      TracksExtraA3(trackParCov.nSiliconHits,trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
