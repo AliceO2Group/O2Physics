@@ -191,12 +191,13 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
   Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
 
-  Configurable<bool> cfgProcessPM{"cfgProcessPM", false, "Process particles of the opposite charge"};
-  Configurable<bool> cfgProcessPP{"cfgProcessPP", true, "Process particles of the same, positice charge"};
-  Configurable<bool> cfgProcessMM{"cfgProcessMM", true, "Process particles of the same, positice charge"};
-  Configurable<bool> cfgProcessMultBins{"cfgProcessMultBins", true, "Process kstar histograms in multiplicity bins (in multiplicity bins)"};
-  Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
-  Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
+  Configurable<bool> IsPairIdentical{"IsPairIdentical", true, "'true' for identical particles, 'false' for non-identical particles"};
+  Configurable<bool> cfgProcessPM{"cfgProcessPM", true, "Process differently charged particles (plus-minus)"};
+  Configurable<bool> cfgProcessPP{"cfgProcessPP", true, "Process positively charged particles (plus-plus)"};
+  Configurable<bool> cfgProcessMM{"cfgProcessMM", true, "Process negatively charged particles (minus-minus)"};
+  Configurable<bool> cfgProcessMultBins{"cfgProcessMultBins", true, "Process kstar histograms (in multiplicity bins)"};
+  Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if 'cfgProcessMultBins' is false, it will not be processed regardless of 'cfgProcessKtBins' state)"};
+  Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and MultBins"};
 
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventCont;
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventCont;
@@ -455,20 +456,22 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
 
   /// This function processes the same event and takes care of all the histogramming
   /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
-  /// @tparam PartitionType
-  /// @tparam PartType
-  /// @tparam isMC: enables Monte Carlo truth specific histograms
-  /// @param groupPartsOne partition for the first particle passed by the process function
-  /// @param groupPartsTwo partition for the second particle passed by the process function
-  /// @param parts femtoUniverseParticles table (in case of Monte Carlo joined with FemtoUniverseMCLabels)
-  /// @param magFieldTesla magnetic field of the collision
-  /// @param multCol multiplicity of the collision
+  /// \tparam PartitionType
+  /// \tparam PartType
+  /// \tparam isMC: enables Monte Carlo truth specific histograms
+  /// \param groupPartsOne partition for the first particle passed by the process function
+  /// \param groupPartsTwo partition for the second particle passed by the process function
+  /// \param parts femtoUniverseParticles table (in case of Monte Carlo joined with FemtoUniverseMCLabels)
+  /// \param magFieldTesla magnetic field of the collision
+  /// \param multCol multiplicity of the collision
+  /// \param pairType describes charge of correlation pair (plus-minus (1), plus-plus (2), minus-minus (3))
+  /// \param fillQA enables filling of QA histograms
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int ContType, bool fillQA)
+  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int pairType, bool fillQA)
   {
 
     /// Histogramming same event
-    if ((ContType == 1 || ContType == 2) && fillQA) {
+    if ((pairType == 1 || pairType == 2) && fillQA) {
       for (auto& part : groupPartsOne) {
         if (!IsParticleNSigma((int8_t)1, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
           continue;
@@ -477,7 +480,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
       }
     }
 
-    if ((ContType == 1 || ContType == 3) && fillQA) {
+    if ((pairType == 1 || pairType == 3) && fillQA) {
       for (auto& part : groupPartsTwo) {
         if (!IsParticleNSigma((int8_t)2, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
           continue;
@@ -486,7 +489,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
       }
     }
 
-    if (ContType == 1) {
+    if (pairType == 1) {
 
       /// Now build the combinations for non-identical particle pairs
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
@@ -540,24 +543,44 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
           continue;
         }
 
-        switch (ContType) {
+        switch (pairType) {
           case 2: {
-            float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
-            float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
+            if (IsPairIdentical == true) {
+              float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
+              float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
 
-            sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
-            if (cfgProcessMultBins)
-              sameEventMultContPP.fill<float>(kstar, multCol, kT);
+              sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+              if (cfgProcessMultBins)
+                sameEventMultContPP.fill<float>(kstar, multCol, kT);
+            } else {
+              float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
+              float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
+
+              sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+              if (cfgProcessMultBins)
+                sameEventMultContPP.fill<float>(kstar, multCol, kT);
+            }
+
             break;
           }
 
           case 3: {
-            float kstar = FemtoUniverseMath::getkstar(p1, mass2, p2, mass2);
-            float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
+            if (IsPairIdentical == true) {
+              float kstar = FemtoUniverseMath::getkstar(p1, mass2, p2, mass2);
+              float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
 
-            sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
-            if (cfgProcessMultBins)
-              sameEventMultContMM.fill<float>(kstar, multCol, kT);
+              sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+              if (cfgProcessMultBins)
+                sameEventMultContMM.fill<float>(kstar, multCol, kT);
+            } else {
+              float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
+              float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
+
+              sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+              if (cfgProcessMultBins)
+                sameEventMultContMM.fill<float>(kstar, multCol, kT);
+            }
+
             break;
           }
           default:
@@ -627,8 +650,9 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   /// \param parts femtoUniverseParticles table (in case of Monte Carlo joined with FemtoUniverseMCLabels)
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
+  /// \param pairType describes charge of correlation pair (plus-minus (1), plus-plus (2), minus-minus (3))
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int ContType)
+  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int pairType)
   {
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
@@ -647,30 +671,54 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
         }
       }
 
-      switch (ContType) {
+      switch (pairType) {
         case 1: {
           float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
+
           mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
           if (cfgProcessMultBins)
             mixedEventMultCont.fill<float>(kstar, multCol, kT);
           break;
         }
+
         case 2: {
-          float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
-          float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
-          mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
-          if (cfgProcessMultBins)
-            mixedEventMultContPP.fill<float>(kstar, multCol, kT);
+          if (IsPairIdentical == true) {
+            float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
+            float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
+
+            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+            if (cfgProcessMultBins)
+              mixedEventMultContPP.fill<float>(kstar, multCol, kT);
+          } else {
+            float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
+            float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
+
+            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+            if (cfgProcessMultBins)
+              mixedEventMultContPP.fill<float>(kstar, multCol, kT);
+          }
+
           break;
         }
 
         case 3: {
-          float kstar = FemtoUniverseMath::getkstar(p1, mass2, p2, mass2);
-          float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
-          mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
-          if (cfgProcessMultBins)
-            mixedEventMultContMM.fill<float>(kstar, multCol, kT);
+          if (IsPairIdentical == true) {
+            float kstar = FemtoUniverseMath::getkstar(p1, mass2, p2, mass2);
+            float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
+
+            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+            if (cfgProcessMultBins)
+              mixedEventMultContMM.fill<float>(kstar, multCol, kT);
+          } else {
+            float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
+            float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
+
+            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D);
+            if (cfgProcessMultBins)
+              mixedEventMultContMM.fill<float>(kstar, multCol, kT);
+          }
+
           break;
         }
         default:
@@ -680,8 +728,8 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   }
 
   /// process function for to call doMixedEvent with Data
-  /// @param cols subscribe to the collisions table (Data)
-  /// @param parts subscribe to the femtoUniverseParticleTable
+  /// \param cols subscribe to the collisions table (Data)
+  /// \param parts subscribe to the femtoUniverseParticleTable
   void processMixedEvent(soa::Filtered<o2::aod::FDCollisions>& cols,
                          FilteredFemtoFullParticles& parts)
   {
@@ -717,9 +765,9 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKtExtended, processMixedEvent, "Enable processing mixed events", true);
 
   /// brief process function for to call doMixedEvent with Monte Carlo
-  /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
-  /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
-  /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
+  /// \param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
+  /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
+  /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMC(o2::aod::FDCollisions& cols,
                            soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
                            o2::aod::FDMCParticles&)
