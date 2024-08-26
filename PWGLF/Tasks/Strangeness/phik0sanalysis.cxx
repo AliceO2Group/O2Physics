@@ -1457,7 +1457,7 @@ struct phik0shortanalysis {
 
         PhieffHist.fill(HIST("h2PhieffInvMass"), genmultiplicity, recPhi.M());
 
-        bool isCountedK0SInclusive = false, isCountedK0SFirstCut = false, isCountedK0SSecondCut = false;
+        bool isCountedK0SInclusive[nPtBinK0S] = {false}, isCountedK0SFirstCut[nPtBinK0S] = {false}, isCountedK0SSecondCut[nPtBinK0S] = {false};
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
@@ -1495,25 +1495,34 @@ struct phik0shortanalysis {
 
           if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
             continue;
-          if (!isCountedK0SInclusive) {
+
+          int ipTBinK0S = 0;
+          for (int i = 0; i < nPtBinK0S; i++) {
+            if (pTBinK0S[i] < recK0S.Pt() && recK0S.Pt() <= pTBinK0S[i + 1]) {
+              ipTBinK0S = i;
+              break;
+            }
+          }
+
+          if (!isCountedK0SInclusive[ipTBinK0S]) {
             PhieffHist.fill(HIST("h3PhieffK0SInvMassInclusive"), genmultiplicity, recK0S.Pt(), recPhi.M());
-            isCountedK0SInclusive = true;
+            isCountedK0SInclusive[ipTBinK0S] = true;
           }
           if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
-          if (!isCountedK0SFirstCut) {
+          if (!isCountedK0SFirstCut[ipTBinK0S]) {
             PhieffHist.fill(HIST("h3PhieffK0SInvMassFirstCut"), genmultiplicity, recK0S.Pt(), recPhi.M());
-            isCountedK0SFirstCut = true;
+            isCountedK0SFirstCut[ipTBinK0S] = true;
           }
           if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
-          if (!isCountedK0SSecondCut) {
+          if (!isCountedK0SSecondCut[ipTBinK0S]) {
             PhieffHist.fill(HIST("h3PhieffK0SInvMassSecondCut"), genmultiplicity, recK0S.Pt(), recPhi.M());
-            isCountedK0SSecondCut = true;
+            isCountedK0SSecondCut[ipTBinK0S] = true;
           }
         }
 
-        bool isCountedPiInclusive = false, isCountedPiFirstCut = false, isCountedPiSecondCut = false;
+        bool isCountedPiInclusive[nPtBinPi] = {false}, isCountedPiFirstCut[nPtBinPi] = {false}, isCountedPiSecondCut[nPtBinPi] = {false};
 
         // Loop over all primary pion candidates
         for (const auto& track : fullMCTracks) {
@@ -1532,21 +1541,30 @@ struct phik0shortanalysis {
 
           if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
             continue;
-          if (!isCountedPiInclusive) {
+
+          int ipTBinPi = 0;
+          for (int i = 0; i < nPtBinPi; i++) {
+            if (pTBinPi[i] < recPi.Pt() && recPi.Pt() <= pTBinPi[i + 1]) {
+              ipTBinPi = i;
+              break;
+            }
+          }
+
+          if (!isCountedPiInclusive[ipTBinPi]) {
             PhieffHist.fill(HIST("h3PhieffPiInvMassInclusive"), genmultiplicity, recPi.Pt(), recPhi.M());
-            isCountedPiInclusive = true;
+            isCountedPiInclusive[ipTBinPi] = true;
           }
           if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
-          if (!isCountedPiFirstCut) {
+          if (!isCountedPiFirstCut[ipTBinPi]) {
             PhieffHist.fill(HIST("h3PhieffPiInvMassFirstCut"), genmultiplicity, recPi.Pt(), recPhi.M());
-            isCountedPiFirstCut = true;
+            isCountedPiFirstCut[ipTBinPi] = true;
           }
           if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
-          if (!isCountedPiSecondCut) {
+          if (!isCountedPiSecondCut[ipTBinPi]) {
             PhieffHist.fill(HIST("h3PhieffPiInvMassSecondCut"), genmultiplicity, recPi.Pt(), recPhi.M());
-            isCountedPiSecondCut = true;
+            isCountedPiSecondCut[ipTBinPi] = true;
           }
         }
       }
