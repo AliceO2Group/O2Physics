@@ -32,7 +32,7 @@ struct LuminosityCalculator {
   void init(InitContext&)
   {
 
-    std::vector<std::string> histLabels = {"BC", "BC+TVX", "BC+TVX+NoTFB", "BC+TVX+NoTFB+NoITSROFB", "Coll", "Coll+TVX", "Coll+TVX+Sel8", "Coll+TVX+Sel8Full", "Coll+TVX+Sel8FullPbPb", "Coll+TVX+SelMC", "Coll+TVX+SelMCFull", "Coll+TVX+SelMCFullPbPb", "Coll+TVX+SelUnanchoredMC", "Coll+TVX+SelTVX", "Coll+TVX+Sel7", "Coll+TVX+Sel7KINT7"};
+    std::vector<std::string> histLabels = {"BC", "BC+TVX", "BC+TVX+NoTFB", "BC+TVX+NoTFB+NoITSROFB", "Coll", "Coll+TVX", "Coll+TVX+VtxZ+Sel8", "Coll+TVX+VtxZ+Sel8Full", "Coll+TVX+VtxZ+Sel8FullPbPb", "Coll+TVX+VtxZ+SelMC", "Coll+TVX+VtxZ+SelMCFull", "Coll+TVX+VtxZ+SelMCFullPbPb", "Coll+TVX+VtxZ+SelUnanchoredMC", "Coll+TVX+VtxZ+SelTVX", "Coll+TVX+VtxZ+Sel7", "Coll+TVX+VtxZ+Sel7KINT7"};
     registry.add("counter", "BCs and Collisions", HistType::kTH1I, {{static_cast<int>(histLabels.size()), -0.5, static_cast<double>(histLabels.size()) - 0.5}});
     auto counter = registry.get<TH1>(HIST("counter"));
     for (std::vector<std::string>::size_type iCounter = 0; iCounter < histLabels.size(); iCounter++) {
