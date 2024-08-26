@@ -2320,8 +2320,6 @@ struct phik0shortanalysis {
       std::vector<TLorentzVector> listrecPhi;
       int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
-      bool isCountedPhi = false;
-
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
@@ -2335,6 +2333,7 @@ struct phik0shortanalysis {
 
           auto track2ID = track2.globalIndex();
           if (track2ID == track1ID)
+            continue; // condition to avoid double counting of pair
 
           TLorentzVector recPhi;
           recPhi = recMother(track1, track2, massKa, massKa);
