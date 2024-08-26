@@ -52,7 +52,7 @@ struct f0980analysis {
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
-  Configurable<bool> cfgFindRT{"cfgFindRT", "false", "boolean for RT analysis"};
+  Configurable<bool> cfgFindRT{"cfgFindRT", false, "boolean for RT analysis"};
 
 
   // Track selection
