@@ -105,7 +105,7 @@ struct LuminosityProducer {
       readCollisionCounter++;
       if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::selTVX)) { // asuumes all selections include the TVX trigger
         readCollisionWithTVXCounter++;
-        if (std::abs(collision.posZ()) < vertexZCutForCounting) {
+        if (std::abs(collision.posZ()) > vertexZCutForCounting) {
           continue;
         }
         if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8)) {
