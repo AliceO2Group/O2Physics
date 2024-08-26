@@ -70,7 +70,7 @@ struct LuminosityProducer {
         std::copy(readBCWithTVXAndNoTFBCounterSpan.begin(), readBCWithTVXAndNoTFBCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndNoTFB));
         std::copy(readBCWithTVXAndNoTFBAndNoITSROFBCounterSpan.begin(), readBCWithTVXAndNoTFBAndNoITSROFBCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndNoTFBAndNoITSROFB));
       } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
+        for (unsigned int i = 0; i < previousReadCounts.size(); i++) { // in principle we only care about the first element, but might be interesting information to keep
           previousReadCounts[i] += readBCCounterSpan[i];
           previousReadCountsWithTVX[i] += readBCWithTVXCounterSpan[i];
           previousReadCountsWithTVXAndNoTFB[i] += readBCWithTVXAndNoTFBCounterSpan[i];
@@ -183,7 +183,7 @@ struct LuminosityProducer {
         std::copy(readCollisionWithTVXAndZVertexAndSel7KINT7CounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel7KINT7CounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel7KINT7));
 
       } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
+        for (unsigned int i = 0; i < previousReadCounts.size(); i++) { // in principle we only care about the first element, but might be interesting information to keep
           previousReadCounts[i] += readCollisionCounterSpan[i];
           previousReadCountsWithTVX[i] += readCollisionWithTVXCounterSpan[i];
           previousReadCountsWithTVXAndZVertexAndSel8[i] += readCollisionWithTVXAndZVertexAndSel8CounterSpan[i];
