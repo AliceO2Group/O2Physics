@@ -159,15 +159,29 @@ struct TaskPolarisationCharmHadrons {
   struct : ConfigurableGroup {
     Configurable<bool> applyLcBkgVeto{"applyLcBkgVeto", false, "Flag to enable the veto on D+ and Ds+ background for Lc->pKpi analysis"};
     /// background from D+->K-pi+pi+
-    Configurable<float> massDplusKPiPiMin{"massKDplusPiPiMin", 1.85, "Min. value for D+->K-pi+pi+ veto"};
-    Configurable<float> massDplusKPiPiMax{"massKDplusPiPiMax", 1.90, "Max. value for D+->K-pi+pi+ veto"};
+    Configurable<float> massDplusKPiPiMinVeto{"massDplusKPiPiMinVeto", 1.85, "Min. value for D+->K-pi+pi+ veto"};
+    Configurable<float> massDplusKPiPiMaxVeto{"massDplusKPiPiMaxVeto", 1.90, "Max. value for D+->K-pi+pi+ veto"};
     /// background from D+->K+K-pi+
-    Configurable<float> massDplusKPiPiMin{"massDplusKPiPiMin", 1.85, "Min. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMin, but this allows more flexibility in analysis
-    Configurable<float> massDplusKPiPiMax{"massDplusKPiPiMax", 1.90, "Max. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMax, but this allows more flexibility in analysis
+    Configurable<float> massDplusKKPiMinVeto{"massDplusKKPiMinVeto", 1.85, "Min. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMinVeto, but this allows more flexibility in analysis
+    Configurable<float> massDplusKKPiMaxVeto{"massDplusKKPiMaxVeto", 1.90, "Max. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMaxVeto, but this allows more flexibility in analysis
     /// background from Ds+->K+K-pi+
-    Configurable<float> massDsKPiPiMin{"massDsKPiPiMin", 1.94, "Min. value for Ds+->K+K-pi+ veto"};
-    Configurable<float> massDsKPiPiMax{"massDsKPiPiMax", 2.00, "Max. value for Ds+->K+K-pi+ veto"};
+    Configurable<float> massDsKKPiMinVeto{"massDsKKPiMinVeto", 1.94, "Min. value for Ds+->K+K-pi+ veto"};
+    Configurable<float> massDsKKPiMaxVeto{"massDsKKPiMaxVeto", 2.00, "Max. value for Ds+->K+K-pi+ veto"};
   } lcBkgVeto;
+  struct : ConfigurableGroup {
+    /// monitoring histograms (Dalitz plot)
+    Configurable<bool> activateTHnLcChannelMonitor{"activateTHnLcChannelMonitor", false, "Flag to switch on the monitoring THnSparse of M2(Kpi), M2(pK), M2(ppi), pt correlation for Lc -> pKpi"};
+    ConfigurableAxis configThnAxisInvMass2KPiLcMonitoring{"configThnAxisInvMassKPiLcMonitoring", {180, 0.2f, 2.f}, "#it{M}^{2}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+    ConfigurableAxis configThnAxisInvMass2PKLcMonitoring{"configThnAxisInvMass2PKLcMonitoring", {300, 2.f, 5.f}, "#it{M}^{2}(pK) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+    ConfigurableAxis configThnAxisInvMass2PPiLcMonitoring{"configThnAxisInvMass2PPiLcMonitoring", {300, 2.f, 5.f}, "#it{M}^{2}(p#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+
+    /// veto conditions on Lc->pKpi signals
+    Configurable<bool> applyLcSignalVeto{"applyLcSignalVeto", false, "Flag to enable the veto on Lc->pKpi resonant channels"};
+    Configurable<float> mass2PPiLcMinVeto{"mass2PPiLcMinVeto", 1.f, "Min. value for Delta++(<-Lc) mass veto"};
+    Configurable<float> mass2PPiLcMaxVeto{"mass2PPiLcMaxVeto", 1.6f, "Max. value for Delta++(<-Lc) mass veto"};
+
+  } lcPKPiChannels;
+
 
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
@@ -268,6 +282,9 @@ struct TaskPolarisationCharmHadrons {
     const AxisSpec thnAxisNumItsClsMin{configThnAxisNumItsClsMin, "min #it{N}_{cls ITS}"};
     const AxisSpec thnAxisNumTpcClsMin{configThnAxisNumTpcClsMin, "min #it{N}_{cls TPC}"};
     const AxisSpec thnAxisCharge{configThnAxisCharge, "charge"};
+    const AxisSpec thnAxisInvMass2KPiLcMonitoring{lcPKPiChannels.configThnAxisInvMass2KPiLcMonitoring, "#it{M}^{2}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2}"};
+    const AxisSpec thnAxisInvMass2PKLcMonitoring{lcPKPiChannels.configThnAxisInvMass2PKLcMonitoring,   "#it{M}^{2}(pK) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisInvMass2PPiLcMonitoring{lcPKPiChannels.configThnAxisInvMass2PPiLcMonitoring, "#it{M}^{2}(p#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
 
     auto invMassBins = thnAxisInvMass.binEdges;
     minInvMass = invMassBins.front();
@@ -431,6 +448,11 @@ struct TaskPolarisationCharmHadrons {
       }
     }
 
+    /// control plots for Lc->pKPi
+    if ((doprocessLcToPKPi || doprocessLcToPKPiWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl) && lcPKPiChannels.activateTHnLcChannelMonitor) {
+      registry.add("hMass2PairsLcPKPi", "THnSparse to monitor M2(Kpi), M2(pK), M2(ppi), pt correlation for Lc -> pKpi", HistType::kTHnSparseF, {thnAxisInvMass2KPiLcMonitoring, thnAxisInvMass2PKLcMonitoring, thnAxisInvMass2PPiLcMonitoring, thnAxisPt})
+    }
+
     // inv. mass hypothesis to loop over
     // e.g.: Lc->pKpi has the ambiguity pKpi vs. piKp
     if (doprocessLcToPKPi || doprocessLcToPKPiWithMl) {
@@ -448,6 +470,8 @@ struct TaskPolarisationCharmHadrons {
   /// \param rapCharmHad is the rapidity of the candidate
   /// \param invMassD0 is the invariant-mass of the D0 daugher (only for D*+)
   /// \param invMassKPiLc is the invariant-mass of the K-pi pair (only for Lc+)
+  /// \param invMassPKLc is the invariant-mass of the p-K pair (only for Lc+)
+  /// \param invMassPPiLc is the invariant-mass of the p-pi pair (only for Lc+)
   /// \param cosThetaStar is the cosThetaStar of the candidate
   /// \param outputMl is the array with ML output scores
   /// \param isRotatedCandidate is a flag that keeps the info of the rotation of the candidate for bkg studies
@@ -458,7 +482,7 @@ struct TaskPolarisationCharmHadrons {
   /// \param numItsClsMin is the minimum number of ITS clusters of the daughter tracks
   /// \param numTpcClsMin is the minimum number of TPC clusters of the daughter tracks
   template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, charm_polarisation::CosThetaStarType cosThetaStarType>
-  void fillRecoHistos(float invMassCharmHad, float ptCharmHad, int numPvContributors, float rapCharmHad, float invMassD0, float invMassKPiLc, float cosThetaStar, std::array<float, 3> outputMl, int isRotatedCandidate, int8_t origin, float ptBhadMother, int8_t resoChannelLc, float absEtaMin, int numItsClsMin, int numTpcClsMin, int8_t charge)
+  void fillRecoHistos(float invMassCharmHad, float ptCharmHad, int numPvContributors, float rapCharmHad, float invMassD0, float invMassKPiLc, float invMassPKLc, float invMassPPiLc, float cosThetaStar, std::array<float, 3> outputMl, int isRotatedCandidate, int8_t origin, float ptBhadMother, int8_t resoChannelLc, float absEtaMin, int numItsClsMin, int numTpcClsMin, int8_t charge)
   {
     if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
       if constexpr (!doMc) {                                                            // data
@@ -842,7 +866,7 @@ struct TaskPolarisationCharmHadrons {
       // variable definition
       float pxDau{-1000.f}, pyDau{-1000.f}, pzDau{-1000.f};
       float pxCharmHad{-1000.f}, pyCharmHad{-1000.f}, pzCharmHad{-1000.f};
-      float massDau{0.f}, invMassCharmHad{0.f}, invMassCharmHadForSparse{0.f}, invMassD0{0.f}, invMassKPiLc{0.f};
+      float massDau{0.f}, invMassCharmHad{0.f}, invMassCharmHadForSparse{0.f}, invMassD0{0.f}, invMassKPiLc{0.f}, invMassPKLc{0.f}, invMassPPiLc{0.f};
       float rapidity{-999.f};
       std::array<float, 3> outputMl{-1.f, -1.f, -1.f};
       int isRotatedCandidate = 0; // currently meaningful only for Lc->pKpi
@@ -961,6 +985,8 @@ struct TaskPolarisationCharmHadrons {
           }
           // invariant mass of the KPi pair
           invMassKPiLc = hfHelper.invMassKPiPairLcToPKPi(candidate);
+          invMassPKLc = hfHelper.invMassPKPairLcToPKPi(candidate);
+          invMassPPiLc = hfHelper.invMassPPiPairLcToPKPi(candidate);
 
           // D+ and Ds+ invariant mass values, to put a veto on background sources
           invMassPiKPi = hfHelper.invMassDplusToPiKPi(candidate); // bkg. from D+ -> K+pi-pi-
@@ -993,6 +1019,8 @@ struct TaskPolarisationCharmHadrons {
           }
           // invariant mass of the KPi pair
           invMassKPiLc = hfHelper.invMassKPiPairLcToPiKP(candidate);
+          invMassPKLc = hfHelper.invMassPKPairLcToPiKP(candidate);
+          invMassPPiLc = hfHelper.invMassPPiPairLcToPiKP(candidate);
 
           // D+ and Ds+ invariant mass values, to put a veto on background sources
           invMassPiKPi = hfHelper.invMassDplusToPiKPi(candidate); // bkg. from D+ -> K+pi-pi-
@@ -1007,14 +1035,29 @@ struct TaskPolarisationCharmHadrons {
         }
 
         /// put veto on D+, Ds+ inv. masses, to reduce the background
-        if (applyLcBkgVeto && ((massDplusKPiPiMin < invMassPiKPi && invMassPiKPi < massDplusKPiPiMax) /*bkg. from D+ -> K+pi-pi-*/ || 
-            (massDplusKKPiMin < invMassKKPi && invMassKKPi < massDplusKPiPiMax) /*bkg. from D+ -> K+K-pi+ (1st mass hypothesis)*/ ||
-            (massDplusKKPiMin < invMassPiKK && invMassPiKK < massDplusKPiPiMax) /*bkg. from D+ -> K+K-pi+ (2nd mass hypothesis)*/ ||
-            (massDsKKPiMin < invMassKKPi && invMassKKPi < massDsKPiPiMax) /*bkg. from Ds+ -> K+K-pi+ (1st mass hypothesis)*/ ||
-            (massDsKKPiMin < invMassPiKK && invMassPiKK < massDsKPiPiMax)) /*bkg. from Ds+ -> K+K-pi+ (2nd mass hypothesis)*/){
-          /// this candidate has D+ and/or Ds+ in the veto range, let's exclude it
+        if (lcBkgVeto.applyLcBkgVeto && ((lcBkgVeto.massDplusKPiPiMinVeto < invMassPiKPi && invMassPiKPi < lcBkgVeto.massDplusKPiPiMaxVeto) /*bkg. from D+ -> K+pi-pi-*/ || 
+            (lcBkgVeto.massDplusKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (1st mass hypothesis)*/ ||
+            (lcBkgVeto.massDplusKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (2nd mass hypothesis)*/ ||
+            (lcBkgVeto.massDsKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDsKKPiMaxVeto) /*bkg. from Ds+ -> K+K-pi+ (1st mass hypothesis)*/ ||
+            (lcBkgVeto.massDsKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDsKKPiMaxVeto)) /*bkg. from Ds+ -> K+K-pi+ (2nd mass hypothesis)*/){
+          /// this candidate has D+ and/or Ds+ in the veto range, let's reject it
           continue;
         }
+
+        /// control plots on pair masses
+        double invMass2KPiLc = invMassKPiLc*invMassKPiLc;
+        double invMass2PKLc = invMassPKLc*invMassPKLc;
+        double invMass2PPiLc = invMassPPiLc*invMassPPiLc;
+        if (lcPKPiChannels.activateTHnLcChannelMonitor) {
+          registry.fill(HIST("hMass2PairsLcPKPi"), invMass2KPiLc, invMass2PKLc, invMass2PPiLc);
+        }
+
+        /// veto cut on pair masses
+        if (lcPKPiChannels.applyLcSignalVeto && mass2PPiLcMinVeto < invMass2PPiLc && invMass2PPiLc < mass2PPiLcMaxVeto) {
+          /// this candidate has a significant contribution from Lc+ -> Delta++ K-, let's reject it
+          continue;
+        }
+
       } // Lc->pKpi
 
       if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
@@ -1057,22 +1100,22 @@ struct TaskPolarisationCharmHadrons {
       if (activateTHnSparseCosThStarHelicity) {
         ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
         cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
-        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Helicity>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarHelicity, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge);
+        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Helicity>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, invMassPKLc, invMassPPiLc, cosThetaStarHelicity, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge);
       }
       if (activateTHnSparseCosThStarProduction) {
         ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
         cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
-        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Production>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarProduction, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge);
+        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Production>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, invMassPKLc, invMassPPiLc, cosThetaStarProduction, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge);
       }
       if (activateTHnSparseCosThStarBeam) {
         ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
         cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Beam>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarBeam, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge);
+        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Beam>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, invMassPKLc, invMassPPiLc, cosThetaStarBeam, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge);
       }
       if (activateTHnSparseCosThStarRandom) {
         ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
         cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Random>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarRandom, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge);
+        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Random>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, invMassPKLc, invMassPPiLc, cosThetaStarRandom, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge);
       }
 
       /// Table for Lc->pKpi background studies
