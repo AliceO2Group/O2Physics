@@ -163,28 +163,28 @@ struct OnTheFlyTracker {
     TrackAlice3() = default;
     ~TrackAlice3() = default;
     TrackAlice3(const TrackAlice3& src) = default;
-    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, 
-    const float t = 0, 
-    const float te = 1, 
-    bool decayDauInput = false, 
-    bool weakDecayDauInput = false, 
-    int isUsedInCascadingInput = 0,
-    int nSiliconHitsInput = 0,
-    int nTPCHitsInput = 0) : o2::track::TrackParCov(src),
-                                                                 mcLabel{label},
-                                                                 timeEst{t, te},
-                                                                 isDecayDau(decayDauInput),
-                                                                 isWeakDecayDau(weakDecayDauInput),
-                                                                 isUsedInCascading(isUsedInCascadingInput),
-                                                                 nSiliconHits(nSiliconHitsInput),
-                                                                 nTPCHits(nTPCHitsInput) {}
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label,
+                const float t = 0,
+                const float te = 1,
+                bool decayDauInput = false,
+                bool weakDecayDauInput = false,
+                int isUsedInCascadingInput = 0,
+                int nSiliconHitsInput = 0,
+                int nTPCHitsInput = 0) : o2::track::TrackParCov(src),
+                                         mcLabel{label},
+                                         timeEst{t, te},
+                                         isDecayDau(decayDauInput),
+                                         isWeakDecayDau(weakDecayDauInput),
+                                         isUsedInCascading(isUsedInCascadingInput),
+                                         nSiliconHits(nSiliconHitsInput),
+                                         nTPCHits(nTPCHitsInput) {}
     const TimeEst& getTimeMUS() const { return timeEst; }
     int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
     bool isDecayDau;
     bool isWeakDecayDau;
     int isUsedInCascading; // 0: not at all, 1: is a cascade, 2: is a bachelor, 3: is a pion, 4: is a proton
-    int nSiliconHits; 
+    int nSiliconHits;
     int nTPCHits;
   };
 
@@ -634,9 +634,9 @@ struct OnTheFlyTracker {
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsPerfect(3);
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsTracked(3);
       std::vector<bool> isReco(3);
-      std::vector<int> nHits(3); // total
+      std::vector<int> nHits(3);        // total
       std::vector<int> nSiliconHits(3); // silicon type
-      std::vector<int> nTPCHits(3); // TPC type
+      std::vector<int> nTPCHits(3);     // TPC type
       std::vector<o2::delphes::DelphesO2TrackSmearer> smearer = {mSmearer0, mSmearer1, mSmearer2, mSmearer3, mSmearer4, mSmearer5};
       if (treatXi && mcParticle.pdgCode() == 3312) {
         histos.fill(HIST("hXiBuilding"), 0.0f);

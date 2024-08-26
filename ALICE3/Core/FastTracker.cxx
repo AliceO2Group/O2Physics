@@ -179,7 +179,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     // check if layer is doable
     if (layers[il].r < initialRadius)
       continue; // this layer should not be attempted, but go ahead
-    if(layers[il].type==0)
+    if (layers[il].type == 0)
       continue; // inert layer, skip
 
     // check if layer is reached
@@ -247,7 +247,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
   // Inward pass to calculate covariances
   for (int il = lastLayerReached; il >= firstLayerReached; il--) {
-    if(layers[il].type==0)
+    if (layers[il].type == 0)
       continue; // inert layer, skip
 
     float targetX = 1e+3;
@@ -283,9 +283,9 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     outputTrack.update(hitpoint, hitpointcov);
     outputTrack.checkCovariance();
 
-    if(layers[il].type==1)
+    if (layers[il].type == 1)
       nSiliconPoints++; // count silicon hits
-    if(layers[il].type==2)
+    if (layers[il].type == 2)
       nGasPoints++; // count TPC/gas hits
 
     hits.push_back(thisHit);

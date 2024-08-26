@@ -26,9 +26,9 @@ namespace o2::aod
 {
 namespace track_alice3
 {
-DECLARE_SOA_COLUMN(IsReconstructed, isReconstructed, bool);  //! is reconstructed or not
-DECLARE_SOA_COLUMN(NSiliconHits, nSiliconHits, int);         //! number of silicon hits
-DECLARE_SOA_COLUMN(NTPCHits, nTPCHits, int);                 //! number of tpc hits
+DECLARE_SOA_COLUMN(IsReconstructed, isReconstructed, bool); //! is reconstructed or not
+DECLARE_SOA_COLUMN(NSiliconHits, nSiliconHits, int);        //! number of silicon hits
+DECLARE_SOA_COLUMN(NTPCHits, nTPCHits, int);                //! number of tpc hits
 } // namespace track_alice3
 DECLARE_SOA_TABLE(TracksAlice3, "AOD", "TRACKSALICE3",
                   track_alice3::IsReconstructed);
