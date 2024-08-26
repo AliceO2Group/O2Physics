@@ -112,6 +112,8 @@ struct phik0shortanalysis {
   HistogramRegistry PhiPionHist{"PhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MCPhiPionHist{"MCPhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhieffHist{"PhieffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry K0SeffHist{"PhieffK0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry PioneffHist{"PhieffPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry yaccHist{"yaccHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for event selection
@@ -416,6 +418,14 @@ struct phik0shortanalysis {
     PhieffHist.add("h2PhieffPiGenMCInclusiveAssocReco", "Phi coupled to Pion for GenMC Inclusive", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
     PhieffHist.add("h2PhieffPiGenMCFirstCutAssocReco", "Phi coupled to Pion for GenMC Deltay < FirstCut", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
     PhieffHist.add("h2PhieffPiGenMCSecondCutAssocReco", "Phi coupled to Pion for GenMC Deltay < SecondCut", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
+
+    // MCK0S invariant mass and GenMC K0S for computing efficiencies
+    K0SeffHist.add("h3K0SeffInvMass", "Invariant mass of K0Short for Efficiency", kTH3F, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis});
+    K0SeffHist.add("h2K0SGenMC", "K0Short for GenMC", kTH2F, {{10, -0.5f, 9.5f}, {4, -0.5f, 3.5f}});
+
+    // MCPion invariant mass and GenMC Pion for computing efficiencies
+    PioneffHist.add("h4PieffInvMass", "Invariant mass of Pion for Efficiency", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+    PioneffHist.add("h2PiGenMC", "Pion for GenMC", kTH2F, {{10, -0.5f, 9.5f}, {3, -0.5f, 2.5f}});
 
     // y acceptance studies
     yaccHist.add("hyaccK0SRecMC", "K0S y acceptance in RecMC", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
@@ -1578,6 +1588,8 @@ struct phik0shortanalysis {
       if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
+      K0SeffHist.fill(HIST("h3K0SeffInvMass"), genmultiplicity, recK0S.Pt(), recK0S.M());
+
       std::vector<TLorentzVector> listrecPhi;
       int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
 
@@ -1760,6 +1772,8 @@ struct phik0shortanalysis {
       recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
       if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
         continue;
+
+      PioneffHist.fill(HIST("h4PieffInvMass"), genmultiplicity, recPi.Pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
 
       std::vector<TLorentzVector> listrecPhi;
       int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
@@ -2129,6 +2143,8 @@ struct phik0shortanalysis {
         }
       }
 
+      K0SeffHist.fill(HIST("h2K0SGenMC"), imultBin, ipTBin);
+
       bool isCountedPhi = false;
 
       bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
@@ -2226,6 +2242,8 @@ struct phik0shortanalysis {
           break;
         }
       }
+
+      PioneffHist.fill(HIST("h2PiGenMC"), imultBin, ipTBin);
 
       bool isCountedPhi = false;
 
