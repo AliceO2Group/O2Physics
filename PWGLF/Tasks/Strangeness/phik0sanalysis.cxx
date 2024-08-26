@@ -174,7 +174,8 @@ struct phik0shortanalysis {
   // Configurable on pion pT
   Configurable<std::vector<float>> binspTPi{"binspTPi", std::vector<float>{pTBinPi, pTBinPi + nPtBinPi + 1}, "pT bin limits for pions"};
 
-  // Configurables for invariant mass histograms filling
+  // Configurables for delta y selection
+  Configurable<int> nBinsy{"nBinsy", 16, "Number of bins in y and deltay axis"};
   Configurable<float> cfgInclusiveDeltay{"cfgInclusiveDeltay", 0.8, "Inclusive upper bound on Deltay selection"};
   Configurable<float> cfgFirstCutonDeltay{"cgfFirstCutonDeltay", 0.5, "First upper bound on Deltay selection"};
   Configurable<float> cfgSecondCutonDeltay{"cgfSecondCutonDeltay", 0.2, "Second upper bound on Deltay selection"};
@@ -237,8 +238,8 @@ struct phik0shortanalysis {
     AxisSpec K0SmassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec PhimassAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
-    AxisSpec yAxis = {16, -0.8f, 0.8f, "#it{y}"};
-    AxisSpec deltayAxis = {16, 0.0f, 1.6f, "|#it{#Deltay}|"};
+    AxisSpec yAxis = {nBinsy, -0.8f, 0.8f, "#it{y}"};
+    AxisSpec deltayAxis = {nBinsy, 0.0f, 1.6f, "|#it{#Deltay}|"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{{0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "centFT0M"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
