@@ -1773,7 +1773,17 @@ struct phik0shortanalysis {
       if (std::abs(recPi.Rapidity()) > cfgInclusiveDeltay)
         continue;
 
-      PioneffHist.fill(HIST("h4PieffInvMass"), genmultiplicity, recPi.Pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+      float nsigmaTPC, nsigmaTOF;
+      if (track.hasTPC())
+        nsigmaTPC = track.tpcNSigmaPi();
+      else
+        nsigmaTPC = -9.99;
+      if (track.hasTOF())
+        nsigmaTOF = track.tofNSigmaPi();
+      else
+        nsigmaTOF = -9.99;
+
+      PioneffHist.fill(HIST("h4PieffInvMass"), genmultiplicity, recPi.Pt(), nsigmaTPC, nsigmaTOF);
 
       std::vector<TLorentzVector> listrecPhi;
       int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
@@ -1846,16 +1856,6 @@ struct phik0shortanalysis {
             countLtSecondCut++;
         }
       }
-
-      float nsigmaTPC, nsigmaTOF;
-      if (track.hasTPC())
-        nsigmaTPC = track.tpcNSigmaPi();
-      else
-        nsigmaTPC = -9.99;
-      if (track.hasTOF())
-        nsigmaTOF = track.tofNSigmaPi();
-      else
-        nsigmaTOF = -9.99;
 
       float weightInclusive, weightLtFirstCut, weightLtSecondCut;
       if (countInclusive > 0) {
