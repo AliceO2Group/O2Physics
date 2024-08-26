@@ -1969,6 +1969,8 @@ struct phik0shortanalysis {
         isCountedPhi = true;
       }
 
+      PhieffHist.fill(HIST("h1PhiGenMC"), imultBin);
+
       bool isCountedK0SInclusive = false, isCountedK0SFirstCut = false, isCountedK0SSecondCut = false;
       bool isCountedK0SInclusiveAssocReco = false, isCountedK0SFirstCutAssocReco = false, isCountedK0SSecondCutAssocReco = false;
 
@@ -2130,7 +2132,7 @@ struct phik0shortanalysis {
       bool isCountedPhi = false;
 
       bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
-      bool isCountedPhiInclusiveAssocReco = false, isCountedPhiFirstCutAssocReco = false, isCountedPhiSecondCutAssocReco = false;
+      //bool isCountedPhiInclusiveAssocReco = false, isCountedPhiFirstCutAssocReco = false, isCountedPhiSecondCutAssocReco = false;
 
       for (auto mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 333)
@@ -2155,7 +2157,7 @@ struct phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        if (isAssocColl) {
+        /*if (isAssocColl) {
           if (!isCountedPhiInclusiveAssocReco) {
             MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCInclusiveAssocReco"), imultBin, ipTBin);
             isCountedPhiInclusiveAssocReco = true;
@@ -2172,22 +2174,28 @@ struct phik0shortanalysis {
             MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCSecondCutAssocReco"), imultBin, ipTBin);
             isCountedPhiSecondCutAssocReco = true;
           }
-        }
+        }*/
 
         if (!isCountedPhiInclusive) {
           MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCInclusive"), imultBin, ipTBin);
+          if (isAssocColl)
+            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCInclusiveAssocReco"), imultBin, ipTBin);
           isCountedPhiInclusive = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
           continue;
         if (!isCountedPhiFirstCut) {
           MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCFirstCut"), imultBin, ipTBin);
+          if (isAssocColl)
+            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCFirstCutAssocReco"), imultBin, ipTBin);
           isCountedPhiFirstCut = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
           continue;
         if (!isCountedPhiSecondCut) {
           MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCSecondCut"), imultBin, ipTBin);
+          if (isAssocColl)
+            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCSecondCutAssocReco"), imultBin, ipTBin);
           isCountedPhiSecondCut = true;
         }
       }
@@ -2241,7 +2249,7 @@ struct phik0shortanalysis {
       bool isCountedPhi = false;
 
       bool isCountedPhiInclusive = false, isCountedPhiFirstCut = false, isCountedPhiSecondCut = false;
-      bool isCountedPhiInclusiveAssocReco = false, isCountedPhiFirstCutAssocReco = false, isCountedPhiSecondCutAssocReco = false;
+      //bool isCountedPhiInclusiveAssocReco = false, isCountedPhiFirstCutAssocReco = false, isCountedPhiSecondCutAssocReco = false;
 
       for (auto mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 333)
@@ -2266,7 +2274,7 @@ struct phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        if (isAssocColl) {
+        /*if (isAssocColl) {
           if (!isCountedPhiInclusiveAssocReco) {
             MCPhiPionHist.fill(HIST("h2PhiPiGenMCInclusiveAssocReco"), imultBin, ipTBin);
             isCountedPhiInclusiveAssocReco = true;
@@ -2283,22 +2291,28 @@ struct phik0shortanalysis {
             MCPhiPionHist.fill(HIST("h2PhiPiGenMCSecondCutAssocReco"), imultBin, ipTBin);
             isCountedPhiSecondCutAssocReco = true;
           }
-        }
+        }*/
 
         if (!isCountedPhiInclusive) {
           MCPhiPionHist.fill(HIST("h2PhiPiGenMCInclusive"), imultBin, ipTBin);
+          if (isAssocColl)
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCInclusiveAssocReco"), imultBin, ipTBin);
           isCountedPhiInclusive = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
           continue;
         if (!isCountedPhiFirstCut) {
           MCPhiPionHist.fill(HIST("h2PhiPiGenMCFirstCut"), imultBin, ipTBin);
+          if (isAssocColl)
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCFirstCutAssocReco"), imultBin, ipTBin);
           isCountedPhiFirstCut = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
           continue;
         if (!isCountedPhiSecondCut) {
           MCPhiPionHist.fill(HIST("h2PhiPiGenMCSecondCut"), imultBin, ipTBin);
+          if (isAssocColl)
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCSecondCutAssocReco"), imultBin, ipTBin);
           isCountedPhiSecondCut = true;
         }
       }
