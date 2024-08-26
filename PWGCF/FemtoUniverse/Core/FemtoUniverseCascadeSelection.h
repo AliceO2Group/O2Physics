@@ -259,8 +259,8 @@ class FemtoUniverseCascadeSelection
       femtoUniverseSelection::kLowerLimit, // DCA v0 to PV max
       femtoUniverseSelection::kLowerLimit, // v0 mass min
       femtoUniverseSelection::kUpperLimit, // v0 mass max
-    }; ///< Map to match a variable with
-       ///< its type
+    };                                     ///< Map to match a variable with
+                                           ///< its type
 
   static constexpr std::string_view mSelectionHelper[kNcascadeSelection] = {
     "Cascade particle sign (+1 or -1)",
