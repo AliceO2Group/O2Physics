@@ -661,7 +661,7 @@ struct OnTheFlyTracker {
             nSiliconHits[i] = fastTracker.nSiliconPoints;
             nTPCHits[i] = fastTracker.nGasPoints;
 
-            if (nSiliconHits[i] >= fastTrackerSettings.minSiliconHits || (nSiliconHits[i]>=fastTrackerSettings.minSiliconHitsIfTPCUsed && nTPCHits[i]>=fastTrackerSettings.minTPCClusters)) {
+            if (nSiliconHits[i] >= fastTrackerSettings.minSiliconHits || (nSiliconHits[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed && nTPCHits[i] >= fastTrackerSettings.minTPCClusters)) {
               isReco[i] = true;
             } else {
               continue; // extra sure
@@ -1037,7 +1037,7 @@ struct OnTheFlyTracker {
                             trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                             trackParCov.getSigma1Pt2());
       tracksLabels(trackParCov.mcLabel, 0);
-      TracksExtraA3(trackParCov.nSiliconHits,trackParCov.nTPCHits);
+      TracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
@@ -1085,7 +1085,7 @@ struct OnTheFlyTracker {
                             trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                             trackParCov.getSigma1Pt2());
       tracksLabels(trackParCov.mcLabel, 0);
-      TracksExtraA3(trackParCov.nSiliconHits,trackParCov.nTPCHits);
+      TracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
