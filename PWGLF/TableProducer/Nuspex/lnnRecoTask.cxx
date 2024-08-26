@@ -303,8 +303,8 @@ struct lnnRecoTask {
       auto nSigmaTPCneg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for triton reconstruction
-      bool is3H = posTrack.hasTPC() && nSigmaMin3H < nSigmaTPCpos > nSigmaMax3H;
-      bool isAnti3H = negTrack.hasTPC() && nSigmaMin3H < nSigmaTPCneg > nSigmaMax3H;
+      bool is3H = posTrack.hasTPC() && nSigmaMin3H<nSigmaTPCpos> nSigmaMax3H;
+      bool isAnti3H = negTrack.hasTPC() && nSigmaMin3H<nSigmaTPCneg> nSigmaMax3H;
 
       if (!is3H && !isAnti3H)
         continue;
