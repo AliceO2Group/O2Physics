@@ -182,10 +182,13 @@ struct femtoUniversePairTaskTrackPhi {
 
   bool IsProtonRejected(float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
   {
-    if (mom < 0.5)
+    if (mom < 0.5) {
       return true;
+    }
     if (mom > 0.5) {
       if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
+        return true;
+      } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfBothTracks.ConfNsigmaRejectKaon) {
         return true;
       } else {
         return false;
@@ -237,11 +240,16 @@ struct femtoUniversePairTaskTrackPhi {
   bool IsKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < 0.5) {
-      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
+      if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
+        return true;
+      } else if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
         return true;
       }
-    } else if (mom > 0.5) {
+    }
+    if (mom > 0.5) {
       if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
+        return true;
+      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
         return true;
       } else {
         return false;
@@ -274,11 +282,16 @@ struct femtoUniversePairTaskTrackPhi {
   bool IsPionRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < 0.5) {
-      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
+      if (TMath::Abs(nsigmaTPCK) < ConfBothTracks.ConfNsigmaRejectKaon) {
+        return true;
+      } else if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
         return true;
       }
-    } else if (mom > 0.5) {
+    }
+    if (mom > 0.5) {
       if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfBothTracks.ConfNsigmaRejectKaon) {
+        return true;
+      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
         return true;
       } else {
         return false;
