@@ -313,7 +313,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramIPsData(T const& collision, U const& jets, V const& /*jtracks*/)
+  void fillHistogramIPsData(T const& /*collision*/, U const& jets, V const& /*jtracks*/)
   {
     for (auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -399,7 +399,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V>
-  void fillHistogramIPsMCD(T const& collision, U const& mcdjets, V const& /*jtracks*/)
+  void fillHistogramIPsMCD(T const& /*collision*/, U const& mcdjets, V const& /*jtracks*/)
   {
     for (auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {

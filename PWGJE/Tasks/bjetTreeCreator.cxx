@@ -342,7 +342,7 @@ struct BJetTreeCreator {
   }
 
   template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
-  void analyzeJetTrackInfo(AnyCollision const& collision, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
+  void analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
   {
 
     for (auto& jconstituent : analysisJet.template tracks_as<AnyTracks>()) {
