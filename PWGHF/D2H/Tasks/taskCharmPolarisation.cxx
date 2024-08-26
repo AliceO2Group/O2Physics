@@ -155,6 +155,20 @@ struct TaskPolarisationCharmHadrons {
   /// table for Lc->pKpi background studies in MC
   Configurable<int> cosThStarAxisLcPKPiBkgMc{"cosThStarAxisLcPKPiBkgMc", 1, "cos(Theta*) axis for background studies (1 = helicity; 2 = production; 3 = beam; 4 = random)"};
 
+  /// veto conditions for Lc->pKpi analysis
+  struct : ConfigurableGroup {
+    Configurable<bool> applyLcBkgVeto{"applyLcBkgVeto", false, "Flag to enable the veto on D+ and Ds+ background for Lc->pKpi analysis"};
+    /// background from D+->K-pi+pi+
+    Configurable<float> massDplusKPiPiMin{"massKDplusPiPiMin", 1.85, "Min. value for D+->K-pi+pi+ veto"};
+    Configurable<float> massDplusKPiPiMax{"massKDplusPiPiMax", 1.90, "Max. value for D+->K-pi+pi+ veto"};
+    /// background from D+->K+K-pi+
+    Configurable<float> massDplusKPiPiMin{"massDplusKPiPiMin", 1.85, "Min. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMin, but this allows more flexibility in analysis
+    Configurable<float> massDplusKPiPiMax{"massDplusKPiPiMax", 1.90, "Max. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMax, but this allows more flexibility in analysis
+    /// background from Ds+->K+K-pi+
+    Configurable<float> massDsKPiPiMin{"massDsKPiPiMin", 1.94, "Min. value for Ds+->K+K-pi+ veto"};
+    Configurable<float> massDsKPiPiMax{"massDsKPiPiMax", 2.00, "Max. value for Ds+->K+K-pi+ veto"};
+  } lcBkgVeto;
+
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
 
@@ -918,6 +932,9 @@ struct TaskPolarisationCharmHadrons {
         rapidity = RecoDecay::y(candidate.pVector(), massLc);
 
         /// mass-hypothesis-dependent variables
+        float invMassPiKPi = 0.f; // bkg. from D+ -> K+pi-pi-
+        float invMassKKPi = 0.f;  // bkg. from D+, Ds+ -> K+K-pi+ (1st mass hypothesis)
+        float invMassPiKK = 0.f;  // bkg. from D+, Ds+ -> pi+K-K+ (2nd mass hypothesis)
         if (iMass == charm_polarisation::MassHyposLcToPKPi::PKPi && candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
           // reconstructed as pKpi
           pxDau = candidate.pxProng0();
@@ -944,6 +961,12 @@ struct TaskPolarisationCharmHadrons {
           }
           // invariant mass of the KPi pair
           invMassKPiLc = hfHelper.invMassKPiPairLcToPKPi(candidate);
+
+          // D+ and Ds+ invariant mass values, to put a veto on background sources
+          invMassPiKPi = hfHelper.invMassDplusToPiKPi(candidate); // bkg. from D+ -> K+pi-pi-
+          invMassKKPi = hfHelper.invMassDsToKKPi(candidate); // bkg. from D+, Ds+ -> K+K-pi+ (1st mass hypothesis)
+          invMassPiKK = hfHelper.invMassDsToPiKK(candidate); // bkg. from D+, Ds+ -> pi+K-K+ (2nd mass hypothesis)
+
         } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
           // reconstructed as piKp
           pxDau = candidate.pxProng2();
@@ -970,6 +993,12 @@ struct TaskPolarisationCharmHadrons {
           }
           // invariant mass of the KPi pair
           invMassKPiLc = hfHelper.invMassKPiPairLcToPiKP(candidate);
+
+          // D+ and Ds+ invariant mass values, to put a veto on background sources
+          invMassPiKPi = hfHelper.invMassDplusToPiKPi(candidate); // bkg. from D+ -> K+pi-pi-
+          invMassKKPi = hfHelper.invMassDsToKKPi(candidate); // bkg. from D+, Ds+ -> K+K-pi+ (1st mass hypothesis)
+          invMassPiKK = hfHelper.invMassDsToPiKK(candidate); // bkg. from D+, Ds+ -> pi+K-K+ (2nd mass hypothesis)
+
         } else {
           // NB: no need to check cases in which candidate.isSelLcToPKPi() and candidate.isSelLcToPiKP() are both false, because they are rejected already by the Filter
           // ... but we need to put this protections here!
@@ -977,6 +1006,15 @@ struct TaskPolarisationCharmHadrons {
           continue;
         }
 
+        /// put veto on D+, Ds+ inv. masses, to reduce the background
+        if (applyLcBkgVeto && ((massDplusKPiPiMin < invMassPiKPi && invMassPiKPi < massDplusKPiPiMax) /*bkg. from D+ -> K+pi-pi-*/ || 
+            (massDplusKKPiMin < invMassKKPi && invMassKKPi < massDplusKPiPiMax) /*bkg. from D+ -> K+K-pi+ (1st mass hypothesis)*/ ||
+            (massDplusKKPiMin < invMassPiKK && invMassPiKK < massDplusKPiPiMax) /*bkg. from D+ -> K+K-pi+ (2nd mass hypothesis)*/ ||
+            (massDsKKPiMin < invMassKKPi && invMassKKPi < massDsKPiPiMax) /*bkg. from Ds+ -> K+K-pi+ (1st mass hypothesis)*/ ||
+            (massDsKKPiMin < invMassPiKK && invMassPiKK < massDsKPiPiMax)) /*bkg. from Ds+ -> K+K-pi+ (2nd mass hypothesis)*/){
+          /// this candidate has D+ and/or Ds+ in the veto range, let's exclude it
+          continue;
+        }
       } // Lc->pKpi
 
       if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
