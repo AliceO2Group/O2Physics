@@ -359,18 +359,13 @@ bool prongAcceptance(T const& prong, float prongChi2PCAMax, float prongsigmaLxyM
  * positive and negative value are expected from primary vertex
  * positive value is expected from secondary vertex
  *
- * @param collision which is needed external table of collision due to postion X and Y
  * @param jet
- * @param track which is needed each DCA_X and Y which is measured in jettaggerhfExtension.cxx
+ * @param jtrack which is needed aod::JTrackExtras
  */
-template <typename T, typename U, typename V>
-int getGeoSign(T const& collision, U const& jet, V const& track)
+template <typename T, typename U>
+int getGeoSign(T const& jet, U const& jtrack)
 {
-  auto trackPar = getTrackPar(track);
-  auto xyz = trackPar.getXYZGlo();
-  auto dcaX = xyz.X() - collision.posX();
-  auto dcaY = xyz.Y() - collision.posY();
-  auto sign = TMath::Sign(1, dcaX * jet.px() + dcaY * jet.py() + track.dcaZ() * jet.pz());
+  auto sign = TMath::Sign(1, jtrack.dcaX() * jet.px() + jtrack.dcaY() * jet.py() + jtrack.dcaZ() * jet.pz());
   if (sign < -1 || sign > 1)
     LOGF(info, Form("Sign is %d", sign));
   return sign;
@@ -380,15 +375,14 @@ int getGeoSign(T const& collision, U const& jet, V const& track)
  * Orders the tracks associated with a jet based on signed impact parameter significance and stores them
  * in a vector in descending order.
  */
-template <typename T, typename U, typename V, typename W, typename Vec = std::vector<float>>
-void orderForIPJetTracks(T const& collision, U const& jet, V const& /*jtracks*/, W const& /*tracks*/, float const& trackDcaXYMax, float const& trackDcaZMax, Vec& vecSignImpSig)
+template <typename T, typename U, typename Vec = std::vector<float>>
+void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float const& trackDcaXYMax, float const& trackDcaZMax, Vec& vecSignImpSig)
 {
-  for (auto& jtrack : jet.template tracks_as<V>()) {
-    auto track = jtrack.template track_as<W>();
-    if (!trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
+  for (auto& jtrack : jet.template tracks_as<U>()) {
+    if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
       continue;
-    auto geoSign = getGeoSign(collision, jet, track);
-    auto varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+    auto geoSign = getGeoSign(jet, jtrack);
+    auto varSignImpXYSig = geoSign * std::abs(jtrack.dcaXY()) / jtrack.sigmadcaXY();
     vecSignImpSig.push_back(varSignImpXYSig);
   }
   std::sort(vecSignImpSig.begin(), vecSignImpSig.end(), std::greater<float>());
@@ -397,14 +391,14 @@ void orderForIPJetTracks(T const& collision, U const& jet, V const& /*jtracks*/,
 /**
  * Checks if a jet is greater than the given tagging working point based on the signed impact parameter significances
  */
-template <typename T, typename U, typename V, typename W>
-bool isGreaterThanTaggingPoint(T const& collision, U const& jet, V const& jtracks, W const& tracks, float const& trackDcaXYMax, float const& trackDcaZMax, float const& taggingPoint = 1.0, int const& cnt = 1)
+template <typename T, typename U>
+bool isGreaterThanTaggingPoint(T const& jet, U const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, float const& taggingPoint = 1.0, int const& cnt = 1)
 {
   if (cnt == 0) {
     return true; // untagged
   }
   std::vector<float> vecSignImpSig;
-  orderForIPJetTracks(collision, jet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, vecSignImpSig);
+  orderForIPJetTracks(jet, jtracks, trackDcaXYMax, trackDcaZMax, vecSignImpSig);
   if (vecSignImpSig.size() > static_cast<std::vector<float>::size_type>(cnt) - 1) {
     for (int i = 0; i < cnt; i++) {
       if (vecSignImpSig[i] < taggingPoint) { // tagger point set
@@ -453,7 +447,7 @@ template <typename T, typename U>
 float getTrackProbability(T const& fResoFuncjet, U const& track, const float& minSignImpXYSig = -40)
 {
   float probTrack = 0;
-  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / track.sigmadcaXY();
   if (-varSignImpXYSig < minSignImpXYSig)
     varSignImpXYSig = -minSignImpXYSig - 0.01; // To avoid overflow for integral
   probTrack = fResoFuncjet->Integral(minSignImpXYSig, -varSignImpXYSig) / fResoFuncjet->Integral(minSignImpXYSig, 0);
@@ -480,26 +474,25 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, const float& mi
  *         specific flavor. Returns -1 if the jet contains fewer than two tracks with a positive
  *         geometric sign.
  */
-template <typename T, typename U, typename V, typename W, typename X>
-float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& jtracks, X const& tracks, float const& trackDcaXYMax, float const& trackDcaZMax, const int& cnt, const float& tagPoint = 1.0, const float& minSignImpXYSig = -10)
+template <typename T, typename U, typename V>
+float getJetProbability(T const& fResoFuncjet, U const& jet, V const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, const int& cnt, const float& tagPoint = 1.0, const float& minSignImpXYSig = -10)
 {
-  if (!(isGreaterThanTaggingPoint(collision, jet, jtracks, tracks, trackDcaXYMax, trackDcaZMax, tagPoint, cnt)))
+  if (!(isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPoint, cnt)))
     return -1;
 
   std::vector<float> jetTracksPt;
   float trackjetProb = 1.;
 
-  for (auto& jtrack : jet.template tracks_as<W>()) {
-    auto track = jtrack.template track_as<X>();
-    if (!trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
+  for (auto& jtrack : jet.template tracks_as<V>()) {
+    if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
       continue;
 
-    float probTrack = getTrackProbability(fResoFuncjet, track, minSignImpXYSig);
+    float probTrack = getTrackProbability(fResoFuncjet, jtrack, minSignImpXYSig);
 
-    auto geoSign = getGeoSign(collision, jet, track);
+    auto geoSign = getGeoSign(jet, jtrack);
     if (geoSign > 0) { // only take positive sign track for JP calculation
       trackjetProb *= probTrack;
-      jetTracksPt.push_back(track.pt());
+      jetTracksPt.push_back(jtrack.pt());
     }
   }
 

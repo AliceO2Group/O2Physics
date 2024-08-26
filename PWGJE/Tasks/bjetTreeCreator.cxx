@@ -252,8 +252,10 @@ struct BJetTreeCreator {
   Filter jetFilter = (aod::jet::pt >= jetPtMin && aod::jet::pt <= jetPtMax && aod::jet::eta < jetEtaMax - aod::jet::r / 100.f && aod::jet::eta > jetEtaMin + aod::jet::r / 100.f);
 
   using FilteredCollision = soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs>>;
-  using JetTrackswID = soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>>;
-  using JetTracksMCDwID = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
+  //using JetTrackswID = soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>>;
+  using JetTrackswID = soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras, aod::JTrackPIs>>;
+  //using JetTracksMCDwID = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
+  using JetTracksMCDwID = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>>;
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>;
   using DataJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::DataSecondaryVertex3ProngIndices>>;
 
@@ -326,7 +328,8 @@ struct BJetTreeCreator {
       auto constituent = jconstituent.template track_as<OriginalTracks>();
       double deltaRJetTrack = jetutilities::deltaR(analysisJet, constituent);
       double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
-      int sign = jettaggingutilities::getGeoSign(collision, analysisJet, constituent);
+      //int sign = jettaggingutilities::getGeoSign(collision, analysisJet, constituent);
+      int sign = jettaggingutilities::getGeoSign(analysisJet, jconstituent);
 
       float RClosestSV = 10.;
       for (const auto& candSV : analysisJet.template secondaryVertices_as<SecondaryVertices>()) {
