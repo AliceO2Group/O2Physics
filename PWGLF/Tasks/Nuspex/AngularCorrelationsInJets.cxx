@@ -455,13 +455,12 @@ struct AngularCorrelationsInJets {
 
     // TPC
     if (track.pt() < fAntiheliumTPCTOFpT && (track.tpcNSigmaHe() < fAntiheliumTPCnsigLowMin || track.tpcNSigmaHe() > fAntiheliumTPCnsigLowMax))
-        return false;
+      return false;
     if (track.pt() > fAntiheliumTPCTOFpT && (track.tpcNSigmaHe() < fAntiheliumTPCnsigHighMin || track.tpcNSigmaHe() > fAntiheliumTPCnsigHighMax))
       return false
 
-    // DCA
-    if (TMath::Abs(track.dcaXY()) > fAntiheliumDCAxy)
-      return false;
+        // DCA
+        if (TMath::Abs(track.dcaXY()) > fAntiheliumDCAxy) return false;
     if (TMath::Abs(track.dcaZ()) > fAntiheliumDCAz)
       return false;
 
@@ -569,7 +568,7 @@ struct AngularCorrelationsInJets {
         }
       }
       fillMixedEventDeltas(particleVector.at(i), buffer, particleType, jetAxis);
-      tempBuffer.emplace_back([phiToAxis, etaToAxis]);
+      tempBuffer.emplace_back([ phiToAxis, etaToAxis ]);
     }
   }
 
@@ -677,7 +676,7 @@ struct AngularCorrelationsInJets {
       }
 
       if (track.tpcNClsFindable() != 0) {
-        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows()/track.tpcNClsFindable());
+        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
       }
       registryQA.fill(HIST("hPtFullEvent"), track.pt());
       registryQA.fill(HIST("hEtaFullEvent"), track.eta());
@@ -805,7 +804,7 @@ struct AngularCorrelationsInJets {
         NchUE++;
         ptUE = ptUE + track.pt();
       }
-    } //for (int i = 0; i < nParticles; i++)
+    } // for (int i = 0; i < nParticles; i++)
 
     NchJet = NchJetPlusUE - 0.5 * NchUE;
     ptJet = ptJetPlusUE - 0.5 * ptUE;
@@ -972,7 +971,7 @@ struct AngularCorrelationsInJets {
       }
 
       if (track.tpcNClsFindable() != 0) {
-        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows()/track.tpcNClsFindable());
+        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
       }
       registryQA.fill(HIST("hPtFullEvent"), track.pt());
       registryQA.fill(HIST("hEtaFullEvent"), track.eta());
@@ -1108,7 +1107,7 @@ struct AngularCorrelationsInJets {
         NchUE++;
         ptUE = ptUE + track.pt();
       }
-    } //for (int i = 0; i < nParticles; i++)
+    } // for (int i = 0; i < nParticles; i++)
 
     NchJet = NchJetPlusUE - 0.5 * NchUE;
     ptJet = ptJetPlusUE - 0.5 * ptUE;
