@@ -120,7 +120,8 @@ struct lnnRecoTask {
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 1, "Minimum rigidity of the triton candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
-  Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
+  Configurable<float> nSigmaMin3H{"nSigmaMin3H", -2., "triton dEdx cut (n sigma)"};
+  Configurable<float> nSigmaMax3H{"nSigmaMax3H", 3.5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
 
@@ -302,8 +303,8 @@ struct lnnRecoTask {
       auto nSigmaTPCneg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for triton reconstruction
-      bool is3H = posTrack.hasTPC() && nSigmaTPCpos > -1 * nSigmaMax3H;
-      bool isAnti3H = negTrack.hasTPC() && nSigmaTPCneg > -1 * nSigmaMax3H;
+      bool is3H = posTrack.hasTPC() && nSigmaMin3H < nSigmaTPCpos > nSigmaMax3H;
+      bool isAnti3H = negTrack.hasTPC() && nSigmaMin3H < nSigmaTPCneg > nSigmaMax3H;
 
       if (!is3H && !isAnti3H)
         continue;
