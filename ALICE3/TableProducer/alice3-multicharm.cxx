@@ -441,9 +441,9 @@ struct alice3multicharm {
 
             // produce multi-charm table for posterior analysis
             multiCharmCore(
-                  thisXiCcandidate.dca, thisXiCCcandidate.dca,
-                  thisXiCcandidate.mass, thisXiCCcandidate.mass,
-                  thisXiCCcandidate.pt, thisXiCCcandidate.eta);
+              thisXiCcandidate.dca, thisXiCCcandidate.dca,
+              thisXiCcandidate.mass, thisXiCCcandidate.mass,
+              thisXiCCcandidate.pt, thisXiCCcandidate.eta);
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
         }
