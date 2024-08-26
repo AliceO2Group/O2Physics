@@ -46,6 +46,28 @@ namespace jettaggingutilities
 {
 const int cmTomum = 10000; // using cm -> #mum for impact parameter (dca)
 
+//________________________________________________________________________
+bool isBHadron(int pc)
+{
+  std::vector<int> bPdG = {511, 521, 10511, 10521, 513, 523, 10513, 10523, 20513, 20523, 20513, 20523, 515, 525, 531, 10531, 533, 10533,
+                           20533, 535, 541, 10541, 543, 10543, 20543, 545, 551, 10551, 100551, 110551, 200551, 210551, 553, 10553, 20553,
+                           30553, 100553, 110553, 120553, 130553, 200553, 210553, 220553, 300553, 9000533, 9010553, 555, 10555, 20555,
+                           100555, 110555, 120555, 200555, 557, 100557, 5122, 5112, 5212, 5222, 5114, 5214, 5224, 5132, 5232, 5312, 5322,
+                           5314, 5324, 5332, 5334, 5142, 5242, 5412, 5422, 5414, 5424, 5342, 5432, 5434, 5442, 5444, 5512, 5522, 5514, 5524,
+                           5532, 5534, 5542, 5544, 5554};
+
+  return (std::find(bPdG.begin(), bPdG.end(), std::abs(pc)) != bPdG.end());
+}
+//________________________________________________________________________
+bool isCHadron(int pc)
+{
+  std::vector<int> bPdG = {411, 421, 10411, 10421, 413, 423, 10413, 10423, 20431, 20423, 415, 425, 431, 10431, 433, 10433, 20433, 435, 441,
+                           10441, 100441, 443, 10443, 20443, 100443, 30443, 9000443, 9010443, 9020443, 445, 100445, 4122, 4222, 4212, 4112,
+                           4224, 4214, 4114, 4232, 4132, 4322, 4312, 4324, 4314, 4332, 4334, 4412, 4422, 4414, 4424, 4432, 4434, 4444};
+
+  return (std::find(bPdG.begin(), bPdG.end(), std::abs(pc)) != bPdG.end());
+}
+
 /**
  * returns the globalIndex of the earliest mother of a particle in the shower. returns -1 if a suitable mother is not found
  *
@@ -292,11 +314,7 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
 template <typename AnyJet, typename AllMCParticles>
 int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
 {
-  const int arraySize = 99;
-
-  std::array<int, arraySize> countpartcode;
-  int count = 0;
-
+  bool charmQuark = false;
   for (auto& mcpart : mcparticles) {
     int pdgcode = mcpart.pdgCode();
     if (TMath::Abs(pdgcode) == 21 || (TMath::Abs(pdgcode) >= 1 && TMath::Abs(pdgcode) <= 5)) {
@@ -305,19 +323,48 @@ int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
       if (dR < jet.r() / 100.f) {
         if (TMath::Abs(pdgcode) == 5) {
           return JetTaggingSpecies::beauty; // Beauty jet
-        } else {
-          if (count > arraySize - 1)
-            return 0;
-          countpartcode[count] = pdgcode;
-          count++;
+        } else if (TMath::Abs(pdgcode) == 4) {
+          charmQuark = true;
         }
       }
     }
   }
 
-  for (int ij = 0; ij < count; ij++) {
-    if (TMath::Abs(countpartcode[ij]) == 4)
-      return JetTaggingSpecies::charm; // Charm jet
+  if (charmQuark) {
+    return JetTaggingSpecies::charm; // Charm jet
+  }
+
+  return JetTaggingSpecies::lightflavour; // Light flavor jet
+}
+
+/**
+ * return the jet flavor if it finds a HF hadron inside the jet: 0 for lf-jet, 1 for c-jet, 2 for b-jet
+ *
+ * @param AnyJet the jet that we need to study its flavor
+ * @param AllMCParticles a vector of all the mc particles stack
+ */
+template <typename AnyJet, typename AllMCParticles>
+int16_t getJetFlavorHadron(AnyJet const& jet, AllMCParticles const& mcparticles)
+{
+  bool charmHadron = false;
+
+  for (auto& mcpart : mcparticles) {
+    int pdgcode = mcpart.pdgCode();
+    if (isBHadron(pdgcode) || isCHadron(pdgcode)) {
+      double dR = jetutilities::deltaR(jet, mcpart);
+
+      if (dR < jet.r() / 100.f) {
+        if (isBHadron(pdgcode)) {
+          return JetTaggingSpecies::beauty; // Beauty jet
+        } else if (isCHadron(pdgcode)) {
+          charmHadron = true;
+        }
+      }
+    }
+  }
+
+  if (charmHadron) {
+    return JetTaggingSpecies::charm; // Charm jet
   }
 
   return JetTaggingSpecies::lightflavour; // Light flavor jet
