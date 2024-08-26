@@ -197,7 +197,7 @@ struct lmeelfcocktail {
       auto mctracks = pc.inputs().get<std::vector<o2::MCTrack>>("mctracks", i);
 
       std::vector<PxPyPzEVector> eBuff;
-      std::vector<Char_t> echBuff;
+      std::vector<int8_t> echBuff;
       std::vector<Double_t> eweightBuff;
 
       bool skipNext = false;
@@ -214,7 +214,7 @@ struct lmeelfcocktail {
           if (fConfigDoPairing) {
             // LS and ULS spectra
             PxPyPzEVector e, dielectron;
-            Char_t ech, dielectron_ch;
+            int8_t ech, dielectron_ch;
             Double_t eweight, dielectron_weight;
             e.SetPxPyPzE(mctrack.Px(), mctrack.Py(), mctrack.Pz(),
                          mctrack.GetEnergy());

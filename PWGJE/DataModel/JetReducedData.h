@@ -32,13 +32,20 @@ DECLARE_SOA_INDEX_COLUMN(BC, bc);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
+DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);
+DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndITSROFBAndNoTFB, readCountsWithTVXAndITSROFBAndNoTFB, std::vector<int>);
 } // namespace jbc
 
 DECLARE_SOA_TABLE(JBCs, "AOD", "JBC",
                   o2::soa::Index<>,
                   jbc::RunNumber,
                   jbc::GlobalBC,
-                  jbc::Timestamp);
+                  jbc::Timestamp,
+                  jbc::Alias,
+                  jbc::Selection);
 
 using JBC = JBCs::iterator;
 
@@ -47,6 +54,8 @@ DECLARE_SOA_TABLE(StoredJBCs, "AOD1", "JBC",
                   jbc::RunNumber,
                   jbc::GlobalBC,
                   jbc::Timestamp,
+                  jbc::Alias,
+                  jbc::Selection,
                   o2::soa::Marker<1>);
 
 using StoredJBC = StoredJBCs::iterator;
@@ -58,6 +67,17 @@ DECLARE_SOA_TABLE(StoredJBCPIs, "AOD1", "JBCPI",
                   jbc::BCId,
                   o2::soa::Marker<1>);
 
+DECLARE_SOA_TABLE(BCCounts, "AOD", "BCCOUNT",
+                  jbc::ReadCounts,
+                  jbc::ReadCountsWithTVX,
+                  jbc::ReadCountsWithTVXAndITSROFBAndNoTFB);
+
+DECLARE_SOA_TABLE(StoredBCCounts, "AOD1", "BCCOUNT",
+                  jbc::ReadCounts,
+                  jbc::ReadCountsWithTVX,
+                  jbc::ReadCountsWithTVXAndITSROFBAndNoTFB,
+                  o2::soa::Marker<1>);
+
 namespace jcollision
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
@@ -67,13 +87,17 @@ DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);
+DECLARE_SOA_COLUMN(TriggerSel, triggerSel, uint64_t);
 DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelection, readCountsWithTVXAndSelection, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelectionAndZVertex, readCountsWithTVXAndSelectionAndZVertex, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
 DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
@@ -86,8 +110,10 @@ DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
                   jcollision::PosZ,
                   jcollision::Multiplicity,
                   jcollision::Centrality,
+                  jcollision::TrackOccupancyInTimeRange,
                   jcollision::EventSel,
-                  jcollision::Alias);
+                  jcollision::Alias,
+                  jcollision::TriggerSel);
 
 using JCollision = JCollisions::iterator;
 
@@ -98,8 +124,10 @@ DECLARE_SOA_TABLE(StoredJCollisions, "AOD1", "JCOLLISION",
                   jcollision::PosZ,
                   jcollision::Multiplicity,
                   jcollision::Centrality,
+                  jcollision::TrackOccupancyInTimeRange,
                   jcollision::EventSel,
                   jcollision::Alias,
+                  jcollision::TriggerSel,
                   o2::soa::Marker<1>);
 
 using StoredJCollision = StoredJCollisions::iterator;
@@ -122,27 +150,6 @@ DECLARE_SOA_TABLE(StoredJCollisionPIs, "AOD1", "JCOLLISIONPI",
                   jcollision::CollisionId,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JCHTRIGSEL",
-                  jcollision::ChargedTriggerSel);
-
-DECLARE_SOA_TABLE(StoredJChTrigSels, "AOD1", "JCHTRIGSEL",
-                  jcollision::ChargedTriggerSel,
-                  o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(JFullTrigSels, "AOD", "JFULLTRIGSEL",
-                  jcollision::FullTriggerSel);
-
-DECLARE_SOA_TABLE(StoredJFullTrigSels, "AOD1", "JFULLTRIGSEL",
-                  jcollision::FullTriggerSel,
-                  o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(JChHFTrigSels, "AOD", "JCHHFTRIGSEL",
-                  jcollision::ChargedHFTriggerSel);
-
-DECLARE_SOA_TABLE(StoredJChHFTrigSels, "AOD1", "JCHHFTRIGSEL",
-                  jcollision::ChargedHFTriggerSel,
-                  o2::soa::Marker<1>);
-
 DECLARE_SOA_TABLE(JCollisionBCs, "AOD", "JCOLLISIONBC",
                   jcollision::JBCId);
 
@@ -150,14 +157,27 @@ DECLARE_SOA_TABLE(StoredJCollisionBCs, "AOD1", "JCOLLISIONBC",
                   jcollision::JBCId,
                   o2::soa::Marker<1>);
 
+DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JCHTRIGSEL",
+                  jcollision::ChargedTriggerSel);
+
+DECLARE_SOA_TABLE(JFullTrigSels, "AOD", "JFULLTRIGSEL",
+                  jcollision::FullTriggerSel);
+
+DECLARE_SOA_TABLE(JChHFTrigSels, "AOD", "JCHHFTRIGSEL",
+                  jcollision::ChargedHFTriggerSel);
+
 DECLARE_SOA_TABLE(CollisionCounts, "AOD", "COLLCOUNT",
                   jcollision::ReadCounts,
-                  jcollision::ReadSelectedCounts,
+                  jcollision::ReadCountsWithTVX,
+                  jcollision::ReadCountsWithTVXAndSelection,
+                  jcollision::ReadCountsWithTVXAndSelectionAndZVertex,
                   jcollision::WrittenCounts);
 
 DECLARE_SOA_TABLE(StoredCollisionCounts, "AOD1", "COLLCOUNT",
                   jcollision::ReadCounts,
-                  jcollision::ReadSelectedCounts,
+                  jcollision::ReadCountsWithTVX,
+                  jcollision::ReadCountsWithTVXAndSelection,
+                  jcollision::ReadCountsWithTVXAndSelectionAndZVertex,
                   jcollision::WrittenCounts,
                   o2::soa::Marker<1>);
 
@@ -214,8 +234,14 @@ DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
+DECLARE_SOA_COLUMN(DCAX, dcaX, float);
+DECLARE_SOA_COLUMN(DCAY, dcaY, float);
 DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
+DECLARE_SOA_COLUMN(DCAXYZ, dcaXYZ, float);
+DECLARE_SOA_COLUMN(SigmaDCAZ, sigmadcaZ, float);
+DECLARE_SOA_COLUMN(SigmaDCAXY, sigmadcaXY, float);
+DECLARE_SOA_COLUMN(SigmaDCAXYZ, sigmadcaXYZ, float);
 DECLARE_SOA_COLUMN(Sigma1Pt, sigma1Pt, float);
 DECLARE_SOA_COLUMN(TrackSel, trackSel, uint8_t);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
@@ -266,13 +292,25 @@ DECLARE_SOA_TABLE(StoredJTracks, "AOD1", "JTRACK",
 using StoredJTrack = StoredJTracks::iterator;
 
 DECLARE_SOA_TABLE(JTrackExtras, "AOD", "JTRACKEXTRA",
-                  jtrack::DCAXY,
+                  jtrack::DCAX,
+                  jtrack::DCAY,
                   jtrack::DCAZ,
+                  jtrack::DCAXY,
+                  jtrack::DCAXYZ,
+                  jtrack::SigmaDCAZ,
+                  jtrack::SigmaDCAXY,
+                  jtrack::SigmaDCAXYZ,
                   jtrack::Sigma1Pt);
 
 DECLARE_SOA_TABLE(StoredJTrackExtras, "AOD1", "JTRACKEXTRA",
-                  jtrack::DCAXY,
+                  jtrack::DCAX,
+                  jtrack::DCAY,
                   jtrack::DCAZ,
+                  jtrack::DCAXY,
+                  jtrack::DCAXYZ,
+                  jtrack::SigmaDCAZ,
+                  jtrack::SigmaDCAXY,
+                  jtrack::SigmaDCAXYZ,
                   jtrack::Sigma1Pt,
                   o2::soa::Marker<1>);
 

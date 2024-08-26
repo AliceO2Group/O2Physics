@@ -61,7 +61,7 @@ class V0PhotonCut : public TNamed
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
-    kITSCluserSize,
+    kITSClusterSize,
     kIsWithinBeamPipe,
     kRequireITSTPC,
     kRequireITSonly,
@@ -208,7 +208,7 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedTrack(track, V0PhotonCuts::kITSChi2NDF)) {
       return false;
     }
-    if (!IsSelectedTrack(track, V0PhotonCuts::kITSCluserSize)) {
+    if (!IsSelectedTrack(track, V0PhotonCuts::kITSClusterSize)) {
       return false;
     }
     return true;
@@ -395,7 +395,7 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kITSChi2NDF:
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
-      case V0PhotonCuts::kITSCluserSize: {
+      case V0PhotonCuts::kITSClusterSize: {
         if (!isITSonlyTrack(track)) {
           return true;
         }

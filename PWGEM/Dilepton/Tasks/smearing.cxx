@@ -225,8 +225,8 @@ struct ApplySmearing {
 
   void processDummyMCanalysis(ReducedMCTracks const&) {}
 
-  PROCESS_SWITCH(ApplySmearing, processMCanalysisEM, "Run for MC analysis", false);
-  PROCESS_SWITCH(ApplySmearing, processMCanalysisDQ, "Run for MC analysis", false);
+  PROCESS_SWITCH(ApplySmearing, processMCanalysisEM, "Run for MC analysis which uses skimmed EM data format", false);
+  PROCESS_SWITCH(ApplySmearing, processMCanalysisDQ, "Run for MC analysis which uses skimmed DQ data format", false);
   PROCESS_SWITCH(ApplySmearing, processCocktail, "Run for cocktail analysis", false);
   PROCESS_SWITCH(ApplySmearing, processDummyMCanalysis, "Dummy process function", false);
   PROCESS_SWITCH(ApplySmearing, processDummyCocktail, "Dummy process function", true);

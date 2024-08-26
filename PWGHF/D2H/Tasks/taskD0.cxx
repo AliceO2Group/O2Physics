@@ -211,23 +211,27 @@ struct HfTaskD0 {
     registry.add("hDecLengthVsPtSig", "2-prong candidates;decay length (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
+    const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#pi K) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
+    const AxisSpec thnAxisY{thnConfigAxisY, "y"};
+    const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
+    const AxisSpec thnAxisCandType{thnConfigAxisCandType, "D0 type"};
+    const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
+
+    registry.add("hSparseAcc", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin});
+    registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
+
     if (applyMl) {
       const AxisSpec thnAxisBkgScore{thnConfigAxisBkgScore, "BDT score bkg."};
       const AxisSpec thnAxisNonPromptScore{thnConfigAxisNonPromptScore, "BDT score non-prompt."};
-      const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#pi K) (GeV/#it{c}^{2})"};
-      const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-      const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
-      const AxisSpec thnAxisY{thnConfigAxisY, "y"};
-      const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
-      const AxisSpec thnAxisCandType{thnConfigAxisCandType, "D0 type"};
-      const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
-      const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
-
-      registry.add("hSparseAcc", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin});
-      registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
 
       registry.add("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type", "Thn for D0 candidates with BDT scores", HistType::kTHnSparseD, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin, thnAxisCandType});
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Sumw2();
+    } else {
+      registry.add("hMassVsPtVsPtBVsYVsOriginVsD0Type", "Thn for D0 candidates without BDT scores", HistType::kTHnSparseD, {thnAxisMass, thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin, thnAxisCandType});
+      registry.get<THnSparse>(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"))->Sumw2();
     }
   }
 
@@ -297,6 +301,13 @@ struct HfTaskD0 {
         }
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
+        }
+      } else {
+        if (candidate.isSelD0() >= selectionFlagD0) {
+          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
+        }
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
         }
       }
     }
@@ -464,6 +475,8 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
           if constexpr (applyMl) {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0);
+          } else {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0);
           }
         } else {
           registry.fill(HIST("hPtProng0Bkg"), ptProng0, rapidityCandidate);
@@ -484,6 +497,8 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
             if constexpr (applyMl) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+            } else {
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0);
             }
           }
         }
@@ -494,6 +509,8 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if constexpr (applyMl) {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0bar);
+          } else {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0bar);
           }
         } else {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
@@ -501,6 +518,8 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
             if constexpr (applyMl) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+            } else {
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
             }
           }
         }
@@ -522,17 +541,13 @@ struct HfTaskD0 {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hYGenPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
-          if constexpr (applyMl) {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1);
-          }
+          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1);
         } else {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
           registry.fill(HIST("hYGenNonPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
-          if constexpr (applyMl) {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2);
-          }
+          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2);
         }
         registry.fill(HIST("hEtaGen"), particle.eta());
       }
