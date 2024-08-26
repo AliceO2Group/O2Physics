@@ -39,24 +39,24 @@ using namespace o2::framework::expressions;
 struct JetDerivedDataWriter {
 
   struct : ConfigurableGroup {
-    Configurable<float> chargedJetPtMin{"chargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
-    Configurable<float> chargedEventWiseSubtractedJetPtMin{"chargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
-    Configurable<float> chargedMCPJetPtMin{"chargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
-    Configurable<float> neutralJetPtMin{"neutralJetPtMin", 0.0, "Minimum neutral jet pt to accept event"};
-    Configurable<float> neutralMCPJetPtMin{"neutralMCPJetPtMin", 0.0, "Minimum neutal mcp jet pt to accept event"};
-    Configurable<float> fullJetPtMin{"fullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
-    Configurable<float> fullMCPJetPtMin{"fullMCPJetPtMin", 0.0, "Minimum full mcp jet pt to accept event"};
-    Configurable<float> chargedD0JetPtMin{"chargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
-    Configurable<float> chargedEventWiseSubtractedD0JetPtMin{"chargedEventWiseSubtractedD0JetPtMin", 0.0, "Minimum charged event-wise subtracted D0 jet pt to accept event"};
-    Configurable<float> chargedD0MCPJetPtMin{"chargedD0MCPJetPtMin", 0.0, "Minimum charged D0 mcp jet pt to accept event"};
-    Configurable<float> chargedLcJetPtMin{"chargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
-    Configurable<float> chargedEventWiseSubtractedLcJetPtMin{"chargedEventWiseSubtractedLcJetPtMin", 0.0, "Minimum charged event-wise subtracted Lc jet pt to accept event"};
-    Configurable<float> chargedLcMCPJetPtMin{"chargedLcMCPJetPtMin", 0.0, "Minimum charged Lc mcp jet pt to accept event"};
-    Configurable<float> chargedDielectronJetPtMin{"chargedDielectronJetPtMin", 0.0, "Minimum charged Dielectron jet pt to accept event"};
-    Configurable<float> chargedEventWiseSubtractedDielectronJetPtMin{"chargedEventWiseSubtractedDielectronJetPtMin", 0.0, "Minimum charged event-wise subtracted Dielectron jet pt to accept event"};
-    Configurable<float> chargedDielectronMCPJetPtMin{"chargedDielectronMCPJetPtMin", 0.0, "Minimum charged Dielectron mcp jet pt to accept event"};
-    Configurable<float> triggerTrackPtMin{"triggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
-    Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
+    Configurable<float> thresholdChargedJetPtMin{"thresholdChargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
+    Configurable<float> thresholdChargedEventWiseSubtractedJetPtMin{"thresholdChargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
+    Configurable<float> thresholdChargedMCPJetPtMin{"thresholdChargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
+    Configurable<float> thresholdNeutralJetPtMin{"thresholdNeutralJetPtMin", 0.0, "Minimum neutral jet pt to accept event"};
+    Configurable<float> thresholdNeutralMCPJetPtMin{"thresholdNeutralMCPJetPtMin", 0.0, "Minimum neutal mcp jet pt to accept event"};
+    Configurable<float> thresholdFullJetPtMin{"thresholdFullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
+    Configurable<float> thresholdFullMCPJetPtMin{"thresholdFullMCPJetPtMin", 0.0, "Minimum full mcp jet pt to accept event"};
+    Configurable<float> thresholdChargedD0JetPtMin{"thresholdChargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
+    Configurable<float> thresholdChargedEventWiseSubtractedD0JetPtMin{"thresholdChargedEventWiseSubtractedD0JetPtMin", 0.0, "Minimum charged event-wise subtracted D0 jet pt to accept event"};
+    Configurable<float> thresholdChargedD0MCPJetPtMin{"thresholdChargedD0MCPJetPtMin", 0.0, "Minimum charged D0 mcp jet pt to accept event"};
+    Configurable<float> thresholdChargedLcJetPtMin{"thresholdChargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
+    Configurable<float> thresholdChargedEventWiseSubtractedLcJetPtMin{"thresholdChargedEventWiseSubtractedLcJetPtMin", 0.0, "Minimum charged event-wise subtracted Lc jet pt to accept event"};
+    Configurable<float> thresholdChargedLcMCPJetPtMin{"thresholdChargedLcMCPJetPtMin", 0.0, "Minimum charged Lc mcp jet pt to accept event"};
+    Configurable<float> thresholdChargedDielectronJetPtMin{"thresholdChargedDielectronJetPtMin", 0.0, "Minimum charged Dielectron jet pt to accept event"};
+    Configurable<float> thresholdChargedEventWiseSubtractedDielectronJetPtMin{"thresholdChargedEventWiseSubtractedDielectronJetPtMin", 0.0, "Minimum charged event-wise subtracted Dielectron jet pt to accept event"};
+    Configurable<float> thresholdChargedDielectronMCPJetPtMin{"thresholdChargedDielectronMCPJetPtMin", 0.0, "Minimum charged Dielectron mcp jet pt to accept event"};
+    Configurable<float> thresholdTriggerTrackPtMin{"thresholdTriggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
+    Configurable<float> thresholdClusterEnergyMin{"thresholdClusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
     Configurable<int> downscaleFactor{"downscaleFactor", 1, "random downscale of selected events"};
 
     Configurable<float> vertexZCut{"vertexZCut", 10.0, "z-vertex cut on event"};
@@ -258,41 +258,41 @@ struct JetDerivedDataWriter {
   {
     float selectionObjectPtMin = 0.0;
     if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.chargedJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedEventWiseSubtractedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelEventWiseSubtractedJets>) {
-      selectionObjectPtMin = config.chargedEventWiseSubtractedJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets>) {
-      selectionObjectPtMin = config.chargedMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.neutralJetPtMin;
+      selectionObjectPtMin = config.thresholdNeutralJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets>) {
-      selectionObjectPtMin = config.neutralMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdNeutralMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::FullJets> || std::is_same_v<std::decay_t<T>, aod::FullMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.fullJetPtMin;
+      selectionObjectPtMin = config.thresholdFullJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets>) {
-      selectionObjectPtMin = config.fullMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdFullMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.chargedD0JetPtMin;
+      selectionObjectPtMin = config.thresholdChargedD0JetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedEventWiseSubtractedJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJets>) {
-      selectionObjectPtMin = config.chargedEventWiseSubtractedD0JetPtMin;
+      selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedD0JetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets>) {
-      selectionObjectPtMin = config.chargedD0MCPJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedD0MCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.chargedLcJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedLcJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedEventWiseSubtractedJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCDetectorLevelEventWiseSubtractedJets>) {
-      selectionObjectPtMin = config.chargedEventWiseSubtractedLcJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedLcJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets>) {
-      selectionObjectPtMin = config.chargedLcMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedLcMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::DielectronChargedJets> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.chargedDielectronJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedDielectronJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::DielectronChargedEventWiseSubtractedJets> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJets>) {
-      selectionObjectPtMin = config.chargedEventWiseSubtractedDielectronJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedDielectronJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets>) {
-      selectionObjectPtMin = config.chargedDielectronMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedDielectronMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
-      selectionObjectPtMin = config.triggerTrackPtMin;
+      selectionObjectPtMin = config.thresholdTriggerTrackPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JClusters>) {
-      selectionObjectPtMin = config.clusterEnergyMin;
+      selectionObjectPtMin = config.thresholdClusterEnergyMin;
     } else {
       selectionObjectPtMin = 0.0;
     }
@@ -309,9 +309,13 @@ struct JetDerivedDataWriter {
       }
       if (isTriggerObject) {
         if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::BplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets>) {
-          McCollisionFlag[selectionObject.mcCollisionId()] = true;
+          if (selectionObject.mcCollisionId() >= 0) {
+            McCollisionFlag[selectionObject.mcCollisionId()] = true;
+          }
         } else {
-          collisionFlag[selectionObject.collisionId()] = true;
+          if (selectionObject.collisionId() >= 0) {
+            collisionFlag[selectionObject.collisionId()] = true;
+          }
         }
       }
     }
@@ -322,7 +326,7 @@ struct JetDerivedDataWriter {
   PROCESS_SWITCH(JetDerivedDataWriter, processSetupAllCollisionsWithDownscaling, "setup the writing of untriggered collisions with downscaling", false);
   PROCESS_SWITCH(JetDerivedDataWriter, processSetupAllMcCollisionsWithDownscaling, "setup the writing of untriggered mccollisions with downscaling", false);
   PROCESS_SWITCH(JetDerivedDataWriter, processSetupEventTriggering, "process software triggers", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedJets>, processSelectingChargedJets, "process charged jets", true);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedJets>, processSelectingChargedJets, "process charged jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedEventWiseSubtractedJets>, processSelectingChargedEventWiseSubtractedJets, "process charged event-wise subtracted jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedMCDetectorLevelJets>, processSelectingChargedMCDJets, "process charged mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedMCDetectorLevelEventWiseSubtractedJets>, processSelectingChargedMCDetectorLevelEventWiseSubtractedJets, "process charged event-wise subtracted mcd jets", false);
