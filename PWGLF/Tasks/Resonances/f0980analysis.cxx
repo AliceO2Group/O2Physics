@@ -54,7 +54,6 @@ struct f0980analysis {
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
   Configurable<bool> cfgFindRT{"cfgFindRT", false, "boolean for RT analysis"};
 
-
   // Track selection
   Configurable<bool> cfgPrimaryTrack{
     "cfgPrimaryTrack", true,
