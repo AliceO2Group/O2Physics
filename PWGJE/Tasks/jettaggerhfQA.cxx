@@ -783,7 +783,6 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsData, "Fill impact parameter imformation for data jets", false);
 
-
   void processIPsMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, JetParticles&)
   {
     fillHistogramIPsMCD(jcollision, mcdjets, jtracks);

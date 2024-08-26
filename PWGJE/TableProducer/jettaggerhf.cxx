@@ -127,8 +127,10 @@ struct JetTaggerHFTask {
       float probTrack = -1;
       if (!isMC) {
         probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigData, jtrack, minSignImpXYSig);
-        if (geoSign > 0) registry.fill(HIST("h_pos_track_probability"), probTrack);
-        else registry.fill(HIST("h_neg_track_probability"), probTrack);
+        if (geoSign > 0)
+          registry.fill(HIST("h_pos_track_probability"), probTrack);
+        else
+          registry.fill(HIST("h_neg_track_probability"), probTrack);
       } else {
         if (useResoFuncFromIncJet) {
           probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigIncJetMC, jtrack, minSignImpXYSig);
@@ -143,8 +145,10 @@ struct JetTaggerHFTask {
             probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSigLfJetMC, jtrack, minSignImpXYSig);
           }
         }
-        if (geoSign > 0) registry.fill(HIST("h2_pos_track_probability_flavour"), probTrack, origin);
-        else registry.fill(HIST("h2_neg_track_probability_flavour"), probTrack, origin);
+        if (geoSign > 0)
+          registry.fill(HIST("h2_pos_track_probability_flavour"), probTrack, origin);
+        else
+          registry.fill(HIST("h2_neg_track_probability_flavour"), probTrack, origin);
       }
     }
   }

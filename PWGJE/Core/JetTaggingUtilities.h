@@ -513,7 +513,6 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, const float& mi
  * @param collision: The collision event data, necessary for geometric sign calculations.
  * @param jet: The jet for which the probability is being calculated.
  * @param jtracks: Tracks in jets
- * @param tracks: The original tracks to transform from jtracks.
  * @param cnt: ordering number of impact parameter cnt=0: untagged, cnt=1: first, cnt=2: seconde, cnt=3: third.
  * @param tagPoint: tagging working point which is selected by condiered efficiency and puriy
  * @param minSignImpXYSig: To avoid over fitting
