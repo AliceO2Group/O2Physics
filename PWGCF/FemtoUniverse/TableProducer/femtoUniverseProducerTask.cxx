@@ -209,9 +209,9 @@ struct femtoUniverseProducerTask {
   Filter CustomTrackFilter = (aod::track::pt > ConfFilterCuts.ConfPtLowFilterCut) &&
                              (aod::track::pt < ConfFilterCuts.ConfPtHighFilterCut) &&
                              (nabs(aod::track::eta) < ConfFilterCuts.ConfEtaFilterCut) &&
-                             (!ConfFilterCuts.ConfDxaXYCustom0Cut || (aod::track::dcaXY > ConfFilterCuts.ConfDcaXYFilterCut)) && //!(1 && 2) = !1 || !2
+                             (!ConfFilterCuts.ConfDxaXYCustom0Cut || (aod::track::dcaXY < ConfFilterCuts.ConfDcaXYFilterCut)) && // true if configurable set to false or if configurable is true and it passes the selection
                              (aod::track::dcaZ < ConfFilterCuts.ConfDcaZFilterCut) &&
-                             (!ConfFilterCuts.ConfDcaXYCustom1Cut || (nabs(aod::track::dcaXY) > ConfFilterCuts.ConfDcaXYCustom11FilterCut + ConfFilterCuts.ConfDcaXYCustom12FilterCut / aod::track::pt)); //!(1 && 2) = !1 || !2
+                             (!ConfFilterCuts.ConfDcaXYCustom1Cut || (nabs(aod::track::dcaXY) < ConfFilterCuts.ConfDcaXYCustom11FilterCut + ConfFilterCuts.ConfDcaXYCustom12FilterCut / aod::track::pt)); // same logic here
 
   // CASCADE
   FemtoUniverseCascadeSelection cascadeCuts;
