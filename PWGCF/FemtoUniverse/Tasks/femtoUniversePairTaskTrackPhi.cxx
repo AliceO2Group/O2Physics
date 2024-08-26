@@ -236,7 +236,7 @@ struct femtoUniversePairTaskTrackPhi {
 
   bool IsKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
-    if (mom < 0.5){
+    if (mom < 0.5) {
       if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
         return true;
       }
@@ -273,7 +273,7 @@ struct femtoUniversePairTaskTrackPhi {
 
   bool IsPionRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCK, float nsigmaTOFK)
   {
-    if (mom < 0.5){
+    if (mom < 0.5) {
       if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
         return true;
       }
