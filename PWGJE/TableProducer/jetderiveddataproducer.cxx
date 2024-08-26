@@ -225,18 +225,24 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
-  void processTracks(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension> const& tracks) // we do not consider orphan tracks (tracks without a collision) in the JE framework
+  void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const&)
   {
-    for (auto const& track : tracks) {
-      jTracksTable(collision.globalIndex(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
-      auto trackParCov = getTrackParCov(track);
-      auto xyzTrack = trackParCov.getXYZGlo();
-      float sigmaDCAXYZ;
-      float dcaXYZ = getDcaXYZ(track, &sigmaDCAXYZ);
-      jTracksExtraTable(xyzTrack.X() - collision.posX(), xyzTrack.Y() - collision.posY(), track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(track.sigmaDcaZ2()), std::sqrt(track.sigmaDcaXY2()), sigmaDCAXYZ, track.sigma1Pt()); // why is this getSigmaZY
-      jTracksParentIndexTable(track.globalIndex());
-      trackCollisionMapping[{track.globalIndex(), collision.globalIndex()}] = jTracksTable.lastIndex();
+    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
+    auto trackParCov = getTrackParCov(track);
+    auto xyzTrack = trackParCov.getXYZGlo();
+    float sigmaDCAXYZ;
+    float dcaXYZ = getDcaXYZ(track, &sigmaDCAXYZ);
+    float dcaX = -99.0;
+    float dcaY = -99.0;
+    if (track.collisionId() >= 0) {
+      auto const& collision = track.collision_as<aod::Collisions>();
+      dcaX = xyzTrack.X() - collision.posX();
+      dcaY = xyzTrack.Y() - collision.posY();
     }
+
+    jTracksExtraTable(dcaX, dcaY, track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(track.sigmaDcaZ2()), std::sqrt(track.sigmaDcaXY2()), sigmaDCAXYZ, track.sigma1Pt()); // why is this getSigmaZY
+    jTracksParentIndexTable(track.globalIndex());
+    trackCollisionMapping[{track.globalIndex(), track.collisionId()}] = jTracksTable.lastIndex();
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracks, "produces derived track table", true);
 
@@ -286,14 +292,12 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracksWithCollisionAssociator, "produces derived track table taking into account track-to-collision associations", false);
 
-  void processMcTrackLabels(aod::Collision const&, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks)
+  void processMcTrackLabels(soa::Join<aod::Tracks, aod::McTrackLabels>::iterator const& track)
   {
-    for (auto const& track : tracks) {
-      if (track.has_mcParticle()) {
-        jMcTracksLabelTable(track.mcParticleId());
-      } else {
-        jMcTracksLabelTable(-1);
-      }
+    if (track.has_mcParticle()) {
+      jMcTracksLabelTable(track.mcParticleId());
+    } else {
+      jMcTracksLabelTable(-1);
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcTrackLabels, "produces derived track labels table", false);
