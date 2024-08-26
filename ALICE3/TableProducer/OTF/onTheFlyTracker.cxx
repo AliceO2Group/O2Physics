@@ -77,6 +77,7 @@ struct OnTheFlyTracker {
   Produces<aod::TracksDCACov> tracksDCACov;
   Produces<aod::CollisionsAlice3> collisionsAlice3;
   Produces<aod::TracksAlice3> TracksAlice3;
+  Produces<aod::TracksExtraA3> TracksExtraA3;
   Produces<aod::UpgradeCascades> upgradeCascades;
 
   // optionally produced, empty (to be tuned later)
@@ -162,18 +163,29 @@ struct OnTheFlyTracker {
     TrackAlice3() = default;
     ~TrackAlice3() = default;
     TrackAlice3(const TrackAlice3& src) = default;
-    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, const float t = 0, const float te = 1, bool decayDauInput = false, bool weakDecayDauInput = false, int isUsedInCascadingInput = 0) : o2::track::TrackParCov(src),
-                                                                                                                                                                                                             mcLabel{label},
-                                                                                                                                                                                                             timeEst{t, te},
-                                                                                                                                                                                                             isDecayDau(decayDauInput),
-                                                                                                                                                                                                             isWeakDecayDau(weakDecayDauInput),
-                                                                                                                                                                                                             isUsedInCascading(isUsedInCascadingInput) {}
+    TrackAlice3(const o2::track::TrackParCov& src, const int64_t label, 
+    const float t = 0, 
+    const float te = 1, 
+    bool decayDauInput = false, 
+    bool weakDecayDauInput = false, 
+    int isUsedInCascadingInput = 0,
+    int nSiliconHitsInput = 0,
+    int nTPCHitsInput = 0) : o2::track::TrackParCov(src),
+                                                                 mcLabel{label},
+                                                                 timeEst{t, te},
+                                                                 isDecayDau(decayDauInput),
+                                                                 isWeakDecayDau(weakDecayDauInput),
+                                                                 isUsedInCascading(isUsedInCascadingInput),
+                                                                 nSiliconHits(nSiliconHitsInput),
+                                                                 nTPCHits(nTPCHitsInput) {}
     const TimeEst& getTimeMUS() const { return timeEst; }
     int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
     bool isDecayDau;
     bool isWeakDecayDau;
     int isUsedInCascading; // 0: not at all, 1: is a cascade, 2: is a bachelor, 3: is a pion, 4: is a proton
+    int nSiliconHits; 
+    int nTPCHits;
   };
 
   // Helper struct to pass cascade information
@@ -622,7 +634,9 @@ struct OnTheFlyTracker {
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsPerfect(3);
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsTracked(3);
       std::vector<bool> isReco(3);
-      std::vector<int> nHits(3);
+      std::vector<int> nHits(3); // total
+      std::vector<int> nSiliconHits(3); // silicon type
+      std::vector<int> nTPCHits(3); // TPC type
       std::vector<o2::delphes::DelphesO2TrackSmearer> smearer = {mSmearer0, mSmearer1, mSmearer2, mSmearer3, mSmearer4, mSmearer5};
       if (treatXi && mcParticle.pdgCode() == 3312) {
         histos.fill(HIST("hXiBuilding"), 0.0f);
@@ -636,9 +650,14 @@ struct OnTheFlyTracker {
 
         for (int i = 0; i < 3; i++) {
           isReco[i] = false;
+          nHits[i] = 0;
+          nSiliconHits[i] = 0;
+          nTPCHits[i] = 0;
           if (enableSecondarySmearing) {
 
             nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i]);
+            nSiliconHits[i] = fastTracker.nSiliconPoints;
+            nTPCHits[i] = fastTracker.nGasPoints;
 
             if (nHits[i] >= fastTrackerSettings.minSiliconHits) {
               isReco[i] = true;
@@ -659,7 +678,7 @@ struct OnTheFlyTracker {
             histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           }
           if (isReco[i]) {
-            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
+            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2, nSiliconHits[i], nTPCHits[i]});
           } else {
             ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
           }

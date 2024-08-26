@@ -42,6 +42,9 @@ struct DetLayer {
 
   // efficiency
   float eff; // detection efficiency
+
+  // layer type 
+  int type; // 0: undefined/inert, 1: silicon, 2: gas/tpc
 };
 
 } // namespace o2::fastsim
