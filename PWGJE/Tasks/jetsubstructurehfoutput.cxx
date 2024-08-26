@@ -42,11 +42,9 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename OutputCollisionTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable, typename BCCounterTable, typename CollisionCounterTable>
+template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename OutputCollisionTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
 struct JetSubstructureHFOutputTask {
 
-  Produces<BCCounterTable> storedBCCountsTable;
-  Produces<CollisionCounterTable> storedCollisionCountsTable;
   Produces<OutputCollisionTableData> collisionOutputTableData;
   Produces<OutputTableData> jetOutputTableData;
   Produces<SubstructureOutputTableData> jetSubstructureOutputTableData;
@@ -382,105 +380,6 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMaps, "process function that clears all the maps in each dataframe", true);
 
-  void processCountBCs(aod::JBCs const& bcs, aod::BCCounts const& bcCounts)
-  {
-    int readBCCounter = 0;
-    int readBCWithTVXCounter = 0;
-    int readBCWithTVXAndITSROFBAndNoTFBCounter = 0;
-    for (const auto& bc : bcs) {
-      readBCCounter++;
-      if (bc.selection_bit(aod::evsel::EventSelectionFlags::kIsTriggerTVX)) {
-        readBCWithTVXCounter++;
-        if (bc.selection_bit(aod::evsel::EventSelectionFlags::kNoITSROFrameBorder) && bc.selection_bit(aod::evsel::EventSelectionFlags::kNoTimeFrameBorder)) {
-          readBCWithTVXAndITSROFBAndNoTFBCounter++;
-        }
-      }
-    }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadCountsWithTVX;
-    std::vector<int> previousReadCountsWithTVXAndITSROFBAndNoTFB;
-    int iPreviousDataFrame = 0;
-    for (const auto& bcCount : bcCounts) {
-      auto readBCCounterSpan = bcCount.readCounts();
-      auto readBCWithTVXCounterSpan = bcCount.readCountsWithTVX();
-      auto readBCWithTVXAndITSROFBAndNoTFBCounterSpan = bcCount.readCountsWithTVXAndITSROFBAndNoTFB();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readBCCounterSpan.begin(), readBCCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readBCWithTVXCounterSpan.begin(), readBCWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
-        std::copy(readBCWithTVXAndITSROFBAndNoTFBCounterSpan.begin(), readBCWithTVXAndITSROFBAndNoTFBCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndITSROFBAndNoTFB));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
-          previousReadCounts[i] += readBCCounterSpan[i];
-          previousReadCountsWithTVX[i] += readBCWithTVXCounterSpan[i];
-          previousReadCountsWithTVXAndITSROFBAndNoTFB[i] += readBCWithTVXAndITSROFBAndNoTFBCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readBCCounter);
-    previousReadCountsWithTVX.push_back(readBCWithTVXCounter);
-    previousReadCountsWithTVXAndITSROFBAndNoTFB.push_back(readBCWithTVXAndITSROFBAndNoTFBCounter);
-    storedBCCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndITSROFBAndNoTFB);
-  }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processCountBCs, "write out bc counting output table", false);
-
-  void processCountCollisions(JetCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
-  {
-    int readCollisionCounter = 0;
-    int readCollisionWithTVXCounter = 0;
-    int readCollisionWithTVXAndSelectionCounter = 0;
-    int readCollisionWithTVXAndSelectionAndZVertexCounter = 0;
-    int writtenCollisionCounter = -1;
-    for (const auto& collision : collisions) {
-      readCollisionCounter++;
-      if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::selTVX)) {
-        readCollisionWithTVXCounter++;
-        if (jetderiveddatautilities::selectCollision(collision, eventSelection)) {
-          readCollisionWithTVXAndSelectionCounter++;
-          if (std::abs(collision.posZ()) < vertexZCutForCounting) {
-            readCollisionWithTVXAndSelectionAndZVertexCounter++;
-          }
-        }
-      }
-    }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadCountsWithTVX;
-    std::vector<int> previousReadCountsWithTVXAndSelection;
-    std::vector<int> previousReadCountsWithTVXAndSelectionAndZVertex;
-    std::vector<int> previousWrittenCounts;
-    int iPreviousDataFrame = 0;
-    for (const auto& collisionCount : collisionCounts) {
-      auto readCollisionCounterSpan = collisionCount.readCounts();
-      auto readCollisionWithTVXCounterSpan = collisionCount.readCountsWithTVX();
-      auto readCollisionWithTVXAndSelectionCounterSpan = collisionCount.readCountsWithTVXAndSelection();
-      auto readCollisionWithTVXAndSelectionAndZVertexCounterSpan = collisionCount.readCountsWithTVXAndSelectionAndZVertex();
-      auto writtenCollisionCounterSpan = collisionCount.writtenCounts();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readCollisionWithTVXCounterSpan.begin(), readCollisionWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
-        std::copy(readCollisionWithTVXAndSelectionCounterSpan.begin(), readCollisionWithTVXAndSelectionCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndSelection));
-        std::copy(readCollisionWithTVXAndSelectionAndZVertexCounterSpan.begin(), readCollisionWithTVXAndSelectionAndZVertexCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndSelectionAndZVertex));
-        std::copy(writtenCollisionCounterSpan.begin(), writtenCollisionCounterSpan.end(), std::back_inserter(previousWrittenCounts));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
-          previousReadCounts[i] += readCollisionCounterSpan[i];
-          previousReadCountsWithTVX[i] += readCollisionWithTVXCounterSpan[i];
-          previousReadCountsWithTVXAndSelection[i] += readCollisionWithTVXAndSelectionCounterSpan[i];
-          previousReadCountsWithTVXAndSelectionAndZVertex[i] += readCollisionWithTVXAndSelectionAndZVertexCounterSpan[i];
-          previousWrittenCounts[i] += writtenCollisionCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readCollisionCounter);
-    previousReadCountsWithTVX.push_back(readCollisionWithTVXCounter);
-    previousReadCountsWithTVXAndSelection.push_back(readCollisionWithTVXAndSelectionCounter);
-    previousReadCountsWithTVXAndSelectionAndZVertex.push_back(readCollisionWithTVXAndSelectionAndZVertexCounter);
-    previousWrittenCounts.push_back(writtenCollisionCounter);
-    storedCollisionCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndSelection, previousReadCountsWithTVXAndSelectionAndZVertex, previousWrittenCounts);
-  }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processCountCollisions, "process function that counts read in collisions", false);
-
   void processOutputCollisionsData(JetCollisions const& collisions,
                                    JetTableData const& jets,
                                    CandidateCollisionTable const& canidateCollisions,
@@ -602,10 +501,10 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputMatchingMC, "jet matching output MC", false);
 };
-using JetSubstructureOutputD0 = JetSubstructureHFOutputTask<CollisionsD0, soa::Join<McCollisionsD0, aod::HfD0McRCollIds>, CandidatesD0Data, CandidatesD0MCD, CandidatesD0MCP, aod::JTrackD0Subs, soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0CJetSSs>, soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0CJetSSs, aod::D0ChargedJetsMatchedToD0ChargedEventWiseSubtractedJets>, aod::D0CJetCOs, aod::D0CJetOs, aod::D0CJetSSOs, aod::D0CJetMOs, soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0CMCDJetSSs, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>, aod::D0CMCDJetCOs, aod::D0CMCDJetOs, aod::D0CMCDJetSSOs, aod::D0CMCDJetMOs, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0CMCPJetSSs, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>, aod::D0CMCPJetCOs, aod::D0CMCPJetOs, aod::D0CMCPJetSSOs, aod::D0CMCPJetMOs, soa::Join<aod::D0ChargedEventWiseSubtractedJets, aod::D0ChargedEventWiseSubtractedJetConstituents, aod::D0CEWSJetSSs, aod::D0ChargedEventWiseSubtractedJetsMatchedToD0ChargedJets>, aod::D0CEWSJetCOs, aod::D0CEWSJetOs, aod::D0CEWSJetSSOs, aod::D0CEWSJetMOs, aod::StoredHfD0CollBase, aod::StoredHfD0Bases, aod::StoredHfD0Pars, aod::StoredHfD0ParEs, aod::StoredHfD0Sels, aod::StoredHfD0Mls, aod::StoredHfD0Mcs, aod::StoredHfD0McCollBases, aod::StoredHfD0McRCollIds, aod::StoredHfD0PBases, aod::D0BCCounts, aod::D0CollisionCounts>;
-using JetSubstructureOutputLc = JetSubstructureHFOutputTask<CollisionsLc, soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds>, CandidatesLcData, CandidatesLcMCD, CandidatesLcMCP, aod::JTrackLcSubs, soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcCJetSSs>, soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcCJetSSs, aod::LcChargedJetsMatchedToLcChargedEventWiseSubtractedJets>, aod::LcCJetCOs, aod::LcCJetOs, aod::LcCJetSSOs, aod::LcCJetMOs, soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents, aod::LcCMCDJetSSs, aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets>, aod::LcCMCDJetCOs, aod::LcCMCDJetOs, aod::LcCMCDJetSSOs, aod::LcCMCDJetMOs, soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents, aod::LcCMCPJetSSs, aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>, aod::LcCMCPJetCOs, aod::LcCMCPJetOs, aod::LcCMCPJetSSOs, aod::LcCMCPJetMOs, soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents, aod::LcCEWSJetSSs, aod::LcChargedEventWiseSubtractedJetsMatchedToLcChargedJets>, aod::LcCEWSJetCOs, aod::LcCEWSJetOs, aod::LcCEWSJetSSOs, aod::LcCEWSJetMOs, aod::StoredHf3PCollBase, aod::StoredHf3PBases, aod::StoredHf3PPars, aod::StoredHf3PParEs, aod::StoredHf3PSels, aod::StoredHf3PMls, aod::StoredHf3PMcs, aod::StoredHf3PMcCollBases, aod::StoredHf3PMcRCollIds, aod::StoredHf3PPBases, aod::LcBCCounts, aod::LcCollisionCounts>;
-// using JetSubstructureOutputBplus = JetSubstructureHFOutputTask<aod::HfBplusCollBases, soa::Join<aod::StoredHfBplusMcCollBases, aod::JBplusMcCollisionIds, aod::HfBplusMcRCollIds>, CandidatesBplusData, CandidatesBplusMCD, CandidatesBplusMCP, aod::JTrackBplusSubs, soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusCJetSSs>, soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusCJetSSs, aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets>, aod::BplusCJetCOs, aod::BplusCJetOs, aod::BplusCJetSSOs, aod::BplusCJetMOs, soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusCMCDJetSSs, aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets>, aod::BplusCMCDJetCOs, aod::BplusCMCDJetOs, aod::BplusCMCDJetSSOs,  aod::BplusCMCDJetMOs, soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusCMCPJetSSs, aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>, aod::BplusCMCPJetCOs, aod::BplusCMCPJetOs, aod::BplusCMCPJetSSOs, aod::BplusCMCPJetMOs, soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents, aod::BplusCEWSJetSSs, aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets>, aod::BplusCEWSJetCOs, aod::BplusCEWSJetOs, aod::BplusCEWSJetSSOs, aod::BplusCEWSJetMOs, aod::StoredHfBplusCollBase, aod::StoredHfBplusBases, aod::StoredHfBplusPars, aod::StoredHfBplusParEs, aod::StoredHfBplusSels, aod::StoredHfBplusMls, aod::StoredHfBplusMcs, aod::StoredHfBplusPBases, aod::BplusBCCounts, aod::BplusCollisionCounts>;
-using JetSubstructureOutputDielectron = JetSubstructureHFOutputTask<CollisionsDielectron, McCollisionsDielectron, CandidatesDielectronData, CandidatesDielectronMCD, CandidatesDielectronMCP, aod::JTrackDielectronSubs, soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronCJetSSs>, soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronCJetSSs, aod::DielectronChargedJetsMatchedToDielectronChargedEventWiseSubtractedJets>, aod::DielectronCJetCOs, aod::DielectronCJetOs, aod::DielectronCJetSSOs, aod::DielectronCJetMOs, soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents, aod::DielectronCMCDJetSSs, aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCParticleLevelJets>, aod::DielectronCMCDJetCOs, aod::DielectronCMCDJetOs, aod::DielectronCMCDJetSSOs, aod::DielectronCMCDJetMOs, soa::Join<aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents, aod::DielectronCMCPJetSSs, aod::DielectronChargedMCParticleLevelJetsMatchedToDielectronChargedMCDetectorLevelJets>, aod::DielectronCMCPJetCOs, aod::DielectronCMCPJetOs, aod::DielectronCMCPJetSSOs, aod::DielectronCMCPJetMOs, soa::Join<aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents, aod::DielectronCEWSJetSSs, aod::DielectronChargedEventWiseSubtractedJetsMatchedToDielectronChargedJets>, aod::DielectronCEWSJetCOs, aod::DielectronCEWSJetOs, aod::DielectronCEWSJetSSOs, aod::DielectronCEWSJetMOs, aod::StoredReducedEvents, aod::StoredDielectrons, aod::JDielectron1Dummys, aod::JDielectron2Dummys, aod::JDielectron3Dummys, aod::JDielectron4Dummys, aod::JDielectron5Dummys, aod::StoredJDielectronMcCollisions, aod::JDielectron6Dummys, aod::StoredJDielectronMcs, aod::DielectronBCCounts, aod::DielectronCollisionCounts>;
+using JetSubstructureOutputD0 = JetSubstructureHFOutputTask<CollisionsD0, soa::Join<McCollisionsD0, aod::HfD0McRCollIds>, CandidatesD0Data, CandidatesD0MCD, CandidatesD0MCP, aod::JTrackD0Subs, soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0CJetSSs>, soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0CJetSSs, aod::D0ChargedJetsMatchedToD0ChargedEventWiseSubtractedJets>, aod::D0CJetCOs, aod::D0CJetOs, aod::D0CJetSSOs, aod::D0CJetMOs, soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0CMCDJetSSs, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>, aod::D0CMCDJetCOs, aod::D0CMCDJetOs, aod::D0CMCDJetSSOs, aod::D0CMCDJetMOs, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0CMCPJetSSs, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>, aod::D0CMCPJetCOs, aod::D0CMCPJetOs, aod::D0CMCPJetSSOs, aod::D0CMCPJetMOs, soa::Join<aod::D0ChargedEventWiseSubtractedJets, aod::D0ChargedEventWiseSubtractedJetConstituents, aod::D0CEWSJetSSs, aod::D0ChargedEventWiseSubtractedJetsMatchedToD0ChargedJets>, aod::D0CEWSJetCOs, aod::D0CEWSJetOs, aod::D0CEWSJetSSOs, aod::D0CEWSJetMOs, aod::StoredHfD0CollBase, aod::StoredHfD0Bases, aod::StoredHfD0Pars, aod::StoredHfD0ParEs, aod::StoredHfD0Sels, aod::StoredHfD0Mls, aod::StoredHfD0Mcs, aod::StoredHfD0McCollBases, aod::StoredHfD0McRCollIds, aod::StoredHfD0PBases>;
+using JetSubstructureOutputLc = JetSubstructureHFOutputTask<CollisionsLc, soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds>, CandidatesLcData, CandidatesLcMCD, CandidatesLcMCP, aod::JTrackLcSubs, soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcCJetSSs>, soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcCJetSSs, aod::LcChargedJetsMatchedToLcChargedEventWiseSubtractedJets>, aod::LcCJetCOs, aod::LcCJetOs, aod::LcCJetSSOs, aod::LcCJetMOs, soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents, aod::LcCMCDJetSSs, aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets>, aod::LcCMCDJetCOs, aod::LcCMCDJetOs, aod::LcCMCDJetSSOs, aod::LcCMCDJetMOs, soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents, aod::LcCMCPJetSSs, aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>, aod::LcCMCPJetCOs, aod::LcCMCPJetOs, aod::LcCMCPJetSSOs, aod::LcCMCPJetMOs, soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents, aod::LcCEWSJetSSs, aod::LcChargedEventWiseSubtractedJetsMatchedToLcChargedJets>, aod::LcCEWSJetCOs, aod::LcCEWSJetOs, aod::LcCEWSJetSSOs, aod::LcCEWSJetMOs, aod::StoredHf3PCollBase, aod::StoredHf3PBases, aod::StoredHf3PPars, aod::StoredHf3PParEs, aod::StoredHf3PSels, aod::StoredHf3PMls, aod::StoredHf3PMcs, aod::StoredHf3PMcCollBases, aod::StoredHf3PMcRCollIds, aod::StoredHf3PPBases>;
+// using JetSubstructureOutputBplus = JetSubstructureHFOutputTask<aod::HfBplusCollBases, soa::Join<aod::StoredHfBplusMcCollBases, aod::JBplusMcCollisionIds, aod::HfBplusMcRCollIds>, CandidatesBplusData, CandidatesBplusMCD, CandidatesBplusMCP, aod::JTrackBplusSubs, soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusCJetSSs>, soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusCJetSSs, aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets>, aod::BplusCJetCOs, aod::BplusCJetOs, aod::BplusCJetSSOs, aod::BplusCJetMOs, soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusCMCDJetSSs, aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets>, aod::BplusCMCDJetCOs, aod::BplusCMCDJetOs, aod::BplusCMCDJetSSOs,  aod::BplusCMCDJetMOs, soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusCMCPJetSSs, aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>, aod::BplusCMCPJetCOs, aod::BplusCMCPJetOs, aod::BplusCMCPJetSSOs, aod::BplusCMCPJetMOs, soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents, aod::BplusCEWSJetSSs, aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets>, aod::BplusCEWSJetCOs, aod::BplusCEWSJetOs, aod::BplusCEWSJetSSOs, aod::BplusCEWSJetMOs, aod::StoredHfBplusCollBase, aod::StoredHfBplusBases, aod::StoredHfBplusPars, aod::StoredHfBplusParEs, aod::StoredHfBplusSels, aod::StoredHfBplusMls, aod::StoredHfBplusMcs, aod::StoredHfBplusPBases>;
+using JetSubstructureOutputDielectron = JetSubstructureHFOutputTask<CollisionsDielectron, McCollisionsDielectron, CandidatesDielectronData, CandidatesDielectronMCD, CandidatesDielectronMCP, aod::JTrackDielectronSubs, soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronCJetSSs>, soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronCJetSSs, aod::DielectronChargedJetsMatchedToDielectronChargedEventWiseSubtractedJets>, aod::DielectronCJetCOs, aod::DielectronCJetOs, aod::DielectronCJetSSOs, aod::DielectronCJetMOs, soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents, aod::DielectronCMCDJetSSs, aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCParticleLevelJets>, aod::DielectronCMCDJetCOs, aod::DielectronCMCDJetOs, aod::DielectronCMCDJetSSOs, aod::DielectronCMCDJetMOs, soa::Join<aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents, aod::DielectronCMCPJetSSs, aod::DielectronChargedMCParticleLevelJetsMatchedToDielectronChargedMCDetectorLevelJets>, aod::DielectronCMCPJetCOs, aod::DielectronCMCPJetOs, aod::DielectronCMCPJetSSOs, aod::DielectronCMCPJetMOs, soa::Join<aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents, aod::DielectronCEWSJetSSs, aod::DielectronChargedEventWiseSubtractedJetsMatchedToDielectronChargedJets>, aod::DielectronCEWSJetCOs, aod::DielectronCEWSJetOs, aod::DielectronCEWSJetSSOs, aod::DielectronCEWSJetMOs, aod::StoredReducedEvents, aod::StoredDielectrons, aod::JDielectron1Dummys, aod::JDielectron2Dummys, aod::JDielectron3Dummys, aod::JDielectron4Dummys, aod::JDielectron5Dummys, aod::StoredJDielectronMcCollisions, aod::JDielectron6Dummys, aod::StoredJDielectronMcs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
