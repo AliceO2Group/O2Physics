@@ -121,7 +121,8 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
-  Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtouniverse tables"};
+  Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", false, "Activate filling of V0 into femtouniverse tables"};
+  Configurable<bool> ConfActivateSecondaries{"ConfActivateSecondaries", false, "Fill secondary MC gen particles that were reconstructed"};
   Configurable<bool> ConfIsActivateCascade{"ConfIsActivateCascade", true, "Activate filling of Cascade into femtouniverse tables"};
   Configurable<bool> ConfIsActivatePhi{"ConfIsActivatePhi", false, "Activate filling of Phi into femtouniverse tables"};
   Configurable<bool> ConfMCTruthAnalysisWithPID{"ConfMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
@@ -262,9 +263,10 @@ struct femtoUniverseProducerTask {
     Configurable<float> ConfLooseTOFNSigmaValue{"ConfLooseTOFNSigmaValue", 10, "Value for the loose TOF N Sigma for Kaon PID."};
     Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
     Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
-    Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
-    Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
   } ConfPhiSelection;
+
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
+  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
@@ -640,7 +642,7 @@ struct femtoUniverseProducerTask {
       int particleOrigin = 99;
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
-      if (abs(pdgCode) == abs(ConfPhiSelection.ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPhiSelection.ConfPDGCodePartTwo.value)) {
+      if (abs(pdgCode) == abs(ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPDGCodePartTwo.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
@@ -1186,8 +1188,8 @@ struct femtoUniverseProducerTask {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiSelection.ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiSelection.ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -1217,7 +1219,7 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiSelection.ConfPDGCodePartOne, ConfPhiSelection.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
+      phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, 321, -321); ///\todo fill QA also for daughters
 
       int postrackID = p1.globalIndex();
       int rowInPrimaryTrackTablePos = -1; // does it do anything?
@@ -1283,10 +1285,11 @@ struct femtoUniverseProducerTask {
     }
   }
 
-  template <typename TrackType, bool transientLabels = false>
+  template <typename TrackType, bool transientLabels = false, bool resolveDaughs = false>
   void fillParticles(TrackType const& tracks, std::optional<std::reference_wrapper<const std::set<int>>> recoMcIds = std::nullopt)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack;
 
     for (auto& particle : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
@@ -1307,7 +1310,7 @@ struct femtoUniverseProducerTask {
             if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary() || (recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
+              if (particle.isPhysicalPrimary() || (ConfActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1328,6 +1331,10 @@ struct femtoUniverseProducerTask {
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       // now the table is filled
+      if constexpr (resolveDaughs) {
+        tmpIDtrack.push_back(particle.globalIndex());
+        continue;
+      }
       outputParts(outputCollision.lastIndex(),
                   particle.pt(),
                   particle.eta(),
@@ -1347,6 +1354,42 @@ struct femtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
+      }
+    }
+    if constexpr (resolveDaughs) {
+      childIDs[0] = 0;
+      childIDs[1] = 0;
+      for (int i = 0; i < tmpIDtrack.size(); i++) {
+        const auto& particle = tracks.iteratorAt(tmpIDtrack[i] - tracks.begin().globalIndex());
+        for (int daughIndex = 0, n = std::min(2ul, particle.daughtersIds().size()); daughIndex < n; daughIndex++) {
+          // loop to find the corresponding index of the daughters
+          for (int j = 0; j < tmpIDtrack.size(); j++) {
+            if (tmpIDtrack[j] == particle.daughtersIds()[daughIndex]) {
+              childIDs[daughIndex] = i - j;
+              break;
+            }
+          }
+        }
+        outputParts(outputCollision.lastIndex(),
+                    particle.pt(),
+                    particle.eta(),
+                    particle.phi(),
+                    aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                    0,
+                    static_cast<uint32_t>(particle.pdgCode()),
+                    particle.pdgCode(),
+                    childIDs,
+                    0,
+                    0);
+        if (ConfIsDebug) {
+          fillDebugParticle<false, true, false>(particle);
+        }
+
+        // Workaround to keep the FDParticles and MC label tables
+        // aligned, so that they can be joined in the task.
+        if constexpr (transientLabels) {
+          outputPartsMCLabels(-1);
+        }
       }
     }
   }
@@ -1562,8 +1605,8 @@ struct femtoUniverseProducerTask {
     for (auto& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
-      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                     // fills the reco collisions for mc collision
-      fillParticles<decltype(groupedMCParticles), true>(groupedMCParticles, recoMcIds); // fills mc particles
+      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                           // fills the reco collisions for mc collision
+      fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
     }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTruthAndFullMC, "Provide both MC truth and reco for tracks and V0s", false);
