@@ -492,7 +492,7 @@ struct BJetTreeCreator {
         }
       }
 
-      if (jetFlavor == 0 && (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt()))) {
+      if ((jetFlavor != JetTaggingSpecies::charm && jetFlavor != JetTaggingSpecies::beauty) && (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt()))) {
         continue;
       }
 
