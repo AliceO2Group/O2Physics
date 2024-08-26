@@ -288,7 +288,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
                                                                           "Maximal DCA_z (cm)",
                                                                           "Minimal DCA (cm)",
                                                                           "Maximal PID (nSigma)"}; ///< Helper information for the different selections
-}; // namespace femtoUniverse
+};                                                                                                 // namespace femtoUniverse
 
 template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename cutContainerType>
 void FemtoUniverseTrackSelection::init(HistogramRegistry* registry)
