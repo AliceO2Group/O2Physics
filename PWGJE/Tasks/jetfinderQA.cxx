@@ -736,7 +736,7 @@ struct JetFinderQATask {
     }
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-      if (collisionspermcpjet.size() == 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
+      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
         fillMCPHistograms(jet);
       }
     } else {
