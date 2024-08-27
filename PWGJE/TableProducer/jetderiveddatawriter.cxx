@@ -26,7 +26,6 @@
 #include "Framework/ASoA.h"
 #include "Framework/runDataProcessing.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -72,8 +71,6 @@ struct JetDerivedDataWriter {
     Configurable<bool> saveLcTable{"saveLcTable", false, "save the Lc table to the output"};
     Configurable<bool> saveDielectronTable{"saveDielectronTable", false, "save the Dielectron table to the output"};
 
-    Configurable<float> vertexZCutForCounting{"vertexZCutForCounting", 10.0, "choose z-vertex cut for collision counter"};
-    Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
     Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   } config;
 
@@ -163,14 +160,11 @@ struct JetDerivedDataWriter {
 
   TRandom3 randomNumber;
 
-  int eventSelection = -1;
-
   std::vector<int> triggerMaskBits;
   void init(InitContext&)
   {
     precisionPositionMask = 0xFFFFFC00; // 13 bits
     precisionMomentumMask = 0xFFFFFC00; // 13 bits  this is currently keept at 13 bits wihich gives roughly a resolution of 1/8000. This can be increased to 15 bits if really needed
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(config.eventSelectionForCounting));
     randomNumber.SetSeed(0);
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(config.triggerMasks);
   }
