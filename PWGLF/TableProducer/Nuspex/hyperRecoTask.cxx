@@ -200,7 +200,7 @@ struct hyperRecoTask {
   {
 
     zorroSummary.setObject(zorro.getZorroSummary());
-    
+
     mRunNumber = 0;
     d_bz = 0;
 
