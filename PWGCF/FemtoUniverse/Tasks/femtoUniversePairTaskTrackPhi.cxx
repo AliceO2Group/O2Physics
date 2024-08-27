@@ -182,6 +182,9 @@ struct femtoUniversePairTaskTrackPhi {
 
   bool IsProtonRejected(float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
   {
+    if (mom < 0.5) {
+      return true;
+    }
     if (mom > 0.5) {
       if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
         return true;
@@ -236,6 +239,13 @@ struct femtoUniversePairTaskTrackPhi {
 
   bool IsKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
+    if (mom < 0.5) {
+      if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
+        return true;
+      } else if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
+        return true;
+      }
+    }
     if (mom > 0.5) {
       if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
         return true;
@@ -271,6 +281,13 @@ struct femtoUniversePairTaskTrackPhi {
 
   bool IsPionRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCK, float nsigmaTOFK)
   {
+    if (mom < 0.5) {
+      if (TMath::Abs(nsigmaTPCK) < ConfBothTracks.ConfNsigmaRejectKaon) {
+        return true;
+      } else if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
+        return true;
+      }
+    }
     if (mom > 0.5) {
       if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfBothTracks.ConfNsigmaRejectKaon) {
         return true;
@@ -430,20 +447,6 @@ struct femtoUniversePairTaskTrackPhi {
     float tpcNSigmaPr, tofNSigmaPr, tpcNSigmaPi, tofNSigmaPi, tpcNSigmaKa, tofNSigmaKa;
     if (!ConfTrack.ConfIsSame) {
       for (auto& track : groupPartsTrack) {
-        // if (track.p() > ConfBothTracks.ConfCutTable->get("Track", "MaxP") || track.pt() > ConfBothTracks.ConfCutTable->get("Track", "MaxPt")) {
-        //   continue;
-        // }
-        // if (!isFullPIDSelected(track.pidcut(),
-        //                        track.p(),
-        //                        ConfBothTracks.ConfCutTable->get("Track", "PIDthr"),
-        //                        vPIDTrack,
-        //                        ConfBothTracks.ConfNspecies,
-        //                        kNsigma,
-        //                        ConfBothTracks.ConfCutTable->get("Track", "nSigmaTPC"),
-        //                        ConfBothTracks.ConfCutTable->get("Track", "nSigmaTPCTOF"))) {
-        //   continue;
-        // }
-
         tpcNSigmaPi = trackCuts.getNsigmaTPC(track, o2::track::PID::Pion);
         tofNSigmaPi = trackCuts.getNsigmaTOF(track, o2::track::PID::Pion);
         tpcNSigmaKa = trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon);
@@ -475,27 +478,6 @@ struct femtoUniversePairTaskTrackPhi {
     }
     /// Now build the combinations
     for (auto& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsTrack, groupPartsPhi))) {
-      // if (track.p() > ConfBothTracks.ConfCutTable->get("PhiCandidate", "MaxP") || track.pt() > ConfBothTracks.ConfCutTable->get("PhiCandidate", "MaxPt") || phicandidate.p() > ConfBothTracks.ConfCutTable->get("Track", "MaxP") || phicandidate.pt() > ConfBothTracks.ConfCutTable->get("Track", "MaxPt")) {
-      //   continue;
-      // }
-      // if (!isFullPIDSelected(track.pidcut(),
-      //                        track.p(),
-      //                        ConfBothTracks.ConfCutTable->get("PhiCandidate", "PIDthr"),
-      //                        vPIDPhiCandidate,
-      //                        ConfBothTracks.ConfNspecies,
-      //                        kNsigma,
-      //                        ConfBothTracks.ConfCutTable->get("PhiCandidate", "nSigmaTPC"),
-      //                        ConfBothTracks.ConfCutTable->get("PhiCandidate", "nSigmaTPCTOF")) ||
-      //     !isFullPIDSelected(phicandidate.pidcut(),
-      //                        phicandidate.p(),
-      //                        ConfBothTracks.ConfCutTable->get("Track", "PIDthr"),
-      //                        vPIDTrack,
-      //                        ConfBothTracks.ConfNspecies,
-      //                        kNsigma,
-      //                        ConfBothTracks.ConfCutTable->get("Track", "nSigmaTPC"),
-      //                        ConfBothTracks.ConfCutTable->get("Track", "nSigmaTPCTOF"))) {
-      //   continue;
-      // }
       if (ConfTrack.ConfIsTrackIdentified) {
         if (!IsParticleNSigmaAccepted(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
@@ -573,27 +555,6 @@ struct femtoUniversePairTaskTrackPhi {
   {
 
     for (auto& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsTrack, groupPartsPhi))) {
-      // if (track.p() > ConfBothTracks.ConfCutTable->get("PhiCandidate", "MaxP") || track.pt() > ConfBothTracks.ConfCutTable->get("PhiCandidate", "MaxPt") || phicandidate.p() > ConfBothTracks.ConfCutTable->get("Track", "MaxP") || phicandidate.pt() > ConfBothTracks.ConfCutTable->get("Track", "MaxPt")) {
-      //   continue;
-      // }
-      // if (!isFullPIDSelected(track.pidcut(),
-      //                        track.p(),
-      //                        ConfBothTracks.ConfCutTable->get("PhiCandidate", "PIDthr"),
-      //                        vPIDPhiCandidate,
-      //                        ConfBothTracks.ConfNspecies,
-      //                        kNsigma,
-      //                        ConfBothTracks.ConfCutTable->get("PhiCandidate", "nSigmaTPC"),
-      //                        ConfBothTracks.ConfCutTable->get("PhiCandidate", "nSigmaTPCTOF")) ||
-      //     !isFullPIDSelected(phicandidate.pidcut(),
-      //                        phicandidate.p(),
-      //                        ConfBothTracks.ConfCutTable->get("Track", "PIDthr"),
-      //                        vPIDTrack,
-      //                        ConfBothTracks.ConfNspecies,
-      //                        kNsigma,
-      //                        ConfBothTracks.ConfCutTable->get("Track", "nSigmaTPC"),
-      //                        ConfBothTracks.ConfCutTable->get("Track", "nSigmaTPCTOF"))) {
-      //   continue;
-      // }
       if (ConfTrack.ConfIsTrackIdentified) {
         if (!IsParticleNSigmaAccepted(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
