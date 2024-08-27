@@ -461,7 +461,7 @@ struct AngularCorrelationsInJets {
 
     // TPC
     if (track.pt() < configurables.fAntiheliumTPCTOFpT && (track.tpcNSigmaHe() < configurables.fAntiheliumTPCnsigLowMin || track.tpcNSigmaHe() > configurables.fAntiheliumTPCnsigLowMax))
-        return false;
+      return false;
     if (track.pt() > configurables.fAntiheliumTPCTOFpT && (track.tpcNSigmaHe() < configurables.fAntiheliumTPCnsigHighMin || track.tpcNSigmaHe() > configurables.fAntiheliumTPCnsigHighMax))
       return false;
 
@@ -654,10 +654,10 @@ struct AngularCorrelationsInJets {
   template <typename T, typename U>
   void fillHistogramsRun2(T const& collision, U const& allTracks)
   {
-    std::vector<std::pair<double,double>> fTempBufferProton;
-    std::vector<std::pair<double,double>> fTempBufferAntiproton;
-    std::vector<std::pair<double,double>> fTempBufferDeuteron;
-    std::vector<std::pair<double,double>> fTempBufferAntideuteron;
+    std::vector<std::pair<double, double>> fTempBufferProton;
+    std::vector<std::pair<double, double>> fTempBufferAntiproton;
+    std::vector<std::pair<double, double>> fTempBufferDeuteron;
+    std::vector<std::pair<double, double>> fTempBufferAntideuteron;
     fTempBufferProton.clear();
     fTempBufferAntiproton.clear();
     fTempBufferDeuteron.clear();
@@ -696,7 +696,7 @@ struct AngularCorrelationsInJets {
       }
 
       if (track.tpcNClsFindable() != 0) {
-        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows()/track.tpcNClsFindable());
+        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
       }
       registryQA.fill(HIST("hPtFullEvent"), track.pt());
       registryQA.fill(HIST("hEtaFullEvent"), track.eta());
@@ -836,7 +836,7 @@ struct AngularCorrelationsInJets {
         NchUE++;
         ptUE = ptUE + track.pt();
       }
-    } //for (const auto& [index, track] : particles)
+    } // for (const auto& [index, track] : particles)
 
     NchJet = NchJetPlusUE - 0.5 * NchUE;
     ptJet = ptJetPlusUE - 0.5 * ptUE;
@@ -963,10 +963,10 @@ struct AngularCorrelationsInJets {
   template <typename T, typename U>
   void fillHistogramsRun3(T const& collision, U const& allTracks)
   {
-    std::vector<std::pair<double,double>> fTempBufferProton;
-    std::vector<std::pair<double,double>> fTempBufferAntiproton;
-    std::vector<std::pair<double,double>> fTempBufferDeuteron;
-    std::vector<std::pair<double,double>> fTempBufferAntideuteron;
+    std::vector<std::pair<double, double>> fTempBufferProton;
+    std::vector<std::pair<double, double>> fTempBufferAntiproton;
+    std::vector<std::pair<double, double>> fTempBufferDeuteron;
+    std::vector<std::pair<double, double>> fTempBufferAntideuteron;
     fTempBufferProton.clear();
     fTempBufferAntiproton.clear();
     fTempBufferDeuteron.clear();
@@ -1005,7 +1005,7 @@ struct AngularCorrelationsInJets {
       }
 
       if (track.tpcNClsFindable() != 0) {
-        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows()/track.tpcNClsFindable());
+        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
       }
       registryQA.fill(HIST("hPtFullEvent"), track.pt());
       registryQA.fill(HIST("hEtaFullEvent"), track.eta());
@@ -1145,7 +1145,7 @@ struct AngularCorrelationsInJets {
         NchUE++;
         ptUE = ptUE + track.pt();
       }
-    } //for (const auto& [index, track] : particles)
+    } // for (const auto& [index, track] : particles)
 
     NchJet = NchJetPlusUE - 0.5 * NchUE;
     ptJet = ptJetPlusUE - 0.5 * ptUE;
