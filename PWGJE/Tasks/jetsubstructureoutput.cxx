@@ -23,6 +23,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGJE/Core/JetFinder.h"
@@ -40,7 +41,6 @@ using namespace o2::framework::expressions;
 
 struct JetSubstructureOutputTask {
 
-  Produces<aod::StoredCollisionCounts> storedCollisionCountsTable;
   Produces<aod::CJetCOs> collisionOutputTableData;
   Produces<aod::CJetOs> jetOutputTableData;
   Produces<aod::CJetSSOs> jetSubstructureOutputTableData;
@@ -70,6 +70,7 @@ struct JetSubstructureOutputTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track pseudorapidity"};
 
   Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
+  Configurable<float> vertexZCutForCounting{"vertexZCutForCounting", 10.0, "choose z-vertex cut for collision counter"};
 
   std::map<int32_t, int32_t> jetMappingData;
   std::map<int32_t, int32_t> jetMappingDataSub;
@@ -191,45 +192,6 @@ struct JetSubstructureOutputTask {
     jetMappingMCP.clear();
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processClearMaps, "process function that clears all the maps in each dataframe", true);
-
-  void processCountCollisions(JetCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
-  {
-    int readCollisionCounter = 0;
-    int readSelectedCollisionCounter = 0;
-    int writtenCollisionCounter = -1;
-    for (auto const& collision : collisions) {
-      readCollisionCounter++;
-      if (jetderiveddatautilities::selectCollision(collision, eventSelection)) {
-        readSelectedCollisionCounter++;
-      }
-    }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadSelectedCounts;
-    std::vector<int> previousWrittenCounts;
-    int iPreviousDataFrame = 0;
-    for (const auto& collisionCount : collisionCounts) {
-      auto readCollisionCounterSpan = collisionCount.readCounts();
-      auto readSelectedCollisionCounterSpan = collisionCount.readSelectedCounts();
-      auto writtenCollisionCounterSpan = collisionCount.writtenCounts();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readSelectedCollisionCounterSpan.begin(), readSelectedCollisionCounterSpan.end(), std::back_inserter(previousReadSelectedCounts));
-        std::copy(writtenCollisionCounterSpan.begin(), writtenCollisionCounterSpan.end(), std::back_inserter(previousWrittenCounts));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
-          previousReadCounts[i] += readCollisionCounterSpan[i];
-          previousReadSelectedCounts[i] += readSelectedCollisionCounterSpan[i];
-          previousWrittenCounts[i] += writtenCollisionCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readCollisionCounter);
-    previousReadSelectedCounts.push_back(readSelectedCollisionCounter);
-    previousWrittenCounts.push_back(writtenCollisionCounter);
-    storedCollisionCountsTable(previousReadCounts, previousReadSelectedCounts, previousWrittenCounts);
-  }
-  PROCESS_SWITCH(JetSubstructureOutputTask, processCountCollisions, "process function that counts read in collisions", false);
 
   void processOutputData(JetCollision const& collision,
                          soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::CJetSSs> const& jets)

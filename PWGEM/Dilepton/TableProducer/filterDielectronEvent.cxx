@@ -31,12 +31,15 @@
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
+
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -69,19 +72,22 @@ struct filterDielectronEvent {
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda)"}; // this is to suppress random combination. default 4 + 1 for skimming.
+  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda)"};
+  Configurable<float> max_p_for_its_cluster_size{"max_p_for_its_cluster_size", 0.2, "its cluster size cut is applied below this track momentum"};
   Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.15, "min pt for track"};
-  Configurable<float> maxeta{"maxeta", 0.8, "eta acceptance"};
+  Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
   Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1e+10, "max DCA 3D in sigma"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.5, "max. TOF n sigma for electron inclusion"};
-  Configurable<float> maxMee{"maxMee", 0.04, "max mee for virtual photon selection"};
+  Configurable<float> maxMee{"maxMee", 0.02, "max mee for virtual photon selection"};
+
+  Configurable<bool> apply_phiv{"apply_phiv", true, "flag to apply phiv cut"};
   Configurable<float> slope{"slope", 0.0181, "slope for mee vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0370, "intercept for mee vs. phiv"};
 
@@ -137,8 +143,7 @@ struct filterDielectronEvent {
       fRegistry.add("Track/hMeanClusterSizeITS_TPCNsigmaEl", "mean cluster size ITS vs. n #sigma_{e}^{TPC} in p_{pv} < 0.2 GeV/c;n #sigma_{e}^{TPC};<cluster size> on ITS #times cos(#lambda)", kTH2F, {{100, -5, 5}, {160, 0, 16}}, false);
       fRegistry.add("Pair/before/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {100, 0, 1}}, false);
       fRegistry.add("Pair/before/hMvsPhiV", "mee vs. phiv;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0, 0.1}}, false);
-      fRegistry.add("Pair/after/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {100, 0, 1}}, false);
-      fRegistry.add("Pair/after/hMvsPhiV", "m_{ee} vs. phiv;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0, 0.1}}, false);
+      fRegistry.addClone("Pair/before/", "Pair/after/");
     }
   }
 
@@ -225,7 +230,7 @@ struct filterDielectronEvent {
       }
       total_cluster_size += cluster_size_per_layer;
     }
-    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_its_cluster_size) {
+    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_its_cluster_size && track.p() < max_p_for_its_cluster_size) {
       return false;
     }
 
@@ -433,11 +438,12 @@ struct filterDielectronEvent {
         ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
+
         if (fillQAHistogram) {
           fRegistry.fill(HIST("Pair/before/hMvsPt"), v12.M(), v12.Pt());
           fRegistry.fill(HIST("Pair/before/hMvsPhiV"), phiv, v12.M());
         }
-        if (v12.M() < maxMee && slope * phiv + intercept < v12.M()) {
+        if (apply_phiv ? (v12.M() < maxMee && slope * phiv + intercept < v12.M()) : (v12.M() < maxMee)) {
           fillTrackTable(collision, pos);
           fillTrackTable(collision, ele);
           if (fillQAHistogram) {
@@ -517,11 +523,12 @@ struct filterDielectronEvent {
           ROOT::Math::PtEtaPhiMVector v2(ele_prop.getPt(), ele_prop.getEta(), ele_prop.getPhi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pVec_pos[0], pVec_pos[1], pVec_pos[2], pVec_ele[0], pVec_ele[1], pVec_ele[2], pos.sign(), ele.sign(), d_bz);
+
           if (fillQAHistogram) {
             fRegistry.fill(HIST("Pair/before/hMvsPt"), v12.M(), v12.Pt());
             fRegistry.fill(HIST("Pair/before/hMvsPhiV"), phiv, v12.M());
           }
-          if (v12.M() < maxMee && slope * phiv + intercept < v12.M()) {
+          if (apply_phiv ? (v12.M() < maxMee && slope * phiv + intercept < v12.M()) : (v12.M() < maxMee)) {
             fillTrackTable(collision, pos);
             fillTrackTable(collision, ele);
             if (fillQAHistogram) {
@@ -600,7 +607,7 @@ struct filterDielectronEvent {
           fRegistry.fill(HIST("Pair/before/hMvsPt"), v12.M(), v12.Pt());
           fRegistry.fill(HIST("Pair/before/hMvsPhiV"), phiv, v12.M());
         }
-        if (v12.M() < maxMee && slope * phiv + intercept < v12.M()) {
+        if (apply_phiv ? (v12.M() < maxMee && slope * phiv + intercept < v12.M()) : (v12.M() < maxMee)) {
           fillTrackTable(collision, pos);
           fillTrackTable(collision, ele);
           if (fillQAHistogram) {
@@ -683,7 +690,7 @@ struct filterDielectronEvent {
             fRegistry.fill(HIST("Pair/before/hMvsPt"), v12.M(), v12.Pt());
             fRegistry.fill(HIST("Pair/before/hMvsPhiV"), phiv, v12.M());
           }
-          if (v12.M() < maxMee && slope * phiv + intercept < v12.M()) {
+          if (apply_phiv ? (v12.M() < maxMee && slope * phiv + intercept < v12.M()) : (v12.M() < maxMee)) {
             fillTrackTable(collision, pos);
             fillTrackTable(collision, ele);
             if (fillQAHistogram) {

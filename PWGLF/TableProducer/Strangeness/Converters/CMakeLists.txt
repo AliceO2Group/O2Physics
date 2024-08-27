@@ -28,3 +28,8 @@ o2physics_add_dpl_workflow(v0coresconverter
                     SOURCES v0coresconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0coresconverter2
+                    SOURCES v0coresconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

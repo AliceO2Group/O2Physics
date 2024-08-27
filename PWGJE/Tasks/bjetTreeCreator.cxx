@@ -162,11 +162,16 @@ struct BJetTreeCreator {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
+  Configurable<std::vector<double>> jetPtBins{"jetPtBins", std::vector<double>{5, 1000}, "jet pT bins for reduction"};
+  Configurable<std::vector<double>> jetReductionFactors{"jetReductionFactors", std::vector<double>{0.0}, "jet reduction factors"};
+
   // track level configurables
   Configurable<float> trackPtMin{"trackPtMin", 0.5, "minimum track pT"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track eta"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
+
+  Configurable<bool> useQuarkDef{"useQuarkDef", true, "Flag whether to use quarks or hadrons for determining the jet flavor"};
 
   // track level configurables
   Configurable<float> svPtMin{"svPtMin", 0.5, "minimum SV pT"};
@@ -187,6 +192,8 @@ struct BJetTreeCreator {
   int eventSelection = -1;
 
   std::vector<double> jetRadiiValues;
+  std::vector<double> jetPtBinsReduction;
+  std::vector<double> jetReductionFactorsPt;
 
   void init(InitContext const&)
   {
@@ -194,6 +201,8 @@ struct BJetTreeCreator {
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     jetRadiiValues = (std::vector<double>)jetRadii;
+    jetPtBinsReduction = (std::vector<double>)jetPtBins;
+    jetReductionFactorsPt = (std::vector<double>)jetReductionFactors;
 
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
 
@@ -252,10 +261,29 @@ struct BJetTreeCreator {
   Filter jetFilter = (aod::jet::pt >= jetPtMin && aod::jet::pt <= jetPtMax && aod::jet::eta < jetEtaMax - aod::jet::r / 100.f && aod::jet::eta > jetEtaMin + aod::jet::r / 100.f);
 
   using FilteredCollision = soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs>>;
-  using JetTrackswID = soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>>;
-  using JetTracksMCDwID = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
+  using JetTrackswID = soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras, aod::JTrackPIs>>;
+  using JetTracksMCDwID = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>>;
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>;
   using DataJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::DataSecondaryVertex3ProngIndices>>;
+
+  // Function to get the reduction factor based on jet pT
+  double getReductionFactor(double jetPT)
+  {
+    // Loop through the jetPtBins vector
+    for (size_t ibin = 0; ibin < jetPtBinsReduction.size() - 1; ++ibin) {
+      if (jetPT >= jetPtBinsReduction[ibin] && jetPT < jetPtBinsReduction[ibin + 1]) {
+        return jetReductionFactorsPt[ibin];
+      }
+    }
+
+    // If jetPT is above the last bin, use the last reduction factor
+    if (jetPT >= jetPtBinsReduction.back()) {
+      return jetReductionFactorsPt.back();
+    }
+
+    // If jetPT is below the first bin, return the first reduction factor
+    return jetReductionFactorsPt.front();
+  }
 
   // Looping over the SV info and writing them to a table
   template <typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
@@ -314,7 +342,7 @@ struct BJetTreeCreator {
   }
 
   template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
-  void analyzeJetTrackInfo(AnyCollision const& collision, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
+  void analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
   {
 
     for (auto& jconstituent : analysisJet.template tracks_as<AnyTracks>()) {
@@ -326,7 +354,7 @@ struct BJetTreeCreator {
       auto constituent = jconstituent.template track_as<OriginalTracks>();
       double deltaRJetTrack = jetutilities::deltaR(analysisJet, constituent);
       double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
-      int sign = jettaggingutilities::getGeoSign(collision, analysisJet, constituent);
+      int sign = jettaggingutilities::getGeoSign(analysisJet, jconstituent);
 
       float RClosestSV = 10.;
       for (const auto& candSV : analysisJet.template secondaryVertices_as<SecondaryVertices>()) {
@@ -387,6 +415,10 @@ struct BJetTreeCreator {
       }
 
       if (!jetIncluded) {
+        continue;
+      }
+
+      if (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt())) {
         continue;
       }
 
@@ -452,9 +484,18 @@ struct BJetTreeCreator {
       // jetFlavor = jettaggingutilities::jetTrackFromHFShower(analysisJet, nonFilteredTracks, mcParticlesPerColl, hftrack);
 
       for (auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
-        jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, mcParticlesPerColl);
-        // jetFlavor = jettaggingutilities::mcpJetFromHFShower(mcpjet, mcParticlesPerColl, (float)(mcpjet.r() / 100.));
+        if (useQuarkDef) {
+          jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, mcParticlesPerColl);
+        } else {
+          jetFlavor = jettaggingutilities::getJetFlavorHadron(mcpjet, mcParticlesPerColl);
+          // jetFlavor = jettaggingutilities::mcpJetFromHFShower(mcpjet, mcParticlesPerColl, (float)(mcpjet.r() / 100.));
+        }
       }
+
+      if ((jetFlavor != JetTaggingSpecies::charm && jetFlavor != JetTaggingSpecies::beauty) && (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt()))) {
+        continue;
+      }
+
       analyzeJetSVInfo(analysisJet, allTracks, allSVs, SVsIndices, jetFlavor, eventWeight);
       analyzeJetTrackInfo(collision, analysisJet, allTracks, allSVs, tracksIndices, jetFlavor, eventWeight);
 
@@ -513,8 +554,12 @@ struct BJetTreeCreator {
       }
 
       int16_t jetFlavor = 0;
-      jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, MCParticles);
-      // jetFlavor = jettaggingutilities::mcpJetFromHFShower(mcpjet, mcParticlesPerColl, (float)(mcpjet.r() / 100.));
+      if (useQuarkDef) {
+        jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, MCParticles);
+      } else {
+        jetFlavor = jettaggingutilities::getJetFlavorHadron(mcpjet, MCParticles);
+        // jetFlavor = jettaggingutilities::mcpJetFromHFShower(mcpjet, MCParticles, (float)(mcpjet.r() / 100.));
+      }
 
       float eventWeight = mcpjet.eventWeight();
 

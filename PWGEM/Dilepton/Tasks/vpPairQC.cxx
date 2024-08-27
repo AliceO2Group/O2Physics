@@ -238,9 +238,16 @@ struct vpPairQC {
     fRegistry.add("Track/positive/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.addClone("Track/positive/", "Track/negative/");
 
+    const AxisSpec axis_mass{100, 0, 0.1, "m_{ee} (GeV/c^{2})"};
+    const AxisSpec axis_pair_pt{100, 0, 1, "p_{T,ee} (GeV/c)"};
+    const AxisSpec axis_pair_dca_3d{100, 0, 10, "DCA_{ee}^{3D} (#sigma)"};
+    const AxisSpec axis_pair_dca_xy{100, 0, 10, "DCA_{ee}^{XY} (#sigma)"};
+    const AxisSpec axis_phiv{90, 0, M_PI, "#varphi_{V} (rad.)"};
     // for pair
-    fRegistry.add("Pair/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {100, 0, 1}}, true);
-    fRegistry.add("Pair/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
+    fRegistry.add("Pair/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {axis_mass, axis_pair_pt}, true);
+    fRegistry.add("Pair/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {axis_phiv, axis_mass}, true);
+    fRegistry.add("Pair/hDCA3DvsPhiV", "DCA_{ee}^{3D} vs. #varphi_{V};#varphi_{V} (rad.);DCA_{ee}^{3D} (#sigma)", kTH2F, {axis_phiv, axis_pair_dca_3d}, true);
+    fRegistry.add("Pair/hDCAXYvsPhiV", "DCA_{ee}^{XY} vs. #varphi_{V};#varphi_{V} (rad.);DCA_{ee}^{XY} (#sigma)", kTH2F, {axis_phiv, axis_pair_dca_xy}, true);
   }
 
   void DefineEMEventCut()
@@ -338,10 +345,15 @@ struct vpPairQC {
     }
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
-    if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/hMvsPt"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, v12.M());
-    }
+    float dca_t1 = dca3DinSigma(t1);
+    float dca_t2 = dca3DinSigma(t2);
+    float pair_dca_3d = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
+    float pair_dca_xy = std::sqrt((std::pow(t1.dcaXY() / std::sqrt(t1.cYY()), 2) + std::pow(t2.dcaXY() / std::sqrt(t2.cYY()), 2)) / 2.);
+
+    fRegistry.fill(HIST("Pair/hMvsPt"), v12.M(), v12.Pt());
+    fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, v12.M());
+    fRegistry.fill(HIST("Pair/hDCA3DvsPhiV"), phiv, pair_dca_3d);
+    fRegistry.fill(HIST("Pair/hDCAXYvsPhiV"), phiv, pair_dca_xy);
 
     if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
       used_trackIds.emplace_back(t1.globalIndex());
@@ -449,8 +461,8 @@ struct vpPairQC {
         continue;
       }
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);

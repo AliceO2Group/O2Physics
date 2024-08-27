@@ -18,8 +18,6 @@
 #include <algorithm> // std::upper_bound
 #include <iterator>  // std::distance
 #include <string>    //std::string
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 namespace o2::analysis
 {
@@ -27,7 +25,7 @@ namespace o2::analysis
 /// \param bins  array of pT bins
 /// \param value  pT
 /// \return index of the pT bin
-/// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
+/// \note Accounts for the offset so that pT bin array can be used to also configure a histogram axis.
 template <typename T1, typename T2>
 int findBin(T1 const& binsPt, T2 value)
 {
@@ -111,34 +109,48 @@ bool isSelectedTrackTpcQuality(T const& track, const int tpcNClustersFoundMin, c
   return true;
 }
 
-struct HfTriggerCuts : o2::framework::ConfigurableGroup {
-  std::string prefix = "hfMassCut"; // JSON group name
+/// Mass selection of 2 or 3 prong canidates in triggered data analysis
+/// \tparam nProngs switch between 2-prong and 3-prong selection
+/// \param invMass is the invariant mass of the candidate
+/// \param pdgMass is the pdg Mass of the candidate particle
+/// \param pt is the pT of the candidate
+/// \param cutConfig is the struct with the pt-dependent mass configurations
+/// \return true if candidate passes selection
+template <typename Config>
+bool isCandidateInMassRange(const float& invMass, const double& pdgMass, const float& pt, Config const& cutConfig)
+{
+  float peakMean = (pt < cutConfig.ptDeltaMassMax.value) ? ((pdgMass + cutConfig.deltaMassPars->get("constant")) + cutConfig.deltaMassPars->get("linear") * pt) : pdgMass;
+  float peakWidth = cutConfig.sigmaPars->get("constant") + cutConfig.sigmaPars->get("linear") * pt;
 
-  static constexpr float defaultDeltaMassPars3Prong[1][2] = {{-0.0025f, 0.0001f}};
-  static constexpr float defaultSigmaPars3Prong[1][2] = {{0.00796f, 0.00176f}};
-  o2::framework::Configurable<float> nSigma{"nSigma", 2.5, "Number of Sigmas for pT differential mass cut"};
-  o2::framework::Configurable<float> pTMaxDeltaMass{"pTMaxDeltaMass", 10., "Max pT to apply delta mass shift to PDG mass value"};
-  o2::framework::Configurable<float> pTMaxMassCut{"pTMaxMassCut", 8., "Max pT to apply pT differential cut"};
-  o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars3Prong{"deltaMassPars3Prong", {defaultDeltaMassPars3Prong[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 3 prong trigger mass cut"};
-  o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars3Prong{"sigmaPars3Prong", {defaultSigmaPars3Prong[0], 2, {"constant", "linear"}}, "sigma parameters for HF 3 prong trigger mass cut"};
+  return (!(std::abs(invMass - peakMean) > cutConfig.nSigmaMax.value * peakWidth && pt < cutConfig.ptMassCutMax.value));
+}
 
-  /// Mass selection of D+ candidates to build B0 candidates
-  /// \param pTrackSameChargeFirst is the first same-charge track momentum
-  /// \param pTrackSameChargeFirst is the second same-charge track momentum
-  /// \param pTrackSameChargeFirst is the opposite charge track momentum
-  /// \param ptD is the pt of the D+ meson candidate
-  /// \return true if D+ passes selection
-  bool isSelectedDplusInMassRange(const float& invMassDplus, const float& ptD)
-  {
-    float peakMean = (ptD < pTMaxDeltaMass) ? ((o2::constants::physics::MassDPlus + deltaMassPars3Prong->get("constant")) + deltaMassPars3Prong->get("linear") * ptD) : o2::constants::physics::MassDPlus;
-    float peakWidth = sigmaPars3Prong->get("constant") + sigmaPars3Prong->get("linear") * ptD;
+/// Configurable group to apply trigger specific cuts for 2-prong HF analysis
+struct HfTrigger2ProngCuts : o2::framework::ConfigurableGroup {
+  std::string prefix = "hfTrigger2ProngCuts"; // JSON group name
 
-    if (std::fabs(invMassDplus - peakMean) > nSigma * peakWidth && ptD < pTMaxMassCut) {
-      return false;
-    }
-    return true;
-  }
+  static constexpr float defaultDeltaMassPars[1][2] = {{-0.0025f, 0.0001f}};
+  static constexpr float defaultSigmaPars[1][2] = {{0.01424f, 0.00178f}};
+  o2::framework::Configurable<float> nSigmaMax{"nSigmaMax", 2, "Maximum number of sigmas for pT-differential mass cut for 2-prong candidates"};
+  o2::framework::Configurable<float> ptDeltaMassMax{"ptDeltaMassMax", 10., "Max pT to apply delta mass shift to PDG mass value for 2-prong candidates"};
+  o2::framework::Configurable<float> ptMassCutMax{"ptMassCutMax", 9999., "Max pT to apply pT-differential cut for 2-prong candidates"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars{"deltaMassPars", {defaultDeltaMassPars[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 2-prong trigger mass cut"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars{"sigmaPars", {defaultSigmaPars[0], 2, {"constant", "linear"}}, "sigma parameters for HF 2-prong trigger mass cut"};
 };
+
+/// Configurable group to apply trigger specific cuts for 3-prong HF analysis
+struct HfTrigger3ProngCuts : o2::framework::ConfigurableGroup {
+  std::string prefix = "hfTrigger3ProngCuts"; // JSON group name
+
+  static constexpr float defaultDeltaMassPars[1][2] = {{-0.0025f, 0.0001f}};
+  static constexpr float defaultSigmaPars[1][2] = {{0.00796f, 0.00176f}};
+  o2::framework::Configurable<float> nSigmaMax{"nSigmaMax", 2, "Maximum number of sigmas for pT-differential mass cut for 3-prong candidates"};
+  o2::framework::Configurable<float> ptDeltaMassMax{"ptDeltaMassMax", 10., "Max pT to apply delta mass shift to PDG mass value for 3-prong candidates"};
+  o2::framework::Configurable<float> ptMassCutMax{"ptMassCutMax", 9999., "Max pT to apply pT-differential cut for 3-prong candidates"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars{"deltaMassPars", {defaultDeltaMassPars[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 3-prong trigger mass cut"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars{"sigmaPars", {defaultSigmaPars[0], 2, {"constant", "linear"}}, "sigma parameters for HF 3-prong trigger mass cut"};
+};
+
 } // namespace o2::analysis
 
 #endif // PWGHF_UTILS_UTILSANALYSIS_H_

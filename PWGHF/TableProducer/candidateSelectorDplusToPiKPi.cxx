@@ -76,14 +76,14 @@ struct HfCandidateSelectorDplusToPiKPi {
   // Mass Cut for trigger analysis
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
-  o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponse;
+  HfMlResponseDplusToPiKPi<float> hfMlResponse;
   std::vector<float> outputMlNotPreselected = {};
   std::vector<float> outputMl = {};
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   HfHelper hfHelper;
-  o2::analysis::HfTriggerCuts hfTriggerCuts;
+  HfTrigger3ProngCuts hfTriggerCuts;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
@@ -136,13 +136,13 @@ struct HfCandidateSelectorDplusToPiKPi {
   template <typename T1, typename T2>
   bool selection(const T1& candidate, const T2& trackPion1, const T2& trackKaon, const T2& trackPion2)
   {
-    auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    auto ptCand = candidate.pt();
+    int pTBin = findBin(binsPt, ptCand);
     if (pTBin == -1) {
       return false;
     }
     // check that the candidate pT is within the analysis range
-    if (candpT < ptCandMin || candpT > ptCandMax) {
+    if (ptCand < ptCandMin || ptCand > ptCandMax) {
       return false;
     }
     // cut on daughter pT
@@ -153,7 +153,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !hfTriggerCuts.isSelectedDplusInMassRange(hfHelper.invMassDplusToPiKPi(candidate), candpT)) {
+    if (useTriggerMassCut && !isCandidateInMassRange(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand, hfTriggerCuts)) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {

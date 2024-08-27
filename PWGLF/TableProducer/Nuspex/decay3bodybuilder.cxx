@@ -27,6 +27,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
+#include "PWGLF/DataModel/pidTOFGeneric.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -58,9 +59,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+using ColwithEvTimes = o2::soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
-using FullTracksExtPIDIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::EvTimeTOFFT0ForTrack>;
+using FullTracksExtPIDIU = soa::Join<FullTracksExtIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 struct decay3bodyBuilder {
@@ -156,12 +158,12 @@ struct decay3bodyBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   // CCDB TOF PID paras
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
   Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
   Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
   Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
   Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
-  Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   // for KFParticle reconstruction
   struct : ConfigurableGroup {
@@ -208,6 +210,7 @@ struct decay3bodyBuilder {
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
+  o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, FullTracksExtIU::iterator> bachelorTOFPID;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
   void init(InitContext&)
@@ -334,7 +337,8 @@ struct decay3bodyBuilder {
     }
 
     // Initial TOF PID Paras, copied from PIDTOF.h
-    ccdb->setTimestamp(bc.timestamp());
+    timestamp.value = bc.timestamp();
+    ccdb->setTimestamp(timestamp.value);
     // Not later than now objects
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     // TODO: implement the automatic pass name detection from metadata
@@ -365,8 +369,8 @@ struct decay3bodyBuilder {
         mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
       }
     } else if (loadResponseFromCCDB) { // Loading it from CCDB
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << bc.timestamp();
-      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, bc.timestamp());
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
+      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
       if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
         if (fatalOnPassNotAvailable) {
@@ -385,10 +389,12 @@ struct decay3bodyBuilder {
         mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
         mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
       } else {
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), bc.timestamp()), true);
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), bc.timestamp()), false);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
       }
     }
+
+    bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
   //------------------------------------------------------------------
@@ -424,7 +430,8 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // 3body candidate builder
-  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
+  template <class TCollisionClass, class TTrackClass, typename TCollisionTable, typename TTrackTable>
+  // void buildVtx3BodyDataTable(TCollisionTable const& /*allcollisions*/, TCollisionTable::iterator const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
 
@@ -496,17 +503,10 @@ struct decay3bodyBuilder {
 
       // Recalculate the TOF PID
       double tofNsigmaDe = -999;
-      static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
 
-      if (t2.hasTOF()) {
-        double bachExpTime = t2.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (t2.tofExpMom() * t2.tofExpMom())) / (kCSPEED * t2.tofExpMom()); // L*E/(p*c) = L/v
-        double tofsignal = t2.trackTime() * 1000 + bachExpTime;
-        // double bachtime = t2.trackTime() * 1000 + bachExpTime - collision.collisionTime(); // in ps
-
-        double expSigma = GetExpectedSigma(mRespParamsV2, t2, tofsignal, collision.collisionTimeRes(), o2::constants::physics::MassDeuteron);
-        double corrTofMom = t2.tofExpMom() / (1.f + t2.sign() * mRespParamsV2.getShift(t2.eta()));
-        double corrSignal = t2.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (corrTofMom * corrTofMom)) / (kCSPEED * corrTofMom) + mRespParamsV2.getTimeShift(t2.eta(), t2.sign());
-        tofNsigmaDe = (tofsignal - collision.collisionTime() - corrSignal) / expSigma;
+      if (t2.has_collision() && t2.hasTOF()) {
+        auto originalcol = t2.template collision_as<TCollisionClass>();
+        tofNsigmaDe = bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, t2, originalcol, collision);
       }
 
       registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNsigmaDe);
@@ -888,13 +888,17 @@ struct decay3bodyBuilder {
   }
 
   //------------------------------------------------------------------
-  void processRun3(aod::Collision const& collision, FullTracksExtIU const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3(ColwithEvTimes const& collisions, FullTracksExtIU const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-    registry.fill(HIST("hEventCounter"), 0.5);
+    for (const auto& collision : collisions) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      registry.fill(HIST("hEventCounter"), 0.5);
 
-    buildVtx3BodyDataTable<FullTracksExtIU>(collision, tracksIU, decay3bodys, bachelorcharge);
+      const auto& d3bodysInCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
+      // buildVtx3BodyDataTable<ColwithEvTimes, FullTracksExtIU>(collisions, collision, tracksIU, d3bodysInCollision, bachelorcharge);
+      buildVtx3BodyDataTable<ColwithEvTimes, FullTracksExtIU>(collision, tracksIU, d3bodysInCollision, bachelorcharge);
+    }
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 

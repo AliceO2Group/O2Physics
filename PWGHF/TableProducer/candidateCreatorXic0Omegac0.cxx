@@ -256,8 +256,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runXic0Omegac0Creator(Coll const&,
                              aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
-                             TracksWCovDca const&,
-                             MyLFTracksWCov const&,
+                             MyLFTracksWCov const& lfTracks,
+                             TracksWCovDca const& tracks,
                              MyCascTable const&, CascadesLinked const&,
                              aod::HfCascLf2Prongs const& candidates,
                              Hist& hInvMassCharmBaryon,
@@ -309,7 +309,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       df.setBz(magneticField);
 
-      auto trackCharmBachelor = cand.prong0_as<TracksWCovDca>();
+      auto trackCharmBachelorId = cand.prong0Id();
+      auto trackCharmBachelor = tracks.rawIteratorAt(trackCharmBachelorId);
 
       auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
       hCascadesCounter->Fill(0);
@@ -319,9 +320,12 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       auto casc = cascAodElement.cascData_as<MyCascTable>();
       hCascadesCounter->Fill(1);
-      auto trackCascDauCharged = casc.bachelor_as<MyLFTracksWCov>(); // pion <- xi track
-      auto trackV0Dau0 = casc.posTrack_as<MyLFTracksWCov>();         // V0 positive daughter track
-      auto trackV0Dau1 = casc.negTrack_as<MyLFTracksWCov>();         // V0 negative daughter track
+      auto trackCascDauChargedId = casc.bachelorId();                           // pion <- xi track
+      auto trackV0Dau0Id = casc.posTrackId();                                   // V0 positive daughter track
+      auto trackV0Dau1Id = casc.negTrackId();                                   // V0 negative daughter track
+      auto trackCascDauCharged = lfTracks.rawIteratorAt(trackCascDauChargedId); // pion <- xi track
+      auto trackV0Dau0 = lfTracks.rawIteratorAt(trackV0Dau0Id);                 // V0 positive daughter track
+      auto trackV0Dau1 = lfTracks.rawIteratorAt(trackV0Dau1Id);                 // V0 negative daughter track
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
@@ -1005,7 +1009,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                            CascadesLinked const& cascadeLinks,
                            aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
+    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToXiPi, "Run candidate creator w/o centrality selections for xi pi decay channel", true);
 
@@ -1017,7 +1021,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                               CascadesLinked const& cascadeLinks,
                               aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
+    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToOmegaPi, "Run candidate creator w/o centrality selections for omega pi decay channel", false);
 
@@ -1040,7 +1044,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                              CascadesLinked const& cascadeLinks,
                              aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToOmegaK, "Run candidate creator w/o centrality selections for omega K decay channel", false);
 
@@ -1053,7 +1057,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                              CascadesLinked const& cascadeLinks,
                              aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
+    runXic0Omegac0Creator<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CToXiPi, "Run candidate creator w/ centrality selection on FT0C for xi pi channel", false);
 
@@ -1065,7 +1069,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                                 CascadesLinked const& cascadeLinks,
                                 aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
+    runXic0Omegac0Creator<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CToOmegaPi, "Run candidate creator w/ centrality selection on FT0C for omega pi channel", false);
 
@@ -1077,7 +1081,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                                CascadesLinked const& cascadeLinks,
                                aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+    runXic0Omegac0Creator<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CToOmegaK, "Run candidate creator w/ centrality selection on FT0C for omega K channel", false);
 
@@ -1090,7 +1094,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                              CascadesLinked const& cascadeLinks,
                              aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
+    runXic0Omegac0Creator<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MToXiPi, "Run candidate creator w/ centrality selection on FT0M for xi pi channel", false);
 
@@ -1102,7 +1106,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                                 CascadesLinked const& cascadeLinks,
                                 aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
+    runXic0Omegac0Creator<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MToOmegaPi, "Run candidate creator w/ centrality selection on FT0M for omega pi channel", false);
 
@@ -1114,7 +1118,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                                CascadesLinked const& cascadeLinks,
                                aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, lfTracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+    runXic0Omegac0Creator<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MToOmegaK, "Run candidate creator w/ centrality selection on FT0M for omega K channel", false);
 

@@ -142,6 +142,7 @@ struct hJetAnalysis {
     int trig_number = 0;
     int n_TT = 0;
     double leadingPT = 0;
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     float dice = rand->Rndm();
     if (dice < frac_sig)
@@ -182,6 +183,9 @@ struct hJetAnalysis {
     }
 
     for (auto& jet : jets) {
+      if (jet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
       registry.fill(HIST("hJetPt"), jet.pt(), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
@@ -255,6 +259,7 @@ struct hJetAnalysis {
     int trig_number = 0;
     int n_TT = 0;
     double leadingPT = 0;
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     float dice = rand->Rndm();
     if (dice < frac_sig)
@@ -292,6 +297,9 @@ struct hJetAnalysis {
     }
 
     for (auto& jet : jets) {
+      if (jet.pt() > pTHatMaxMCP * pTHat) {
+        continue;
+      }
       registry.fill(HIST("hJetPt"), jet.pt(), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
@@ -369,6 +377,9 @@ struct hJetAnalysis {
 
     for (const auto& mcdjetWTA : mcdjetsWTA) {
       double djet = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jetBase.phi() - mcdjetWTA.phi(), -o2::constants::math::PI), jetBase.eta() - mcdjetWTA.eta());
+      if (mcdjetWTA.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
       if (djet < 0.6 * jetR) {
         dR = djet;
         break;
@@ -382,6 +393,9 @@ struct hJetAnalysis {
         }
         for (const auto& mcpjetWTA : mcpjetsWTA) {
           double djetp = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jetTag.phi() - mcpjetWTA.phi(), -o2::constants::math::PI), jetTag.eta() - mcpjetWTA.eta());
+          if (mcpjetWTA.pt() > pTHatMaxMCP * pTHat) {
+            continue;
+          }
           if (djetp < 0.6 * jetR) {
             dRp = djetp;
             break;
@@ -391,11 +405,9 @@ struct hJetAnalysis {
         registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
         registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - jetBase.pt()) / jetTag.pt(), weight);
         registry.fill(HIST("hPhiResolution"), jetTag.pt(), jetTag.phi() - jetBase.phi(), weight);
-        if (jetBase.pt() > 5 || jetTag.pt() > 5) {
-          registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
-          registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
-          registry.fill(HIST("hFullMatching"), jetBase.pt(), jetTag.pt(), jetBase.phi(), jetTag.phi(), dR, dRp, weight);
-        }
+        registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
+        registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
+        registry.fill(HIST("hFullMatching"), jetBase.pt(), jetTag.pt(), jetBase.phi(), jetTag.phi(), dR, dRp, weight);
       }
     }
   }
