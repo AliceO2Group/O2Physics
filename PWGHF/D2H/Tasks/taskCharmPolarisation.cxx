@@ -171,9 +171,9 @@ struct TaskPolarisationCharmHadrons {
   struct : ConfigurableGroup {
     /// monitoring histograms (Dalitz plot)
     Configurable<bool> activateTHnLcChannelMonitor{"activateTHnLcChannelMonitor", false, "Flag to switch on the monitoring THnSparse of M2(Kpi), M2(pK), M2(ppi), pt correlation for Lc -> pKpi"};
-    ConfigurableAxis configThnAxisInvMass2KPiLcMonitoring{"configThnAxisInvMassKPiLcMonitoring", {180, 0.2f, 2.f}, "#it{M}^{2}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
-    ConfigurableAxis configThnAxisInvMass2PKLcMonitoring{"configThnAxisInvMass2PKLcMonitoring", {300, 2.f, 5.f}, "#it{M}^{2}(pK) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
-    ConfigurableAxis configThnAxisInvMass2PPiLcMonitoring{"configThnAxisInvMass2PPiLcMonitoring", {300, 2.f, 5.f}, "#it{M}^{2}(p#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+    ConfigurableAxis configThnAxisInvMass2KPiLcMonitoring{"configThnAxisInvMassKPiLcMonitoring", {180, 0.3f, 2.1f}, "#it{M}^{2}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+    ConfigurableAxis configThnAxisInvMass2PKLcMonitoring{"configThnAxisInvMass2PKLcMonitoring", {320, 2.f, 5.2f}, "#it{M}^{2}(pK) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+    ConfigurableAxis configThnAxisInvMass2PPiLcMonitoring{"configThnAxisInvMass2PPiLcMonitoring", {400, 1.f, 5.f}, "#it{M}^{2}(p#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
 
     /// veto conditions on Lc->pKpi signals
     Configurable<bool> applyLcSignalVeto{"applyLcSignalVeto", false, "Flag to enable the veto on Lc->pKpi resonant channels"};
@@ -450,7 +450,7 @@ struct TaskPolarisationCharmHadrons {
 
     /// control plots for Lc->pKPi
     if ((doprocessLcToPKPi || doprocessLcToPKPiWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl) && lcPKPiChannels.activateTHnLcChannelMonitor) {
-      registry.add("hMass2PairsLcPKPi", "THnSparse to monitor M2(Kpi), M2(pK), M2(ppi), pt correlation for Lc -> pKpi", HistType::kTHnSparseF, {thnAxisInvMass2KPiLcMonitoring, thnAxisInvMass2PKLcMonitoring, thnAxisInvMass2PPiLcMonitoring, thnAxisPt})
+      registry.add("hMass2PairsLcPKPi", "THnSparse to monitor M2(Kpi), M2(pK), M2(ppi), pt correlation for Lc -> pKpi", HistType::kTHnSparseF, {thnAxisInvMass2KPiLcMonitoring, thnAxisInvMass2PKLcMonitoring, thnAxisInvMass2PPiLcMonitoring, thnAxisPt});
     }
 
     // inv. mass hypothesis to loop over
@@ -1049,11 +1049,11 @@ struct TaskPolarisationCharmHadrons {
         double invMass2PKLc = invMassPKLc*invMassPKLc;
         double invMass2PPiLc = invMassPPiLc*invMassPPiLc;
         if (lcPKPiChannels.activateTHnLcChannelMonitor) {
-          registry.fill(HIST("hMass2PairsLcPKPi"), invMass2KPiLc, invMass2PKLc, invMass2PPiLc);
+          registry.fill(HIST("hMass2PairsLcPKPi"), invMass2KPiLc, invMass2PKLc, invMass2PPiLc, candidate.pt());
         }
 
         /// veto cut on pair masses
-        if (lcPKPiChannels.applyLcSignalVeto && mass2PPiLcMinVeto < invMass2PPiLc && invMass2PPiLc < mass2PPiLcMaxVeto) {
+        if (lcPKPiChannels.applyLcSignalVeto && lcPKPiChannels.mass2PPiLcMinVeto < invMass2PPiLc && invMass2PPiLc < lcPKPiChannels.mass2PPiLcMaxVeto) {
           /// this candidate has a significant contribution from Lc+ -> Delta++ K-, let's reject it
           continue;
         }
