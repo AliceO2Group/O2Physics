@@ -35,22 +35,6 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jd0indices
 
-namespace d0bccounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndITSROFBAndNoTFB, readCountsWithTVXAndITSROFBAndNoTFB, std::vector<int>);
-} // namespace d0bccounter
-
-namespace d0collisioncounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelection, readCountsWithTVXAndSelection, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelectionAndZVertex, readCountsWithTVXAndSelectionAndZVertex, std::vector<int>);
-DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
-} // namespace d0collisioncounter
-
 DECLARE_SOA_TABLE(JD0CollisionIds, "AOD", "JD0COLLID",
                   jd0indices::JCollisionId);
 
@@ -85,18 +69,6 @@ DECLARE_SOA_TABLE(StoredJD0PIds, "AOD1", "JD0PID",
                   jd0indices::JMcParticleId,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(D0BCCounts, "AOD", "D0BCCOUNT",
-                  d0bccounter::ReadCounts,
-                  d0bccounter::ReadCountsWithTVX,
-                  d0bccounter::ReadCountsWithTVXAndITSROFBAndNoTFB);
-
-DECLARE_SOA_TABLE(D0CollisionCounts, "AOD", "D0COLLCOUNT",
-                  d0collisioncounter::ReadCounts,
-                  d0collisioncounter::ReadCountsWithTVX,
-                  d0collisioncounter::ReadCountsWithTVXAndSelection,
-                  d0collisioncounter::ReadCountsWithTVXAndSelectionAndZVertex,
-                  d0collisioncounter::WrittenCounts);
-
 namespace jlcindices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
@@ -106,22 +78,6 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
 DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jlcindices
-
-namespace lcbccounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndITSROFBAndNoTFB, readCountsWithTVXAndITSROFBAndNoTFB, std::vector<int>);
-} // namespace lcbccounter
-
-namespace lccollisioncounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelection, readCountsWithTVXAndSelection, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelectionAndZVertex, readCountsWithTVXAndSelectionAndZVertex, std::vector<int>);
-DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
-} // namespace lccollisioncounter
 
 DECLARE_SOA_TABLE(JLcCollisionIds, "AOD", "JLCCOLLID",
                   jlcindices::JCollisionId);
@@ -158,18 +114,6 @@ DECLARE_SOA_TABLE(StoredJLcPIds, "AOD1", "JLCPID",
                   jlcindices::JMcCollisionId,
                   jlcindices::JMcParticleId,
                   o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(LcBCCounts, "AOD", "LCBCCOUNT",
-                  lcbccounter::ReadCounts,
-                  lcbccounter::ReadCountsWithTVX,
-                  lcbccounter::ReadCountsWithTVXAndITSROFBAndNoTFB);
-
-DECLARE_SOA_TABLE(LcCollisionCounts, "AOD", "LCCOLLCOUNT",
-                  lccollisioncounter::ReadCounts,
-                  lccollisioncounter::ReadCountsWithTVX,
-                  lccollisioncounter::ReadCountsWithTVXAndSelection,
-                  lccollisioncounter::ReadCountsWithTVXAndSelectionAndZVertex,
-                  lccollisioncounter::WrittenCounts);
 
 } // namespace o2::aod
 

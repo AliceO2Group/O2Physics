@@ -47,6 +47,8 @@
 #include "ALICE3/DataModel/RICH.h"
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
+#include "ALICE3/DataModel/OTFMulticharm.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,10 +66,13 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 using labeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
 using richTracks = soa::Join<aod::Tracks, aod::RICHs>;
-using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA>;
+using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
 
 struct alice3multicharm {
   SliceCache cache;
+
+  Produces<aod::MCharmIndices> multiCharmIdx;
+  Produces<aod::MCharmCores> multiCharmCore;
 
   // Operation and minimisation criteria
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
@@ -83,7 +88,7 @@ struct alice3multicharm {
   Configurable<float> xiFromXiC_dcaXYconstant{"xiFromXiC_dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> xiFromXiC_dcaXYpTdep{"xiFromXiC_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
 
-  ConfigurableAxis axisEta{"axisEta", {8, -4.0f, +4.0f}, "#eta"};
+  ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
   ConfigurableAxis axisDCA{"axisDCA", {200, -100, 100}, "DCA (#mum)"};
 
@@ -126,7 +131,18 @@ struct alice3multicharm {
     std::array<float, 3> prong1mom;
     std::array<float, 3> prong2mom;
     std::array<float, 21> parentTrackCovMatrix;
-  } thisCandidate;
+  } thisXiCcandidate;
+
+  struct {
+    float dca;
+    float mass;
+    float pt;
+    float eta;
+    std::array<float, 3> xyz;
+    std::array<float, 3> prong0mom;
+    std::array<float, 3> prong1mom;
+    std::array<float, 21> parentTrackCovMatrix;
+  } thisXiCCcandidate;
 
   template <typename TTrackType>
   bool buildDecayCandidateTwoBody(TTrackType const& t0, TTrackType const& t1, float mass0, float mass1)
@@ -146,18 +162,18 @@ struct alice3multicharm {
 
     o2::track::TrackParCov t0new = fitter.getTrack(0);
     o2::track::TrackParCov t1new = fitter.getTrack(1);
-    t0new.getPxPyPzGlo(thisCandidate.prong0mom);
-    t1new.getPxPyPzGlo(thisCandidate.prong1mom);
+    t0new.getPxPyPzGlo(thisXiCCcandidate.prong0mom);
+    t1new.getPxPyPzGlo(thisXiCCcandidate.prong1mom);
 
     // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
     for (int i = 0; i < 3; i++) {
-      thisCandidate.xyz[i] = vtx[i];
+      thisXiCCcandidate.xyz[i] = vtx[i];
     }
 
     // compute cov mat
     for (int ii = 0; ii < 21; ii++)
-      thisCandidate.parentTrackCovMatrix[ii] = 0.0f;
+      thisXiCCcandidate.parentTrackCovMatrix[ii] = 0.0f;
 
     std::array<float, 21> covA = {0};
     std::array<float, 21> covB = {0};
@@ -167,22 +183,22 @@ struct alice3multicharm {
     const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
     for (int i = 0; i < 6; i++) {
       int j = momInd[i];
-      thisCandidate.parentTrackCovMatrix[j] = covA[j] + covB[j];
+      thisXiCCcandidate.parentTrackCovMatrix[j] = covA[j] + covB[j];
     }
 
     auto covVtx = fitter.calcPCACovMatrix();
-    thisCandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
-    thisCandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
-    thisCandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
-    thisCandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
-    thisCandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
-    thisCandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
+    thisXiCCcandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
+    thisXiCCcandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
+    thisXiCCcandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
+    thisXiCCcandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
+    thisXiCCcandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
+    thisXiCCcandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
 
     // set relevant values
-    thisCandidate.dca = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    thisCandidate.mass = RecoDecay::m(array{array{thisCandidate.prong0mom[0], thisCandidate.prong0mom[1], thisCandidate.prong0mom[2]}, array{thisCandidate.prong1mom[0], thisCandidate.prong1mom[1], thisCandidate.prong1mom[2]}}, array{mass0, mass1});
-    thisCandidate.pt = std::hypot(thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0], thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1]);
-    thisCandidate.eta = RecoDecay::eta(array{thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0], thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1], thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2]});
+    thisXiCCcandidate.dca = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+    thisXiCCcandidate.mass = RecoDecay::m(array{array{thisXiCCcandidate.prong0mom[0], thisXiCCcandidate.prong0mom[1], thisXiCCcandidate.prong0mom[2]}, array{thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong1mom[2]}}, array{mass0, mass1});
+    thisXiCCcandidate.pt = std::hypot(thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1]);
+    thisXiCCcandidate.eta = RecoDecay::eta(array{thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]});
     return true;
   }
 
@@ -209,19 +225,19 @@ struct alice3multicharm {
     t0 = fitter3.getTrack(0);
     t1 = fitter3.getTrack(1);
     t2 = fitter3.getTrack(2);
-    t0.getPxPyPzGlo(thisCandidate.prong0mom);
-    t1.getPxPyPzGlo(thisCandidate.prong1mom);
-    t2.getPxPyPzGlo(thisCandidate.prong2mom);
+    t0.getPxPyPzGlo(thisXiCcandidate.prong0mom);
+    t1.getPxPyPzGlo(thisXiCcandidate.prong1mom);
+    t2.getPxPyPzGlo(thisXiCcandidate.prong2mom);
 
     // get decay vertex coordinates
     const auto& vtx = fitter3.getPCACandidate();
     for (int i = 0; i < 3; i++) {
-      thisCandidate.xyz[i] = vtx[i];
+      thisXiCcandidate.xyz[i] = vtx[i];
     }
 
     // compute cov mat
     for (int ii = 0; ii < 21; ii++)
-      thisCandidate.parentTrackCovMatrix[ii] = 0.0f;
+      thisXiCcandidate.parentTrackCovMatrix[ii] = 0.0f;
 
     std::array<float, 21> covA = {0};
     std::array<float, 21> covB = {0};
@@ -233,22 +249,22 @@ struct alice3multicharm {
     const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
     for (int i = 0; i < 6; i++) {
       int j = momInd[i];
-      thisCandidate.parentTrackCovMatrix[j] = covA[j] + covB[j] + covC[j];
+      thisXiCcandidate.parentTrackCovMatrix[j] = covA[j] + covB[j] + covC[j];
     }
 
     auto covVtx = fitter3.calcPCACovMatrix();
-    thisCandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
-    thisCandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
-    thisCandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
-    thisCandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
-    thisCandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
-    thisCandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
+    thisXiCcandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
+    thisXiCcandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
+    thisXiCcandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
+    thisXiCcandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
+    thisXiCcandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
+    thisXiCcandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
 
     // set relevant values
-    thisCandidate.dca = TMath::Sqrt(fitter3.getChi2AtPCACandidate());
-    thisCandidate.mass = RecoDecay::m(array{array{thisCandidate.prong0mom[0], thisCandidate.prong0mom[1], thisCandidate.prong0mom[2]}, array{thisCandidate.prong1mom[0], thisCandidate.prong1mom[1], thisCandidate.prong1mom[2]}, array{thisCandidate.prong2mom[0], thisCandidate.prong2mom[1], thisCandidate.prong2mom[2]}}, array{p0mass, p1mass, p2mass});
-    thisCandidate.pt = std::hypot(thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0], thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1]);
-    thisCandidate.eta = RecoDecay::eta(array{thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0], thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1], thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2] + thisCandidate.prong2mom[2]});
+    thisXiCcandidate.dca = TMath::Sqrt(fitter3.getChi2AtPCACandidate());
+    thisXiCcandidate.mass = RecoDecay::m(array{array{thisXiCcandidate.prong0mom[0], thisXiCcandidate.prong0mom[1], thisXiCcandidate.prong0mom[2]}, array{thisXiCcandidate.prong1mom[0], thisXiCcandidate.prong1mom[1], thisXiCcandidate.prong1mom[2]}, array{thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong2mom[1], thisXiCcandidate.prong2mom[2]}}, array{p0mass, p1mass, p2mass});
+    thisXiCcandidate.pt = std::hypot(thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1]);
+    thisXiCcandidate.eta = RecoDecay::eta(array{thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1], thisXiCcandidate.prong0mom[2] + thisXiCcandidate.prong1mom[2] + thisXiCcandidate.prong2mom[2]});
     return true;
   }
 
@@ -313,6 +329,10 @@ struct alice3multicharm {
     histos.add("hMassXi", "hMassXi", kTH1F, {axisXiMass});
     histos.add("hMassXiC", "hMassXiC", kTH1F, {axisXiCMass});
     histos.add("hMassXiCC", "hMassXiCC", kTH1F, {axisXiCCMass});
+
+    histos.add("hEtaXiCC", "hEtaXiCC", kTH1F, {axisEta});
+    histos.add("hPtXiCC", "hPtXiCC", kTH1F, {axisPt});
+    histos.add("h3dMassXiCC", "h3dMassXiCC", kTH3F, {axisPt, axisEta, axisXiCCMass});
 
     histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1F, {axisDCAXiCDaughters});
     histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1F, {axisDCAXiCCDaughters});
@@ -398,14 +418,14 @@ struct alice3multicharm {
           histos.fill(HIST("hCharmBuilding"), 1.0f);
 
           const std::array<float, 3> momentumC = {
-            thisCandidate.prong0mom[0] + thisCandidate.prong1mom[0] + thisCandidate.prong2mom[0],
-            thisCandidate.prong0mom[1] + thisCandidate.prong1mom[1] + thisCandidate.prong2mom[1],
-            thisCandidate.prong0mom[2] + thisCandidate.prong1mom[2] + thisCandidate.prong2mom[2]};
+            thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0],
+            thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1],
+            thisXiCcandidate.prong0mom[2] + thisXiCcandidate.prong1mom[2] + thisXiCcandidate.prong2mom[2]};
 
-          o2::track::TrackParCov xicTrack(thisCandidate.xyz, momentumC, thisCandidate.parentTrackCovMatrix, +1);
+          o2::track::TrackParCov xicTrack(thisXiCcandidate.xyz, momentumC, thisXiCcandidate.parentTrackCovMatrix, +1);
 
-          histos.fill(HIST("hMassXiC"), thisCandidate.mass);
-          histos.fill(HIST("hDCAXiCDaughters"), thisCandidate.dca);
+          histos.fill(HIST("hMassXiC"), thisXiCcandidate.mass);
+          histos.fill(HIST("hDCAXiCDaughters"), thisXiCcandidate.dca);
 
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
@@ -421,8 +441,17 @@ struct alice3multicharm {
               continue; // failed at building candidate
             histos.fill(HIST("hCharmBuilding"), 3.0f);
 
-            histos.fill(HIST("hMassXiCC"), thisCandidate.mass);
-            histos.fill(HIST("hDCAXiCCDaughters"), thisCandidate.dca);
+            histos.fill(HIST("hMassXiCC"), thisXiCCcandidate.mass);
+            histos.fill(HIST("hPtXiCC"), thisXiCCcandidate.pt);
+            histos.fill(HIST("hEtaXiCC"), thisXiCCcandidate.eta);
+            histos.fill(HIST("h3dMassXiCC"), thisXiCCcandidate.pt, thisXiCCcandidate.eta, thisXiCCcandidate.mass);
+            histos.fill(HIST("hDCAXiCCDaughters"), thisXiCCcandidate.dca);
+
+            // produce multi-charm table for posterior analysis
+            multiCharmCore(
+              thisXiCcandidate.dca, thisXiCCcandidate.dca,
+              thisXiCcandidate.mass, thisXiCCcandidate.mass,
+              thisXiCCcandidate.pt, thisXiCCcandidate.eta);
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
         }

@@ -47,6 +47,16 @@ o2physics_add_dpl_workflow(jet-deriveddata-writer
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(jet-luminosity-producer
+                    SOURCES luminosityproducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-luminosity-calculator
+                    SOURCES luminositycalculator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(jet-matching-mc
                     SOURCES jetmatchingmc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
