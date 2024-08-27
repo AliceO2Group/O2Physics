@@ -36,7 +36,8 @@ DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndITSROFBAndNoTFB, readCountsWithTVXAndITSROFBAndNoTFB, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndNoTFB, readCountsWithTVXAndNoTFB, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndNoTFBAndNoITSROFB, readCountsWithTVXAndNoTFBAndNoITSROFB, std::vector<int>);
 } // namespace jbc
 
 DECLARE_SOA_TABLE(JBCs, "AOD", "JBC",
@@ -70,12 +71,14 @@ DECLARE_SOA_TABLE(StoredJBCPIs, "AOD1", "JBCPI",
 DECLARE_SOA_TABLE(BCCounts, "AOD", "BCCOUNT",
                   jbc::ReadCounts,
                   jbc::ReadCountsWithTVX,
-                  jbc::ReadCountsWithTVXAndITSROFBAndNoTFB);
+                  jbc::ReadCountsWithTVXAndNoTFB,
+                  jbc::ReadCountsWithTVXAndNoTFBAndNoITSROFB);
 
 DECLARE_SOA_TABLE(StoredBCCounts, "AOD1", "BCCOUNT",
                   jbc::ReadCounts,
                   jbc::ReadCountsWithTVX,
-                  jbc::ReadCountsWithTVXAndITSROFBAndNoTFB,
+                  jbc::ReadCountsWithTVXAndNoTFB,
+                  jbc::ReadCountsWithTVXAndNoTFBAndNoITSROFB,
                   o2::soa::Marker<1>);
 
 namespace jcollision
@@ -96,9 +99,16 @@ DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelection, readCountsWithTVXAndSelection, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelectionAndZVertex, readCountsWithTVXAndSelectionAndZVertex, std::vector<int>);
-DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8, readCountsWithTVXAndZVertexAndSel8, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8Full, readCountsWithTVXAndZVertexAndSel8Full, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8FullPbPb, readCountsWithTVXAndZVertexAndSel8FullPbPb, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMC, readCountsWithTVXAndZVertexAndSelMC, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFull, readCountsWithTVXAndZVertexAndSelMCFull, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFullPbPb, readCountsWithTVXAndZVertexAndSelMCFullPbPb, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelUnanchoredMC, readCountsWithTVXAndZVertexAndSelUnanchoredMC, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelTVX, readCountsWithTVXAndZVertexAndSelTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7, readCountsWithTVXAndZVertexAndSel7, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7KINT7, readCountsWithTVXAndZVertexAndSel7KINT7, std::vector<int>);
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
 DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
 } // namespace jcollision
@@ -169,16 +179,30 @@ DECLARE_SOA_TABLE(JChHFTrigSels, "AOD", "JCHHFTRIGSEL",
 DECLARE_SOA_TABLE(CollisionCounts, "AOD", "COLLCOUNT",
                   jcollision::ReadCounts,
                   jcollision::ReadCountsWithTVX,
-                  jcollision::ReadCountsWithTVXAndSelection,
-                  jcollision::ReadCountsWithTVXAndSelectionAndZVertex,
-                  jcollision::WrittenCounts);
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8Full,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8FullPbPb,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMC,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMCFull,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMCFullPbPb,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelUnanchoredMC,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelTVX,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel7,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7);
 
 DECLARE_SOA_TABLE(StoredCollisionCounts, "AOD1", "COLLCOUNT",
                   jcollision::ReadCounts,
                   jcollision::ReadCountsWithTVX,
-                  jcollision::ReadCountsWithTVXAndSelection,
-                  jcollision::ReadCountsWithTVXAndSelectionAndZVertex,
-                  jcollision::WrittenCounts,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8Full,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8FullPbPb,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMC,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMCFull,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMCFullPbPb,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelUnanchoredMC,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelTVX,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel7,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7,
                   o2::soa::Marker<1>);
 
 namespace jmccollision

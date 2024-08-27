@@ -52,22 +52,6 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jdielectronindices
 
-namespace dielectronbccounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndITSROFBAndNoTFB, readCountsWithTVXAndITSROFBAndNoTFB, std::vector<int>);
-} // namespace dielectronbccounter
-
-namespace dielectroncollisioncounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelection, readCountsWithTVXAndSelection, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSelectionAndZVertex, readCountsWithTVXAndSelectionAndZVertex, std::vector<int>);
-DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
-} // namespace dielectroncollisioncounter
-
 DECLARE_SOA_TABLE(JDielectronCollisionIds, "AOD", "JDIELCOLLID",
                   jdielectronindices::JCollisionId);
 
@@ -92,18 +76,6 @@ DECLARE_SOA_TABLE(StoredJDielectronIds, "AOD1", "JDIELID",
                   jdielectronindices::Prong0Id,
                   jdielectronindices::Prong1Id,
                   o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(DielectronBCCounts, "AOD", "DIELBCCOUNT",
-                  dielectronbccounter::ReadCounts,
-                  dielectronbccounter::ReadCountsWithTVX,
-                  dielectronbccounter::ReadCountsWithTVXAndITSROFBAndNoTFB);
-
-DECLARE_SOA_TABLE(DielectronCollisionCounts, "AOD", "DIELCOLLCOUNT",
-                  dielectroncollisioncounter::ReadCounts,
-                  dielectroncollisioncounter::ReadCountsWithTVX,
-                  dielectroncollisioncounter::ReadCountsWithTVXAndSelection,
-                  dielectroncollisioncounter::ReadCountsWithTVXAndSelectionAndZVertex,
-                  dielectroncollisioncounter::WrittenCounts);
 
 namespace jdielectronmc
 {

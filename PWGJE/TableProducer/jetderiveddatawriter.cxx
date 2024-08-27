@@ -78,8 +78,6 @@ struct JetDerivedDataWriter {
   } config;
 
   struct : ProducesGroup {
-    Produces<aod::StoredBCCounts> storedBCCountsTable;
-    Produces<aod::StoredCollisionCounts> storedCollisionCountsTable;
     Produces<aod::StoredJDummys> storedJDummysTable;
     Produces<aod::StoredJBCs> storedJBCsTable;
     Produces<aod::StoredJBCPIs> storedJBCParentIndexTable;
@@ -363,108 +361,6 @@ struct JetDerivedDataWriter {
     products.storedJDummysTable(1);
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processStoreDummyTable, "write out dummy output table", true);
-
-  void processStoreBCCounting(aod::JBCs const& bcs, aod::BCCounts const& bcCounts)
-  {
-    int readBCCounter = 0;
-    int readBCWithTVXCounter = 0;
-    int readBCWithTVXAndITSROFBAndNoTFBCounter = 0;
-    for (const auto& bc : bcs) {
-      readBCCounter++;
-      if (bc.selection_bit(aod::evsel::EventSelectionFlags::kIsTriggerTVX)) {
-        readBCWithTVXCounter++;
-        if (bc.selection_bit(aod::evsel::EventSelectionFlags::kNoITSROFrameBorder) && bc.selection_bit(aod::evsel::EventSelectionFlags::kNoTimeFrameBorder)) {
-          readBCWithTVXAndITSROFBAndNoTFBCounter++;
-        }
-      }
-    }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadCountsWithTVX;
-    std::vector<int> previousReadCountsWithTVXAndITSROFBAndNoTFB;
-    int iPreviousDataFrame = 0;
-    for (const auto& bcCount : bcCounts) {
-      auto readBCCounterSpan = bcCount.readCounts();
-      auto readBCWithTVXCounterSpan = bcCount.readCountsWithTVX();
-      auto readBCWithTVXAndITSROFBAndNoTFBCounterSpan = bcCount.readCountsWithTVXAndITSROFBAndNoTFB();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readBCCounterSpan.begin(), readBCCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readBCWithTVXCounterSpan.begin(), readBCWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
-        std::copy(readBCWithTVXAndITSROFBAndNoTFBCounterSpan.begin(), readBCWithTVXAndITSROFBAndNoTFBCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndITSROFBAndNoTFB));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
-          previousReadCounts[i] += readBCCounterSpan[i];
-          previousReadCountsWithTVX[i] += readBCWithTVXCounterSpan[i];
-          previousReadCountsWithTVXAndITSROFBAndNoTFB[i] += readBCWithTVXAndITSROFBAndNoTFBCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readBCCounter);
-    previousReadCountsWithTVX.push_back(readBCWithTVXCounter);
-    previousReadCountsWithTVXAndITSROFBAndNoTFB.push_back(readBCWithTVXAndITSROFBAndNoTFBCounter);
-    products.storedBCCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndITSROFBAndNoTFB);
-  }
-  PROCESS_SWITCH(JetDerivedDataWriter, processStoreBCCounting, "write out bc counting output table", true);
-
-  void processStoreCollisionCounting(aod::JCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
-  {
-    int readCollisionCounter = 0;
-    int readCollisionWithTVXCounter = 0;
-    int readCollisionWithTVXAndSelectionCounter = 0;
-    int readCollisionWithTVXAndSelectionAndZVertexCounter = 0;
-    int writtenCollisionCounter = 0;
-    for (const auto& collision : collisions) {
-      readCollisionCounter++;
-      if (collisionFlag[collision.globalIndex()]) {
-        writtenCollisionCounter++;
-      }
-      if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::selTVX)) {
-        readCollisionWithTVXCounter++;
-        if (jetderiveddatautilities::selectCollision(collision, eventSelection)) {
-          readCollisionWithTVXAndSelectionCounter++;
-          if (std::abs(collision.posZ()) < config.vertexZCutForCounting) {
-            readCollisionWithTVXAndSelectionAndZVertexCounter++;
-          }
-        }
-      }
-    }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadCountsWithTVX;
-    std::vector<int> previousReadCountsWithTVXAndSelection;
-    std::vector<int> previousReadCountsWithTVXAndSelectionAndZVertex;
-    std::vector<int> previousWrittenCounts;
-    int iPreviousDataFrame = 0;
-    for (const auto& collisionCount : collisionCounts) {
-      auto readCollisionCounterSpan = collisionCount.readCounts();
-      auto readCollisionWithTVXCounterSpan = collisionCount.readCountsWithTVX();
-      auto readCollisionWithTVXAndSelectionCounterSpan = collisionCount.readCountsWithTVXAndSelection();
-      auto readCollisionWithTVXAndSelectionAndZVertexCounterSpan = collisionCount.readCountsWithTVXAndSelectionAndZVertex();
-      auto writtenCollisionCounterSpan = collisionCount.writtenCounts();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readCollisionWithTVXCounterSpan.begin(), readCollisionWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
-        std::copy(readCollisionWithTVXAndSelectionCounterSpan.begin(), readCollisionWithTVXAndSelectionCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndSelection));
-        std::copy(readCollisionWithTVXAndSelectionAndZVertexCounterSpan.begin(), readCollisionWithTVXAndSelectionAndZVertexCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndSelectionAndZVertex));
-        std::copy(writtenCollisionCounterSpan.begin(), writtenCollisionCounterSpan.end(), std::back_inserter(previousWrittenCounts));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
-          previousReadCounts[i] += readCollisionCounterSpan[i];
-          previousReadCountsWithTVX[i] += readCollisionWithTVXCounterSpan[i];
-          previousReadCountsWithTVXAndSelection[i] += readCollisionWithTVXAndSelectionCounterSpan[i];
-          previousReadCountsWithTVXAndSelectionAndZVertex[i] += readCollisionWithTVXAndSelectionAndZVertexCounterSpan[i];
-          previousWrittenCounts[i] += writtenCollisionCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readCollisionCounter);
-    previousReadCountsWithTVX.push_back(readCollisionWithTVXCounter);
-    previousReadCountsWithTVXAndSelection.push_back(readCollisionWithTVXAndSelectionCounter);
-    previousReadCountsWithTVXAndSelectionAndZVertex.push_back(readCollisionWithTVXAndSelectionAndZVertexCounter);
-    previousWrittenCounts.push_back(writtenCollisionCounter);
-    products.storedCollisionCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndSelection, previousReadCountsWithTVXAndSelectionAndZVertex, previousWrittenCounts);
-  }
-  PROCESS_SWITCH(JetDerivedDataWriter, processStoreCollisionCounting, "write out collision counting output table", true);
 
   void processStoreData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JEMCCollisionLbs>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, CollisionsD0 const& D0Collisions, CandidatesD0Data const& D0s, CollisionsLc const& LcCollisions, CandidatesLcData const& Lcs, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronData const& Dielectrons)
   {
