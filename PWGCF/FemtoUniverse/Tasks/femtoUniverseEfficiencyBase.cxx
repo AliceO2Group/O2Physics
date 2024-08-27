@@ -46,6 +46,7 @@ struct femtoUniverseEfficiencyBase {
   /// Configurables for both particles
   Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
   Configurable<float> ConfMomProton{"ConfMomProton", 0.75, "Momentum threshold for proton identification using TOF"};
+  Configurable<bool> IsKaonRun2{"IsKaonRun2", false, "Enable kaon selection used in Run2"}; // to check consistency with Run2 results
 
   /// Particle 1
   Configurable<int32_t> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
@@ -166,40 +167,54 @@ struct femtoUniverseEfficiencyBase {
 
   bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
-    if (mom < 0.3) { // 0.0-0.3
-      if (TMath::Abs(nsigmaTPCK) < 3.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.45) { // 0.30 - 0.45
-      if (TMath::Abs(nsigmaTPCK) < 2.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.55) { // 0.45-0.55
-      if (TMath::Abs(nsigmaTPCK) < 1.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-        {
-          return true;
-        }
-      } else {
-        return false;
-      }
-    } else if (mom > 1.5) { // 1.5 -
-      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-        return true;
+    if (IsKaonRun2 == true) {
+      if (mom < 0.4) {
+        return TMath::Abs(nsigmaTPCK) < 2;
+      } else if (mom > 0.4 && mom < 0.45) {
+        return TMath::Abs(nsigmaTPCK) < 1;
+      } else if (mom > 0.45 && mom < 0.8) {
+        return (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 2);
+      } else if (mom > 0.8 && mom < 1.5) {
+        return (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 1.5);
       } else {
         return false;
       }
     } else {
-      return false;
+      if (mom < 0.3) { // 0.0-0.3
+        if (TMath::Abs(nsigmaTPCK) < 3.0) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom < 0.45) { // 0.30 - 0.45
+        if (TMath::Abs(nsigmaTPCK) < 2.0) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom < 0.55) { // 0.45-0.55
+        if (TMath::Abs(nsigmaTPCK) < 1.0) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+          {
+            return true;
+          }
+        } else {
+          return false;
+        }
+      } else if (mom > 1.5) { // 1.5 -
+        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return false;
+      }
     }
   }
 
