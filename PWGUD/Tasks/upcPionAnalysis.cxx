@@ -476,20 +476,21 @@ struct UPCPionAnalysis {
       registry.fill(HIST("hSelectionCounter"), 5);
 
       for (auto t : tracks) {
-       
+
         /*if (!t.isPVContributor()) {
           continue;
         }*/
-     
-    if(!trackselector(t, parameters)) continue;
-       
+
+        if (!trackselector(t, parameters))
+          continue;
+
         int NFindable = t.tpcNClsFindable();
         int NMinusFound = t.tpcNClsFindableMinusFound();
         int NCluster = NFindable - NMinusFound;
 
-       /*if (NCluster < TPC_cluster) {
-          continue;
-        }*/
+        /*if (NCluster < TPC_cluster) {
+           continue;
+         }*/
 
         double dEdx = t.tpcSignal();
 
@@ -571,7 +572,7 @@ struct UPCPionAnalysis {
                 registry.fill(HIST("hCharge"), sign);
                 registry.fill(HIST("h4TracksPions"), onlyPionTracks.size());
 
-              if (p.Pt() < Pt_coherent) {
+                if (p.Pt() < Pt_coherent) {
                   registry.fill(HIST("hMassFourPionsCoherent"), p.M());
                 }
 

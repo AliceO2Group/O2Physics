@@ -36,13 +36,13 @@ namespace o2::aod
 {
 namespace tree
 {
-//DECLARE_SOA_COLUMN(GAPSIDE, gapside, int);
-//DECLARE_SOA_COLUMN(FT0AAMP, ft0Aamp, float); // namespace udzdc
-//DECLARE_SOA_COLUMN(FT0CAMP, ft0Camp, float);
-//DECLARE_SOA_COLUMN(FDDAAMP, fddAamp, float);
-//DECLARE_SOA_COLUMN(FDDCAMP, fddCamp, float);
-//DECLARE_SOA_COLUMN(FV0AAMP, fv0Aamp, float);
-// ZDC tables
+// DECLARE_SOA_COLUMN(GAPSIDE, gapside, int);
+// DECLARE_SOA_COLUMN(FT0AAMP, ft0Aamp, float); // namespace udzdc
+// DECLARE_SOA_COLUMN(FT0CAMP, ft0Camp, float);
+// DECLARE_SOA_COLUMN(FDDAAMP, fddAamp, float);
+// DECLARE_SOA_COLUMN(FDDCAMP, fddCamp, float);
+// DECLARE_SOA_COLUMN(FV0AAMP, fv0Aamp, float);
+//  ZDC tables
 DECLARE_SOA_COLUMN(ZAENERGY, zaenergy, float); // namespace udzdc
 DECLARE_SOA_COLUMN(ZCENERGY, zcenergy, float);
 // track tables
@@ -70,19 +70,19 @@ DECLARE_SOA_COLUMN(PTS, Pts, std::vector<float>);
 DECLARE_SOA_COLUMN(ETAS, etas, std::vector<float>);
 DECLARE_SOA_COLUMN(PHIS, Phis, std::vector<float>);
 DECLARE_SOA_COLUMN(SIGNS, Signs, std::vector<float>);
-//DECLARE_SOA_COLUMN(RAWTRACKS, rawtracks, int);
-//DECLARE_SOA_COLUMN(PTRACKS, ptracks, int);
+// DECLARE_SOA_COLUMN(RAWTRACKS, rawtracks, int);
+// DECLARE_SOA_COLUMN(PTRACKS, ptracks, int);
 
 // DECLARE_SOA_COLUMN(NTPCCLS, ntpccls,int);
 } // namespace tree
 
 DECLARE_SOA_TABLE(TREE, "AOD", "Tree", //! ZDC information
-                 // tree::GAPSIDE,
-                 // tree::FT0AAMP,
-                 // tree::FT0CAMP,
-                 // tree::FDDAAMP,
-                 // tree::FDDCAMP,
-                 // tree::FV0AAMP,
+                                       // tree::GAPSIDE,
+                                       // tree::FT0AAMP,
+                                       // tree::FT0CAMP,
+                                       // tree::FDDAAMP,
+                                       // tree::FDDCAMP,
+                                       // tree::FV0AAMP,
                   tree::ZAENERGY,
                   tree::ZCENERGY,
                   tree::PT,
@@ -108,9 +108,9 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree", //! ZDC information
                   tree::ETAS,
                   tree::PHIS,
                   tree::SIGNS
-                  //tree::RAWTRACKS,
-                  //tree::PTRACKS
-                  );
+                  // tree::RAWTRACKS,
+                  // tree::PTRACKS
+);
 
 } // namespace o2::aod
 
@@ -218,79 +218,80 @@ struct EventByEvent {
     std::vector<float> prtpcpid;
 
     TLorentzVector p;
-      
-      if (gapSide == gap_Side) {
-          
-          // registry.fill(HIST("hTracks"), tracks.size());
-          
-          if (collision.numContrib() > collcontrib_cut)
-              return;
-          
-          registry.fill(HIST("hSelectionCounter"), 4);
-          if ((collision.posZ() < -(Zvtx_cut)) || (collision.posZ() > Zvtx_cut))
-              return;
-          registry.fill(HIST("hSelectionCounter"), 5);
-          
-          for (auto t : tracks) {
-              
-              if(!trackselector(t, parameters)) continue;
-              
-              double dEdx = t.tpcSignal();
-              
-              registry.fill(HIST("hdEdx"), t.tpcInnerParam() / t.sign(), dEdx);
-              TLorentzVector a;
-              a.SetXYZM(t.px(), t.py(), t.pz(), o2::constants::physics::MassPionCharged);
-              allTracks.push_back(a);
-              auto nSigmaPi = t.tpcNSigmaPi();
-              
-              if (fabs(nSigmaPi) < PID_cut) {
-                  onlyPionTracks.push_back(a);
-                  onlyPionSigma.push_back(nSigmaPi);
-                  rawPionTracks.push_back(t);
-                  registry.fill(HIST("hdEdxPion"), t.tpcInnerParam() / t.sign(), dEdx);
-              }
-          }
-          registry.fill(HIST("hTracksPions"), onlyPionTracks.size());
-          
-          //_____________________________________
-          if (collision.numContrib() >= 2) {
-              // Four pions analysis
-              registry.fill(HIST("hSelectionCounter"), 6);
-              if ((rawPionTracks.size() >= 2) && (allTracks.size() >= 2)) {
-                  
-                  for (auto pion : onlyPionTracks) {
-                      p += pion;
-                  }
-                  
-                  registry.fill(HIST("h4TracksPions"), onlyPionTracks.size());
-                  registry.fill(HIST("hSelectionCounter"), 7);
-                  
-                  for (auto rtrk : rawPionTracks) {
-                      
-                      TLorentzVector itrk;
-                      itrk.SetXYZM(rtrk.px(), rtrk.py(), rtrk.pz(), o2::constants::physics::MassPionCharged);
-                      trackpt.push_back(itrk.Pt());
-                      tracketa.push_back(itrk.Eta());
-                      trackphi.push_back(itrk.Phi());
-                      tracksign.push_back(rtrk.sign());
-                      pitpcpid.push_back(rtrk.tpcNSigmaPi());
-                      ktpcpid.push_back(rtrk.tpcNSigmaKa());
-                      eltpcpid.push_back(rtrk.tpcNSigmaEl());
-                      prtpcpid.push_back(rtrk.tpcNSigmaPr());
-                  }
-                  
-                  int sign = 0;
-                  TLorentzVector piplus, piminus;
-                  for (auto rawPion : rawPionTracks) {
-                      sign += rawPion.sign();
-                  }
-                  
-                  registry.fill(HIST("hTracks"), collision.numContrib());
-                  
-                  tree(collision.energyCommonZNA(), collision.energyCommonZNC(), p.Pt(), p.Y(), p.Phi(), p.M(), sign, collision.numContrib(), pitpcpid, ktpcpid, eltpcpid, prtpcpid, trackpt, tracketa, trackphi, tracksign);
-              }
-          }
+
+    if (gapSide == gap_Side) {
+
+      // registry.fill(HIST("hTracks"), tracks.size());
+
+      if (collision.numContrib() > collcontrib_cut)
+        return;
+
+      registry.fill(HIST("hSelectionCounter"), 4);
+      if ((collision.posZ() < -(Zvtx_cut)) || (collision.posZ() > Zvtx_cut))
+        return;
+      registry.fill(HIST("hSelectionCounter"), 5);
+
+      for (auto t : tracks) {
+
+        if (!trackselector(t, parameters))
+          continue;
+
+        double dEdx = t.tpcSignal();
+
+        registry.fill(HIST("hdEdx"), t.tpcInnerParam() / t.sign(), dEdx);
+        TLorentzVector a;
+        a.SetXYZM(t.px(), t.py(), t.pz(), o2::constants::physics::MassPionCharged);
+        allTracks.push_back(a);
+        auto nSigmaPi = t.tpcNSigmaPi();
+
+        if (fabs(nSigmaPi) < PID_cut) {
+          onlyPionTracks.push_back(a);
+          onlyPionSigma.push_back(nSigmaPi);
+          rawPionTracks.push_back(t);
+          registry.fill(HIST("hdEdxPion"), t.tpcInnerParam() / t.sign(), dEdx);
+        }
       }
+      registry.fill(HIST("hTracksPions"), onlyPionTracks.size());
+
+      //_____________________________________
+      if (collision.numContrib() >= 2) {
+        // Four pions analysis
+        registry.fill(HIST("hSelectionCounter"), 6);
+        if ((rawPionTracks.size() >= 2) && (allTracks.size() >= 2)) {
+
+          for (auto pion : onlyPionTracks) {
+            p += pion;
+          }
+
+          registry.fill(HIST("h4TracksPions"), onlyPionTracks.size());
+          registry.fill(HIST("hSelectionCounter"), 7);
+
+          for (auto rtrk : rawPionTracks) {
+
+            TLorentzVector itrk;
+            itrk.SetXYZM(rtrk.px(), rtrk.py(), rtrk.pz(), o2::constants::physics::MassPionCharged);
+            trackpt.push_back(itrk.Pt());
+            tracketa.push_back(itrk.Eta());
+            trackphi.push_back(itrk.Phi());
+            tracksign.push_back(rtrk.sign());
+            pitpcpid.push_back(rtrk.tpcNSigmaPi());
+            ktpcpid.push_back(rtrk.tpcNSigmaKa());
+            eltpcpid.push_back(rtrk.tpcNSigmaEl());
+            prtpcpid.push_back(rtrk.tpcNSigmaPr());
+          }
+
+          int sign = 0;
+          TLorentzVector piplus, piminus;
+          for (auto rawPion : rawPionTracks) {
+            sign += rawPion.sign();
+          }
+
+          registry.fill(HIST("hTracks"), collision.numContrib());
+
+          tree(collision.energyCommonZNA(), collision.energyCommonZNC(), p.Pt(), p.Y(), p.Phi(), p.M(), sign, collision.numContrib(), pitpcpid, ktpcpid, eltpcpid, prtpcpid, trackpt, tracketa, trackphi, tracksign);
+        }
+      }
+    }
   }
 };
 
