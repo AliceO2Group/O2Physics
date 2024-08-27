@@ -37,7 +37,6 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include <TFile.h>
 #include <TH1.h>
 
