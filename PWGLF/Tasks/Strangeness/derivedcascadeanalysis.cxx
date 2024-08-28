@@ -842,7 +842,7 @@ struct derivedCascadeAnalysis {
         histos.fill(HIST("InvMassAfterSel/hNegativeCascade"), casc.pt(), invmass, coll.centFT0C());
         if (doOccupancyCheck) {
           static_for<0, 9>([&](auto i) {
-            static_cast<int>(index) = i.value;
+            static constexpr int index = i.value;
             if (coll.centFT0C() < centralityIntervals[index + 1] && coll.centFT0C() > centralityIntervals[index]) {
               histos.fill(HIST("InvMassAfterSelCent") + HIST(Index[index]) + HIST("/hNegativeCascade"), casc.pt(), invmass, coll.trackOccupancyInTimeRange());
             }
@@ -875,7 +875,7 @@ struct derivedCascadeAnalysis {
         histos.fill(HIST("InvMassAfterSel/hPositiveCascade"), casc.pt(), invmass, coll.centFT0C());
         if (doOccupancyCheck) {
           static_for<0, 9>([&](auto i) {
-            static_cast<int>(index) = i.value;
+            static constexpr int index = i.value;
             if (coll.centFT0C() < centralityIntervals[index + 1] && coll.centFT0C() > centralityIntervals[index]) {
               histos.fill(HIST("InvMassAfterSelCent") + HIST(Index[index]) + HIST("/hPositiveCascade"), casc.pt(), invmass, coll.trackOccupancyInTimeRange());
             }
@@ -1111,7 +1111,7 @@ struct derivedCascadeAnalysis {
         histos.fill(HIST("InvMassAfterSel/hNegativeCascade"), casc.pt(), invmass, coll.centFT0C());
         if (doOccupancyCheck) {
           static_for<0, 9>([&](auto i) {
-            static_cast<int>(index) = i.value;
+            static constexpr int index = i.value;
             if (coll.centFT0C() < centralityIntervals[index + 1] && coll.centFT0C() > centralityIntervals[index]) {
               histos.fill(HIST("InvMassAfterSelCent") + HIST(Index[index]) + HIST("/hNegativeCascade"), casc.pt(), invmass, coll.trackOccupancyInTimeRange());
             }
@@ -1174,7 +1174,7 @@ struct derivedCascadeAnalysis {
         histos.fill(HIST("InvMassAfterSel/hPositiveCascade"), casc.pt(), invmass, coll.centFT0C());
         if (doOccupancyCheck) {
           static_for<0, 9>([&](auto i) {
-            static_cast<int>(index) = i.value;
+            static constexpr int index = i.value;
             if (coll.centFT0C() < centralityIntervals[index + 1] && coll.centFT0C() > centralityIntervals[index]) {
               histos.fill(HIST("InvMassAfterSelCent") + HIST(Index[index]) + HIST("/hPositiveCascade"), casc.pt(), invmass, coll.trackOccupancyInTimeRange());
             }
