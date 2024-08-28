@@ -21,9 +21,15 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Qvectors.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 namespace o2::aod
 {
+
+namespace stracolls
+{
+  DECLARE_SOA_COLUMN(IsUPC, isUPC, bool); //! is event upc-like
+}
 
 //______________________________________________________
 // Collision declarations for derived data analysis
@@ -86,6 +92,13 @@ DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to comp
                   epcalibrationtable::TriggerEventEP);
 DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
+DECLARE_SOA_TABLE(StraUpcSels, "AOD", "STRAUPCSELS", //! information for UPC analysis
+                  udcollision::TotalFV0AmplitudeA, 
+                  udcollision::TotalFT0AmplitudeA, udcollision::TotalFT0AmplitudeC,
+                  udzdc::EnergyCommonZNA, udzdc::EnergyCommonZNC,
+                  udcollision::TotalFDDAmplitudeA, udcollision::TotalFDDAmplitudeC,
+                  udcollision::GapSide,
+                  stracolls::IsUPC);
 
 using StraRawCents = StraRawCents_004;
 using StraCollision = StraCollisions::iterator;

@@ -289,9 +289,9 @@ struct derivedlambdakzeroanalysis {
       // TOF PID
       if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
-      if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
       if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
+        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
+      if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
     }
 
@@ -1141,11 +1141,11 @@ struct derivedlambdakzeroanalysis {
     if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 17 /* Below min occupancy */);
+    histos.fill(HIST("hEventSelection"), 17 /* Above min occupancy */);
     if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 18 /* Above max occupancy */);
+    histos.fill(HIST("hEventSelection"), 18 /* Below max occupancy */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {

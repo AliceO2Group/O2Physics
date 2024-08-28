@@ -48,6 +48,7 @@
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,6 +59,7 @@ using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFu
 using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::McTrackLabels>;
 using FullTracksExtIUTOF = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFEvTime, aod::TOFSignal>;
 using FullCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>;
+using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDCollsLabels>;
 
 // simple bit checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
@@ -129,6 +131,10 @@ struct strangederivedbuilder {
   Produces<aod::V0FoundTags> v0FoundTags;
   Produces<aod::CascFoundTags> cascFoundTags;
 
+  //__________________________________________________
+  // UPC information
+  Produces<aod::StraUpcSels> strangeUpcSels;
+
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -180,6 +186,7 @@ struct strangederivedbuilder {
   Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
+  Preslice<aod::UDCollsLabels> udCollisionsPerCollision = o2::aod::udcollision::collisionId;
 
   std::vector<uint32_t> genK0Short;
   std::vector<uint32_t> genLambda;
@@ -826,6 +833,24 @@ struct strangederivedbuilder {
   {
     StraTPCQVs(collision.qTPCL() * std::cos(2 * collision.psiTPCL()), collision.qTPCL() * std::sin(2 * collision.psiTPCL()), collision.qTPCL(), collision.qTPCR() * std::cos(2 * collision.psiTPCR()), collision.qTPCR() * std::sin(2 * collision.psiTPCR()), collision.qTPCR());
   }
+  void processUPCinfo(aod::Collisions const& collisions, UDCollisionsFull const& udCollisions)
+  {
+    if (udCollisions.size() == 0)
+      return;
+    for (const auto& collision : collisions) {
+      auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collision.globalIndex());
+      if (udCollision.size() == 1) {
+        for (auto& udColl : udCollision) {
+          strangeUpcSels(udColl.totalFV0AmplitudeA(), udColl.totalFT0AmplitudeA(), udColl.totalFT0AmplitudeC(), 
+                         udColl.energyCommonZNA(), udColl.energyCommonZNC(), 
+                         udColl.totalFDDAmplitudeA(), udColl.totalFDDAmplitudeC(), 
+                         udColl.gapSide(), 1.);
+        }
+      } else { // in principle, udCollision.size() should be 0 in this case
+        strangeUpcSels(-1, -1, -1, -1, -1, -1, -1, -1, 0.);
+      }
+    }
+  }
 
   uint64_t combineProngIndices(uint32_t low, uint32_t high)
   {
@@ -893,6 +918,9 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processPureSimulation, "Produce pure simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processReconstructedSimulation, "Produce reco-ed simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processBinnedGenerated, "Produce binned generated information", false);
+
+  // UPC information
+  PROCESS_SWITCH(strangederivedbuilder, processUPCinfo, "Produce UPC table", false);
 
   // event plane information
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
