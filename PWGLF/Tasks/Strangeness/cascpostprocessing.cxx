@@ -238,7 +238,7 @@ struct cascpostprocessing {
     float ctau = 0;
     float rapidity = 0;
     bool isCandidate = 0;
-    long int counter = -1;
+    int64_t counter = -1;
     bool isCorrectlyRec = 0;
 
     for (auto& candidate : mycascades) {

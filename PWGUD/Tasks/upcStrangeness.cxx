@@ -18,6 +18,14 @@
 //    roman.nepeivoda@cern.ch
 //
 
+#include <bitset>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TDatabasePDG.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -36,14 +44,6 @@
 #include "Framework/StaticFor.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGLF/Utils/upcStrangeness.h"
-
-#include <bitset>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::framework;

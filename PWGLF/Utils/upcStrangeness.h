@@ -147,4 +147,4 @@ std::bitset<selNum> maskSelectionAntiXi;
 std::bitset<selNum> maskSelectionOmega;
 std::bitset<selNum> maskSelectionAntiOmega;
 
-#endif
+#endif // PWGLF_UTILS_UPCSTRANGENESS_H_
