@@ -15,15 +15,12 @@
 //
 #include "PWGCF/Flow/DataModel/FlowESE.h"
 
-
 #include <chrono>
 #include <string>
 #include <TComplex.h>
 #include <algorithm>
 #include <numeric>
 #include <vector>
-
-
 
 #include <CCDB/BasicCCDBManager.h>
 

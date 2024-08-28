@@ -74,25 +74,6 @@ struct JetSpectraEseTask {
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
 
-  void processCollisions(JetCollision const& collision, JetTracks const& tracks)
-  {
-
-    registry.fill(HIST("h_collisions"), 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
-      return;
-    }
-    registry.fill(HIST("h_collisions"), 1.5);
-    for (auto const& track : tracks) {
-      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-        continue;
-      }
-      registry.fill(HIST("h_track_pt"), track.pt());
-      registry.fill(HIST("h_track_eta"), track.eta());
-      registry.fill(HIST("h_track_phi"), track.phi());
-    }
-  }
-  PROCESS_SWITCH(JetSpectraEseTask, processCollisions, "process self contained collisions", true);
-
   int spCode(const int qPerc)
   {
     if (qPerc < 0)
