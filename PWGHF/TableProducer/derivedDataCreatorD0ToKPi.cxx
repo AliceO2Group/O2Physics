@@ -206,19 +206,31 @@ struct HfDerivedDataCreatorD0ToKPi {
     }
 
     if (fillCandidatePar) {
-      float tpcNSigmaPi = prong0.tpcNSigmaPi();
-      float tofNSigmaPi = prong0.tofNSigmaPi();
-      float tpcTofNSigmaPi = prong0.tpcTofNSigmaPi();
-      float tofNSigmaKa = prong1.tofNSigmaKa();
-      float tpcNSigmaKa = prong1.tpcNSigmaKa();
-      float tpcTofNSigmaKa = prong1.tpcTofNSigmaKa();
+      float tpcNSigmaPiExpPi = prong0.tpcNSigmaPi();
+      float tofNSigmaPiExpPi = prong0.tofNSigmaPi();
+      float tpcTofNSigmaPiExpPi = prong0.tpcTofNSigmaPi();
+      float tpcNSigmaKaExpPi = prong0.tpcNSigmaKa();
+      float tofNSigmaKaExpPi = prong0.tofNSigmaKa();
+      float tpcTofNSigmaKaExpPi = prong0.tpcTofNSigmaKa();
+      float tpcNSigmaPiExpKa = prong1.tpcNSigmaPi();
+      float tofNSigmaPiExpKa = prong1.tofNSigmaPi();
+      float tpcTofNSigmaPiExpKa = prong1.tpcTofNSigmaPi();
+      float tpcNSigmaKaExpKa = prong1.tpcNSigmaKa();
+      float tofNSigmaKaExpKa = prong1.tofNSigmaKa();
+      float tpcTofNSigmaKaExpKa = prong1.tpcTofNSigmaKa();
       if (candFlag == 1) {
-        tpcNSigmaPi = prong1.tpcNSigmaPi();
-        tofNSigmaPi = prong1.tofNSigmaPi();
-        tpcTofNSigmaPi = prong1.tpcTofNSigmaPi();
-        tpcNSigmaKa = prong0.tpcNSigmaKa();
-        tofNSigmaKa = prong0.tofNSigmaKa();
-        tpcTofNSigmaKa = prong0.tpcTofNSigmaKa();
+        tpcNSigmaPiExpPi = prong1.tpcNSigmaPi();
+        tofNSigmaPiExpPi = prong1.tofNSigmaPi();
+        tpcTofNSigmaPiExpPi = prong1.tpcTofNSigmaPi();
+        tpcNSigmaKaExpPi = prong1.tpcNSigmaKa();
+        tofNSigmaKaExpPi = prong1.tofNSigmaKa();
+        tpcTofNSigmaKaExpPi = prong1.tpcTofNSigmaKa();
+        tpcNSigmaPiExpKa = prong0.tpcNSigmaPi();
+        tofNSigmaPiExpKa = prong0.tofNSigmaPi();
+        tpcTofNSigmaPiExpKa = prong0.tpcTofNSigmaPi();
+        tpcNSigmaKaExpKa = prong0.tpcNSigmaKa();
+        tofNSigmaKaExpKa = prong0.tofNSigmaKa();
+        tpcTofNSigmaKaExpKa = prong0.tpcTofNSigmaKa();
       }
       rowCandidatePar(
         candidate.chi2PCA(),
@@ -234,12 +246,18 @@ struct HfDerivedDataCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
-        tpcNSigmaPi,
-        tofNSigmaPi,
-        tpcTofNSigmaPi,
-        tpcNSigmaKa,
-        tofNSigmaKa,
-        tpcTofNSigmaKa,
+        tpcNSigmaPiExpPi,
+        tofNSigmaPiExpPi,
+        tpcTofNSigmaPiExpPi,
+        tpcNSigmaKaExpPi,
+        tofNSigmaKaExpPi,
+        tpcTofNSigmaKaExpPi,
+        tpcNSigmaPiExpKa,
+        tofNSigmaPiExpKa,
+        tpcTofNSigmaPiExpKa,
+        tpcNSigmaKaExpKa,
+        tofNSigmaKaExpKa,
+        tpcTofNSigmaKaExpKa,
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct());
     }
