@@ -22,7 +22,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 
-
 namespace o2::aod
 {
 namespace qVector
