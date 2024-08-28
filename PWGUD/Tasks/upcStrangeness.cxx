@@ -132,7 +132,7 @@ struct upcStrangeness {
     Configurable<float> FT0Acut{"FT0Acut", 200., "FT0A threshold"};
     Configurable<float> FT0Ccut{"FT0Ccut", 100., "FT0C threshold"};
     Configurable<float> ZDCcut{"ZDCcut", 10., "ZDC threshold"};
-    //Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
+    // Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
   } upcCuts;
 
   // Track quality
@@ -220,39 +220,61 @@ struct upcStrangeness {
   {
     // initialise bit masks
     int selTopoV0[] = {selV0CosPA, selDCANegToPV, selDCAPosToPV, selDCAV0Dau, selV0Radius, selV0RadiusMax};
-    for (int sel : selTopoV0) { maskTopologicalV0.set(sel);}
+    for (int sel : selTopoV0) {
+      maskTopologicalV0.set(sel);
+    }
 
     int selTopoCasc[] = {selCascCosPA, selDCACascDau, selCascRadius, selCascRadiusMax, selBachToPV, selMesonToPV, selBaryonToPV, selDCAV0ToPV,
                          selV0CosPA, selDCAV0Dau, selV0Radius, selV0RadiusMax, selLambdaMassWin};
-    for (int sel : selTopoCasc) { maskTopologicalCasc.set(sel);}
+    for (int sel : selTopoCasc) {
+      maskTopologicalCasc.set(sel);
+    }
 
     if (doBachelorBaryonCut)
       maskTopologicalCasc.set(selBachBaryon);
 
     int selKinematicV0[] = {selPosEta, selNegEta};
-    for (int sel : selKinematicV0) { maskKinematicV0.set(sel);}
+    for (int sel : selKinematicV0) {
+      maskKinematicV0.set(sel);
+    }
 
     int selKinematicCasc[] = {selPosEta, selNegEta, selBachEta};
-    for (int sel : selKinematicCasc) { maskKinematicCasc.set(sel);}
+    for (int sel : selKinematicCasc) {
+      maskKinematicCasc.set(sel);
+    }
 
     // K0s
     int selK0ShortSpecific[] = {selK0ShortRapidity, selK0ShortCTau, selK0ShortArmenteros, selConsiderK0Short};
-    for (int sel : selK0ShortSpecific) { maskK0ShortSpecific.set(sel);}
+    for (int sel : selK0ShortSpecific) {
+      maskK0ShortSpecific.set(sel);
+    }
     // Lambda
     int selLambdaSpecific[] = {selLambdaRapidity, selLambdaCTau, selConsiderLambda};
-    for (int sel : selLambdaSpecific) { maskLambdaSpecific.set(sel);}
+    for (int sel : selLambdaSpecific) {
+      maskLambdaSpecific.set(sel);
+    }
     int selAntiLambdaSpecific[] = {selLambdaRapidity, selLambdaCTau, selConsiderAntiLambda};
-    for (int sel : selAntiLambdaSpecific) { maskAntiLambdaSpecific.set(sel);}
+    for (int sel : selAntiLambdaSpecific) {
+      maskAntiLambdaSpecific.set(sel);
+    }
     // Xi
     int selXiSpecific[] = {selXiRapidity, selXiCTau, selRejCompXi, selMassWinXi, selConsiderXi};
-    for (int sel : selXiSpecific) { maskXiSpecific.set(sel);}
+    for (int sel : selXiSpecific) {
+      maskXiSpecific.set(sel);
+    }
     int selAntiXiSpecific[] = {selXiRapidity, selXiCTau, selRejCompXi, selMassWinXi, selConsiderAntiXi};
-    for (int sel : selAntiXiSpecific) { maskAntiXiSpecific.set(sel);}
+    for (int sel : selAntiXiSpecific) {
+      maskAntiXiSpecific.set(sel);
+    }
     // Omega
     int selOmegaSpecific[] = {selOmegaRapidity, selOmegaCTau, selRejCompOmega, selMassWinOmega, selConsiderOmega};
-    for (int sel : selOmegaSpecific) { maskOmegaSpecific.set(sel);}
+    for (int sel : selOmegaSpecific) {
+      maskOmegaSpecific.set(sel);
+    }
     int selAntiOmegaSpecific[] = {selOmegaRapidity, selOmegaCTau, selRejCompOmega, selMassWinOmega, selConsiderAntiOmega};
-    for (int sel : selAntiOmegaSpecific) { maskAntiOmegaSpecific.set(sel);}
+    for (int sel : selAntiOmegaSpecific) {
+      maskAntiOmegaSpecific.set(sel);
+    }
 
     // ask for specific TPC/TOF PID selections of V0 tracks
     // positive track
@@ -276,7 +298,7 @@ struct upcStrangeness {
       // TOF PID
       if (PIDConfigurations.TofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific.set(selTOFNSigmaPositivePionK0Short);
-        maskK0ShortSpecific.set(selTOFDeltaTPositivePionK0Short);        
+        maskK0ShortSpecific.set(selTOFDeltaTPositivePionK0Short);
       }
       if (PIDConfigurations.TofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
         maskLambdaSpecific.set(selTOFNSigmaPositiveProtonLambda);
@@ -396,14 +418,14 @@ struct upcStrangeness {
     }
 
     // Primary particle selection, central to analysis
-    maskSelectionK0Short =    maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskK0ShortSpecific | (std::bitset<selNum>(1) << selPhysPrimK0Short);
-    maskSelectionLambda =     maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskLambdaSpecific | (std::bitset<selNum>(1) << selPhysPrimLambda);
+    maskSelectionK0Short = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskK0ShortSpecific | (std::bitset<selNum>(1) << selPhysPrimK0Short);
+    maskSelectionLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskLambdaSpecific | (std::bitset<selNum>(1) << selPhysPrimLambda);
     maskSelectionAntiLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskAntiLambdaSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiLambda);
-    maskSelectionXi =         maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskXiSpecific | (std::bitset<selNum>(1) << selPhysPrimXi);
-    maskSelectionAntiXi =     maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiXiSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiXi);
-    maskSelectionOmega =      maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskOmegaSpecific | (std::bitset<selNum>(1) << selPhysPrimOmega);
-    maskSelectionAntiOmega =  maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiOmegaSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiOmega);
-    
+    maskSelectionXi = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskXiSpecific | (std::bitset<selNum>(1) << selPhysPrimXi);
+    maskSelectionAntiXi = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiXiSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiXi);
+    maskSelectionOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskOmegaSpecific | (std::bitset<selNum>(1) << selPhysPrimOmega);
+    maskSelectionAntiOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiOmegaSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiOmega);
+
     // Check if doing the right thing in AP space please
     histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2F, {axisAPAlpha, axisAPQt});
     histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
@@ -512,7 +534,7 @@ struct upcStrangeness {
         histos.add("Lambda/hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
         histos.add("Lambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});        
+        histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
       }
       if (doCollisionAssociationQA) {
         histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
@@ -553,7 +575,7 @@ struct upcStrangeness {
         histos.add("AntiLambda/hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
         histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});        
+        histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
       }
       if (doCollisionAssociationQA) {
         histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
@@ -590,9 +612,8 @@ struct upcStrangeness {
         histos.add("Xi/hMassLambdaDau", "hMassLambdaDau", kTH2F, {axisPtCoarse, axisLambdaMass});
         if (doBachelorBaryonCut) {
           histos.add("Xi/hBachBaryonCosPA", "hBachBaryonCosPA", kTH2F, {axisPtCoarse, {100, 0.0f, 1.0f}});
-          histos.add("Xi/hBachBaryonDCAxyToPV", "hBachBaryonDCAxyToPV", kTH2F, {axisPtCoarse, {300, -3.0f, 3.0f}});    
+          histos.add("Xi/hBachBaryonDCAxyToPV", "hBachBaryonDCAxyToPV", kTH2F, {axisPtCoarse, {300, -3.0f, 3.0f}});
         }
-
       }
     }
 
@@ -785,7 +806,6 @@ struct upcStrangeness {
       bitMap.set(selMassWinOmega);
     if (fabs(casc.mLambda() - pdgDB->Mass(3122)) < lambdamasswin)
       bitMap.set(selLambdaMassWin);
-    
 
     if (fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) > dcav0topv)
       bitMap.set(selDCAV0ToPV);
@@ -814,11 +834,11 @@ struct upcStrangeness {
     if (fabs(rapidityOmega) < rapidityCut)
       bitMap.set(selOmegaRapidity);
     if (fabs(poseta) < daughterEtaCut)
-        bitMap.set(selNegEta);
+      bitMap.set(selNegEta);
     if (fabs(negeta) < daughterEtaCut)
-        bitMap.set(selPosEta);
+      bitMap.set(selPosEta);
     if (fabs(bacheta) < daughterEtaCut)
-        bitMap.set(selBachEta);
+      bitMap.set(selBachEta);
 
     // ITS quality flags
     if (posTrackExtra.itsNCls() >= TrackConfigurations.minITSclusters)
@@ -958,9 +978,9 @@ struct upcStrangeness {
     if (fabs(rapidityK0Short) < rapidityCut)
       bitMap.set(selK0ShortRapidity);
     if (fabs(v0.negativeeta()) < daughterEtaCut)
-        bitMap.set(selNegEta);
+      bitMap.set(selNegEta);
     if (fabs(v0.positiveeta()) < daughterEtaCut)
-        bitMap.set(selPosEta);
+      bitMap.set(selPosEta);
 
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
@@ -1051,7 +1071,7 @@ struct upcStrangeness {
       histos.fill(HIST("GeneralQA/hPt"), casc.pt());
     }
     // Xi
-    if (verifyMask(selMap, maskSelectionXi) && analyseXi) { 
+    if (verifyMask(selMap, maskSelectionXi) && analyseXi) {
       histos.fill(HIST("Xi/h2dMassXi"), casc.mXi(), gap);
       if (PIDConfigurations.doPlainTopoQA) {
         histos.fill(HIST("Xi/hDCANegToPV"), casc.pt(), casc.dcanegtopv());
@@ -1069,20 +1089,19 @@ struct upcStrangeness {
     }
 
     // Anti-Xi
-    if (verifyMask(selMap, maskSelectionAntiXi) && analyseAntiXi) { 
+    if (verifyMask(selMap, maskSelectionAntiXi) && analyseAntiXi) {
       histos.fill(HIST("AntiXi/h2dMassAntiXi"), casc.mXi(), gap);
     }
 
     // Omega
-    if (verifyMask(selMap, maskSelectionOmega) && analyseOmega) { 
+    if (verifyMask(selMap, maskSelectionOmega) && analyseOmega) {
       histos.fill(HIST("Omega/h2dMassOmega"), casc.mOmega(), gap);
     }
 
     // Anti-Omega
-    if (verifyMask(selMap, maskSelectionAntiOmega) && analyseAntiOmega) { 
+    if (verifyMask(selMap, maskSelectionAntiOmega) && analyseAntiOmega) {
       histos.fill(HIST("AntiOmega/h2dMassAntiOmega"), casc.mOmega(), gap);
     }
-
   }
 
   template <typename TV0>
@@ -1280,7 +1299,6 @@ struct upcStrangeness {
 
       analyseCascCandidate(casc, collision, selGapSide, selMap);
     } // end casc loop
-
   }
 
   PROCESS_SWITCH(upcStrangeness, processV0s, "Process V0s in UPC", true);
