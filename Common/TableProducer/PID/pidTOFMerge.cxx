@@ -293,12 +293,7 @@ float trackSampleMaxMomentum = 2.f;
 template <typename trackType>
 bool filterForTOFEventTime(const trackType& tr)
 {
-  return (tr.hasTOF() 
-    && tr.p() > trackSampleMinMomentum 
-    && tr.p() < trackSampleMaxMomentum 
-    && tr.hasITS()
-    && tr.hasTPC()
-    && (tr.trackType() == o2::aod::track::TrackTypeEnum::Track || tr.trackType() == o2::aod::track::TrackTypeEnum::TrackIU));
+  return (tr.hasTOF() && tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum && tr.hasITS() && tr.hasTPC() && (tr.trackType() == o2::aod::track::TrackTypeEnum::Track || tr.trackType() == o2::aod::track::TrackTypeEnum::TrackIU));
 } // accept all
 
 /// Specialization of TOF event time maker
