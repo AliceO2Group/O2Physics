@@ -14,8 +14,8 @@
 /// \author Joachim Hansen <joachim.hansen@cern.ch>
 //
 
-#ifndef PWGCF_FLOW_DATAMODEL_FLOWESE_H_
-#define PWGCF_FLOW_DATAMODEL_FLOWESE_H_
+#ifndef PWGCF_FLOW_DATAMODEL_FLOWESETABLE_H_
+#define PWGCF_FLOW_DATAMODEL_FLOWESETABLE_H_
 
 #include <vector>
 
@@ -42,4 +42,4 @@ using qPercentileFT0C = qPercentileFT0Cs::iterator;
 
 } // namespace o2::aod
 
-#endif // PWGCF_FLOW_DATAMODEL_FLOWESE_H_
+#endif // PWGCF_FLOW_DATAMODEL_FLOWESETABLE_H_

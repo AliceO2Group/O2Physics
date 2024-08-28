@@ -47,7 +47,7 @@
 #include "FT0Base/Geometry.h"
 
 #include "FFitWeights.h"
-#include "TSpline.h"
+#include <TSpline.h>
 
 using namespace o2;
 using namespace o2::framework;
