@@ -543,7 +543,7 @@ struct tofPidCollisionTimeQa {
       switch (particle.pdgCode()) {
         case 211:
           histos.fill(HIST("MC/particle/pdg211/all/particleDiff"), particle.pt(), tMimusFormationTime);
-          histos.fill(HIST("MC/particle/pdg211/all/delta"), particle.pt(), mcTOFvalue);
+          // histos.fill(HIST("MC/particle/pdg211/all/delta"), particle.pt(), mcTOFvalue);
           if (particle.isPhysicalPrimary()) {
             histos.fill(HIST("MC/particle/pdg211/prm/particleDiff"), particle.pt(), tMimusFormationTime);
           }
