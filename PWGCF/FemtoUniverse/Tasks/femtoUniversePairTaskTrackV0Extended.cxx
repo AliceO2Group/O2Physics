@@ -547,11 +547,11 @@ struct femtoUniversePairTaskTrackV0Extended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        /*if (ConfIsCPR.value) {  /// CPR check is not needed for mixed events
+        if (ConfIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
           }
-        }*/
+        }
         float weight = 1.0f;
         if (plocalEffp1)
           weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
@@ -619,11 +619,11 @@ struct femtoUniversePairTaskTrackV0Extended {
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        /*if (ConfIsCPR.value) {  /// CPR check is not needed for mixed events
+        if (ConfIsCPR.value) {
           if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
           }
-        }*/
+        }
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }
     }
