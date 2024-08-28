@@ -481,7 +481,7 @@ struct AngularCorrelationsInJets {
     for (const auto& pair : tempBuffer) {
       if (static_cast<int>(buffer.size()) == fBufferSize) {
         buffer.insert(buffer.begin(), pair);
-        buffer.resize(configurables.fBufferSize);
+        buffer.resize(fBufferSize);
       } else if (static_cast<int>(buffer.size()) < fBufferSize) {
         buffer.emplace_back(pair);
       }
