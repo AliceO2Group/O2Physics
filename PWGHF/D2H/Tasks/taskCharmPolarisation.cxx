@@ -171,7 +171,7 @@ struct TaskPolarisationCharmHadrons {
   struct : ConfigurableGroup {
     /// monitoring histograms (Dalitz plot)
     Configurable<bool> activateTHnLcChannelMonitor{"activateTHnLcChannelMonitor", false, "Flag to switch on the monitoring THnSparse of M2(Kpi), M2(pK), M2(ppi), pt correlation for Lc -> pKpi"};
-    ConfigurableAxis configThnAxisInvMass2KPiLcMonitoring{"configThnAxisInvMassKPiLcMonitoring", {180, 0.3f, 2.1f}, "#it{M}^{2}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+    ConfigurableAxis configThnAxisInvMass2KPiLcMonitoring{"configThnAxisInvMassKPiLcMonitoring", {200, 0.3f, 2.3f}, "#it{M}^{2}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
     ConfigurableAxis configThnAxisInvMass2PKLcMonitoring{"configThnAxisInvMass2PKLcMonitoring", {320, 2.f, 5.2f}, "#it{M}^{2}(pK) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
     ConfigurableAxis configThnAxisInvMass2PPiLcMonitoring{"configThnAxisInvMass2PPiLcMonitoring", {400, 1.f, 5.f}, "#it{M}^{2}(p#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
 
