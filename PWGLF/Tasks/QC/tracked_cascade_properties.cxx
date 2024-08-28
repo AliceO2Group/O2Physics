@@ -37,6 +37,8 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/DCA.h"
+#define mXi 1.32171
+#define mOmega 1.67245
 
 using namespace std;
 using namespace o2;
@@ -75,10 +77,10 @@ struct tracked_cascade_properties {
   Configurable<float> maximumCascRadius{"maximumCascRadius", 18.0f, "Maximum Cascade Radius"};
 
   // Mass Cuts
-  Configurable<float> mMin_xi{"mMin_xi", 1.31f, "mMin Xi"};
-  Configurable<float> mMax_xi{"mMax_xi", 1.33f, "mMax Xi"};
-  Configurable<float> mMin_omega{"mMin_omega", 1.66f, "mMin Omega"};
-  Configurable<float> mMax_omega{"mMax_omega", 1.68f, "mMax Omega"};
+  Configurable<float> mMin_xi{"mMin_xi", 1.315f, "mMin Xi"};
+  Configurable<float> mMax_xi{"mMax_xi", 1.328f, "mMax Xi"};
+  Configurable<float> mMin_omega{"mMin_omega", 1.665f, "mMin Omega"};
+  Configurable<float> mMax_omega{"mMax_omega", 1.680f, "mMax Omega"};
 
   void init(InitContext const&)
   {
@@ -104,6 +106,11 @@ struct tracked_cascade_properties {
     registryData.add("xi_neg_avgclustersize_cosL", "xi_neg_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
     registryData.add("omega_pos_avgclustersize_cosL", "omega_pos_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
     registryData.add("omega_neg_avgclustersize_cosL", "omega_neg_avgclustersize_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+
+    registryData.add("xi_pos_avgclustersize_cosL_vs_betagamma", "xi_pos_avgclustersize_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("xi_neg_avgclustersize_cosL_vs_betagamma", "xi_neg_avgclustersize_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("omega_pos_avgclustersize_cosL_vs_betagamma", "omega_pos_avgclustersize_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("omega_neg_avgclustersize_cosL_vs_betagamma", "omega_neg_avgclustersize_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
 
     registryData.add("xi_mass_pos", "xi_mass_pos", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("xi_mass_neg", "xi_mass_neg", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
@@ -174,37 +181,53 @@ struct tracked_cascade_properties {
       registryQC.fill(HIST("deltaNclsITS_track"), nCls - track.itsNCls());
       registryQC.fill(HIST("deltaNclsITS_itstrack"), nCls - trackITS.itsNCls());
 
+      // Xi Mass
+      if (btrack.sign() > 0) {
+        registryData.fill(HIST("xi_mass_pos"), track.p(), trackedCascade.xiMass());
+      }
+      if (btrack.sign() < 0) {
+        registryData.fill(HIST("xi_mass_neg"), track.p(), trackedCascade.xiMass());
+      }
+
       // Track Inclination
       double lambda = track_inclination(track.eta());
 
       // Xi
       if (trackedCascade.xiMass() > mMin_xi && trackedCascade.xiMass() < mMax_xi) {
-        registryQC.fill(HIST("nITScls_vs_p_xi"), track.p(), track.itsNCls());
+        registryQC.fill(HIST("nITScls_vs_p_xi"), track.p(), trackITS.itsNCls());
         if (btrack.sign() > 0) {
           registryData.fill(HIST("xi_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("xi_pos_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("xi_mass_pos"), track.p(), trackedCascade.xiMass());
+          registryData.fill(HIST("xi_pos_avgclustersize_cosL_vs_betagamma"), track.p() / mXi, averageClusterSize * cos(lambda));
         }
         if (btrack.sign() < 0) {
           registryData.fill(HIST("xi_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("xi_neg_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("xi_mass_neg"), track.p(), trackedCascade.xiMass());
+          registryData.fill(HIST("xi_neg_avgclustersize_cosL_vs_betagamma"), track.p() / mXi, averageClusterSize * cos(lambda));
         }
         continue;
       }
 
+      // Omega Mass
+      if (btrack.sign() > 0) {
+        registryData.fill(HIST("omega_mass_pos"), track.p(), trackedCascade.omegaMass());
+      }
+      if (btrack.sign() < 0) {
+        registryData.fill(HIST("omega_mass_neg"), track.p(), trackedCascade.omegaMass());
+      }
+
       // Omega
       if (trackedCascade.omegaMass() > mMin_omega && trackedCascade.omegaMass() < mMax_omega) {
-        registryQC.fill(HIST("nITScls_vs_p_omega"), track.p(), track.itsNCls());
+        registryQC.fill(HIST("nITScls_vs_p_omega"), track.p(), trackITS.itsNCls());
         if (btrack.sign() > 0) {
           registryData.fill(HIST("omega_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("omega_pos_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("omega_mass_pos"), track.p(), trackedCascade.omegaMass());
+          registryData.fill(HIST("omega_pos_avgclustersize_cosL_vs_betagamma"), track.p() / mOmega, averageClusterSize * cos(lambda));
         }
         if (btrack.sign() < 0) {
           registryData.fill(HIST("omega_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("omega_neg_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("omega_mass_neg"), track.p(), trackedCascade.omegaMass());
+          registryData.fill(HIST("omega_neg_avgclustersize_cosL_vs_betagamma"), track.p() / mOmega, averageClusterSize * cos(lambda));
         }
       }
     }

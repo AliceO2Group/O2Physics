@@ -164,7 +164,6 @@ struct emcalQC {
 
         // Apply cuts one by one and fill in hClusterQualityCuts histogram
         fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 0., cluster.e());
-        auto track = nullptr;
 
         // Define two boleans to see, whether the cluster "survives" the EMC cluster cuts to later check, whether the cuts in this task align with the ones in EMCPhotonCut.h:
         bool survivesIsSelectedEMCalCuts = true;                        // Survives "manual" cuts listed in this task
@@ -172,7 +171,7 @@ struct emcalQC {
 
         for (int icut = 0; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables
           EMCPhotonCut::EMCPhotonCuts specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);
-          if (!fEMCCut.IsSelectedEMCal(specificcut, cluster, track)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row
+          if (!fEMCCut.IsSelectedEMCal(specificcut, cluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row
             fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut + 1, cluster.e());
             survivesIsSelectedEMCalCuts = false;
           }

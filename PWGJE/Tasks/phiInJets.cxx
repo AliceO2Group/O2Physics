@@ -152,6 +152,9 @@ struct phiInJets {
       JEhistos.add("ptJEHistogramPhi", "ptJEHistogramPhi", kTH1F, {PtAxis});
       JEhistos.add("ptJEHistogramPhi_JetTrigger", "ptJEHistogramPhi_JetTrigger", kTH1F, {PtAxis});
       JEhistos.add("minvJEHistogramPhi", "minvJEHistogramPhi", kTH1F, {MinvAxis});
+      JEhistos.add("hNRealPhiVPhiCand", "hNRealPhiVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
+      JEhistos.add("hNRealPhiWithJetVPhiCand", "hNRealPhiWithJetVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
+      JEhistos.add("hNRealPhiInJetVPhiCand", "hNRealPhiInJetVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
 
       JEhistos.add("hMCRec_nonmatch_hUSS_KtoKangle_v_pt", "hMCRec_nonmatch_hUSS_KtoKangle_v_pt", kTH2F, {axisEta, PtAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_Kangle_v_pt", "hMCRec_nonmatch_hUSS_Kangle_v_pt", kTH2F, {axisEta, PtAxis});
@@ -196,6 +199,10 @@ struct phiInJets {
       JEhistos.add("h_matched_GEN_jet_phi", "matched_GEN level jet #phi;#phi_{jet part};Delta", {HistType::kTH2F, {{80, -1.0, 7.}, {400, -20., 20.}}});
       JEhistos.add("2DGenToRec", "2DGenToRec", kTH2F, {PtAxis, axisPt});
       JEhistos.add("2DGenToRec_constrained", "2DGenToRec_constrained", kTH2F, {PtAxis, axisPt});
+
+      JEhistos.add("RespGen_Matrix_MATCHED", "RespGen_Matrix_MATCHED", HistType::kTHnSparseD, {PtAxis, axisPt, PtAxis, axisPt});             // REC(Phi,Jet), GEN(Phi,Jet)
+      JEhistos.add("RespGen_Matrix_MATCHED_rand0", "RespGen_Matrix_MATCHED_rand0", HistType::kTHnSparseD, {PtAxis, axisPt, PtAxis, axisPt}); // REC(Phi,Jet), GEN(Phi,Jet)
+      JEhistos.add("RespGen_Matrix_MATCHED_rand1", "RespGen_Matrix_MATCHED_rand1", HistType::kTHnSparseD, {PtAxis, axisPt, PtAxis, axisPt}); // REC(Phi,Jet), GEN(Phi,Jet)
 
       JEhistos.add("hMCTrue_hUSS_INSIDE", "hMCTrue_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCTrue_hUSS_INSIDE_1D", "hMCTrue_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
@@ -412,7 +419,7 @@ struct phiInJets {
 
     double best_R = 0;
     double best_jetpt = 0;
-    for (int i = 0; i < jet_pt.size(); i++) {
+    for (std::vector<double>::size_type i = 0; i < jet_pt.size(); i++) {
       double phidiff = TVector2::Phi_mpi_pi(jet_phi[i] - lResonance.Phi());
       double etadiff = jet_eta[i] - lResonance.Eta();
       double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -515,30 +522,30 @@ struct phiInJets {
 
     /////////////////////////////////////////////////////////////////////////////
     // Fill outside Jet
-    /*if (!jetFlag) {
-      if (trk1.sign() * trk2.sign() < 0) {
-        if (!IsMC) {
-          JEhistos.fill(HIST("hUSS_OUTSIDE_1D"), lResonance.M());
-          if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-            JEhistos.fill(HIST("hUSS_OUTSIDE_1D_2_3"), lResonance.M());
-          JEhistos.fill(HIST("hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-        }
+    // if (!jetFlag) {
+    //   if (trk1.sign() * trk2.sign() < 0) {
+    //     if (!IsMC) {
+    //       JEhistos.fill(HIST("hUSS_OUTSIDE_1D"), lResonance.M());
+    //       if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+    //         JEhistos.fill(HIST("hUSS_OUTSIDE_1D_2_3"), lResonance.M());
+    //       JEhistos.fill(HIST("hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
+    //     }
 
-        if (IsMC) {
-          JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D"), lResonance.M());
-          if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-            JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
-          JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-        }
+    //     if (IsMC) {
+    //       JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D"), lResonance.M());
+    //       if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+    //         JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
+    //       JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
+    //     }
 
-      } else if (trk1.sign() * trk2.sign() > 0) {
+    //   } else if (trk1.sign() * trk2.sign() > 0) {
 
-        JEhistos.fill(HIST("hLSS_OUTSIDE_1D"), lResonance.M());
-        if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-          JEhistos.fill(HIST("hLSS_OUTSIDE_1D_2_3"), lResonance.M());
-        JEhistos.fill(HIST("hLSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-      }
-      } //! jetflag*/
+    //     JEhistos.fill(HIST("hLSS_OUTSIDE_1D"), lResonance.M());
+    //     if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+    //       JEhistos.fill(HIST("hLSS_OUTSIDE_1D_2_3"), lResonance.M());
+    //     JEhistos.fill(HIST("hLSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
+    //   }
+    //   } //! jetflag
     /////////////////////////////////////////////////////////////////////////////
     if (!cfgIsKstar) {
       if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
@@ -697,6 +704,11 @@ struct phiInJets {
     if (hasJets)
       JEhistos.fill(HIST("nEvents_MCRec"), 2.5);
 
+    double PhiCand = 0;
+    double RealPhiCand = 0;
+    double RealPhiCandWithJet = 0;
+    double RealPhiCandInJet = 0;
+
     // Track Eff
     for (const auto& track : tracks) {
       auto originalTrack = track.track_as<myCompleteTracks>();
@@ -735,8 +747,21 @@ struct phiInJets {
         if (fabs(originalTrack.eta()) > cfgtrkMaxEta || fabs(originalTrack2.eta()) > cfgtrkMaxEta)
           continue;
 
-        // check PID
+        TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+        lDecayDaughter1.SetXYZM(originalTrack.px(), originalTrack.py(), originalTrack.pz(), massKa);
+        if (!cfgIsKstar)
+          lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massKa);
+        else
+          lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);
+        lResonance = lDecayDaughter1 + lDecayDaughter2;
 
+        if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
+          continue;
+
+        if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+          PhiCand++;
+
+        // check PID
         if (track.has_mcParticle() && track2.has_mcParticle()) {
           auto part1 = track.mcParticle();
           auto part2 = track2.mcParticle();
@@ -783,27 +808,26 @@ struct phiInJets {
           if (mothers1[0] != mothers2[0])
             continue; // Kaons not from the same phi
 
-          TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-          lDecayDaughter1.SetXYZM(originalTrack.px(), originalTrack.py(), originalTrack.pz(), massKa);
-          if (!cfgIsKstar)
-            lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massKa);
-          else
-            lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);
-          lResonance = lDecayDaughter1 + lDecayDaughter2;
-
           double phidiff_Kaons = TVector2::Phi_mpi_pi(lDecayDaughter2.Phi() - lDecayDaughter1.Phi());
           double etadiff_Kaons = lDecayDaughter2.Eta() - lDecayDaughter1.Eta();
           double R_Kaons = TMath::Sqrt((etadiff_Kaons * etadiff_Kaons) + (phidiff_Kaons * phidiff_Kaons));
-          if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
-            continue;
           JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_KtoKangle_v_pt"), R_Kaons, lResonance.Pt());
           JEhistos.fill(HIST("ptJEHistogramPhi"), lResonance.Pt());
+
+          if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+            RealPhiCand++;
 
           // Now we do jets
           bool jetFlag = false;
           int goodjets = 0;
           double jetpt = 0;
+
           for (int i = 0; i < mcd_pt.size(); i++) {
+            if (i == 0) {
+              if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
+                RealPhiCandWithJet++;
+              }
+            }
             double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
             double etadiff = mcd_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -823,36 +847,21 @@ struct phiInJets {
               jetpt = mcd_pt[i];
               goodjets++;
             }
-          }
+          } // R check for jets
 
           if (cfgSingleJet)
             if (goodjets > 1)
               jetpt = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
 
           if (jetFlag) {
+            if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+              RealPhiCandInJet++;
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D"), lResonance.M());
             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
               JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-
-          } /* else if (!jetFlag && mcd_pt.size() > 0) {
-             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
-
-             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-               JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3"), lResonance.M());
-
-             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG"), jetpt, lResonance.Pt(), lResonance.M());
-
-           } else if (!jetFlag) {
-             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_1D"), lResonance.M());
-
-             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-               JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
-
-             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-           }*/
-          //! jetflag
+          }
 
           if (hasJets) {
             JEhistos.fill(HIST("ptJEHistogramPhi_JetTrigger"), lResonance.Pt());
@@ -864,6 +873,10 @@ struct phiInJets {
         } // mcpart check
       }   // tracks2
     }     // tracks1
+    JEhistos.fill(HIST("hNRealPhiVPhiCand"), PhiCand, RealPhiCand);
+    JEhistos.fill(HIST("hNRealPhiWithJetVPhiCand"), PhiCand, RealPhiCandWithJet);
+    JEhistos.fill(HIST("hNRealPhiInJetVPhiCand"), PhiCand, RealPhiCandInJet);
+
     // Jet Eff
   }
   PROCESS_SWITCH(phiInJets, processRec, "pikp detector level MC JE", true);
@@ -976,7 +989,7 @@ struct phiInJets {
           TLorentzVector lResonance;
           lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
           bool jetFlag = false;
-          for (int i = 0; i < mcp_pt.size(); i++) {
+          for (std::vector<double>::size_type i = 0; i < mcp_pt.size(); i++) {
             double phidiff = TVector2::Phi_mpi_pi(mcp_phi[i] - lResonance.Phi());
             double etadiff = mcp_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -1005,24 +1018,24 @@ struct phiInJets {
             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
               JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
             JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_INSIDE"), jetpt, lResonance.Pt(), lResonance.M());
+          }
+          //  else if (!jetFlag && mcp_pt.size() > 0) {
+          //       JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
 
-          } /* else if (!jetFlag && mcp_pt.size() > 0) {
-             JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
+          //       if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+          //         JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3"), lResonance.M());
 
-             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-               JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3"), lResonance.M());
+          //       JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG"), jetpt, lResonance.Pt(), lResonance.M());
 
-             JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG"), jetpt, lResonance.Pt(), lResonance.M());
+          //     } else if (!jetFlag) {
+          //       JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_1D"), lResonance.M());
 
-           } else if (!jetFlag) {
-             JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_1D"), lResonance.M());
+          //       if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+          //         JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
 
-             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-               JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
+          //       JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
 
-             JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-
-       }*/  //! jetflag
+          // }  //! jetflag
 
           ////////////////////////////Phi found
           if (hasJets) {
@@ -1051,7 +1064,8 @@ struct phiInJets {
                          JetMCPTable const& mcpjets,
                          myCompleteJetTracks const& tracks,
                          myCompleteTracks const&,
-                         aod::JMcParticles const& mcParticles)
+                         aod::JMcParticles const& mcParticles,
+                         aod::McParticles const&)
 
   {
     if (cDebugLevel > 0) {
@@ -1137,6 +1151,10 @@ struct phiInJets {
         double phi_dgth_px[2] = {0};
         double phi_dgth_py[2] = {0};
         double phi_dgth_pz[2] = {0};
+        double TEMP_phi_dgth_px[2] = {0};
+        double TEMP_phi_dgth_py[2] = {0};
+        double TEMP_phi_dgth_pz[2] = {0};
+
         bool good_daughter[2] = {false};
         int dgth_index = 0;
         // First we check for Forced BR
@@ -1152,21 +1170,35 @@ struct phiInJets {
                 auto trk = track.track_as<myCompleteTracks>();
                 if (!trackSelection(trk))
                   continue;
+                if (fabs(trk.eta()) > cfgtrkMaxEta)
+                  continue;
                 if (cfgSimPID) {
                   if (!trackPID(trk, true))
                     continue;
                 }
-                if (track.globalIndex() == dgth.globalIndex()) {
-                  phi_dgth_px[dgth_index] = track.px();
-                  phi_dgth_py[dgth_index] = track.py();
-                  phi_dgth_pz[dgth_index] = track.pz();
+                if (!trk.has_mcParticle())
+                  continue;
+                auto part = trk.mcParticle();
+                if (part.globalIndex() == dgth.globalIndex()) {
+                  TEMP_phi_dgth_px[dgth_index] = track.px();
+                  TEMP_phi_dgth_py[dgth_index] = track.py();
+                  TEMP_phi_dgth_pz[dgth_index] = track.pz();
                   good_daughter[dgth_index] = true;
                   dgth_index++;
-                }
-              }
-            }
-          }
-        } else {
+                  if (dgth_index == 2) {
+                    phi_dgth_px[0] = TEMP_phi_dgth_px[0];
+                    phi_dgth_py[0] = TEMP_phi_dgth_py[0];
+                    phi_dgth_pz[0] = TEMP_phi_dgth_pz[0];
+                    phi_dgth_px[1] = TEMP_phi_dgth_px[1];
+                    phi_dgth_py[1] = TEMP_phi_dgth_py[1];
+                    phi_dgth_pz[1] = TEMP_phi_dgth_pz[1];
+                    break;
+                  }
+                } // index check
+              }   // track loop
+            }     // mc daughter loop
+          }       // check if particle has daughters
+        } else {  // check for kstar
           if (mcParticle.has_daughters())
             for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
               if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
@@ -1187,12 +1219,12 @@ struct phiInJets {
         lDecayDaughter1_REC.SetXYZM(phi_dgth_px[0], phi_dgth_py[0], phi_dgth_pz[0], massKa);
         lDecayDaughter2_REC.SetXYZM(phi_dgth_px[1], phi_dgth_py[1], phi_dgth_pz[1], massKa);
         lResonance_REC = lDecayDaughter1_REC + lDecayDaughter2_REC;
-        if (cDebugLevel > 0)
-          if (good_daughter[0] && good_daughter[1])
-            std::cout << "Reconstructed level phi pT: " << lResonance_REC.Pt() << std::endl;
+        // if (cDebugLevel > 0)
+        //   if (good_daughter[0] && good_daughter[1])
+        //     std::cout << "Reconstructed level phi pT: " << lResonance_REC.Pt() << std::endl;
 
         bool jetFlag = false;
-        for (int i = 0; i < mcp_pt.size(); i++) {
+        for (std::vector<double>::size_type i = 0; i < mcp_pt.size(); i++) {
           double phidiff = TVector2::Phi_mpi_pi(mcp_phi[i] - lResonance.Phi());
           double etadiff = mcp_eta[i] - lResonance.Eta();
           double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -1211,6 +1243,25 @@ struct phiInJets {
         }
 
         if (jetFlag) {
+          if (cDebugLevel > 0) {
+            std::cout << "******************************************" << std::endl;
+            std::cout << "GEN TO REC LEVEL: " << std::endl;
+            std::cout << "Rec. Phi Pt: " << lResonance_REC.Pt() << std::endl;
+            std::cout << "Rec. Phi Eta: " << lResonance_REC.Eta() << std::endl;
+            std::cout << "Rec. Jet Pt: " << jetpt_mcd << std::endl;
+            std::cout << "Gen. Phi Pt: " << lResonance.Pt() << std::endl;
+            std::cout << "Gen. Phi Eta: " << lResonance.Eta() << std::endl;
+            std::cout << "Gen. Jet Pt: " << jetpt_mcp << std::endl;
+            std::cout << "******************************************" << std::endl;
+          }
+
+          JEhistos.fill(HIST("RespGen_Matrix_MATCHED"), lResonance_REC.Pt(), jetpt_mcd, lResonance.Pt(), jetpt_mcp);
+          unsigned int seed = static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count());
+          int dice = rand_r(&seed) % 2;
+          if (dice > 0)
+            JEhistos.fill(HIST("RespGen_Matrix_MATCHED_rand0"), lResonance_REC.Pt(), jetpt_mcd, lResonance.Pt(), jetpt_mcp);
+          else
+            JEhistos.fill(HIST("RespGen_Matrix_MATCHED_rand1"), lResonance_REC.Pt(), jetpt_mcd, lResonance.Pt(), jetpt_mcp);
 
           JEhistos.fill(HIST("2DGenToRec"), lResonance.Pt(), jetpt_mcp);
           // //check constrained eff
@@ -1221,25 +1272,24 @@ struct phiInJets {
           if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
             JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE_1D_2_3"), lResonance.M());
           JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE"), jetpt_mcp, lResonance.Pt(), lResonance.M());
+        }
+        // else if (!jetFlag && mcp_pt.size() > 0) {
+        //    JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
 
-        } /* else if (!jetFlag && mcp_pt.size() > 0) {
-           JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
+        //    if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+        //      JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_TRIG_1D_2_3"), lResonance.M());
 
-           if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-             JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_TRIG_1D_2_3"), lResonance.M());
+        //    JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_TRIG"), jetpt_mcp, lResonance.Pt(), lResonance.M());
 
-           JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_TRIG"), jetpt_mcp, lResonance.Pt(), lResonance.M());
+        //  } else if (!jetFlag) {
+        //    JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_1D"), lResonance.M());
 
-         } else if (!jetFlag) {
-           JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_1D"), lResonance.M());
+        //    if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+        //      JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
 
-           if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-             JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
+        //    JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE"), jetpt_mcp, lResonance.Pt(), lResonance.M());
 
-           JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE"), jetpt_mcp, lResonance.Pt(), lResonance.M());
-
-         }*/
-          //! jetflag
+        //  }          //! jetflag
       }   // chech for phi
     }     // MC Particles
   }       // main fcn
@@ -1400,7 +1450,7 @@ struct phiInJets {
             int goodjets = 0;
             double jetpt_mcp = 0;
             double jetpt_mcd = 0;
-            for (int i = 0; i < mcd_pt.size(); i++) {
+            for (std::vector<double>::size_type i = 0; i < mcd_pt.size(); i++) {
               double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
               double etadiff = mcd_eta[i] - lResonance.Eta();
               double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -1421,6 +1471,7 @@ struct phiInJets {
             if (jetFlag) { // Fill Resp. Matrix
               if (cDebugLevel > 0) {
                 std::cout << "******************************************" << std::endl;
+                std::cout << "REC TO GEN LEVEL: " << std::endl;
                 std::cout << "Rec. Phi Pt: " << lResonance.Pt() << std::endl;
                 std::cout << "Rec. Jet Pt: " << jetpt_mcd << std::endl;
                 std::cout << "Gen. Phi Pt: " << mothers1Pt[0] << std::endl;
@@ -1447,24 +1498,24 @@ struct phiInJets {
               if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
                 JEhistos.fill(HIST("hMCRec_hUSS_INSIDE_1D_2_3"), lResonance.M());
               JEhistos.fill(HIST("hMCRec_hUSS_INSIDE"), jetpt_mcd, lResonance.Pt(), lResonance.M());
+            }
+            // else if (!jetFlag && mcd_pt.size() > 0) {
+            //    JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
 
-            } /* else if (!jetFlag && mcd_pt.size() > 0) {
-               JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
+            //    if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+            //      JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_TRIG_1D_2_3"), lResonance.M());
 
-               if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-                 JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_TRIG_1D_2_3"), lResonance.M());
+            //    JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_TRIG"), jetpt_mcd, lResonance.Pt(), lResonance.M());
 
-               JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_TRIG"), jetpt_mcd, lResonance.Pt(), lResonance.M());
+            //  } else if (!jetFlag) {
+            //    JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D"), lResonance.M());
 
-             } else if (!jetFlag) {
-               JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D"), lResonance.M());
+            //    if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+            //      JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
 
-               if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-                 JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
+            //    JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE"), jetpt_mcd, lResonance.Pt(), lResonance.M());
 
-               JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE"), jetpt_mcd, lResonance.Pt(), lResonance.M());
-
-         }*/  //! jetflag
+            //         }  //! jetflag
 
           } // pass track cut
         }   // has mc particle

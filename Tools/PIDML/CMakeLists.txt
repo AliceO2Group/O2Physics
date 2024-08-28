@@ -15,6 +15,18 @@ o2physics_add_dpl_workflow(pid-ml-producer
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pid-ml-batch-eff-and-pur-producer
+                           SOURCES pidMLBatchEffAndPurProducer.cxx
+                           JOB_POOL analysis
+                           PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pid-ml-eff-and-pur-producer
+                           SOURCES pidMLEffAndPurProducer.cxx
+                           JOB_POOL analysis
+                           PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(simple-apply-pid-onnx-model
                            SOURCES simpleApplyPidOnnxModel.cxx
                            JOB_POOL analysis

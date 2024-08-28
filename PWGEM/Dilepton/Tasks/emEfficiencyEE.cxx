@@ -93,7 +93,7 @@ using MyMCTrackNoSkimmed = soa::Join<aod::McParticles, aod::SmearedElectrons>;
 
 constexpr static uint32_t gkEventFillMapNoSkimmed = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkMCEventFillMapNoSkimmed = VarManager::ObjTypes::CollisionMC;
-constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkParticleMCFillMapNoSkimmed = VarManager::ObjTypes::ParticleMC;
 
 // Skimmed data: works up to dielectron efficiency
@@ -119,6 +119,8 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
+  Configurable<bool> fConfigOnlyInjectedEvents{"cfgOnlyInjectedEvents", false, "Use only on Non-skimmed data! If true, select only injected events"};
+  Configurable<std::vector<int>> fSubGenIDs{"cfgSubGenIDs", {0, 1, 2, 3}, "Use only on Non-skimmed data! Provide a comma separated list of subGenIDs to select, e.g. 0,1,2,3"};
 
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
@@ -148,17 +150,29 @@ struct AnalysisEventSelection {
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     bool pass = true;
 
+    int32_t subGeneratorID = -999;
     VarManager::FillEvent<TEventFillMap>(event);
     if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
+      // TODO: Get access to subgenerator ID in skimmed data
+      // generatorID = event.reducedMCevent().generatorsID();
     }
     if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       if (!event.has_mcCollision()) {
         pass = false;
       } else {
         VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
+        subGeneratorID = event.mcCollision().getSubGeneratorId();
       }
     }
+
+    // check if SubGeneratorID is part of list
+    // if SubGenerator is not part of it, rejct event, return
+    if (fConfigOnlyInjectedEvents && !(std::find(fSubGenIDs->begin(), fSubGenIDs->end(), subGeneratorID) != fSubGenIDs->end())) {
+      eventSel(0);
+      return;
+    }
+
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
     }
@@ -482,7 +496,7 @@ struct AnalysisTrackSelection {
     AxisSpec axisPhi{phiBins, "#it{#varphi}_{e} (rad)"};
     AxisSpec axisPt{ptBins, "#it{p}_{T,e} (GeV/#it{c})"};
     AxisSpec axisMCColl = {3, -0.5, 2.5, "MCcoll info"};
-    AxisSpec axisAmbig = {2, -0.5, 1.5, "Ambiguous info"};
+    AxisSpec axisDoubleCount = {2, -0.5, 1.5, "Double count info"};
 
     // List of track cuts
     TString cutNamesStr = fConfigCuts.value;
@@ -557,15 +571,15 @@ struct AnalysisTrackSelection {
             fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
             fHistRecPosSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_SingleRec_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
             fHistRecNegSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_SingleRec_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
-            fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisAmbig}, true));
-            fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisAmbig}, true));
+            fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisDoubleCount}, true));
+            fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisDoubleCount}, true));
           } else {
             fHistRecPosPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
             fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
             fHistRecPosSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_SingleRec_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
             fHistRecNegSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_SingleRec_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
-            fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisAmbig}, true));
-            fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisAmbig}, true));
+            fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
+            fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
           }
         }
       }
@@ -577,16 +591,16 @@ struct AnalysisTrackSelection {
           fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
           fHistRecPosSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_SingleRec_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
           fHistRecNegSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_SingleRec_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
-          fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisAmbig}, true));
-          fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisAmbig}, true));
+          fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisDoubleCount}, true));
+          fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisMCColl, axisDoubleCount}, true));
 
         } else {
           fHistRecPosPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
           fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
           fHistRecPosSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_SingleRec_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
           fHistRecNegSingleRecPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_SingleRec_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisEta, axisPhi}, true));
-          fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisAmbig}, true));
-          fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisAmbig}, true));
+          fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
+          fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
         }
       }
     }
@@ -775,6 +789,7 @@ struct AnalysisTrackSelection {
   {
 
     for (auto& mctrack : groupedMCTracks) {
+      VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
@@ -817,6 +832,7 @@ struct AnalysisTrackSelection {
       if (!mccollisionwithin10 && fConfigMCCollz)
         continue;
 
+      VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
@@ -848,19 +864,10 @@ struct AnalysisTrackSelection {
   void runRecTrack(TTracks const& groupedTracks, TTracksMC const& tracksMC, bool pass, bool write)
   {
 
-    std::map<uint64_t, int> fRecTrackLabels[fTrackCuts.size() + 1];
-
     uint32_t filterMap = 0;
     trackSel.reserve(groupedTracks.size());
 
     for (auto& track : groupedTracks) {
-
-      // How many time the associated MC track was seen for this cut
-      Int_t fRecCounters[fTrackCuts.size() + 1];
-      for (unsigned int k = 0; k < fTrackCuts.size() + 1; k++) {
-        fRecCounters[k] = 0;
-      }
-
       filterMap = 0;
 
       VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
@@ -903,11 +910,6 @@ struct AnalysisTrackSelection {
       // compute MC matching decisions
       uint32_t mcDecision = 0;
       int isig = 0;
-      Int_t mctrackindex = -999;
-      Int_t doublereconstructedtrack[fTrackCuts.size() + 1];
-      for (unsigned int k = 0; k < fTrackCuts.size() + 1; k++) {
-        doublereconstructedtrack[k] = 0;
-      }
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
 
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
@@ -920,38 +922,6 @@ struct AnalysisTrackSelection {
             auto mctrack = track.template mcParticle_as<aod::McParticles>();
             if ((*sig).CheckSignal(true, mctrack)) {
               mcDecision |= (uint32_t(1) << isig);
-              mctrackindex = mctrack.globalIndex();
-            }
-          }
-        }
-      }
-
-      // Double reconstructed track only for the signal (they should not be redundant or crossing!!)
-      for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
-          continue;
-        }
-
-        // no track cuts
-        if (!(fRecTrackLabels[fTrackCuts.size()].find(mctrackindex) != fRecTrackLabels[fTrackCuts.size()].end())) {
-          fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecCounters[fTrackCuts.size()];
-          fRecCounters[fTrackCuts.size()]++;
-        } else {
-          // printf("For cut %d, found a mc collision track already reconstructed %d for selected collision with the same mc collision %d\n",j,mctrackindex,mcCollisionId);
-          doublereconstructedtrack[fTrackCuts.size()] = 1;
-          fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecTrackLabels[fTrackCuts.size()].find(mctrackindex)->second + 1;
-        }
-
-        for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-          if (filterMap & (uint8_t(1) << j)) {
-
-            if (!(fRecTrackLabels[j].find(mctrackindex) != fRecTrackLabels[j].end())) {
-              fRecTrackLabels[j][mctrackindex] = fRecCounters[j];
-              fRecCounters[j]++;
-            } else {
-              // printf("For cut %d, found a mc collision track already reconstructed %d for selected collision with the same mc collision %d\n",j,mctrackindex,mcCollisionId);
-              doublereconstructedtrack[j] = 1;
-              fRecTrackLabels[j][mctrackindex] = fRecTrackLabels[j].find(mctrackindex)->second + 1;
             }
           }
         }
@@ -962,38 +932,6 @@ struct AnalysisTrackSelection {
         if (!(mcDecision & (uint32_t(1) << i))) {
           continue;
         }
-        Double_t mmcpt = -10000.;
-        Double_t mmceta = -10000.;
-        Double_t mmcphi = -1000.;
-        // No track cut
-        if (fConfigRecWithMC) {
-
-          if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-            auto mctrack = track.reducedMCTrack();
-            mmcpt = mctrack.pt();
-            mmceta = mctrack.eta();
-            mmcphi = mctrack.phi();
-          }
-          if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
-            if (track.has_mcParticle()) {
-              auto mctrack = track.template mcParticle_as<aod::McParticles>();
-              mmcpt = mctrack.pt();
-              mmceta = mctrack.eta();
-              mmcphi = mctrack.phi();
-            }
-          }
-
-          if (track.sign() < 0) {
-            fHistRecNegPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-            if (doublereconstructedtrack[fTrackCuts.size()] == 0)
-              fHistRecNegSingleRecPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-          } else {
-            fHistRecPosPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-            if (doublereconstructedtrack[fTrackCuts.size()] == 0)
-              fHistRecPosSingleRecPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-          }
-        }
-        // track cuts
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
           if (filterMap & (uint8_t(1) << j)) {
             if (track.sign() < 0) {
@@ -1004,14 +942,29 @@ struct AnalysisTrackSelection {
 
             if (fConfigRecWithMC) {
 
+              Double_t mcpt = -10000.;
+              Double_t mceta = -10000.;
+              Double_t mcphi = -1000.;
+
+              if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
+                auto mctrack = track.reducedMCTrack();
+                mcpt = mctrack.pt();
+                mceta = mctrack.eta();
+                mcphi = mctrack.phi();
+              }
+              if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
+                if (track.has_mcParticle()) {
+                  auto mctrack = track.template mcParticle_as<aod::McParticles>();
+                  mcpt = mctrack.pt();
+                  mceta = mctrack.eta();
+                  mcphi = mctrack.phi();
+                }
+              }
+
               if (track.sign() < 0) {
-                fHistRecNegPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-                if (doublereconstructedtrack[j] == 0)
-                  fHistRecNegSingleRecPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
+                fHistRecNegPartMC[j * fMCSignals.size() + i]->Fill(mcpt, mceta, mcphi);
               } else {
-                fHistRecPosPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
-                if (doublereconstructedtrack[j] == 0)
-                  fHistRecPosSingleRecPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
+                fHistRecPosPartMC[j * fMCSignals.size() + i]->Fill(mcpt, mceta, mcphi);
               }
             }
 
@@ -1201,7 +1154,7 @@ struct AnalysisTrackSelection {
           doublereconstructedtrack[fTrackCuts.size()] = 1;
           fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecTrackLabels[fTrackCuts.size()].find(mctrackindex)->second + 1;
         }
-
+        // track cuts
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
           if (filterMap & (uint8_t(1) << j)) {
 
@@ -1227,7 +1180,6 @@ struct AnalysisTrackSelection {
         Double_t mmcphi = -1000.;
         // No track cut
         if (fConfigRecWithMC) {
-
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
             auto mctrack = track.reducedMCTrack();
             mmcpt = mctrack.pt();

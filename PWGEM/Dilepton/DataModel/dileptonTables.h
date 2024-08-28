@@ -17,7 +17,6 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/CaloClusters.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Qvectors.h"
@@ -33,26 +32,26 @@ namespace pwgem::dilepton::swt
 enum class swtAliases : int { // software trigger aliases for EM
   kHighTrackMult = 0,
   kHighFt0Mult,
-  // kSingleE,
-  // kLMeeIMR,
-  // kLMeeHMR,
-  // kDiElectron,
-  // kSingleMuLow,
-  // kSingleMuHigh,
-  // kDiMuon,
+  kSingleE,
+  kLMeeIMR,
+  kLMeeHMR,
+  kDiElectron,
+  kSingleMuLow,
+  kSingleMuHigh,
+  kDiMuon,
   kNaliases
 };
 
 const std::unordered_map<std::string, int> aliasLabels = {
   {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
   {"fHighFt0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0Mult)},
-  // {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
-  // {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
-  // {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
-  // {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
-  // {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
-  // {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
-  // {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
+  {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
+  {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
+  {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
+  {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
+  {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
+  {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
+  {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
 };
 } // namespace pwgem::dilepton::swt
 
@@ -186,7 +185,7 @@ DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEven
                   emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);
 using EMEventProperty = EMEventsProperty::iterator;
 
-DECLARE_SOA_TABLE(EMEventsNee, "AOD", "EMEVENTNEE", emevent::NeeULS, emevent::NeeLSpp, emevent::NeeLSmm); // joinable to EMEvents
+DECLARE_SOA_TABLE(EMEventsNee, "AOD", "EMEVENTNEE", emevent::NeeULS, emevent::NeeLSpp, emevent::NeeLSmm); // joinable to EMEvents or aod::Collisions
 using EMEventNee = EMEventsNee::iterator;
 
 namespace emmcevent
@@ -197,7 +196,7 @@ DECLARE_SOA_COLUMN(McCollisionId, mcCollisionId, int);
 DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
                   o2::soa::Index<>, emmcevent::McCollisionId, mccollision::GeneratorsID,
                   mccollision::PosX, mccollision::PosY, mccollision::PosZ,
-                  mccollision::T, mccollision::ImpactParameter,
+                  mccollision::ImpactParameter, mccollision::EventPlaneAngle,
 
                   // dynamic column
                   mccollision::GetGeneratorId<mccollision::GeneratorsID>,
@@ -384,8 +383,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
-                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
-                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                   emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
                   emprimaryelectron::P<track::Pt, track::Eta>,
                   emprimaryelectron::Px<track::Pt, track::Phi>,
