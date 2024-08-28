@@ -37,6 +37,8 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include <TFile.h>
+#include <TH1.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoUniverse;
@@ -57,9 +59,14 @@ static const float cutsTable[nPart][nCuts]{
 
 struct femtoUniversePairTaskTrackPhi {
 
+  Service<o2::framework::O2DatabasePDG> pdgMC;
+
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   SliceCache cache;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
+
+  using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
+  Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
 
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
@@ -160,6 +167,12 @@ struct femtoUniversePairTaskTrackPhi {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+
+  std::unique_ptr<TFile> plocalEffFile;
+  std::unique_ptr<TH1> plocalEffp1;
+  std::unique_ptr<TH1> plocalEffp2;
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -364,6 +377,24 @@ struct femtoUniversePairTaskTrackPhi {
     qaRegistry.add("Hadron/nSigmaTOFPi", "; #it{p} (GeV/#it{c}); n#sigma_{TOFPi}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Hadron/nSigmaTPCKa", "; #it{p} (GeV/#it{c}); n#sigma_{TPCKa}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Hadron/nSigmaTOFKa", "; #it{p} (GeV/#it{c}); n#sigma_{TOFKa}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+
+    // MC truth
+    registryMCtruth.add("MCtruthPhi", "MC truth Phi;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("MCtruthAllPositivePt", "MC truth all positive;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("MCtruthAllNegativePt", "MC truth all negative;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("MCtruthKp", "MC truth K+;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("MCtruthKm", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("MCtruthKpPt", "MC truth kaons positive;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("MCtruthKmPt", "MC truth kaons negative;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCtruth.add("MCtruthPpos", "MC truth proton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("MCtruthPneg", "MC truth antiproton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    // MC reco
+    registryMCreco.add("MCrecoPhi", "MC reco Phi;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("MCrecoAllPositivePt", "MC reco all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCreco.add("MCrecoAllNegativePt", "MC reco all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCreco.add("MCrecoPpos", "MC reco proton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("MCrecoPneg", "MC reco antiproton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
     trackHistoPartPhi.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarInvMassBins, ConfBothTracks.ConfIsMC, ConfPhi.ConfPDGCodePhi);
     if (!ConfTrack.ConfIsSame) {
@@ -635,6 +666,81 @@ struct femtoUniversePairTaskTrackPhi {
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processMixedEventMC, "Enable processing mixed events MC", false);
+
+  ///--------------------------------------------MC-------------------------------------------------///
+
+  /// This function fills MC truth particles from derived MC table
+  void processMCTruth(aod::FDParticles const& parts)
+  {
+    for (auto& part : parts) {
+      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
+        continue;
+
+      int pdgCode = static_cast<int>(part.pidcut());
+      const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
+      if (!pdgParticle) {
+        continue;
+      }
+
+      if (pdgParticle->Charge() > 0.0) {
+        registryMCtruth.fill(HIST("MCtruthAllPositivePt"), part.pt());
+      }
+      if (pdgCode == 321) {
+        registryMCtruth.fill(HIST("MCtruthKp"), part.pt(), part.eta());
+        registryMCtruth.fill(HIST("MCtruthKpPt"), part.pt());
+      }
+      if (pdgCode == 333) {
+        registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
+        continue;
+      }
+      if (pdgCode == 2212) {
+        registryMCtruth.fill(HIST("MCtruthPpos"), part.pt(), part.eta());
+      }
+
+      if (pdgParticle->Charge() < 0.0) {
+        registryMCtruth.fill(HIST("MCtruthAllNegativePt"), part.pt());
+      }
+      if (pdgCode == -321) {
+        registryMCtruth.fill(HIST("MCtruthKm"), part.pt(), part.eta());
+        registryMCtruth.fill(HIST("MCtruthKmPt"), part.pt());
+      }
+      if (pdgCode == -2212) {
+        registryMCtruth.fill(HIST("MCtruthPneg"), part.pt(), part.eta());
+      }
+    }
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processMCTruth, "Process MC truth data", false);
+
+  void processMCReco(FemtoRecoParticles const& parts, aod::FDMCParticles const& mcparts)
+  {
+    for (auto& part : parts) {
+      auto mcPartId = part.fdMCParticleId();
+      if (mcPartId == -1)
+        continue; // no MC particle
+      const auto& mcpart = mcparts.iteratorAt(mcPartId);
+      if (part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) {
+        if (mcpart.pdgMCTruth() == 333) {
+          registryMCreco.fill(HIST("MCrecoPhi"), mcpart.pt(), mcpart.eta()); // phi
+        }
+      } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {
+        if (part.sign() > 0) {
+          registryMCreco.fill(HIST("MCrecoAllPositivePt"), mcpart.pt());
+          if (mcpart.pdgMCTruth() == 2212 && IsParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+            registryMCreco.fill(HIST("MCrecoPpos"), mcpart.pt(), mcpart.eta());
+          }
+        }
+
+        if (part.sign() < 0) {
+          registryMCreco.fill(HIST("MCrecoAllNegativePt"), mcpart.pt());
+          if (mcpart.pdgMCTruth() == -2212 && IsParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+            registryMCreco.fill(HIST("MCrecoPneg"), mcpart.pt(), mcpart.eta());
+          }
+        }
+      } // partType
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processMCReco, "Process MC reco data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
