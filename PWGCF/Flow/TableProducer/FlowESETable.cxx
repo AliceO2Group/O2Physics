@@ -17,11 +17,9 @@
 #include <chrono>
 #include <string>
 #include <TComplex.h>
-// #include <TH3F.h>
 #include <algorithm>
 #include <numeric>
 #include <vector>
-#include "TSpline.h"
 
 #include "Framework/ASoA.h"
 
@@ -43,18 +41,21 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/FT0Corrected.h"
 
-#include "PWGCF/Flow/DataModel/FlowESE.h"
-#include "FFitWeights.h"
-
-#include "CCDB/BasicCCDBManager.h"
 #include "DetectorsCommonDataFormats/AlignParam.h"
 #include "FT0Base/Geometry.h"
+
+#include "PWGCF/Flow/DataModel/FlowESE.h"
+
+
+#include "FFitWeights.h"
+#include "TSpline.h"
+
+
 
 using namespace o2;
 using namespace o2::framework;
 // using namespace o2::framework::expressions;
 
-#include "Framework/runDataProcessing.h"
 
 // using CollWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
 using CollWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;

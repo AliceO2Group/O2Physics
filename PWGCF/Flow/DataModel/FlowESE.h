@@ -14,12 +14,14 @@
 /// \author Joachim Hansen <joachim.hansen@cern.ch>
 //
 
-#ifndef PWGCF_FLOW_DATAMODEL_QVEC_H_
-#define PWGCF_FLOW_DATAMODEL_QVEC_H_
+#ifndef PWGCF_FLOW_DATAMODEL_FLOWESE_H_
+#define PWGCF_FLOW_DATAMODEL_FLOWESE_H_
+
+#include <vector>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-#include <vector>
+
 
 namespace o2::aod
 {
@@ -41,4 +43,4 @@ using qPercentileFT0C = qPercentileFT0Cs::iterator;
 
 } // namespace o2::aod
 
-#endif /* PWGCF_FLOW_DATAMODEL_QVEC_H_ */
+#endif // PWGCF_FLOW_DATAMODEL_FLOWESE_H_ 

@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGCF_FLOW_CORE_LINKDEF_H_
-#define PWGCF_FLOW_CORE_LINKDEF_H_
+#ifndef PWGCF_FLOW_CORE_FLOWCORELINKDEF_H_
+#define PWGCF_FLOW_CORE_FLOWCORELINKDEF_H_
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -18,4 +18,4 @@
 
 #pragma link C++ class FFitWeights + ;
 
-#endif // PWGCF_FLOW_CORE_LINKDEF_H_
+#endif // PWGCF_FLOW_CORE_FLOWCORELINKDEF_H_
