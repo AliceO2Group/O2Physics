@@ -109,8 +109,12 @@ struct MultiplicityTable {
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
-  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
-  Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+ struct : ConfigurableGroup {
+    Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
+    Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> reconstructionPass{"reconstructionPass", "metadata", {"Apass to use when fetching the calibration tables. `metadata` to fetch it from the AO2D metadata. Empty does not check for any pass. Otherwise it will override the metadata."}};
+  } ccdbConfig;
+
   Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
 
   int mRunNumber;
@@ -195,7 +199,7 @@ struct MultiplicityTable {
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
 
-    ccdb->setURL(ccdbUrl);
+    ccdb->setURL(ccdbConfig.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
@@ -372,7 +376,18 @@ struct MultiplicityTable {
       if (doVertexZeq > 0) {
         if (bc.runNumber() != mRunNumber) {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
-          lCalibObjects = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
+          if (ccdbConfig.reconstructionPass.value == "") {
+            lCalibObjects = ccdb->getForTimeStamp<TList>(ccdbConfig.ccdbPath, bc.timestamp());
+          } else if (ccdbConfig.reconstructionPass.value == "metadata") {
+            std::map<std::string, std::string> metadata;
+            metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+            lCalibObjects = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+          } else {
+            std::map<std::string, std::string> metadata;
+            metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+            lCalibObjects = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+          }
+
           if (lCalibObjects) {
             if (produceHistograms) {
               listCalib->Add(lCalibObjects->Clone(Form("%i", bc.runNumber())));
