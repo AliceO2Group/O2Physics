@@ -109,7 +109,7 @@ struct MultiplicityTable {
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
- struct : ConfigurableGroup {
+  struct : ConfigurableGroup {
     Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
     Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
     Configurable<std::string> reconstructionPass{"reconstructionPass", "metadata", {"Apass to use when fetching the calibration tables. `metadata` to fetch it from the AO2D metadata. Empty does not check for any pass. Otherwise it will override the metadata."}};
