@@ -29,7 +29,7 @@ namespace o2::aod
 
 namespace stracolls
 {
-  DECLARE_SOA_COLUMN(IsUPC, isUPC, bool); //! is event upc-like
+DECLARE_SOA_COLUMN(IsUPC, isUPC, bool); //! is event upc-like
 }
 
 //______________________________________________________
@@ -94,7 +94,7 @@ DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to comp
 DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE(StraUpcSels, "AOD", "STRAUPCSELS", //! information for UPC analysis
-                  udcollision::TotalFV0AmplitudeA, 
+                  udcollision::TotalFV0AmplitudeA,
                   udcollision::TotalFT0AmplitudeA, udcollision::TotalFT0AmplitudeC,
                   udzdc::EnergyCommonZNA, udzdc::EnergyCommonZNC,
                   udcollision::TotalFDDAmplitudeA, udcollision::TotalFDDAmplitudeC,

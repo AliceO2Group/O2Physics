@@ -109,7 +109,7 @@ enum selectionsCombined : int { selV0CosPA = 0,
                                 selTOFDeltaTNegativePionLambdaXi,
                                 selTOFDeltaTNegativePionLambdaOmega,
                                 selTOFDeltaTBachPionXi,
-                                selTOFDeltaTBachKaonOmega, 
+                                selTOFDeltaTBachKaonOmega,
                                 selBachEta,
                                 selLambdaMassWin,
                                 selCount,
@@ -129,7 +129,7 @@ std::bitset<selNum> maskKinematicV0;
 std::bitset<selNum> maskKinematicCasc;
 
 std::bitset<selNum> maskTrackPropertiesV0;
-std::bitset<selNum> maskTrackPropertiesCasc; 
+std::bitset<selNum> maskTrackPropertiesCasc;
 
 std::bitset<selNum> maskK0ShortSpecific;
 std::bitset<selNum> maskLambdaSpecific;

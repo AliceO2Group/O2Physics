@@ -841,9 +841,9 @@ struct strangederivedbuilder {
       auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collision.globalIndex());
       if (udCollision.size() == 1) {
         for (auto& udColl : udCollision) {
-          strangeUpcSels(udColl.totalFV0AmplitudeA(), udColl.totalFT0AmplitudeA(), udColl.totalFT0AmplitudeC(), 
-                         udColl.energyCommonZNA(), udColl.energyCommonZNC(), 
-                         udColl.totalFDDAmplitudeA(), udColl.totalFDDAmplitudeC(), 
+          strangeUpcSels(udColl.totalFV0AmplitudeA(), udColl.totalFT0AmplitudeA(), udColl.totalFT0AmplitudeC(),
+                         udColl.energyCommonZNA(), udColl.energyCommonZNC(),
+                         udColl.totalFDDAmplitudeA(), udColl.totalFDDAmplitudeC(),
                          udColl.gapSide(), 1.);
         }
       } else { // in principle, udCollision.size() should be 0 in this case
