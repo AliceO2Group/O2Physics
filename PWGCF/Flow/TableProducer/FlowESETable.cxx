@@ -13,7 +13,6 @@
 //
 /// \author Joachim Hansen <joachim.hansen@cern.ch>
 //
-#include "PWGCF/Flow/DataModel/FlowESETable.h"
 
 #include <chrono>
 #include <string>
@@ -26,6 +25,8 @@
 
 #include <DataFormatsParameters/GRPObject.h>
 #include <DataFormatsParameters/GRPMagField.h>
+
+#include "PWGCF/Flow/DataModel/FlowESE.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"

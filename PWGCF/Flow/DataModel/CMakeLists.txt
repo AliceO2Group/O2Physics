@@ -10,4 +10,4 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_header_only_library(flow-datamodel
-                                  HEADERS FlowESETable.h)
+                                  HEADERS FlowESE.h)

@@ -29,7 +29,7 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 
-#include "PWGCF/Flow/DataModel/FlowESETable.h"
+#include "PWGCF/Flow/DataModel/FlowESE.h"
 #include "PWGCF/Flow/Core/FFitWeights.h"
 
 using namespace o2;
