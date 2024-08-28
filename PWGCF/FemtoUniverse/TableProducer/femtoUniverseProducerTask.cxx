@@ -205,7 +205,7 @@ struct femtoUniverseProducerTask {
     Configurable<float> ConfDcaXYCustom12FilterCut{"ConfDcaXY2FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
   } ConfFilterCuts;
 
-  Filter GlobalCutFilter = requireGlobalTrackWoDCAInFilter();
+  Filter GlobalCutFilter = requireGlobalTrackInFilter();
   Filter CustomTrackFilter = (aod::track::pt > ConfFilterCuts.ConfPtLowFilterCut) &&
                              (aod::track::pt < ConfFilterCuts.ConfPtHighFilterCut) &&
                              (nabs(aod::track::eta) < ConfFilterCuts.ConfEtaFilterCut) &&
