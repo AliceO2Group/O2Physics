@@ -1425,8 +1425,6 @@ struct CFFilter {
     registry.fill(HIST("EventCuts/fMultiplicityBefore"), col.multNTracksPV());
     registry.fill(HIST("EventCuts/fZvtxBefore"), col.posZ());
 
-    std::vector<ROOT::Math::PtEtaPhiMVector> kaons, antikaons, phi;
-
     bool keepEvent3N[CFTrigger::kNThreeBodyTriggers] = {false, false, false, false};
     int lowQ3Triplets[CFTrigger::kNThreeBodyTriggers] = {0, 0, 0, 0};
 
@@ -1443,7 +1441,7 @@ struct CFFilter {
       std::vector<int> AntiProtonIndex = {};
 
       // Prepare vectors for different species
-      std::vector<ROOT::Math::PtEtaPhiMVector> protons, antiprotons, deuterons, antideuterons, lambdas, antilambdas;
+      std::vector<ROOT::Math::PtEtaPhiMVector> protons, antiprotons, deuterons, antideuterons, lambdas, antilambdas, kaons, antikaons, phi;
 
       // create deuteron and proton vectors (and corresponding antiparticles) for pair and triplet creation
       for (auto& track : tracks) {
@@ -1623,52 +1621,52 @@ struct CFFilter {
             registry.fill(HIST("TrackCuts/AntiDeuteron/fTrkTPCfClsAntiDeuteron"), track.tpcCrossedRowsOverFindableCls());
             registry.fill(HIST("TrackCuts/AntiDeuteron/fTPCnclsAntiDeuteron"), track.tpcNClsFound());
           }
-          // get Kaons (Phi Daughters)
-          if (ConfTriggerSwitches->get("Switch", "ppPhi") > 0.) {
-            if (isSelectedTrackKaon(track)) {
-              ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassKaonPlus);
-              if (track.sign() > 0) {
-                temp.SetM(mMassKaonPlus);
-                kaons.push_back(temp);
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fP"), track.p());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fPTPC"), track.tpcInnerParam());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fPt"), track.pt());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fEta"), track.eta());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fPhi"), track.phi());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fNsigmaTPCvsP"), track.tpcInnerParam(), track.tpcNSigmaKa());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fNsigmaTOFvsP"), track.tpcInnerParam(), track.tofNSigmaKa());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fNsigmaTPCTOFvsP"), track.tpcInnerParam(), std::abs(std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa())));
+        }
+        // get Kaons (Phi Daughters)
+        if (ConfTriggerSwitches->get("Switch", "ppPhi") > 0.) {
+          if (isSelectedTrackKaon(track)) {
+            ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassKaonPlus);
+            if (track.sign() > 0) {
+              temp.SetM(mMassKaonPlus);
+              kaons.push_back(temp);
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fP"), track.p());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fPTPC"), track.tpcInnerParam());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fPt"), track.pt());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fEta"), track.eta());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fPhi"), track.phi());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fNsigmaTPCvsP"), track.tpcInnerParam(), track.tpcNSigmaKa());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fNsigmaTOFvsP"), track.tpcInnerParam(), track.tofNSigmaKa());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fNsigmaTPCTOFvsP"), track.tpcInnerParam(), std::abs(std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa())));
 
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fDCAxy"), track.dcaXY());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fDCAz"), track.dcaZ());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fTPCsCls"), track.tpcNClsShared());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fTPCcRows"), track.tpcNClsCrossedRows());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
-                registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fTPCncls"), track.tpcNClsFound());
-              }
-              if (track.sign() < 0) {
-                temp.SetM(mMassKaonMinus);
-                antikaons.push_back(temp);
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fP"), track.p());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fPTPC"), track.tpcInnerParam());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fPt"), track.pt());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fEta"), track.eta());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fPhi"), track.phi());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fNsigmaTPCvsP"), track.tpcInnerParam(), track.tpcNSigmaKa());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fNsigmaTOFvsP"), track.tpcInnerParam(), track.tofNSigmaKa());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fNsigmaTPCTOFvsP"), track.tpcInnerParam(), std::abs(std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa())));
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fDCAxy"), track.dcaXY());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fDCAz"), track.dcaZ());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fTPCsCls"), track.tpcNClsShared());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fTPCcRows"), track.tpcNClsCrossedRows());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
+              registry.fill(HIST("TrackCuts/Phi/Before/PosDaughter/fTPCncls"), track.tpcNClsFound());
+            }
+            if (track.sign() < 0) {
+              temp.SetM(mMassKaonMinus);
+              antikaons.push_back(temp);
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fP"), track.p());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fPTPC"), track.tpcInnerParam());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fPt"), track.pt());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fEta"), track.eta());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fPhi"), track.phi());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fNsigmaTPCvsP"), track.tpcInnerParam(), track.tpcNSigmaKa());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fNsigmaTOFvsP"), track.tpcInnerParam(), track.tofNSigmaKa());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fNsigmaTPCTOFvsP"), track.tpcInnerParam(), std::abs(std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa())));
 
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fDCAxy"), track.dcaXY());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fDCAz"), track.dcaZ());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fTPCsCls"), track.tpcNClsShared());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fTPCcRows"), track.tpcNClsCrossedRows());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
-                registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fTPCncls"), track.tpcNClsFound());
-              }
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fDCAxy"), track.dcaXY());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fDCAz"), track.dcaZ());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fTPCsCls"), track.tpcNClsShared());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fTPCcRows"), track.tpcNClsCrossedRows());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
+              registry.fill(HIST("TrackCuts/Phi/Before/NegDaughter/fTPCncls"), track.tpcNClsFound());
             }
           }
         }
