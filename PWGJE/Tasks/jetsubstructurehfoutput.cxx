@@ -22,8 +22,6 @@
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -83,9 +81,6 @@ struct JetSubstructureHFOutputTask {
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track pseudorapidity"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track pseudorapidity"};
 
-  Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
-  Configurable<float> vertexZCutForCounting{"vertexZCutForCounting", 10.0, "choose z-vertex cut for collision counter"};
-
   std::map<int32_t, int32_t> jetMappingData;
   std::map<int32_t, int32_t> jetMappingDataSub;
   std::map<int32_t, int32_t> jetMappingMCD;
@@ -108,11 +103,9 @@ struct JetSubstructureHFOutputTask {
   PresliceOptional<soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds>> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
   PresliceOptional<McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
 
-  int eventSelection = -1;
   void init(InitContext const&)
   {
     jetRadiiValues = (std::vector<double>)jetRadii;
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelectionForCounting));
   }
 
   template <typename T, typename U, typename V, typename M>

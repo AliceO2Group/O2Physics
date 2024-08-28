@@ -163,14 +163,14 @@ struct JetTaggerHFTask {
     switch (resoFuncMatch) {
       case 0:
         vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsIncJetMC = (std::vector<float>)paramsResoFuncIncJetMC;
+        vecParamsCharmJetMC = (std::vector<float>)paramsResoFuncCharmJetMC;
+        vecParamsBeautyJetMC = (std::vector<float>)paramsResoFuncBeautyJetMC;
+        vecParamsLfJetMC = (std::vector<float>)paramsResoFuncLfJetMC;
         LOG(info) << "defined parameters of resolution function: custom";
         break;
       case 1:
         vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsCharmJetMC = (std::vector<float>)paramsResoFuncCharmJetMC;
-        vecParamsBeautyJetMC = (std::vector<float>)paramsResoFuncBeautyJetMC;
-        vecParamsLfJetMC = (std::vector<float>)paramsResoFuncLfJetMC;
+        vecParamsIncJetMC = (std::vector<float>)paramsResoFuncIncJetMC;
         useResoFuncFromIncJet = true;
         LOG(info) << "defined parameters of resolution function: custom & use inclusive distribution";
         break;
