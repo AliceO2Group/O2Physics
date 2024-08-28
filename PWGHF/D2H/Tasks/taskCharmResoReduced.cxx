@@ -24,6 +24,7 @@
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 
 using namespace o2;
+using namespace o2::soa;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -36,11 +37,12 @@ enum DecayChannel : uint8_t {
 };
 
 struct HfTaskReso{
+Configurable<float> ptMinReso{"ptMinReso", 5, "Discard events with smaller pT"};
 // Configurables axis for histos
 ConfigurableAxis configAxisPt{"configAxisPt", {VARIABLE_WIDTH,0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "axis for pT"};
 ConfigurableAxis configAxisPtProng0{"configAxisPtProng0", {VARIABLE_WIDTH,0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "axis for pT of D daughter"};
 ConfigurableAxis configAxisPtProng1{"configAxisPtProng1", {VARIABLE_WIDTH,0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "axis for pT of V0 daughter"};
-ConfigurableAxis configAxisInvMassReso{"configAxisInvMassReso", {225, 2.35, 2.80}, "axis for Resonance invariant mass"};
+ConfigurableAxis configAxisInvMassReso{"configAxisInvMassReso", {200, 2.34, 2.74}, "axis for Resonance invariant mass"};
 ConfigurableAxis configAxisInvMassProng0{"configAxisInvMassProng0", {175, 1.70, 2.05}, "axis for Prong0 invariant mass"};
 ConfigurableAxis configAxisInvMassProng1{"configAxisInvMassProng1", {80, 0.46, 0.54}, "axis for Prong1 invariant mass"};
 ConfigurableAxis configAxisCosThetaStar{"configAxisCosThetaStar", {40, -1, 1}, "axis for V0 costheta star"};
@@ -49,13 +51,13 @@ ConfigurableAxis configAxisNonPromptBdtScore{"configAxisNonPromptBdtScore", {100
 // Configurables for ME
 Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
 Configurable<int> numberEventsToSkip{"numberEventsToSkip", -1, "Number of events to Skip in ME process"};
-ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 50., 100., 200.}, "event multiplicity pools (PV contributors for now)"};
-ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "z vertex position pools"};
-ConfigurableAxis bzPoolBins{"bzPoolBins", {2, -10, 10}, "Bz of collision"};
+ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
+ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
+// ConfigurableAxis bzPoolBins{"bzPoolBins", {2, -10, 10}, "Bz of collision"};
 
 using reducedResoWithMl = soa::Join<aod::HfCandCharmReso, aod::HfCharmResoMLs>;
-using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib, aod::hf_reduced_collision::Bz>;
 SliceCache cache;
+Preslice<reducedResoWithMl> resoPerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
 
 // Histogram Registry
 HistogramRegistry registry;
@@ -66,7 +68,7 @@ void init(InitContext&)
     const AxisSpec axisPt{configAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPtProng0{configAxisPtProng0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPtProng1{configAxisPtProng1, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisInvMassReso{configAxisInvMassReso, "inv. mass (D{V}_{0}) (GeV/#it{c}^{2})"};
+    const AxisSpec axisInvMassReso{configAxisInvMassReso, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
     const AxisSpec axisInvMassProng0{configAxisInvMassProng0, "inv. mass (D) (GeV/#it{c}^{2})"};
     const AxisSpec axisInvMassProng1{configAxisInvMassProng1, "inv. mass ({V}_{0}) (GeV/#it{c}^{2})"};
     const AxisSpec axisCosThetaStar{configAxisCosThetaStar,"cos(#vartheta*)"};
@@ -78,14 +80,20 @@ void init(InitContext&)
     registry.add("hPt", "Charm resonance candidates pT", {HistType::kTH1F, {axisPt}});
     registry.add("hPtProng0", "D daughters pT", {HistType::kTH1F, {axisPtProng0}});
     registry.add("hPtProng1", "V0 daughter pT", {HistType::kTH1F, {axisPtProng1}});
-    registry.add("hNPvCont", "Collision number of PV contributors ; N contrib ; entries", {HistType::kTH1F, {{100, 0, 500}}});
+    registry.add("hNPvCont", "Collision number of PV contributors ; N contrib ; entries", {HistType::kTH1F, {{100, 0, 250}}});
     registry.add("hZvert", "Collision Z Vtx ; z PV [cm] ; entries", {HistType::kTH1F, {{120, -12., 12.}}});
-    registry.add("hBz", "Collision Bz ; Bz [T] ; entries", {HistType::kTH1F, {{20, -1., 1.}}});
-    if (doprocessDs2StarData){
+    registry.add("hBz", "Collision Bz ; Bz [T] ; entries", {HistType::kTH1F, {{20, -10., 10.}}});
+    if (doprocessDs2StarData || doprocessDs2StarDataME){
       registry.add("hSparseMl", "THn for production studies with cosThStar and BDT scores", HistType::kTHnSparseF,{axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisInvMassProng1, axisCosThetaStar, axisBkgBdtScore, axisNonPromptBdtScore});
     }
     else{ 
       registry.add("hSparse", "THn for production studies with cosThStar", HistType::kTHnSparseF,{axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisInvMassProng1, axisCosThetaStar});
+    }
+    if (doprocessDs2StarDataME){
+      registry.add("hNPvContCorr", "Collision number of PV contributors ; N contrib ; N contrib", {HistType::kTH2F, {{100, 0, 250}, {100, 0, 250}}});
+      registry.add("hZvertCorr", "Collision Z Vtx ; z PV [cm] ; z PV [cm]", {HistType::kTH2F, {{120, -12., 12.},{120, -12., 12.}}});
+      registry.add("hMassProng0Corr", "D daughters inv. mass", {HistType::kTH2F, {axisInvMassProng0,axisInvMassProng0}});
+      registry.add("hMassProng1Corr", "V0 daughter inv. mass", {HistType::kTH2F, {axisInvMassProng1,axisInvMassProng1}});
     }
 }
 
@@ -123,7 +131,7 @@ void fillHisto (const Cand& candidate, const Coll& collision){
           registry.fill(HIST("hSparseMl"), candidate.pt(), candidate.ptProng0(), candidate.ptProng1(), candidate.invMass(), candidate.invMassProng0(), candidate.invMassProng1(), cosThetaStar, candidate.mlScoreBkgProng0(), candidate.mlScoreNonpromptProng0());
     }
     else {
-          registry.fill(HIST("hSparse"), candidate.pt(), candidate.ptProng0(), candidate.ptProng1(), candidate.invMass(), candidate.invMassProng0(), candidate.invMassProng1(), cosThetaStar, candidate.mlScoreBkgProng0());
+          registry.fill(HIST("hSparse"), candidate.pt(), candidate.ptProng0(), candidate.ptProng1(), candidate.invMass(), candidate.invMassProng0(), candidate.invMassProng1(), cosThetaStar);
     }
 } // fillHisto
 
@@ -135,6 +143,9 @@ void fillHisto (const Cand& candidate, const Coll& collision){
 template <DecayChannel channel, bool hasMl, typename Coll, typename Candidates>
 void processData ( Coll const&, Candidates const& candidates){
   for (const auto& cand : candidates) {
+    if (cand.pt() < ptMinReso){
+          continue;
+    }
     auto coll = cand.template hfRedCollision_as<Coll>();
     fillHisto<channel, hasMl>(cand, coll);
   }
@@ -147,30 +158,47 @@ void processData ( Coll const&, Candidates const& candidates){
 /// \param Cand is the candidates table
 template <DecayChannel channel, bool hasMl, typename Coll, typename Candidates>
 void processDataME ( Coll const& collisions, Candidates const& candidates){
-  BinningType corrBinning{{zPoolBins, multPoolBins, bzPoolBins}, true};
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
   auto candsTuple = std::make_tuple(candidates);
-    SameKindPair<Coll, Candidates, BinningType> pairs{corrBinning, numberEventsMixed, numberEventsToSkip, collisions, candsTuple, &cache}; 
-    for (auto& [collision1, cands1, collision2, cands2] : pairs) {
-      // For each couple of candidate resonances I can make 2 mixed candidates by swithching daughters
-      // To each ME I associate the collision of the D daughter
-      for (const auto& [cand1, cand2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(cands1, cands2))) {
-        // Vectors with daughter momenta
-        std::array<Candidates,2> cands = {cand1, cand2};
-        std::array<std::array<float, 3>, 2> pVecsDDau = {cand1.pVectorProng0(),cand2.pVectorProng0()};
-        std::array<std::array<float, 3>, 2> pVecsV0Dau = {cand1.pVectorProng1(),cand2.pVectorProng1()};
-        std::array<float, 2> bdtBkg = {cand1.mlScoreBkgProng0, cand2.mlScoreBkgProng0()};
-        std::array<float, 2> bdtNonPrompt = {cand1.mlScoreNonPromptProng0, cand2.mlScoreNonPromptProng0()};
-        // Reconstructing mass, pt and cosThetaStar of mixed candidates
-        for (int i = 0; i<2; i++){
-          int j = (i + 1) % 2; //index on V0 momenta array
-          float ptME = RecoDecay::pt(pVecsDDau[i][0] + pVecsV0Dau[j][0], pVecsDDau[i][1] + pVecsV0Dau[j][1]);
-          float invMassME = RecoDecay::m(std::array{pVecsDDau[i], pVecsV0Dau[j]}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0});
-          float cosThetaStarME = RecoDecay::cosThetaStar(std::array{pVecsDDau[i], pVecsV0Dau[j]}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0}, invMassME, 1);
-
+  SameKindPair<aod::HfRedCollisions, Candidates, BinningType> pairs{corrBinning, numberEventsMixed, numberEventsToSkip, collisions, candsTuple, &cache}; 
+  for (auto& [collision1, cands1, collision2, cands2] : pairs) {
+    // For each couple of candidate resonances I can make 2 mixed candidates by swithching daughters
+    for (const auto& [cand1, cand2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(cands1, cands2))) {
+      float ptME1 = RecoDecay::pt(RecoDecay::sumOfVec(cand1.pVectorProng0(),  cand2.pVectorProng1()));
+      if (ptME1 > ptMinReso ){
+        float invMassME1 = RecoDecay::m(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short});
+        float cosThetaStarME1 = RecoDecay::cosThetaStar(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short}, invMassME1, 1);
+        registry.fill(HIST("hMass"), invMassME1);
+        registry.fill(HIST("hPt"), ptME1);
+        registry.fill(HIST("hNPvContCorr"), collision1.numContrib(),collision2.numContrib());
+        registry.fill(HIST("hZvertCorr"), collision1.posZ(),collision2.posZ());
+        registry.fill(HIST("hMassProng0Corr"), cand1.invMassProng0(),cand2.invMassProng0());
+        registry.fill(HIST("hMassProng1Corr"), cand1.invMassProng1(),cand2.invMassProng1());
+        if constexpr (hasMl){
+          registry.fill(HIST("hSparseMl"), ptME1, cand1.ptProng0(), cand2.ptProng1(), invMassME1, cand1.invMassProng0(), cand2.invMassProng1(), cosThetaStarME1, cand1.mlScoreBkgProng0(), cand1.mlScoreNonpromptProng0());
         }
-      }  
+        else {
+          registry.fill(HIST("hSparse"), ptME1, cand1.ptProng0(), cand2.ptProng1(), invMassME1, cand1.invMassProng0(), cand2.invMassProng1(), cosThetaStarME1);
+        }
+      }
+      // float ptME2 = RecoDecay::pt(cand2.pxProng0() + cand1.pxProng1(), cand2.pyProng0() + cand1.pyProng1());
+      // if (ptME2 > ptMinReso ){
+      //   float invMassME2 = RecoDecay::m(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short});
+      //   float cosThetaStarME2 = RecoDecay::cosThetaStar(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short}, invMassME2, 1);
+      //   registry.fill(HIST("hMass"), invMassME2);
+      //   registry.fill(HIST("hPt"), ptME2);
+      //   if constexpr (hasMl){
+      //     registry.fill(HIST("hSparseMl"), ptME2, cand2.ptProng0(), cand1.ptProng1(), invMassME2, cand2.invMassProng0(), cand1.invMassProng1(), cosThetaStarME2, cand2.mlScoreBkgProng0(), cand2.mlScoreNonpromptProng0());
+      //   }
+      //   else {
+      //     registry.fill(HIST("hSparse"), ptME2, cand2.ptProng0(), cand1.ptProng1(), invMassME2, cand2.invMassProng0(), cand1.invMassProng1(), cosThetaStarME2);
+      //   }
+      // }
+      
     }
   }
+}
 
 // process functions
 void processDs2StarData(aod::HfRedCollisions const& collisions, reducedResoWithMl const& candidates)
@@ -178,6 +206,12 @@ void processDs2StarData(aod::HfRedCollisions const& collisions, reducedResoWithM
   processData<DecayChannel::Ds2StarToDplusK0s, true>(collisions, candidates);
 }
 PROCESS_SWITCH(HfTaskReso, processDs2StarData, "Process data", true);
+
+void processDs2StarDataME(aod::HfRedCollisions const& collisions, reducedResoWithMl const& candidates)
+{
+  processDataME<DecayChannel::Ds2StarToDplusK0s, true>(collisions, candidates);
+}
+PROCESS_SWITCH(HfTaskReso, processDs2StarDataME, "Process data with Event Mixing", false);
 
 }; //struct HfTaskReso
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
