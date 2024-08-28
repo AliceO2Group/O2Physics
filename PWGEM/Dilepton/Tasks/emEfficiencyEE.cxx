@@ -124,6 +124,7 @@ struct AnalysisEventSelection {
 
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
+  HistogramRegistry registry{"HistoAnalysisEvent", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
@@ -140,6 +141,11 @@ struct AnalysisEventSelection {
       DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;", fConfigAddEventHistogram); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                           // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
+
+      AxisSpec axisSubGen = {4, -0.5, 3.5, "MC SubGenerator ID"};
+      registry.add<TH1>("Generator/SubGenerator_BeforeCuts", "", HistType::kTH1D, {axisSubGen}, true);
+      registry.add<TH1>("Generator/SubGenerator_SelectedInjected", "", HistType::kTH1D, {axisSubGen}, true);
+      registry.add<TH1>("Generator/SubGenerator_AfterCuts", "", HistType::kTH1D, {axisSubGen}, true);
     }
   }
 
@@ -165,9 +171,12 @@ struct AnalysisEventSelection {
         subGeneratorID = event.mcCollision().getSubGeneratorId();
       }
     }
+    
+    registry.fill(HIST("Generator/SubGenerator_BeforeCuts"), subGeneratorID);
 
-    // check if SubGeneratorID is part of list
-    // if SubGenerator is not part of it, rejct event, return
+    // check if SubGeneratorID is part of list:
+    // if SubGenerator is not part of it, reject event, return
+    // fill event histos only if event is from SubGenerator
     if (fConfigOnlyInjectedEvents && !(std::find(fSubGenIDs->begin(), fSubGenIDs->end(), subGeneratorID) != fSubGenIDs->end())) {
       eventSel(0);
       return;
@@ -175,10 +184,12 @@ struct AnalysisEventSelection {
 
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
+      registry.fill(HIST("Generator/SubGenerator_SelectedInjected"), subGeneratorID);
     }
     if (fEventCut->IsSelected(VarManager::fgValues) && pass) {
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        registry.fill(HIST("Generator/SubGenerator_AfterCuts"), subGeneratorID);
       }
       eventSel(1);
     } else {
@@ -211,6 +222,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy process function", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummyNoSkimmed, "Dummy process function", false);
 };
+
 struct AnalysisEventQa {
 
   Filter filterEventSelected = aod::emanalysisflags::isEventSelected == 1;
@@ -473,6 +485,8 @@ struct AnalysisTrackSelection {
   std::vector<std::shared_ptr<TH3>> fHistRecNegSingleRecPartMC;
   std::vector<std::shared_ptr<TH3>> fHistRecPosClassCollDoubleCountPartMC;
   std::vector<std::shared_ptr<TH3>> fHistRecNegClassCollDoubleCountPartMC;
+  std::vector<std::shared_ptr<TH3>> fHistRecPosClassAmbigCollDoubleCountPartMC;
+  std::vector<std::shared_ptr<TH3>> fHistRecNegClassAmbigCollDoubleCountPartMC;
 
   // Res histos
   std::vector<std::shared_ptr<TH2>> fHistRes;
@@ -481,7 +495,7 @@ struct AnalysisTrackSelection {
   HistogramManager* fHistManQA;                            // histo manager
   std::vector<TString> fHistNamesRecoQA;                   // list of histo names for all reconstructed tracks in histo manager
   std::vector<std::vector<TString>> fHistNamesMCMatchedQA; // list of histo names for reconstructed signals in histo manager
-  std::vector<std::vector<TString>> fHistNamesMCQA;        // list of histo names for generated signals in histo manager
+  std::vector<TString> fHistNamesMCQA;                     // list of histo names for generated signals in histo manager
 
   void init(o2::framework::InitContext&)
   {
@@ -497,6 +511,7 @@ struct AnalysisTrackSelection {
     AxisSpec axisPt{ptBins, "#it{p}_{T,e} (GeV/#it{c})"};
     AxisSpec axisMCColl = {3, -0.5, 2.5, "MCcoll info"};
     AxisSpec axisDoubleCount = {2, -0.5, 1.5, "Double count info"};
+    AxisSpec axisAmbig = {2, -0.5, 1.5, "Ambiguous info"};
 
     // List of track cuts
     TString cutNamesStr = fConfigCuts.value;
@@ -565,7 +580,6 @@ struct AnalysisTrackSelection {
     if (fConfigRecWithMC) {
       for (unsigned int list_i = 0; list_i < fTrackCuts.size(); ++list_i) {
         for (unsigned int i = 0; i < fMCSignals.size(); ++i) {
-
           if (!fConfigUsePtVec) {
             fHistRecPosPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
             fHistRecNegPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisPt, axisEta, axisPhi}, true));
@@ -581,6 +595,8 @@ struct AnalysisTrackSelection {
             fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
             fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
           }
+          fHistRecPosClassAmbigCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Pos_ClassAmigCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisAmbig, axisMCColl, axisDoubleCount}, true));
+          fHistRecNegClassAmbigCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/%s_MCVars/Nrec_Neg_ClassAmigCollDoubleCount_%s", fTrackCuts.at(list_i).GetName(), fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisAmbig, axisMCColl, axisDoubleCount}, true));
         }
       }
       // Histo without track cut
@@ -602,12 +618,13 @@ struct AnalysisTrackSelection {
           fHistRecPosClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
           fHistRecNegClassCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {{ptBinsVec, "#it{p}_{T,e} (GeV/#it{c})"}, axisMCColl, axisDoubleCount}, true));
         }
+        fHistRecPosClassAmbigCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Pos_ClassAmigCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisAmbig, axisMCColl, axisDoubleCount}, true));
+        fHistRecNegClassAmbigCollDoubleCountPartMC.push_back(registry.add<TH3>(Form("SingleElectron/NoCut_MCVars/Nrec_Neg_ClassAmigCollDoubleCount_%s", fMCSignals.at(i).GetName()), "", HistType::kTH3D, {axisAmbig, axisMCColl, axisDoubleCount}, true));
       }
     }
 
     // Resolution histogramms
     if (fConfigResolutionOn) {
-
       // Binning for resolution
       AxisSpec axisPtRes{ptResBins, "#it{p}^{gen}_{T,e} (GeV/#it{c})"};
       AxisSpec axisDeltaptRes{deltaptResBins, "(p^{gen}_{T} - p^{rec}_{T}) / p^{gen}_{T} (GeV/c)"};
@@ -649,13 +666,14 @@ struct AnalysisTrackSelection {
       }
 
       // Add histogram classes for each MC signal at generated level
-      std::vector<TString> mcnamesgen;
+      // std::vector<TString> mcnamesgen;
       for (unsigned int isig = 0; isig < fMCSignals.size(); ++isig) {
         TString nameStr2 = Form("MCTruthGen_%s", fMCSignals.at(isig).GetName());
-        mcnamesgen.push_back(nameStr2);
+        fHistNamesMCQA.push_back(nameStr2);
+        // mcnamesgen.push_back(nameStr2);
         histClassesQA += Form("%s;", nameStr2.Data());
       }
-      fHistNamesMCQA.push_back(mcnamesgen);
+      // fHistNamesMCQA.push_back(mcnamesgen);
 
       fHistManQA = new HistogramManager("SingleElectronQA", "aa", VarManager::kNVars);
       fHistManQA->SetUseDefaultVariableNames(kTRUE);
@@ -787,7 +805,6 @@ struct AnalysisTrackSelection {
   template <bool smeared, typename TTracksMC>
   void runMCGenTrack(TTracksMC const& groupedMCTracks)
   {
-
     for (auto& mctrack : groupedMCTracks) {
       VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
@@ -810,8 +827,9 @@ struct AnalysisTrackSelection {
             if constexpr (smeared)
               fHistGenSmearedPosPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
           }
-          if (fConfigQA)
-            fHistManQA->FillHistClass(Form("MCTruthGen_%s", (*sig).GetName()), VarManager::fgValues);
+          if (fConfigQA){
+            fHistManQA->FillHistClass(fHistNamesMCQA[isig].Data(), VarManager::fgValues);
+          }
         }
       }
     }
@@ -854,7 +872,8 @@ struct AnalysisTrackSelection {
               fHistGenSmearedPosPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
           }
           if (fConfigQA)
-            fHistManQA->FillHistClass(Form("MCTruthGen_%s", (*sig).GetName()), VarManager::fgValues);
+            // fHistManQA->FillHistClass(Form("MCTruthGen_%s", (*sig).GetName()), VarManager::fgValues);
+            fHistManQA->FillHistClass(fHistNamesMCQA[isig].Data(), VarManager::fgValues);
         }
       }
     }
@@ -1053,25 +1072,30 @@ struct AnalysisTrackSelection {
         if (ambiguousinfo == 1)
           printf("Has reccollision but is ambiguous\n");
         // printf("Look for the reconstructed collision %d\n",reccollisionid);
+        bool pass = 0;
         for (auto& event : events) {
-          if (event.isEventSelected() == 1)
+          if (event.isEventSelected() == 1) {
             VarManager::FillEvent<TEventFillMap>(event);
-          // printf("Global index of collision %d\n",event.globalIndex());
-          if ((reccollisionid == event.globalIndex()) && (event.isEventSelected() == 1)) {
-            // printf("Found a collision with the same id %d and %d\n",reccollisionid,event.globalIndex());
-            if (ambiguousinfo == 1)
-              printf("Has reccollision and found it in the list but is ambiguous\n");
-            if (event.has_mcCollision()) {
-              mcCollisionIdrectrack = event.mcCollisionId();
+            // printf("Global index of collision %d\n",event.globalIndex());
+            if (reccollisionid == event.globalIndex()) {
+              pass = 1;
+              // printf("Found a collision with the same id %d and %d\n",reccollisionid,event.globalIndex());
               if (ambiguousinfo == 1)
-                printf("Has reccollision with mccollision but is ambiguous\n");
-            } else {
-              if (ambiguousinfo == 1)
-                printf("Has reccollision but without mccollision and is ambiguous\n");
+                printf("Has reccollision and found it in the list but is ambiguous\n");
+              if (event.has_mcCollision()) {
+                mcCollisionIdrectrack = event.mcCollisionId();
+                if (ambiguousinfo == 1)
+                  printf("Has reccollision with mccollision but is ambiguous\n");
+              } else {
+                if (ambiguousinfo == 1)
+                  printf("Has reccollision but without mccollision and is ambiguous\n");
+              }
+              break;
             }
-            break;
           }
         }
+        if (!pass) continue; // rec collision of track is not selected by isSelected
+        // else                 rec collision of track is selected by isSelected
       } else {
         // printf("Not attached to a reconstructed collision\n");
       }
@@ -1139,11 +1163,11 @@ struct AnalysisTrackSelection {
         }
       }
 
-      // Double reconstructed track only for the signal (they should not be redundant or crossing!!)
-      for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
-          continue;
-        }
+      // // Double reconstructed track only for the signal (they should not be redundant or crossing!!)
+      // for (unsigned int i = 0; i < fMCSignals.size(); i++) {
+      //   if (!(mcDecision & (uint32_t(1) << i))) {
+      //     continue;
+      //   }
 
         // no track cuts
         if (!(fRecTrackLabels[fTrackCuts.size()].find(mctrackindex) != fRecTrackLabels[fTrackCuts.size()].end())) {
@@ -1168,7 +1192,7 @@ struct AnalysisTrackSelection {
             }
           }
         }
-      }
+      // }
 
       // fill histograms
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
@@ -1202,6 +1226,7 @@ struct AnalysisTrackSelection {
                 fHistRecNegSingleRecPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
               if (TMath::Abs(mmceta) < 0.8) {
                 fHistRecNegClassCollDoubleCountPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, collisioninfo, doublereconstructedtrack[fTrackCuts.size()]);
+                fHistRecNegClassAmbigCollDoubleCountPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(ambiguousinfo, collisioninfo, doublereconstructedtrack[fTrackCuts.size()]);
               }
             } else {
               fHistRecPosPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
@@ -1209,6 +1234,7 @@ struct AnalysisTrackSelection {
                 fHistRecPosSingleRecPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
               if (TMath::Abs(mmceta) < 0.8) {
                 fHistRecPosClassCollDoubleCountPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(mmcpt, collisioninfo, doublereconstructedtrack[fTrackCuts.size()]);
+                fHistRecPosClassAmbigCollDoubleCountPartMC[fTrackCuts.size() * fMCSignals.size() + i]->Fill(ambiguousinfo, collisioninfo, doublereconstructedtrack[fTrackCuts.size()]);
               }
             }
           }
@@ -1230,6 +1256,7 @@ struct AnalysisTrackSelection {
                     fHistRecNegSingleRecPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
                   if (TMath::Abs(mmceta) < 0.8) {
                     fHistRecNegClassCollDoubleCountPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, collisioninfo, doublereconstructedtrack[j]);
+                    fHistRecNegClassAmbigCollDoubleCountPartMC[j * fMCSignals.size() + i]->Fill(ambiguousinfo, collisioninfo, doublereconstructedtrack[fTrackCuts.size()]);
                   }
                 } else {
                   fHistRecPosPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
@@ -1237,6 +1264,7 @@ struct AnalysisTrackSelection {
                     fHistRecPosSingleRecPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, mmceta, mmcphi);
                   if (TMath::Abs(mmceta) < 0.8) {
                     fHistRecPosClassCollDoubleCountPartMC[j * fMCSignals.size() + i]->Fill(mmcpt, collisioninfo, doublereconstructedtrack[j]);
+                    fHistRecPosClassAmbigCollDoubleCountPartMC[j * fMCSignals.size() + i]->Fill(ambiguousinfo, collisioninfo, doublereconstructedtrack[fTrackCuts.size()]);
                   }
                 }
               }
@@ -1275,6 +1303,7 @@ struct AnalysisTrackSelection {
   }
 
   void processMCNoSkimmed(soa::Filtered<MyMCEventsSelectedNoSkimmed>::iterator const& eventMC, MyMCTrackNoSkimmed const& tracksMC)
+  // void processMCNoSkimmed(aod::McCollisions::iterator const& eventMC, MyMCTrackNoSkimmed const& tracksMC)
   {
     runMCFill<gkMCEventFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(eventMC, tracksMC);
   }
@@ -1285,6 +1314,7 @@ struct AnalysisTrackSelection {
   // }
 
   void processMCNoSkimmedMore(soa::Filtered<MyMCEventsSelectedNoSkimmed>::iterator const& eventMC, MyMCTrackNoSkimmed const& tracksMC)
+  // void processMCNoSkimmedMore(aod::McCollisions::iterator const& eventMC, MyMCTrackNoSkimmed const& tracksMC)
   {
     runMCFillMore<gkMCEventFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(eventMC, tracksMC);
   }
@@ -1305,7 +1335,7 @@ struct AnalysisTrackSelection {
   //   // runDataFill<gkEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(event, tracks, tracksMC, false);
   // }
 
-  void processDataNoSkimmedMore(MyEventsSelectedNoSkimmed const& events, aod::McCollisions const& eventsMC, MyBarrelTracksNoSkimmed const& tracks, aod::McParticles const& tracksMC, aod::AmbiguousTracks const& ambiTracksMid)
+  void processDataNoSkimmedMore(soa::Filtered<MyEventsSelectedNoSkimmed> const& events, aod::McCollisions const& eventsMC, MyBarrelTracksNoSkimmed const& tracks, aod::McParticles const& tracksMC, aod::AmbiguousTracks const& ambiTracksMid)
   {
     runDataFillMore<gkEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed, gkParticleMCFillMapNoSkimmed>(events, eventsMC, tracks, tracksMC, ambiTracksMid);
   }
@@ -2006,7 +2036,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurab
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 500, -6.3, 6.3, VarManager::kMCPhi);
     }
     if (classStr.Contains("MCTruthGen")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_track");
     }
     if (classStr.Contains("DileptonsSelected")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel");
