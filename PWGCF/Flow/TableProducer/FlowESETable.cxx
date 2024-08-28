@@ -13,6 +13,9 @@
 //
 /// \author Joachim Hansen <joachim.hansen@cern.ch>
 //
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
 
 #include <chrono>
 #include <string>
@@ -20,13 +23,6 @@
 #include <algorithm>
 #include <numeric>
 #include <vector>
-
-#include <CCDB/BasicCCDBManager.h>
-
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-
-#include "PWGCF/Flow/DataModel/FlowESE.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -42,12 +38,12 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/FT0Corrected.h"
-
 #include "DetectorsCommonDataFormats/AlignParam.h"
-
 #include "FT0Base/Geometry.h"
 
+#include "PWGCF/Flow/DataModel/FlowESE.h"
 #include "FFitWeights.h"
+
 #include <TSpline.h>
 
 using namespace o2;
