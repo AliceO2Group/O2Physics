@@ -572,7 +572,7 @@ struct TableMaker {
                collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
 
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                VarManager::fgValues[VarManager::kNTPCpileupContribA], VarManager::fgValues[VarManager::kNTPCpileupContribC], 
+                VarManager::fgValues[VarManager::kNTPCpileupContribA], VarManager::fgValues[VarManager::kNTPCpileupContribC],
                 VarManager::fgValues[VarManager::kNTPCpileupZA], VarManager::fgValues[VarManager::kNTPCpileupZC], 0, 0);
       }
 
