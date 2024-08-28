@@ -274,7 +274,7 @@ struct TableMaker {
     }
 
     bool enableBarrelHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") ||
-                               context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly"));
+                               context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterMuonOnly") || context.mOptions.get<bool>("processPPWithFilterMuonMFT") ||
                              context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbMuonOnly") || context.mOptions.get<bool>("processPbPbMuonMFT"));
 
@@ -437,8 +437,9 @@ struct TableMaker {
     fStatsList->Add(histMuons);
   }
 
-  template <uint32_t TEventFillMap, typename TEvents, typename TBCs, typename TZdcs>
-  void skimCollisions(TEvents const& collisions, TBCs const& /*bcs*/, TZdcs const& /*zdcs*/)
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TBCs, typename TZdcs, typename TTrackAssoc, typename TTracks>
+  void skimCollisions(TEvents const& collisions, TBCs const& /*bcs*/, TZdcs const& /*zdcs*/,
+                      TTrackAssoc const& trackAssocs, TTracks const& tracks)
   {
     // Skim collisions
     // NOTE: So far, collisions are filtered based on the user specified analysis cuts and the filterPP event filter.
@@ -496,6 +497,10 @@ struct TableMaker {
           auto bc_zdc = bcEvSel.zdc();
           VarManager::FillZDC(bc_zdc);
         }
+      }
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0 && (TTrackFillMap & VarManager::ObjTypes::Track) > 0 && (TTrackFillMap & VarManager::ObjTypes::TrackDCA) > 0) {
+        auto groupedTrackIndices = trackAssocs.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+        VarManager::FillEventTrackEstimators<TTrackFillMap>(collision, groupedTrackIndices, tracks);
       }
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -565,8 +570,10 @@ struct TableMaker {
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
                collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                0, 0, 0.0, 0.0, 0, 0);
+                VarManager::fgValues[VarManager::kNTPCpileupContribA], VarManager::fgValues[VarManager::kNTPCpileupContribC], 
+                VarManager::fgValues[VarManager::kNTPCpileupZA], VarManager::fgValues[VarManager::kNTPCpileupZC], 0, 0);
       }
 
       fCollIndexMap[collision.globalIndex()] = event.lastIndex();
@@ -897,7 +904,7 @@ struct TableMaker {
     }
 
     // skim collisions
-    skimCollisions<TEventFillMap>(collisions, bcs, zdcs);
+    skimCollisions<TEventFillMap, TTrackFillMap>(collisions, bcs, zdcs, trackAssocs, tracksBarrel);
     if (fCollIndexMap.size() == 0) {
       return;
     }
