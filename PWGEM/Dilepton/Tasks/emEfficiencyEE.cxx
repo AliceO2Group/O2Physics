@@ -171,7 +171,7 @@ struct AnalysisEventSelection {
         subGeneratorID = event.mcCollision().getSubGeneratorId();
       }
     }
-    
+
     registry.fill(HIST("Generator/SubGenerator_BeforeCuts"), subGeneratorID);
 
     // check if SubGeneratorID is part of list:
@@ -827,7 +827,7 @@ struct AnalysisTrackSelection {
             if constexpr (smeared)
               fHistGenSmearedPosPart[isig]->Fill(mctrack.ptSmeared(), mctrack.etaSmeared(), mctrack.phiSmeared());
           }
-          if (fConfigQA){
+          if (fConfigQA) {
             fHistManQA->FillHistClass(fHistNamesMCQA[isig].Data(), VarManager::fgValues);
           }
         }
@@ -1094,8 +1094,9 @@ struct AnalysisTrackSelection {
             }
           }
         }
-        if (!pass) continue; // rec collision of track is not selected by isSelected
-        // else                 rec collision of track is selected by isSelected
+        if (!pass) // rec collision of track is not selected by isSelected
+          continue;
+        // else       rec collision of track is selected by isSelected
       } else {
         // printf("Not attached to a reconstructed collision\n");
       }
@@ -1169,29 +1170,29 @@ struct AnalysisTrackSelection {
       //     continue;
       //   }
 
-        // no track cuts
-        if (!(fRecTrackLabels[fTrackCuts.size()].find(mctrackindex) != fRecTrackLabels[fTrackCuts.size()].end())) {
-          fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecCounters[fTrackCuts.size()];
-          fRecCounters[fTrackCuts.size()]++;
-        } else {
-          // printf("For cut %d, found a mc collision track already reconstructed %d for selected collision with the same mc collision %d\n",j,mctrackindex,mcCollisionId);
-          doublereconstructedtrack[fTrackCuts.size()] = 1;
-          fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecTrackLabels[fTrackCuts.size()].find(mctrackindex)->second + 1;
-        }
-        // track cuts
-        for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-          if (filterMap & (uint8_t(1) << j)) {
+      // no track cuts
+      if (!(fRecTrackLabels[fTrackCuts.size()].find(mctrackindex) != fRecTrackLabels[fTrackCuts.size()].end())) {
+        fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecCounters[fTrackCuts.size()];
+        fRecCounters[fTrackCuts.size()]++;
+      } else {
+        // printf("For cut %d, found a mc collision track already reconstructed %d for selected collision with the same mc collision %d\n",j,mctrackindex,mcCollisionId);
+        doublereconstructedtrack[fTrackCuts.size()] = 1;
+        fRecTrackLabels[fTrackCuts.size()][mctrackindex] = fRecTrackLabels[fTrackCuts.size()].find(mctrackindex)->second + 1;
+      }
+      // track cuts
+      for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
+        if (filterMap & (uint8_t(1) << j)) {
 
-            if (!(fRecTrackLabels[j].find(mctrackindex) != fRecTrackLabels[j].end())) {
-              fRecTrackLabels[j][mctrackindex] = fRecCounters[j];
-              fRecCounters[j]++;
-            } else {
-              // printf("For cut %d, found a mc collision track already reconstructed %d for selected collision with the same mc collision %d\n",j,mctrackindex,mcCollisionId);
-              doublereconstructedtrack[j] = 1;
-              fRecTrackLabels[j][mctrackindex] = fRecTrackLabels[j].find(mctrackindex)->second + 1;
-            }
+          if (!(fRecTrackLabels[j].find(mctrackindex) != fRecTrackLabels[j].end())) {
+            fRecTrackLabels[j][mctrackindex] = fRecCounters[j];
+            fRecCounters[j]++;
+          } else {
+            // printf("For cut %d, found a mc collision track already reconstructed %d for selected collision with the same mc collision %d\n",j,mctrackindex,mcCollisionId);
+            doublereconstructedtrack[j] = 1;
+            fRecTrackLabels[j][mctrackindex] = fRecTrackLabels[j].find(mctrackindex)->second + 1;
           }
         }
+      }
       // }
 
       // fill histograms

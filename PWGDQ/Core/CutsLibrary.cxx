@@ -3202,6 +3202,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   std::string nameStr = cutName;
   // ---------------------------------------------------------------
   // Event cuts
+  if (!nameStr.compare("noEventCut")) {
+    return cut;
+  }
+
   if (!nameStr.compare("eventNoTFBorder")) {
     cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
     return cut;

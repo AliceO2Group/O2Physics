@@ -242,6 +242,7 @@ class VarManager : public TObject
     kNTPCtracksInPast,
     kNTPCtracksInFuture,
     kMCEventGeneratorId,
+    kMCEventSubGeneratorId,
     kMCVtxX,
     kMCVtxY,
     kMCVtxZ,
@@ -1626,6 +1627,7 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & CollisionMC) > 0) {
     values[kMCEventGeneratorId] = event.generatorsID();
+    values[kMCEventSubGeneratorId] = event.getSubGeneratorId();
     values[kMCVtxX] = event.posX();
     values[kMCVtxY] = event.posY();
     values[kMCVtxZ] = event.posZ();
@@ -1636,6 +1638,7 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedEventMC) > 0) {
     values[kMCEventGeneratorId] = event.generatorsID();
+    values[kMCEventGeneratorId] = -999; // to be added in reduced events
     values[kMCVtxX] = event.mcPosX();
     values[kMCVtxY] = event.mcPosY();
     values[kMCVtxZ] = event.mcPosZ();
