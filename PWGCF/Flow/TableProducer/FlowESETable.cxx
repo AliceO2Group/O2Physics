@@ -13,7 +13,7 @@
 //
 /// \author Joachim Hansen <joachim.hansen@cern.ch>
 //
-#include "PWGCF/Flow/DataModel/FlowESE.h"
+#include "PWGCF/Flow/DataModel/FlowESETable.h"
 
 #include <chrono>
 #include <string>
