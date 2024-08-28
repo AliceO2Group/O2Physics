@@ -575,7 +575,7 @@ struct derivedlambdakzeroanalysis {
     }
 
     // inspect histogram sizes, please
-    histos.prstatic_cast<int>();
+    histos.print();
   }
 
   template <typename TV0, typename TCollision>
