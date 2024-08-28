@@ -67,7 +67,8 @@ struct TrackEfficiencyJets {
   Configurable<float> trackQAEtaMax{"trackQAEtaMax", 0.9, "maximum eta acceptance for tracks in the processTracks QA"};
   Configurable<float> trackQAPtMin{"trackQAPtMin", 0.15, "minimum pT acceptance for tracks in the processTracks QA"};
   Configurable<float> trackQAPtMax{"trackQAPtMax", 100.0, "maximum pT acceptance for tracks in the processTracks QA"};
-  Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
+  Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
 
   int eventSelection = -1;
   int trackSelection = -1;
@@ -391,7 +392,7 @@ struct TrackEfficiencyJets {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
@@ -412,7 +413,7 @@ struct TrackEfficiencyJets {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);

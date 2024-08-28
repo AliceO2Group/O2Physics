@@ -79,6 +79,9 @@ struct qVectorsCorrection {
   Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.1, "Maximum transverse DCA"};
   Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 1.0, "Maximum longitudinal DCA"};
 
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+
   ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {300, -1, 1}, ""};
   ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
   ConfigurableAxis cfgaxisCent{"cfgaxisCent", {100, 0, 100}, ""};
@@ -471,6 +474,10 @@ struct qVectorsCorrection {
                          !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))) {
       return;
     }
+    if (cfgAddEvtSel && (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      return;
+    }
+
     for (uint i = 0; i < cfgnMods->size(); i++) {
       fillHistosQvec(qVec, cfgnMods->at(i));
       if (cfgQAFinal) {
