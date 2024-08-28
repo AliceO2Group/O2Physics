@@ -196,6 +196,10 @@ struct alice3multicharm {
 
     // set relevant values
     thisXiCCcandidate.dca = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+    if(thisXiCCcandidate.dca>dcaXiCCDaughtersSelection){ 
+      return false;
+    }
+    
     thisXiCCcandidate.mass = RecoDecay::m(array{array{thisXiCCcandidate.prong0mom[0], thisXiCCcandidate.prong0mom[1], thisXiCCcandidate.prong0mom[2]}, array{thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong1mom[2]}}, array{mass0, mass1});
     thisXiCCcandidate.pt = std::hypot(thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1]);
     thisXiCCcandidate.eta = RecoDecay::eta(array{thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]});
@@ -262,6 +266,9 @@ struct alice3multicharm {
 
     // set relevant values
     thisXiCcandidate.dca = TMath::Sqrt(fitter3.getChi2AtPCACandidate());
+    if(thisXiCcandidate.dca>dcaXiCDaughtersSelection){ 
+      return false;
+    }
     thisXiCcandidate.mass = RecoDecay::m(array{array{thisXiCcandidate.prong0mom[0], thisXiCcandidate.prong0mom[1], thisXiCcandidate.prong0mom[2]}, array{thisXiCcandidate.prong1mom[0], thisXiCcandidate.prong1mom[1], thisXiCcandidate.prong1mom[2]}, array{thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong2mom[1], thisXiCcandidate.prong2mom[2]}}, array{p0mass, p1mass, p2mass});
     thisXiCcandidate.pt = std::hypot(thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1]);
     thisXiCcandidate.eta = RecoDecay::eta(array{thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1], thisXiCcandidate.prong0mom[2] + thisXiCcandidate.prong1mom[2] + thisXiCcandidate.prong2mom[2]});
