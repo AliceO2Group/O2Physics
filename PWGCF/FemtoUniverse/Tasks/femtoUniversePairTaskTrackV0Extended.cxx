@@ -135,11 +135,6 @@ struct femtoUniversePairTaskTrackV0Extended {
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
   ConfigurableAxis ConfmultBins3D{"ConfMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
 
-  /// MC
-
-  Configurable<float> ConfHPtMC{"ConfHPtMC", 4.0f, "higher limit for pt"};
-  Configurable<float> ConfLPtMC{"ConfLPtMC", 0.3f, "lower limit for pt"};
-
   // Efficiency
   Configurable<std::string> ConfLocalEfficiency{"ConfLocalEfficiency", "", "Local path to efficiency .root file"};
 
@@ -552,11 +547,11 @@ struct femtoUniversePairTaskTrackV0Extended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (ConfIsCPR.value) {
+        /*if (ConfIsCPR.value) {  /// CPR check is not needed for mixed events
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
           }
-        }
+        }*/
         float weight = 1.0f;
         if (plocalEffp1)
           weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
@@ -624,11 +619,11 @@ struct femtoUniversePairTaskTrackV0Extended {
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (ConfIsCPR.value) {
+        /*if (ConfIsCPR.value) {  /// CPR check is not needed for mixed events
           if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
           }
-        }
+        }*/
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }
     }
