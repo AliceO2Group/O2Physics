@@ -171,7 +171,7 @@ struct AnalysisEventSelection {
         subGeneratorID = event.mcCollision().getSubGeneratorId();
       }
     }
-
+    
     registry.fill(HIST("Generator/SubGenerator_BeforeCuts"), subGeneratorID);
 
     // check if SubGeneratorID is part of list:
