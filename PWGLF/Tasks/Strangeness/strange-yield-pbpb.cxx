@@ -103,7 +103,7 @@ struct strangeYieldPbPb {
   Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
   static constexpr float lifetimeCutsV0[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecutV0{"lifetimecutV0", {lifetimeCutsV0[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecutV0"};
-  
+
   // Standard cascade topological criteria
   Configurable<double> casccospa{"casccospa", 0.97, "Casc CosPA"};
   Configurable<float> dcacascdau{"dcacascdau", 1.2, "DCA Casc Daughters"};
@@ -220,7 +220,8 @@ struct strangeYieldPbPb {
   // PDG database
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
-  void setBits(std::bitset<selNum>& mask, std::initializer_list<int> selections) {
+  void setBits(std::bitset<selNum>& mask, std::initializer_list<int> selections)
+  {
     for (int sel : selections) {
       mask.set(sel);
     }
@@ -230,10 +231,11 @@ struct strangeYieldPbPb {
   {
     // initialise bit masks
     setBits(maskTopologicalV0, {selV0CosPA, selDCANegToPV, selDCAPosToPV, selDCAV0Dau, selV0Radius, selV0RadiusMax});
-    setBits(maskTopologicalCasc, {selCascCosPA, selDCACascDau, selCascRadius, selCascRadiusMax, selBachToPV, selMesonToPV, selBaryonToPV, 
+    setBits(maskTopologicalCasc, {selCascCosPA, selDCACascDau, selCascRadius, selCascRadiusMax, selBachToPV, selMesonToPV, selBaryonToPV,
                                   selDCAV0ToPV, selV0CosPA, selDCAV0Dau, selV0Radius, selV0RadiusMax, selLambdaMassWin});
 
-    if (doBachelorBaryonCut) maskTopologicalCasc.set(selBachBaryon);
+    if (doBachelorBaryonCut)
+      maskTopologicalCasc.set(selBachBaryon);
 
     setBits(maskKinematicV0, {selPosEta, selNegEta});
     setBits(maskKinematicCasc, {selPosEta, selNegEta, selBachEta});
@@ -690,64 +692,64 @@ struct strangeYieldPbPb {
 
   int computeITSclusBitmap(uint8_t itsClusMap, bool fromAfterburner)
   {
-      int bitMap = 0;
+    int bitMap = 0;
 
-      struct MaskBitmapPair {
-          uint8_t mask;
-          int bitmap;
-          int afterburnerBitmap;
-      };
+    struct MaskBitmapPair {
+      uint8_t mask;
+      int bitmap;
+      int afterburnerBitmap;
+    };
 
-      constexpr MaskBitmapPair configs[] = {
-                           // L6 <-- L0
-          {0x7F, 12, 12},  // 01111 111 (L0 to L6)
-          {0x7E, 11, 11},  // 01111 110 (L1 to L6)
-          {0x7C, 10, 10},  // 01111 100 (L2 to L6)
-          {0x78,  9,  -3}, // 01111 000 (L3 to L6)
-          {0x70,  8,  -2}, // 01110 000 (L4 to L6)
-          {0x60,  7,  -1}, // 01100 000 (L5 to L6)
-          {0x3F,  6,  6},  // 00111 111 (L0 to L5)
-          {0x3E,  5,  5},  // 00111 110 (L1 to L5)
-          {0x3C,  4,  4},  // 00111 100 (L2 to L5)
-          {0x1F,  3,  3},  // 00011 111 (L0 to L4)
-          {0x1E,  2,  2},  // 00011 110 (L1 to L4)
-          {0x0F,  1,  1},  // 00001 111 (L0 to L3)
-      };
+    constexpr MaskBitmapPair configs[] = {
+      // L6 <-- L0
+      {0x7F, 12, 12}, // 01111 111 (L0 to L6)
+      {0x7E, 11, 11}, // 01111 110 (L1 to L6)
+      {0x7C, 10, 10}, // 01111 100 (L2 to L6)
+      {0x78, 9, -3},  // 01111 000 (L3 to L6)
+      {0x70, 8, -2},  // 01110 000 (L4 to L6)
+      {0x60, 7, -1},  // 01100 000 (L5 to L6)
+      {0x3F, 6, 6},   // 00111 111 (L0 to L5)
+      {0x3E, 5, 5},   // 00111 110 (L1 to L5)
+      {0x3C, 4, 4},   // 00111 100 (L2 to L5)
+      {0x1F, 3, 3},   // 00011 111 (L0 to L4)
+      {0x1E, 2, 2},   // 00011 110 (L1 to L4)
+      {0x0F, 1, 1},   // 00001 111 (L0 to L3)
+    };
 
-      for (const auto& config : configs) {
-          if (verifyMask(itsClusMap, config.mask)) {
-              bitMap = fromAfterburner ? config.afterburnerBitmap : config.bitmap;
-              break;
-          }
+    for (const auto& config : configs) {
+      if (verifyMask(itsClusMap, config.mask)) {
+        bitMap = fromAfterburner ? config.afterburnerBitmap : config.bitmap;
+        break;
       }
+    }
 
-      return bitMap;
+    return bitMap;
   }
 
   uint computeDetBitmap(uint8_t detMap)
   {
-      uint bitMap = 0;
+    uint bitMap = 0;
 
-      struct MaskBitmapPair {
-          uint8_t mask;
-          int bitmap;
-      };
+    struct MaskBitmapPair {
+      uint8_t mask;
+      int bitmap;
+    };
 
-      constexpr MaskBitmapPair configs[] = {
-          {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF, 4},  // ITS-TPC-TRD-TOF
-          {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF, 3},                        // ITS-TPC-TOF
-          {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD, 2},                        // ITS-TPC-TRD
-          {o2::aod::track::ITS | o2::aod::track::TPC, 1}                                               // ITS-TPC
-      };
+    constexpr MaskBitmapPair configs[] = {
+      {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF, 4}, // ITS-TPC-TRD-TOF
+      {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF, 3},                       // ITS-TPC-TOF
+      {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD, 2},                       // ITS-TPC-TRD
+      {o2::aod::track::ITS | o2::aod::track::TPC, 1}                                              // ITS-TPC
+    };
 
-      for (const auto& config : configs) {
-          if (verifyMask(detMap, config.mask)) {
-              bitMap = config.bitmap;
-              break;
-          }
+    for (const auto& config : configs) {
+      if (verifyMask(detMap, config.mask)) {
+        bitMap = config.bitmap;
+        break;
       }
+    }
 
-      return bitMap;
+    return bitMap;
   }
 
   template <typename TCasc, typename TCollision>
