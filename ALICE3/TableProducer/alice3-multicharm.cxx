@@ -49,6 +49,8 @@
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/OTFMulticharm.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "DetectorsVertexing/PVertexerHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -122,6 +124,7 @@ struct alice3multicharm {
 
   // Helper struct to pass candidate information
   struct {
+    // decay properties
     float dca;
     float mass;
     float pt;
@@ -142,6 +145,12 @@ struct alice3multicharm {
     std::array<float, 3> prong0mom;
     std::array<float, 3> prong1mom;
     std::array<float, 21> parentTrackCovMatrix;
+
+    float etaPiCC;
+
+    // charm daughters
+    int nSiliconHitsPiCC;
+    int nTPCHitsPiCC;
   } thisXiCCcandidate;
 
   template <typename TTrackType>
@@ -397,6 +406,10 @@ struct alice3multicharm {
       histos.fill(HIST("hMassXi"), xiCand.mXi());
       uint32_t nCombinationsC = 0;
       auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
+      auto piFromXi = xiCand.bachTrack_as<alice3tracks>(); // de-reference bach track
+      auto piFromLa = xiCand.negTrack_as<alice3tracks>();  // de-reference neg track
+      auto prFromLa = xiCand.posTrack_as<alice3tracks>();  // de-reference pos track
+
       if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
 
@@ -408,6 +421,7 @@ struct alice3multicharm {
 
         // second pion from XiC decay for starts here
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
+
           if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
             continue; // keep only if same mother
           if (pi1c.globalIndex() >= pi2c.globalIndex())
@@ -431,12 +445,25 @@ struct alice3multicharm {
 
           o2::track::TrackParCov xicTrack(thisXiCcandidate.xyz, momentumC, thisXiCcandidate.parentTrackCovMatrix, +1);
 
+          o2::dataformats::DCA dcaInfo;
+          float xicdcaXY = 1e+10, xicdcaZ = 1e+10;
+          o2::track::TrackParCov xicTrackCopy(xicTrack); // paranoia
+
+          o2::vertexing::PVertex primaryVertex;
+          primaryVertex.setXYZ(collision.posX(), collision.posY(), collision.posZ());
+
+          if (xicTrackCopy.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+            xicdcaXY = dcaInfo.getY();
+            xicdcaZ = dcaInfo.getZ();
+          }
+
           histos.fill(HIST("hMassXiC"), thisXiCcandidate.mass);
           histos.fill(HIST("hDCAXiCDaughters"), thisXiCcandidate.dca);
 
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
+
             if (xiCand.posTrackId() == picc.globalIndex() || xiCand.negTrackId() == picc.globalIndex() || xiCand.bachTrackId() == picc.globalIndex())
               continue; // avoid using any track that was already used
 
@@ -454,11 +481,32 @@ struct alice3multicharm {
             histos.fill(HIST("h3dMassXiCC"), thisXiCCcandidate.pt, thisXiCCcandidate.eta, thisXiCCcandidate.mass);
             histos.fill(HIST("hDCAXiCCDaughters"), thisXiCCcandidate.dca);
 
+            const std::array<float, 3> momentumCC = {
+              thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0],
+              thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1],
+              thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]};
+
+            o2::track::TrackParCov xiccTrack(thisXiCCcandidate.xyz, momentumCC, thisXiCCcandidate.parentTrackCovMatrix, +2);
+
+            float xiccdcaXY = 1e+10, xiccdcaZ = 1e+10;
+            if (xiccTrack.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+              xiccdcaXY = dcaInfo.getY();
+              xiccdcaZ = dcaInfo.getZ();
+            }
+
             // produce multi-charm table for posterior analysis
             multiCharmCore(
               thisXiCcandidate.dca, thisXiCCcandidate.dca,
               thisXiCcandidate.mass, thisXiCCcandidate.mass,
-              thisXiCCcandidate.pt, thisXiCCcandidate.eta);
+              thisXiCCcandidate.pt, thisXiCCcandidate.eta,
+              xi.nSiliconHits(), piFromXi.nSiliconHits(),
+              piFromLa.nSiliconHits(), prFromLa.nSiliconHits(),
+              pi1c.nSiliconHits(), pi2c.nSiliconHits(), picc.nSiliconHits(),
+              piFromXi.nTPCHits(), piFromLa.nTPCHits(), prFromLa.nTPCHits(),
+              pi1c.nTPCHits(), pi2c.nTPCHits(), picc.nTPCHits(),
+              xi.dcaXY(), xicdcaXY, xiccdcaXY,
+              piFromXi.dcaXY(), piFromLa.dcaXY(), prFromLa.dcaXY(),
+              pi1c.dcaXY(), pi2c.dcaXY(), picc.dcaXY());
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
         }
