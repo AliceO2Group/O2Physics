@@ -205,11 +205,11 @@ struct Pi0EtaToGammaGammaMC {
   {
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     if constexpr (pairtype == PairType::kPCMDalitzEE) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "ee#gamma", "");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "ee#gamma");
     } else if constexpr (pairtype == PairType::kPCMDalitzMuMu) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#mu#mu#gamma", "");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#mu#mu#gamma");
     } else {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#gamma#gamma", "");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#gamma#gamma");
     }
     DefineEMEventCut();
     DefinePCMCut();
@@ -413,13 +413,12 @@ struct Pi0EtaToGammaGammaMC {
   // Partition<MyMCMuons> muons_pos = o2::aod::emprimarymuon::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaMu) < o2::aod::pidtpc::tpcNSigmaMu&& o2::aod::pidtpc::tpcNSigmaMu < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaMu);
   // Partition<MyMCMuons> muons_neg = o2::aod::emprimarymuon::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaMu) < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaMu);
 
-  template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TTracksMatchedWithEMC, typename TTracksMatchedWithPHOS, typename TMCCollisions, typename TMCParticles>
+  template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TMCCollisions, typename TMCParticles>
   void runTruePairing(TCollisions const& collisions,
                       TPhotons1 const& photons1, TPhotons2 const& photons2,
                       TSubInfos1 const& /*subinfos1*/, TSubInfos2 const& /*subinfos2*/,
                       TPreslice1 const& perCollision1, TPreslice2 const& perCollision2,
                       TCut1 const& cut1, TCut2 const& cut2,
-                      TTracksMatchedWithEMC const& /*tracks_emc*/, TTracksMatchedWithPHOS const& /*tracks_phos*/,
                       TMCCollisions const& mccollisions, TMCParticles const& mcparticles)
   {
     for (auto& collision : collisions) {
@@ -665,19 +664,18 @@ struct Pi0EtaToGammaGammaMC {
     if constexpr (pairtype == PairType::kPCMPCM) {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
-      runTruePairing(collisions, v0photons, v0photons, v0legs, v0legs, perCollision_pcm, perCollision_pcm, fV0PhotonCut, fV0PhotonCut, nullptr, nullptr, mccollisions, mcparticles);
+      runTruePairing(collisions, v0photons, v0photons, v0legs, v0legs, perCollision_pcm, perCollision_pcm, fV0PhotonCut, fV0PhotonCut, mccollisions, mcparticles);
       runGenInfo(collisions, mccollisions, mcparticles);
     } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
       auto emprimaryelectrons = std::get<2>(std::tie(args...));
       // LOGF(info, "electrons.size() = %d, positrons.size() = %d", electrons.size(), positrons.size());
-      runTruePairing(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDileptonCut, nullptr, nullptr, mccollisions, mcparticles);
+      runTruePairing(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDileptonCut, mccollisions, mcparticles);
       runGenInfo(collisions, mccollisions, mcparticles);
     } else if constexpr (pairtype == PairType::kEMCEMC) {
       auto emcclusters = std::get<0>(std::tie(args...));
-      auto emcmatchedtracks = std::get<1>(std::tie(args...));
-      runTruePairing(collisions, emcclusters, emcclusters, nullptr, nullptr, perCollision_emc, perCollision_emc, fEMCCut, fEMCCut, emcmatchedtracks, nullptr, mccollisions, mcparticles);
+      runTruePairing(collisions, emcclusters, emcclusters, nullptr, nullptr, perCollision_emc, perCollision_emc, fEMCCut, fEMCCut, mccollisions, mcparticles);
       runGenInfo(collisions, mccollisions, mcparticles);
     }
 

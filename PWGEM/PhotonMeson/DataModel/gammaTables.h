@@ -13,14 +13,7 @@
 #include <TMath.h>
 
 #include "Common/Core/RecoDecay.h"
-// #include "Framework/AnalysisDataModel.h"
-// #include "Common/DataModel/PIDResponse.h"
-// #include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/TrackSelectionTables.h"
-// #include "Common/DataModel/CaloClusters.h"
-// #include "Common/DataModel/Multiplicity.h"
-// #include "Common/DataModel/Centrality.h"
-// #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/CaloClusters.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
@@ -201,6 +194,14 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
 
 // iterators
 using V0Leg = V0Legs::iterator;
+
+namespace emevent
+{
+DECLARE_SOA_COLUMN(NgPCM, ngpcm, int);
+} // namespace emevent
+
+DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgPCM); // joinable to EMEvents or aod::Collisions
+using EMEventNgPCM = EMEventsNgPCM::iterator;
 
 namespace v0photonkf
 {
@@ -411,8 +412,8 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
 
 namespace skimmedcluster
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //! collisionID used as index for matched clusters
-DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //! bunch crossing ID used as index for ambiguous clusters
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                            //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                     //!
 DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
 DECLARE_SOA_COLUMN(E, e, float);                                       //! cluster energy (GeV)
 DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
@@ -440,12 +441,9 @@ DECLARE_SOA_COLUMN(TrackPt, trackpt, std::vector<float>);                       
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m = 0) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
 } // namespace emccluster
 DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //! table of skimmed EMCal clusters
-                  o2::soa::Index<>, skimmedcluster::CollisionId, skimmedcluster::BCId, skimmedcluster::E, emccluster::CoreEnergy,
-                  skimmedcluster::Eta, skimmedcluster::Phi, skimmedcluster::M02, skimmedcluster::M20, skimmedcluster::NCells, skimmedcluster::Time,
-                  emccluster::IsExotic, skimmedcluster::DistanceToBadChannel, skimmedcluster::NLM, emccluster::Definition,
-                  emccluster::TrackIds, emccluster::TrackEta, emccluster::TrackPhi, emccluster::TrackP, emccluster::TrackPt,
-                  // dynamic column
-                  emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
+                  o2::soa::Index<>, skimmedcluster::CollisionId, skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
+                  skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::TrackEta,
+                  emccluster::TrackPhi, emccluster::TrackP, emccluster::TrackPt, emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
 using SkimEMCCluster = SkimEMCClusters::iterator;
 
 DECLARE_SOA_TABLE(EMCEMEventIds, "AOD", "EMCEMEVENTID", emccluster::EMEventId); // To be joined with SkimEMCClusters table at analysis level.

@@ -46,6 +46,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
+// using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTOFFullDe>; // For TOF PID check
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 struct hypertriton3bodyQa {
@@ -183,7 +184,7 @@ struct hypertriton3bodyAnalysis {
       {"hPionTPCVsPt", "hPionTPCVsPt", {HistType::kTH2F, {{20, 0.0f, 2.0f, "#it{p}_{T} (GeV/c)"}, {120, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hDeuteronTPCVsPt", "hDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {120, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hDeuteronTOFVsPBeforeTOFCut", "hDeuteronTOFVsPBeforeTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
-      {"hDeuteronTOFVsPAtferTOFCut", "hDeuteronTOFVsPAtferTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
+      {"hDeuteronTOFVsPAfterTOFCut", "hDeuteronTOFVsPAfterTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
 
       {"hDalitz", "hDalitz", {HistType::kTH2F, {{120, 7.85, 8.45, "M^{2}(dp) (GeV^{2}/c^{4})"}, {60, 1.1, 1.4, "M^{2}(p#pi) (GeV^{2}/c^{4})"}}}},
       {"h3dMassHypertriton", "h3dMassHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {80, 2.96f, 3.04f, "Inv. Mass (GeV/c^{2})"}}}},
@@ -192,8 +193,13 @@ struct hypertriton3bodyAnalysis {
 
       {"hTrueHypertritonCounter", "hTrueHypertritonCounter", {HistType::kTH1F, {{12, 0.0f, 12.0f}}}},
       {"hDeuteronTOFVsPBeforeTOFCutSig", "hDeuteronTOFVsPBeforeTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
-      {"hDeuteronTOFVsPAtferTOFCutSig", "hDeuteronTOFVsPAtferTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
+      {"hDeuteronTOFVsPAfterTOFCutSig", "hDeuteronTOFVsPAfterTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
       {"h3dTotalTrueHypertriton", "h3dTotalTrueHypertriton", {HistType::kTH3F, {{50, 0, 50, "ct(cm)"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {80, 2.96f, 3.04f, "Inv. Mass (GeV/c^{2})"}}}},
+      // For TOF PID check
+      /*{"hDeuteronDefaultTOFVsPBeforeTOFCut", "hDeuteronDefaultTOFVsPBeforeTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
+      {"hDeuteronDefaultTOFVsPAtferTOFCut", "hDeuteronDefaultTOFVsPAtferTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
+      {"hDeuteronDefaultTOFVsPBeforeTOFCutSig", "hDeuteronDefaultTOFVsPBeforeTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
+      {"hDeuteronDefaultTOFVsPAfterTOFCutSig", "hDeuteronDefaultTOFVsPAfterTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},*/
 
       // for mcparticles information
       {"hGeneratedHypertritonCounter", "hGeneratedHypertritonCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
@@ -315,17 +321,21 @@ struct hypertriton3bodyAnalysis {
     }
     FillCandCounter(kCandDcaDau, isTrueCand);
 
+    // registry.fill(HIST("hDeuteronDefaultTOFVsPBeforeTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
     registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     if (isTrueCand) {
+      // registry.fill(HIST("hDeuteronDefaultTOFVsPBeforeTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
       registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     }
     if ((candData.tofNSigmaBachDe() < TofPidNsigmaMin || candData.tofNSigmaBachDe() > TofPidNsigmaMax) && trackDeuteron.p() > minDeuteronPUseTOF) {
       return;
     }
     FillCandCounter(kCandTOFPID, isTrueCand);
-    registry.fill(HIST("hDeuteronTOFVsPAtferTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
+    // registry.fill(HIST("hDeuteronDefaultTOFVsPAtferTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
+    registry.fill(HIST("hDeuteronTOFVsPAfterTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     if (isTrueCand) {
-      registry.fill(HIST("hDeuteronTOFVsPAtferTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
+      // registry.fill(HIST("hDeuteronDefaultTOFVsPAfterTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
+      registry.fill(HIST("hDeuteronTOFVsPAfterTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     }
 
     if (TMath::Abs(trackProton.tpcNSigmaPr()) > TpcPidNsigmaCut || TMath::Abs(trackPion.tpcNSigmaPi()) > TpcPidNsigmaCut || TMath::Abs(trackDeuteron.tpcNSigmaDe()) > TpcPidNsigmaCut) {

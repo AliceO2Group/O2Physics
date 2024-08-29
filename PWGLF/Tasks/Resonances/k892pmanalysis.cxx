@@ -60,6 +60,9 @@ struct k892pmanalysis {
   Configurable<int> cLambdaAntiLambdaMassBins{"cLambdaAntiLambdaMassBins", 250, "V0 mass (in the (Anti)Lambda0 hypothesis) binning"};
 
   Configurable<int> cDCABinsQA{"cDCABinsQA", 150, "DCA binning"};
+
+  Configurable<int> cTpcNsigmaPionBinsQA{"cTpcNsigmaPionBinsQA", 140, "tpcNSigmaPi binning"};
+
   // Pre-selection cuts
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minimum pt cut"};
   Configurable<double> cMaxEtacut{"cMaxEtacut", 0.8, "Track maximum eta cut"};
@@ -72,10 +75,7 @@ struct k892pmanalysis {
   /// PID Selections
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                // TPC
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                // TOF
-  Configurable<double> cMaxTPCnSigmaV0Pion{"cMaxTPCnSigmaV0Pion", 5.0, "TPC nSigma cut for V0 Pion"};         // TPC, secondary pions
-  Configurable<double> cMaxTOFnSigmaV0Pion{"cMaxTOFnSigmaV0Pion", 5.0, "TOF nSigma cut for V0 Pion"};         // TOF, secondary pions
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
-  Configurable<double> nsigmaCutCombinedV0Pion{"nsigmaCutCombinedV0Pion", -999, "Combined nSigma cut for V0 Pion"}; // Combined, secondary pions
   Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
   Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
   // Track selections
@@ -86,7 +86,7 @@ struct k892pmanalysis {
   Configurable<double> cV0MinCosPA{"cV0MinCosPA", 0.97, "V0 minimum pointing angle cosine"};
   Configurable<double> cV0MaxDaughDCA{"cV0MaxDaughDCA", 1.0, "V0 daughter DCA Maximum"};
   // Competing V0 rejection
-  Configurable<double> cV0MassWindow{"cV0MassWindow", 0.004, "Mass window for competing Lambda0 rejection"};
+  Configurable<double> cV0MassWindow{"cV0MassWindow", 0.0043, "Mass window for competing Lambda0 rejection"};
   // Resonance selection
   // Configurable<double> cMaxResRapidity{"cMaxResRapidity", 0.5, "Maximum pseudo-rapidity value of reconstructed K*(892)pm resonance"};
   // Event mixing
@@ -102,6 +102,7 @@ struct k892pmanalysis {
     AxisSpec dcazAxisQA = {cDCABinsQA, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
     AxisSpec daughdcaAxisQa = {cDCABinsQA, 0.0, 3.0, "V0 daughters DCA (cm)"};
     AxisSpec CosPointAngleAxisQA = {binsV0CosPointAngleQA, "CosPA"};
+    AxisSpec tpcNSigmaPiAxisQA = {cTpcNsigmaPionBinsQA, -7.0, 7.0, "N#sigma_{TPC}"};
     AxisSpec ptAxis = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
@@ -112,11 +113,11 @@ struct k892pmanalysis {
 
     // Mass QA (quick check)
     // QA before
-    histos.add("QAbefore/k0shortmass", "Invariant mass of K0Short", kTH1F, {k0sMassAxisQA});
+    histos.add("QAbefore/k0shortmassPt", "Invariant mass of K0Short vs K0Short Pt", kTH2F, {ptAxisQA, k0sMassAxisQA});
     histos.add("QAbefore/lambda0mass", "Invariant mass of V0 in Lambda0 hypothesis", kTH1F, {lambdaAntilambdaMassAxisQA});
     histos.add("QAbefore/antilambda0mass", "Invariant mass of V0 in AntiLambda0 hypothesis", kTH1F, {lambdaAntilambdaMassAxisQA});
     // QA after
-    histos.add("QAafter/k0shortmass", "Invariant mass of K0Short", kTH1F, {k0sMassAxisQA});
+    histos.add("QAafter/k0shortmassPt", "Invariant mass of K0Short vs K0Short Pt", kTH2F, {ptAxisQA, k0sMassAxisQA});
     histos.add("QAafter/lambda0mass", "Invariant mass of V0 in Lambda0 hypothesis", kTH1F, {lambdaAntilambdaMassAxisQA});
     histos.add("QAafter/antilambda0mass", "Invariant mass of V0 in AntiLambda0 hypothesis", kTH1F, {lambdaAntilambdaMassAxisQA});
     histos.add("k892pminvmass", "Invariant mass of charged K*(892)", kTH1F, {invMassAxis});
@@ -152,6 +153,11 @@ struct k892pmanalysis {
     // QA after
     histos.add("QAafter/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxisQA});
     histos.add("QAafter/trkpT_k0s", "pT distribution of k0short track candidates", kTH1F, {ptAxisQA});
+    // Primary pion TPC PID
+    // QA before
+    histos.add("QAbefore/tpcNsigmaPionQA", "NsigmaTPC distribution of primary pion candidates", kTH2F, {ptAxisQA, tpcNSigmaPiAxisQA});
+    // QA after
+    histos.add("QAafter/tpcNsigmaPionQA", "NsigmaTPC distribution of primary pion candidates", kTH2F, {ptAxisQA, tpcNSigmaPiAxisQA});
     // Good tracks and V0 counts QA
     histos.add("QAafter/hGoodTracksV0s", "Number of good track and V0 passed", kTH1F, {goodTrackCountAxis});
     // Mass vs Pt vs Multiplicity 3-dimensional histogram
@@ -244,30 +250,6 @@ struct k892pmanalysis {
     return false;
   }
 
-  // Secondary PID selection tools
-  template <typename T>
-  bool selectionPIDSecondaryPion(const T& candidate)
-  {
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
-    if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaV0Pion) {
-      tpcPIDPassed = true;
-    }
-    if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaV0Pion) {
-        tofPIDPassed = true;
-      }
-      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedV0Pion * nsigmaCutCombinedV0Pion)) {
-        tofPIDPassed = true;
-      }
-    } else {
-      tofPIDPassed = true;
-    }
-    if (tpcPIDPassed && tofPIDPassed) {
-      return true;
-    }
-    return false;
-  }
-
   /*// Resonance candidate selection
   template <typename ResoCandidate>
   bool selectionResoK892pm(const ResoCandidate& resoCandidate)
@@ -311,6 +293,8 @@ struct k892pmanalysis {
         histos.fill(HIST("QAbefore/trkEta_pi"), trketaPi);
         // pT QA (before cuts)
         histos.fill(HIST("QAbefore/trkpT_pi"), trkptPi);
+        // TPC PID (before cuts)
+        histos.fill(HIST("QAbefore/tpcNsigmaPionQA"), trkptPi, trk.tpcNSigmaPi());
       }
 
       // apply the track cut
@@ -329,6 +313,8 @@ struct k892pmanalysis {
         histos.fill(HIST("QAafter/trkEta_pi"), trketaPi);
         // pT QA (after cuts)
         histos.fill(HIST("QAafter/trkpT_pi"), trk.pt());
+        // TPC PID (after cuts)
+        histos.fill(HIST("QAafter/tpcNsigmaPionQA"), trkptPi, trk.tpcNSigmaPi());
       }
 
       for (auto& v0 : dV0s) {
@@ -350,7 +336,7 @@ struct k892pmanalysis {
           // pT QA (before cuts)
           histos.fill(HIST("QAbefore/trkpT_k0s"), v0ptK0s);
           // K0s mass QA (before cuts)
-          histos.fill(HIST("QAbefore/k0shortmass"), v0.mK0Short());
+          histos.fill(HIST("QAbefore/k0shortmassPt"), v0ptK0s, v0.mK0Short());
         }
 
         // apply the track cut
@@ -381,7 +367,7 @@ struct k892pmanalysis {
           // pt QA (after cuts)
           histos.fill(HIST("QAafter/trkpT_k0s"), v0ptK0s);
           // K0s mass QA (after cuts)
-          histos.fill(HIST("QAafter/k0shortmass"), v0.mK0Short());
+          histos.fill(HIST("QAafter/k0shortmassPt"), v0ptK0s, v0.mK0Short());
           histos.fill(HIST("QAafter/lambda0mass"), v0.mLambda());
           histos.fill(HIST("QAafter/antilambda0mass"), v0.mAntiLambda());
         }

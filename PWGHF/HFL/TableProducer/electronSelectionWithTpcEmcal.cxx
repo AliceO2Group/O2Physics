@@ -69,8 +69,10 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> phiTrackEMCalMin{"phiTrackEMCalMin", 4.5355f, "phi range for electron tracks associated Emcal"};
 
   // Track and  EMCal Cluster matching cut
-  Configurable<float> deltaEtaMatchMin{"deltaEtaMatchMin", 0.015f, "Eta distance of EMCAL cluster to its closest track"};
-  Configurable<float> deltaPhiMatchMin{"deltaPhiMatchMin", 0.025f, "Phi distance of EMCAL cluster to its closest track"};
+  Configurable<float> deltaEtaMatchMin{"deltaEtaMatchMin", -0.013f, "Min Eta distance of EMCAL cluster to its closest track"};
+  Configurable<float> deltaEtaMatchMax{"deltaEtaMatchMax", 0.0171f, "Max Eta distance of EMCAL cluster to its closest track"};
+  Configurable<float> deltaPhiMatchMin{"deltaPhiMatchMin", -0.022f, "Min Phi distance of EMCAL cluster to its closest track"};
+  Configurable<float> deltaPhiMatchMax{"deltaPhiMatchMax", 0.028f, "Max Phi distance of EMCAL cluster to its closest track"};
   Configurable<float> timeEmcClusterMax{"timeEmcClusterMax", 50.f, "EMCal Cluster time"};
 
   // Inclusive electron selection cut
@@ -84,8 +86,11 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> tpcNsigmaElectronMax{"tpcNsigmaElectronMax", 3.0f, "max Electron TPCnsigma"};
 
   // Track and EMCal Cluster matching cut for Mc Reco
-  Configurable<float> mcRecDeltaEtaMatchMin{"mcRecDeltaEtaMatchMin", 0.015f, "McReco Eta distance of EMCAL cluster to its closest track"};
-  Configurable<float> mcRecDeltaPhiMatchMin{"mcRecDeltaPhiMatchMin", 0.025f, "McReco Phi distance of EMCAL cluster to its closest track"};
+  Configurable<float> mcRecDeltaEtaMatchMin{"mcRecDeltaEtaMatchMin", -0.013f, "McReco Min Eta distance of EMCAL cluster to its closest track"};
+  Configurable<float> mcRecDeltaEtaMatchMax{"mcRecDeltaEtaMatchMax", 0.0171f, "McReco Max Eta distance of EMCAL cluster to its closest track"};
+  Configurable<float> mcRecDeltaPhiMatchMin{"mcRecDeltaPhiMatchMin", -0.022f, "McReco Min Phi distance of EMCAL cluster to its closest track"};
+  Configurable<float> mcRecDeltaPhiMatchMax{"mcRecDeltaPhiMatchMax", 0.028f, "McReco Max Phi distance of EMCAL cluster to its closest track"};
+
   Configurable<float> mcRecTimeEmcClusterMax{"mcRecTimeEmcClusterMax", 50.f, "McReco EMCal Cluster time"};
 
   // Inclusive electron selection cut for Mc Reco
@@ -256,14 +261,14 @@ struct HfElectronSelectionWithTpcEmcal {
           if (std::abs(timeEmcCluster) > timeEmcClusterMax) {
             continue;
           }
-          if (std::abs(deltaPhiMatch) > deltaPhiMatchMin || std::abs(deltaEtaMatch) > deltaEtaMatchMin) {
+          if (deltaPhiMatch < deltaPhiMatchMin || deltaPhiMatch > deltaPhiMatchMax || deltaEtaMatch < deltaEtaMatchMin || deltaEtaMatch > deltaEtaMatchMax) {
             continue;
           }
         } else {
           if (std::abs(timeEmcCluster) > mcRecTimeEmcClusterMax) {
             continue;
           }
-          if (std::abs(deltaPhiMatch) > mcRecDeltaPhiMatchMin || std::abs(deltaEtaMatch) > mcRecDeltaEtaMatchMin) {
+          if (deltaPhiMatch < mcRecDeltaPhiMatchMin || deltaPhiMatch > mcRecDeltaPhiMatchMax || deltaEtaMatch < mcRecDeltaEtaMatchMin || deltaEtaMatch > mcRecDeltaEtaMatchMax) {
             continue;
           }
         }

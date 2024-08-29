@@ -58,6 +58,7 @@ std::shared_ptr<TH1> hCentFT0M;
 std::shared_ptr<TH1> hCentFV0A;
 std::shared_ptr<TH2> hNsigma3HSel;
 std::shared_ptr<TH2> hdEdx3HSel;
+std::shared_ptr<TH2> hdEdx3HTPCMom;
 std::shared_ptr<TH2> hdEdxTot;
 std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
@@ -114,10 +115,10 @@ struct lnnRecoTask {
 
   // Selection criteria
   Configurable<double> v0cospa{"lnncospa", 0.95, "V0 CosPA"};
-  Configurable<float> masswidth{"lnnmasswidth", 0.06, "Mass width (GeV/c^2)"};
+  Configurable<float> masswidth{"lnnmasswidth", 0.006, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"lnndcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
-  Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.5, "Minimum rigidity of the triton candidate"};
+  Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 1, "Minimum rigidity of the triton candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
@@ -148,11 +149,12 @@ struct lnnRecoTask {
   Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
 
   // histogram axes
-  ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
+  ConfigurableAxis rigidityBins{"rigidityBins", {200, -6.f, 6.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
   ConfigurableAxis dEdxBins{"dEdxBins", {1000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
   ConfigurableAxis centBins{"centBins", {100, 0.f, 100.f}, "Binning for centrality"};
+  ConfigurableAxis TritMomBins{"TritMom", {100, 0.f, 6.f}, "Binning for Triton TPC momentum"};
 
   // std vector of candidates
   std::vector<lnnCandidate> lnnCandidates;
@@ -160,6 +162,7 @@ struct lnnRecoTask {
   std::vector<unsigned int> filledMothers;
   // vector to keep track of the collisions passing the event selection in the MC
   std::vector<bool> isGoodCollision;
+  // vector to armazenade h3Track
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
@@ -195,9 +198,11 @@ struct lnnRecoTask {
     const AxisSpec nSigma3HAxis{nSigmaBins, "n_{#sigma}({}^{3}H)"};
     const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
     const AxisSpec centAxis{centBins, "Centrality"};
+    const AxisSpec TritMomAxis{TritMomBins, "#it{p}^{TPC}({}^{3}H)"};
 
     hNsigma3HSel = qaRegistry.add<TH2>("hNsigma3HSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
+    hdEdx3HTPCMom = qaRegistry.add<TH2>("hdEdx3HTPCMom", "; #it{p}^{TPC}({}^{3}H); dE/dx", HistType::kTH2F, {TritMomAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
 
@@ -366,7 +371,8 @@ struct lnnRecoTask {
       }
 
       // Definition of lnn mass
-      float mLNN_HypHI = 2.99; // 2993.7 MeV/c**2
+      float mLNN_HypHI = 2.994; // value in GeV, but 2993.7 MeV/c**2
+
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
       if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
@@ -411,6 +417,10 @@ struct lnnRecoTask {
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       lnnCandidates.push_back(lnnCand);
+
+      if (is3H) {
+        hdEdx3HTPCMom->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
+      }
     }
   }
 
@@ -468,7 +478,7 @@ struct lnnRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10) {
+      if ((!collision.sel8()) || std::abs(collision.posZ()) > 10) {
         continue;
       }
       hEvents->Fill(1.);
@@ -504,6 +514,8 @@ struct lnnRecoTask {
   void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     filledMothers.clear();
+
+    isGoodCollision.clear();
     isGoodCollision.resize(mcCollisions.size(), false);
 
     for (const auto& collision : collisions) {
@@ -513,7 +525,7 @@ struct lnnRecoTask {
 
       hEvents->Fill(0.);
 
-      if (std::abs(collision.posZ()) > 10) {
+      if ((collision.posZ()) > 10) {
         continue;
       }
       hEvents->Fill(1.);

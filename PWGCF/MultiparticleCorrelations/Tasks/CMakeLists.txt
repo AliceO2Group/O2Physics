@@ -18,3 +18,8 @@ o2physics_add_dpl_workflow(multiparticle-correlations-ar
                     SOURCES multiparticle-correlations-ar.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(threeparticle-correlations
+                    SOURCES ThreeParticleCorrelations.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)

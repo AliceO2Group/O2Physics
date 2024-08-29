@@ -75,6 +75,10 @@ enum HfTriggers {
   kSigmaC0K0,
   kPhotonCharm2P,
   kPhotonCharm3P,
+  kSingleCharm2P,
+  kSingleCharm3P,
+  kSingleNonPromptCharm2P,
+  kSingleNonPromptCharm3P,
   kNtriggersHF
 };
 
@@ -129,7 +133,7 @@ static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", 
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
 static const std::array<std::string, 2> eventTitles = {"all", "rejected"};
-static const std::array<std::string, kNtriggersHF> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel(), filtering::HfSigmaCPPK::columnLabel(), filtering::HfSigmaC0K0::columnLabel(), filtering::HfPhotonCharm2P::columnLabel(), filtering::HfPhotonCharm3P::columnLabel()};
+static const std::vector<std::string> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel(), filtering::HfSigmaCPPK::columnLabel(), filtering::HfSigmaC0K0::columnLabel(), filtering::HfPhotonCharm2P::columnLabel(), filtering::HfPhotonCharm3P::columnLabel(), filtering::HfSingleCharm2P::columnLabel(), filtering::HfSingleCharm3P::columnLabel(), filtering::HfSingleNonPromptCharm2P::columnLabel(), filtering::HfSingleNonPromptCharm3P::columnLabel()};
 
 static const std::array<std::string, kNV0> v0Labels{"#gamma", "K_{S}^{0}", "#Lambda", "#bar{#Lambda}"};
 static const std::array<std::string, kNV0> v0Names{"Photon", "K0S", "Lambda", "AntiLambda"};
@@ -225,6 +229,10 @@ static const std::vector<std::string> labelsColumnsCharmBaryons = {"MinPtXiPi", 
 static const std::vector<std::string> labelsEmpty{};
 static constexpr double cutsTrackDummy[o2::analysis::hf_cuts_single_track::nBinsPtTrack][o2::analysis::hf_cuts_single_track::nCutVarsTrack] = {{0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}, {0., 10.}};
 o2::framework::LabeledArray<double> cutsSingleTrackDummy{cutsTrackDummy[0], o2::analysis::hf_cuts_single_track::nBinsPtTrack, o2::analysis::hf_cuts_single_track::nCutVarsTrack, o2::analysis::hf_cuts_single_track::labelsPtTrack, o2::analysis::hf_cuts_single_track::labelsCutVarTrack};
+
+// manual downscale factors for tests
+constexpr double defDownscaleFactors[kNtriggersHF][1] = {{1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}}; // one for each trigger
+static const std::vector<std::string> labelsDownscaleFactor = {"Downscale factor"};
 
 // Main helper class
 

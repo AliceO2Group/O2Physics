@@ -62,12 +62,10 @@ struct phianalysisrun3_PbPb {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
-  Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
-  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
+  Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 2.0, "Value of the TPC Nsigma cut"};
+  Configurable<float> nsigmaCutTOF{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
-  Configurable<bool> tof{"TOF", true, "TOF"};
-  Configurable<bool> tpc{"TPC", false, "TPC"};
-  Configurable<bool> combined{"combined", true, "combined"};
+  Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "isEtaAssym"};
   Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
@@ -76,6 +74,7 @@ struct phianalysisrun3_PbPb {
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
+  Configurable<bool> additionalQAplots{"additionalQAplots", true, "Additional QA plots"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
@@ -116,6 +115,21 @@ struct phianalysisrun3_PbPb {
       histos.add("h1Phimassrec", "Phi meson Rec", kTH1F, {{200, 0.9, 1.1}});
       histos.add("h1Phipt", "Phi meson Rec", kTH1F, {{200, 0.0f, 20.0f}});
     }
+    if (additionalQAplots) {
+      // DCA QA
+      histos.add("QAbefore/trkDCAxy", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
+      histos.add("QAbefore/trkDCAz", "DCAz distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
+      histos.add("QAafter/trkDCAxy", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
+      histos.add("QAafter/trkDCAz", "DCAz distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
+      // PID QA before cuts
+      histos.add("QAbefore/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
+      histos.add("QAbefore/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {{200, 0.0, 20.0}, {100, -6, 6}}});
+      histos.add("QAbefore/TPC_Nsigma_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {{200, 0.0, 20.0}, {100, -6, 6}}});
+      // PID QA after cuts
+      histos.add("QAafter/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
+      histos.add("QAafter/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {{200, 0.0, 20.0}, {100, -6, 6}}});
+      histos.add("QAafter/TPC_Nsigma_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {{200, 0.0, 20.0}, {100, -6, 6}}});
+    }
   }
 
   double massKa = o2::constants::physics::MassKPlus;
@@ -145,14 +159,18 @@ struct phianalysisrun3_PbPb {
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (tof && combined && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombined * nsigmaCutCombined)) {
+    if (!isNoTOF && candidate.hasTOF() && (std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) && (std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC)) {
       return true;
     }
-    if (tpc && combined && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+    if (!isNoTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+      return true;
+    }
+    if (isNoTOF && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
       return true;
     }
     return false;
   }
+
   // deep angle cut on pair to remove photon conversion
   template <typename T1, typename T2>
   bool selectionPair(const T1& candidate1, const T2& candidate2)
@@ -272,6 +290,12 @@ struct phianalysisrun3_PbPb {
       if (!selectionTrack(track1)) {
         continue;
       }
+      histos.fill(HIST("QAbefore/TPC_Nsigma_all"), track1.pt(), track1.tpcNSigmaKa());
+      histos.fill(HIST("QAbefore/TOF_Nsigma_all"), track1.pt(), track1.tofNSigmaKa());
+      histos.fill(HIST("QAbefore/trkDCAxy"), track1.dcaXY());
+      histos.fill(HIST("QAbefore/trkDCAz"), track1.dcaZ());
+      histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
       histos.fill(HIST("hDcaz"), track1.dcaZ());
@@ -294,9 +318,19 @@ struct phianalysisrun3_PbPb {
         bool likesign = true;
         bool rotation = true;
         if (isITSOnlycut) {
+          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.pt(), track1.tpcNSigmaKa());
+          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.pt(), track1.tofNSigmaKa());
+          histos.fill(HIST("QAafter/trkDCAxy"), track1.dcaXY());
+          histos.fill(HIST("QAafter/trkDCAz"), track1.dcaZ());
+          histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
           FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
         if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
+          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.pt(), track1.tpcNSigmaKa());
+          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.pt(), track1.tofNSigmaKa());
+          histos.fill(HIST("QAafter/trkDCAxy"), track1.dcaXY());
+          histos.fill(HIST("QAafter/trkDCAz"), track1.dcaZ());
+          histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
           FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
       }
