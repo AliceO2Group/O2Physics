@@ -51,6 +51,8 @@ DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                       //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta10, multMCNParticlesEta10, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
+DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);                             //! Position of the MC Collision along Z
+
 
 // complementary / MultsExtra table
 DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int); //!
@@ -137,6 +139,7 @@ DECLARE_SOA_TABLE(MultsExtraMC, "AOD", "MULTEXTRAMC", //! Table for the MC infor
                   mult::MultMCNParticlesEta05,
                   mult::MultMCNParticlesEta08,
                   mult::MultMCNParticlesEta10,
+                  mult::MCPosZ,
                   mult::IsInelGt0<mult::MultMCNParticlesEta10>,
                   mult::IsInelGt1<mult::MultMCNParticlesEta10>,
                   o2::soa::Marker<1>);
