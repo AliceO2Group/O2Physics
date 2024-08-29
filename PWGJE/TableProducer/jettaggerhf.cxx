@@ -112,6 +112,9 @@ struct JetTaggerHFTask {
           if (origin == JetTaggingSpecies::lightflavour) {
             jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, jet, jtracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
           }
+          if (origin != JetTaggingSpecies::charm && origin != JetTaggingSpecies::beauty && origin != JetTaggingSpecies::lightflavour) {
+            jetProb.push_back(-1);
+          }
         }
       }
     }
