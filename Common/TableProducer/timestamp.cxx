@@ -59,7 +59,7 @@ struct TimestampTask {
         isRun2MC.value = 1;
         LOG(info) << "Autosetting the Run2 MC mode based on metadata";
       } else {
-        isRun2MC.value = 1;
+        isRun2MC.value = 0;
       }
     }
   }
