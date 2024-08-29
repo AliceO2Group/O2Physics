@@ -124,6 +124,10 @@ struct femtoUniversePairTaskTrackPhi {
   Partition<FemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsPhiDaughMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
 
+  // Partition for K+K- minv
+  Partition<FemtoFullParticles> partsKaons = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsKaonsMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
+
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTrack;
 
@@ -453,7 +457,7 @@ struct femtoUniversePairTaskTrackPhi {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartitionType groupPartsPhiDaugh, PartType parts, float magFieldTesla, int multCol)
+  void doSameEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartitionType groupPartsPhiDaugh, PartitionType groupPartsKaons, PartType parts, float magFieldTesla, int multCol)
   {
 
     /// Histogramming same event
@@ -558,17 +562,17 @@ struct femtoUniversePairTaskTrackPhi {
     float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
     float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
 
-    for (auto& [phidaugh1, phidaugh2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsPhiDaugh, groupPartsPhiDaugh))) {
-      if ((phidaugh1.mAntiLambda() == 1) && (phidaugh2.mAntiLambda() == 1)) {
-        part1Vec.SetPtEtaPhiM(phidaugh1.pt(), phidaugh1.eta(), phidaugh1.phi(), mMassOne);
-        part2Vec.SetPtEtaPhiM(phidaugh2.pt(), phidaugh2.eta(), phidaugh2.phi(), mMassOne);
+    for (auto& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsKaons, groupPartsKaons))) {
+      if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
         TLorentzVector sumVec(part1Vec);
         sumVec += part2Vec;
         registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
       }
-      if ((phidaugh1.mAntiLambda() == -1) && (phidaugh2.mAntiLambda() == -1)) {
-        part1Vec.SetPtEtaPhiM(phidaugh1.pt(), phidaugh1.eta(), phidaugh1.phi(), mMassTwo);
-        part2Vec.SetPtEtaPhiM(phidaugh2.pt(), phidaugh2.eta(), phidaugh2.phi(), mMassTwo);
+      if ((kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
 
         TLorentzVector sumVec(part1Vec);
         sumVec += part2Vec;
@@ -588,8 +592,9 @@ struct femtoUniversePairTaskTrackPhi {
     auto thegroupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhi = partsPhi->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhiDaugh = partsPhiDaugh->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsKaons = partsKaons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<false>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, parts, col.magField(), col.multNtr());
+    doSameEvent<false>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processSameEvent, "Enable processing same event", true);
 
@@ -606,8 +611,9 @@ struct femtoUniversePairTaskTrackPhi {
     auto thegroupPartsPhi = partsPhiMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrack = partsTrackMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhiDaugh = partsPhiDaughMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsKaons = partsKaonsMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, parts, col.magField(), col.multNtr());
+    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
