@@ -328,7 +328,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCDWithSV, "Fill tagging decision for mcd jets with sv", false);
 
-  void processTraining(JetCollision const& /*collision*/, JetTableMCP const& /*mcdjets*/, JetTagTracksMCP const& /*tracks*/)
+  void processTraining(JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
   {
     // To create table for ML
   }
