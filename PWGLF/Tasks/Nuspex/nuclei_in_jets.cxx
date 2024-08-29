@@ -393,12 +393,13 @@ struct nuclei_in_jets {
     // Anti-kt Jet Finder
     int n_particles_removed(0);
     std::vector<TVector3> jet;
-    std::vector<TVector3> ue;
+    std::vector<TVector3> ue1;
+    std::vector<TVector3> ue2;
 
     do {
       double dij_min(1e+06), diB_min(1e+06);
       int i_min(0), j_min(0), iB_min(0);
-      for (int i = 0; i < trk.size(); i++) {
+      for (int i = 0; i < static_cast<int>(trk.size()); i++) {
         if (trk[i].Mag() == 0)
           continue;
         double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
@@ -406,7 +407,7 @@ struct nuclei_in_jets {
           diB_min = diB;
           iB_min = i;
         }
-        for (int j = (i + 1); j < trk.size(); j++) {
+        for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) {
           if (trk[j].Mag() == 0)
             continue;
           double dij = calculate_dij(trk[i], trk[j], Rjet);
@@ -427,33 +428,29 @@ struct nuclei_in_jets {
         trk[iB_min].SetXYZ(0, 0, 0);
         n_particles_removed++;
       }
-    } while (n_particles_removed < trk.size());
+    } while (n_particles_removed < static_cast<int>(trk.size()));
 
-    registryQC.fill(HIST("nJets_found"), jet.size());
+    registryQC.fill(HIST("nJets_found"), static_cast<int>(jet.size()));
 
     // Jet Selection
     std::vector<int> isSelected;
-    for (int i = 0; i < jet.size(); i++) {
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
       isSelected.push_back(0);
     }
 
     int n_jets_selected(0);
-    for (int i = 0; i < jet.size(); i++) {
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
       if ((abs(jet[i].Eta()) + Rjet) > max_eta)
         continue;
 
-      // Perpendicular cone
-      TVector3 ue_axis(0, 0, 0);
-      double sign(0);
-      double x = gRandom->Uniform(0.0, 1.0);
-      if (x < 0.5) {
-        sign = +1.0;
-      } else {
-        sign = -1.0;
-      }
-      get_perpendicular_axis(jet, ue_axis, sign);
-      ue.push_back(ue_axis);
+      // Perpendicular cones
+      TVector3 ue_axis1(0, 0, 0);
+      TVector3 ue_axis2(0, 0, 0);
+      get_perpendicular_axis(jet[i], ue_axis1, +1);
+      get_perpendicular_axis(jet[i], ue_axis2, -1);
+      ue1.push_back(ue_axis1);
+      ue2.push_back(ue_axis2);
 
       double nPartJetPlusUE(0);
       double nPartJet(0);
@@ -471,23 +468,31 @@ struct nuclei_in_jets {
         double deltaEta_jet = sel_track.Eta() - jet[i].Eta();
         double deltaPhi_jet = GetDeltaPhi(sel_track.Phi(), jet[i].Phi());
         double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-        double deltaEta_ue = sel_track.Eta() - ue_axis.Eta();
-        double deltaPhi_ue = GetDeltaPhi(sel_track.Phi(), ue_axis.Phi());
-        double deltaR_ue = sqrt(deltaEta_ue * deltaEta_ue + deltaPhi_ue * deltaPhi_ue);
+        double deltaEta_ue1 = sel_track.Eta() - ue_axis1.Eta();
+        double deltaPhi_ue1 = GetDeltaPhi(sel_track.Phi(), ue_axis1.Phi());
+        double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        double deltaEta_ue2 = sel_track.Eta() - ue_axis2.Eta();
+        double deltaPhi_ue2 = GetDeltaPhi(sel_track.Phi(), ue_axis2.Phi());
+        double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
         if (deltaR_jet < Rjet) {
           registryQC.fill(HIST("deltaEtadeltaPhi_jet"), deltaEta_jet, deltaPhi_jet);
           nPartJetPlusUE++;
           ptJetPlusUE = ptJetPlusUE + sel_track.Pt();
         }
-        if (deltaR_ue < Rjet) {
-          registryQC.fill(HIST("deltaEtadeltaPhi_ue"), deltaEta_ue, deltaPhi_ue);
+        if (deltaR_ue1 < Rjet) {
+          registryQC.fill(HIST("deltaEtadeltaPhi_ue"), deltaEta_ue1, deltaPhi_ue1);
+          nPartUE++;
+          ptUE = ptUE + sel_track.Pt();
+        }
+        if (deltaR_ue2 < Rjet) {
+          registryQC.fill(HIST("deltaEtadeltaPhi_ue"), deltaEta_ue2, deltaPhi_ue2);
           nPartUE++;
           ptUE = ptUE + sel_track.Pt();
         }
       }
-      nPartJet = nPartJetPlusUE - nPartUE;
-      ptJet = ptJetPlusUE - ptUE;
+      nPartJet = nPartJetPlusUE - 0.5 * nPartUE;
+      ptJet = ptJetPlusUE - 0.5 * ptUE;
       registryQC.fill(HIST("NchJetPlusUE"), nPartJetPlusUE);
       registryQC.fill(HIST("NchJet"), nPartJet);
       registryQC.fill(HIST("NchUE"), nPartUE);
@@ -510,7 +515,7 @@ struct nuclei_in_jets {
 
     //************************************************************************************************************************************
 
-    for (int i = 0; i < jet.size(); i++) {
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
       if (isSelected[i] == 0)
         continue;
@@ -537,16 +542,19 @@ struct nuclei_in_jets {
         double deltaEta_jet = particle_dir.Eta() - jet[i].Eta();
         double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), jet[i].Phi());
         double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-        double deltaEta_ue = particle_dir.Eta() - ue[i].Eta();
-        double deltaPhi_ue = GetDeltaPhi(particle_dir.Phi(), ue[i].Phi());
-        double deltaR_ue = sqrt(deltaEta_ue * deltaEta_ue + deltaPhi_ue * deltaPhi_ue);
+        double deltaEta_ue1 = particle_dir.Eta() - ue1[i].Eta();
+        double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue1[i].Phi());
+        double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        double deltaEta_ue2 = particle_dir.Eta() - ue2[i].Eta();
+        double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
+        double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
         // DCAxy Distributions of Antiprotons
         if (isHighPurityAntiproton(track) && TMath::Abs(dcaz) < max_dcaz) {
           if (deltaR_jet < Rjet) {
             registryData.fill(HIST("antiproton_dca_jet"), pt, dcaxy);
           }
-          if (deltaR_ue < Rjet) {
+          if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
             registryData.fill(HIST("antiproton_dca_ue"), pt, dcaxy);
           }
         }
@@ -577,7 +585,7 @@ struct nuclei_in_jets {
         }
 
         // UE
-        if (deltaR_ue < Rjet) {
+        if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
 
           // Antiproton
           if (pt < 1.0)
