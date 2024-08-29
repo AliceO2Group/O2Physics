@@ -330,6 +330,25 @@ DECLARE_SOA_TABLE(Dstar, "AOD", "DSTAR", // Only Dstar properties
                   hf_correlation_dstar_hadron::TimeStamp,
                   hf_correlation_dstar_hadron::PoolBin);
 
+// Note: definition of columns and tables forElectron Hadron correlation pairs
+namespace hf_correlation_electron_hadron
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);        //! DeltaPhi between Electron and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);        //! DeltaEta between Electron and Hadrons
+DECLARE_SOA_COLUMN(PtElectron, ptElectron, float);          //! Transverse momentum of Electron
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);        //! Transverse momentum of Hadron; 
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicity
+
+} // namespace etaphi
+DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! D+-Hadrons pairs Informations
+                  aod::hf_correlation_electron_hadron::DeltaPhi,
+                  aod::hf_correlation_electron_hadron::DeltaEta,
+                  aod::hf_correlation_electron_hadron::PtElectron,
+                  aod::hf_correlation_electron_hadron::PtHadron,
+                  aod::hf_correlation_electron_hadron::PoolBin);
+                 
+} // namespace o2::aod
+
 // Note: Table for selection of Lc in a collision
 namespace hf_selection_lc_collision
 {
