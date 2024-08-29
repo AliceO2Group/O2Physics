@@ -12,8 +12,8 @@
 /// \author Roman Nepeivoda (roman.nepeivoda@cern.ch)
 /// \since August 27, 2024
 
-#ifndef PWGLF_UTILS_UPCSTRANGENESS_H_
-#define PWGLF_UTILS_UPCSTRANGENESS_H_
+#ifndef PWGLF_UTILS_STRANGENESSMASKS_H_
+#define PWGLF_UTILS_STRANGENESSMASKS_H_
 
 enum selectionsCombined : int { selV0CosPA = 0,
                                 selV0Radius,
@@ -147,4 +147,4 @@ std::bitset<selNum> maskSelectionAntiXi;
 std::bitset<selNum> maskSelectionOmega;
 std::bitset<selNum> maskSelectionAntiOmega;
 
-#endif // PWGLF_UTILS_UPCSTRANGENESS_H_
+#endif // PWGLF_UTILS_STRANGENESSMASKS_H_
