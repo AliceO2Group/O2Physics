@@ -58,7 +58,7 @@ DECLARE_SOA_COLUMN(NTPCHitsPiC1, nTPCHitsPiC1, int);
 DECLARE_SOA_COLUMN(NTPCHitsPiC2, nTPCHitsPiC2, int);
 DECLARE_SOA_COLUMN(NTPCHitsPiCC, nTPCHitsPiCC, int);
 
-// DCA to PV variables 
+// DCA to PV variables
 DECLARE_SOA_COLUMN(DCAToPVXi, dcaToPVXi, float);
 DECLARE_SOA_COLUMN(DCAToPVXiC, dcaToPVXiC, float);
 DECLARE_SOA_COLUMN(DCAToPVXiCC, dcaToPVXiCC, float);
@@ -86,7 +86,7 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::MXiCC,
                   otfmulticharm::Pt,
                   otfmulticharm::Eta,
-                  
+
                   otfmulticharm::NSiliconHitsXi,
                   otfmulticharm::NSiliconHitsPiFromXi,
                   otfmulticharm::NSiliconHitsPiFromLa,
@@ -99,18 +99,17 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::NTPCHitsPrFromLa,
                   otfmulticharm::NTPCHitsPiC1,
                   otfmulticharm::NTPCHitsPiC2,
-                  otfmulticharm::NTPCHitsPiCC, 
+                  otfmulticharm::NTPCHitsPiCC,
 
-                  otfmulticharm::DCAToPVXi, 
-                  otfmulticharm::DCAToPVXiC, 
-                  otfmulticharm::DCAToPVXiCC, 
-                  otfmulticharm::DCAToPVPiFromXi, 
-                  otfmulticharm::DCAToPVPiFromLa, 
+                  otfmulticharm::DCAToPVXi,
+                  otfmulticharm::DCAToPVXiC,
+                  otfmulticharm::DCAToPVXiCC,
+                  otfmulticharm::DCAToPVPiFromXi,
+                  otfmulticharm::DCAToPVPiFromLa,
                   otfmulticharm::DCAToPVPrFromLa,
                   otfmulticharm::DCAToPVPiC1,
                   otfmulticharm::DCAToPVPiC2,
-                  otfmulticharm::DCAToPVPiCC 
-                  );
+                  otfmulticharm::DCAToPVPiCC);
 
 } // namespace o2::aod
 

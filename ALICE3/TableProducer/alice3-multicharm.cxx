@@ -149,7 +149,7 @@ struct alice3multicharm {
     float etaPiCC;
 
     // charm daughters
-    int nSiliconHitsPiCC; 
+    int nSiliconHitsPiCC;
     int nTPCHitsPiCC;
   } thisXiCCcandidate;
 
@@ -400,8 +400,8 @@ struct alice3multicharm {
       uint32_t nCombinationsC = 0;
       auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
       auto piFromXi = xiCand.bachTrack_as<alice3tracks>(); // de-reference bach track
-      auto piFromLa = xiCand.negTrack_as<alice3tracks>(); // de-reference neg track
-      auto prFromLa = xiCand.posTrack_as<alice3tracks>(); // de-reference pos track
+      auto piFromLa = xiCand.negTrack_as<alice3tracks>();  // de-reference neg track
+      auto prFromLa = xiCand.posTrack_as<alice3tracks>();  // de-reference pos track
 
       if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
@@ -475,9 +475,9 @@ struct alice3multicharm {
             histos.fill(HIST("hDCAXiCCDaughters"), thisXiCCcandidate.dca);
 
             const std::array<float, 3> momentumCC = {
-            thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0],
-            thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1],
-            thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]};
+              thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0],
+              thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1],
+              thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]};
 
             o2::track::TrackParCov xiccTrack(thisXiCCcandidate.xyz, momentumCC, thisXiCCcandidate.parentTrackCovMatrix, +2);
 
@@ -491,16 +491,15 @@ struct alice3multicharm {
             multiCharmCore(
               thisXiCcandidate.dca, thisXiCCcandidate.dca,
               thisXiCcandidate.mass, thisXiCCcandidate.mass,
-              thisXiCCcandidate.pt, thisXiCCcandidate.eta, 
-              xi.nSiliconHits(), piFromXi.nSiliconHits(), 
-              piFromLa.nSiliconHits(), prFromLa.nSiliconHits(), 
-              pi1c.nSiliconHits(), pi2c.nSiliconHits(), picc.nSiliconHits(), 
+              thisXiCCcandidate.pt, thisXiCCcandidate.eta,
+              xi.nSiliconHits(), piFromXi.nSiliconHits(),
+              piFromLa.nSiliconHits(), prFromLa.nSiliconHits(),
+              pi1c.nSiliconHits(), pi2c.nSiliconHits(), picc.nSiliconHits(),
               piFromXi.nTPCHits(), piFromLa.nTPCHits(), prFromLa.nTPCHits(),
-              pi1c.nTPCHits(), pi2c.nTPCHits(), picc.nTPCHits(), 
+              pi1c.nTPCHits(), pi2c.nTPCHits(), picc.nTPCHits(),
               xi.dcaXY(), xicdcaXY, xiccdcaXY,
-              piFromXi.dcaXY(), piFromLa.dcaXY(), prFromLa.dcaXY(), 
-              pi1c.dcaXY(), pi2c.dcaXY(), picc.dcaXY()    
-              );
+              piFromXi.dcaXY(), piFromLa.dcaXY(), prFromLa.dcaXY(),
+              pi1c.dcaXY(), pi2c.dcaXY(), picc.dcaXY());
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
         }
