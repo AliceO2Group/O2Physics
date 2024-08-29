@@ -112,6 +112,9 @@ struct JetTaggerHFTask {
           if (origin == JetTaggingSpecies::lightflavour) {
             jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, jet, jtracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
           }
+          if (origin != JetTaggingSpecies::charm && origin != JetTaggingSpecies::beauty && origin !=JetTaggingSpecies::lightflavour) {
+            jetProb.push_back(-1);
+          }
         }
       }
     }
@@ -325,7 +328,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCDWithSV, "Fill tagging decision for mcd jets with sv", false);
 
-  void processTraining(JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
+  void processTraining(JetCollision const& /*collision*/, JetTableMCP const& /*mcdjets*/, JetTagTracksMCP const& /*tracks*/)
   {
     // To create table for ML
   }
