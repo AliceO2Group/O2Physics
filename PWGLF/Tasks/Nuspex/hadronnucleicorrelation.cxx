@@ -861,24 +861,24 @@ struct hadronnucleicorrelation {
         s = -1;
       }
 
-      if (track.origin() == 1){ //secondaries
+      if (track.origin() == 1) { // secondaries
         if (TMath::Abs(track.pdgCode()) == pdgProton) {
           if (TMath::Abs(track.tpcNSigmaPr()) < nsigmaTPC) {
             if (track.pt() < pTthrpr_TOF) {
-              registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt()*s);
+              registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * s);
             } else if (TMath::Abs(track.tofNSigmaPr()) < nsigmaTOF) {
-              registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt()*s);
+              registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * s);
             }
           }
         }
       }
-      if (track.origin() == 1 || track.origin() == 0){ //primaries and secondaries
+      if (track.origin() == 1 || track.origin() == 0) { // primaries and secondaries
         if (TMath::Abs(track.pdgCode()) == pdgProton) {
           if (TMath::Abs(track.tpcNSigmaPr()) < nsigmaTPC) {
             if (track.pt() < pTthrpr_TOF) {
-              registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt()*s);
+              registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * s);
             } else if (TMath::Abs(track.tofNSigmaPr()) < nsigmaTOF) {
-              registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt()*s);
+              registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * s);
             }
           }
         }
