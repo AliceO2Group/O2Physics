@@ -70,6 +70,8 @@ struct MultiplicityExtraTable {
     bool isFV0OrA = false;
     float multFT0C = 0.f;
     float multFT0A = 0.f;
+    float posZFT0 = 0.f;
+    bool posZFT0valid = false;
     float multFV0A = 0.f;
     float multFDDA = 0.f;
     float multFDDC = 0.f;
@@ -104,21 +106,21 @@ struct MultiplicityExtraTable {
     bool collidingBC = CollidingBunch.test(localBC);
 
     if (bc.has_ft0()) {
-      auto ft0 = bc.ft0();
+      const auto& ft0 = bc.ft0();
       std::bitset<8> triggers = ft0.triggerMask();
       Tvx = triggers[o2::fit::Triggers::bitVertex];
       multFT0TriggerBits = static_cast<uint8_t>(triggers.to_ulong());
 
       // calculate T0 charge
-      for (auto amplitude : ft0.amplitudeA()) {
-        multFT0A += amplitude;
-      }
-      for (auto amplitude : ft0.amplitudeC()) {
-        multFT0C += amplitude;
-      }
+      multFT0A = ft0.sumAmpA();
+      multFT0C = ft0.sumAmpC();
+      posZFT0 = ft0.posZ();
+      posZFT0valid = ft0.isValidTime();
     } else {
       multFT0A = -999.0f;
       multFT0C = -999.0f;
+      posZFT0 = -999.0f;
+      posZFT0valid = false;
     }
     if (bc.has_fv0a()) {
       auto fv0 = bc.fv0a();
@@ -169,7 +171,7 @@ struct MultiplicityExtraTable {
       return; // skip this event
     }
 
-    multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
+    multBC(multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
   }
 
   void processCollisionNeighbors(aod::Collisions const& collisions)
