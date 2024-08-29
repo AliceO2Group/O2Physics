@@ -166,6 +166,8 @@ namespace multBC
 {
 DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float); //!
 DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float); //!
+DECLARE_SOA_COLUMN(MultBCFT0PosZ, multBCFT0PosZ, float); //! Position along Z computed with the FT0 information within the BC
+
 DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float); //!
 DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float); //!
 DECLARE_SOA_COLUMN(MultBCFDDC, multBCFDDC, float); //!
@@ -188,6 +190,7 @@ DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);              //! CTP
 DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
                   multBC::MultBCFT0C,
+                  multBC::MultBCFT0PosZ,
                   multBC::MultBCFV0A,
                   multBC::MultBCFDDA,
                   multBC::MultBCFDDC,
@@ -204,6 +207,7 @@ DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFDDtriggerBits,
                   multBC::MultBCTriggerMask,
                   multBC::MultBCColliding);
+
 using MultBC = MultsBC::iterator;
 
 } // namespace o2::aod
