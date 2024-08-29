@@ -167,6 +167,7 @@ namespace multBC
 DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float); //!
 DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float); //!
 DECLARE_SOA_COLUMN(MultBCFT0PosZ, multBCFT0PosZ, float); //! Position along Z computed with the FT0 information within the BC
+DECLARE_SOA_COLUMN(MultBCFT0PosZValid, MultBCFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information within the BC
 
 DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float); //!
 DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float); //!
