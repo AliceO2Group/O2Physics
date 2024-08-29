@@ -79,6 +79,7 @@ struct SingleTrackQC {
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
+  Configurable<bool> cfgUseDCAxy{"cfgUseDCAxy", false, "flag to use DCAxy, instead of DCA3D"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
 
@@ -187,7 +188,11 @@ struct SingleTrackQC {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,e} (GeV/c)"};
       const AxisSpec axis_eta{20, -1.0, +1.0, "#eta_{e}"};
       const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{e} (rad.)"};
-      const AxisSpec axis_dca{{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA_{e}^{3D} (#sigma)"};
+      std::string dca_axis_title = "DCA_{e}^{3D} (#sigma)";
+      if (cfgUseDCAxy) {
+        dca_axis_title = "DCA_{e}^{XY} (#sigma)";
+      }
+      const AxisSpec axis_dca{{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, dca_axis_title};
 
       // track info
       fRegistry.add("Track/positive/hs", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca}, true);
@@ -372,9 +377,14 @@ struct SingleTrackQC {
     if (cfgApplyWeightTTCA) {
       weight = map_weight[track.globalIndex()];
     }
-    float dca_3d = dca3DinSigma(track);
+
+    float dca = dca3DinSigma(track);
+    if (cfgUseDCAxy) {
+      dca = abs(track.dcaXY() / std::sqrt(track.cYY()));
+    }
+
     if (track.sign() > 0) {
-      fRegistry.fill(HIST("Track/positive/hs"), track.pt(), track.eta(), track.phi(), dca_3d, weight);
+      fRegistry.fill(HIST("Track/positive/hs"), track.pt(), track.eta(), track.phi(), dca, weight);
       fRegistry.fill(HIST("Track/positive/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/positive/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
@@ -403,7 +413,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
       fRegistry.fill(HIST("Track/positive/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
     } else {
-      fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_3d, weight);
+      fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca, weight);
       fRegistry.fill(HIST("Track/negative/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/negative/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
