@@ -9,12 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file CorrelatorHfeHadrons.cxx
+/// \file correlatorHfeHadrons.cxx
 /// \brief Heavy Flavour electron-Hadron correaltor task - data-like, MC-reco and MC-Kine analyses.
 /// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
 /// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
-
-#include "THnSparse.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -45,7 +43,7 @@ std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MC
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
 BinningType corrBinning{{zBins, multBins}, true};
 
-struct HfCorrelationHfeHadrons {
+struct HfCorrelatorHfeHadrons {
   SliceCache cache;
   Produces<aod::HfEHadronPair> entryElectronHadronPair;
   // Configurables
@@ -72,6 +70,8 @@ struct HfCorrelationHfeHadrons {
   using McTableTracks = soa::Join<TableTracks, aod::McTrackLabels>;
 
   Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > (uint16_t)1;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::HfSelEl> perCollision = aod::hf_sel_electron::collisionId;
   HistogramConfigSpec hCorrelSpec{HistType::kTHnSparseD, {{30, 0., 30.}, {20, 0., 20.}, {32, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {50, -1.8, 1.8}}};
 
   HistogramRegistry registry{
@@ -191,6 +191,8 @@ struct HfCorrelationHfeHadrons {
     }
   }
 
+  // =======  Process starts for Data, Same event ============
+
   void processData(TableCollision const& collision,
                    aod::HfSelEl const& electron,
                    TableTracks const& tracks)
@@ -198,9 +200,10 @@ struct HfCorrelationHfeHadrons {
     fillCorrelation(collision, electron, tracks);
   }
 
-  PROCESS_SWITCH(HfCorrelationHfeHadrons, processData, "Process for Data", true);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
 
-  // group according to reconstructed Collisions
+  // =======  Process starts for McRec, Same event ============
+
   void processMcRec(McTableCollision const& mcCollision,
                     aod::HfSelEl const& mcElectron,
                     McTableTracks const& mcTracks)
@@ -208,10 +211,10 @@ struct HfCorrelationHfeHadrons {
     fillCorrelation(mcCollision, mcElectron, mcTracks);
   }
 
-  PROCESS_SWITCH(HfCorrelationHfeHadrons, processMcRec, "Process MC Reco mode", false);
-  // Processing Event Mixing
-  Preslice<aod::Tracks> perCol = aod::track::collisionId;
-  Preslice<aod::HfSelEl> perCollision = aod::hf_sel_electron::collisionId;
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", false);
+
+  // ====================== Implement Event mixing on Data ===================================
+
   void processDataMixedEvent(TableCollisions const& collision, aod::HfSelEl const& electron, TableTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(electron, tracks);
@@ -223,9 +226,10 @@ struct HfCorrelationHfeHadrons {
       fillMixCorrelation(c1, c2, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(HfCorrelationHfeHadrons, processDataMixedEvent, "Process Mixed Event Data", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processDataMixedEvent, "Process Mixed Event Data", false);
 
-  // group according to Mix reconstructed Collisions
+  // ====================== Implement Event mixing on McRec ===================================
+
   void processMcRecMixedEvent(McTableCollisions const& mccollision, aod::HfSelEl const& electron, McTableTracks const& mcTracks)
   {
     auto tracksTuple = std::make_tuple(electron, mcTracks);
@@ -237,11 +241,11 @@ struct HfCorrelationHfeHadrons {
       fillMixCorrelation(c1, c2, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(HfCorrelationHfeHadrons, processMcRecMixedEvent, "Process Mixed Event MC Reco mode", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRecMixedEvent, "Process Mixed Event MC Reco mode", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCorrelationHfeHadrons>(cfgc)};
+    adaptAnalysisTask<HfCorrelatorHfeHadrons>(cfgc)};
 }
