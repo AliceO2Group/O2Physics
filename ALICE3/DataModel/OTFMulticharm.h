@@ -38,19 +38,25 @@ DECLARE_SOA_COLUMN(DCAXiCCDaughters, dcaXiCCDaughters, float);
 DECLARE_SOA_COLUMN(MXiC, mXiC, float);
 DECLARE_SOA_COLUMN(MXiCC, mXiCC, float);
 
-} // namespace otfmulticharm
-DECLARE_SOA_TABLE(MultiCharmStates, "AOD", "MultiCharmStates",
-                  o2::soa::Index<>,
-                  otfcascade::CascadeId,
-                  otfcascade::XiCPion1Id,
-                  otfcascade::XiCPion2Id,
-                  otfcascade::XiCCPionId,
-                  otfcascade::DCAXiCDaughters,
-                  otfcascade::DCAXiCCDaughters,
-                  otfcascade::MXiC,
-                  otfcascade::MXiCC);
+// kine vars
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
 
-using MultiCharmState = MultiCharmState::iterator;
+} // namespace otfmulticharm
+DECLARE_SOA_TABLE(MCharmIndices, "AOD", "MCharmIndices",
+                  o2::soa::Index<>,
+                  otfmulticharm::CascadeId,
+                  otfmulticharm::XiCPion1Id,
+                  otfmulticharm::XiCPion2Id,
+                  otfmulticharm::XiCCPionId);
+
+DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
+                  otfmulticharm::DCAXiCDaughters,
+                  otfmulticharm::DCAXiCCDaughters,
+                  otfmulticharm::MXiC,
+                  otfmulticharm::MXiCC,
+                  otfmulticharm::Pt,
+                  otfmulticharm::Eta);
 
 } // namespace o2::aod
 

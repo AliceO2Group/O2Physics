@@ -30,13 +30,18 @@ FastTracker::FastTracker()
   applyZacceptance = false;
   covMatFactor = 0.99f;
   verboseLevel = 0;
+
+  // last fast-tracked track properties
   covMatOK = 0;
   covMatNotOK = 0;
+  nIntercepts = 0;
+  nSiliconPoints = 0;
+  nGasPoints = 0;
 }
 
-void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff)
+void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
 {
-  DetLayer newLayer{name.Data(), r, z, x0, xrho, resRPhi, resZ, eff};
+  DetLayer newLayer{name.Data(), r, z, x0, xrho, resRPhi, resZ, eff, type};
   layers.push_back(newLayer);
 }
 
@@ -66,18 +71,18 @@ void FastTracker::AddSiliconALICE3v4()
   float resZOT = 0.0005;     // 5 mum
   float eff = 1.00;
 
-  layers.push_back(DetLayer{"bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f}); // 150 mum Be
-  layers.push_back(DetLayer{"ddd0", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff});
-  layers.push_back(DetLayer{"ddd1", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff});
-  layers.push_back(DetLayer{"ddd2", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff});
-  layers.push_back(DetLayer{"bpipe1", 5.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f}); // 500 mum Be
-  layers.push_back(DetLayer{"ddd3", 7., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"ddd4", 10., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"ddd5", 13., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"ddd6", 16., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"ddd7", 25., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"ddd8", 40., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"ddd9", 45., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
+  layers.push_back(DetLayer{"bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0}); // 150 mum Be
+  layers.push_back(DetLayer{"ddd0", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
+  layers.push_back(DetLayer{"ddd1", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
+  layers.push_back(DetLayer{"ddd2", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
+  layers.push_back(DetLayer{"bpipe1", 5.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0}); // 500 mum Be
+  layers.push_back(DetLayer{"ddd3", 7., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"ddd4", 10., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"ddd5", 13., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"ddd6", 16., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"ddd7", 25., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"ddd8", 40., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"ddd9", 45., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
 }
 
 void FastTracker::AddSiliconALICE3v1()
@@ -94,19 +99,19 @@ void FastTracker::AddSiliconALICE3v1()
   float resZOT = 0.00100;    // 5 mum
   float eff = 1.00;
 
-  layers.push_back(DetLayer{"bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f}); // 150 mum Be
-  layers.push_back(DetLayer{"B00", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff});
-  layers.push_back(DetLayer{"B01", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff});
-  layers.push_back(DetLayer{"B02", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff});
-  layers.push_back(DetLayer{"bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f}); // 500 mum Be
-  layers.push_back(DetLayer{"B03", 3.75, 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"B04", 7., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"B05", 12., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"B06", 20., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"B07", 30., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"B08", 45., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"B09", 60., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
-  layers.push_back(DetLayer{"B10", 80., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff});
+  layers.push_back(DetLayer{"bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 1}); // 150 mum Be
+  layers.push_back(DetLayer{"B00", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
+  layers.push_back(DetLayer{"B01", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
+  layers.push_back(DetLayer{"B02", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
+  layers.push_back(DetLayer{"bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 1}); // 500 mum Be
+  layers.push_back(DetLayer{"B03", 3.75, 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"B04", 7., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"B05", 12., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"B06", 20., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"B07", 30., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"B08", 45., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"B09", 60., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
+  layers.push_back(DetLayer{"B10", 80., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
 }
 
 void FastTracker::AddTPC(float phiResMean, float zResMean)
@@ -139,7 +144,7 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
 
   // add boundaries between ITS and TPC
   for (int i = 0; i < kNPassiveBound; i++) {
-    AddLayer(Form("tpc_boundary%d", i), rBoundary[i], zLength, radLBoundary[i], xrhoBoundary[i]); // dummy errors
+    AddLayer(Form("tpc_boundary%d", i), rBoundary[i], zLength, radLBoundary[i], xrhoBoundary[i], 0); // dummy errors
   }
   for (Int_t k = 0; k < tpcRows; k++) {
     Float_t rowRadius = 0;
@@ -150,7 +155,7 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
     else if (k >= (innerRows + middleRows) && k < tpcRows)
       rowRadius = row128Radius + (k - innerRows - middleRows + 1) * tpcOuterRadialPitch;
 
-    AddLayer(Form("tpc_%d", k), rowRadius, zLength, radLPerRow, 0, phiResMean, zResMean, 1.0f);
+    AddLayer(Form("tpc_%d", k), rowRadius, zLength, radLPerRow, 0, phiResMean, zResMean, 1.0f, 2);
   }
 }
 
@@ -159,7 +164,9 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
 int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack)
 {
   hits.clear();
-  int nIntercepts = 0;
+  nIntercepts = 0;
+  nSiliconPoints = 0;
+  nGasPoints = 0;
   std::array<float, 3> posIni; // provision for != PV
   inputTrack.getXYZGlo(posIni);
   float initialRadius = std::hypot(posIni[0], posIni[1]);
@@ -172,7 +179,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     // check if layer is doable
     if (layers[il].r < initialRadius)
       continue; // this layer should not be attempted, but go ahead
-    if (layers[il].eff < 1e-5)
+    if (layers[il].type == 0)
       continue; // inert layer, skip
 
     // check if layer is reached
@@ -240,6 +247,9 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
   // Inward pass to calculate covariances
   for (int il = lastLayerReached; il >= firstLayerReached; il--) {
+    if (layers[il].type == 0)
+      continue; // inert layer, skip
+
     float targetX = 1e+3;
     inputTrack.getXatLabR(layers[il].r, targetX, magneticField);
     if (targetX > 999)
@@ -271,9 +281,14 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       static_cast<float>(xyz1[2])};
     const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {layers[il].resRPhi * layers[il].resRPhi, 0.f, layers[il].resZ * layers[il].resZ};
     outputTrack.update(hitpoint, hitpointcov);
+    outputTrack.checkCovariance();
+
+    if (layers[il].type == 1)
+      nSiliconPoints++; // count silicon hits
+    if (layers[il].type == 2)
+      nGasPoints++; // count TPC/gas hits
 
     hits.push_back(thisHit);
-    outputTrack.checkCovariance();
   }
 
   // backpropagate to original radius

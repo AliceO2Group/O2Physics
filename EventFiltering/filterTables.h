@@ -70,10 +70,11 @@ DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
 DECLARE_SOA_COLUMN(LD, hasLD, bool); //! has l-d pair
 
 // CF three body triggers
-DECLARE_SOA_COLUMN(PPP, hasPPP, bool); //! has p-p-p triplet
-DECLARE_SOA_COLUMN(PPL, hasPPL, bool); //! has p-p-L triplet
-DECLARE_SOA_COLUMN(PLL, hasPLL, bool); //! has p-L-L triplet
-DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
+DECLARE_SOA_COLUMN(PPP, hasPPP, bool);     //! has p-p-p triplet
+DECLARE_SOA_COLUMN(PPL, hasPPL, bool);     //! has p-p-L triplet
+DECLARE_SOA_COLUMN(PLL, hasPLL, bool);     //! has p-L-L triplet
+DECLARE_SOA_COLUMN(LLL, hasLLL, bool);     //! has L-L-L tripletD
+DECLARE_SOA_COLUMN(PPPHI, hasPPPHI, bool); //! has P-P-PHI triplet
 
 // jets
 DECLARE_SOA_COLUMN(JetChLowPt, hasJetChLowPt, bool);   //! low-pT charged jet
@@ -210,7 +211,7 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
 using HfFilter = HfFilters::iterator;
 
 DECLARE_SOA_TABLE(CFFilters, "AOD", "CFFilters", //!
-                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL, filtering::PD, filtering::LD);
+                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL, filtering::PPPHI, filtering::PD, filtering::LD);
 using CfFilter = CFFilters::iterator;
 
 // jets

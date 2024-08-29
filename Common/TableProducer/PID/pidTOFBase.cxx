@@ -46,16 +46,13 @@ float trackDistanceForGoodMatch = 999.f;
 float trackDistanceForGoodMatchLowMult = 999.f;
 int multiplicityThreshold = 0;
 using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
-using Run3Cols = o2::soa::Join<aod::Collisions, aod::PVMults>;
+using Run3Cols = aod::Collisions;
 bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& /*ev*/)
 {
   if (!tr.hasTOF()) {
     return false;
   }
-  if (tr.has_collision() && tr.collision_as<Run3Cols>().multNTracksPVeta1() < multiplicityThreshold) {
-    return tr.tofChi2() < trackDistanceForGoodMatchLowMult;
-  }
-  return tr.tofChi2() < trackDistanceForGoodMatch;
+  return true;
 }
 
 /// Task to produce the TOF signal from the trackTime information

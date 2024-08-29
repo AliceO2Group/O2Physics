@@ -165,6 +165,10 @@ struct BJetTreeCreator {
   Configurable<std::vector<double>> jetPtBins{"jetPtBins", std::vector<double>{5, 1000}, "jet pT bins for reduction"};
   Configurable<std::vector<double>> jetReductionFactors{"jetReductionFactors", std::vector<double>{0.0}, "jet reduction factors"};
 
+  Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
+  Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+
   // track level configurables
   Configurable<float> trackPtMin{"trackPtMin", 0.5, "minimum track pT"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
@@ -473,10 +477,15 @@ struct BJetTreeCreator {
         continue;
       }
 
+      float eventWeight = analysisJet.eventWeight();
+      float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+      if (analysisJet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
+
       std::vector<int> tracksIndices;
       std::vector<int> SVsIndices;
 
-      float eventWeight = analysisJet.eventWeight();
       int16_t jetFlavor = 0;
 
       // JetTracksMCDwID::iterator hftrack;
@@ -492,7 +501,7 @@ struct BJetTreeCreator {
         }
       }
 
-      if (jetFlavor == 0 && (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt()))) {
+      if ((jetFlavor != JetTaggingSpecies::charm && jetFlavor != JetTaggingSpecies::beauty) && (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt()))) {
         continue;
       }
 
@@ -516,6 +525,11 @@ struct BJetTreeCreator {
       }
 
       for (auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
+
+        if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+          continue;
+        }
+
         if (jetFlavor == 2) {
           registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_bjet"), analysisJet.pt(), mcpjet.pt(), eventWeight);
         } else if (jetFlavor == 1) {
@@ -553,6 +567,12 @@ struct BJetTreeCreator {
         continue;
       }
 
+      float eventWeight = mcpjet.eventWeight();
+      float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+      if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+        continue;
+      }
+
       int16_t jetFlavor = 0;
       if (useQuarkDef) {
         jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, MCParticles);
@@ -560,8 +580,6 @@ struct BJetTreeCreator {
         jetFlavor = jettaggingutilities::getJetFlavorHadron(mcpjet, MCParticles);
         // jetFlavor = jettaggingutilities::mcpJetFromHFShower(mcpjet, MCParticles, (float)(mcpjet.r() / 100.));
       }
-
-      float eventWeight = mcpjet.eventWeight();
 
       if (jetFlavor == 2) {
         registry.fill(HIST("h_jetpT_particle_bjet"), mcpjet.pt(), eventWeight);

@@ -113,12 +113,18 @@ enum class InputFeaturesD0ToKPi : uint8_t {
   nSigTofKa1,
   nSigTpcTofPi1,
   nSigTpcTofKa1,
-  nSigTpcPi,
-  nSigTpcKa,
-  nSigTofPi,
-  nSigTofKa,
-  nSigTpcTofPi,
-  nSigTpcTofKa,
+  nSigTpcPiExpPi,
+  nSigTpcKaExpPi,
+  nSigTpcPiExpKa,
+  nSigTpcKaExpKa,
+  nSigTofPiExpPi,
+  nSigTofKaExpPi,
+  nSigTofPiExpKa,
+  nSigTofKaExpKa,
+  nSigTpcTofPiExpPi,
+  nSigTpcTofKaExpPi,
+  nSigTpcTofPiExpKa,
+  nSigTpcTofKaExpKa,
   maxNormalisedDeltaIP,
   impactParameterProduct,
   cosThetaStar,
@@ -167,22 +173,28 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcKa0, tpcNSigmaKa);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcPi1, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcKa1, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcPi, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcKa, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcPiExpPi, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcKaExpPi, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcPiExpKa, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcKaExpKa, tpcNSigmaKa);
         // TOF PID variables
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTofPi0, tofNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTofKa0, tofNSigmaKa);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTofPi1, tofNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTofKa1, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofPi, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofKa, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofPiExpPi, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofKaExpPi, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofPiExpKa, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofKaExpKa, tofNSigmaKa);
         // Combined PID variables
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcTofPi0, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcTofKa0, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcTofPi1, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcTofKa1, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofPi, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofKa, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofPiExpPi, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofKaExpPi, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofPiExpKa, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofKaExpKa, tpcTofNSigmaKa);
 
         CHECK_AND_FILL_VEC_D0(maxNormalisedDeltaIP);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameterProduct, impactParameterProduct);
@@ -217,22 +229,28 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_D0(nSigTpcKa0),
       FILL_MAP_D0(nSigTpcPi1),
       FILL_MAP_D0(nSigTpcKa1),
-      FILL_MAP_D0(nSigTpcPi),
-      FILL_MAP_D0(nSigTpcKa),
+      FILL_MAP_D0(nSigTpcPiExpPi),
+      FILL_MAP_D0(nSigTpcKaExpPi),
+      FILL_MAP_D0(nSigTpcPiExpKa),
+      FILL_MAP_D0(nSigTpcKaExpKa),
       // TOF PID variables
       FILL_MAP_D0(nSigTofPi0),
       FILL_MAP_D0(nSigTofKa0),
       FILL_MAP_D0(nSigTofPi1),
       FILL_MAP_D0(nSigTofKa1),
-      FILL_MAP_D0(nSigTofPi),
-      FILL_MAP_D0(nSigTofKa),
+      FILL_MAP_D0(nSigTofPiExpPi),
+      FILL_MAP_D0(nSigTofKaExpPi),
+      FILL_MAP_D0(nSigTofPiExpKa),
+      FILL_MAP_D0(nSigTofKaExpKa),
       // Combined PID variables
       FILL_MAP_D0(nSigTpcTofPi0),
       FILL_MAP_D0(nSigTpcTofKa0),
       FILL_MAP_D0(nSigTpcTofPi1),
       FILL_MAP_D0(nSigTpcTofKa1),
-      FILL_MAP_D0(nSigTpcTofPi),
-      FILL_MAP_D0(nSigTpcTofKa),
+      FILL_MAP_D0(nSigTpcTofPiExpPi),
+      FILL_MAP_D0(nSigTpcTofKaExpPi),
+      FILL_MAP_D0(nSigTpcTofPiExpKa),
+      FILL_MAP_D0(nSigTpcTofKaExpKa),
 
       FILL_MAP_D0(maxNormalisedDeltaIP),
       FILL_MAP_D0(impactParameterProduct),

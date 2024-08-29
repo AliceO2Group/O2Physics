@@ -293,6 +293,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
   fgVariableNames[kMCEventGeneratorId] = "MC Generator ID";
+  fgVariableNames[kMCEventSubGeneratorId] = "MC SubGenerator ID";
   fgVariableNames[kMCVtxX] = "MC Vtx X";
   fgVariableNames[kMCVtxY] = "MC Vtx Y";
   fgVariableNames[kMCVtxZ] = "MC Vtx Z";
@@ -300,6 +301,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMCEventWeight] = "MC event weight";
   fgVariableNames[kMCEventImpParam] = "MC impact parameter";
   fgVariableUnits[kMCEventGeneratorId] = "";
+  fgVariableUnits[kMCEventSubGeneratorId] = "";
   fgVariableUnits[kMCVtxX] = "cm";
   fgVariableUnits[kMCVtxY] = "cm";
   fgVariableUnits[kMCVtxZ] = "cm";

@@ -52,6 +52,7 @@ struct f0980analysis {
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
+  Configurable<bool> cfgFindRT{"cfgFindRT", false, "boolean for RT analysis"};
 
   // Track selection
   Configurable<bool> cfgPrimaryTrack{
@@ -228,12 +229,15 @@ struct f0980analysis {
     double LHpt = 0.;
     double LHphi = 0.;
     double relPhi = 0.;
-    for (auto& trk : dTracks) {
-      if (trk.pt() > LHpt) {
-        LHpt = trk.pt();
-        LHphi = trk.phi();
+    if (cfgFindRT) {
+      for (auto& trk : dTracks) {
+        if (trk.pt() > LHpt) {
+          LHpt = trk.pt();
+          LHphi = trk.phi();
+        }
       }
     }
+
     histos.fill(HIST("QA/EPhist"), collision.cent(), collision.evtPl());
     histos.fill(HIST("QA/hEPResAB"), collision.cent(), collision.evtPlResAB());
     histos.fill(HIST("QA/hEPResAC"), collision.cent(), collision.evtPlResBC());

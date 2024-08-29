@@ -49,6 +49,13 @@ enum SpeciesAndDecay { DsToKKPi = 0,
                        DplusToPiKPi,
                        kSpeciesAndDecay };
 
+template <typename T>
+concept hasDsMlInfo = requires(T candidate)
+{
+  candidate.mlProbDsToKKPi();
+  candidate.mlProbDsToPiKK();
+};
+
 /// Ds± analysis task
 struct HfTaskDs {
 
@@ -121,6 +128,12 @@ struct HfTaskDs {
   std::unordered_map<std::string, histTypes> mcDplusBkgHistograms = {};
   std::unordered_map<std::string, histTypes> mcBkgHistograms = {};
 
+  std::map<CentralityEstimator, std::variant<PresliceUnsorted<CollisionsMc>, PresliceUnsorted<CollisionsMcWithFT0C>, PresliceUnsorted<CollisionsMcWithFT0M>, PresliceUnsorted<CollisionsMcWithNTracksPV>>> colPerMcCollisionMap{
+    {CentralityEstimator::None, colPerMcCollision},
+    {CentralityEstimator::FT0C, colPerMcCollisionWithFT0C},
+    {CentralityEstimator::FT0M, colPerMcCollisionWithFT0M},
+    {CentralityEstimator::NTracksPV, colPerMcCollisionWithNTracksPV}};
+
   std::array<std::unordered_map<std::string, histTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcBkgHistograms};
 
   void init(InitContext&)
@@ -192,14 +205,10 @@ struct HfTaskDs {
         if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt || i == DataType::McDplusBkg) {
 
           histosPtr[i]["hEtaGen"] = registry.add<TH1>((folders[i] + "hEtaGen").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
-          histosPtr[i]["hEtaRecSig"] = registry.add<TH1>((folders[i] + "hEtaRecSig").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
-          histosPtr[i]["hCPARecSig"] = registry.add<TH1>((folders[i] + "hCPARecSig").c_str(), "3-prong candidates (matched);cos. pointing angle;entries", {HistType::kTH1F, {{100, -1., 1.}}});
-          histosPtr[i]["hPtRecSig"] = registry.add<TH1>((folders[i] + "hPtRecSig").c_str(), "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
-          histosPtr[i]["hPtGenSig"] = registry.add<TH1>((folders[i] + "hPtGenSig").c_str(), "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
           histosPtr[i]["hPtGen"] = registry.add<TH1>((folders[i] + "hPtGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
-          histosPtr[i]["hPtVsYRecSigRecoPID"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoPID").c_str(), "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
-          histosPtr[i]["hPtVsYRecSigRecoTopol"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoTopol").c_str(), "3-prong candidates (RecoTopol - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
-          histosPtr[i]["hPtVsYRecSigRecoSkim"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoSkim").c_str(), "3-prong candidates (RecoSkim - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYRecoPID"] = registry.add<TH2>((folders[i] + "hPtVsYRecoPID").c_str(), "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYRecoTopol"] = registry.add<TH2>((folders[i] + "hPtVsYRecoTopol").c_str(), "3-prong candidates (RecoTopol - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYRecoSkim"] = registry.add<TH2>((folders[i] + "hPtVsYRecoSkim").c_str(), "3-prong candidates (RecoSkim - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
           histosPtr[i]["hPtYNPvContribGen"] = registry.add<THnSparse>((folders[i] + "hPtYNPvContribGen").c_str(), "Thn for generated candidates", {HistType::kTHnSparseF, {ptbins, {ybins}, axisNPvContributors}});
         }
       }
@@ -234,6 +243,24 @@ struct HfTaskDs {
   bool isDplusBkg(const CandDs& candidate)
   {
     return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
+  }
+
+  /// Checks whether the candidate is in the signal region of either the Ds or D+ decay
+  /// \param candidate is the candidate
+  /// \param isDs is true if we check for the Ds signal region, false for the D+ signal region
+  /// \return true if the candidate is in the signal region, false otherwise
+  template <typename CandDs>
+  bool isCandInSignalRegion(const CandDs& candidate, bool isDs)
+  {
+    bool isKKPi = candidate.isSelDsToKKPi() >= selectionFlagDs;
+    float invMass = isKKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
+    if (isDs && (invMass < massDsSignalMin || invMass > massDsSignalMax)) {
+      return false;
+    }
+    if (!isDs && (invMass < massDplusSignalMin || invMass > massDplusSignalMax)) {
+      return false;
+    }
+    return true;
   }
 
   /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
@@ -287,40 +314,61 @@ struct HfTaskDs {
     return;
   }
 
+  /// Fill mass sparse if ML information is present
+  /// \param candidate is candidate
+  /// \param dataType is data class, as defined in DataType enum
+  /// \param finalState is either KKPi or PiKK, as defined in FinalState enum
+  template <typename Coll, hasDsMlInfo Cand>
+  void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
+  {
+    auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
+    auto pt = candidate.pt();
+    auto mlScore = finalState == FinalState::KKPi ? candidate.mlProbDsToKKPi() : candidate.mlProbDsToPiKK();
+
+    std::vector<float> outputMl = {-999., -999., -999.};
+    for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
+      if (mlScore.size() == 0) {
+        continue;
+      }
+      outputMl[iclass] = mlScore[classMl->at(iclass)];
+    }
+
+    if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
+      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
+      return;
+    }
+    std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
+
+    return;
+  }
+
+  /// Fill mass sparse if ML information is not present
+  /// \param candidate is candidate
+  /// \param dataType is data class, as defined in DataType enum
+  /// \param finalState is either KKPi or PiKK, as defined in FinalState enum
+  template <typename Coll, typename Cand>
+  void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
+  {
+    auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
+    auto pt = candidate.pt();
+
+    if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
+      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate));
+      return;
+    }
+    std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
+
+    return;
+  }
+
   /// Fill histograms of quantities for the KKPi daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <bool useMl, typename Coll, typename T1>
+  template <typename Coll, typename T1>
   void fillHistoKKPi(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-    if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
-      if constexpr (useMl) {
-        std::vector<float> outputMl = {-999., -999., -999.};
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
-          if (candidate.mlProbDsToKKPi().size() == 0) {
-            continue;
-          }
-          outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-        }
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
-      } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<Coll>(candidate));
-      }
-    } else {
-      if constexpr (useMl) {
-        std::vector<float> outputMl = {-999., -999., -999.};
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
-          if (candidate.mlProbDsToKKPi().size() == 0) {
-            continue;
-          }
-          outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-        }
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
-      } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
-      }
-    }
+    fillSparse<Coll>(candidate, dataType, FinalState::KKPi);
 
     std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
     std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
@@ -333,38 +381,11 @@ struct HfTaskDs {
   /// Fill histograms of quantities for the PiKK daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <bool useMl, typename Coll, typename T1>
+  template <typename Coll, typename T1>
   void fillHistoPiKK(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-
-    if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
-      if constexpr (useMl) {
-        std::vector<float> outputMl = {-999., -999., -999.};
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
-          if (candidate.mlProbDsToPiKK().size() == 0) {
-            continue;
-          }
-          outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-        }
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
-      } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<Coll>(candidate));
-      }
-    } else {
-      if constexpr (useMl) {
-        std::vector<float> outputMl = {-999., -999., -999.};
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
-          if (candidate.mlProbDsToPiKK().size() == 0) {
-            continue;
-          }
-          outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-        }
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
-      } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
-      }
-    }
+    fillSparse<Coll>(candidate, dataType, FinalState::PiKK);
 
     std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
     std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);
@@ -378,7 +399,7 @@ struct HfTaskDs {
   /// \param candidate is candidate
   /// \param mcParticles are particles with MC information
   /// \param whichSpeciesDecay defines which histogram to fill
-  template <bool useMl, typename Coll, typename T1>
+  template <typename Coll, typename T1>
   void fillHistoMCRec(const T1& candidate, const CandDsMcGen& mcParticles, DataType dataType)
   {
 
@@ -399,55 +420,60 @@ struct HfTaskDs {
         return;
       }
 
-      auto particleMother = mcParticles.iteratorAt(indexMother);
-
-      int flag = candidate.isCandidateSwapped() ? candidate.isSelDsToPiKK() : candidate.isSelDsToKKPi(); // 0 corresponds to KKPi, 1 to PiKK
-
       auto pt = candidate.pt(); // rec. level pT
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
         fillHisto(candidate, dataType);
-        fillHistoKKPi<useMl, Coll>(candidate, dataType);
+        fillHistoKKPi<Coll>(candidate, dataType);
+
+        if (TESTBIT(candidate.isSelDsToKKPi(), aod::SelectionStep::RecoSkims)) {
+          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
+        }
+        if (TESTBIT(candidate.isSelDsToKKPi(), aod::SelectionStep::RecoTopol)) {
+          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoTopol"])->Fill(pt, yCand);
+        }
+        if (TESTBIT(candidate.isSelDsToKKPi(), aod::SelectionStep::RecoPID)) {
+          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoPID"])->Fill(pt, yCand);
+        }
       }
       if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
         fillHisto(candidate, dataType);
-        fillHistoPiKK<useMl, Coll>(candidate, dataType);
-      }
+        fillHistoPiKK<Coll>(candidate, dataType);
 
-      std::get<TH1_ptr>(histosPtr[dataType]["hPtRecSig"])->Fill(pt);
-      std::get<TH1_ptr>(histosPtr[dataType]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
-      std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecSigRecoSkim"])->Fill(pt, yCand);
-      std::get<TH1_ptr>(histosPtr[dataType]["hCPARecSig"])->Fill(candidate.cpa());
-      std::get<TH1_ptr>(histosPtr[dataType]["hEtaRecSig"])->Fill(candidate.eta());
-      if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-        std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecSigRecoTopol"])->Fill(pt, yCand);
-      }
-      if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-        std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecSigRecoPID"])->Fill(pt, yCand);
+        if (TESTBIT(candidate.isSelDsToPiKK(), aod::SelectionStep::RecoSkims)) {
+          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
+        }
+        if (TESTBIT(candidate.isSelDsToPiKK(), aod::SelectionStep::RecoTopol)) {
+          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoTopol"])->Fill(pt, yCand);
+        }
+        if (TESTBIT(candidate.isSelDsToPiKK(), aod::SelectionStep::RecoPID)) {
+          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoPID"])->Fill(pt, yCand);
+        }
       }
     }
     return;
   }
 
-  template <FinalState decayChannel, bool useMl, typename Coll, typename CandDs>
-  void runDataAnalysis(CandDs const& candidate)
+  template <typename Coll, typename CandDs>
+  void runDataAnalysisPerCandidate(CandDs const& candidate)
   {
     if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
       return;
     }
-    if constexpr (decayChannel == FinalState::KKPi) { // KKPi
+
+    if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
       fillHisto(candidate, DataType::Data);
-      fillHistoKKPi<useMl, Coll>(candidate, DataType::Data);
+      fillHistoKKPi<Coll>(candidate, DataType::Data);
     }
-    if constexpr (decayChannel == FinalState::PiKK) { // PiKK
+    if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
       fillHisto(candidate, DataType::Data);
-      fillHistoPiKK<useMl, Coll>(candidate, DataType::Data);
+      fillHistoPiKK<Coll>(candidate, DataType::Data);
     }
   }
 
-  template <bool useMl, typename Coll, typename CandDs>
-  void runMcAnalysis(CandDs const& candidate,
-                     CandDsMcGen const& mcParticles)
+  template <typename Coll, typename CandDs>
+  void runMcAnalysisPerCandidate(CandDs const& candidate,
+                                 CandDsMcGen const& mcParticles)
   {
     // MC rec.
     std::array<MemberFunctionPointer<CandDs>, 5> isOfType = {// Contains the functions to check if the candidate is of a certain type
@@ -461,7 +487,7 @@ struct HfTaskDs {
     for (int i = DataType::McDsPrompt; i <= DataType::McDplusBkg; i++) { // Check what type of MC signal candidate it is, and fill the corresponding histograms
       if ((this->*isOfType[i - DataType::McDsPrompt])(candidate)) {
         isBkg = false;
-        fillHistoMCRec<useMl, Coll>(candidate, mcParticles, static_cast<DataType>(i));
+        fillHistoMCRec<Coll>(candidate, mcParticles, static_cast<DataType>(i));
         break;
       }
     }
@@ -473,11 +499,11 @@ struct HfTaskDs {
       if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs) {
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
           fillHisto(candidate, DataType::McBkg);
-          fillHistoKKPi<useMl, Coll>(candidate, DataType::McBkg);
+          fillHistoKKPi<Coll>(candidate, DataType::McBkg);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
           fillHisto(candidate, DataType::McBkg);
-          fillHistoPiKK<useMl, Coll>(candidate, DataType::McBkg);
+          fillHistoPiKK<Coll>(candidate, DataType::McBkg);
         }
       }
     }
@@ -496,28 +522,10 @@ struct HfTaskDs {
           auto pt = particle.pt();
           double y{0.f};
 
-          unsigned maxNumContrib = 0; // Search for reco. collisions of the same MC collision
-
-          if constexpr (centDetector == CentralityEstimator::None) {
-            const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
-            for (const auto& recCol : recoCollsPerMcColl) {
-              maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
-            }
-          } else if constexpr (centDetector == CentralityEstimator::FT0C) {
-            const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithFT0C, particle.mcCollision().globalIndex());
-            for (const auto& recCol : recoCollsPerMcColl) {
-              maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
-            }
-          } else if constexpr (centDetector == CentralityEstimator::FT0M) {
-            const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithFT0M, particle.mcCollision().globalIndex());
-            for (const auto& recCol : recoCollsPerMcColl) {
-              maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
-            }
-          } else if constexpr (centDetector == CentralityEstimator::NTracksPV) {
-            const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithNTracksPV, particle.mcCollision().globalIndex());
-            for (const auto& recCol : recoCollsPerMcColl) {
-              maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
-            }
+          unsigned maxNumContrib = 0;
+          const auto& recoCollsPerMcColl = recoCollisions.sliceBy(std::get<PresliceUnsorted<Coll>>(colPerMcCollisionMap.at(centDetector)), particle.mcCollision().globalIndex());
+          for (const auto& recCol : recoCollisions) {
+            maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
           }
 
           if (particle.flagMcDecayChanGen() == decayChannel) {
@@ -557,76 +565,6 @@ struct HfTaskDs {
     }
   }
 
-  /// Checks wheter the candidate is in the signal region of either the Ds or D+ decay
-  /// \param candidate is the candidate
-  /// \param isDs is true if we check for the Ds signal region, false for the D+ signal region
-  /// \return true if the candidate is in the signal region, false otherwise
-  template <typename CandDs>
-  bool isCandInSignalRegion(const CandDs& candidate, bool isDs)
-  {
-    bool isKKPi = candidate.isSelDsToKKPi() >= selectionFlagDs;
-    float invMass = isKKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
-    if (isDs && (invMass < massDsSignalMin || invMass > massDsSignalMax)) {
-      return false;
-    }
-    if (!isDs && (invMass < massDplusSignalMin || invMass > massDplusSignalMax)) {
-      return false;
-    }
-    return true;
-  }
-
-  template <bool doMc, typename CandDs>
-  void incrementCandCounters(const CandDs& candidate,
-                             std::array<int, DataType::kDataTypes>& nCandsPerType,
-                             std::array<int, DataType::kDataTypes>& nCandsInSignalRegionDsPerType,
-                             std::array<int, DataType::kDataTypes>& nCandsInSignalRegionDplusPerType)
-  {
-    if constexpr (doMc) {
-      std::array<MemberFunctionPointer<CandDs>, 4> isOfType = {// Contains the functions to check if the candidate is of a certain type
-                                                               &HfTaskDs::isDsPrompt<CandDs>,
-                                                               &HfTaskDs::isDsNonPrompt<CandDs>,
-                                                               &HfTaskDs::isDplusPrompt<CandDs>,
-                                                               &HfTaskDs::isDplusNonPrompt<CandDs>};
-      bool isBkg = true;
-      for (int i = DataType::McDsPrompt; i <= DataType::McDplusNonPrompt; i++) { // Check what type of MC signal candidate it is, and fill the corresponding arrays
-        if ((this->*isOfType[i - DataType::McDsPrompt])(candidate)) {
-          isBkg = false;
-          ++nCandsPerType[i];
-          if (isCandInSignalRegion(candidate, true)) {
-            ++nCandsInSignalRegionDsPerType[i];
-          }
-          if (isCandInSignalRegion(candidate, false)) {
-            ++nCandsInSignalRegionDplusPerType[i];
-          }
-          break;
-        }
-      }
-      if (isBkg) {
-        ++nCandsPerType[DataType::McBkg];
-        if (isCandInSignalRegion(candidate, true)) {
-          ++nCandsInSignalRegionDsPerType[DataType::McBkg];
-        }
-        if (isCandInSignalRegion(candidate, false)) {
-          ++nCandsInSignalRegionDplusPerType[DataType::McBkg];
-        }
-      }
-
-      nCandsPerType[DataType::Data] = nCandsPerType[DataType::McDsPrompt] + nCandsPerType[DataType::McDsNonPrompt] + nCandsPerType[DataType::McDplusPrompt] + nCandsPerType[DataType::McDplusNonPrompt] + nCandsPerType[DataType::McBkg];
-
-      nCandsInSignalRegionDsPerType[DataType::Data] = nCandsInSignalRegionDsPerType[DataType::McDsPrompt] + nCandsInSignalRegionDsPerType[DataType::McDsNonPrompt] + nCandsInSignalRegionDsPerType[DataType::McDplusPrompt] + nCandsInSignalRegionDsPerType[DataType::McDplusNonPrompt] + nCandsInSignalRegionDsPerType[DataType::McBkg];
-
-      nCandsInSignalRegionDplusPerType[DataType::Data] = nCandsInSignalRegionDplusPerType[DataType::McDsPrompt] + nCandsInSignalRegionDplusPerType[DataType::McDsNonPrompt] + nCandsInSignalRegionDplusPerType[DataType::McDplusPrompt] + nCandsInSignalRegionDplusPerType[DataType::McDplusNonPrompt] + nCandsInSignalRegionDplusPerType[DataType::McBkg];
-    } else { // Data
-      ++nCandsPerType[DataType::Data];
-      if (isCandInSignalRegion(candidate, true)) {
-        ++nCandsInSignalRegionDsPerType[DataType::Data];
-      }
-      if (isCandInSignalRegion(candidate, false)) {
-        ++nCandsInSignalRegionDplusPerType[DataType::Data];
-      }
-    }
-  }
-
   template <typename Coll>
   void fillNPvContribHisto(const Coll& collision,
                            std::array<int, DataType::kDataTypes>& nCandsPerType,
@@ -634,46 +572,115 @@ struct HfTaskDs {
                            std::array<int, DataType::kDataTypes>& nCandsInSignalRegionDplusPerType)
   {
     int numPvContributors = collision.numContrib();
-    std::get<TH2_ptr>(histosPtr[DataType::Data]["hNPvContribAll"])->Fill(numPvContributors, evaluateCentralityColl(collision));
+    float centrality = evaluateCentralityColl(collision);
+    std::get<TH2_ptr>(histosPtr[DataType::Data]["hNPvContribAll"])->Fill(numPvContributors, centrality);
     for (int i = 0; i < DataType::kDataTypes; i++) {
       if (nCandsPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCands"])->Fill(numPvContributors, evaluateCentralityColl(collision));
+        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCands"])->Fill(numPvContributors, centrality);
       }
       if (nCandsInSignalRegionDsPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDs"])->Fill(numPvContributors, evaluateCentralityColl(collision));
+        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDs"])->Fill(numPvContributors, centrality);
       }
       if (nCandsInSignalRegionDplusPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDplus"])->Fill(numPvContributors, evaluateCentralityColl(collision));
+        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDplus"])->Fill(numPvContributors, centrality);
       }
     }
+  }
+
+  template <typename Coll, typename CandsDs>
+  void runDataAnalysisPerCollision(const Coll& collisions, const CandsDs& candsDs, Preslice<CandsDs> candDsPerCollision)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      std::array<int, DataType::kDataTypes> nCandsPerType{0};
+      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
+      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
+
+      auto groupedDsCandidates = candsDs.sliceBy(candDsPerCollision, thisCollId);
+      for (const auto& candidate : groupedDsCandidates) {
+        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
+          continue;
+        }
+        runDataAnalysisPerCandidate<Coll>(candidate);
+
+        ++nCandsPerType[DataType::Data];
+        if (isCandInSignalRegion(candidate, true)) {
+          ++nCandsInSignalRegionDsPerType[DataType::Data];
+        }
+        if (isCandInSignalRegion(candidate, false)) {
+          ++nCandsInSignalRegionDplusPerType[DataType::Data];
+        }
+      }
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+    }
+  }
+
+  template <CentralityEstimator centDetector, typename Coll, typename CandsDs, typename CandDsMcGen>
+  void runMcAnalysisPerCollision(const Coll& collisions,
+                                 const CandsDs& candsDs,
+                                 const CandDsMcGen& mcParticles,
+                                 Preslice<CandsDs> candDsPerCollision)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      std::array<int, DataType::kDataTypes> nCandsPerType{0};
+      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
+      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
+
+      auto groupedDsCandidates = candsDs.sliceBy(candDsPerCollision, thisCollId);
+      for (const auto& candidate : groupedDsCandidates) {
+        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
+          continue;
+        }
+        runDataAnalysisPerCandidate<Coll>(candidate);
+        runMcAnalysisPerCandidate<Coll>(candidate, mcParticles);
+
+        // Increase the number of candidates of the corresponding type to fill the NPvContrib histos
+        std::array<MemberFunctionPointer<typename CandsDs::iterator>, 4> isOfType = {// Contains the functions to check if the candidate is of a certain type
+                                                                                     &HfTaskDs::isDsPrompt<typename CandsDs::iterator>,
+                                                                                     &HfTaskDs::isDsNonPrompt<typename CandsDs::iterator>,
+                                                                                     &HfTaskDs::isDplusPrompt<typename CandsDs::iterator>,
+                                                                                     &HfTaskDs::isDplusNonPrompt<typename CandsDs::iterator>};
+        bool isBkg = true;
+        for (int i = DataType::McDsPrompt; i <= DataType::McDplusNonPrompt; i++) { // Check what type of MC signal candidate it is, and fill the corresponding arrays
+          if ((this->*isOfType[i - DataType::McDsPrompt])(candidate)) {
+            isBkg = false;
+            ++nCandsPerType[i];
+            if (isCandInSignalRegion(candidate, true)) {
+              ++nCandsInSignalRegionDsPerType[i];
+            }
+            if (isCandInSignalRegion(candidate, false)) {
+              ++nCandsInSignalRegionDplusPerType[i];
+            }
+            break;
+          }
+        }
+        if (isBkg) {
+          ++nCandsPerType[DataType::McBkg];
+          if (isCandInSignalRegion(candidate, true)) {
+            ++nCandsInSignalRegionDsPerType[DataType::McBkg];
+          }
+          if (isCandInSignalRegion(candidate, false)) {
+            ++nCandsInSignalRegionDplusPerType[DataType::McBkg];
+          }
+        }
+
+        nCandsPerType[DataType::Data] = nCandsPerType[DataType::McDsPrompt] + nCandsPerType[DataType::McDsNonPrompt] + nCandsPerType[DataType::McDplusPrompt] + nCandsPerType[DataType::McDplusNonPrompt] + nCandsPerType[DataType::McBkg];
+
+        nCandsInSignalRegionDsPerType[DataType::Data] = nCandsInSignalRegionDsPerType[DataType::McDsPrompt] + nCandsInSignalRegionDsPerType[DataType::McDsNonPrompt] + nCandsInSignalRegionDsPerType[DataType::McDplusPrompt] + nCandsInSignalRegionDsPerType[DataType::McDplusNonPrompt] + nCandsInSignalRegionDsPerType[DataType::McBkg];
+
+        nCandsInSignalRegionDplusPerType[DataType::Data] = nCandsInSignalRegionDplusPerType[DataType::McDsPrompt] + nCandsInSignalRegionDplusPerType[DataType::McDsNonPrompt] + nCandsInSignalRegionDplusPerType[DataType::McDplusPrompt] + nCandsInSignalRegionDplusPerType[DataType::McDplusNonPrompt] + nCandsInSignalRegionDplusPerType[DataType::McBkg];
+      }
+      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
+    }
+    fillMcGenHistos<centDetector>(mcParticles, collisions);
   }
 
   void processDataWithCentFT0C(CollisionsWithFT0C const& collisions,
                                CandDsData const& candsDs,
                                aod::Tracks const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsWithFT0C>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsWithFT0C>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
+    runDataAnalysisPerCollision(collisions, candsDs, candDsDataPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithCentFT0C, "Process data w/o ML information on Ds, with information on centrality from FT0C", false);
 
@@ -681,28 +688,7 @@ struct HfTaskDs {
                                CandDsData const& candsDs,
                                aod::Tracks const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsWithFT0M>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsWithFT0M>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
+    runDataAnalysisPerCollision(collisions, candsDs, candDsDataPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithCentFT0M, "Process data w/o ML information on Ds, with information on centrality from FT0M", false);
 
@@ -710,28 +696,7 @@ struct HfTaskDs {
                                     CandDsData const& candsDs,
                                     aod::Tracks const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsWithNTracksPV>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsWithNTracksPV>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
+    runDataAnalysisPerCollision(collisions, candsDs, candDsDataPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithCentNTracksPV, "Process data w/o ML information on Ds, with information on centrality from NTracksPV", false);
 
@@ -739,22 +704,7 @@ struct HfTaskDs {
                    CandDsData const& candsDs,
                    aod::Tracks const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, false /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, false /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
-        }
-      }
-    }
+    runDataAnalysisPerCollision(collisions, candsDs, candDsDataPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processData, "Process data w/o ML information on Ds, w/o information on centrality", true);
 
@@ -762,28 +712,7 @@ struct HfTaskDs {
                                     CandDsDataWithMl const& candsDs,
                                     aod::Tracks const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataWithMlPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsWithFT0C>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsWithFT0C>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
+    runDataAnalysisPerCollision(collisions, candsDs, candDsDataWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentFT0C, "Process data with ML information on Ds, with information on centrality from FT0C", false);
 
@@ -791,28 +720,7 @@ struct HfTaskDs {
                                     CandDsDataWithMl const& candsDs,
                                     aod::Tracks const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataWithMlPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsWithFT0M>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsWithFT0M>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
+    runDataAnalysisPerCollision(collisions, candsDs, candDsDataWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentFT0M, "Process data with ML information on Ds, with information on centrality from FT0M", false);
 
@@ -820,28 +728,7 @@ struct HfTaskDs {
                                          CandDsDataWithMl const& candsDs,
                                          aod::Tracks const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataWithMlPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<false /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsWithNTracksPV>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsWithNTracksPV>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
+    runDataAnalysisPerCollision(collisions, candsDs, candDsDataWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentNTracksPV, "Process data with ML information on Ds, with information on centrality", false);
 
@@ -849,22 +736,7 @@ struct HfTaskDs {
                          CandDsDataWithMl const& candsDs,
                          aod::Tracks const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto groupedDsCandidates = candsDs.sliceBy(candDsDataWithMlPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, true /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, true /*useMl*/, soa::Join<aod::Collisions, aod::EvSels>>(candidate);
-        }
-      }
-    }
+    runDataAnalysisPerCollision(collisions, candsDs, candDsDataWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMl, "Process data with ML information on Ds, w/o information on centrality", false);
 
@@ -874,31 +746,7 @@ struct HfTaskDs {
                              aod::McCollisions const&,
                              aod::TracksWMc const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        runMcAnalysis<false /*useMl*/, CollisionsMcWithFT0C, CandDsMcReco::iterator>(candidate, mcParticles);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsMcWithFT0C>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsMcWithFT0C>(candidate);
-        }
-      }
-      fillNPvContribHisto<CollisionsMcWithFT0C::iterator>(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
-    fillMcGenHistos<CentralityEstimator::FT0C>(mcParticles, collisions);
+    runMcAnalysisPerCollision<CentralityEstimator::FT0C, CollisionsMcWithFT0C>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithCentFT0C, "Process MC w/o ML information on Ds, with information on centrality from FT0C", false);
 
@@ -908,31 +756,7 @@ struct HfTaskDs {
                              aod::McCollisions const&,
                              aod::TracksWMc const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        runMcAnalysis<false /*useMl*/, CollisionsMcWithFT0M>(candidate, mcParticles);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsMcWithFT0M>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsMcWithFT0M>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
-    fillMcGenHistos<CentralityEstimator::FT0M>(mcParticles, collisions);
+    runMcAnalysisPerCollision<CentralityEstimator::FT0M, CollisionsMcWithFT0M>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithCentFT0M, "Process MC w/o ML information on Ds, with information on centrality from FT0M", false);
 
@@ -942,31 +766,7 @@ struct HfTaskDs {
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        runMcAnalysis<false /*useMl*/, CollisionsMcWithNTracksPV>(candidate, mcParticles);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
-    fillMcGenHistos<CentralityEstimator::NTracksPV>(mcParticles, collisions);
+    runMcAnalysisPerCollision<CentralityEstimator::NTracksPV, CollisionsMcWithNTracksPV>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithCentNTracksPV, "Process MC w/o ML information on Ds, with information on centrality from NTracksPV", false);
 
@@ -976,25 +776,7 @@ struct HfTaskDs {
                  aod::McCollisions const&,
                  aod::TracksWMc const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        runMcAnalysis<false /*useMl*/, CollisionsMc>(candidate, mcParticles);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, false /*useMl*/, CollisionsMc>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, false /*useMl*/, CollisionsMc>(candidate);
-        }
-      }
-    }
-    fillMcGenHistos<CentralityEstimator::None>(mcParticles, collisions);
+    runMcAnalysisPerCollision<CentralityEstimator::None, CollisionsMc>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMc, "Process MC w/o ML information on Ds, w/o information on centrality", false);
 
@@ -1004,31 +786,7 @@ struct HfTaskDs {
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        runMcAnalysis<true, CollisionsMcWithFT0C>(candidate, mcParticles);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsMcWithFT0C>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsMcWithFT0C>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
-    fillMcGenHistos<CentralityEstimator::FT0C>(mcParticles, collisions);
+    runMcAnalysisPerCollision<CentralityEstimator::FT0C, CollisionsMcWithFT0C>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentFT0C, "Process MC with ML information on Ds, with information on centrality from FT0C", false);
 
@@ -1038,31 +796,7 @@ struct HfTaskDs {
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        runMcAnalysis<true, CollisionsMcWithFT0M>(candidate, mcParticles);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsMcWithFT0M>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsMcWithFT0M>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
-    fillMcGenHistos<CentralityEstimator::FT0M>(mcParticles, collisions);
+    runMcAnalysisPerCollision<CentralityEstimator::FT0M, CollisionsMcWithFT0M>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentFT0M, "Process MC with ML information on Ds, with information on centrality from FT0M", false);
 
@@ -1072,31 +806,7 @@ struct HfTaskDs {
                                        aod::McCollisions const&,
                                        aod::TracksWMc const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      std::array<int, DataType::kDataTypes> nCandsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
-      std::array<int, DataType::kDataTypes> nCandsInSignalRegionDplusPerType{0};
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        incrementCandCounters<true /*doMc*/>(candidate, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-
-        runMcAnalysis<true, CollisionsMcWithNTracksPV>(candidate, mcParticles);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsMcWithNTracksPV>(candidate);
-        }
-      }
-      fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
-    }
-    fillMcGenHistos<CentralityEstimator::NTracksPV>(mcParticles, collisions);
+    runMcAnalysisPerCollision<CentralityEstimator::NTracksPV, CollisionsMcWithNTracksPV>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentNTracksPV, "Process MC with ML information on Ds, with information on centrality from NTracksPV", false);
 
@@ -1106,25 +816,7 @@ struct HfTaskDs {
                        aod::McCollisions const&,
                        aod::TracksWMc const&)
   {
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto groupedDsCandidates = candsDs.sliceBy(candDsMcRecoWithMlPerCollision, thisCollId);
-      for (const auto& candidate : groupedDsCandidates) {
-        if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
-          continue;
-        }
-
-        runMcAnalysis<true /*useMl*/, CollisionsMc>(candidate, mcParticles);
-
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::KKPi, true /*useMl*/, CollisionsMc>(candidate);
-        }
-        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          runDataAnalysis<FinalState::PiKK, true /*useMl*/, CollisionsMc>(candidate);
-        }
-      }
-    }
-    fillMcGenHistos<CentralityEstimator::None>(mcParticles, collisions);
+    runMcAnalysisPerCollision<CentralityEstimator::None, CollisionsMc>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMl, "Process MC with ML information on Ds, w/o information on centrality", false);
 };
