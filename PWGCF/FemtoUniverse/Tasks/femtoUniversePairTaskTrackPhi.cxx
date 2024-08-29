@@ -552,8 +552,9 @@ struct femtoUniversePairTaskTrackPhi {
       if (plocalEffp1) {
         weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(track.pt(), track.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(phicandidate.pt(), phicandidate.eta()));
         sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
-      } else
+      } else {
         sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
+      }
     }
 
     TLorentzVector part1Vec;
@@ -654,8 +655,9 @@ struct femtoUniversePairTaskTrackPhi {
       if (plocalEffp1) {
         weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(track.pt(), track.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(phicandidate.pt(), phicandidate.eta()));
         mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
-      } else
+      } else {
         mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
+      }
     }
   }
 
