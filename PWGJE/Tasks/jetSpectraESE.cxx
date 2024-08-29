@@ -29,8 +29,8 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 
-#include "PWGCF/Flow/DataModel/FlowESE.h"
-#include "PWGCF/Flow/Core/FFitWeights.h"
+#include "Common/DataModel/FlowESE.h"
+#include "Common/Core/FFitWeights.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -99,14 +99,18 @@ struct JetSpectraEseTask {
     return s;
   }
 
-  void processESEDataCharged(JColwESE::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, aod::BCsWithTimestamps const&)
+  // void processESEDataCharged(JColwESE::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, aod::BCsWithTimestamps const&)
+  void processESEDataCharged(soa::Join<JetCollisions, aod::JCollisionPIs>::iterator const& collision,
+                             soa::Join<aod::Collisions, aod::CentFT0Cs, aod::qVecFT0Cs, aod::qPercentileFT0Cs> const&,
+                             soa::Filtered<aod::ChargedJets> const& jets)
   {
+    auto originalCollision = collision.collision_as<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::qVecFT0Cs, aod::qPercentileFT0Cs>>();
 
-    float vPsi2 = FFitWeights::EventPlane(collision, 2);
+    float vPsi2 = FFitWeights::EventPlane(originalCollision, 2);
 
-    auto qPerc = collision.qPERCFT0C();
+    auto qPerc = originalCollision.qPERCFT0C();
     if (qPerc[0] > 0)
-      registry.fill(HIST("h_Cent_q2Percs"), collision.centFT0C(), qPerc[0]);
+      registry.fill(HIST("h_Cent_q2Percs"), originalCollision.centFT0C(), qPerc[0]);
 
     int code = spCode(qPerc[0]);
 

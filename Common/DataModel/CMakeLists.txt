@@ -20,4 +20,5 @@ o2physics_add_header_only_library(DataModel
                                           TrackSelectionTables.h
                                           McCollisionExtra.h
                                           Qvectors.h
-                                          MftmchMatchingML.h)
+                                          MftmchMatchingML.h
+                                          FlowESE.h)

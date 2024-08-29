@@ -41,7 +41,7 @@
 #include "DetectorsCommonDataFormats/AlignParam.h"
 #include "FT0Base/Geometry.h"
 
-#include "PWGCF/Flow/DataModel/FlowESE.h"
+#include "Common/DataModel/FlowESE.h"
 #include "FFitWeights.h"
 
 #include <TSpline.h>
@@ -104,6 +104,9 @@ struct ProduceFlowESE {
     registry.add("h_qy2VecFT0C", "qyVecFT0C;qyVecFT0C;entries", {HistType::kTH1F, {{1000, 0, 1000}}});
     registry.add("h_qx3VecFT0C", "qxVecFT0C;qxVecFT0C;entries", {HistType::kTH1F, {{1000, 0, 1000}}});
     registry.add("h_qy3VecFT0C", "qyVecFT0C;qyVecFT0C;entries", {HistType::kTH1F, {{1000, 0, 1000}}});
+
+    registry.add("h_Q2XvsQ2YFT0C", "Q_{2,y}^{FT0C};Q_{2,x}^{FT0C};", {HistType::kTH2F, {{350, -3500, 3500}, {350, -3500, 3500}}});
+    registry.add("h_Q2XvsQ2YFT0C_Rec", "Q_{2,y}^{FT0C};Q_{2,x}^{FT0C};", {HistType::kTH2F, {{350, -350, 350}, {350, -350, 350}}});
 
     registry.add("h_Cent_q2FT0C", "q^{FT0C}_{2};Centrality (FT0A);", {HistType::kTH2F, {axisCentralityR, axisq2FT0C}});
     registry.add("h_Cent_q3FT0C", "q^{FT0C}_{3};Centrality (FT0A);", {HistType::kTH2F, {axisCentralityR, axisq2FT0C}});
@@ -309,7 +312,7 @@ struct ProduceFlowESE {
 
     if (!fCalc) {
       qn = 0;
-    } else {
+    } else if (fCalc && cfgCorrLevel == 0) {
       qn = Calcqn(qVecFT0C[0], qVecFT0C[1], sumAmplFT0C);
     }
 
@@ -319,10 +322,14 @@ struct ProduceFlowESE {
     if (cfgCorrLevel > 1) {
       int centr = static_cast<int>(collision.centFT0C());
       if (fCalc) {
+        registry.fill(HIST("h_Q2XvsQ2YFT0C"), qVecFT0C[0], qVecFT0C[1]);
         qVecFT0C[0] = qVecFT0C[0] - weights->GetRecVal(centr, "x", nHarm);
         qVecFT0C[1] = qVecFT0C[1] - weights->GetRecVal(centr, "y", nHarm);
         FFitObj->FillQ(collision.centFT0C(), qVecFT0C[0], nHarm, "x", "_Rec");
         FFitObj->FillQ(collision.centFT0C(), qVecFT0C[1], nHarm, "y", "_Rec");
+        registry.fill(HIST("h_Q2XvsQ2YFT0C_Rec"), qVecFT0C[0], qVecFT0C[1]);
+
+        qn = Calcqn(qVecFT0C[0], qVecFT0C[1], sumAmplFT0C);
 
         qVecFT0C[0] = qVecFT0C[0] / weights->GetRMSVal(centr, "x", nHarm);
         qVecFT0C[1] = qVecFT0C[1] / weights->GetRMSVal(centr, "y", nHarm);

@@ -9,11 +9,3 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-
-o2physics_add_library(FlowCore
-               SOURCES  FFitWeights.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
-
-o2physics_target_root_dictionary(FlowCore
-              HEADERS FFitWeights.h
-              LINKDEF FlowCoreLinkDef.h)
