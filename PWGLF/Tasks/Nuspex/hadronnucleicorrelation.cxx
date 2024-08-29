@@ -384,8 +384,8 @@ struct hadronnucleicorrelation {
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) <= max_chi2_TPC &&
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) >= min_TPC_nCrossedRowsOverFindableCls &&
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) <= max_chi2_ITS &&
-                       //  nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY_v1)) <= max_dcaxy && // For now no filtering on the DCAxy or DCAz (casting not supported)
-                       //  nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY_v1)) <= max_dcaz && // For now no filtering on the DCAxy or DCAz (casting not supported)
+                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY_v1)) <= max_dcaxy &&
+                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY_v1)) <= max_dcaz &&
                        nabs(o2::aod::singletrackselector::eta) <= etacut;
 
   template <int ME, bool doMC, typename Type>
@@ -563,9 +563,7 @@ struct hadronnucleicorrelation {
   void processData(FilteredCollisions const& collisions, FilteredTracks const& tracks)
   {
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
-        continue;
-      if (abs(track.dcaXY()) > max_dcaxy || abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
+      if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex) {
         continue;
       }
       if (doQA) {
@@ -831,10 +829,7 @@ struct hadronnucleicorrelation {
   void processMC(FilteredCollisions const& collisions, FilteredTracksMC const& tracks)
   {
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
-        continue;
-
-      if (abs(track.dcaXY()) > max_dcaxy || abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
+      if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex) {
         continue;
       }
 
