@@ -13,8 +13,8 @@
 Author: Joachim Hansen
 
 */
-#ifndef PWGCF_COMMON_CORE_FFITWEIGHTS_H_
-#define PWGCF_COMMON_CORE_FFITWEIGHTS_H_
+#ifndef COMMON_CORE_FFITWEIGHTS_H_
+#define COMMON_CORE_FFITWEIGHTS_H_
 
 #include <vector>
 #include <string>
@@ -99,4 +99,4 @@ class FFitWeights : public TNamed
 
   ClassDef(FFitWeights, 1); // calibration class
 };
-#endif // PWGCF_COMMON_CORE_FFITWEIGHTS_H_
+#endif // COMMON_CORE_FFITWEIGHTS_H_
