@@ -14,8 +14,8 @@
 /// \author Joachim Hansen <joachim.hansen@cern.ch>
 //
 
-#ifndef COMMON_DATAMODEL_FLOWESE_H_
-#define COMMON_DATAMODEL_FLOWESE_H_
+#ifndef COMMON_DATAMODEL_ESETABLE_H_
+#define COMMON_DATAMODEL_ESETABLE_H_
 
 #include <vector>
 
@@ -42,4 +42,4 @@ using qPercentileFT0C = qPercentileFT0Cs::iterator;
 
 } // namespace o2::aod
 
-#endif // COMMON_DATAMODEL_FLOWESE_H_
+#endif // COMMON_DATAMODEL_ESETABLE_H_
