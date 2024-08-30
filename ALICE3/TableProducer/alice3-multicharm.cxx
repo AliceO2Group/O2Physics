@@ -345,33 +345,33 @@ struct alice3multicharm {
     // failure rates.
     // --- 0: attempt XiC, 1: success XiC
     // --- 2: attempt XiCC, 3: success XiCC
-    histos.add("hCharmBuilding", "hCharmBuilding", kTH1F, {{10, -0.5, 9.5f}});
+    histos.add("hCharmBuilding", "hCharmBuilding", kTH1D, {{10, -0.5, 9.5f}});
 
-    histos.add("h2dGenXi", "h2dGenXi", kTH2F, {axisPt, axisEta});
-    histos.add("h2dGenXiC", "h2dGenXiC", kTH2F, {axisPt, axisEta});
-    histos.add("h2dGenXiCC", "h2dGenXiCC", kTH2F, {axisPt, axisEta});
+    histos.add("h2dGenXi", "h2dGenXi", kTH1D, {axisPt, axisEta});
+    histos.add("h2dGenXiC", "h2dGenXiC", kTH1D, {axisPt, axisEta});
+    histos.add("h2dGenXiCC", "h2dGenXiCC", kTH1D, {axisPt, axisEta});
 
-    histos.add("hMassXi", "hMassXi", kTH1F, {axisXiMass});
-    histos.add("hMassXiC", "hMassXiC", kTH1F, {axisXiCMass});
-    histos.add("hMassXiCC", "hMassXiCC", kTH1F, {axisXiCCMass});
+    histos.add("hMassXi", "hMassXi", kTH1D, {axisXiMass});
+    histos.add("hMassXiC", "hMassXiC", kTH1D, {axisXiCMass});
+    histos.add("hMassXiCC", "hMassXiCC", kTH1D, {axisXiCCMass});
 
-    histos.add("hEtaXiCC", "hEtaXiCC", kTH1F, {axisEta});
-    histos.add("hPtXiCC", "hPtXiCC", kTH1F, {axisPt});
-    histos.add("h3dMassXiCC", "h3dMassXiCC", kTH3F, {axisPt, axisEta, axisXiCCMass});
+    histos.add("hEtaXiCC", "hEtaXiCC", kTH1D, {axisEta});
+    histos.add("hPtXiCC", "hPtXiCC", kTH1D, {axisPt});
+    histos.add("h3dMassXiCC", "h3dMassXiCC", kTH3D, {axisPt, axisEta, axisXiCCMass});
 
-    histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1F, {axisDCAXiCDaughters});
-    histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1F, {axisDCAXiCCDaughters});
+    histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1D, {axisDCAXiCDaughters});
+    histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1D, {axisDCAXiCCDaughters});
 
     // These histograms bookkeep the exact number of combinations attempted
     // CombinationsXiC: triplets Xi-pi-pi considered per Xi
     // CombinationsXiCC: doublets XiC-pi considered per XiC
-    histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1F, {axisNConsidered});
-    histos.add("hCombinationsXiCC", "hCombinationsXiCC", kTH1F, {axisNConsidered});
+    histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1D, {axisNConsidered});
+    histos.add("hCombinationsXiCC", "hCombinationsXiCC", kTH1D, {axisNConsidered});
 
     if (doDCAplots) {
-      histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2F, {axisPt, axisDCA});
-      histos.add("h2dDCAxyVsPtPiFromXiC", "h2dDCAxyVsPtPiFromXiC", kTH2F, {axisPt, axisDCA});
-      histos.add("h2dDCAxyVsPtPiFromXiCC", "h2dDCAxyVsPtPiFromXiCC", kTH2F, {axisPt, axisDCA});
+      histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2D, {axisPt, axisDCA});
+      histos.add("h2dDCAxyVsPtPiFromXiC", "h2dDCAxyVsPtPiFromXiC", kTH2D, {axisPt, axisDCA});
+      histos.add("h2dDCAxyVsPtPiFromXiCC", "h2dDCAxyVsPtPiFromXiCC", kTH2D, {axisPt, axisDCA});
     }
   }
 
