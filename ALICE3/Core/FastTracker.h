@@ -34,7 +34,7 @@ class FastTracker
   FastTracker();
   virtual ~FastTracker() {}
 
-  void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f);
+  void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
 
   void AddSiliconALICE3v4();
   void AddSiliconALICE3v1();
@@ -55,6 +55,11 @@ class FastTracker
 
   uint64_t covMatOK;    // cov mat has negative eigenvals
   uint64_t covMatNotOK; // cov mat has negative eigenvals
+
+  // last track information
+  int nIntercepts;    // found in first outward propagation
+  int nSiliconPoints; // silicon-based space points added to track
+  int nGasPoints;     // tpc-based space points added to track
 
   ClassDef(FastTracker, 1);
 };

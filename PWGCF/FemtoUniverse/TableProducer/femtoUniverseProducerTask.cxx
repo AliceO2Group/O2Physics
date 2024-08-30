@@ -205,7 +205,7 @@ struct femtoUniverseProducerTask {
     Configurable<float> ConfDcaXYCustom12FilterCut{"ConfDcaXY2FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
   } ConfFilterCuts;
 
-  Filter GlobalCutFilter = requireGlobalTrackWoDCAInFilter();
+  Filter GlobalCutFilter = requireGlobalTrackInFilter();
   Filter CustomTrackFilter = (aod::track::pt > ConfFilterCuts.ConfPtLowFilterCut) &&
                              (aod::track::pt < ConfFilterCuts.ConfPtHighFilterCut) &&
                              (nabs(aod::track::eta) < ConfFilterCuts.ConfEtaFilterCut) &&
@@ -262,6 +262,8 @@ struct femtoUniverseProducerTask {
     Configurable<float> ConfLooseTOFNSigmaValue{"ConfLooseTOFNSigmaValue", 10, "Value for the loose TOF N Sigma for Kaon PID."};
     Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
     Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
+    Configurable<float> ConfNsigmaRejectPion{"ConfNsigmaRejectPion", 3.0, "Reject if particle could be a Pion combined nsigma value."};
+    Configurable<float> ConfNsigmaRejectProton{"ConfNsigmaRejectProton", 3.0, "Reject if particle could be a Proton combined nsigma value."};
   } ConfPhiSelection;
 
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
@@ -383,6 +385,28 @@ struct femtoUniverseProducerTask {
       }
     } else if (mom > 1.5) { // 1.5 -
       if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool IsKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
+  {
+    if (mom < 0.5) {
+      if (TMath::Abs(nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion) {
+        return true;
+      } else if (TMath::Abs(nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton) {
+        return true;
+      }
+    }
+    if (mom > 0.5) {
+      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion) {
+        return true;
+      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton) {
         return true;
       } else {
         return false;
@@ -656,6 +680,61 @@ struct femtoUniverseProducerTask {
       }
 
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+      outputPartsMCLabels(outputPartsMC.lastIndex());
+    } else {
+      outputPartsMCLabels(-1);
+    }
+  }
+
+  template <typename ParticleType>
+  void fillMCParticlePhi(ParticleType const& kaon1, ParticleType const& kaon2)
+  {
+    if (kaon1.has_mcParticle() && kaon2.has_mcParticle()) {
+      // get corresponding MC particle and its info
+      auto kaon1MC = kaon1.mcParticle();
+      auto kaon2MC = kaon2.mcParticle();
+      auto pdgCode1 = kaon1MC.pdgCode();
+      auto pdgCode2 = kaon2MC.pdgCode();
+
+      int phiOrigin = 99;
+      auto motherskaon1MC = kaon1MC.template mothers_as<aod::McParticles>();
+      auto motherskaon2MC = kaon2MC.template mothers_as<aod::McParticles>();
+
+      if (abs(pdgCode1) == abs(321) || abs(pdgCode2) == abs(-321)) {
+        if ((kaon1MC.isPhysicalPrimary() && kaon2MC.isPhysicalPrimary()) && (!motherskaon1MC.empty() && !motherskaon2MC.empty())) {
+          for (auto& particleMotherOfNeg : motherskaon1MC) {
+            for (auto& particleMotherOfPos : motherskaon2MC) {
+              if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 333) {
+                phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
+              } else {
+                phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake;
+              }
+            }
+          }
+        } else {
+          phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake;
+        }
+      } else {
+        phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake;
+      }
+
+      TLorentzVector part1Vec;
+      TLorentzVector part2Vec;
+
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
+
+      part1Vec.SetPtEtaPhiM(kaon1MC.pt(), kaon1MC.eta(), kaon1MC.phi(), mMassOne);
+      part2Vec.SetPtEtaPhiM(kaon2MC.pt(), kaon2MC.eta(), kaon2MC.phi(), mMassTwo);
+
+      TLorentzVector sumVec(part1Vec);
+      sumVec += part2Vec;
+
+      float phiEta = sumVec.Eta();
+      float phiPt = sumVec.Pt();
+      float phiPhi = sumVec.Phi();
+
+      outputPartsMC(phiOrigin, 333, phiPt, phiEta, phiPhi);
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
       outputPartsMCLabels(-1);
@@ -1183,6 +1262,13 @@ struct femtoUniverseProducerTask {
           continue;
         }
       }
+      if (IsKaonRejected(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion))) {
+        continue;
+      }
+      if (IsKaonRejected(p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion))) {
+        continue;
+      }
+
       if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
         continue;
       }
@@ -1281,9 +1367,9 @@ struct femtoUniverseProducerTask {
         fillDebugParticle<true, false, false>(p2); // QA for negative daughter
         fillDebugParticle<false, true, false>(p1); // QA for phi
       }
-      // if constexpr (isMC) {
-      //   fillMCParticle(v0, o2::aod::femtouniverseparticle::ParticleType::kV0);
-      // }
+      if constexpr (isMC) {
+        fillMCParticlePhi(p1, p2);
+      }
     }
   }
 
@@ -1309,7 +1395,7 @@ struct femtoUniverseProducerTask {
         std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
+            if ((pdgCode == 333) || (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
               pass = true;
             } else {
               if (particle.isPhysicalPrimary() || (ConfActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))

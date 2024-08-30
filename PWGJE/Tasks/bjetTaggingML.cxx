@@ -84,6 +84,10 @@ struct BJetTaggingML {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
+  Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
+  Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+
   // track level configurables
   Configurable<float> trackPtMin{"trackPtMin", 0.5, "minimum track pT"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
@@ -447,10 +451,15 @@ struct BJetTaggingML {
         continue;
       }
 
+      float eventWeight = analysisJet.eventWeight();
+      float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+      if (analysisJet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
+
       std::vector<bjetTrackParams> tracksParams;
       std::vector<bjetSVParams> SVsParams;
 
-      float eventWeight = analysisJet.eventWeight();
       int jetFlavor = 0;
 
       for (auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
@@ -496,6 +505,10 @@ struct BJetTaggingML {
       }
 
       for (auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
+        if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+          continue;
+        }
+
         if (jetFlavor == 2) {
           registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_bjet"), analysisJet.pt(), mcpjet.pt(), eventWeight);
         } else if (jetFlavor == 1) {
@@ -521,6 +534,12 @@ struct BJetTaggingML {
         continue;
       }
 
+      float eventWeight = mcpjet.eventWeight();
+      float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+      if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+        continue;
+      }
+
       int8_t jetFlavor = 0;
 
       if (useQuarkDef) {
@@ -528,8 +547,6 @@ struct BJetTaggingML {
       } else {
         jetFlavor = jettaggingutilities::getJetFlavorHadron(mcpjet, mcParticlesPerColl);
       }
-
-      float eventWeight = mcpjet.eventWeight();
 
       registry.fill(HIST("h_jetpT_particle_DetColl"), mcpjet.pt(), eventWeight);
 
@@ -564,6 +581,12 @@ struct BJetTaggingML {
         continue;
       }
 
+      float eventWeight = mcpjet.eventWeight();
+      float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+      if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+        continue;
+      }
+
       int8_t jetFlavor = 0;
 
       if (useQuarkDef) {
@@ -571,8 +594,6 @@ struct BJetTaggingML {
       } else {
         jetFlavor = jettaggingutilities::getJetFlavorHadron(mcpjet, MCParticles);
       }
-
-      float eventWeight = mcpjet.eventWeight();
 
       if (jetFlavor == 2) {
         registry.fill(HIST("h_jetpT_particle_bjet"), mcpjet.pt(), eventWeight);
