@@ -607,11 +607,10 @@ struct nuclei_in_jets {
   }
   PROCESS_SWITCH(nuclei_in_jets, processData, "Process Data", true);
 
-  /*
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<MCTracks> perCollision = o2::aod::track::collisionId;
 
-  void processMC(o2::aod::McCollisions const& mcCollisions, SimCollisions const& collisions, MCTracks const& mcTracks, aod::McParticles const& mcParticles)
+  void processEfficiency(o2::aod::McCollisions const& mcCollisions, SimCollisions const& collisions, MCTracks const& mcTracks, aod::McParticles const& mcParticles)
   {
     // Generated Events
     for (const auto& mccollision : mcCollisions) {
@@ -625,7 +624,7 @@ struct nuclei_in_jets {
           continue;
         if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
           continue;
-        if (particle.y() < min_y || particle.y() > max_y)
+        if (particle.eta() < min_eta || particle.eta() > max_eta)
           continue;
 
         if (particle.pdgCode() == -2212) {
@@ -743,8 +742,9 @@ struct nuclei_in_jets {
       }
     }
   }
+  PROCESS_SWITCH(nuclei_in_jets, processEfficiency, "process efficiency", false);
 
-  void processSecAntiprotons(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&, const aod::McParticles&)
+  void processSecondaryAntiprotons(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&, const aod::McParticles&)
   {
     for (const auto& collision : collisions) {
 
@@ -757,213 +757,174 @@ struct nuclei_in_jets {
 
       auto tracks_per_coll = mcTracks.sliceBy(perCollision, collision.globalIndex());
 
-      // Reduced Event
-      std::vector<int> particle_ID;
-      std::vector<int> particle_ID_copy;
-      int leading_ID(0);
-      double pt_max(0);
-      int i = -1;
+      // List of Tracks
+      std::vector<TVector3> trk;
 
-      // Loop over Reconstructed Tracks
       for (auto track : tracks_per_coll) {
 
-        i++;
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
 
-        if (track.pt() > pt_max) {
-          leading_ID = i;
-          pt_max = track.pt();
-        }
-        particle_ID.push_back(i);
-        particle_ID_copy.push_back(i);
+        TVector3 momentum(track.px(), track.py(), track.pz());
+        trk.push_back(momentum);
       }
-      if (pt_max < min_pt_leading)
-        continue;
 
-      // Momentum of the Leading Particle
-      auto const& leading_track = tracks_per_coll.iteratorAt(leading_ID);
-      TVector3 p_jet(leading_track.px(), leading_track.py(), leading_track.pz());
+      // Anti-kt Jet Finder
+      int n_particles_removed(0);
+      std::vector<TVector3> jet;
+      std::vector<TVector3> ue1;
+      std::vector<TVector3> ue2;
 
-      // Labels
-      int exit(0);
-      int nPartAssociated(0);
-      int nParticles = static_cast<int>(particle_ID.size());
-      std::vector<int> jet_particle_ID;
-      jet_particle_ID.push_back(leading_ID);
-
-      // Jet Finder
       do {
-        // Initialization
-        double distance_jet_min(1e+08);
-        double distance_bkg_min(1e+08);
-        int label_jet_particle(0);
-        int i_jet_particle(0);
+        double dij_min(1e+06), diB_min(1e+06);
+        int i_min(0), j_min(0), iB_min(0);
+        for (int i = 0; i < static_cast<int>(trk.size()); i++) {
+          if (trk[i].Mag() == 0)
+            continue;
+          double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
+          if (diB < diB_min) {
+            diB_min = diB;
+            iB_min = i;
+          }
+          for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) {
+            if (trk[j].Mag() == 0)
+              continue;
+            double dij = calculate_dij(trk[i], trk[j], Rjet);
+            if (dij < dij_min) {
+              dij_min = dij;
+              i_min = i;
+              j_min = j;
+            }
+          }
+        }
+        if (dij_min < diB_min) {
+          trk[i_min] = trk[i_min] + trk[j_min];
+          trk[j_min].SetXYZ(0, 0, 0);
+          n_particles_removed++;
+        }
+        if (dij_min > diB_min) {
+          jet.push_back(trk[iB_min]);
+          trk[iB_min].SetXYZ(0, 0, 0);
+          n_particles_removed++;
+        }
+      } while (n_particles_removed < static_cast<int>(trk.size()));
 
-        for (int i = 0; i < nParticles; i++) {
+      // Jet Selection
+      std::vector<int> isSelected;
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+        isSelected.push_back(0);
+      }
 
-          // Skip Leading Particle & Elements already associated to the Jet
-          if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
+      int n_jets_selected(0);
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+
+        if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+          continue;
+
+        // Perpendicular cones
+        TVector3 ue_axis1(0, 0, 0);
+        TVector3 ue_axis2(0, 0, 0);
+        get_perpendicular_axis(jet[i], ue_axis1, +1);
+        get_perpendicular_axis(jet[i], ue_axis2, -1);
+        ue1.push_back(ue_axis1);
+        ue2.push_back(ue_axis2);
+
+        double nPartJetPlusUE(0);
+        double ptJetPlusUE(0);
+        double ptJet(0);
+        double ptUE(0);
+
+        for (auto track : tracks_per_coll) {
+
+          if (!passedTrackSelectionForJetReconstruction(track))
+            continue;
+          TVector3 sel_track(track.px(), track.py(), track.pz());
+
+          double deltaEta_jet = sel_track.Eta() - jet[i].Eta();
+          double deltaPhi_jet = GetDeltaPhi(sel_track.Phi(), jet[i].Phi());
+          double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          double deltaEta_ue1 = sel_track.Eta() - ue_axis1.Eta();
+          double deltaPhi_ue1 = GetDeltaPhi(sel_track.Phi(), ue_axis1.Phi());
+          double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          double deltaEta_ue2 = sel_track.Eta() - ue_axis2.Eta();
+          double deltaPhi_ue2 = GetDeltaPhi(sel_track.Phi(), ue_axis2.Phi());
+          double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+          if (deltaR_jet < Rjet) {
+            nPartJetPlusUE++;
+            ptJetPlusUE = ptJetPlusUE + sel_track.Pt();
+          }
+          if (deltaR_ue1 < Rjet) {
+            ptUE = ptUE + sel_track.Pt();
+          }
+          if (deltaR_ue2 < Rjet) {
+            ptUE = ptUE + sel_track.Pt();
+          }
+        }
+        ptJet = ptJetPlusUE - 0.5 * ptUE;
+
+        if (ptJet < min_jet_pt)
+          continue;
+        if (nPartJetPlusUE < min_nPartInJet)
+          continue;
+        n_jets_selected++;
+        isSelected[i] = 1;
+      }
+      if (n_jets_selected == 0)
+        return;
+
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+
+        if (isSelected[i] == 0)
+          continue;
+
+        for (auto track : tracks_per_coll) {
+          if (!passedTrackSelection(track))
+            continue;
+          if (require_PV_contributor && !(track.isPVContributor()))
+            continue;
+          if (track.sign() > 0)
+            continue;
+          if (TMath::Abs(track.dcaXY()) > max_dcaxy)
+            continue;
+          if (TMath::Abs(track.dcaZ()) > max_dcaz)
+            continue;
+          if (!track.has_mcParticle())
+            continue;
+          const auto particle = track.mcParticle();
+          if (particle.pdgCode() != -2212)
             continue;
 
-          // Get Particle Momentum
-          auto stored_track = tracks_per_coll.iteratorAt(particle_ID[i]);
-          TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
+          TVector3 particle_dir(track.px(), track.py(), track.pz());
+          float deltaEta_jet = particle_dir.Eta() - jet[i].Eta();
+          float deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), jet[i].Phi());
+          float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          float deltaEta_ue1 = particle_dir.Eta() - ue1[i].Eta();
+          float deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue1[i].Phi());
+          float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          float deltaEta_ue2 = particle_dir.Eta() - ue2[i].Eta();
+          float deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
+          float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-          // Variables
-          double one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
-          double one_over_pt2_lead = 1.0 / (p_jet.Pt() * p_jet.Pt());
-          double deltaEta = p_particle.Eta() - p_jet.Eta();
-          double deltaPhi = GetDeltaPhi(p_particle.Phi(), p_jet.Phi());
-          double min = Minimum(one_over_pt2_part, one_over_pt2_lead);
-          double Delta2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
-
-          // Distances
-          double distance_jet = min * Delta2 / (Rjet * Rjet);
-          double distance_bkg = one_over_pt2_part;
-
-          // Find Minimum Distance Jet
-          if (distance_jet < distance_jet_min) {
-            distance_jet_min = distance_jet;
-            label_jet_particle = particle_ID[i];
-            i_jet_particle = i;
+          if (deltaR_jet < Rjet) {
+            registryMC.fill(HIST("antiproton_all_jet"), track.pt());
+            if (particle.isPhysicalPrimary()) {
+              registryMC.fill(HIST("antiproton_prim_jet"), track.pt());
+            }
           }
-
-          // Find Minimum Distance Bkg
-          if (distance_bkg < distance_bkg_min) {
-            distance_bkg_min = distance_bkg;
-          }
-        }
-
-        if (distance_jet_min <= distance_bkg_min) {
-
-          // Add Particle to Jet
-          jet_particle_ID.push_back(label_jet_particle);
-
-          // Update Momentum of Leading Particle
-          auto jet_track = tracks_per_coll.iteratorAt(label_jet_particle);
-          TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
-          p_jet = p_jet + p_i;
-
-          // Remove Element
-          particle_ID[i_jet_particle] = -1;
-          nPartAssociated++;
-        }
-
-        if (nPartAssociated >= (nParticles - 1))
-          exit = 1;
-        if (distance_jet_min > distance_bkg_min)
-          exit = 2;
-
-      } while (exit == 0);
-
-      // Event Counter: Skip Events with jet not fully inside acceptance
-      if ((TMath::Abs(p_jet.Eta()) + Rjet) > max_eta)
-        continue;
-
-      // Perpendicular Cones for UE Estimate
-      TVector3 ue_axis1(0.0, 0.0, 0.0);
-      TVector3 ue_axis2(0.0, 0.0, 0.0);
-      get_perpendicular_axis(p_jet, ue_axis1, +1.0);
-      get_perpendicular_axis(p_jet, ue_axis2, -1.0);
-
-      // Protection against delta<0
-      if (ue_axis1.Mag() == 0 || ue_axis2.Mag() == 0)
-        continue;
-
-      double NchJetPlusUE(0);
-      // double NchJet(0);
-      // double NchUE(0);
-      double ptJetPlusUE(0);
-      double ptJet(0);
-      double ptUE(0);
-
-      for (int i = 0; i < nParticles; i++) {
-
-        auto track = tracks_per_coll.iteratorAt(particle_ID_copy[i]);
-
-        TVector3 particle_dir(track.px(), track.py(), track.pz());
-        double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
-        double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
-        double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-        double deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
-        double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
-        double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-        double deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
-        double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
-        double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
-
-        if (deltaR_jet < Rjet) {
-          NchJetPlusUE++;
-          ptJetPlusUE = ptJetPlusUE + track.pt();
-        }
-        if (deltaR_ue1 < Rjet) {
-          // NchUE++;
-          ptUE = ptUE + track.pt();
-        }
-        if (deltaR_ue2 < Rjet) {
-          // NchUE++;
-          ptUE = ptUE + track.pt();
-        }
-      }
-
-      // NchJet = NchJetPlusUE - 0.5 * NchUE;
-      ptJet = ptJetPlusUE - 0.5 * ptUE;
-
-      // Skip Events with n. particles in jet less than given value
-      if (NchJetPlusUE < min_nPartInJet)
-        continue;
-
-      // Skip Events with Jet Pt lower than threshold
-      if (ptJet < min_jet_pt)
-        continue;
-
-      for (auto track : tracks_per_coll) {
-
-        if (!passedTrackSelection(track))
-          continue;
-        if (require_PV_contributor && !(track.isPVContributor()))
-          continue;
-        if (TMath::Abs(track.dcaXY()) > max_dcaxy)
-          continue;
-        if (TMath::Abs(track.dcaZ()) > max_dcaz)
-          continue;
-
-        // Get MC Particle
-        if (!track.has_mcParticle())
-          continue;
-        const auto particle = track.mcParticle();
-        if (particle.pdgCode() != -2212)
-          continue;
-
-        TVector3 particle_dir(track.px(), track.py(), track.pz());
-        float deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
-        float deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
-        float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-        float deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
-        float deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
-        float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-        float deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
-        float deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
-        float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
-
-        if (deltaR_jet < Rjet) {
-          registryMC.fill(HIST("antiproton_all_jet"), track.pt());
-          if (particle.isPhysicalPrimary()) {
-            registryMC.fill(HIST("antiproton_prim_jet"), track.pt());
-          }
-        }
-        if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
-          registryMC.fill(HIST("antiproton_all_ue"), track.pt());
-          if (particle.isPhysicalPrimary()) {
-            registryMC.fill(HIST("antiproton_prim_ue"), track.pt());
+          if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+            registryMC.fill(HIST("antiproton_all_ue"), track.pt());
+            if (particle.isPhysicalPrimary()) {
+              registryMC.fill(HIST("antiproton_prim_ue"), track.pt());
+            }
           }
         }
       }
     }
   }
+  PROCESS_SWITCH(nuclei_in_jets, processSecondaryAntiprotons, "process secondary antiprotons", false);
 
-  void processAntipReweighting(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  void processAntiprotonReweighting(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     for (const auto& mccollision : mcCollisions) {
 
@@ -974,18 +935,11 @@ struct nuclei_in_jets {
       // MC Particles per Collision
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
 
-      // Reduced Event
-      std::vector<int> particle_ID;
-      std::vector<int> particle_ID_copy;
-      int leading_ID(0);
-      double pt_max(0);
-      int i = -1;
+      // List of Tracks
+      std::vector<TVector3> trk;
 
       for (auto& particle : mcParticles_per_coll) {
-
-        i++;
-
-        if (particle.isPhysicalPrimary() && particle.pdgCode() == -2212 && particle.y() > min_y && particle.y() < max_y) {
+        if (particle.isPhysicalPrimary() && particle.pdgCode() == -2212) {
           registryMC.fill(HIST("antiproton_eta_pt_pythia"), particle.pt(), particle.eta());
         }
 
@@ -995,13 +949,23 @@ struct nuclei_in_jets {
         double dz = particle.vz() - mccollision.posZ();
         double dcaxy = sqrt(dx * dx + dy * dy);
         double dcaz = abs(dz);
-        if (dcaxy > (0.0105 * 0.035 / TMath::Power(particle.pt(), 1.1)))
-          continue;
-        if (dcaz > 2.0)
-          continue;
+
+        if (setDCAselectionPtDep) {
+          if (dcaxy > (0.004f + 0.013f / particle.pt()))
+            continue;
+          if (dcaz > (0.004f + 0.013f / particle.pt()))
+            continue;
+        }
+        if (!setDCAselectionPtDep) {
+          if (dcaxy > 0.1)
+            continue;
+          if (dcaz > 0.1)
+            continue;
+        }
+
         if (abs(particle.eta()) > 0.8)
           continue;
-        if (particle.pt() < 0.1)
+        if (particle.pt() < 0.15)
           continue;
 
         // PDG Selection
@@ -1009,182 +973,177 @@ struct nuclei_in_jets {
         if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
           continue;
 
-        // Find pt Leading
-        if (particle.pt() > pt_max) {
-          leading_ID = i;
-          pt_max = particle.pt();
-        }
-
-        // Store Array Elements
-        particle_ID.push_back(i);
-        particle_ID_copy.push_back(i);
+        TVector3 momentum(particle.px(), particle.py(), particle.pz());
+        trk.push_back(momentum);
       }
 
-      // Momentum of the Leading Particle
-      auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
-      TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
-      TVector3 p_jet(leading_track.px(), leading_track.py(), leading_track.pz());
+      // Anti-kt Jet Finder
+      int n_particles_removed(0);
+      std::vector<TVector3> jet;
+      std::vector<TVector3> ue1;
+      std::vector<TVector3> ue2;
 
-      // Skip Events with pt<pt_leading_min
-      if (pt_max < min_pt_leading)
-        continue;
-
-      // Labels
-      int exit(0);
-      int nPartAssociated(0);
-      int nParticles = static_cast<int>(particle_ID.size());
-      std::vector<int> jet_particle_ID;
-      jet_particle_ID.push_back(leading_ID);
-
-      // Jet Finder
       do {
-        // Initialization
-        double distance_jet_min(1e+08);
-        double distance_bkg_min(1e+08);
-        int label_jet_particle(0);
-        int i_jet_particle(0);
+        double dij_min(1e+06), diB_min(1e+06);
+        int i_min(0), j_min(0), iB_min(0);
+        for (int i = 0; i < static_cast<int>(trk.size()); i++) {
+          if (trk[i].Mag() == 0)
+            continue;
+          double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
+          if (diB < diB_min) {
+            diB_min = diB;
+            iB_min = i;
+          }
+          for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) {
+            if (trk[j].Mag() == 0)
+              continue;
+            double dij = calculate_dij(trk[i], trk[j], Rjet);
+            if (dij < dij_min) {
+              dij_min = dij;
+              i_min = i;
+              j_min = j;
+            }
+          }
+        }
+        if (dij_min < diB_min) {
+          trk[i_min] = trk[i_min] + trk[j_min];
+          trk[j_min].SetXYZ(0, 0, 0);
+          n_particles_removed++;
+        }
+        if (dij_min > diB_min) {
+          jet.push_back(trk[iB_min]);
+          trk[iB_min].SetXYZ(0, 0, 0);
+          n_particles_removed++;
+        }
+      } while (n_particles_removed < static_cast<int>(trk.size()));
 
-        for (int i = 0; i < nParticles; i++) {
+      // Jet Selection
+      std::vector<int> isSelected;
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+        isSelected.push_back(0);
+      }
 
-          // Skip Leading Particle & Elements already associated to the Jet
-          if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
+      int n_jets_selected(0);
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+
+        if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+          continue;
+
+        // Perpendicular cones
+        TVector3 ue_axis1(0, 0, 0);
+        TVector3 ue_axis2(0, 0, 0);
+        get_perpendicular_axis(jet[i], ue_axis1, +1);
+        get_perpendicular_axis(jet[i], ue_axis2, -1);
+        ue1.push_back(ue_axis1);
+        ue2.push_back(ue_axis2);
+
+        double nPartJetPlusUE(0);
+        double ptJetPlusUE(0);
+        double ptJet(0);
+        double ptUE(0);
+
+        for (auto& particle : mcParticles_per_coll) {
+
+          // Select Primary Particles
+          double dx = particle.vx() - mccollision.posX();
+          double dy = particle.vy() - mccollision.posY();
+          double dz = particle.vz() - mccollision.posZ();
+          double dcaxy = sqrt(dx * dx + dy * dy);
+          double dcaz = abs(dz);
+
+          if (setDCAselectionPtDep) {
+            if (dcaxy > (0.004f + 0.013f / particle.pt()))
+              continue;
+            if (dcaz > (0.004f + 0.013f / particle.pt()))
+              continue;
+          }
+          if (!setDCAselectionPtDep) {
+            if (dcaxy > 0.1)
+              continue;
+            if (dcaz > 0.1)
+              continue;
+          }
+
+          if (abs(particle.eta()) > 0.8)
+            continue;
+          if (particle.pt() < 0.15)
             continue;
 
-          // Get Particle Momentum
-          auto stored_track = mcParticles_per_coll.iteratorAt(particle_ID[i]);
-          TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
+          // PDG Selection
+          int pdg = abs(particle.pdgCode());
+          if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
+            continue;
 
-          // Variables
-          double one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
-          double one_over_pt2_lead = 1.0 / (p_jet.Pt() * p_jet.Pt());
-          double deltaEta = p_particle.Eta() - p_jet.Eta();
-          double deltaPhi = GetDeltaPhi(p_particle.Phi(), p_jet.Phi());
-          double min = Minimum(one_over_pt2_part, one_over_pt2_lead);
-          double Delta2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
+          TVector3 sel_track(particle.px(), particle.py(), particle.pz());
 
-          // Distances
-          double distance_jet = min * Delta2 / (Rjet * Rjet);
-          double distance_bkg = one_over_pt2_part;
+          double deltaEta_jet = sel_track.Eta() - jet[i].Eta();
+          double deltaPhi_jet = GetDeltaPhi(sel_track.Phi(), jet[i].Phi());
+          double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          double deltaEta_ue1 = sel_track.Eta() - ue_axis1.Eta();
+          double deltaPhi_ue1 = GetDeltaPhi(sel_track.Phi(), ue_axis1.Phi());
+          double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          double deltaEta_ue2 = sel_track.Eta() - ue_axis2.Eta();
+          double deltaPhi_ue2 = GetDeltaPhi(sel_track.Phi(), ue_axis2.Phi());
+          double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-          // Find Minimum Distance Jet
-          if (distance_jet < distance_jet_min) {
-            distance_jet_min = distance_jet;
-            label_jet_particle = particle_ID[i];
-            i_jet_particle = i;
+          if (deltaR_jet < Rjet) {
+            nPartJetPlusUE++;
+            ptJetPlusUE = ptJetPlusUE + sel_track.Pt();
           }
-
-          // Find Minimum Distance Bkg
-          if (distance_bkg < distance_bkg_min) {
-            distance_bkg_min = distance_bkg;
+          if (deltaR_ue1 < Rjet) {
+            ptUE = ptUE + sel_track.Pt();
+          }
+          if (deltaR_ue2 < Rjet) {
+            ptUE = ptUE + sel_track.Pt();
           }
         }
+        ptJet = ptJetPlusUE - 0.5 * ptUE;
 
-        if (distance_jet_min <= distance_bkg_min) {
-
-          // Add Particle to Jet
-          jet_particle_ID.push_back(label_jet_particle);
-
-          // Update Momentum of Leading Particle
-          auto jet_track = mcParticles_per_coll.iteratorAt(label_jet_particle);
-          TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
-          p_jet = p_jet + p_i;
-
-          // Remove Element
-          particle_ID[i_jet_particle] = -1;
-          nPartAssociated++;
-        }
-
-        if (nPartAssociated >= (nParticles - 1))
-          exit = 1;
-        if (distance_jet_min > distance_bkg_min)
-          exit = 2;
-      } while (exit == 0);
-
-      // Event Counter: Skip Events with jet not fully inside acceptance
-      if ((TMath::Abs(p_jet.Eta()) + Rjet) > max_eta)
-        continue;
-
-      // Perpendicular Cones for the UE Estimate
-      TVector3 ue_axis1(0.0, 0.0, 0.0);
-      TVector3 ue_axis2(0.0, 0.0, 0.0);
-      get_perpendicular_axis(p_jet, ue_axis1, +1.0);
-      get_perpendicular_axis(p_jet, ue_axis2, -1.0);
-
-      // Protection against delta<0
-      if (ue_axis1.Mag() == 0 || ue_axis2.Mag() == 0)
-        continue;
-
-      double NchJetPlusUE(0);
-      double ptJetPlusUE(0);
-      double ptJet(0);
-      double ptUE(0);
-
-      for (int i = 0; i < nParticles; i++) {
-
-        auto track = mcParticles_per_coll.iteratorAt(particle_ID_copy[i]);
-        TVector3 particle_dir(track.px(), track.py(), track.pz());
-        double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
-        double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
-        double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-        double deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
-        double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
-        double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-        double deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
-        double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
-        double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
-
-        if (deltaR_jet < Rjet) {
-          NchJetPlusUE++;
-          ptJetPlusUE = ptJetPlusUE + track.pt();
-        }
-        if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
-          ptUE = ptUE + track.pt();
-        }
+        if (ptJet < min_jet_pt)
+          continue;
+        if (nPartJetPlusUE < min_nPartInJet)
+          continue;
+        n_jets_selected++;
+        isSelected[i] = 1;
       }
-      ptJet = ptJetPlusUE - 0.5 * ptUE;
+      if (n_jets_selected == 0)
+        return;
 
-      // Skip Events with n. particles in jet less than given value
-      if (NchJetPlusUE < min_nPartInJet)
-        continue;
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-      // Skip Events with Jet Pt lower than threshold
-      if (ptJet < min_jet_pt)
-        continue;
-
-      // Generated Particles
-      for (auto& particle : mcParticles_per_coll) {
-
-        if (!particle.isPhysicalPrimary())
-          continue;
-        if (particle.pdgCode() != -2212)
-          continue;
-        if (particle.y() < min_y || particle.y() > max_y)
+        if (isSelected[i] == 0)
           continue;
 
-        TVector3 particle_dir(particle.px(), particle.py(), particle.pz());
-        double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
-        double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
-        double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-        double deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
-        double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
-        double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-        double deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
-        double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
-        double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+        // Generated Particles
+        for (auto& particle : mcParticles_per_coll) {
 
-        if (deltaR_jet < Rjet) {
-          registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta());
-        }
-        if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
-          registryMC.fill(HIST("antiproton_eta_pt_ue"), particle.pt(), particle.eta());
+          if (!particle.isPhysicalPrimary())
+            continue;
+          if (particle.pdgCode() != -2212)
+            continue;
+
+          TVector3 particle_dir(particle.px(), particle.py(), particle.pz());
+          double deltaEta_jet = particle_dir.Eta() - jet[i].Eta();
+          double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), jet[i].Phi());
+          double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          double deltaEta_ue1 = particle_dir.Eta() - ue1[i].Eta();
+          double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue1[i].Phi());
+          double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          double deltaEta_ue2 = particle_dir.Eta() - ue2[i].Eta();
+          double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
+          double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+          if (deltaR_jet < Rjet) {
+            registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta());
+          }
+          if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+            registryMC.fill(HIST("antiproton_eta_pt_ue"), particle.pt(), particle.eta());
+          }
         }
       }
     }
   }
-  */
-  // PROCESS_SWITCH(nuclei_in_jets, processMC, "process MC", false);
-  // PROCESS_SWITCH(nuclei_in_jets, processSecAntiprotons, "Process sec antip", false);
-  // PROCESS_SWITCH(nuclei_in_jets, processAntipReweighting, "Process antip reweighting", false);
+  PROCESS_SWITCH(nuclei_in_jets, processAntiprotonReweighting, "Process antiproton reweighting", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
