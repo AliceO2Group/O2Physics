@@ -55,6 +55,7 @@ using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 namespace
 {
 constexpr int kNpart = 2;
+constexpr double trackSels[10]{/* 60, */ 80, 100, 2, 3, /* 4,  */0.05, 0.1, /* 0.15,  */0.5, 1, /* 1.5, */ 2, 3/* , 4 */};
 constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 constexpr double estimatorsCorrelationCoef[2]{-0.669108, 1.04489};
 constexpr double estimatorsSigmaPars[4]{0.933321, 0.0416976, -0.000936344, 8.92179e-06};
@@ -63,6 +64,8 @@ constexpr double partMass[kNpart]{o2::constants::physics::MassProton, o2::consta
 constexpr double partPdg[kNpart]{2212, o2::constants::physics::kDeuteron};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNamesPar{"p", "d"};
+static const std::vector<std::string> trackSelsNames{"tpcClsMid", "tpcClsTight", "chi2TpcTight", "chi2TpcMid", "dcaxyTight", "dcaxyMid", "dcazTight", "dcazMid", "tpcNsigmaTight", "tpcNsigmaMid"};
+static const std::vector<std::string> particleName{"p"};
 std::array<std::shared_ptr<TH3>, kNpart> tofMass;
 void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
@@ -269,6 +272,8 @@ struct ebyeMaker {
   Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 1.e-10f, "cluster size cut for antideuterons"};
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
+  Configurable<LabeledArray<double>> cfgTrackSels{"cfgTrackSels", {trackSels, 1, 10, particleName, trackSelsNames}, "Track selections"};
+
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
   std::array<float, kNpart> ptMax;
@@ -408,16 +413,16 @@ struct ebyeMaker {
   int getTrackSelMask(T const& track)
   {
     int mask = 0x0;
-    if (track.tpcncls > 100) mask |= kTPCclsTight;
-    else if (track.tpcncls > 80 ) mask |= kTPCclsMid;
-    if (track.tpcchi2 < 2) mask |= kChi2TPCTight;
-    else if (track.tpcchi2 < 3) mask |= kChi2TPCMid;
-    if (std::abs(track.dcaxypv) < 0.05) mask |= kDCAxyTight;
-    else if (std::abs(track.dcaxypv) < 0.1) mask |= kDCAxyMid;
-    if (std::abs(track.dcazpv) < 0.5) mask |= kDCAzTight;
-    else if (std::abs(track.dcazpv) < 1) mask |= kDCAzMid;
-    if (std::abs(track.tpcnsigma) < 2) mask |= kTPCPIDTight;
-    else if (std::abs(track.tpcnsigma) < 3) mask |= kTPCPIDMid;
+    if (track.tpcncls > cfgTrackSels->get("tpcClsTight")) mask |= kTPCclsTight;
+    else if (track.tpcncls > cfgTrackSels->get("tpcClsMid") ) mask |= kTPCclsMid;
+    if (track.tpcchi2 < cfgTrackSels->get("chi2TpcTight")) mask |= kChi2TPCTight;
+    else if (track.tpcchi2 < cfgTrackSels->get("chi2TpcMid")) mask |= kChi2TPCMid;
+    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight")) mask |= kDCAxyTight;
+    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid")) mask |= kDCAxyMid;
+    if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazTight")) mask |= kDCAzTight;
+    else if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazMid")) mask |= kDCAzMid;
+    if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaTight")) mask |= kTPCPIDTight;
+    else if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaMid")) mask |= kTPCPIDMid;
     // if (track.itsnsigma < 2) mask |= kITSPIDTight;
     // else if (track.itsnsigma < 3) mask |= kITSPIDMid;
     return mask;
