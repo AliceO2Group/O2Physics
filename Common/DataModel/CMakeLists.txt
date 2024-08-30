@@ -21,4 +21,4 @@ o2physics_add_header_only_library(DataModel
                                           McCollisionExtra.h
                                           Qvectors.h
                                           MftmchMatchingML.h
-                                          FlowESE.h)
+                                          EseTable.h)
