@@ -53,7 +53,7 @@ using namespace o2::framework;
 // using CollWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
 using CollWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 
-struct ProduceEseTable {
+struct EseTableProducer {
   Produces<o2::aod::qVecFV0As> qVectorFV0A;
   Produces<o2::aod::qVecFT0Cs> qVectorFT0C;
   Produces<o2::aod::qPercentileFT0Cs> qPercs;
@@ -394,6 +394,6 @@ struct ProduceEseTable {
     qVectorFT0C(qvecRe, qvecIm);
     qPercs(qnp);
   }
-  PROCESS_SWITCH(ProduceEseTable, processQVecs, "procc q vectors ", true);
+  PROCESS_SWITCH(EseTableProducer, processQVecs, "procc q vectors ", true);
 };
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<ProduceEseTable>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<EseTableProducer>(cfgc)}; }
