@@ -144,4 +144,4 @@ struct JetSpectraEseTask {
   PROCESS_SWITCH(JetSpectraEseTask, processESEDataCharged, "process self contained collisions", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetSpectraEseTask>(cfgc, TaskName{"jet-spectra-ese"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetSpectraEseTask>(cfgc)}; }

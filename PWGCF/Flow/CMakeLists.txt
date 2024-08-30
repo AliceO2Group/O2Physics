@@ -12,4 +12,3 @@
 add_subdirectory(Core)
 add_subdirectory(Tasks)
 add_subdirectory(TableProducer)
-add_subdirectory(DataModel)

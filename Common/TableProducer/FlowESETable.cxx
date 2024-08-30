@@ -396,4 +396,4 @@ struct ProduceFlowESE {
   }
   PROCESS_SWITCH(ProduceFlowESE, processQVecs, "procc q vectors ", true);
 };
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<ProduceFlowESE>(cfgc, TaskName{"flow-qv-ese"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<ProduceFlowESE>(cfgc)}; }
