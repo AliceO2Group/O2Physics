@@ -97,7 +97,7 @@ struct alice3multicharm {
 
   Configurable<float> minXiCRadius{"minXiCRadius", 0.001, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> massWindowXi{"massWindowXi", 0.015, "Mass window around Xi peak"};
-  Configurable<float> massWindowXiC{"massWindowXiC", 0.015, "Mass window around XiC peak"};  
+  Configurable<float> massWindowXiC{"massWindowXiC", 0.015, "Mass window around XiC peak"};
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
@@ -127,9 +127,9 @@ struct alice3multicharm {
 
   // partitions for Xi daughters
   Partition<alice3tracks> tracksPiFromXiC =
-    ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiC) == trackSelectionPiFromXiC) && aod::track::signed1Pt > 0.0f && 1.0f/nabs(aod::track::signed1Pt) > minPiCPt && nabs(aod::track::dcaXY) > piFromXiC_dcaXYconstant + piFromXiC_dcaXYpTdep* nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiC) == trackSelectionPiFromXiC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCPt&& nabs(aod::track::dcaXY) > piFromXiC_dcaXYconstant + piFromXiC_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksPiFromXiCC =
-    ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiCC) == trackSelectionPiFromXiCC) && aod::track::signed1Pt > 0.0f && 1.0f/nabs(aod::track::signed1Pt) > minPiCCPt && nabs(aod::track::dcaXY) > piFromXiCC_dcaXYconstant + piFromXiCC_dcaXYpTdep* nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiCC) == trackSelectionPiFromXiCC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCCPt&& nabs(aod::track::dcaXY) > piFromXiCC_dcaXYconstant + piFromXiCC_dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   // Helper struct to pass candidate information
   struct {
@@ -414,7 +414,7 @@ struct alice3multicharm {
     for (auto const& xiCand : cascades) {
       histos.fill(HIST("hMassXi"), xiCand.mXi());
 
-      if(std::abs(xiCand.mXi()-o2::constants::physics::MassXiMinus)>massWindowXi)
+      if (std::abs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > massWindowXi)
         continue; // out of mass region
 
       uint32_t nCombinationsC = 0;
@@ -431,7 +431,7 @@ struct alice3multicharm {
           continue;
         if (xiCand.posTrackId() == pi1c.globalIndex() || xiCand.negTrackId() == pi1c.globalIndex() || xiCand.bachTrackId() == pi1c.globalIndex())
           continue; // avoid using any track that was already used
-        if(pi1c.pt() < minPiCPt) 
+        if (pi1c.pt() < minPiCPt)
           continue;
 
         // second pion from XiC decay for starts here
@@ -443,7 +443,7 @@ struct alice3multicharm {
             continue; // avoid same-mother, avoid double-counting
           if (xiCand.posTrackId() == pi2c.globalIndex() || xiCand.negTrackId() == pi2c.globalIndex() || xiCand.bachTrackId() == pi2c.globalIndex())
             continue; // avoid using any track that was already used
-          if(pi2c.pt() < minPiCPt) 
+          if (pi2c.pt() < minPiCPt)
             continue;
 
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
@@ -453,8 +453,8 @@ struct alice3multicharm {
           histos.fill(HIST("hCharmBuilding"), 0.0f);
           if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
             continue; // failed at building candidate
-          
-          if(std::abs(thisXiCcandidate.mass-o2::constants::physics::MassXiCPlus)>massWindowXiC)
+
+          if (std::abs(thisXiCcandidate.mass - o2::constants::physics::MassXiCPlus) > massWindowXiC)
             continue; // out of mass region
           histos.fill(HIST("hCharmBuilding"), 1.0f);
 
@@ -465,8 +465,8 @@ struct alice3multicharm {
 
           o2::track::TrackParCov xicTrack(thisXiCcandidate.xyz, momentumC, thisXiCcandidate.parentTrackCovMatrix, +1);
 
-          if(std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1]) < minXiCRadius) 
-            continue; //do not take if radius too small, likely a primary combination
+          if (std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1]) < minXiCRadius)
+            continue; // do not take if radius too small, likely a primary combination
 
           o2::dataformats::DCA dcaInfo;
           float xicdcaXY = 1e+10, xicdcaZ = 1e+10;
@@ -489,7 +489,7 @@ struct alice3multicharm {
 
             if (xiCand.posTrackId() == picc.globalIndex() || xiCand.negTrackId() == picc.globalIndex() || xiCand.bachTrackId() == picc.globalIndex())
               continue; // avoid using any track that was already used
-            if(picc.pt() < minPiCCPt) 
+            if (picc.pt() < minPiCCPt)
               continue;
 
             // to-do: check same mother here
@@ -520,19 +520,19 @@ struct alice3multicharm {
             }
 
             // produce multi-charm table for posterior analysis
-            if(fillDerivedTable){
-            multiCharmCore(
-              thisXiCcandidate.dca, thisXiCCcandidate.dca,
-              thisXiCcandidate.mass, thisXiCCcandidate.mass,
-              thisXiCCcandidate.pt, thisXiCCcandidate.eta,
-              xi.nSiliconHits(), piFromXi.nSiliconHits(),
-              piFromLa.nSiliconHits(), prFromLa.nSiliconHits(),
-              pi1c.nSiliconHits(), pi2c.nSiliconHits(), picc.nSiliconHits(),
-              piFromXi.nTPCHits(), piFromLa.nTPCHits(), prFromLa.nTPCHits(),
-              pi1c.nTPCHits(), pi2c.nTPCHits(), picc.nTPCHits(),
-              xi.dcaXY(), xicdcaXY, xiccdcaXY,
-              piFromXi.dcaXY(), piFromLa.dcaXY(), prFromLa.dcaXY(),
-              pi1c.dcaXY(), pi2c.dcaXY(), picc.dcaXY());
+            if (fillDerivedTable) {
+              multiCharmCore(
+                thisXiCcandidate.dca, thisXiCCcandidate.dca,
+                thisXiCcandidate.mass, thisXiCCcandidate.mass,
+                thisXiCCcandidate.pt, thisXiCCcandidate.eta,
+                xi.nSiliconHits(), piFromXi.nSiliconHits(),
+                piFromLa.nSiliconHits(), prFromLa.nSiliconHits(),
+                pi1c.nSiliconHits(), pi2c.nSiliconHits(), picc.nSiliconHits(),
+                piFromXi.nTPCHits(), piFromLa.nTPCHits(), prFromLa.nTPCHits(),
+                pi1c.nTPCHits(), pi2c.nTPCHits(), picc.nTPCHits(),
+                xi.dcaXY(), xicdcaXY, xiccdcaXY,
+                piFromXi.dcaXY(), piFromLa.dcaXY(), prFromLa.dcaXY(),
+                pi1c.dcaXY(), pi2c.dcaXY(), picc.dcaXY());
             }
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
