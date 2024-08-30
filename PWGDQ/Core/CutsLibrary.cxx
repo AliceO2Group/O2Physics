@@ -768,6 +768,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pTLow05DCAzHigh03")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    return cut;
+  }
+
   if (!nameStr.compare("pTLow04DCAzHigh03")) {
     cut->AddCut(GetAnalysisCut("pTLow04"));
     cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
@@ -3602,14 +3608,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pTLow04")) {
     cut->AddCut(VarManager::kPt, 0.4, 1000.0);
+    return cut;
   }
 
   if (!nameStr.compare("pTLow03")) {
     cut->AddCut(VarManager::kPt, 0.3, 1000.0);
+    return cut;
   }
 
   if (!nameStr.compare("pTLow02")) {
     cut->AddCut(VarManager::kPt, 0.2, 1000.0);
+    return cut;
   }
 
   // -----------------------------------------------
