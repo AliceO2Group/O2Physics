@@ -169,12 +169,12 @@ DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table
                   emevent::EP3BPos<emevent::Q3xBPos, emevent::Q3yBPos>,
                   emevent::EP3BNeg<emevent::Q3xBNeg, emevent::Q3yBNeg>,
                   emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>);
-                  // emevent::EP4FT0M<emevent::Q4xFT0M, emevent::Q4yFT0M>,
-                  // emevent::EP4FT0A<emevent::Q4xFT0A, emevent::Q4yFT0A>,
-                  // emevent::EP4FT0C<emevent::Q4xFT0C, emevent::Q4yFT0C>,
-                  // emevent::EP4BPos<emevent::Q4xBPos, emevent::Q4yBPos>,
-                  // emevent::EP4BNeg<emevent::Q4xBNeg, emevent::Q4yBNeg>,
-                  // emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>
+// emevent::EP4FT0M<emevent::Q4xFT0M, emevent::Q4yFT0M>,
+// emevent::EP4FT0A<emevent::Q4xFT0A, emevent::Q4yFT0A>,
+// emevent::EP4FT0C<emevent::Q4xFT0C, emevent::Q4yFT0C>,
+// emevent::EP4BPos<emevent::Q4xBPos, emevent::Q4yBPos>,
+// emevent::EP4BNeg<emevent::Q4xBNeg, emevent::Q4yBNeg>,
+// emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>
 using EMEventQvec = EMEventsQvec::iterator;
 
 DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTRIGGERINFO", //! joinable to EMEvents
