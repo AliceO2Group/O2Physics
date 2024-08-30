@@ -347,7 +347,6 @@ DECLARE_SOA_COLUMN(DmesonSel, dmesonSel, bool); //! Selection flag for D meson i
 
 DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in collisions
                   aod::hf_selection_dmeson_collision::DmesonSel);
-} // namespace o2::aod
 
 // Note: definition of columns and tables for Electron Hadron correlation pairs
 namespace hf_correlation_electron_hadron
@@ -359,11 +358,11 @@ DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);     //! Transverse momentum of Ha
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicity
 } // namespace hf_correlation_electron_hadron
 DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs Informations
-                  aod::hf_correlation_electron_hadron::DeltaPhi,
-                  aod::hf_correlation_electron_hadron::DeltaEta,
-                  aod::hf_correlation_electron_hadron::PtElectron,
-                  aod::hf_correlation_electron_hadron::PtHadron,
-                  aod::hf_correlation_electron_hadron::PoolBin);
+                  hf_correlation_electron_hadron::DeltaPhi,
+                  hf_correlation_electron_hadron::DeltaEta,
+                  hf_correlation_electron_hadron::PtElectron,
+                  hf_correlation_electron_hadron::PtHadron,
+                  hf_correlation_electron_hadron::PoolBin);
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
