@@ -690,10 +690,6 @@ struct JetTaggerHFQA {
     registry.fill(HIST("h3_jet_eta_flavour_flavour_run2"), mcdjet.eta(), jetflavour, jetflavourRun2Def, eventWeight);
     registry.fill(HIST("h3_jet_phi_flavour_flavour_run2"), mcdjet.phi(), jetflavour, jetflavourRun2Def, eventWeight);
     for (auto& track : mcdjet.template tracks_as<V>()) {
-      if (!trackAcceptance(track))
-        continue;
-      if (!jettaggingutilities::trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
-        continue;
       int geoSign = jettaggingutilities::getGeoSign(mcdjet, track);
       if (fillIPxy) {
         float varImpXY, varSignImpXY, varImpXYSig, varSignImpXYSig;
@@ -809,7 +805,6 @@ struct JetTaggerHFQA {
     if (jet.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
-    registry.fill(HIST("h_2prong_nprongs"), jet.template secondaryVertices_as<U>().size());
     registry.fill(HIST("h_3prong_nprongs"), jet.template secondaryVertices_as<U>().size());
     for (const auto& prong : jet.template secondaryVertices_as<U>()) {
       auto Lxy = prong.decayLengthXY();
@@ -909,7 +904,7 @@ struct JetTaggerHFQA {
       return;
     }
     auto origin = mcdjet.origin();
-    registry.fill(HIST("h2_3prong_nprongs_flavour"), mcdjet.template secondaryVertices_as<U>().size(), origin, eventWeight);
+    registry.fill(HIST("h2_3prong_nprongs_flavour"), mcdjet.template secondaryVertices_as<U>().size(), origin);
     if (mcdjet.template secondaryVertices_as<U>().size() < 1)
       return;
     for (const auto& prong : mcdjet.template secondaryVertices_as<U>()) {
@@ -1046,13 +1041,10 @@ struct JetTaggerHFQA {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      if (!isAcceptedJet<JetTracks>(mcdjet)) {
-        continue;
-      }
       fillHistogramIPsMCD(mcdjet, jtracks, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCDWeighted, "Fill impact parameter imformation for mcd jets weighted", false);
+  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCDWeighted, "Fill impact parameter imformation for mcd jets", false);
 
   void processIPsMCP(soa::Filtered<JetCollisionsMCD> const& collisions, JetTagTableMCP const& mcpjets, JetParticles&)
   {
