@@ -564,6 +564,10 @@ struct femtoUniversePairTaskTrackPhi {
     float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
 
     for (auto& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsKaons, groupPartsKaons))) {
+      if (!IsKaonNSigma(kaon1.p(), trackCuts.getNsigmaTPC(kaon1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon1, o2::track::PID::Kaon))) {
+      }
+      if (!IsKaonNSigma(kaon2.p(), trackCuts.getNsigmaTPC(kaon2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon2, o2::track::PID::Kaon))) {
+      }
       if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
         part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
         part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
