@@ -49,11 +49,22 @@ class FlowPtContainer : public TNamed
   void CalculateCorrelations();
   void CalculateCMTerms();
   void FillPtProfiles(const Double_t& lMult, const Double_t& rn);
-  void FillVnPtProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void FillVnPtCorrProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void FillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void FillVnPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+  {
+    if (fUseCentralMoments)
+      FillVnDeltaPtProfiles(centmult, flowval, flowtuples, rn, mask);
+    else
+      FillVnPtCorrProfiles(centmult, flowval, flowtuples, rn, mask);
+  }
   void FillCMProfiles(const double& lMult, const double& rn);
   TList* GetCorrList() { return fCorrList; }
   TList* GetCMTermList() { return fCMTermList; }
+  TList* GetCovList() { return fCovList; }
   void SetEventWeight(const unsigned int& lWeight) { fEventWeight = lWeight; }
+  void SetUseCentralMoments(bool newval) { fUseCentralMoments = newval; }
+  bool usesCentralMoments() { return fUseCentralMoments; }
   void RebinMulti(Int_t nbins);
   void RebinMulti(Int_t nbins, double* binedges);
   TH1* getCentralMomentHist(int ind, int m);
@@ -82,11 +93,14 @@ class FlowPtContainer : public TNamed
   int mpar;
   int fillCounter;
   unsigned int fEventWeight;
+  bool fUseCentralMoments;
   void MergeBSLists(TList* source, TList* target);
   TH1* raiseHistToPower(TH1* inh, double p);
   std::vector<double> sumP;    //!
   std::vector<double> corrNum; //!
   std::vector<double> corrDen; //!
+  std::vector<double> cmNum;   //!
+  std::vector<double> cmDen;   //!
 
   static constexpr float fFactorial[9] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
   static constexpr int fSign[9] = {1, -1, 1, -1, 1, -1, 1, -1, 1};
