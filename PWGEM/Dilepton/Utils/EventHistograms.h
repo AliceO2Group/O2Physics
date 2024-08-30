@@ -117,38 +117,39 @@ void addEventHistograms(HistogramRegistry* fRegistry)
     fRegistry->add("Event/before/hPrfQ3FT0AQ3BNeg_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{BNeg};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{BNeg}", kTProfile, {{100, 0, 100}}, false);
     fRegistry->add("Event/before/hPrfQ3FT0AQ3BTot_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{BTot};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{BTot}", kTProfile, {{100, 0, 100}}, false);
     fRegistry->add("Event/before/hPrfQ3FT0AQ3FT0C_CentFT0C", "Q_{3}^{FT0A} #upoint Q_{3}^{FT0C};centrality FT0C (%);Q_{3}^{FT0A} #upoint Q_{3}^{FT0C}", kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
-  } else if constexpr (nmod == 4) {                                                                                                                                                         // Q4
-    fRegistry->add("Event/before/hQ4xFT0M_CentFT0C", "hQ4xFT0M_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0M}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yFT0M_CentFT0C", "hQ4yFT0M_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0M}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4xFT0A_CentFT0C", "hQ4xFT0A_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0A}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yFT0A_CentFT0C", "hQ4yFT0A_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0A}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4xFT0C_CentFT0C", "hQ4xFT0C_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0C}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yFT0C_CentFT0C", "hQ4yFT0C_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0C}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4xBPos_CentFT0C", "hQ4xBPos_CentFT0C;centrality FT0C (%);Q_{4,x}^{BPos}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yBPos_CentFT0C", "hQ4yBPos_CentFT0C;centrality FT0C (%);Q_{4,y}^{BPos}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4xBNeg_CentFT0C", "hQ4xBNeg_CentFT0C;centrality FT0C (%);Q_{4,x}^{BNeg}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yBNeg_CentFT0C", "hQ4yBNeg_CentFT0C;centrality FT0C (%);Q_{4,y}^{BNeg}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4xBTot_CentFT0C", "hQ4xBTot_CentFT0C;centrality FT0C (%);Q_{4,x}^{BTot}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-    fRegistry->add("Event/before/hQ4yBTot_CentFT0C", "hQ4yBTot_CentFT0C;centrality FT0C (%);Q_{4,y}^{BTot}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
-
-    fRegistry->add("Event/before/hEP4FT0M_CentFT0C", "4rd harmonics event plane FT0M;centrality FT0C (%);#Psi_{4}^{FT0M} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP4FT0A_CentFT0C", "4rd harmonics event plane FT0A;centrality FT0C (%);#Psi_{4}^{FT0A} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP4FT0C_CentFT0C", "4rd harmonics event plane FT0C;centrality FT0C (%);#Psi_{4}^{FT0C} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP4BPos_CentFT0C", "4rd harmonics event plane BPos;centrality FT0C (%);#Psi_{4}^{BPos} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP4BNeg_CentFT0C", "4rd harmonics event plane BNeg;centrality FT0C (%);#Psi_{4}^{BNeg} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-    fRegistry->add("Event/before/hEP4BTot_CentFT0C", "4rd harmonics event plane BTot;centrality FT0C (%);#Psi_{4}^{BTot} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-
-    fRegistry->add("Event/before/hPrfQ4FT0MQ4BPos_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{BPos}", kTProfile, {{100, 0, 100}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0MQ4BNeg_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{BNeg}", kTProfile, {{100, 0, 100}}, false);
-    fRegistry->add("Event/before/hPrfQ4BPosQ4BNeg_CentFT0C", "Q_{4}^{BPos} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{BPos} #upoint Q_{4}^{BNeg}", kTProfile, {{100, 0, 100}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
-    fRegistry->add("Event/before/hPrfQ4FT0CQ4BPos_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BPos}", kTProfile, {{100, 0, 100}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0CQ4BNeg_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BNeg}", kTProfile, {{100, 0, 100}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0CQ4BTot_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BTot};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BTot}", kTProfile, {{100, 0, 100}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0AQ4BPos_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BPos}", kTProfile, {{100, 0, 100}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0AQ4BNeg_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BNeg}", kTProfile, {{100, 0, 100}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0AQ4BTot_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BTot};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BTot}", kTProfile, {{100, 0, 100}}, false);
-    fRegistry->add("Event/before/hPrfQ4FT0AQ4FT0C_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{FT0C};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{FT0C}", kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
   }
+  // else if constexpr (nmod == 4) {                                                                                                                                                         // Q4
+  //   fRegistry->add("Event/before/hQ4xFT0M_CentFT0C", "hQ4xFT0M_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0M}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4yFT0M_CentFT0C", "hQ4yFT0M_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0M}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4xFT0A_CentFT0C", "hQ4xFT0A_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0A}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4yFT0A_CentFT0C", "hQ4yFT0A_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0A}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4xFT0C_CentFT0C", "hQ4xFT0C_CentFT0C;centrality FT0C (%);Q_{4,x}^{FT0C}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4yFT0C_CentFT0C", "hQ4yFT0C_CentFT0C;centrality FT0C (%);Q_{4,y}^{FT0C}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4xBPos_CentFT0C", "hQ4xBPos_CentFT0C;centrality FT0C (%);Q_{4,x}^{BPos}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4yBPos_CentFT0C", "hQ4yBPos_CentFT0C;centrality FT0C (%);Q_{4,y}^{BPos}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4xBNeg_CentFT0C", "hQ4xBNeg_CentFT0C;centrality FT0C (%);Q_{4,x}^{BNeg}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4yBNeg_CentFT0C", "hQ4yBNeg_CentFT0C;centrality FT0C (%);Q_{4,y}^{BNeg}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4xBTot_CentFT0C", "hQ4xBTot_CentFT0C;centrality FT0C (%);Q_{4,x}^{BTot}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+  //   fRegistry->add("Event/before/hQ4yBTot_CentFT0C", "hQ4yBTot_CentFT0C;centrality FT0C (%);Q_{4,y}^{BTot}", kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+
+  //   fRegistry->add("Event/before/hEP4FT0M_CentFT0C", "4rd harmonics event plane FT0M;centrality FT0C (%);#Psi_{4}^{FT0M} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+  //   fRegistry->add("Event/before/hEP4FT0A_CentFT0C", "4rd harmonics event plane FT0A;centrality FT0C (%);#Psi_{4}^{FT0A} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+  //   fRegistry->add("Event/before/hEP4FT0C_CentFT0C", "4rd harmonics event plane FT0C;centrality FT0C (%);#Psi_{4}^{FT0C} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+  //   fRegistry->add("Event/before/hEP4BPos_CentFT0C", "4rd harmonics event plane BPos;centrality FT0C (%);#Psi_{4}^{BPos} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+  //   fRegistry->add("Event/before/hEP4BNeg_CentFT0C", "4rd harmonics event plane BNeg;centrality FT0C (%);#Psi_{4}^{BNeg} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+  //   fRegistry->add("Event/before/hEP4BTot_CentFT0C", "4rd harmonics event plane BTot;centrality FT0C (%);#Psi_{4}^{BTot} (rad.)", kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+
+  //   fRegistry->add("Event/before/hPrfQ4FT0MQ4BPos_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{BPos}", kTProfile, {{100, 0, 100}}, false);
+  //   fRegistry->add("Event/before/hPrfQ4FT0MQ4BNeg_CentFT0C", "Q_{4}^{FT0M} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0M} #upoint Q_{4}^{BNeg}", kTProfile, {{100, 0, 100}}, false);
+  //   fRegistry->add("Event/before/hPrfQ4BPosQ4BNeg_CentFT0C", "Q_{4}^{BPos} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{BPos} #upoint Q_{4}^{BNeg}", kTProfile, {{100, 0, 100}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
+  //   fRegistry->add("Event/before/hPrfQ4FT0CQ4BPos_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BPos}", kTProfile, {{100, 0, 100}}, false);
+  //   fRegistry->add("Event/before/hPrfQ4FT0CQ4BNeg_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BNeg}", kTProfile, {{100, 0, 100}}, false);
+  //   fRegistry->add("Event/before/hPrfQ4FT0CQ4BTot_CentFT0C", "Q_{4}^{FT0C} #upoint Q_{4}^{BTot};centrality FT0C (%);Q_{4}^{FT0C} #upoint Q_{4}^{BTot}", kTProfile, {{100, 0, 100}}, false);
+  //   fRegistry->add("Event/before/hPrfQ4FT0AQ4BPos_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BPos};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BPos}", kTProfile, {{100, 0, 100}}, false);
+  //   fRegistry->add("Event/before/hPrfQ4FT0AQ4BNeg_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BNeg};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BNeg}", kTProfile, {{100, 0, 100}}, false);
+  //   fRegistry->add("Event/before/hPrfQ4FT0AQ4BTot_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{BTot};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{BTot}", kTProfile, {{100, 0, 100}}, false);
+  //   fRegistry->add("Event/before/hPrfQ4FT0AQ4FT0C_CentFT0C", "Q_{4}^{FT0A} #upoint Q_{4}^{FT0C};centrality FT0C (%);Q_{4}^{FT0A} #upoint Q_{4}^{FT0C}", kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
+  // }
   fRegistry->addClone("Event/before/", "Event/after/");
 }
 
