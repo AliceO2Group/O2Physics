@@ -676,7 +676,7 @@ struct Dilepton {
   {
     bool is_good = true;
     for (auto& qn : qvectors[nmod]) {
-      if (abs(qn[0]) > 100.f || abs(qn[1]) > 100.f) {
+      if (abs(qn[0]) > 10.f || abs(qn[1]) > 10.f) {
         is_good = false;
         break;
       }
