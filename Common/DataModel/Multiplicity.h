@@ -72,6 +72,9 @@ DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);       //!
 DECLARE_SOA_COLUMN(MultAllTracksTPCOnly, multAllTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultAllTracksITSTPC, multAllTracksITSTPC, int);   //!
 DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);       //!
+DECLARE_SOA_COLUMN(MultNGlobalTracksPV, multNGlobalTracksPV, int);
+DECLARE_SOA_COLUMN(MultNGlobalTracksPVeta1, multNGlobalTracksPVeta1, int);
+DECLARE_SOA_COLUMN(MultNGlobalTracksPVetaHalf, multNGlobalTracksPVetaHalf, int);
 
 DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
 
@@ -121,7 +124,10 @@ DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
 
 // for QA purposes
 DECLARE_SOA_TABLE(MultsGlobal, "AOD", "MULTGLOBAL", //! counters that use Track Selection (optional)
-                  mult::MultNTracksGlobal);
+                  mult::MultNTracksGlobal,
+                  mult::MultNGlobalTracksPV,
+                  mult::MultNGlobalTracksPVeta1,
+                  mult::MultNGlobalTracksPVetaHalf);
 DECLARE_SOA_TABLE(MultSelections, "AOD", "MULTSELECTIONS", //!
                   evsel::Selection);                       // for derived data / QA studies
 using MultExtra = MultsExtra::iterator;

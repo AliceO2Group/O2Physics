@@ -1321,7 +1321,7 @@ struct correlateStrangeness {
     if (doGenEventSelection) {
       if (!bestCollisionSel8)
         return;
-      if (std::abs(bestCollisionVtxZ) > 10.0f)
+      if (std::abs(bestCollisionVtxZ) > zVertexCut)
         return;
       if (!bestCollisionINELgtZERO)
         return;

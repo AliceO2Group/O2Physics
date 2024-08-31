@@ -993,8 +993,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(CascRadius, cascradius, //!
 // CosPAs
 DECLARE_SOA_DYNAMIC_COLUMN(V0CosPA, v0cosPA, //!
                            [](float Xlambda, float Ylambda, float Zlambda, float PxLambda, float PyLambda, float PzLambda, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{Xlambda, Ylambda, Zlambda}, std::array{PxLambda, PyLambda, PzLambda}); });
+// DECLARE_SOA_DYNAMIC_COLUMN(CascCosPA, casccosPA, //!
+//                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{X, Y, Z}, std::array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CascCosPA, casccosPA, //!
-                           [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{X, Y, Z}, std::array{Px, Py, Pz}); });
+                           [](float X, float Y, float Z, float PxBach, float PxPos, float PxNeg, float PyBach, float PyPos, float PyNeg, float PzBach, float PzPos, float PzNeg, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{X, Y, Z}, std::array{PxBach + PxPos + PxNeg, PyBach + PyPos + PyNeg, PzBach + PzPos + PzNeg}); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAV0ToPV, dcav0topv, //!
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
 
@@ -1143,7 +1145,7 @@ DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about
                   cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
                   cascdata::CascRadius<cascdata::X, cascdata::Y>,
                   cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
-                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::PxBach, cascdata::PxPos, cascdata::PxNeg, cascdata::PyBach, cascdata::PyPos, cascdata::PyNeg, cascdata::PzBach, cascdata::PzPos, cascdata::PzNeg>,
                   cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
 
                   // Invariant masses
@@ -1186,7 +1188,7 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
                   cascdata::CascRadius<cascdata::X, cascdata::Y>,
                   cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
-                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::PxBach, cascdata::PxPos, cascdata::PxNeg, cascdata::PyBach, cascdata::PyPos, cascdata::PyNeg, cascdata::PzBach, cascdata::PzPos, cascdata::PzNeg>,
                   cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
 
                   // Invariant masses
@@ -1224,7 +1226,7 @@ DECLARE_SOA_TABLE(StoredTraCascCores, "AOD", "TRACASCCORE", //!
                   cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
                   cascdata::CascRadius<cascdata::X, cascdata::Y>,
                   cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
-                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::PxBach, cascdata::PxPos, cascdata::PxNeg, cascdata::PyBach, cascdata::PyPos, cascdata::PyNeg, cascdata::PzBach, cascdata::PzPos, cascdata::PzNeg>,
                   cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
 
                   // Invariant masses

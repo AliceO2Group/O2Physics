@@ -730,11 +730,9 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
     return;
   }
   ue.fill(HIST("hCounter"), 1);
-  if (timeEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-    return;
-  }
-
+  // TODO:Implement time frame selection (only if MC includes this effect)
   ue.fill(HIST("hCounter"), 2);
+
   if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
     return;
   }

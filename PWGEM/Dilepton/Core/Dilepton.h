@@ -25,6 +25,7 @@
 #include <vector>
 #include <tuple>
 #include <utility>
+#include "TH1D.h"
 #include "TString.h"
 #include "Math/Vector4D.h"
 
@@ -93,6 +94,8 @@ struct Dilepton {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  Configurable<std::string> spresoPath{"spresoPath", "Users/d/dsekihat/PWGEM/dilepton/Qvector/resolution/LHC23zzh/pass3/test", "Path of SP resolution file"};
+  Configurable<bool> cfgApplySPresolution{"cfgApplySPresolution", false, "flag to apply resolution correction for flow analysis"};
 
   Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kVM:5, kHFll:6"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
@@ -111,6 +114,7 @@ struct Dilepton {
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
+  Configurable<bool> cfgUseDCAxy{"cfgUseDCAxy", false, "flag to use DCAxy, instead of DCA3D"};
 
   ConfigurableAxis ConfMllBins{"ConfMllBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00}, "mll bins for output histograms"};
   ConfigurableAxis ConfPtllBins{"ConfPtllBins", {VARIABLE_WIDTH, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTll bins for output histograms"};
@@ -243,6 +247,7 @@ struct Dilepton {
   float beamE2 = 0.f;                                // beam energy
   float beamP1 = 0.f;                                // beam momentum
   float beamP2 = 0.f;                                // beam momentum
+  TH1D* h1sp_resolution = nullptr;
 
   void init(InitContext& /*context*/)
   {
@@ -419,6 +424,12 @@ struct Dilepton {
       LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
       fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
     }
+
+    if (cfgApplySPresolution) {
+      auto list = ccdb->getForTimeStamp<TList>(spresoPath, 10);
+      h1sp_resolution = reinterpret_cast<TH1D*>(list->FindObject("histo_SP_R2_FT0M_BPos_BNeg"));
+      LOGF(info, "h1sp_resolution.GetBinContent(40) = %f", h1sp_resolution->GetBinContent(40));
+    }
   }
 
   ~Dilepton()
@@ -428,7 +439,7 @@ struct Dilepton {
     delete emh_neg;
     emh_neg = 0x0;
 
-    // map_mixed_eventId_to_centrality.clear();
+    map_mixed_eventId_to_centrality.clear();
     map_mixed_eventId_to_qvector.clear();
     map_mixed_eventId_to_globalBC.clear();
 
@@ -438,6 +449,7 @@ struct Dilepton {
     if (eid_bdt) {
       delete eid_bdt;
     }
+    delete h1sp_resolution;
   }
 
   void addhistograms()
@@ -451,6 +463,9 @@ struct Dilepton {
       mass_axis_title = "m_{ee} (GeV/c^{2})";
       pair_pt_axis_title = "p_{T,ee} (GeV/c)";
       pair_dca_axis_title = "DCA_{ee}^{3D} (#sigma)";
+      if (cfgUseDCAxy) {
+        pair_dca_axis_title = "DCA_{ee}^{XY} (#sigma)";
+      }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       mass_axis_title = "m_{#mu#mu} (GeV/c^{2})";
       pair_pt_axis_title = "p_{T,#mu#mu} (GeV/c)";
@@ -672,12 +687,21 @@ struct Dilepton {
   {
     bool is_good = true;
     for (auto& qn : qvectors[nmod]) {
-      if (abs(qn[0]) > 100.f || abs(qn[1]) > 100.f) {
+      if (abs(qn[0]) > 10.f || abs(qn[1]) > 10.f) {
         is_good = false;
         break;
       }
     }
     return is_good;
+  }
+
+  float getSPresolution(const float centrality)
+  {
+    if (h1sp_resolution == nullptr) {
+      return 1.f;
+    } else {
+      return h1sp_resolution->GetBinContent(h1sp_resolution->FindBin(centrality));
+    }
   }
 
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2, typename TCut>
@@ -758,6 +782,11 @@ struct Dilepton {
       dca_t1 = dca3DinSigma(t1);
       dca_t2 = dca3DinSigma(t2);
       pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
+      if (cfgUseDCAxy) {
+        dca_t1 = t1.dcaXY() / std::sqrt(t1.cYY());
+        dca_t2 = t2.dcaXY() / std::sqrt(t2.cYY());
+        pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
+      }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       dca_t1 = fwdDcaXYinSigma(t1);
       dca_t2 = fwdDcaXYinSigma(t2);
@@ -820,11 +849,12 @@ struct Dilepton {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
         {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg},                                                 // 2nd harmonics
         {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg},                                                 // 3rd harmonics
-        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 4th harmonics
       };
 
       if constexpr (ev_id == 0) {
-        float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]);
+        // LOGF(info, "collision.centFT0C() = %f, getSPresolution = %f", collision.centFT0C(), getSPresolution(collision.centFT0C()));
+
+        float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C());
         if (t1.sign() * t2.sign() < 0) { // ULS
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, weight);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ"), v12.M(), v12.Pt(), pair_dca, sp, weight);
@@ -987,7 +1017,7 @@ struct Dilepton {
   TEMH* emh_pos = nullptr;
   TEMH* emh_neg = nullptr;
   std::map<std::pair<int, int>, std::vector<std::vector<std::array<float, 2>>>> map_mixed_eventId_to_qvector;
-  // std::map<std::pair<int, int>, float> map_mixed_eventId_to_centrality;
+  std::map<std::pair<int, int>, float> map_mixed_eventId_to_centrality;
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   std::vector<std::pair<int, int>> used_trackIds;
@@ -1030,7 +1060,6 @@ struct Dilepton {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
         {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg},                                                 // 2nd harmonics
         {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg},                                                 // 3rd harmonics
-        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 4th harmonics
       };
 
       if (nmod == 2) {
@@ -1200,7 +1229,7 @@ struct Dilepton {
               continue;
             }
 
-            // auto centrality_mix = map_mixed_eventId_to_centrality[mix_dfId_collisionId];
+            auto centrality_mix = map_mixed_eventId_to_centrality[mix_dfId_collisionId];
             auto qvectors_mix = map_mixed_eventId_to_qvector[mix_dfId_collisionId];
             auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
             uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
@@ -1218,25 +1247,25 @@ struct Dilepton {
 
             for (auto& pos : selected_posTracks_in_this_event) { // ULS mix
               for (auto& neg : negTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(pos, neg, cut, qvectors, qvectors_mix);
+                fillMixedPairInfoForFlow(pos, neg, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix);
               }
             }
 
             for (auto& neg : selected_negTracks_in_this_event) { // ULS mix
               for (auto& pos : posTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(neg, pos, cut, qvectors, qvectors_mix);
+                fillMixedPairInfoForFlow(neg, pos, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix);
               }
             }
 
             for (auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
               for (auto& pos2 : posTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(pos1, pos2, cut, qvectors, qvectors_mix);
+                fillMixedPairInfoForFlow(pos1, pos2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix);
               }
             }
 
             for (auto& neg1 : selected_negTracks_in_this_event) { // LS-- mix
               for (auto& neg2 : negTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(neg1, neg2, cut, qvectors, qvectors_mix);
+                fillMixedPairInfoForFlow(neg1, neg2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix);
               }
             }
           } // end of loop over mixed event pool
@@ -1248,7 +1277,7 @@ struct Dilepton {
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) {
         if (nmod > 0) {
           map_mixed_eventId_to_qvector[key_df_collision] = qvectors;
-          // map_mixed_eventId_to_centrality[key_df_collision] = collision.centFT0C();
+          map_mixed_eventId_to_centrality[key_df_collision] = collision.centFT0C();
         }
         map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
         emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
@@ -1261,7 +1290,7 @@ struct Dilepton {
   } // end of DF
 
   template <typename TTrack1, typename TTrack2, typename TCut, typename TQvectors, typename TMixedQvectors>
-  bool fillMixedPairInfoForFlow(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TQvectors const& qvectors, TMixedQvectors const& qvectors_mix)
+  bool fillMixedPairInfoForFlow(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TQvectors const& qvectors, TMixedQvectors const& qvectors_mix, const float centrality, const float centrality_mix)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto v1ambIds = t1.ambiguousElectronsIds();
@@ -1302,8 +1331,8 @@ struct Dilepton {
       pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
     }
 
-    float sp1 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v1.Phi())), static_cast<float>(std::sin(nmod * v1.Phi()))}, qvectors[nmod][cfgQvecEstimator]);
-    float sp2 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v2.Phi())), static_cast<float>(std::sin(nmod * v2.Phi()))}, qvectors_mix[nmod][cfgQvecEstimator]);
+    float sp1 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v1.Phi())), static_cast<float>(std::sin(nmod * v1.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(centrality);
+    float sp2 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v2.Phi())), static_cast<float>(std::sin(nmod * v2.Phi()))}, qvectors_mix[nmod][cfgQvecEstimator]) / getSPresolution(centrality_mix);
     float cos_dphi1 = std::cos(nmod * (v1.Phi() - v12.Phi()));
     float cos_dphi2 = std::cos(nmod * (v2.Phi() - v12.Phi()));
     float cos_dphi12 = std::cos(nmod * (v1.Phi() - v2.Phi()));

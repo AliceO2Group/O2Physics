@@ -32,7 +32,6 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseFemtoContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
@@ -125,6 +124,10 @@ struct femtoUniversePairTaskTrackPhi {
   Partition<FemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsPhiDaughMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
 
+  // Partition for K+K- minv
+  Partition<FemtoFullParticles> partsKaons = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsKaonsMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
+
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTrack;
 
@@ -155,8 +158,9 @@ struct femtoUniversePairTaskTrackPhi {
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
 
-  FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
-  FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
+  // Efficiency
+  Configurable<std::string> ConfLocalEfficiency{"ConfLocalEfficiency", "", "Local path to efficiency .root file"};
+
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kPhi> pairCleaner;
@@ -169,6 +173,7 @@ struct femtoUniversePairTaskTrackPhi {
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryPhiMinvBackground{"registryPhiMinvBackground", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   std::unique_ptr<TFile> plocalEffFile;
   std::unique_ptr<TH1> plocalEffp1;
@@ -371,6 +376,9 @@ struct femtoUniversePairTaskTrackPhi {
     qaRegistry.add("PhiDaugh_neg/phi", "; #it{varphi}; Counts", kTH1F, {{200, 0, 2. * M_PI}});
     qaRegistry.add("PhiDaugh_neg/hDCAxy", "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
 
+    registryPhiMinvBackground.add("InvariantMassKpKp", "; invariant mass K+K+; Counts", kTH1F, {{6000, 0.9, 4.0}});
+    registryPhiMinvBackground.add("InvariantMassKmKm", "; invariant mass K-K-; Counts", kTH1F, {{6000, 0.9, 4.0}});
+
     qaRegistry.add("Hadron/nSigmaTPCPr", "; #it{p} (GeV/#it{c}); n#sigma_{TPCPr}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Hadron/nSigmaTOFPr", "; #it{p} (GeV/#it{c}); n#sigma_{TOFPr}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Hadron/nSigmaTPCPi", "; #it{p} (GeV/#it{c}); n#sigma_{TPCPi}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
@@ -404,19 +412,26 @@ struct femtoUniversePairTaskTrackPhi {
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventFemtoCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfBothTracks.ConfIsMC, ConfBothTracks.ConfUse3D);
-    mixedEventFemtoCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfBothTracks.ConfIsMC, ConfBothTracks.ConfUse3D);
     sameEventAngularCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfBothTracks.ConfEtaBins, ConfBothTracks.ConfPhiBins, ConfBothTracks.ConfIsMC, ConfBothTracks.ConfUse3D);
     mixedEventAngularCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfBothTracks.ConfEtaBins, ConfBothTracks.ConfPhiBins, ConfBothTracks.ConfIsMC, ConfBothTracks.ConfUse3D);
 
-    sameEventFemtoCont.setPDGCodes(ConfPhi.ConfPDGCodePhi, ConfTrack.ConfPDGCodeTrack);
-    mixedEventFemtoCont.setPDGCodes(ConfPhi.ConfPDGCodePhi, ConfTrack.ConfPDGCodeTrack);
     sameEventAngularCont.setPDGCodes(ConfPhi.ConfPDGCodePhi, ConfTrack.ConfPDGCodeTrack);
     mixedEventAngularCont.setPDGCodes(ConfPhi.ConfPDGCodePhi, ConfTrack.ConfPDGCodeTrack);
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCutMin.value, ConfCPRdeltaPhiCutMax.value, ConfCPRdeltaEtaCutMin.value, ConfCPRdeltaEtaCutMax.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value, ConfCPRInvMassCutMin.value, ConfCPRInvMassCutMax.value);
+    }
+
+    if (!ConfLocalEfficiency.value.empty()) {
+      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(ConfLocalEfficiency.value.c_str(), "read"));
+      if (!plocalEffFile || plocalEffFile.get()->IsZombie()) {
+        LOGF(fatal, "Could not load efficiency histogram from %s", ConfLocalEfficiency.value.c_str());
+      }
+
+      plocalEffp1 = (ConfTrack.ConfTrackSign > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus"));
+      plocalEffp2 = std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Phi"));
+      LOGF(info, "Loaded efficiency histograms for track-Phi.");
     }
 
     vPIDPhiCandidate = ConfPhi.ConfPIDPhi.value;
@@ -442,7 +457,7 @@ struct femtoUniversePairTaskTrackPhi {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartitionType groupPartsPhiDaugh, PartType parts, float magFieldTesla, int multCol)
+  void doSameEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartitionType groupPartsPhiDaugh, PartitionType groupPartsKaons, PartType parts, float magFieldTesla, int multCol)
   {
 
     /// Histogramming same event
@@ -532,8 +547,42 @@ struct femtoUniversePairTaskTrackPhi {
       if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
         continue;
       }
-      sameEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
-      sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
+
+      float weight = 1.0f;
+      if (plocalEffp1) {
+        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(track.pt(), track.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(phicandidate.pt(), phicandidate.eta()));
+        sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
+      } else {
+        sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
+      }
+    }
+
+    TLorentzVector part1Vec;
+    TLorentzVector part2Vec;
+
+    float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
+    float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
+
+    for (auto& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsKaons, groupPartsKaons))) {
+      if (!IsKaonNSigma(kaon1.p(), trackCuts.getNsigmaTPC(kaon1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon1, o2::track::PID::Kaon))) {
+      }
+      if (!IsKaonNSigma(kaon2.p(), trackCuts.getNsigmaTPC(kaon2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon2, o2::track::PID::Kaon))) {
+      }
+      if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
+      }
+      if ((kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        registryPhiMinvBackground.fill(HIST("InvariantMassKmKm"), sumVec.M());
+      }
     }
   }
 
@@ -548,8 +597,9 @@ struct femtoUniversePairTaskTrackPhi {
     auto thegroupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhi = partsPhi->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhiDaugh = partsPhiDaugh->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsKaons = partsKaons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<false>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, parts, col.magField(), col.multNtr());
+    doSameEvent<false>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processSameEvent, "Enable processing same event", true);
 
@@ -566,8 +616,9 @@ struct femtoUniversePairTaskTrackPhi {
     auto thegroupPartsPhi = partsPhiMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrack = partsTrackMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhiDaugh = partsPhiDaughMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsKaons = partsKaonsMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, parts, col.magField(), col.multNtr());
+    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackPhi, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -604,8 +655,13 @@ struct femtoUniversePairTaskTrackPhi {
         }
       }
 
-      mixedEventFemtoCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
-      mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D);
+      float weight = 1.0f;
+      if (plocalEffp1) {
+        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(track.pt(), track.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(phicandidate.pt(), phicandidate.eta()));
+        mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
+      } else {
+        mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
+      }
     }
   }
 

@@ -139,6 +139,8 @@ struct eventQC {
     fRegistry.add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
     fRegistry.add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", kTH2F, {{60, 0, 60000}, {200, 0, 20000}}, false);
     fRegistry.add("Event/before/hNTracksPVvsOccupancy", "hNTracksPVvsOccupancy;N_{track} to PV;N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
+    fRegistry.add("Event/before/hNGlobalTracksvsOccupancy", "hNGlobalTracksvsOccupancy;N_{track}^{global};N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
+    fRegistry.add("Event/before/hNGlobalTracksPVvsOccupancy", "hNGlobalTracksPVvsOccupancy;N_{track}^{global} to PV;N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
     fRegistry.addClone("Event/before/", "Event/after/");
 
     fRegistry.add("Event/after/hMultNGlobalTracks", "hMultNGlobalTracks; N_{track}^{global}", kTH1F, {{6001, -0.5, 6000.5}}, false);
@@ -150,36 +152,36 @@ struct eventQC {
 
     for (int i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
       int nmod = cfgnMods->at(i);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dxFT0M_CentFT0C", nmod), Form("hQ%dxFT0M_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{FT0M}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dyFT0M_CentFT0C", nmod), Form("hQ%dyFT0M_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FT0M}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dxFT0A_CentFT0C", nmod), Form("hQ%dxFT0A_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{FT0A}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dyFT0A_CentFT0C", nmod), Form("hQ%dyFT0A_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FT0A}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dxFT0C_CentFT0C", nmod), Form("hQ%dxFT0C_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{FT0C}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dyFT0C_CentFT0C", nmod), Form("hQ%dyFT0C_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FT0C}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dxBPos_CentFT0C", nmod), Form("hQ%dxBPos_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BPos}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dyBPos_CentFT0C", nmod), Form("hQ%dyBPos_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{BPos}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dxBNeg_CentFT0C", nmod), Form("hQ%dxBNeg_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BNeg}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dyBNeg_CentFT0C", nmod), Form("hQ%dyBNeg_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{BNeg}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dxBTot_CentFT0C", nmod), Form("hQ%dxBTot_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BTot}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hQ%dyBTot_CentFT0C", nmod), Form("hQ%dyBTot_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{BTot}", nmod, nmod), kTH2F, {{110, 0, 110}, {100, -5, +5}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dxFT0M_CentFT0C", nmod), Form("hQ%dxFT0M_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{FT0M}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dyFT0M_CentFT0C", nmod), Form("hQ%dyFT0M_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FT0M}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dxFT0A_CentFT0C", nmod), Form("hQ%dxFT0A_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{FT0A}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dyFT0A_CentFT0C", nmod), Form("hQ%dyFT0A_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FT0A}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dxFT0C_CentFT0C", nmod), Form("hQ%dxFT0C_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{FT0C}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dyFT0C_CentFT0C", nmod), Form("hQ%dyFT0C_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FT0C}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dxBPos_CentFT0C", nmod), Form("hQ%dxBPos_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BPos}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dyBPos_CentFT0C", nmod), Form("hQ%dyBPos_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{BPos}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dxBNeg_CentFT0C", nmod), Form("hQ%dxBNeg_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BNeg}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dyBNeg_CentFT0C", nmod), Form("hQ%dyBNeg_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{BNeg}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dxBTot_CentFT0C", nmod), Form("hQ%dxBTot_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BTot}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hQ%dyBTot_CentFT0C", nmod), Form("hQ%dyBTot_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{BTot}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
 
-      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0M_CentFT0C", nmod), Form("event plane FT0M;centrality FT0C (%%);#Psi_{%d}^{FT0M} (rad.)", nmod), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0A_CentFT0C", nmod), Form("event plane FT0A;centrality FT0C (%%);#Psi_{%d}^{FT0A} (rad.)", nmod), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0C_CentFT0C", nmod), Form("event plane FT0C;centrality FT0C (%%);#Psi_{%d}^{FT0C} (rad.)", nmod), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dBPos_CentFT0C", nmod), Form("event plane BPos;centrality FT0C (%%);#Psi_{%d}^{BPos} (rad.)", nmod), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dBNeg_CentFT0C", nmod), Form("event plane BNeg;centrality FT0C (%%);#Psi_{%d}^{BNeg} (rad.)", nmod), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dBTot_CentFT0C", nmod), Form("event plane BTot;centrality FT0C (%%);#Psi_{%d}^{BTot} (rad.)", nmod), kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0M_CentFT0C", nmod), Form("event plane FT0M;centrality FT0C (%%);#Psi_{%d}^{FT0M} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0A_CentFT0C", nmod), Form("event plane FT0A;centrality FT0C (%%);#Psi_{%d}^{FT0A} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0C_CentFT0C", nmod), Form("event plane FT0C;centrality FT0C (%%);#Psi_{%d}^{FT0C} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dBPos_CentFT0C", nmod), Form("event plane BPos;centrality FT0C (%%);#Psi_{%d}^{BPos} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dBNeg_CentFT0C", nmod), Form("event plane BNeg;centrality FT0C (%%);#Psi_{%d}^{BNeg} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dBTot_CentFT0C", nmod), Form("event plane BTot;centrality FT0C (%%);#Psi_{%d}^{BTot} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
 
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0MQ%dBPos_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0M} #upoint Q_{%d}^{BPos};centrality FT0C (%%);Q_{%d}^{FT0M} #upoint Q_{%d}^{BPos}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0MQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0M} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0M} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dBPosQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{BPos} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{BPos} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0CQ%dBPos_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0C} #upoint Q_{%d}^{BPos};centrality FT0C (%%);Q_{%d}^{FT0C} #upoint Q_{%d}^{BPos}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0CQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0C} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0C} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0CQ%dBTot_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0C} #upoint Q_{%d}^{BTot};centrality FT0C (%%);Q_{%d}^{FT0C} #upoint Q_{%d}^{BTot}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBPos_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BPos};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BPos}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBTot_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BTot};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BTot}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dFT0C_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{FT0C};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{FT0C}", nmod, nmod, nmod, nmod), kTProfile, {{110, 0, 110}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0MQ%dBPos_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0M} #upoint Q_{%d}^{BPos};centrality FT0C (%%);Q_{%d}^{FT0M} #upoint Q_{%d}^{BPos}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0MQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0M} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0M} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dBPosQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{BPos} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{BPos} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0CQ%dBPos_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0C} #upoint Q_{%d}^{BPos};centrality FT0C (%%);Q_{%d}^{FT0C} #upoint Q_{%d}^{BPos}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0CQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0C} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0C} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0CQ%dBTot_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0C} #upoint Q_{%d}^{BTot};centrality FT0C (%%);Q_{%d}^{FT0C} #upoint Q_{%d}^{BTot}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBPos_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BPos};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BPos}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBTot_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BTot};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BTot}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dFT0C_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{FT0C};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{FT0C}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
     }
 
     const AxisSpec axis_pt{ConfPtBins, "p_{T} (GeV/c)"};
@@ -451,7 +453,7 @@ struct eventQC {
   {
     bool is_good = true;
     for (auto& qvec : qvectors) {
-      if (abs(qvec[0]) > 100.f || abs(qvec[1]) > 100.f) {
+      if (abs(qvec[0]) > 10.f || abs(qvec[1]) > 10.f) {
         is_good = false;
         break;
       }
@@ -582,6 +584,8 @@ struct eventQC {
       fRegistry.fill(HIST("Event/after/hMultNGlobalTracksPV"), nGlobalTracksPV);
       fRegistry.fill(HIST("Event/after/hMultFT0CvsMultNGlobalTracks"), collision.multFT0C(), nGlobalTracks);
       fRegistry.fill(HIST("Event/after/hMultFT0CvsMultNGlobalTracksPV"), collision.multFT0C(), nGlobalTracksPV);
+      fRegistry.fill(HIST("Event/after/hNGlobalTracksvsOccupancy"), nGlobalTracks, collision.trackOccupancyInTimeRange());
+      fRegistry.fill(HIST("Event/after/hNGlobalTracksPVvsOccupancy"), nGlobalTracksPV, collision.trackOccupancyInTimeRange());
       if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent> || std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent_Qvec>) {
         fRegistry.fill(HIST("Event/after/hCentFT0CvsMultNGlobalTracks"), collision.centFT0C(), nGlobalTracks);
         fRegistry.fill(HIST("Event/after/hCentFT0CvsMultNGlobalTracksPV"), collision.centFT0C(), nGlobalTracksPV);
