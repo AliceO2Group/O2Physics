@@ -791,9 +791,9 @@ struct HfTaskMcEfficiency {
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcLc, "Process MC for Lc signal", false);
 
   void processMcXic(soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi> const& candidates,
-                   TracksWithSelectionMC const& tracks,
-                   aod::McParticles const& mcParticles,
-                   aod::McCollisionLabels const& colls)
+                    TracksWithSelectionMC const& tracks,
+                    aod::McParticles const& mcParticles,
+                    aod::McCollisionLabels const& colls)
   {
     std::vector<int> pdgCodes{Pdg::kXiCPlus};
     candidate3ProngMcLoop<false, false, false, true>(candidates, tracks, mcParticles, colls, pdgCodes);
@@ -841,9 +841,9 @@ struct HfTaskMcEfficiency {
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDsLc, "Process MC for Ds+ and Lc signals", false);
 
   void processMcLcXic(soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfSelXicToPKPi> const& candidates,
-                     TracksWithSelectionMC const& tracks,
-                     aod::McParticles const& mcParticles,
-                     aod::McCollisionLabels const& colls)
+                      TracksWithSelectionMC const& tracks,
+                      aod::McParticles const& mcParticles,
+                      aod::McCollisionLabels const& colls)
   {
     std::vector<int> pdgCodes{Pdg::kLambdaCPlus, Pdg::kXiCPlus};
     candidate3ProngMcLoop<false, false, true, true>(candidates, tracks, mcParticles, colls, pdgCodes);
