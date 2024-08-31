@@ -176,8 +176,8 @@ struct highmasslambdasvx {
   void init(o2::framework::InitContext&)
   {
     std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
-    std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.0015, 0.002, 0.0025, 0.003, 0.004, 0.005, 0.006, 0.008, 0.01, 0.02, 0.04, 0.05, 0.06, 0.08, 0.1, 0.3, 1.0};
-    std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 0.6, 0.8, 1.2, 1.4, 1.6, 2.0, 3.0, 4.0, 6.0};
+    std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.006, 0.3};
+    std::vector<double> ptProtonBinning = {0.0, 0.3, 0.5, 0.8, 1.2, 6.0};
     std::vector<double> ptLambdaBinning = {2.0, 3.0, 4.0, 5.0, 6.0};
 
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
