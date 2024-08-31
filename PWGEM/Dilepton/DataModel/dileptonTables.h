@@ -58,7 +58,8 @@ const std::unordered_map<std::string, int> aliasLabels = {
 namespace emevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
-DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16); //! Bitmask of fired trigger aliases (see above for definitions)
+DECLARE_SOA_BITMAP_COLUMN(SWTAliasTmp, swtaliastmp, 16); //! Bitmask of fired trigger aliases (see above for definitions) to be join to aod::Collisions for skimming
+DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16);       //! Bitmask of fired trigger aliases (see above for definitions) to be join to aod::EMEvents for analysis
 DECLARE_SOA_COLUMN(NInspectedTVX, nInspectedTVX, uint64_t);
 DECLARE_SOA_COLUMN(NeeULS, neeuls, int);
 DECLARE_SOA_COLUMN(NeeLSpp, neelspp, int);
@@ -180,6 +181,10 @@ using EMEventQvec = EMEventsQvec::iterator;
 DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTRIGGERINFO", //! joinable to EMEvents
                   emevent::SWTAlias, emevent::NInspectedTVX);
 using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerInfosTMP, "AOD", "EMSWTTMP", //! joinable to aod::Collisions
+                  emevent::SWTAliasTmp, emevent::NInspectedTVX);
+using EMSWTriggerInfoTMP = EMSWTriggerInfosTMP::iterator;
 
 DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEvents
                   emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);

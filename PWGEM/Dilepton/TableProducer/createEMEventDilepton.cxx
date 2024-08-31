@@ -24,7 +24,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "EventFiltering/Zorro.h"
 #include "Common/Core/TableHelper.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
@@ -41,6 +40,10 @@ using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::Qv
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
 using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
+
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
+using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
@@ -67,8 +70,6 @@ struct CreateEMEventDilepton {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
-  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
-  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fHighTrackMult,fHighFt0Mult", "comma-separated software trigger names"}; // !trigger names have to be pre-registered in dileptonTable.h for bit operation!
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -80,16 +81,7 @@ struct CreateEMEventDilepton {
     registry.add("hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
   }
 
-  ~CreateEMEventDilepton()
-  {
-    swt_names.clear();
-    swt_names.shrink_to_fit();
-  }
-
-  Zorro zorro;
-  std::vector<int> mTOIidx;
-  std::vector<std::string> swt_names;
-  uint64_t mNinspectedTVX{0};
+  ~CreateEMEventDilepton() {}
 
   int mRunNumber;
   float d_bz;
@@ -100,22 +92,6 @@ struct CreateEMEventDilepton {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
-    }
-
-    if (enable_swt) {
-      LOGF(info, "enable software triggers : %s", cfg_swt_names.value.data());
-      mTOIidx = zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
-      std::stringstream tokenizer(cfg_swt_names.value);
-      std::string token;
-      while (std::getline(tokenizer, token, ',')) {
-        swt_names.emplace_back(token);
-      }
-      for (auto& idx : mTOIidx) {
-        LOGF(info, "Trigger of Interest : index = %d", idx);
-      }
-      mNinspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
-      LOGF(info, "total inspected TVX events = %d in run number %d", mNinspectedTVX, bc.runNumber());
-      registry.fill(HIST("hNInspectedTVX"), bc.runNumber(), mNinspectedTVX);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -154,7 +130,7 @@ struct CreateEMEventDilepton {
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
 
-  template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
+  template <bool isMC, bool isTriggerAnalysis, EMEventType eventype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const&)
   {
     for (auto& collision : collisions) {
@@ -171,21 +147,11 @@ struct CreateEMEventDilepton {
         continue;
       }
 
-      if (enable_swt) {
-        if (zorro.isSelected(bc.globalBC())) {     // triggered event
-          auto swt_bitset = zorro.getLastResult(); // this has to be called after zorro::isSelected, or simply call zorro.fetch
-          // LOGF(info, "swt_bitset.to_string().c_str() = %s", swt_bitset.to_string().c_str());
-          uint16_t trigger_bitmap = 0;
-          for (size_t idx = 0; idx < mTOIidx.size(); idx++) {
-            if (swt_bitset.test(mTOIidx[idx])) {
-              auto swtname = swt_names[idx];
-              trigger_bitmap |= BIT(o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
-              // LOGF(info, "swtname = %s is fired. swt index in original swt table = %d, swt index for EM table = %d", swtname.data(), mTOIidx[idx], o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
-            }
-          }
-          emswtbit(trigger_bitmap, mNinspectedTVX);
-        } else { // rejected
+      if constexpr (isTriggerAnalysis) {
+        if (collision.swtaliastmp_raw() == 0) {
           continue;
+        } else {
+          emswtbit(collision.swtaliastmp_raw(), collision.nInspectedTVX());
         }
       }
 
@@ -235,41 +201,65 @@ struct CreateEMEventDilepton {
           999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
       }
     } // end of collision loop
-  }   // end of skimEvent
+  } // end of skimEvent
+
+  //---------- for data ----------
 
   void processEvent(MyCollisions const& collisions, MyBCs const& bcs)
   {
-    skimEvent<false, EMEventType::kEvent>(collisions, bcs);
+    skimEvent<false, false, EMEventType::kEvent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent, "process event info", false);
 
   void processEvent_Cent(MyCollisions_Cent const& collisions, MyBCs const& bcs)
   {
-    skimEvent<false, EMEventType::kEvent_Cent>(collisions, bcs);
+    skimEvent<false, false, EMEventType::kEvent_Cent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_Cent, "process event info", false);
 
   void processEvent_Cent_Qvec(MyCollisions_Cent_Qvec const& collisions, MyBCs const& bcs)
   {
-    skimEvent<false, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+    skimEvent<false, false, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_Cent_Qvec, "process event info", false);
 
+  //---------- for data with swt----------
+
+  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT, "process event info", false);
+
+  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent, "process event info", false);
+
+  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent_Qvec, "process event info", false);
+
+  //---------- for MC ----------
+
   void processEventMC(MyCollisionsMC const& collisions, MyBCs const& bcs)
   {
-    skimEvent<true, EMEventType::kEvent>(collisions, bcs);
+    skimEvent<true, false, EMEventType::kEvent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEventMC, "process event info", false);
 
   void processEventMC_Cent(MyCollisionsMC_Cent const& collisions, MyBCs const& bcs)
   {
-    skimEvent<true, EMEventType::kEvent_Cent>(collisions, bcs);
+    skimEvent<true, false, EMEventType::kEvent_Cent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEventMC_Cent, "process event info", false);
 
   void processEventMC_Cent_Qvec(MyCollisionsMC_Cent_Qvec const& collisions, MyBCs const& bcs)
   {
-    skimEvent<true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+    skimEvent<true, false, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEventMC_Cent_Qvec, "process event info", false);
 
@@ -297,7 +287,7 @@ struct AssociateDileptonToEMEvent {
       for (int il = 0; il < nl; il++) {
         eventIds(collision.globalIndex());
       } // end of photon loop
-    }   // end of collision loop
+    } // end of collision loop
   }
 
   // This struct is for both data and MC.
@@ -329,12 +319,9 @@ struct EMEventPropertyTask {
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   using Run3Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
-  Zorro zorro;
 
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
-  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
-  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
 
   Produces<aod::EMEventsProperty> evprop;
@@ -355,8 +342,6 @@ struct EMEventPropertyTask {
   void init(InitContext& initContext)
   {
     getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-    getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);                           // for EM users.
-    getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
 
     if (fillQAHistogram) {
       fRegistry.add("Spherocity/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{200, 0.0f, 10}}, false);
@@ -367,17 +352,6 @@ struct EMEventPropertyTask {
   }
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber = 0;
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
-  {
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-    if (enable_swt) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
-    }
-    mRunNumber = bc.runNumber();
-  }
 
   template <typename TTracks>
   int getSpherocity(TTracks const& tracks, float& spherocity_ptweighted, float& spherocity_ptunweighted)
@@ -441,21 +415,10 @@ struct EMEventPropertyTask {
 
   Partition<Run3Tracks> tracks_for_spherocity = spherocity_cuts.min_pt < aod::track::pt && spherocity_cuts.min_eta < o2::aod::track::eta && o2::aod::track::eta < spherocity_cuts.max_eta && nabs(o2::aod::track::dcaXY) < spherocity_cuts.max_dcaxy && nabs(o2::aod::track::dcaZ) < spherocity_cuts.max_dcaz && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true && o2::aod::track::tpcChi2NCl < spherocity_cuts.max_chi2tpc; // ITS-TPC matched tracks
 
-  void processProp(soa::Join<aod::Collisions, aod::EvSels> const& collisions, Run3Tracks const&, aod::BCsWithTimestamps const&)
+  void processProp(aod::EMEvents const& collisions, Run3Tracks const&)
   {
     for (auto& collision : collisions) {
-
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
-      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
-        continue;
-      }
-
-      auto tracks_for_spherocity_per_collision = tracks_for_spherocity->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      auto tracks_for_spherocity_per_collision = tracks_for_spherocity->sliceByCached(o2::aod::track::collisionId, collision.collisionId(), cache);
       float spherocity_ptweighted = -1.f, spherocity_ptunweighted = -1.f;
       int ntrack = getSpherocity(tracks_for_spherocity_per_collision, spherocity_ptweighted, spherocity_ptunweighted);
       if (fillQAHistogram) {
@@ -467,18 +430,9 @@ struct EMEventPropertyTask {
   }
   PROCESS_SWITCH(EMEventPropertyTask, processProp, "process event property", true);
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&)
+  void processDummy(aod::EMEvents const& collisions)
   {
-    for (auto& collision : collisions) {
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
-      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
-        continue;
-      }
+    for (int i = 0; i < collisions.size(); i++) {
       evprop(-1.f, -1.f, 0);
     } // end of collision loop
   }
