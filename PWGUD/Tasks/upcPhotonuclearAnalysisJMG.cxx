@@ -15,6 +15,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/StepTHn.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
@@ -22,6 +24,9 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
@@ -75,6 +80,12 @@ struct upcPhotonuclearAnalysisJMG {
 
   using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>;
+
+  // Output definitions
+  OutputObj<CorrelationContainer> same{"sameEvent"};
+  OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   void init(InitContext const&)
   {
@@ -177,6 +188,24 @@ struct upcPhotonuclearAnalysisJMG {
     histos.add("Events/SGsideBoth/hTimeRelationSides", "Time in side A vs time in side C; Time in side A; Time in side C", kTH2F, {axisZNTime, axisZNTime});
     histos.add("Events/SGsideBoth/hAmplitudFT0A", "Amplitud in side A distribution; Amplitud in side A; counts", kTH1F, {axisFT0Amplitud});
     histos.add("Events/SGsideBoth/hAmplitudFT0C", "Amplitud in side C distribution; Amplitud in side C; counts", kTH1F, {axisFT0Amplitud});
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+  }
+
+  int getMagneticField()
+  {
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->get<o2::parameters::GRPObject>("GLO/GRP/GRP");
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu");
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", grpo->getNominalL3Field());
+    }
+    return grpo->getNominalL3Field();
   }
 
   template <typename C>
@@ -288,6 +317,7 @@ struct upcPhotonuclearAnalysisJMG {
     int nTracksCharged = 0;
     float sumPt = 0;
 
+
     if (isGlobalCollisionCut(reconstructedCollision) == false) {
       return;
     }
@@ -297,6 +327,7 @@ struct upcPhotonuclearAnalysisJMG {
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
         }
+        std::cout << "Magnetic Field: " << getMagneticField() << std::endl;
         histos.fill(HIST("Events/hCountCollisions"), 1);
         histos.fill(HIST("Events/SGsideA/hEnergyZNA"), reconstructedCollision.energyCommonZNA());
         histos.fill(HIST("Events/SGsideA/hEnergyZNC"), reconstructedCollision.energyCommonZNC());
