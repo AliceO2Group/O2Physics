@@ -48,6 +48,8 @@
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/SGCutParHolder.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -167,12 +169,20 @@ struct strangederivedbuilder {
   Configurable<bool> fillRawFT0A{"fillRawFT0A", false, "Fill raw FT0A information for debug"};
   Configurable<bool> fillRawFT0C{"fillRawFT0C", true, "Fill raw FT0C information for debug"};
   Configurable<bool> fillRawFV0A{"fillRawFV0A", false, "Fill raw FV0A information for debug"};
+  Configurable<bool> fillRawFDDA{"fillRawFDDA", false, "Fill raw FDDA information for debug"};
+  Configurable<bool> fillRawFDDC{"fillRawFDDC", false, "Fill raw FDDC information for debug"};
   Configurable<bool> fillRawZDC{"fillRawZDC", false, "Fill raw ZDC information for debug"};
   Configurable<bool> fillRawNTracksEta1{"fillRawNTracksEta1", true, "Fill raw NTracks |eta|<1 information for debug"};
   Configurable<bool> fillRawNTracksForCorrelation{"fillRawNTracksForCorrelation", true, "Fill raw NTracks for correlation cuts"};
   Configurable<bool> fillTOFInformation{"fillTOFInformation", true, "Fill Daughter Track TOF information"};
 
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
+
+  SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
+  Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
+
+  //  SG selector
+  SGSelector sgSelector;
 
   // For manual sliceBy
   Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
@@ -235,6 +245,9 @@ struct strangederivedbuilder {
       hRawCentrality->SetBinContent(ii, value);
     }
 
+    // UPC selections
+    sameCuts = (SGCutParHolder)SGCuts;
+
     if (doprocessBinnedGenerated) {
       // reserve space for generated vectors if that process enabled
       auto hBinFinder = histos.get<TH2>(HIST("h2dGeneratedK0Short"));
@@ -250,25 +263,35 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse> const& bcs)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
       bool strange = V0Table_thisColl.size() > 0;
+
+      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
+      auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
+      auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
+
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      collision.centFT0C(), collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw());
-        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        strangeEvSels(collision.sel8(), collision.selection_raw(), isSGEvent.value);
+        // isSGEvent.value = 0 --> single gap, A side
+        //                   1 --> single gap, C side
+        //                   2 --> double gap, both A and C side
+        //                   3 --> neither A or C
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawFDDA || fillRawFDDC || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -289,7 +312,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse> const& bcs)
   {
     // create collision indices beforehand
     std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
@@ -314,19 +337,29 @@ struct strangederivedbuilder {
                      CascTable_thisColl.size() > 0 ||
                      KFCascTable_thisColl.size() > 0 ||
                      TraCascTable_thisColl.size() > 0;
+
+      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
+      auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
+      auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
+      
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw());
-        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        strangeEvSels(collision.sel8(), collision.selection_raw(), isSGEvent.value);
+        // isSGEvent.value = 0 --> single gap, A side
+        //                   1 --> single gap, C side
+        //                   2 --> double gap, both A and C side
+        //                   3 --> neither A or C
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawFDDA || fillRawFDDC || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -364,7 +397,7 @@ struct strangederivedbuilder {
       tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
-  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse> const& bcs, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
     // create collision indices beforehand
     std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
@@ -402,20 +435,30 @@ struct strangederivedbuilder {
                      CascTable_thisColl.size() > 0 ||
                      KFCascTable_thisColl.size() > 0 ||
                      TraCascTable_thisColl.size() > 0;
+
+      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
+      auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
+      auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
+
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCollLabels(collision.mcCollisionId());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw());
-        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        strangeEvSels(collision.sel8(), collision.selection_raw(), isSGEvent.value);
+        // isSGEvent.value = 0 --> single gap, A side
+        //                   1 --> single gap, C side
+        //                   2 --> double gap, both A and C side
+        //                   3 --> neither A or C
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawFDDA || fillRawFDDC || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -470,7 +513,7 @@ struct strangederivedbuilder {
     // Figure out the numbering of the new tracks table
     // assume filling per order
     int nTracks = 0;
-    for (int i = 0; i < int(trackMap.size()); i++) {
+    for (int i = 0; i < static_cast<int>(trackMap.size()); i++) {
       if (trackMap[i] >= 0) {
         trackMap[i] = nTracks++;
       }
@@ -545,7 +588,7 @@ struct strangederivedbuilder {
     // Figure out the numbering of the new tracks table
     // assume filling per order
     int nTracks = 0;
-    for (int i = 0; i < int(trackMap.size()); i++) {
+    for (int i = 0; i < static_cast<int>(trackMap.size()); i++) {
       if (trackMap[i] >= 0) {
         trackMap[i] = nTracks++;
       }
@@ -637,7 +680,7 @@ struct strangederivedbuilder {
     // Figure out the numbering of the new mcMother table
     // assume filling per order
     int nParticles = 0;
-    for (int i = 0; i < int(motherReference.size()); i++) {
+    for (int i = 0; i < static_cast<int>(motherReference.size()); i++) {
       if (motherReference[i] >= 0) {
         motherReference[i] = nParticles++; // count particles of interest
       }
@@ -829,7 +872,7 @@ struct strangederivedbuilder {
 
   uint64_t combineProngIndices(uint32_t low, uint32_t high)
   {
-    return (((uint64_t)high) << 32) | ((uint64_t)low);
+    return ((static_cast<uint64_t>(high)) << 32) | (static_cast<uint64_t>(low));
   }
 
   void processV0FoundTags(aod::V0s const& foundV0s, aod::V0Datas const& findableV0s, aod::FindableV0s const& /* added to avoid troubles */)
@@ -851,7 +894,7 @@ struct strangederivedbuilder {
   using uint128_t = __uint128_t;
   uint128_t combineProngIndices128(uint32_t pos, uint32_t neg, uint32_t bach)
   {
-    return (((uint128_t)pos) << 64) | (((uint128_t)neg) << 32) | ((uint128_t)bach);
+    return ((static_cast<uint128_t>(pos)) << 64) | ((static_cast<uint128_t>(neg)) << 32) | (static_cast<uint128_t>(bach));
   }
 
   void processCascFoundTags(aod::Cascades const& foundCascades, aod::CascDatas const& findableCascades, aod::V0s const&, aod::FindableCascades const& /* added to avoid troubles */)

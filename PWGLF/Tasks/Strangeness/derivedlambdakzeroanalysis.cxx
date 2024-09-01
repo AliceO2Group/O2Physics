@@ -49,6 +49,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "PWGUD/Core/SGSelector.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -160,6 +161,19 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
   ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
+
+  // UPC axes
+  ConfigurableAxis axisSelGap{"axisSelGap", {4, -1.5, 2.5}, "Gap side"};
+
+  // UPC selections
+  SGSelector sgSelector;
+  struct : ConfigurableGroup {
+    Configurable<float> FV0cut{"FV0cut", 100., "FV0A threshold"};
+    Configurable<float> FT0Acut{"FT0Acut", 200., "FT0A threshold"};
+    Configurable<float> FT0Ccut{"FT0Ccut", 100., "FT0C threshold"};
+    Configurable<float> ZDCcut{"ZDCcut", 10., "ZDC threshold"};
+    // Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
+  } upcCuts;
 
   // AP plot axes
   ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
@@ -289,9 +303,9 @@ struct derivedlambdakzeroanalysis {
       // TOF PID
       if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
-      if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
       if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
+        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
+      if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
     }
 
@@ -333,6 +347,9 @@ struct derivedlambdakzeroanalysis {
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
     histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2F, {axisCentrality, axisOccupancy});
 
+    histos.add("hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
+    histos.add("hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
+
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
 
@@ -344,6 +361,12 @@ struct derivedlambdakzeroanalysis {
     // histograms versus mass
     if (analyseK0Short) {
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
+      // Non-UPC info
+      histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3F, {axisCentrality, axisPt, axisK0Mass});
+      // UPC info
+      histos.add("h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3F, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3F, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3F, {axisCentrality, axisPt, axisK0Mass});
       if (doTPCQA) {
         histos.add("K0Short/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
         histos.add("K0Short/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
@@ -383,6 +406,12 @@ struct derivedlambdakzeroanalysis {
     }
     if (analyseLambda) {
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      // Non-UPC info
+      histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      // UPC info
+      histos.add("h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassLambdaDG", "h3dMassLambdaDG", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
       if (doTPCQA) {
         histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
         histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
@@ -422,6 +451,12 @@ struct derivedlambdakzeroanalysis {
     }
     if (analyseAntiLambda) {
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      // Non-UPC info
+      histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      // UPC info
+      histos.add("h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
       if (doTPCQA) {
         histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
         histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
@@ -822,7 +857,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap)
+  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap, uint8_t gapSide)
   // precalculate this information so that a check is one mask operation, not many
   {
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
@@ -853,6 +888,14 @@ struct derivedlambdakzeroanalysis {
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
       histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
+      if (gapSide < 0)
+        histos.fill(HIST("h3dMassK0ShortHadronic"), centrality, pt, v0.mK0Short());
+      if (gapSide == 0)
+        histos.fill(HIST("h3dMassK0ShortSGA"), centrality, pt, v0.mK0Short());
+      if (gapSide == 1)
+        histos.fill(HIST("h3dMassK0ShortSGC"), centrality, pt, v0.mK0Short());
+      if (gapSide == 2)
+        histos.fill(HIST("h3dMassK0ShortDG"), centrality, pt, v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
       if (doPlainTopoQA) {
         histos.fill(HIST("K0Short/hPosDCAToPV"), v0.dcapostopv());
@@ -898,6 +941,14 @@ struct derivedlambdakzeroanalysis {
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
       histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
+      if (gapSide < 0)
+        histos.fill(HIST("h3dMassLambdaHadronic"), centrality, pt, v0.mLambda());
+      if (gapSide == 0)
+        histos.fill(HIST("h3dMassLambdaSGA"), centrality, pt, v0.mLambda());
+      if (gapSide == 1)
+        histos.fill(HIST("h3dMassLambdaSGC"), centrality, pt, v0.mLambda());
+      if (gapSide == 2)
+        histos.fill(HIST("h3dMassLambdaDG"), centrality, pt, v0.mLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("Lambda/hNegDCAToPV"), v0.dcanegtopv());
@@ -942,6 +993,14 @@ struct derivedlambdakzeroanalysis {
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
       histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
+      if (gapSide < 0)
+        histos.fill(HIST("h3dMassAntiLambdaHadronic"), centrality, pt, v0.mAntiLambda());
+      if (gapSide == 0)
+        histos.fill(HIST("h3dMassAntiLambdaSGA"), centrality, pt, v0.mAntiLambda());
+      if (gapSide == 1)
+        histos.fill(HIST("h3dMassAntiLambdaSGC"), centrality, pt, v0.mAntiLambda());
+      if (gapSide == 2)
+        histos.fill(HIST("h3dMassAntiLambdaDG"), centrality, pt, v0.mAntiLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());
@@ -1150,6 +1209,17 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
     }
 
+    // gap side
+    int gapSide = collision.gapSide();
+    int selGapSide = -1;
+    // -1 --> Hadronic
+    // 0 --> Single Gap - A side
+    // 1 --> Single Gap - C side
+    // 2 --> Double Gap - both A & C sides
+    selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
+    histos.fill(HIST("hGapSide"), gapSide);
+    histos.fill(HIST("hSelGapSide"), selGapSide);
+
     histos.fill(HIST("hEventCentrality"), centrality);
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
@@ -1175,7 +1245,7 @@ struct derivedlambdakzeroanalysis {
       selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
       selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
 
-      analyseCandidate(v0, v0.pt(), centrality, selMap);
+      analyseCandidate(v0, v0.pt(), centrality, selMap, selGapSide);
     } // end v0 loop
   }
 
@@ -1254,6 +1324,17 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
     }
 
+    // gap side
+    int gapSide = collision.gapSide();
+    int selGapSide = -1;
+    // -1 --> Hadronic
+    // 0 --> Single Gap - A side
+    // 1 --> Single Gap - C side
+    // 2 --> Double Gap - both A & C sides
+    selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
+    histos.fill(HIST("hGapSide"), gapSide);
+    histos.fill(HIST("hSelGapSide"), selGapSide);
+
     histos.fill(HIST("hEventCentrality"), centrality);
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
@@ -1295,7 +1376,7 @@ struct derivedlambdakzeroanalysis {
         selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
       }
 
-      analyseCandidate(v0, ptmc, centrality, selMap);
+      analyseCandidate(v0, ptmc, centrality, selMap, selGapSide);
 
       if (doCollisionAssociationQA) {
         // check collision association explicitly
@@ -1497,49 +1578,49 @@ struct derivedlambdakzeroanalysis {
     auto hOmegaMinus = histos.get<TH2>(HIST("h2dGeneratedOmegaMinus"));
     auto hOmegaPlus = histos.get<TH2>(HIST("h2dGeneratedOmegaPlus"));
     for (auto& gVec : geK0Short) {
-      if (int(gVec.generatedK0Short().size()) != hK0Short->GetNcells())
+      if (static_cast<int>(gVec.generatedK0Short().size()) != hK0Short->GetNcells())
         LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedK0Short().size(), hK0Short->GetNcells());
       for (int iv = 0; iv < hK0Short->GetNcells(); iv++) {
         hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
       }
     }
     for (auto& gVec : geLambda) {
-      if (int(gVec.generatedLambda().size()) != hLambda->GetNcells())
+      if (static_cast<int>(gVec.generatedLambda().size()) != hLambda->GetNcells())
         LOGF(fatal, "Lambda: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedLambda().size(), hLambda->GetNcells());
       for (int iv = 0; iv < hLambda->GetNcells(); iv++) {
         hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
       }
     }
     for (auto& gVec : geAntiLambda) {
-      if (int(gVec.generatedAntiLambda().size()) != hAntiLambda->GetNcells())
+      if (static_cast<int>(gVec.generatedAntiLambda().size()) != hAntiLambda->GetNcells())
         LOGF(fatal, "AntiLambda: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedAntiLambda().size(), hAntiLambda->GetNcells());
       for (int iv = 0; iv < hAntiLambda->GetNcells(); iv++) {
         hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
       }
     }
     for (auto& gVec : geXiMinus) {
-      if (int(gVec.generatedXiMinus().size()) != hXiMinus->GetNcells())
+      if (static_cast<int>(gVec.generatedXiMinus().size()) != hXiMinus->GetNcells())
         LOGF(fatal, "XiMinus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedXiMinus().size(), hXiMinus->GetNcells());
       for (int iv = 0; iv < hXiMinus->GetNcells(); iv++) {
         hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
       }
     }
     for (auto& gVec : geXiPlus) {
-      if (int(gVec.generatedXiPlus().size()) != hXiPlus->GetNcells())
+      if (static_cast<int>(gVec.generatedXiPlus().size()) != hXiPlus->GetNcells())
         LOGF(fatal, "XiPlus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedXiPlus().size(), hXiPlus->GetNcells());
       for (int iv = 0; iv < hXiPlus->GetNcells(); iv++) {
         hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
       }
     }
     for (auto& gVec : geOmegaMinus) {
-      if (int(gVec.generatedOmegaMinus().size()) != hOmegaMinus->GetNcells())
+      if (static_cast<int>(gVec.generatedOmegaMinus().size()) != hOmegaMinus->GetNcells())
         LOGF(fatal, "OmegaMinus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedOmegaMinus().size(), hOmegaMinus->GetNcells());
       for (int iv = 0; iv < hOmegaMinus->GetNcells(); iv++) {
         hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
       }
     }
     for (auto& gVec : geOmegaPlus) {
-      if (int(gVec.generatedOmegaPlus().size()) != hOmegaPlus->GetNcells())
+      if (static_cast<int>(gVec.generatedOmegaPlus().size()) != hOmegaPlus->GetNcells())
         LOGF(fatal, "OmegaPlus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedOmegaPlus().size(), hOmegaPlus->GetNcells());
       for (int iv = 0; iv < hOmegaPlus->GetNcells(); iv++) {
         hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv) + gVec.generatedOmegaPlus()[iv]);
