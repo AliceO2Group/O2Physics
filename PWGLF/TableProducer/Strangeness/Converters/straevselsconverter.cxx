@@ -23,9 +23,9 @@ struct straevselsconverter {
   void process(aod::StraEvSels_000 const& straEvSels_000)
   {
     for (auto& values : straEvSels_000) {
-      straEvSels_001(values.sel8(), 
-                     values.selection_raw(), 
-                     -1/*dummy occupancy value*/);
+      straEvSels_001(values.sel8(),
+                     values.selection_raw(),
+                     -1 /*dummy occupancy value*/);
     }
   }
 };

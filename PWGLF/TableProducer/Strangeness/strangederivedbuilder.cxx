@@ -341,7 +341,7 @@ struct strangederivedbuilder {
       auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
       auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
       auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
-      
+
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
