@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+<<<<<<< HEAD
 /// \file   upcPhotonuclearAnalysisJMG.cxx
 /// \brief  Task for photonuclear UPC analysis for azimuthal correlation: selection, histograms and observables.
 /// \author Josué Martínez García <josuem@cern.ch>
@@ -17,6 +18,13 @@
 #include "PWGUD/Core/UPCPairCuts.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
+=======
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/StepTHn.h"
+>>>>>>> 7234a7984 (adding angular correlation analysis)
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
@@ -25,6 +33,9 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "DataFormatsParameters/GRPObject.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/MathConstants.h"
@@ -176,6 +187,12 @@ struct UpcPhotonuclearAnalysisJMG {
   UPCPairCuts mPairCuts;
   bool doPairCuts = false;
 
+  // Output definitions
+  OutputObj<CorrelationContainer> same{"sameEvent"};
+  OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   void init(InitContext const&)
   {
     const AxisSpec axisCollision{4, -0.5, 3.5};
@@ -283,6 +300,7 @@ struct UpcPhotonuclearAnalysisJMG {
     histos.add("Events/SGsideC/hAmplitudFT0C", "Amplitud in side C distribution; Amplitud in side C; counts", kTH1F, {axisFT0Amplitud});
     histos.add("Events/SGsideC/hTrackPV", "#it{Nch vs Nch(PV)}; #it{N_{ch}(PV)}; #it{N_{ch}}", kTH2F, {axisNch, axisNch});
 
+<<<<<<< HEAD
     std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
@@ -299,6 +317,50 @@ struct UpcPhotonuclearAnalysisJMG {
     // mixedGapSideA.setObject(new CorrelationContainer("mixedEventGapSideA", "mixedEventGapSideA", corrAxis, effAxis, {}));
     // sameGapSideC.setObject(new CorrelationContainer("sameEventGapSideC", "sameEventGapSideC", corrAxis, effAxis, {}));
     // mixedGapSideC.setObject(new CorrelationContainer("mixedEventGapSideC", "mixedEventGapSideC", corrAxis, effAxis, {}));
+=======
+    // histos to selection gap in both sides
+    histos.add("Tracks/SGsideBoth/hTrackPt", "#it{p_{T}} distribution; #it{p_{T}}; counts", kTH1F, {axisPt});
+    histos.add("Tracks/SGsideBoth/hTrackPhi", "#it{#phi} distribution; #it{#phi}; counts", kTH1F, {axisPhi});
+    histos.add("Tracks/SGsideBoth/hTrackEta", "#it{#eta} distribution; #it{#eta}; counts", kTH1F, {axisEta});
+    histos.add("Tracks/SGsideBoth/hTrackTPCSignnalP", "#it{TPC dE/dx vs p}; #it{p*charge}; #it{TPC dE/dx}", kTH2F, {axisP, axisTPCSignal});
+    histos.add("Tracks/SGsideBoth/hTrackITSNCls", "#it{N Clusters ITS} distribution; #it{N Clusters ITS}; counts", kTH1F, {axisNCls});
+    histos.add("Tracks/SGsideBoth/hTrackITSChi2NCls", "#it{N Clusters Chi2 ITS} distribution; #it{N Clusters Chi2 ITS}; counts", kTH1F, {axisChi2NCls});
+    histos.add("Tracks/SGsideBoth/hTrackNClsCrossedRowsOverNCls", "#it{NClsCrossedRows/FindableNCls} distribution in TPC; #it{NClsCrossedRows/FindableNCls}; counts", kTH1F, {axisTPCNClsCrossedRowsMin});
+    histos.add("Tracks/SGsideBoth/hTrackTPCNClsCrossedRows", "#it{Number of crossed TPC Rows} distribution; #it{Number of crossed TPC Rows}; counts", kTH1F, {axisNCls});
+    histos.add("Tracks/SGsideBoth/hTrackTPCNClsFindable", "#it{Findable TPC clusters for this track} distribution; #it{Findable TPC clusters for this track}; counts", kTH1F, {axisNCls});
+    histos.add("Tracks/SGsideBoth/hTrackTPCChi2NCls", "#it{N Clusters Chi2 TPC} distribution; #it{N Clusters Chi2 TPC}; counts", kTH1F, {axisChi2NCls});
+    histos.add("Tracks/SGsideBoth/hTrackITSNClsTPCCls", "#it{ITS Clusters vs TPC Clusters}; #it{TPC Clusters}; #it{ITS Clusters}", kTH2F, {axisNCls, axisNCls});
+
+    histos.add("Events/SGsideBoth/hTrackZVtx", "vertex in z; z (cm); counts", kTH1F, {axisZvtx});
+    histos.add("Events/SGsideBoth/hNch", "#it{Charged Tracks Multiplicity} distribution; #it{Charged Tracks Multiplicity}; counts", kTH1F, {axisNch});
+    histos.add("Events/SGsideBoth/hPtVSNch", "#it{ #LT p_{T} #GT } vs #it{Charged Tracks Multiplicity}; #it{Charged Tracks Multiplicity}; #it{ #LT p_{T} #GT }", kTH2F, {axisNch, axisPt});
+    histos.add("Events/SGsideBoth/hEnergyZNA", "Energy in side A distribution; Energy in side A; counts", kTH1F, {axisZNEnergy});
+    histos.add("Events/SGsideBoth/hEnergyZNC", "Energy in side C distribution; Energy in side C; counts", kTH1F, {axisZNEnergy});
+    histos.add("Events/SGsideBoth/hEnergyRelationSides", "Energy in side A vs energy in side C; Energy in side A; Energy in side C", kTH2F, {axisZNEnergy, axisZNEnergy});
+    histos.add("Events/SGsideBoth/hTimeZNA", "Time in side A distribution; Time in side A; counts", kTH1F, {axisZNTime});
+    histos.add("Events/SGsideBoth/hTimeZNC", "Time in side C distribution; Time in side C; counts", kTH1F, {axisZNTime});
+    histos.add("Events/SGsideBoth/hTimeRelationSides", "Time in side A vs time in side C; Time in side A; Time in side C", kTH2F, {axisZNTime, axisZNTime});
+    histos.add("Events/SGsideBoth/hAmplitudFT0A", "Amplitud in side A distribution; Amplitud in side A; counts", kTH1F, {axisFT0Amplitud});
+    histos.add("Events/SGsideBoth/hAmplitudFT0C", "Amplitud in side C distribution; Amplitud in side C; counts", kTH1F, {axisFT0Amplitud});
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+  }
+
+  int getMagneticField()
+  {
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->get<o2::parameters::GRPObject>("GLO/GRP/GRP");
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu");
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", grpo->getNominalL3Field());
+    }
+    return grpo->getNominalL3Field();
+>>>>>>> 7234a7984 (adding angular correlation analysis)
   }
 
   std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, -7.0f, -5.0f, -2.5f, 0.0f, 2.5f, 5.0f, 7.0f, 10.0f};
@@ -552,6 +614,7 @@ struct UpcPhotonuclearAnalysisJMG {
     std::vector<float> vTrackPtSideA, vTrackEtaSideA, vTrackPhiSideA, vTrackTPCSignalSideA, vTrackTOFSignalSideA, vTrackTPCNSigmaPiSideA, vTrackTOFNSigmaPiSideA, vTrackTPCNSigmaKaSideA, vTrackTOFNSigmaKaSideA;
     std::vector<float> vTrackPtSideC, vTrackEtaSideC, vTrackPhiSideC, vTrackTPCSignalSideC, vTrackTOFSignalSideC, vTrackTPCNSigmaPiSideC, vTrackTOFNSigmaPiSideC, vTrackTPCNSigmaKaSideC, vTrackTOFNSigmaKaSideC;
 
+<<<<<<< HEAD
     int nTracksChargedSideA(-222), nTracksChargedSideC(-222);
     int multiplicitySideA(-222), multiplicitySideC(-222);
 
@@ -562,6 +625,11 @@ struct UpcPhotonuclearAnalysisJMG {
       float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
       histos.fill(HIST("etaphiVtx"), reconstructedCollision.posZ(), eta(track.px(), track.py(), track.pz()), phiVal);
       histos.fill(HIST("Tracks/hTrackPhiBeforeCorr"), phiVal);
+=======
+
+    if (isGlobalCollisionCut(reconstructedCollision) == false) {
+      return;
+>>>>>>> 7234a7984 (adding angular correlation analysis)
     }
 
     switch (sgSide) {
@@ -569,6 +637,7 @@ struct UpcPhotonuclearAnalysisJMG {
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
         }
+        std::cout << "Magnetic Field: " << getMagneticField() << std::endl;
         histos.fill(HIST("Events/hCountCollisions"), 1);
         histos.fill(HIST("Events/SGsideA/hEnergyZNA"), reconstructedCollision.energyCommonZNA());
         histos.fill(HIST("Events/SGsideA/hEnergyZNC"), reconstructedCollision.energyCommonZNC());
