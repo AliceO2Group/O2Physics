@@ -187,8 +187,6 @@ DECLARE_SOA_COLUMN(MultBCT0triggerBits, multBCT0triggerBits, uint8_t);   //!
 DECLARE_SOA_COLUMN(MultBCFDDtriggerBits, multBCFDDtriggerBits, uint8_t); //!
 DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);      //! CTP trigger mask
 DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);              //! CTP trigger mask
-  // MC information
-  DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);                             //! Position of the MC Collision along Z
 } // namespace multBC
 DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
@@ -210,9 +208,6 @@ DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFDDtriggerBits,
                   multBC::MultBCTriggerMask,
                   multBC::MultBCColliding);
-
-DECLARE_SOA_TABLE(MultsBCMC, "AOD", "MULTBCMC", //!
-                  mult::MCPosZ)
 
 using MultBC = MultsBC::iterator;
 
