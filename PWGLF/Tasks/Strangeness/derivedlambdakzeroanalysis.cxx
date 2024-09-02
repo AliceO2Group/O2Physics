@@ -888,14 +888,14 @@ struct derivedlambdakzeroanalysis {
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
       histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
-      if (gapSide < 0)
-        histos.fill(HIST("h3dMassK0ShortHadronic"), centrality, pt, v0.mK0Short());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassK0ShortSGA"), centrality, pt, v0.mK0Short());
       if (gapSide == 1)
         histos.fill(HIST("h3dMassK0ShortSGC"), centrality, pt, v0.mK0Short());
       if (gapSide == 2)
         histos.fill(HIST("h3dMassK0ShortDG"), centrality, pt, v0.mK0Short());
+      if (gapSide > 2)
+        histos.fill(HIST("h3dMassK0ShortHadronic"), centrality, pt, v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
       if (doPlainTopoQA) {
         histos.fill(HIST("K0Short/hPosDCAToPV"), v0.dcapostopv());
@@ -941,14 +941,14 @@ struct derivedlambdakzeroanalysis {
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
       histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
-      if (gapSide < 0)
-        histos.fill(HIST("h3dMassLambdaHadronic"), centrality, pt, v0.mLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassLambdaSGA"), centrality, pt, v0.mLambda());
       if (gapSide == 1)
         histos.fill(HIST("h3dMassLambdaSGC"), centrality, pt, v0.mLambda());
       if (gapSide == 2)
         histos.fill(HIST("h3dMassLambdaDG"), centrality, pt, v0.mLambda());
+      if (gapSide > 2)
+        histos.fill(HIST("h3dMassLambdaHadronic"), centrality, pt, v0.mLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("Lambda/hNegDCAToPV"), v0.dcanegtopv());
@@ -993,14 +993,14 @@ struct derivedlambdakzeroanalysis {
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
       histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
-      if (gapSide < 0)
-        histos.fill(HIST("h3dMassAntiLambdaHadronic"), centrality, pt, v0.mAntiLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassAntiLambdaSGA"), centrality, pt, v0.mAntiLambda());
       if (gapSide == 1)
         histos.fill(HIST("h3dMassAntiLambdaSGC"), centrality, pt, v0.mAntiLambda());
       if (gapSide == 2)
         histos.fill(HIST("h3dMassAntiLambdaDG"), centrality, pt, v0.mAntiLambda());
+      if (gapSide > 2)
+        histos.fill(HIST("h3dMassAntiLambdaHadronic"), centrality, pt, v0.mAntiLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());

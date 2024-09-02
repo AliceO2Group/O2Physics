@@ -48,8 +48,6 @@
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/SGCutParHolder.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -60,6 +58,7 @@ using TracksWithExtra = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFu
 using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::McTrackLabels>;
 using FullTracksExtIUTOF = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFEvTime, aod::TOFSignal>;
 using FullCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>;
+using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDCollsLabels>;
 
 // simple bit checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
@@ -177,18 +176,13 @@ struct strangederivedbuilder {
 
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
 
-  SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
-  Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
-
-  //  SG selector
-  SGSelector sgSelector;
-
   // For manual sliceBy
   Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
   Preslice<aod::CascDatas> CascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
+  Preslice<aod::UDCollsLabels> udCollisionsPerCollision = o2::aod::udcollision::collisionId;
 
   std::vector<uint32_t> genK0Short;
   std::vector<uint32_t> genLambda;
@@ -244,9 +238,6 @@ struct strangederivedbuilder {
       hRawCentrality->SetBinContent(ii, value);
     }
 
-    // UPC selections
-    sameCuts = (SGCutParHolder)SGCuts;
-
     if (doprocessBinnedGenerated) {
       // reserve space for generated vectors if that process enabled
       auto hBinFinder = histos.get<TH2>(HIST("h2dGeneratedK0Short"));
@@ -262,20 +253,22 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse> const& bcs)
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
       bool strange = V0Table_thisColl.size() > 0;
 
-      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
-      auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-      auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
-      // isSGEvent.value = 0 --> single gap, A side
-      //                   1 --> single gap, C side
-      //                   2 --> double gap, both A and C side
-      //                   3 --> neither A or C
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
+      auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
+      int gapSide = -1;
+      if (udCollision.size() == 1) {
+        for (auto& udColl : udCollision) {
+          gapSide = udColl.gapSide();
+        }
+      }
 
       // casc table sliced
       if (strange || fillEmptyCollisions) {
@@ -301,7 +294,7 @@ struct strangederivedbuilder {
                       collision.multZPA() * static_cast<float>(fillRawZDC),
                       collision.multZPC() * static_cast<float>(fillRawZDC),
                       collision.trackOccupancyInTimeRange(),
-                      isSGEvent.value);
+                      gapSide);
         strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -309,7 +302,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse> const& bcs)
+  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions)
   {
     // create collision indices beforehand
     std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
@@ -335,13 +328,15 @@ struct strangederivedbuilder {
                      KFCascTable_thisColl.size() > 0 ||
                      TraCascTable_thisColl.size() > 0;
 
-      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
-      auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-      auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
-      // isSGEvent.value = 0 --> single gap, A side
-      //                   1 --> single gap, C side
-      //                   2 --> double gap, both A and C side
-      //                   3 --> neither A or C
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
+      auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
+      int gapSide = -1;
+      if (udCollision.size() == 1) {
+        for (auto& udColl : udCollision) {
+          gapSide = udColl.gapSide();
+        }
+      }
 
       // casc table sliced
       if (strange || fillEmptyCollisions) {
@@ -367,7 +362,7 @@ struct strangederivedbuilder {
                       collision.multZPA() * static_cast<float>(fillRawZDC),
                       collision.multZPC() * static_cast<float>(fillRawZDC),
                       collision.trackOccupancyInTimeRange(),
-                      isSGEvent.value);
+                      gapSide);
         strangeStamps(bc.runNumber(), bc.timestamp());
       }
 
@@ -392,7 +387,7 @@ struct strangederivedbuilder {
       tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
-  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse> const& bcs, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
     // create collision indices beforehand
     std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
@@ -431,13 +426,15 @@ struct strangederivedbuilder {
                      KFCascTable_thisColl.size() > 0 ||
                      TraCascTable_thisColl.size() > 0;
 
-      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
-      auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-      auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
-      // isSGEvent.value = 0 --> single gap, A side
-      //                   1 --> single gap, C side
-      //                   2 --> double gap, both A and C side
-      //                   3 --> neither A or C
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
+      auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
+      int gapSide = -1;
+      if (udCollision.size() == 1) {
+        for (auto& udColl : udCollision) {
+          gapSide = udColl.gapSide();
+        }
+      }
 
       // casc table sliced
       if (strange || fillEmptyCollisions) {
@@ -464,7 +461,7 @@ struct strangederivedbuilder {
                       collision.multZPA() * static_cast<float>(fillRawZDC),
                       collision.multZPC() * static_cast<float>(fillRawZDC),
                       collision.trackOccupancyInTimeRange(),
-                      isSGEvent.value);
+                      gapSide);
         strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (const auto& v0 : V0Table_thisColl)
