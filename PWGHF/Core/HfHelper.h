@@ -370,6 +370,30 @@ class HfHelper
     return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng0()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
   }
 
+  template <typename T>
+  auto invMassPKPairLcToPKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  auto invMassPKPairLcToPiKP(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng2(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  auto invMassPPiPairLcToPKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  auto invMassPPiPairLcToPiKP(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng2(), candidate.pVectorProng0()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
+  }
+
   // Ξc± → p± K∓ π±
 
   template <typename T>

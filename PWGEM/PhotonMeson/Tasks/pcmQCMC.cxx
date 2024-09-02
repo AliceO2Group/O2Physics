@@ -69,6 +69,7 @@ struct PCMQCMC {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
   } eventcuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -230,6 +231,7 @@ struct PCMQCMC {
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+    fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
   }
 
   void DefinePCMCut()
@@ -386,6 +388,7 @@ struct PCMQCMC {
   }
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;

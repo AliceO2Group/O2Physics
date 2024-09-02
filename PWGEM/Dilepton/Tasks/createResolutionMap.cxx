@@ -64,6 +64,7 @@ struct CreateResolutionMap {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
 
   struct : ConfigurableGroup {
     std::string prefix = "electroncut_group";
@@ -289,9 +290,9 @@ struct CreateResolutionMap {
     if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
       registry.fill(HIST("StandaloneMuon/Ptgen_RelDeltaPt"), mctrack.pt(), (mctrack.pt() - pt) / mctrack.pt());
       registry.fill(HIST("StandaloneMuon/Ptgen_DeltaEta"), mctrack.pt(), mctrack.eta() - eta);
-      if (mctrack.pdgCode() == -13) { // positron
+      if (mctrack.pdgCode() == -13) { // positive muon
         registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Pos"), mctrack.pt(), mctrack.phi() - phi);
-      } else if (mctrack.pdgCode() == 13) { // electron
+      } else if (mctrack.pdgCode() == 13) { // negative muon
         registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Neg"), mctrack.pt(), mctrack.phi() - phi);
       }
     } else if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
@@ -326,6 +327,11 @@ struct CreateResolutionMap {
       initCCDB(bc);
 
       if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      auto mccollision = collision.template mcCollision_as<aod::McCollisions>();
+      if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
 

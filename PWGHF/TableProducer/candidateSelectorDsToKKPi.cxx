@@ -52,6 +52,8 @@ struct HfCandidateSelectorDsToKKPi {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], hf_cuts_ds_to_k_k_pi::nBinsPt, hf_cuts_ds_to_k_k_pi::nCutVars, hf_cuts_ds_to_k_k_pi::labelsPt, hf_cuts_ds_to_k_k_pi::labelsCutVar}, "Ds candidate selection per pT bin"};
+  Configurable<bool> rejectCandsInDplusToPiKPiRegion{"rejectCandsInDplusToPiKPiRegion", false, "Flag to reject candidates in the D+ to PiKPi signal region"};
+  Configurable<float> deltaMRegionDplusToPiKPi{"deltaMRegionDplusToPiKPi", 0.03, "Width of the D+ to PiKPi signal region (GeV/c^2)"};
   // DCAxy and DCAz selections
   Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
   // pT bins for single-track cuts
@@ -170,6 +172,9 @@ struct HfCandidateSelectorDsToKKPi {
       return false;
     }
     if (!isSelectedCandidateProngDca(candidate)) {
+      return false;
+    }
+    if (rejectCandsInDplusToPiKPiRegion && std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) < deltaMRegionDplusToPiKPi) {
       return false;
     }
     return true;

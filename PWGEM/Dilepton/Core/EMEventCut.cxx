@@ -73,3 +73,14 @@ void EMEventCut::SetRequireGoodZvtxFT0vsPV(bool flag)
   mRequireGoodZvtxFT0vsPV = flag;
   LOG(info) << "EM Event Cut, require good Zvtx between FT0 vs. PV: " << mRequireGoodZvtxFT0vsPV;
 }
+
+void EMEventCut::SetRequireNoCollInTimeRangeStandard(bool flag)
+{
+  mRequireNoCollInTimeRangeStandard = flag;
+  LOG(info) << "EM Event Cut, require No collision in time range standard: " << mRequireNoCollInTimeRangeStandard;
+}
+void EMEventCut::SetRequireNoCollInTimeRangeNarrow(bool flag)
+{
+  mRequireNoCollInTimeRangeNarrow = flag;
+  LOG(info) << "EM Event Cut, require No collision in time range narrow: " << mRequireNoCollInTimeRangeNarrow;
+}

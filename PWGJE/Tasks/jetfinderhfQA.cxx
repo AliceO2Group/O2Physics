@@ -437,21 +437,18 @@ struct JetFinderHFQATask {
     if (doprocessTracks || doprocessTracksWeighted) {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {{1200, -10.0, 110.0}, {4, 0.0, 4.0}}});
-      registry.add("h2_centrality_track_pt", "centrality vs track pT; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, 0., 200.}}});
-      registry.add("h2_centrality_track_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {500, -5.0, 5.0}}});
-      registry.add("h2_centrality_track_phi", "centrality vs track #varphi; centrality; #varphi_{track}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {160, -1.0, 7.}}});
-      registry.add("h2_centrality_track_energy", "centrality vs track energy; centrality; Energy GeV", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, 0.0, 100.0}}});
+      registry.add("h3_centrality_track_pt_track_phi", "centrality vs track pT vs track #varphi; centrality; #it{p}_{T,track} (GeV/#it{c}); #varphi_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, {160, -1.0, 7.}}});
+      registry.add("h3_centrality_track_pt_track_eta", "centrality vs track pT vs track #eta; centrality; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, {500, -5.0, 5.0}}});
+      registry.add("h3_track_pt_track_eta_track_phi", "track pT vs track #eta vs track #varphi; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}; #varphi_{track}", {HistType::kTH3F, {{200, 0., 200.}, {500, -5.0, 5.0}, {160, -1.0, 7.}}});
       if (doprocessTracksWeighted) {
         registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       }
     }
 
     if (doprocessTracksSub) {
-
-      registry.add("h2_centrality_track_pt_eventwiseconstituentsubtracted", "centrality vs track pT; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, 0., 200.}}});
-      registry.add("h2_centrality_track_eta_eventwiseconstituentsubtracted", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {500, -5.0, 5.0}}});
-      registry.add("h2_centrality_track_phi_eventwiseconstituentsubtracted", "centrality vs track #varphi; centrality; #varphi_{track}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {160, -1.0, 7.}}});
-      registry.add("h2_centrality_track_energy_eventwiseconstituentsubtracted", "centrality vs track energy; centrality; Energy GeV", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, 0.0, 100.0}}});
+      registry.add("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted", "centrality vs track pT vs track #varphi; centrality; #it{p}_{T,track} (GeV/#it{c}); #varphi_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, {160, -1.0, 7.}}});
+      registry.add("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted", "centrality vs track pT vs track #eta; centrality; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, {500, -5.0, 5.0}}});
+      registry.add("h3_track_pt_track_eta_track_phi_eventwiseconstituentsubtracted", "track pT vs track #eta vs track #varphi; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}; #varphi_{track}", {HistType::kTH3F, {{200, 0., 200.}, {500, -5.0, 5.0}, {160, -1.0, 7.}}});
     }
 
     if (doprocessMCCollisionsWeighted) {
@@ -942,10 +939,9 @@ struct JetFinderHFQATask {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      registry.fill(HIST("h2_centrality_track_pt"), collision.centrality(), track.pt(), weight);
-      registry.fill(HIST("h2_centrality_track_eta"), collision.centrality(), track.eta(), weight);
-      registry.fill(HIST("h2_centrality_track_phi"), collision.centrality(), track.phi(), weight);
-      registry.fill(HIST("h2_centrality_track_energy"), collision.centrality(), track.energy(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_phi"), collision.centrality(), track.pt(), track.phi(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_eta"), collision.centrality(), track.pt(), track.eta(), weight);
+      registry.fill(HIST("h3_track_pt_track_eta_track_phi"), track.pt(), track.eta(), track.phi(), weight);
     }
   }
 
@@ -1206,13 +1202,13 @@ struct JetFinderHFQATask {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
-    if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
       registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
       registry.fill(HIST("h_collision_trigger_events"), 4.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow) && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
       registry.fill(HIST("h_collision_trigger_events"), 5.5); // events with high pT triggered jets
     }
 
@@ -1224,19 +1220,19 @@ struct JetFinderHFQATask {
     for (auto& jet : jets) {
       for (std::size_t iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
         if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f)) {
-          if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow) && !filledJetR_Low[iJetRadius]) {
+          if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt) && !filledJetR_Low[iJetRadius]) {
             filledJetR_Low[iJetRadius] = true;
             for (double pt = 0.0; pt <= jet.pt(); pt += 1.0) {
               registry.fill(HIST("h2_jet_r_jet_pT_triggered_Low"), jet.r() / 100.0, pt);
             }
           }
-          if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh) && !filledJetR_High[iJetRadius]) {
+          if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt) && !filledJetR_High[iJetRadius]) {
             filledJetR_High[iJetRadius] = true;
             for (double pt = 0.0; pt <= jet.pt(); pt += 1.0) {
               registry.fill(HIST("h2_jet_r_jet_pT_triggered_High"), jet.r() / 100.0, pt);
             }
           }
-          if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow) && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh) && !filledJetR_Both[iJetRadius]) {
+          if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt) && !filledJetR_Both[iJetRadius]) {
             filledJetR_Both[iJetRadius] = true;
             for (double pt = 0.0; pt <= jet.pt(); pt += 1.0) {
               registry.fill(HIST("h2_jet_r_jet_pT_triggered_Both"), jet.r() / 100.0, pt);
@@ -1253,17 +1249,17 @@ struct JetFinderHFQATask {
       registry.fill(HIST("h3_jet_r_jet_eta_collision"), jet.r() / 100.0, jet.eta(), 0.0);
       registry.fill(HIST("h3_jet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 0.0);
 
-      if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow)) {
+      if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
         registry.fill(HIST("h3_jet_r_jet_pt_collision"), jet.r() / 100.0, jet.pt(), 1.0);
         registry.fill(HIST("h3_jet_r_jet_eta_collision"), jet.r() / 100.0, jet.eta(), 1.0);
         registry.fill(HIST("h3_jet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 1.0);
       }
-      if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+      if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
         registry.fill(HIST("h3_jet_r_jet_pt_collision"), jet.r() / 100.0, jet.pt(), 2.0);
         registry.fill(HIST("h3_jet_r_jet_eta_collision"), jet.r() / 100.0, jet.eta(), 2.0);
         registry.fill(HIST("h3_jet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 2.0);
       }
-      if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow) && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+      if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
         registry.fill(HIST("h3_jet_r_jet_pt_collision"), jet.r() / 100.0, jet.pt(), 3.0);
         registry.fill(HIST("h3_jet_r_jet_eta_collision"), jet.r() / 100.0, jet.eta(), 3.0);
         registry.fill(HIST("h3_jet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 3.0);
@@ -1274,17 +1270,17 @@ struct JetFinderHFQATask {
         registry.fill(HIST("h3_jet_r_jet_pt_track_eta_MB"), jet.r() / 100.0, jet.pt(), constituent.eta());
         registry.fill(HIST("h3_jet_r_jet_pt_track_phi_MB"), jet.r() / 100.0, jet.pt(), constituent.phi());
 
-        if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow)) {
+        if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
           registry.fill(HIST("h3_jet_r_jet_pt_track_pt_Triggered_Low"), jet.r() / 100.0, jet.pt(), constituent.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_track_eta_Triggered_Low"), jet.r() / 100.0, jet.pt(), constituent.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_track_phi_Triggered_Low"), jet.r() / 100.0, jet.pt(), constituent.phi());
         }
-        if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+        if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
           registry.fill(HIST("h3_jet_r_jet_pt_track_pt_Triggered_High"), jet.r() / 100.0, jet.pt(), constituent.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_track_eta_Triggered_High"), jet.r() / 100.0, jet.pt(), constituent.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_track_phi_Triggered_High"), jet.r() / 100.0, jet.pt(), constituent.phi());
         }
-        if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow) && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+        if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
           registry.fill(HIST("h3_jet_r_jet_pt_track_pt_Triggered_Both"), jet.r() / 100.0, jet.pt(), constituent.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_track_eta_Triggered_Both"), jet.r() / 100.0, jet.pt(), constituent.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_track_phi_Triggered_Both"), jet.r() / 100.0, jet.pt(), constituent.phi());
@@ -1297,19 +1293,19 @@ struct JetFinderHFQATask {
         registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_MB"), jet.r() / 100.0, jet.pt(), candidate.phi());
         registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_MB"), jet.r() / 100.0, jet.pt(), candidate.y());
 
-        if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow)) {
+        if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_pt_Triggered_Low"), jet.r() / 100.0, jet.pt(), candidate.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_eta_Triggered_Low"), jet.r() / 100.0, jet.pt(), candidate.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_Triggered_Low"), jet.r() / 100.0, jet.pt(), candidate.phi());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_Triggered_Low"), jet.r() / 100.0, jet.pt(), candidate.y());
         }
-        if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+        if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_pt_Triggered_High"), jet.r() / 100.0, jet.pt(), candidate.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_eta_Triggered_High"), jet.r() / 100.0, jet.pt(), candidate.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_Triggered_High"), jet.r() / 100.0, jet.pt(), candidate.phi());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_Triggered_High"), jet.r() / 100.0, jet.pt(), candidate.y());
         }
-        if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow) && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+        if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_pt_Triggered_Both"), jet.r() / 100.0, jet.pt(), candidate.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_eta_Triggered_Both"), jet.r() / 100.0, jet.pt(), candidate.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_Triggered_Both"), jet.r() / 100.0, jet.pt(), candidate.phi());
@@ -1326,17 +1322,17 @@ struct JetFinderHFQATask {
       registry.fill(HIST("h_track_eta_MB"), track.eta());
       registry.fill(HIST("h_track_phi_MB"), track.phi());
 
-      if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow)) {
+      if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
         registry.fill(HIST("h_track_pt_Triggered_Low"), track.pt());
         registry.fill(HIST("h_track_eta_Triggered_Low"), track.eta());
         registry.fill(HIST("h_track_phi_Triggered_Low"), track.phi());
       }
-      if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+      if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
         registry.fill(HIST("h_track_pt_Triggered_High"), track.pt());
         registry.fill(HIST("h_track_eta_Triggered_High"), track.eta());
         registry.fill(HIST("h_track_phi_Triggered_High"), track.phi());
       }
-      if (jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow) && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) {
+      if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
         registry.fill(HIST("h_track_pt_Triggered_Both"), track.pt());
         registry.fill(HIST("h_track_eta_Triggered_Both"), track.eta());
         registry.fill(HIST("h_track_phi_Triggered_Both"), track.phi());
@@ -1355,12 +1351,12 @@ struct JetFinderHFQATask {
     int hfLowTrigger = -2;
     int hfHighTrigger = -2;
     if constexpr (jethfutilities::isD0Table<CandidateTableData>()) {
-      hfLowTrigger = jetderiveddatautilities::JTrigSelChHF::chargedD0Low;
-      hfHighTrigger = jetderiveddatautilities::JTrigSelChHF::chargedD0High;
+      hfLowTrigger = jetderiveddatautilities::JTrigSel::JetD0ChLowPt;
+      hfHighTrigger = jetderiveddatautilities::JTrigSel::JetD0ChHighPt;
     }
     if constexpr (jethfutilities::isLcTable<CandidateTableData>()) {
-      hfLowTrigger = jetderiveddatautilities::JTrigSelChHF::chargedLcLow;
-      hfHighTrigger = jetderiveddatautilities::JTrigSelChHF::chargedLcHigh;
+      hfLowTrigger = jetderiveddatautilities::JTrigSel::JetLcChLowPt;
+      hfHighTrigger = jetderiveddatautilities::JTrigSel::JetLcChHighPt;
     }
 
     registry.fill(HIST("h_collision_hftrigger_events"), 0.5); // all events
@@ -1372,28 +1368,28 @@ struct JetFinderHFQATask {
       return;
     }
     registry.fill(HIST("h_collision_hftrigger_events"), 2.5); // events with sel8()
-    if (jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedD0Low)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetD0ChLowPt)) {
       registry.fill(HIST("h_collision_hftrigger_events"), 3.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedD0High)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetD0ChHighPt)) {
       registry.fill(HIST("h_collision_hftrigger_events"), 4.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedD0Low) && jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedD0High)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetD0ChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetD0ChHighPt)) {
       registry.fill(HIST("h_collision_hftrigger_events"), 5.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedLcLow)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetLcChLowPt)) {
       registry.fill(HIST("h_collision_hftrigger_events"), 6.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedLcHigh)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetLcChHighPt)) {
       registry.fill(HIST("h_collision_hftrigger_events"), 7.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedLcLow) && jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedLcHigh)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetLcChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetLcChHighPt)) {
       registry.fill(HIST("h_collision_hftrigger_events"), 8.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedD0Low) && jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedLcLow)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetD0ChLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetLcChLowPt)) {
       registry.fill(HIST("h_collision_hftrigger_events"), 9.5); // events with high pT triggered jets
     }
-    if (jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedD0High) && jetderiveddatautilities::selectChargedHFTrigger(collision, jetderiveddatautilities::JTrigSelChHF::chargedLcHigh)) {
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetD0ChHighPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetLcChHighPt)) {
       registry.fill(HIST("h_collision_hftrigger_events"), 10.5); // events with high pT triggered jets
     }
 
@@ -1405,13 +1401,13 @@ struct JetFinderHFQATask {
     for (auto& jet : jets) {
       for (std::size_t iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
         if (jet.r() == round(jetRadiiValues[iJetRadius] * 100.0f)) {
-          if (jetderiveddatautilities::selectChargedHFTrigger(collision, hfLowTrigger) && !filledJetHFR_Low[iJetRadius]) {
+          if (jetderiveddatautilities::selectTrigger(collision, hfLowTrigger) && !filledJetHFR_Low[iJetRadius]) {
             filledJetHFR_Low[iJetRadius] = true;
             for (double pt = 0.0; pt <= jet.pt(); pt += 1.0) {
               registry.fill(HIST("h2_jet_r_jet_pT_triggered_HFlow"), jet.r() / 100.0, pt);
             }
           }
-          if (jetderiveddatautilities::selectChargedHFTrigger(collision, hfHighTrigger) && !filledJetHFR_High[iJetRadius]) {
+          if (jetderiveddatautilities::selectTrigger(collision, hfHighTrigger) && !filledJetHFR_High[iJetRadius]) {
             filledJetHFR_High[iJetRadius] = true;
             for (double pt = 0.0; pt <= jet.pt(); pt += 1.0) {
               registry.fill(HIST("h2_jet_r_jet_pT_triggered_HFhigh"), jet.r() / 100.0, pt);
@@ -1434,17 +1430,17 @@ struct JetFinderHFQATask {
       registry.fill(HIST("h3_hfjet_r_jet_eta_collision"), jet.r() / 100.0, jet.eta(), 0.0);
       registry.fill(HIST("h3_hfjet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 0.0);
 
-      if (jetderiveddatautilities::selectChargedHFTrigger(collision, hfLowTrigger)) {
+      if (jetderiveddatautilities::selectTrigger(collision, hfLowTrigger)) {
         registry.fill(HIST("h3_hfjet_r_jet_pt_collision"), jet.r() / 100.0, jet.pt(), 1.0);
         registry.fill(HIST("h3_hfjet_r_jet_eta_collision"), jet.r() / 100.0, jet.eta(), 1.0);
         registry.fill(HIST("h3_hfjet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 1.0);
       }
-      if (jetderiveddatautilities::selectChargedHFTrigger(collision, hfHighTrigger)) {
+      if (jetderiveddatautilities::selectTrigger(collision, hfHighTrigger)) {
         registry.fill(HIST("h3_hfjet_r_jet_pt_collision"), jet.r() / 100.0, jet.pt(), 2.0);
         registry.fill(HIST("h3_hfjet_r_jet_eta_collision"), jet.r() / 100.0, jet.eta(), 2.0);
         registry.fill(HIST("h3_hfjet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 2.0);
       }
-      if (jetderiveddatautilities::selectChargedHFTrigger(collision, hfLowTrigger) && jetderiveddatautilities::selectChargedHFTrigger(collision, hfHighTrigger)) {
+      if (jetderiveddatautilities::selectTrigger(collision, hfLowTrigger) && jetderiveddatautilities::selectTrigger(collision, hfHighTrigger)) {
         registry.fill(HIST("h3_hfjet_r_jet_pt_collision"), jet.r() / 100.0, jet.pt(), 3.0);
         registry.fill(HIST("h3_hfjet_r_jet_eta_collision"), jet.r() / 100.0, jet.eta(), 3.0);
         registry.fill(HIST("h3_hfjet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 3.0);
@@ -1457,13 +1453,13 @@ struct JetFinderHFQATask {
         registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_all"), jet.r() / 100.0, jet.pt(), candidate.phi());
         registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_all"), jet.r() / 100.0, jet.pt(), candidate.y());
 
-        if (jetderiveddatautilities::selectChargedHFTrigger(collision, hfLowTrigger)) {
+        if (jetderiveddatautilities::selectTrigger(collision, hfLowTrigger)) {
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_pt_triggered_HFlow"), jet.r() / 100.0, jet.pt(), candidate.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_eta_triggered_HFlow"), jet.r() / 100.0, jet.pt(), candidate.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_triggered_HFlow"), jet.r() / 100.0, jet.pt(), candidate.phi());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_y_triggered_HFlow"), jet.r() / 100.0, jet.pt(), candidate.y());
         }
-        if (jetderiveddatautilities::selectChargedHFTrigger(collision, hfHighTrigger)) {
+        if (jetderiveddatautilities::selectTrigger(collision, hfHighTrigger)) {
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_pt_triggered_HFhigh"), jet.r() / 100.0, jet.pt(), candidate.pt());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_eta_triggered_HFhigh"), jet.r() / 100.0, jet.pt(), candidate.eta());
           registry.fill(HIST("h3_jet_r_jet_pt_candidate_phi_triggered_HFhigh"), jet.r() / 100.0, jet.pt(), candidate.phi());
@@ -1515,10 +1511,9 @@ struct JetFinderHFQATask {
     for (auto const& candidate : candidates) {
 
       for (auto const& track : jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0CandidateTracks, perLcCandidateTracks, perBplusCandidateTracks, perDielectronCandidateTracks)) {
-        registry.fill(HIST("h2_centrality_track_pt_eventwiseconstituentsubtracted"), collision.centrality(), track.pt());
-        registry.fill(HIST("h2_centrality_track_eta_eventwiseconstituentsubtracted"), collision.centrality(), track.eta());
-        registry.fill(HIST("h2_centrality_track_phi_eventwiseconstituentsubtracted"), collision.centrality(), track.phi());
-        registry.fill(HIST("h2_centrality_track_energy_eventwiseconstituentsubtracted"), collision.centrality(), track.energy());
+        registry.fill(HIST("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.phi());
+        registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.eta());
+        registry.fill(HIST("h3_track_pt_track_eta_track_phi_eventwiseconstituentsubtracted"), track.pt(), track.eta(), track.phi());
       }
       break; // currently only fills it for the first candidate in the event (not pT ordered)
     }

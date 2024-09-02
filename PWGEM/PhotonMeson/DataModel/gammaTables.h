@@ -13,14 +13,7 @@
 #include <TMath.h>
 
 #include "Common/Core/RecoDecay.h"
-// #include "Framework/AnalysisDataModel.h"
-// #include "Common/DataModel/PIDResponse.h"
-// #include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/TrackSelectionTables.h"
-// #include "Common/DataModel/CaloClusters.h"
-// #include "Common/DataModel/Multiplicity.h"
-// #include "Common/DataModel/Centrality.h"
-// #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/CaloClusters.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
@@ -201,6 +194,14 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
 
 // iterators
 using V0Leg = V0Legs::iterator;
+
+namespace emevent
+{
+DECLARE_SOA_COLUMN(NgPCM, ngpcm, int);
+} // namespace emevent
+
+DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgPCM); // joinable to EMEvents or aod::Collisions
+using EMEventNgPCM = EMEventsNgPCM::iterator;
 
 namespace v0photonkf
 {

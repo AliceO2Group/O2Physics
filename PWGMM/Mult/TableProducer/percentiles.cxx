@@ -42,16 +42,15 @@ struct Binner {
   Preslice<Particles> perMcCol = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
-  ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
+  ConfigurableAxis multBinning{"multBinning", {302, -1.5, 300.5}, ""};
   ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100}, ""};
-  AxisSpec SmallMultAxis = {100, 0.5, 100.5};
 
   // The objects are uploaded with https://alimonitor.cern.ch/ccdb/upload.jsp
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "Users/a/aalkin/gencentralities", "base path to the ccdb object"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
-  bool isChargedParticle(int code)
+  bool isChargedParticle(int code) const
   {
     static auto p = pdg->GetParticle(code);
     if (p == nullptr) {
@@ -86,7 +85,6 @@ struct Binner {
   void init(InitContext const&)
   {
     AxisSpec MultAxis = {multBinning};
-    AxisSpec CentAxis = {centBinning};
     h.add({"hFT0M", "; N_{part} in FT0M acc", {HistType::kTH1F, {MultAxis}}});
     h.add({"hFT0C", "; N_{part} in FT0C acc", {HistType::kTH1F, {MultAxis}}});
     if (dobin) {
@@ -95,10 +93,13 @@ struct Binner {
       ccdb->setLocalObjectValidityChecking();
     }
     if (docalibrateAdvanced) {
-      h.add({"hCorrelate", " ; N_{part}^{FT0M}; N_{part}^{FT0C}; N_{trk}^{#eta = 0}", {HistType::kTHnSparseF, {MultAxis, MultAxis, SmallMultAxis}}});
+      centBinning.value.insert(centBinning.value.begin() + 1, {-2});
+      AxisSpec ExtraCentAxis = {centBinning};
+      h.add({"hCorrelate", " ; N_{part}^{FT0M}; N_{part}^{FT0C}; N_{trk}^{#eta = 0}", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, ExtraCentAxis}}});
     }
     if (dogetData) {
-      h.add({"hTrkAt0vsFT0M", " ; N_{trk}^{#eta = 0}; FT0M percentile", {HistType::kTH2F, {SmallMultAxis, CentAxis}}});
+      AxisSpec CentAxis = {centBinning};
+      h.add({"hTrkAt0vsFT0M", " ; N_{trk}^{#eta = 0}; FT0M percentile", {HistType::kTH2F, {MultAxis, CentAxis}}});
     }
   }
 
@@ -130,7 +131,7 @@ struct Binner {
 
   PROCESS_SWITCH(Binner, calibrate, "Create binnings", true);
 
-  using ExColsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using ExColsMCFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
   using ExColsCentFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   // require a mix of ITS+TPC and ITS-only tracks (filters on the same table are automatically combined with &&)
@@ -142,7 +143,7 @@ struct Binner {
   Filter fTracksEta = nabs(aod::track::eta) < 0.5f;
 
   void calibrateAdvanced(aod::McCollision const& mcc,
-                         soa::SmallGroups<ExColsMC> const& collisions,
+                         soa::SmallGroups<ExColsMCFT0M> const& collisions,
                          Particles const&,
                          soa::Filtered<Trks> const& tracks)
   {
@@ -165,17 +166,22 @@ struct Binner {
     h.fill(HIST("hFT0C"), nFT0C);
 
     bool selected = false;
+    float cent = 1.e3;
     for (auto& c : collisions) {
       if (isCollisionSelectedMC(c)) {
         selected = true;
         auto sample = tracks.sliceBy(perCol, c.globalIndex());
         nTrkAt0 += sample.size();
+        if (c.centFT0M() < cent) {
+          cent = c.centFT0M();
+        }
       }
     }
     if (!selected) {
-      return;
+      nTrkAt0 = -1;
+      cent = -1;
     }
-    h.fill(HIST("hCorrelate"), nFT0M, nFT0C, nTrkAt0);
+    h.fill(HIST("hCorrelate"), nFT0M, nFT0C, nTrkAt0, cent);
   }
 
   PROCESS_SWITCH(Binner, calibrateAdvanced, "Create binning matched to dN/deta", false);

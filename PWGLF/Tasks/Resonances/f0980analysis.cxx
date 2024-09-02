@@ -33,8 +33,6 @@ using namespace o2::constants::physics;
 
 struct f0980analysis {
   SliceCache cache;
-  Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   HistogramRegistry histos{
     "histos",
     {},
@@ -52,6 +50,7 @@ struct f0980analysis {
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
+  Configurable<bool> cfgFindRT{"cfgFindRT", false, "boolean for RT analysis"};
 
   // Track selection
   Configurable<bool> cfgPrimaryTrack{
@@ -110,13 +109,14 @@ struct f0980analysis {
     AxisSpec EPqaAxis = {200, -constants::math::PI, constants::math::PI};
     AxisSpec EPresAxis = {200, -2, 2};
 
-    histos.add("hInvMass_f0980_US", "unlike invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
-    histos.add("hInvMass_f0980_LSpp", "++ invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
-    histos.add("hInvMass_f0980_LSmm", "-- invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
-
+    if (cfgFindRT) {
+      histos.add("hInvMass_f0980_US", "unlike invariant mass",
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+      histos.add("hInvMass_f0980_LSpp", "++ invariant mass",
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+      histos.add("hInvMass_f0980_LSmm", "-- invariant mass",
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+    }
     histos.add("hInvMass_f0980_US_EPA", "unlike invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, EPAxis}});
     histos.add("hInvMass_f0980_LSpp_EPA", "++ invariant mass",
@@ -228,12 +228,15 @@ struct f0980analysis {
     double LHpt = 0.;
     double LHphi = 0.;
     double relPhi = 0.;
-    for (auto& trk : dTracks) {
-      if (trk.pt() > LHpt) {
-        LHpt = trk.pt();
-        LHphi = trk.phi();
+    if (cfgFindRT) {
+      for (auto& trk : dTracks) {
+        if (trk.pt() > LHpt) {
+          LHpt = trk.pt();
+          LHphi = trk.phi();
+        }
       }
     }
+
     histos.fill(HIST("QA/EPhist"), collision.cent(), collision.evtPl());
     histos.fill(HIST("QA/hEPResAB"), collision.cent(), collision.evtPlResAB());
     histos.fill(HIST("QA/hEPResAC"), collision.cent(), collision.evtPlResBC());
@@ -242,7 +245,7 @@ struct f0980analysis {
 
     TLorentzVector Pion1, Pion2, Reco;
     for (auto& [trk1, trk2] :
-         combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
+         combinations(CombinationsStrictlyUpperIndexPolicy(dTracks, dTracks))) {
       if (trk1.index() == trk2.index()) {
         if (!SelTrack(trk1))
           continue;
@@ -270,8 +273,10 @@ struct f0980analysis {
       }
 
       if (trk1.sign() * trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
-                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        if (cfgFindRT) {
+          histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
+                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        }
         histos.fill(HIST("hInvMass_f0980_US_EPA"), Reco.M(), Reco.Pt(),
                     collision.cent(), relPhi);
         if constexpr (IsMC) {
@@ -285,13 +290,17 @@ struct f0980analysis {
                       collision.cent());
         }
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-        histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(),
-                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        if (cfgFindRT) {
+          histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(),
+                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        }
         histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), Reco.M(), Reco.Pt(),
                     collision.cent(), relPhi);
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(),
-                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        if (cfgFindRT) {
+          histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(),
+                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        }
         histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(),
                     collision.cent(), relPhi);
       }

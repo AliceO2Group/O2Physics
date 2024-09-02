@@ -20,8 +20,12 @@ FlowPtContainer::FlowPtContainer() : TNamed("name", "name"),
                                      mpar(0),
                                      fillCounter(0),
                                      fEventWeight(kEventWeight::kUnity),
+                                     fUseCentralMoments(true),
+                                     sumP(),
                                      corrNum(),
-                                     corrDen() {}
+                                     corrDen(),
+                                     cmNum(),
+                                     cmDen() {}
 FlowPtContainer::~FlowPtContainer()
 {
   delete fCMTermList;
@@ -36,8 +40,12 @@ FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      mpar(0),
                                                      fillCounter(0),
                                                      fEventWeight(kEventWeight::kUnity),
+                                                     fUseCentralMoments(true),
+                                                     sumP(),
                                                      corrNum(),
-                                                     corrDen() {}
+                                                     corrDen(),
+                                                     cmNum(),
+                                                     cmDen() {}
 FlowPtContainer::FlowPtContainer(const char* name, const char* title, int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs) : TNamed(name, title),
                                                                                                                                                 fCMTermList(0),
                                                                                                                                                 fCorrList(0),
@@ -47,8 +55,12 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title, int nbinsx
                                                                                                                                                 mpar(m),
                                                                                                                                                 fillCounter(0),
                                                                                                                                                 fEventWeight(kEventWeight::kUnity),
+                                                                                                                                                fUseCentralMoments(true),
+                                                                                                                                                sumP(),
                                                                                                                                                 corrNum(),
-                                                                                                                                                corrDen()
+                                                                                                                                                corrDen(),
+                                                                                                                                                cmNum(),
+                                                                                                                                                cmDen()
 {
   Initialise(nbinsx, xbins, m, configs);
 };
@@ -61,8 +73,12 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title, int nbinsx
                                                                                                                                                             mpar(m),
                                                                                                                                                             fillCounter(0),
                                                                                                                                                             fEventWeight(kEventWeight::kUnity),
+                                                                                                                                                            fUseCentralMoments(true),
+                                                                                                                                                            sumP(),
                                                                                                                                                             corrNum(),
-                                                                                                                                                            corrDen()
+                                                                                                                                                            corrDen(),
+                                                                                                                                                            cmNum(),
+                                                                                                                                                            cmDen()
 {
   Initialise(nbinsx, xlow, xhigh, m, configs);
 };
@@ -100,7 +116,12 @@ void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& 
     for (auto m(1); m <= mpar; ++m) {
       if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
         continue;
-      fCovList->Add(new BootstrapProfile(Form("%s_mpt%i", configs.GetHeads()[i].c_str(), m), Form("%s_mpt%i", configs.GetHeads()[i].c_str(), m), nMultiBins, &multiBins[0]));
+      if (fUseCentralMoments) {
+        for (auto j = 0; j < m; ++j)
+          fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), nMultiBins, &multiBins[0]));
+      } else {
+        fCovList->Add(new BootstrapProfile(Form("%spt%i", configs.GetHeads()[i].c_str(), m), Form("%spt%i", configs.GetHeads()[i].c_str(), m), nMultiBins, &multiBins[0]));
+      }
     }
   }
   if (nsub) {
@@ -136,7 +157,12 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
     for (auto m(1); m <= mpar; ++m) {
       if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
         continue;
-      fCovList->Add(new BootstrapProfile(Form("%s_mpt%i", configs.GetHeads()[i].c_str(), m + 1), Form("%s_mpt%i", configs.GetHeads()[i].c_str(), m + 1), nbinsx, xbins));
+      if (fUseCentralMoments) {
+        for (auto j = 0; j < m; ++j)
+          fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), nbinsx, xbins));
+      } else {
+        fCovList->Add(new BootstrapProfile(Form("%spt%i", configs.GetHeads()[i].c_str(), m), Form("%spt%i", configs.GetHeads()[i].c_str(), m), nbinsx, xbins));
+      }
     }
   }
   if (nsub) {
@@ -171,7 +197,12 @@ void FlowPtContainer::Initialise(int nbinsx, double xlow, double xhigh, const in
     for (auto m(1); m <= mpar; ++m) {
       if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
         continue;
-      fCovList->Add(new BootstrapProfile(Form("%s_mpt%i", configs.GetHeads()[i].c_str(), m + 1), Form("%s_mpt%i", configs.GetHeads()[i].c_str(), m + 1), nbinsx, xlow, xhigh));
+      if (fUseCentralMoments) {
+        for (auto j = 0; j < m; ++j)
+          fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), nbinsx, xlow, xhigh));
+      } else {
+        fCovList->Add(new BootstrapProfile(Form("%spt%i", configs.GetHeads()[i].c_str(), m), Form("%spt%i", configs.GetHeads()[i].c_str(), m), nbinsx, xlow, xhigh));
+      }
     }
   }
   if (nsub) {
@@ -226,7 +257,7 @@ void FlowPtContainer::FillPtProfiles(const double& centmult, const double& rn)
   }
   return;
 }
-void FlowPtContainer::FillVnPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+void FlowPtContainer::FillVnPtCorrProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
 {
   if (!mask)
     return;
@@ -239,6 +270,21 @@ void FlowPtContainer::FillVnPtProfiles(const double& centmult, const double& flo
   }
   return;
 }
+void FlowPtContainer::FillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+{
+  if (!mask)
+    return;
+  for (auto m(1); m <= mpar; ++m) {
+    if (!(mask & (1 << (m - 1))))
+      continue;
+    for (auto i = 0; i < m; ++i) {
+      if (cmDen[m - 1] != 0)
+        dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * cmNum[m * (m - 1) / 2 + i], (fEventWeight == kUnity) ? 1.0 : flowtuples * cmDen[m - 1], rn);
+      ++fillCounter;
+    }
+  }
+  return;
+}
 void FlowPtContainer::FillCMProfiles(const double& centmult, const double& rn)
 {
   if (sumP[GetVectorIndex(0, 0)] == 0)
@@ -247,28 +293,39 @@ void FlowPtContainer::FillCMProfiles(const double& centmult, const double& rn)
   double tau2 = sumP[GetVectorIndex(3, 0)] / pow(sumP[GetVectorIndex(1, 0)], 3);
   double tau3 = sumP[GetVectorIndex(4, 0)] / pow(sumP[GetVectorIndex(1, 0)], 4);
   // double tau4 = sumP[GetVectorIndex(5,0)]/pow(sumP[GetVectorIndex(1,0)],5);
-  double weight1 = 1 - tau1;
-  double weight2 = 1 - 3 * tau1 + 2 * tau2;
-  double weight3 = 1 - 6 * tau1 + 3 * tau1 * tau1 + 8 * tau2 - 6 * tau3;
+  cmDen.push_back(sumP[GetVectorIndex(1, 0)]);
+  cmDen.push_back(1 - tau1);
+  cmDen.push_back(1 - 3 * tau1 + 2 * tau2);
+  cmDen.push_back(1 - 6 * tau1 + 3 * tau1 * tau1 + 8 * tau2 - 6 * tau3);
   // double weight4 = 1 - 10*tau1 + 15*tau1*tau1 + 20*tau2 - 20*tau1*tau2 - 30*tau3 + 24*tau4;
-  if (mpar < 1 || sumP[GetVectorIndex(1, 0)] == 0)
+  if (mpar < 1 || cmDen[0] == 0)
     return;
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->FillProfile(centmult, sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)], (fEventWeight == kEventWeight::kUnity) ? 1.0 : sumP[GetVectorIndex(1, 0)], rn);
-  if (mpar < 2 || sumP[GetVectorIndex(2, 0)] == 0 || weight1 == 0)
+  cmNum.push_back(sumP[GetVectorIndex(1, 1)] / cmDen[0]);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->FillProfile(centmult, cmNum[0], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[0], rn);
+  if (mpar < 2 || sumP[GetVectorIndex(2, 0)] == 0 || cmDen[1] == 0)
     return;
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(1))->FillProfile(centmult, 1 / weight1 * (sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight1, rn);
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(2))->FillProfile(centmult, 1 / weight1 * (-2 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 2 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight1, rn);
-  if (mpar < 3 || sumP[GetVectorIndex(3, 0)] == 0 || weight2 == 0)
+  cmNum.push_back(1 / cmDen[1] * (sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(1))->FillProfile(centmult, cmNum[1], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[1], rn);
+  cmNum.push_back(1 / cmDen[1] * (-2 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 2 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(2))->FillProfile(centmult, cmNum[2], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[1], rn);
+  if (mpar < 3 || sumP[GetVectorIndex(3, 0)] == 0 || cmDen[2] == 0)
     return;
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(3))->FillProfile(centmult, 1 / weight2 * (sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 3 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 2 * tau2 * sumP[GetVectorIndex(3, 3)] / sumP[GetVectorIndex(3, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight2, rn);
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(4))->FillProfile(centmult, 1 / weight2 * (-3 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 3 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] + 6 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau2 * sumP[GetVectorIndex(3, 2)] / sumP[GetVectorIndex(3, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight2, rn);
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(5))->FillProfile(centmult, 1 / weight2 * (3 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] - 3 * tau1 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 6 * tau2 * sumP[GetVectorIndex(3, 1)] / sumP[GetVectorIndex(3, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight2, rn);
-  if (mpar < 4 || sumP[GetVectorIndex(4, 0)] == 0 || weight3 == 0)
+  cmNum.push_back(1 / cmDen[2] * (sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 3 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 2 * tau2 * sumP[GetVectorIndex(3, 3)] / sumP[GetVectorIndex(3, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(3))->FillProfile(centmult, cmNum[3], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[2], rn);
+  cmNum.push_back(1 / cmDen[2] * (-3 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 3 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] + 6 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau2 * sumP[GetVectorIndex(3, 2)] / sumP[GetVectorIndex(3, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(4))->FillProfile(centmult, cmNum[4], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[2], rn);
+  cmNum.push_back(1 / cmDen[2] * (3 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] - 3 * tau1 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 6 * tau2 * sumP[GetVectorIndex(3, 1)] / sumP[GetVectorIndex(3, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(5))->FillProfile(centmult, cmNum[5], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[2], rn);
+  if (mpar < 4 || sumP[GetVectorIndex(4, 0)] == 0 || cmDen[3] == 0)
     return;
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(6))->FillProfile(centmult, 1 / weight3 * (sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 3 * tau1 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] + 8 * tau2 * sumP[GetVectorIndex(3, 3)] / sumP[GetVectorIndex(3, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau3 * sumP[GetVectorIndex(4, 4)] / sumP[GetVectorIndex(4, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight3, rn);
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(7))->FillProfile(centmult, 1 / weight3 * (-4 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 12 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 12 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 12 * tau1 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] - 8 * tau2 * sumP[GetVectorIndex(3, 3)] / sumP[GetVectorIndex(3, 0)] - 24 * tau2 * sumP[GetVectorIndex(3, 2)] / sumP[GetVectorIndex(3, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 24 * tau3 * sumP[GetVectorIndex(4, 3)] / sumP[GetVectorIndex(4, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight3, rn);
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(8))->FillProfile(centmult, 1 / weight3 * (6 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] - 24 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau1 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 6 * tau1 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] + 12 * tau1 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] + 24 * tau2 * sumP[GetVectorIndex(3, 2)] / sumP[GetVectorIndex(3, 0)] + 24 * tau2 * sumP[GetVectorIndex(3, 1)] / sumP[GetVectorIndex(3, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 36 * tau3 * sumP[GetVectorIndex(4, 2)] / sumP[GetVectorIndex(4, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight3, rn);
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(9))->FillProfile(centmult, 1 / weight3 * (-4 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 12 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] + 12 * tau1 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 12 * tau1 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] - 24 * tau2 * sumP[GetVectorIndex(3, 1)] / sumP[GetVectorIndex(3, 0)] - 8 * tau2 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 24 * tau3 * sumP[GetVectorIndex(4, 1)] / sumP[GetVectorIndex(4, 0)]), (fEventWeight == kEventWeight::kUnity) ? 1.0 : weight3, rn);
+  cmNum.push_back(1 / cmDen[3] * (sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 3 * tau1 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] + 8 * tau2 * sumP[GetVectorIndex(3, 3)] / sumP[GetVectorIndex(3, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau3 * sumP[GetVectorIndex(4, 4)] / sumP[GetVectorIndex(4, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(6))->FillProfile(centmult, cmNum[6], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[3], rn);
+  cmNum.push_back(1 / cmDen[3] * (-4 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 12 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 12 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 12 * tau1 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] - 8 * tau2 * sumP[GetVectorIndex(3, 3)] / sumP[GetVectorIndex(3, 0)] - 24 * tau2 * sumP[GetVectorIndex(3, 2)] / sumP[GetVectorIndex(3, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 24 * tau3 * sumP[GetVectorIndex(4, 3)] / sumP[GetVectorIndex(4, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(7))->FillProfile(centmult, cmNum[7], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[3], rn);
+  cmNum.push_back(1 / cmDen[3] * (6 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] - 24 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 6 * tau1 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 6 * tau1 * tau1 * sumP[GetVectorIndex(2, 2)] / sumP[GetVectorIndex(2, 0)] + 12 * tau1 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] + 24 * tau2 * sumP[GetVectorIndex(3, 2)] / sumP[GetVectorIndex(3, 0)] + 24 * tau2 * sumP[GetVectorIndex(3, 1)] / sumP[GetVectorIndex(3, 0)] * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 36 * tau3 * sumP[GetVectorIndex(4, 2)] / sumP[GetVectorIndex(4, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(8))->FillProfile(centmult, cmNum[8], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[3], rn);
+  cmNum.push_back(1 / cmDen[3] * (-4 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 12 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] + 12 * tau1 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] - 12 * tau1 * tau1 * sumP[GetVectorIndex(2, 1)] / sumP[GetVectorIndex(2, 0)] - 24 * tau2 * sumP[GetVectorIndex(3, 1)] / sumP[GetVectorIndex(3, 0)] - 8 * tau2 * sumP[GetVectorIndex(1, 1)] / sumP[GetVectorIndex(1, 0)] + 24 * tau3 * sumP[GetVectorIndex(4, 1)] / sumP[GetVectorIndex(4, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(9))->FillProfile(centmult, cmNum[9], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[3], rn);
   return;
 }
 double FlowPtContainer::OrderedAddition(std::vector<double> vec)
