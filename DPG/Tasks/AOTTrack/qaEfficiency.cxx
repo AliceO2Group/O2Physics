@@ -423,8 +423,7 @@ struct QaEfficiency {
       hPtRadiusItsTpcTer[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/ter/radius/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
       hPtRadiusItsTpcTofTer[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/ter/radius/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
       hPtRadiusGeneratedTer[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/ter/radius/generated", PDGs[histogramIndex]), "Generated " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
-
-     }
+   }
 
     LOG(info) << "Done with making histograms for particle: " << partName;
   }
@@ -546,7 +545,7 @@ struct QaEfficiency {
       
       makeEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpcPrm[histogramIndex]);
       makeEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTofPrm[histogramIndex]);
-
+      
       makeEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpcStr[histogramIndex]);
       makeEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTofStr[histogramIndex]);
       
@@ -1228,8 +1227,6 @@ struct QaEfficiency {
       hPtRadiusGeneratedPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
       hPtRadiusGeneratedStr[histogramIndex]->Fill(mcParticle.pt(), radius);
       hPtRadiusGeneratedTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-
-
     }
   }
 
@@ -1352,13 +1349,13 @@ struct QaEfficiency {
     }
     fillEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpc[histogramIndex], hPtRadiusGenerated[histogramIndex]);
     fillEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTof[histogramIndex], hPtRadiusGenerated[histogramIndex]);
-      
+    
     fillEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpcPrm[histogramIndex], hPtRadiusGeneratedPrm[histogramIndex]);
     fillEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTofPrm[histogramIndex], hPtRadiusGeneratedPrm[histogramIndex]);
-      
+    
     fillEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpcStr[histogramIndex], hPtRadiusGeneratedStr[histogramIndex]);
     fillEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTofStr[histogramIndex], hPtRadiusGeneratedStr[histogramIndex]);
-      
+    
     fillEfficiency2D("ITS-TPC_vsPt_vsRadius", hPtRadiusItsTpcTer[histogramIndex], hPtRadiusGeneratedTer[histogramIndex]);
     fillEfficiency2D("ITS-TPC-TOF_vsPt_vsRadius", hPtRadiusItsTpcTofTer[histogramIndex], hPtRadiusGeneratedTer[histogramIndex]);
   }
