@@ -423,7 +423,7 @@ struct QaEfficiency {
       hPtRadiusItsTpcTer[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/ter/radius/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
       hPtRadiusItsTpcTofTer[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/ter/radius/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
       hPtRadiusGeneratedTer[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/ter/radius/generated", PDGs[histogramIndex]), "Generated " + tagPt + " vs Radius", kTH2D, {axisPt, axisRadius});
-   }
+    }
 
     LOG(info) << "Done with making histograms for particle: " << partName;
   }
