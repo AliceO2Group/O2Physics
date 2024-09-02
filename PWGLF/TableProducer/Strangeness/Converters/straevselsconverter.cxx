@@ -20,12 +20,30 @@ using namespace o2::framework;
 struct straevselsconverter {
   Produces<aod::StraEvSels_001> straEvSels_001;
 
-  void process(aod::StraEvSels_000 const& straEvSels_000)
+  void process(soa::Join<aod::StraEvSels_000, aod::StraRawCents_004> const& straEvSels_000_RawCents_004)
   {
-    for (auto& values : straEvSels_000) {
+    for (auto& values : straEvSels_000_RawCents_004) {
       straEvSels_001(values.sel8(),
                      values.selection_raw(),
-                     -1 /*dummy occupancy value*/);
+                     values.multFT0A(),
+                     values.multFT0C(),
+                     values.multFT0A(),
+                     0 /*dummy FDDA value*/,
+                     0 /*dummy FDDC value*/,
+                     values.multNTracksPVeta1(),
+                     values.multPVTotalContributors(),
+                     values.multNTracksGlobal(),
+                     values.multNTracksITSTPC(),
+                     values.multAllTracksTPCOnly(),
+                     values.multAllTracksITSTPC(),
+                     values.multZNA(),
+                     values.multZNC(),
+                     values.multZEM1(),
+                     values.multZEM2(),
+                     values.multZPA(),
+                     values.multZPC(),
+                     values.trackOccupancyInTimeRange(),
+                     -1 /*dummy gap side value*/);
     }
   }
 };

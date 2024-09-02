@@ -75,8 +75,7 @@ struct strangederivedbuilder {
   Produces<aod::StraMCCollisions> strangeMCColl;   // characterises collisions / MC
   Produces<aod::StraMCCollMults> strangeMCMults;   // characterises collisions / MC mults
   Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality
-  Produces<aod::StraRawCents> strangeRawCents;     // characterises collisions / centrality
-  Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / sel8 selection
+  Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / centrality / sel8 selection
   Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
   Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
   Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
@@ -273,39 +272,37 @@ struct strangederivedbuilder {
       auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
       auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
       auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
+      // isSGEvent.value = 0 --> single gap, A side
+      //                   1 --> single gap, C side
+      //                   2 --> double gap, both A and C side
+      //                   3 --> neither A or C
 
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      collision.centFT0C(), collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw(), isSGEvent.value);
-        // isSGEvent.value = 0 --> single gap, A side
-        //                   1 --> single gap, C side
-        //                   2 --> double gap, both A and C side
-        //                   3 --> neither A or C
+        strangeEvSels(collision.sel8(), collision.selection_raw(), 
+                      collision.multFT0A() * static_cast<float>(fillRawFT0A),
+                      collision.multFT0C() * static_cast<float>(fillRawFT0C),
+                      collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                      collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                      collision.multFDDC() * static_cast<float>(fillRawFDDC),
+                      collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
+                      collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multZNA() * static_cast<float>(fillRawZDC),
+                      collision.multZNC() * static_cast<float>(fillRawZDC),
+                      collision.multZEM1() * static_cast<float>(fillRawZDC),
+                      collision.multZEM2() * static_cast<float>(fillRawZDC),
+                      collision.multZPA() * static_cast<float>(fillRawZDC),
+                      collision.multZPC() * static_cast<float>(fillRawZDC),
+                      collision.trackOccupancyInTimeRange(),
+                      isSGEvent.value);
         strangeStamps(bc.runNumber(), bc.timestamp());
-
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawFDDA || fillRawFDDC || fillRawNTracksEta1 || fillRawZDC) {
-          strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
-                          collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
-                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
-                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
-                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
-                          collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multZNA() * static_cast<float>(fillRawZDC),
-                          collision.multZNC() * static_cast<float>(fillRawZDC),
-                          collision.multZEM1() * static_cast<float>(fillRawZDC),
-                          collision.multZEM2() * static_cast<float>(fillRawZDC),
-                          collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC),
-                          collision.trackOccupancyInTimeRange());
-        }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
         v0collref(strangeColl.lastIndex());
@@ -341,39 +338,37 @@ struct strangederivedbuilder {
       auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
       auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
       auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
+      // isSGEvent.value = 0 --> single gap, A side
+      //                   1 --> single gap, C side
+      //                   2 --> double gap, both A and C side
+      //                   3 --> neither A or C
 
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw(), isSGEvent.value);
-        // isSGEvent.value = 0 --> single gap, A side
-        //                   1 --> single gap, C side
-        //                   2 --> double gap, both A and C side
-        //                   3 --> neither A or C
+        strangeEvSels(collision.sel8(), collision.selection_raw(), 
+                      collision.multFT0A() * static_cast<float>(fillRawFT0A),
+                      collision.multFT0C() * static_cast<float>(fillRawFT0C),
+                      collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                      collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                      collision.multFDDC() * static_cast<float>(fillRawFDDC),
+                      collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
+                      collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multZNA() * static_cast<float>(fillRawZDC),
+                      collision.multZNC() * static_cast<float>(fillRawZDC),
+                      collision.multZEM1() * static_cast<float>(fillRawZDC),
+                      collision.multZEM2() * static_cast<float>(fillRawZDC),
+                      collision.multZPA() * static_cast<float>(fillRawZDC),
+                      collision.multZPC() * static_cast<float>(fillRawZDC),
+                      collision.trackOccupancyInTimeRange(),
+                      isSGEvent.value);
         strangeStamps(bc.runNumber(), bc.timestamp());
-
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawFDDA || fillRawFDDC || fillRawNTracksEta1 || fillRawZDC) {
-          strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
-                          collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
-                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
-                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
-                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
-                          collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multZNA() * static_cast<float>(fillRawZDC),
-                          collision.multZNC() * static_cast<float>(fillRawZDC),
-                          collision.multZEM1() * static_cast<float>(fillRawZDC),
-                          collision.multZEM2() * static_cast<float>(fillRawZDC),
-                          collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC),
-                          collision.trackOccupancyInTimeRange());
-        }
       }
 
       for (const auto& v0 : V0Table_thisColl)
@@ -439,6 +434,10 @@ struct strangederivedbuilder {
       auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>();
       auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
       auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
+      // isSGEvent.value = 0 --> single gap, A side
+      //                   1 --> single gap, C side
+      //                   2 --> double gap, both A and C side
+      //                   3 --> neither A or C
 
       // casc table sliced
       if (strange || fillEmptyCollisions) {
@@ -446,33 +445,27 @@ struct strangederivedbuilder {
         strangeCollLabels(collision.mcCollisionId());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw(), isSGEvent.value);
-        // isSGEvent.value = 0 --> single gap, A side
-        //                   1 --> single gap, C side
-        //                   2 --> double gap, both A and C side
-        //                   3 --> neither A or C
+        strangeEvSels(collision.sel8(), collision.selection_raw(), 
+                      collision.multFT0A() * static_cast<float>(fillRawFT0A),
+                      collision.multFT0C() * static_cast<float>(fillRawFT0C),
+                      collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                      collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                      collision.multFDDC() * static_cast<float>(fillRawFDDC),
+                      collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
+                      collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                      collision.multZNA() * static_cast<float>(fillRawZDC),
+                      collision.multZNC() * static_cast<float>(fillRawZDC),
+                      collision.multZEM1() * static_cast<float>(fillRawZDC),
+                      collision.multZEM2() * static_cast<float>(fillRawZDC),
+                      collision.multZPA() * static_cast<float>(fillRawZDC),
+                      collision.multZPC() * static_cast<float>(fillRawZDC),
+                      collision.trackOccupancyInTimeRange(),
+                      isSGEvent.value);
         strangeStamps(bc.runNumber(), bc.timestamp());
-
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawFDDA || fillRawFDDC || fillRawNTracksEta1 || fillRawZDC) {
-          strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
-                          collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
-                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
-                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
-                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
-                          collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
-                          collision.multZNA() * static_cast<float>(fillRawZDC),
-                          collision.multZNC() * static_cast<float>(fillRawZDC),
-                          collision.multZEM1() * static_cast<float>(fillRawZDC),
-                          collision.multZEM2() * static_cast<float>(fillRawZDC),
-                          collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC),
-                          collision.trackOccupancyInTimeRange());
-        }
       }
       for (const auto& v0 : V0Table_thisColl)
         V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
