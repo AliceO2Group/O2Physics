@@ -55,7 +55,7 @@ using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 namespace
 {
 constexpr int kNpart = 2;
-constexpr double trackSels[10]{/* 60, */ 80, 100, 2, 3, /* 4,  */0.05, 0.1, /* 0.15,  */0.5, 1, /* 1.5, */ 2, 3/* , 4 */};
+constexpr double trackSels[10]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */};
 constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 constexpr double estimatorsCorrelationCoef[2]{-0.669108, 1.04489};
 constexpr double estimatorsSigmaPars[4]{0.933321, 0.0416976, -0.000936344, 8.92179e-06};
@@ -394,7 +394,7 @@ struct ebyeMaker {
     // o2::base::Propagator::Instance()->setMatLUT(lut);
   }
 
-  template<class T>
+  template <class T>
   float getOuterPID(T const& track)
   {
     if (doprocessMiniRun2) {
@@ -409,20 +409,30 @@ struct ebyeMaker {
     return -999.f;
   }
 
-  template<class T>
+  template <class T>
   int getTrackSelMask(T const& track)
   {
     int mask = 0x0;
-    if (track.tpcncls > cfgTrackSels->get("tpcClsTight")) mask |= kTPCclsTight;
-    else if (track.tpcncls > cfgTrackSels->get("tpcClsMid") ) mask |= kTPCclsMid;
-    if (track.tpcchi2 < cfgTrackSels->get("chi2TpcTight")) mask |= kChi2TPCTight;
-    else if (track.tpcchi2 < cfgTrackSels->get("chi2TpcMid")) mask |= kChi2TPCMid;
-    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight")) mask |= kDCAxyTight;
-    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid")) mask |= kDCAxyMid;
-    if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazTight")) mask |= kDCAzTight;
-    else if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazMid")) mask |= kDCAzMid;
-    if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaTight")) mask |= kTPCPIDTight;
-    else if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaMid")) mask |= kTPCPIDMid;
+    if (track.tpcncls > cfgTrackSels->get("tpcClsTight"))
+      mask |= kTPCclsTight;
+    else if (track.tpcncls > cfgTrackSels->get("tpcClsMid"))
+      mask |= kTPCclsMid;
+    if (track.tpcchi2 < cfgTrackSels->get("chi2TpcTight"))
+      mask |= kChi2TPCTight;
+    else if (track.tpcchi2 < cfgTrackSels->get("chi2TpcMid"))
+      mask |= kChi2TPCMid;
+    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight"))
+      mask |= kDCAxyTight;
+    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid"))
+      mask |= kDCAxyMid;
+    if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazTight"))
+      mask |= kDCAzTight;
+    else if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazMid"))
+      mask |= kDCAzMid;
+    if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaTight"))
+      mask |= kTPCPIDTight;
+    else if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaMid"))
+      mask |= kTPCPIDMid;
     // if (track.itsnsigma < 2) mask |= kITSPIDTight;
     // else if (track.itsnsigma < 3) mask |= kITSPIDMid;
     return mask;
@@ -1039,7 +1049,8 @@ struct ebyeMaker {
         float outerPID = getOuterPID(tk);
         candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
         int selMask = getTrackSelMask(candidateTrack);
-        if (candidateTrack.outerPID < -4) continue;
+        if (candidateTrack.outerPID < -4)
+          continue;
         miniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
