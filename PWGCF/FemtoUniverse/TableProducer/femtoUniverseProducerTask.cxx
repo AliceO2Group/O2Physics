@@ -704,7 +704,7 @@ struct femtoUniverseProducerTask {
         if ((kaon1MC.isPhysicalPrimary() && kaon2MC.isPhysicalPrimary()) && (!motherskaon1MC.empty() && !motherskaon2MC.empty())) {
           for (auto& particleMotherOfNeg : motherskaon1MC) {
             for (auto& particleMotherOfPos : motherskaon2MC) {
-              if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 333) {
+              if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 333) {
                 phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
               } else {
                 phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake;
@@ -1395,7 +1395,7 @@ struct femtoUniverseProducerTask {
         std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            if ((pdgCode == 333) || (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
+            if ((pdgCode == 333) || (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
               pass = true;
             } else {
               if (particle.isPhysicalPrimary() || (ConfActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
