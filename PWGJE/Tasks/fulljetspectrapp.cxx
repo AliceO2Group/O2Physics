@@ -812,7 +812,7 @@ struct FullJetSpectrapp {
         eventAccepted = false;  ////reject the whole event for outlier jets
         fakemcdjet++;
         registry.fill(HIST("h_collisions_weighted"), 8.0);            //Fake Matched Weighted MCD Jets
-        registry.fill(HIST("h2_full_fakemcdjets"), mcdjet.pt(),fakemcdjet, weight);
+        registry.fill(HIST("h2_full_fakemcdjets"), mcdjet.pt(),fakemcdjet, eventWeight);
         break;
       }
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -832,7 +832,7 @@ struct FullJetSpectrapp {
           eventAccepted = false;  //reject the whole event for outlier jets
           fakemcpjet++;
           registry.fill(HIST("h_collisions_weighted"), 9.0);  //Fake Matched Weighted MCP Jets
-          registry.fill(HIST("h2_full_fakemcpjets"), mcpjet.pt(), fakemcpjet, weight);
+          registry.fill(HIST("h2_full_fakemcpjets"), mcpjet.pt(), fakemcpjet, eventWeight);
           break;
         }
         if (!mcpjet.has_matchedJetGeo()) {
@@ -842,12 +842,12 @@ struct FullJetSpectrapp {
         if (mcpjet.eta() > jetEtaMax || mcpjet.phi() > jetPhiMax || !jetfindingutilities::isInEtaAcceptance(mcpjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
           continue;
         }
-        registry.fill(HIST("h_full_matchedmcpjet_eta"), mcpjet.eta(), weight);
-        registry.fill(HIST("h_full_matchedmcpjet_phi"), mcpjet.phi(), weight);
+        registry.fill(HIST("h_full_matchedmcpjet_eta"), mcpjet.eta(), eventWeight);
+        registry.fill(HIST("h_full_matchedmcpjet_phi"), mcpjet.phi(), eventWeight);
         fillMatchedHistograms<typename JetTableMCDMatchedWeightedJoined::iterator, JetTableMCPMatchedWeightedJoined>(mcdjet, mcdjet.eventWeight());
       }//mcpjet
-      registry.fill(HIST("h_full_matchedmcdjet_eta"), mcdjet.eta(), weight);
-      registry.fill(HIST("h_full_matchedmcdjet_phi"), mcdjet.phi(), weight);
+      registry.fill(HIST("h_full_matchedmcdjet_eta"), mcdjet.eta(), eventWeight);
+      registry.fill(HIST("h_full_matchedmcdjet_phi"), mcdjet.phi(), eventWeight);
     }//mcdjet
   }
   PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPMCDMatchedWeighted, "Full Jet finder MCP matched to MCD on weighted events", false);
