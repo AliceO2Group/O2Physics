@@ -904,8 +904,16 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // Any b to any c in history b -> c -> e
-  if (!nameStr.compare("eeFromBtoCandBtoC")) {
+  if (!nameStr.compare("eeFromAnyBtoCandAnyBtoC")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // b->c->e, b->c->e
+  if (!nameStr.compare("eeFromBtoCandBtoC")) {
+    MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false); // check if mother pdg code is in history
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
@@ -934,6 +942,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
+  // b->e and b->c->e
   if (!nameStr.compare("eeFromBandBtoC")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -943,7 +952,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  // Any b->e and Any b->c->e
+  // b->e and b->c->e
   if (!nameStr.compare("eeFromBandBtoCBis")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -953,7 +962,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  // Any b->e and Any b->c->e (same mother/grandmother)
+  // b->e and b->c->e (same mother/grandmother)
   // require that the mother is the grandmother of the other electron
   if (!nameStr.compare("eeFromBandBtoCsameGM")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
@@ -964,7 +973,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  // Any b->e and Any b->c->e (same mother/grandmother)
+  // b->e and b->c->e (same mother/grandmother)
   // require that the mother is the grandmother of the other electron
   if (!nameStr.compare("eeFromBandBtoCsameGMBis")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
@@ -975,7 +984,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  // Any b->e and Any b->c->e (different mother/grandmother)
+  // b->e and b->c->e (different mother/grandmother)
   // require that the mother is not the grandmother of the other electron
   if (!nameStr.compare("eeFromBandBtoCdiffGM")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
@@ -986,7 +995,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  // Any b->e and Any b->c->e (different mother/grandmother)
+  // b->e and b->c->e (different mother/grandmother)
   // require that the mother is not the grandmother of the other electron
   if (!nameStr.compare("eeFromBandBtoCdiffGMBis")) {
     MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});

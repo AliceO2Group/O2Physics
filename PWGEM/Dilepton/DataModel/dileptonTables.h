@@ -58,7 +58,8 @@ const std::unordered_map<std::string, int> aliasLabels = {
 namespace emevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
-DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16); //! Bitmask of fired trigger aliases (see above for definitions)
+DECLARE_SOA_BITMAP_COLUMN(SWTAliasTmp, swtaliastmp, 16); //! Bitmask of fired trigger aliases (see above for definitions) to be join to aod::Collisions for skimming
+DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16);       //! Bitmask of fired trigger aliases (see above for definitions) to be join to aod::EMEvents for analysis
 DECLARE_SOA_COLUMN(NInspectedTVX, nInspectedTVX, uint64_t);
 DECLARE_SOA_COLUMN(NeeULS, neeuls, int);
 DECLARE_SOA_COLUMN(NeeLSpp, neelspp, int);
@@ -153,8 +154,8 @@ DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table
                   emevent::Q2xBPos, emevent::Q2yBPos, emevent::Q2xBNeg, emevent::Q2yBNeg, emevent::Q2xBTot, emevent::Q2yBTot,
                   emevent::Q3xFT0M, emevent::Q3yFT0M, emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C,
                   emevent::Q3xBPos, emevent::Q3yBPos, emevent::Q3xBNeg, emevent::Q3yBNeg, emevent::Q3xBTot, emevent::Q3yBTot,
-                  emevent::Q4xFT0M, emevent::Q4yFT0M, emevent::Q4xFT0A, emevent::Q4yFT0A, emevent::Q4xFT0C, emevent::Q4yFT0C,
-                  emevent::Q4xBPos, emevent::Q4yBPos, emevent::Q4xBNeg, emevent::Q4yBNeg, emevent::Q4xBTot, emevent::Q4yBTot,
+                  // emevent::Q4xFT0M, emevent::Q4yFT0M, emevent::Q4xFT0A, emevent::Q4yFT0A, emevent::Q4xFT0C, emevent::Q4yFT0C,
+                  // emevent::Q4xBPos, emevent::Q4yBPos, emevent::Q4xBNeg, emevent::Q4yBNeg, emevent::Q4xBTot, emevent::Q4yBTot,
 
                   // Dynamic columns
                   emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>,
@@ -168,18 +169,22 @@ DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table
                   emevent::EP3FT0C<emevent::Q3xFT0C, emevent::Q3yFT0C>,
                   emevent::EP3BPos<emevent::Q3xBPos, emevent::Q3yBPos>,
                   emevent::EP3BNeg<emevent::Q3xBNeg, emevent::Q3yBNeg>,
-                  emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>,
-                  emevent::EP4FT0M<emevent::Q4xFT0M, emevent::Q4yFT0M>,
-                  emevent::EP4FT0A<emevent::Q4xFT0A, emevent::Q4yFT0A>,
-                  emevent::EP4FT0C<emevent::Q4xFT0C, emevent::Q4yFT0C>,
-                  emevent::EP4BPos<emevent::Q4xBPos, emevent::Q4yBPos>,
-                  emevent::EP4BNeg<emevent::Q4xBNeg, emevent::Q4yBNeg>,
-                  emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>);
+                  emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>);
+// emevent::EP4FT0M<emevent::Q4xFT0M, emevent::Q4yFT0M>,
+// emevent::EP4FT0A<emevent::Q4xFT0A, emevent::Q4yFT0A>,
+// emevent::EP4FT0C<emevent::Q4xFT0C, emevent::Q4yFT0C>,
+// emevent::EP4BPos<emevent::Q4xBPos, emevent::Q4yBPos>,
+// emevent::EP4BNeg<emevent::Q4xBNeg, emevent::Q4yBNeg>,
+// emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>
 using EMEventQvec = EMEventsQvec::iterator;
 
 DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTRIGGERINFO", //! joinable to EMEvents
                   emevent::SWTAlias, emevent::NInspectedTVX);
 using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerInfosTMP, "AOD", "EMSWTTMP", //! joinable to aod::Collisions
+                  emevent::SWTAliasTmp, emevent::NInspectedTVX);
+using EMSWTriggerInfoTMP = EMSWTriggerInfosTMP::iterator;
 
 DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEvents
                   emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);
