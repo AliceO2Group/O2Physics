@@ -1664,6 +1664,14 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCTruth, "Provide MC data for MC truth track analysis", false);
 
+  void processTrackMCGen(aod::McCollision const& col,
+                         aod::McParticles const& mcParticles)
+  {
+    outputCollision(col.posZ(), 0, 0, 2, 0);
+    fillParticles(mcParticles);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCGen, "Provide MC Generated for model comparisons", false);
+
   Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> recoCollsPerMCColl = aod::mcparticle::mcCollisionId;
   Preslice<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> perCollisionTracks = aod::track::collisionId;
