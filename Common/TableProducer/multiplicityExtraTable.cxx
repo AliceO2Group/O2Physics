@@ -59,7 +59,8 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void processBCs(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&)
+  void processBCs(BCsWithRun3Matchings::iterator const& bc,
+                  aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&)
   {
     // downscale if requested to do so
     if (bcDownscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > bcDownscaleFactor) {
@@ -171,7 +172,18 @@ struct MultiplicityExtraTable {
       return; // skip this event
     }
 
-    multBC(multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
+    multBC(multFT0A, multFT0C, posZFT0, posZFT0valid,
+           multFV0A, 
+           multFDDA, multFDDC, 
+           multZNA, multZNC, 
+           multZEM1, multZEM2,
+           multZPA, multZPC,
+           Tvx, isFV0OrA,
+           multFV0TriggerBits, 
+           multFT0TriggerBits, 
+           multFDDTriggerBits,
+           multBCTriggerMask,
+           collidingBC);
   }
 
   void processCollisionNeighbors(aod::Collisions const& collisions)
