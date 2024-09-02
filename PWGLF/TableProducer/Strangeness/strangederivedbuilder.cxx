@@ -282,7 +282,7 @@ struct strangederivedbuilder {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      collision.centFT0C(), collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw(), 
+        strangeEvSels(collision.sel8(), collision.selection_raw(),
                       collision.multFT0A() * static_cast<float>(fillRawFT0A),
                       collision.multFT0C() * static_cast<float>(fillRawFT0C),
                       collision.multFV0A() * static_cast<float>(fillRawFV0A),
@@ -348,7 +348,7 @@ struct strangederivedbuilder {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw(), 
+        strangeEvSels(collision.sel8(), collision.selection_raw(),
                       collision.multFT0A() * static_cast<float>(fillRawFT0A),
                       collision.multFT0C() * static_cast<float>(fillRawFT0C),
                       collision.multFV0A() * static_cast<float>(fillRawFV0A),
@@ -445,7 +445,7 @@ struct strangederivedbuilder {
         strangeCollLabels(collision.mcCollisionId());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw(), 
+        strangeEvSels(collision.sel8(), collision.selection_raw(),
                       collision.multFT0A() * static_cast<float>(fillRawFT0A),
                       collision.multFT0C() * static_cast<float>(fillRawFT0C),
                       collision.multFV0A() * static_cast<float>(fillRawFV0A),
