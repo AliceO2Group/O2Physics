@@ -120,7 +120,6 @@ struct phiInJets {
       JEhistos.add("hNResoPerEventWJet", "hNResoPerEventWJet", kTH1F, {{10, 0, 10}});
       JEhistos.add("hNResoPerEventInJet", "hNResoPerEventInJet", kTH1F, {{10, 0, 10}});
 
-
       JEhistos.add("FJetaHistogram", "FJetaHistogram", kTH1F, {axisEta});
       JEhistos.add("FJphiHistogram", "FJphiHistogram", kTH1F, {axisPhi});
       JEhistos.add("FJptHistogram", "FJptHistogram", kTH1F, {axisPt});
