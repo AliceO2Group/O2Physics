@@ -26,6 +26,8 @@ struct strarawcentsconverter2v4 {
       straRawCents_004(values.multFT0A(),
                        values.multFT0C(),
                        values.multFT0A(),
+                       0, /*dummy FDDA value*/
+                       0, /*dummy FDDC value*/
                        values.multNTracksPVeta1(),
                        values.multPVTotalContributors(),
                        values.multNTracksGlobal(),

@@ -58,7 +58,7 @@ using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, 
 
 using cascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas>;
 
-using straCollisonFull = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraUpcSels>::iterator;
+using straCollisonFull = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator;
 
 struct strangeYieldPbPb {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -91,16 +91,18 @@ struct strangeYieldPbPb {
   Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
   // Standard V0 topological criteria
-  Configurable<float> v0cospa{"v0cospa", 0.97, "min V0 CosPA"};
-  Configurable<float> dcav0dau{"dcav0dau", 1.5, "max DCA V0 Daughters (cm)"};
-  Configurable<float> dcanegtopv{"dcanegtopv", .05, "min DCA Neg To PV (cm)"};
-  Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
-  Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
-  Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
-  // Additional selection on the AP plot (exclusive for K0Short)
-  // original equation: lArmPt*5>fabs(lArmAlpha)
-  Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
-  Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
+  struct : ConfigurableGroup {
+    Configurable<float> v0cospa{"v0cospa", 0.97, "min V0 CosPA"};
+    Configurable<float> dcav0dau{"dcav0dau", 1.5, "max DCA V0 Daughters (cm)"};
+    Configurable<float> dcanegtopv{"dcanegtopv", .05, "min DCA Neg To PV (cm)"};
+    Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
+    Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
+    Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
+    // Additional selection on the AP plot (exclusive for K0Short)
+    // original equation: lArmPt*5>fabs(lArmAlpha)
+    Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
+    Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
+  } v0cuts;
   static constexpr float lifetimeCutsV0[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecutV0{"lifetimecutV0", {lifetimeCutsV0[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecutV0"};
 
@@ -809,13 +811,13 @@ struct strangeYieldPbPb {
 
     if (fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) > dcav0topv)
       bitMap.set(selDCAV0ToPV);
-    if (casc.v0radius() > v0radius)
+    if (casc.v0radius() > v0cuts.v0radius)
       bitMap.set(selV0Radius);
-    if (casc.v0radius() < v0radiusMax)
+    if (casc.v0radius() < v0cuts.v0radiusMax)
       bitMap.set(selV0RadiusMax);
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) > v0cospa)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) > v0cuts.v0cospa)
       bitMap.set(selV0CosPA);
-    if (casc.dcaV0daughters() < dcav0dau)
+    if (casc.dcaV0daughters() < v0cuts.dcav0dau)
       bitMap.set(selDCAV0Dau);
 
     // proper lifetime
@@ -959,17 +961,17 @@ struct strangeYieldPbPb {
     std::bitset<selNum> bitMap = 0;
 
     // base topological variables
-    if (v0.v0radius() > v0radius)
+    if (v0.v0radius() > v0cuts.v0radius)
       bitMap.set(selV0Radius);
-    if (v0.v0radius() < v0radiusMax)
+    if (v0.v0radius() < v0cuts.v0radiusMax)
       bitMap.set(selV0RadiusMax);
-    if (fabs(v0.dcapostopv()) > dcapostopv)
+    if (fabs(v0.dcapostopv()) > v0cuts.dcapostopv)
       bitMap.set(selDCAPosToPV);
-    if (fabs(v0.dcanegtopv()) > dcanegtopv)
+    if (fabs(v0.dcanegtopv()) > v0cuts.dcanegtopv)
       bitMap.set(selDCANegToPV);
-    if (v0.v0cosPA() > v0cospa)
+    if (v0.v0cosPA() > v0cuts.v0cospa)
       bitMap.set(selV0CosPA);
-    if (v0.dcaV0daughters() < dcav0dau)
+    if (v0.dcaV0daughters() < v0cuts.dcav0dau)
       bitMap.set(selDCAV0Dau);
 
     // kinematic
@@ -1058,7 +1060,7 @@ struct strangeYieldPbPb {
       bitMap.set(selK0ShortCTau);
 
     // armenteros
-    if (v0.qtarm() * armPodCut > fabs(v0.alpha()) || armPodCut < 1e-4)
+    if (v0.qtarm() * v0cuts.armPodCut > fabs(v0.alpha()) || v0cuts.armPodCut < 1e-4)
       bitMap.set(selK0ShortArmenteros);
 
     return bitMap;
@@ -1293,7 +1295,7 @@ struct strangeYieldPbPb {
     }
 
     for (auto& v0 : fullV0s) {
-      if (v0.v0Type() != v0TypeSelection && v0TypeSelection > 0)
+      if (v0.v0Type() != v0cuts.v0TypeSelection && v0cuts.v0TypeSelection > 0)
         continue; // skip V0s that are not standard
 
       std::bitset<selNum> selMap = computeBitmapV0(v0, collision);

@@ -131,10 +131,6 @@ struct strangederivedbuilder {
   Produces<aod::V0FoundTags> v0FoundTags;
   Produces<aod::CascFoundTags> cascFoundTags;
 
-  //__________________________________________________
-  // UPC information
-  Produces<aod::StraUpcSels> strangeUpcSels;
-
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -173,6 +169,8 @@ struct strangederivedbuilder {
   Configurable<bool> fillRawFT0A{"fillRawFT0A", false, "Fill raw FT0A information for debug"};
   Configurable<bool> fillRawFT0C{"fillRawFT0C", true, "Fill raw FT0C information for debug"};
   Configurable<bool> fillRawFV0A{"fillRawFV0A", false, "Fill raw FV0A information for debug"};
+  Configurable<bool> fillRawFDDA{"fillRawFDDA", false, "Fill raw FDDA information for debug"};
+  Configurable<bool> fillRawFDDC{"fillRawFDDC", false, "Fill raw FDDC information for debug"};
   Configurable<bool> fillRawZDC{"fillRawZDC", false, "Fill raw ZDC information for debug"};
   Configurable<bool> fillRawNTracksEta1{"fillRawNTracksEta1", true, "Fill raw NTracks |eta|<1 information for debug"};
   Configurable<bool> fillRawNTracksForCorrelation{"fillRawNTracksForCorrelation", true, "Fill raw NTracks for correlation cuts"};
@@ -207,6 +205,15 @@ struct strangederivedbuilder {
 
   void init(InitContext&)
   {
+
+    Configurable<int> nBinsZDCen{"nBinsZDCen", 200, "N bins in ZN energy"};
+    Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
+    Configurable<float> highEnZN{"highEnZN", 250., "upper limit in ZN energy histo"};
+    const AxisSpec axisEnergyZNA{nBinsZDCen, lowEnZN, highEnZN, "ZNA energy (TeV)"};
+    const AxisSpec axisEnergyZNC{nBinsZDCen, lowEnZN, highEnZN, "ZNC energy (TeV)"};
+    AxisSpec signalFT0MAxis = {200, -50, 2000, "FT0M amplitude"};
+    AxisSpec signalFV0AAxis = {200, -50, 2000, "FV0A amplitude"};
+
     // setup map for fast checking if enabled
     static_for<0, nSpecies - 1>([&](auto i) {
       constexpr int index = i.value;
@@ -236,6 +243,13 @@ struct strangederivedbuilder {
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
+    histos.add("h2dZNA", "h2dZNA", kTH2F, {axisEnergyZNA, axisEnergyZNA});
+    histos.add("h2dZNC", "h2dZNC", kTH2F, {axisEnergyZNC, axisEnergyZNC});
+    histos.add("h2dFT0A", "h2dFT0A", {HistType::kTH2F, {signalFT0MAxis, signalFT0MAxis}});
+    histos.add("h2dFT0C", "h2dFT0C", {HistType::kTH2F, {signalFT0MAxis, signalFT0MAxis}});
+    histos.add("h2dFV0A", "h2dFV0A", {HistType::kTH2F, {signalFV0AAxis, signalFV0AAxis}});
+    histos.add("h2dFDDA", "h2dFDDA", {HistType::kTH2F, {signalFT0MAxis, signalFT0MAxis}});
+    histos.add("h2dFDDC", "h2dFDDC", {HistType::kTH2F, {signalFT0MAxis, signalFT0MAxis}});
 
     for (int ii = 1; ii < 101; ii++) {
       float value = 100.5f - static_cast<float>(ii);
@@ -257,25 +271,43 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FDDMults,  aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions,
+                                UDCollisionsFull const& udCollisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
       bool strange = V0Table_thisColl.size() > 0;
+
+      bool isUPC = kFALSE;
+      int gapSide = -1;
+
+      if (udCollisions.size() != 0) {
+        auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collision.globalIndex());
+        if (udCollision.size() == 1) {
+          for (auto& udColl : udCollision) {
+            isUPC = kTRUE;
+            gapSide = udColl.gapSide();
+          }
+        }
+      }
+
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      collision.centFT0C(), collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw());
+        strangeEvSels(collision.sel8(), collision.selection_raw(), isUPC, gapSide);
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC || fillRawFDDA || fillRawFDDC) {
+
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -296,7 +328,8 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FDDMults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, 
+                         UDCollisionsFull const& udCollisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
     // create collision indices beforehand
     std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
@@ -321,19 +354,59 @@ struct strangederivedbuilder {
                      CascTable_thisColl.size() > 0 ||
                      KFCascTable_thisColl.size() > 0 ||
                      TraCascTable_thisColl.size() > 0;
+
+      bool isUPC = kFALSE;
+      int gapSide = -1;
+      float sig_zna = -1;
+      float sig_znc = -1;
+      float sig_ft0a = -1;
+      float sig_ft0c = -1;
+      float sig_fv0a = -1;
+      float sig_fdda = -1;
+      float sig_fddc = -1;
+
+      if (udCollisions.size() != 0) {
+        auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collision.globalIndex());
+        if (udCollision.size() == 1) {
+          for (auto& udColl : udCollision) {
+            isUPC = kTRUE;
+            gapSide = udColl.gapSide();
+            sig_zna = udColl.energyCommonZNA();
+            sig_znc = udColl.energyCommonZNC();
+            sig_ft0a = udColl.totalFT0AmplitudeA();
+            sig_ft0c = udColl.totalFT0AmplitudeC();
+            sig_fv0a = udColl.totalFV0AmplitudeA();
+            sig_fdda = udColl.totalFDDAmplitudeA();
+            sig_fddc = udColl.totalFDDAmplitudeC();
+          }
+        }
+      }
+
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw());
+        strangeEvSels(collision.sel8(), collision.selection_raw(), isUPC, gapSide);
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC || fillRawFDDA || fillRawFDDC) {
+          if (isUPC) {
+            histos.fill(HIST("h2dZNA"), collision.multZNA(), sig_zna);
+            histos.fill(HIST("h2dZNC"), collision.multZNC(), sig_znc);
+            histos.fill(HIST("h2dFT0A"), collision.multFT0A(), sig_ft0a);
+            histos.fill(HIST("h2dFT0C"), collision.multFT0C(), sig_ft0c);
+            histos.fill(HIST("h2dFV0A"), collision.multFV0A(), sig_fv0a);
+            histos.fill(HIST("h2dFDDA"), collision.multFDDA(), sig_fdda);
+            histos.fill(HIST("h2dFDDC"), collision.multFDDC(), sig_fddc);
+          }
+
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -371,7 +444,8 @@ struct strangederivedbuilder {
       tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
-  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FDDMults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions,
+                           soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
     // create collision indices beforehand
     std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
@@ -409,20 +483,23 @@ struct strangederivedbuilder {
                      CascTable_thisColl.size() > 0 ||
                      KFCascTable_thisColl.size() > 0 ||
                      TraCascTable_thisColl.size() > 0;
+
       // casc table sliced
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCollLabels(collision.mcCollisionId());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8(), collision.selection_raw());
+        strangeEvSels(collision.sel8(), collision.selection_raw(), 0, -1);
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC || fillRawFDDA || fillRawFDDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFV0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFDDA() * static_cast<float>(fillRawFDDA),
+                          collision.multFDDC() * static_cast<float>(fillRawFDDC),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -833,24 +910,6 @@ struct strangederivedbuilder {
   {
     StraTPCQVs(collision.qTPCL() * std::cos(2 * collision.psiTPCL()), collision.qTPCL() * std::sin(2 * collision.psiTPCL()), collision.qTPCL(), collision.qTPCR() * std::cos(2 * collision.psiTPCR()), collision.qTPCR() * std::sin(2 * collision.psiTPCR()), collision.qTPCR());
   }
-  void processUPCinfo(aod::Collisions const& collisions, UDCollisionsFull const& udCollisions)
-  {
-    if (udCollisions.size() == 0)
-      return;
-    for (const auto& collision : collisions) {
-      auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collision.globalIndex());
-      if (udCollision.size() == 1) {
-        for (auto& udColl : udCollision) {
-          strangeUpcSels(udColl.totalFV0AmplitudeA(), udColl.totalFT0AmplitudeA(), udColl.totalFT0AmplitudeC(),
-                         udColl.energyCommonZNA(), udColl.energyCommonZNC(),
-                         udColl.totalFDDAmplitudeA(), udColl.totalFDDAmplitudeC(),
-                         udColl.gapSide(), 1.);
-        }
-      } else { // in principle, udCollision.size() should be 0 in this case
-        strangeUpcSels(-1, -1, -1, -1, -1, -1, -1, -1, 0.);
-      }
-    }
-  }
 
   uint64_t combineProngIndices(uint32_t low, uint32_t high)
   {
@@ -918,9 +977,6 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processPureSimulation, "Produce pure simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processReconstructedSimulation, "Produce reco-ed simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processBinnedGenerated, "Produce binned generated information", false);
-
-  // UPC information
-  PROCESS_SWITCH(strangederivedbuilder, processUPCinfo, "Produce UPC table", false);
 
   // event plane information
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
