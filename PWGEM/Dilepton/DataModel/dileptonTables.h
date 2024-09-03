@@ -104,6 +104,7 @@ DECLARE_SOA_COLUMN(Q4yBTot, q4ybtot, float);                                //! 
 DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocity_ptweighted, float);     //! transverse spherocity
 DECLARE_SOA_COLUMN(SpherocityPtUnWeighted, spherocity_ptunweighted, float); //! transverse spherocity
 DECLARE_SOA_COLUMN(NtrackSpherocity, ntspherocity, int);
+DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);
 
 DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::evsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::evsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::evsel::kNoITSROFrameBorder)); });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0M, ep2ft0m, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
@@ -192,6 +193,10 @@ using EMEventProperty = EMEventsProperty::iterator;
 
 DECLARE_SOA_TABLE(EMEventsNee, "AOD", "EMEVENTNEE", emevent::NeeULS, emevent::NeeLSpp, emevent::NeeLSmm); // joinable to EMEvents or aod::Collisions
 using EMEventNee = EMEventsNee::iterator;
+
+DECLARE_SOA_TABLE(EMEvSels, "AOD", "EMEVSEL", //! joinable to aod::Collisions
+                  emevent::IsSelected);
+using EMEvSel = EMEvSels::iterator;
 
 namespace emmcevent
 {

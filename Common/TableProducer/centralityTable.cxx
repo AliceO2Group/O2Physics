@@ -83,7 +83,7 @@ struct CentralityTable {
     Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
     Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
     Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
-    Configurable<std::string> reconstructionPass{"reconstructionPass", "metadata", {"Apass to use when fetching the calibration tables. `metadata` to fetch it from the AO2D metadata. Empty does not check for any pass. Otherwise it will override the metadata."}};
+    Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
   } ccdbConfig;
 
   Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};

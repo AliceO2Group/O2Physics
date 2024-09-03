@@ -74,8 +74,6 @@ struct PhotonConversionBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<bool> inherit_from_filter_dielectron_event{"inherit_from_filter_dielectron_event", false, "flag to inherit task options from filter-dielectron-event"};
-  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
   Configurable<bool> inherit_from_emevent_photon{"inherit_from_emevent_photon", false, "flag to inherit task options from emevent-photon"};
 
   // Operation and minimisation criteria
@@ -175,14 +173,8 @@ struct PhotonConversionBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if (inherit_from_emevent_dilepton && inherit_from_filter_dielectron_event) {
-      LOGF(fatal, "Cannot enable inherit_from_emevent_dilepton and inherit_from_filter_dielectron_event at the same time. Please choose one.");
-    }
-
-    if (inherit_from_emevent_dilepton) {
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-    } else if (inherit_from_filter_dielectron_event) {
-      getTaskOptionValue(initContext, "filter-dielectron-event", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
+    if (inherit_from_emevent_photon) {
+      getTaskOptionValue(initContext, "create-emevent-photon", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true);
     }
 
     if (useMatCorrType == 1) {
@@ -662,6 +654,12 @@ struct PhotonConversionBuilder {
         }
       }
 
+      if constexpr (enableFilter) {
+        if (!collision.isSelected()) {
+          continue;
+        }
+      }
+
       if constexpr (isTriggerAnalysis) {
         if (collision.swtaliastmp_raw() == 0) {
           continue;
@@ -800,13 +798,13 @@ struct PhotonConversionBuilder {
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 
-  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEvSels, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false, false, true>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec_OnlyIfDielectron, "process reconstructed info for data", false);
 
-  void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEvSels, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false, true, true>(collisions, v0s, tracks, bcs);
   }

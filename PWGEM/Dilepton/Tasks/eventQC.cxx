@@ -186,7 +186,7 @@ struct eventQC {
 
     const AxisSpec axis_pt{ConfPtBins, "p_{T} (GeV/c)"};
     const AxisSpec axis_eta{20, -1.0, +1.0, "#eta"};
-    const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi (rad.)"};
+    const AxisSpec axis_phi{72, 0.0, 2 * M_PI, "#varphi (rad.)"};
     const AxisSpec axis_sign{3, -1.5, +1.5, "sign"};
     fRegistry.add("Track/hs", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_sign}, true);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
