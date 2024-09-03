@@ -192,6 +192,7 @@ DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
                   multBC::MultBCFT0C,
                   multBC::MultBCFT0PosZ,
+                  multBC::MultBCFT0PosZValid,
                   multBC::MultBCFV0A,
                   multBC::MultBCFDDA,
                   multBC::MultBCFDDC,
