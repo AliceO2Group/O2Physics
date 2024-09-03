@@ -80,7 +80,6 @@ struct statPromptPhoton {
   Configurable<float> cfgMaxTrig{"MaxTrig", 5, "Max. Trigger energy/momentum"};
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0, "V_z cut selection"};
 
-
   // INIT
   void init(InitContext const&)
   {
