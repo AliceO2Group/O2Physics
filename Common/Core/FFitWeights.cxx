@@ -53,9 +53,9 @@ void FFitWeights::Init()
   fW_data->SetName("FFitWeights_Data");
   fW_data->SetOwner(kTRUE);
 
-  this->SetBinAxis(1000,0,5000,0);
-  this->SetBinAxis(250,-3500,3500,1);
-  this->SetBinAxis(250,-250,250,2);
+  this->SetBinAxis(1000, 0, 5000, 0);
+  this->SetBinAxis(250, -3500, 3500, 1);
+  this->SetBinAxis(250, -250, 250, 2);
 
   const char* tnd = "FT0Ampl";
   fW_data->Add(new TH2F(tnd, ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));

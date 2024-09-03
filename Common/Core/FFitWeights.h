@@ -50,10 +50,14 @@ class FFitWeights : public TNamed
   void SetChIdBin(int bin) { ChIDBin = bin; }
   void SetCentBin(int bin) { CentBin = bin; }
 
-  void SetBinAxis(int bin, float min, float max, int axisLevel) {
-    if (axisLevel==0) sAmpl = std::shared_ptr<TAxis>(new TAxis(bin,min,max));
-    else if (axisLevel==1) sqVec = std::shared_ptr<TAxis>(new TAxis(bin,min,max));
-    else if (axisLevel==2) sqCorVec = std::shared_ptr<TAxis>(new TAxis(bin,min,max));
+  void SetBinAxis(int bin, float min, float max, int axisLevel)
+  {
+    if (axisLevel == 0)
+      sAmpl = std::shared_ptr<TAxis>(new TAxis(bin, min, max));
+    else if (axisLevel == 1)
+      sqVec = std::shared_ptr<TAxis>(new TAxis(bin, min, max));
+    else if (axisLevel == 2)
+      sqCorVec = std::shared_ptr<TAxis>(new TAxis(bin, min, max));
     else {
       printf("something went wrong assigning axes");
     }
@@ -61,7 +65,6 @@ class FFitWeights : public TNamed
   std::shared_ptr<TAxis> GetAmplAx() { return sAmpl; }
   std::shared_ptr<TAxis> GetqVecAx() { return sqVec; }
   std::shared_ptr<TAxis> GetqCorVecAx() { return sqCorVec; }
- 
 
   void CreateRecenter(const char* xy);
   float GetRecVal(int cent, const char* xy, const int nHarm);
@@ -84,8 +87,8 @@ class FFitWeights : public TNamed
   int CentBin;
   int ChIDBin;
 
-  std::shared_ptr<TAxis> sAmpl; //!
-  std::shared_ptr<TAxis> sqVec; //!
+  std::shared_ptr<TAxis> sAmpl;    //!
+  std::shared_ptr<TAxis> sqVec;    //!
   std::shared_ptr<TAxis> sqCorVec; //!
 
   // TH2F *FT0Ampl;

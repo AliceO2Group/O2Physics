@@ -314,7 +314,7 @@ struct EseTableProducer {
     }
 
     if (fCalc) {
-      if (cfgCorrLevel==0) {
+      if (cfgCorrLevel == 0) {
         qn = Calcqn(qVecFT0C[0], qVecFT0C[1], sumAmplFT0C);
       }
 
@@ -323,7 +323,7 @@ struct EseTableProducer {
 
       if (cfgCorrLevel > 1) {
         int centr = static_cast<int>(collision.centFT0C());
-        
+
         registry.fill(HIST("h_Q2XvsQ2YFT0C"), qVecFT0C[0], qVecFT0C[1]);
         qVecFT0C[0] = qVecFT0C[0] - weights->GetRecVal(centr, "x", nHarm);
         qVecFT0C[1] = qVecFT0C[1] - weights->GetRecVal(centr, "y", nHarm);
@@ -335,16 +335,14 @@ struct EseTableProducer {
 
         qn = Calcqn(qVecFT0C[0], qVecFT0C[1], sumAmplFT0C);
 
-        if (cfgCorrLevel>2) {
+        if (cfgCorrLevel > 2) {
           qVecFT0C[0] = qVecFT0C[0] / weights->GetRMSVal(centr, "x", nHarm);
           qVecFT0C[1] = qVecFT0C[1] / weights->GetRMSVal(centr, "y", nHarm);
           FFitObj->FillQ(collision.centFT0C(), qVecFT0C[0], nHarm, "x", "_RecTot");
           FFitObj->FillQ(collision.centFT0C(), qVecFT0C[1], nHarm, "y", "_RecTot");
         }
-        
       }
       float Psi = EventPlane(qVecFT0C[0], qVecFT0C[1], nHarm);
-
 
       if (nHarm == 2) {
         registry.fill(HIST("h_qx2VecFT0C"), qVecFT0C[0]);
@@ -367,14 +365,12 @@ struct EseTableProducer {
         qnP.push_back(qnCent);
         fIsEseAvailable.push_back(1);
         registry.fill(HIST("h_ESE_status"), 1.5);
-      }
-      else {
+      } else {
         qnP.push_back(-1);
         fIsEseAvailable.push_back(0);
         registry.fill(HIST("h_ESE_status"), .5);
       }
-    }
-    else {
+    } else {
       qn = 0;
       qnP.push_back(qn);
       fIsEseAvailable.push_back(0);
