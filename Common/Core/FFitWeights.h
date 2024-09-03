@@ -58,9 +58,8 @@ class FFitWeights : public TNamed
       sqVec = std::shared_ptr<TAxis>(new TAxis(bin, min, max));
     else if (axisLevel == 2)
       sqCorVec = std::shared_ptr<TAxis>(new TAxis(bin, min, max));
-    else {
+    else
       printf("something went wrong assigning axes");
-    }
   }
   std::shared_ptr<TAxis> GetAmplAx() { return sAmpl; }
   std::shared_ptr<TAxis> GetqVecAx() { return sqVec; }
