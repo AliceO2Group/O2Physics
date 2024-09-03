@@ -21,6 +21,7 @@ Author: Joachim Hansen
 #include <utility>
 #include <algorithm>
 #include <complex>
+#include <memory>
 
 #include "TNamed.h"
 #include "TObjArray.h"
@@ -31,12 +32,6 @@ Author: Joachim Hansen
 #include "TCollection.h"
 #include "TString.h"
 #include "TMath.h"
-
-struct BinRange {
-  BinRange(int b, int r) : bins{b}, range{r} {};
-  int bins{0};
-  int range{0};
-};
 
 class FFitWeights : public TNamed
 {
@@ -54,21 +49,19 @@ class FFitWeights : public TNamed
   std::vector<float> GetGain();
   void SetChIdBin(int bin) { ChIDBin = bin; }
   void SetCentBin(int bin) { CentBin = bin; }
-  void SetAmplBin(int bin, int Range)
-  {
-    sAmpl.bins = bin;
-    sAmpl.range = Range;
+
+  void SetBinAxis(int bin, float min, float max, int axisLevel) {
+    if (axisLevel==0) sAmpl = std::shared_ptr<TAxis>(new TAxis(bin,min,max));
+    else if (axisLevel==1) sqVec = std::shared_ptr<TAxis>(new TAxis(bin,min,max));
+    else if (axisLevel==2) sqCorVec = std::shared_ptr<TAxis>(new TAxis(bin,min,max));
+    else {
+      printf("something went wrong assigning axes");
+    }
   }
-  void SetqVBin(int bin, int Range)
-  {
-    sqVec.bins = bin;
-    sqVec.range = Range;
-  }
-  void SetqCorVBin(int bin, int Range)
-  {
-    sqCorVec.bins = bin;
-    sqCorVec.range = Range;
-  }
+  std::shared_ptr<TAxis> GetAmplAx() { return sAmpl; }
+  std::shared_ptr<TAxis> GetqVecAx() { return sqVec; }
+  std::shared_ptr<TAxis> GetqCorVecAx() { return sqCorVec; }
+ 
 
   void CreateRecenter(const char* xy);
   float GetRecVal(int cent, const char* xy, const int nHarm);
@@ -76,7 +69,7 @@ class FFitWeights : public TNamed
   float GetRMSVal(int cent, const char* xy, const int nHarm);
 
   template <typename CollType>
-  static float EventPlane(const CollType& coll, int nHarm)
+  static float EventPlane(const CollType& coll, float nHarm)
   {
     auto x = coll.qFT0CRe();
     auto y = coll.qFT0CIm();
@@ -91,12 +84,12 @@ class FFitWeights : public TNamed
   int CentBin;
   int ChIDBin;
 
-  BinRange sAmpl;
-  BinRange sqVec;
-  BinRange sqCorVec;
+  std::shared_ptr<TAxis> sAmpl; //!
+  std::shared_ptr<TAxis> sqVec; //!
+  std::shared_ptr<TAxis> sqCorVec; //!
 
   // TH2F *FT0Ampl;
 
-  ClassDef(FFitWeights, 1); // calibration class
+  ClassDef(FFitWeights, 2); // calibration class
 };
 #endif // COMMON_CORE_FFITWEIGHTS_H_

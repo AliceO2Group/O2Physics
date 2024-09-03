@@ -27,9 +27,9 @@ ClassImp(FFitWeights)
                                vGain{0},
                                CentBin{100},
                                ChIDBin{220},
-                               sAmpl{1000, 5000},
-                               sqVec{250, 3500},
-                               sqCorVec{250, 250}
+                               sAmpl{nullptr},
+                               sqVec{nullptr},
+                               sqCorVec{nullptr}
 {
 }
 
@@ -38,9 +38,9 @@ FFitWeights::FFitWeights(const char* name) : TNamed(name, name),
                                              vGain{0},
                                              CentBin{100},
                                              ChIDBin{220},
-                                             sAmpl{1000, 5000},
-                                             sqVec{250, 3500},
-                                             sqCorVec{250, 250} {}
+                                             sAmpl{nullptr},
+                                             sqVec{nullptr},
+                                             sqCorVec{nullptr} {}
 
 FFitWeights::~FFitWeights()
 {
@@ -53,24 +53,28 @@ void FFitWeights::Init()
   fW_data->SetName("FFitWeights_Data");
   fW_data->SetOwner(kTRUE);
 
+  this->SetBinAxis(1000,0,5000,0);
+  this->SetBinAxis(250,-3500,3500,1);
+  this->SetBinAxis(250,-250,250,2);
+
   const char* tnd = "FT0Ampl";
-  fW_data->Add(new TH2F(tnd, ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl.bins, 0, sAmpl.range));
-  fW_data->Add(new TH2F(Form("%sCorr", tnd), ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl.bins, 0, sAmpl.range));
+  fW_data->Add(new TH2F(tnd, ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));
+  fW_data->Add(new TH2F(Form("%sCorr", tnd), ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));
 
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
 
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
 
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqCorVec.bins, -sqCorVec.range, sqCorVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqCorVec.bins, -sqCorVec.range, sqCorVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqCorVec.bins, -sqCorVec.range, sqCorVec.range));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqCorVec.bins, -sqCorVec.range, sqCorVec.range));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqCorVec->GetNbins(), sqCorVec->GetXmin(), sqCorVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqCorVec->GetNbins(), sqCorVec->GetXmin(), sqCorVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqCorVec->GetNbins(), sqCorVec->GetXmin(), sqCorVec->GetXmax()));
+  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqCorVec->GetNbins(), sqCorVec->GetXmin(), sqCorVec->GetXmax()));
 };
 
 void FFitWeights::FillFT0(std::size_t iCh, float amplitude, float GainCst)
@@ -83,14 +87,14 @@ void FFitWeights::FillFT0(std::size_t iCh, float amplitude, float GainCst)
 
   TH2F* th2 = reinterpret_cast<TH2F*>(tar->FindObject("FT0Ampl"));
   if (!th2) {
-    tar->Add(new TH2F("FT0Ampl", ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl.bins, 0, sAmpl.range));
+    tar->Add(new TH2F("FT0Ampl", ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));
     th2 = reinterpret_cast<TH2F*>(tar->At(tar->GetEntries() - 1));
   }
   th2->Fill(iCh, amplitude);
 
   TH2F* th2Cor = reinterpret_cast<TH2F*>(tar->FindObject("FT0AmplCorr"));
   if (!th2Cor) {
-    tar->Add(new TH2F("FT0AmplCorr", ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl.bins, 0, sAmpl.range));
+    tar->Add(new TH2F("FT0AmplCorr", ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));
     th2Cor = reinterpret_cast<TH2F*>(tar->At(tar->GetEntries() - 1));
   }
   th2Cor->Fill(iCh, amplitude / GainCst);
@@ -106,7 +110,7 @@ void FFitWeights::FillQ(float mult, float vec, int nHarm, const char* coord, con
 
   TH2F* th2 = reinterpret_cast<TH2F*>(tar->FindObject(Form("hQ%s%i_FT0C%s", coord, nHarm, qType)));
   if (!th2) {
-    tar->Add(new TH2F(Form("hQ%s%i_FT0C%s", coord, nHarm, qType), Form(";Centrality;Q%s_{%i}", coord, nHarm), CentBin, 0, CentBin, sqVec.bins, -sqVec.range, sqVec.range));
+    tar->Add(new TH2F(Form("hQ%s%i_FT0C%s", coord, nHarm, qType), Form(";Centrality;Q%s_{%i}", coord, nHarm), CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
     th2 = reinterpret_cast<TH2F*>(tar->At(tar->GetEntries() - 1));
   }
   th2->Fill(mult, vec);
@@ -178,7 +182,7 @@ void FFitWeights::CreateRecenter(const char* xy)
     TH1D* h1;
 
     for (int i{1}; i < hQ->GetXaxis()->GetNbins() + 1; i++) {
-      h1 = static_cast<TH1D*>(hQ->ProjectionX(Form("proj%i_Q%s%is", i, xy, nHarm), i, i));
+      h1 = static_cast<TH1D*>(hQ->ProjectionY(Form("proj%i_Q%s%is", i, xy, nHarm), i, i));
 
       double mean = h1->GetMean();
       double meanErr = h1->GetMeanError();
@@ -211,7 +215,7 @@ void FFitWeights::CreateRMS(const char* xy)
     TH1D* h1;
 
     for (int i{1}; i < hQ->GetXaxis()->GetNbins() + 1; i++) {
-      h1 = static_cast<TH1D*>(hQ->ProjectionX(Form("proj%i_Q%s%is", i, xy, nHarm), i, i));
+      h1 = static_cast<TH1D*>(hQ->ProjectionY(Form("proj%i_Q%s%is", i, xy, nHarm), i, i));
 
       double mean = h1->GetRMS();
       double meanErr = h1->GetRMSError();
