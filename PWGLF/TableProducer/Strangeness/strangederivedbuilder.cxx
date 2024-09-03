@@ -211,7 +211,10 @@ struct strangederivedbuilder {
     Configurable<float> highEnZN{"highEnZN", 250., "upper limit in ZN energy histo"};
     const AxisSpec axisEnergyZNA{nBinsZDCen, lowEnZN, highEnZN, "ZNA energy (TeV)"};
     const AxisSpec axisEnergyZNC{nBinsZDCen, lowEnZN, highEnZN, "ZNC energy (TeV)"};
-    AxisSpec signalFT0MAxis = {200, -50, 2000, "FT0M amplitude"};
+    AxisSpec signalFT0AAxis = {200, -50, 2000, "FT0A amplitude"};
+    AxisSpec signalFT0CAxis = {200, -50, 2000, "FT0C amplitude"};
+    AxisSpec signalFDDAAxis = {200, -50, 2000, "FDDA amplitude"};
+    AxisSpec signalFDDCAxis = {200, -50, 2000, "FDDC amplitude"};
     AxisSpec signalFV0AAxis = {200, -50, 2000, "FV0A amplitude"};
 
     // setup map for fast checking if enabled
@@ -245,11 +248,11 @@ struct strangederivedbuilder {
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
     histos.add("h2dZNA", "h2dZNA", kTH2F, {axisEnergyZNA, axisEnergyZNA});
     histos.add("h2dZNC", "h2dZNC", kTH2F, {axisEnergyZNC, axisEnergyZNC});
-    histos.add("h2dFT0A", "h2dFT0A", {HistType::kTH2F, {signalFT0MAxis, signalFT0MAxis}});
-    histos.add("h2dFT0C", "h2dFT0C", {HistType::kTH2F, {signalFT0MAxis, signalFT0MAxis}});
+    histos.add("h2dFT0A", "h2dFT0A", {HistType::kTH2F, {signalFT0AAxis, signalFT0AAxis}});
+    histos.add("h2dFT0C", "h2dFT0C", {HistType::kTH2F, {signalFT0CAxis, signalFT0CAxis}});
     histos.add("h2dFV0A", "h2dFV0A", {HistType::kTH2F, {signalFV0AAxis, signalFV0AAxis}});
-    histos.add("h2dFDDA", "h2dFDDA", {HistType::kTH2F, {signalFT0MAxis, signalFT0MAxis}});
-    histos.add("h2dFDDC", "h2dFDDC", {HistType::kTH2F, {signalFT0MAxis, signalFT0MAxis}});
+    histos.add("h2dFDDA", "h2dFDDA", {HistType::kTH2F, {signalFDDAAxis, signalFDDAAxis}});
+    histos.add("h2dFDDC", "h2dFDDC", {HistType::kTH2F, {signalFDDCAxis, signalFDDCAxis}});
 
     for (int ii = 1; ii < 101; ii++) {
       float value = 100.5f - static_cast<float>(ii);
