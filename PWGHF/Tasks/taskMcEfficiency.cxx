@@ -718,7 +718,7 @@ struct HfTaskMcEfficiency {
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataLc, "Process Lc data (no MC information needed)", false);
 
   void processDataXic(soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi> const& candidates,
-                     TracksWithSelection const& tracks)
+                      TracksWithSelection const& tracks)
   {
     std::vector<int> pdgCodes{Pdg::kXiCPlus};
     candidate3ProngLoop<false, false, false, false, true>(candidates, tracks, tracks, pdgCodes);
