@@ -1151,7 +1151,6 @@ struct QaEfficiency {
       }
     }
   }
-
   template <int pdgSign, o2::track::PID::ID id, bool recoEv = false>
   void fillMCParticleHistograms(const o2::aod::McParticles::iterator& mcParticle, const bool doMakeHistograms)
   {
