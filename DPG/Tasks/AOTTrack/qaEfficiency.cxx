@@ -1127,20 +1127,23 @@ struct QaEfficiency {
           if (passedTOF) {
             hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
           }
-        }
-      }
+       }
     }
     if (isFinal(mcParticle)) {
       if (passedITS && passedTPC && motherIsAccepted) {
         hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
         hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
-        hPtRadiusItsTpcTer[histogramIndex]->Fill(mcParticle.pt(), radius);
         if (passedTOF) {
           hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
           hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
         }
+        if (doPtRadius) {
+          hPtRadiusItsTpcStr[histogramIndex]->Fill(mcParticle.pt(), radius);
+          if (passedTOF) {
+            hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
+          }
+        }
       }
-    }
     } else { // Material
       if (passedITS && passedTPC) {
         hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
@@ -1150,8 +1153,10 @@ struct QaEfficiency {
         }
       }
     }
-} template <int pdgSign, o2::track::PID::ID id, bool recoEv = false>
-void fillMCParticleHistograms(const o2::aod::McParticles::iterator& mcParticle, const bool doMakeHistograms)
+  }
+
+  template <int pdgSign, o2::track::PID::ID id, bool recoEv = false>
+  void fillMCParticleHistograms(const o2::aod::McParticles::iterator& mcParticle, const bool doMakeHistograms)
   {
     static_assert(pdgSign == 0 || pdgSign == 1);
     if (!doMakeHistograms) {
