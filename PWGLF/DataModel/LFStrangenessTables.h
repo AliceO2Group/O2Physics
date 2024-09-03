@@ -32,26 +32,26 @@ namespace straupc
 DECLARE_SOA_COLUMN(IsUPC, isUPC, bool); //! is event upc-like
 
 DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNA, energyCommonZNA, //!
-                           [](float value) -> float { return value;});
+                           [](float value) -> float { return value; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //!
-                           [](float value) -> float { return value;});
+                           [](float value) -> float { return value; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, //!
-                           [](float value) -> float { return value;});
+                           [](float value) -> float { return value; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, //!
-                           [](float value) -> float { return value;});
+                           [](float value) -> float { return value; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, //!
-                           [](float value) -> float { return value;});
+                           [](float value) -> float { return value; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, //!
-                           [](float value) -> float { return value;});
+                           [](float value) -> float { return value; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, //!
-                           [](float value) -> float { return value;});
-}
+                           [](float value) -> float { return value; });
+} // namespace straupc
 
 //______________________________________________________
 // Collision declarations for derived data analysis
@@ -86,15 +86,15 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_003, "AOD", "STRARAWCENTS", 3,     //! 
                             mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC);
-DECLARE_SOA_TABLE_VERSIONED(StraRawCents_004, "AOD", "STRARAWCENTS", 4,     //! debug information
+DECLARE_SOA_TABLE_VERSIONED(StraRawCents_004, "AOD", "STRARAWCENTS", 4,                                     //! debug information
                             mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultFDDA, mult::MultFDDC, // FIT detectors
-                            mult::MultNTracksPVeta1,                        // track multiplicities with eta cut for INEL>0
-                            mult::MultPVTotalContributors,                  // number of PV contribs total
-                            mult::MultNTracksGlobal,                        // global track multiplicities
-                            mult::MultNTracksITSTPC,                        // track multiplicities, PV contribs, no eta cut
-                            mult::MultAllTracksTPCOnly,                     // TPConly track multiplicities, all, no eta cut
-                            mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
-                            mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
+                            mult::MultNTracksPVeta1,                                                        // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                                                  // number of PV contribs total
+                            mult::MultNTracksGlobal,                                                        // global track multiplicities
+                            mult::MultNTracksITSTPC,                                                        // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                                                     // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                                                      // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1,                                   // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC,
                             evsel::NumTracksInTimeRange,
                             straupc::EnergyCommonZNA<mult::MultZNA>,
@@ -104,7 +104,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_004, "AOD", "STRARAWCENTS", 4,     //! 
                             straupc::TotalFV0AmplitudeA<mult::MultFV0A>,
                             straupc::TotalFDDAmplitudeA<mult::MultFDDA>,
                             straupc::TotalFDDAmplitudeC<mult::MultFDDC>); // add occupancy as extra
-DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selections
+DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS",                        //! event selections
                   evsel::Sel8, evsel::Selection, straupc::IsUPC, udcollision::GapSide);
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
