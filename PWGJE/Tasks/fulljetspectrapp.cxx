@@ -482,8 +482,7 @@ struct FullJetSpectrapp {
         registry.fill(HIST("h_full_jet_ResponseMatrix"), jetBase.pt(), jetTag.pt(), weight); // MCD vs MCP jet pT
         }//jetTag
       }//jetBase
-    }//JJMC
-    else {
+    } else {
         if (jetBase.has_matchedJetGeo()) { // geometrical jet matching only needed for pp - here,matching Base(Det.level) with Tag (Part. level) jets
         registry.fill(HIST("h_full_matchedmcdjet_tablesize"), jetBase.size(), weight);
         registry.fill(HIST("h_full_matchedmcdjet_ntracks"), jetBase.tracksIds().size(), weight);
