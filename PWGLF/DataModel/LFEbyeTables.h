@@ -22,6 +22,10 @@ namespace LFEbyeCollTable
 {
 DECLARE_SOA_COLUMN(Centrality, centrality, uint8_t);
 DECLARE_SOA_COLUMN(Zvtx, zvtx, float);
+DECLARE_SOA_COLUMN(ZvtxMask, zvtxMask, uint8_t);
+DECLARE_SOA_COLUMN(TriggerMask, triggerMask, uint8_t);
+DECLARE_SOA_COLUMN(Ntracklets, ntracklets, uint8_t);
+DECLARE_SOA_COLUMN(V0Multiplicity, v0Multiplicity, uint8_t);
 } // namespace LFEbyeCollTable
 
 DECLARE_SOA_TABLE(CollEbyeTables, "AOD", "COLLEBYETABLE",
@@ -30,9 +34,18 @@ DECLARE_SOA_TABLE(CollEbyeTables, "AOD", "COLLEBYETABLE",
                   LFEbyeCollTable::Zvtx);
 using CollEbyeTable = CollEbyeTables::iterator;
 
+DECLARE_SOA_TABLE(MiniCollTables, "AOD", "MINICOLLTABLE",
+                  o2::soa::Index<>,
+                  LFEbyeCollTable::ZvtxMask,
+                  LFEbyeCollTable::TriggerMask,
+                  LFEbyeCollTable::Ntracklets,
+                  LFEbyeCollTable::V0Multiplicity);
+using MiniCollTable = MiniCollTables::iterator;
+
 namespace LFEbyeTable
 {
 DECLARE_SOA_INDEX_COLUMN(CollEbyeTable, collEbyeTable);
+DECLARE_SOA_INDEX_COLUMN(MiniCollTable, miniCollTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
@@ -53,6 +66,10 @@ DECLARE_SOA_COLUMN(GenPt, genPt, float);
 DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
+DECLARE_SOA_COLUMN(EtaMask, etaMask, uint8_t);
+DECLARE_SOA_COLUMN(SelMask, selMask, int);
+DECLARE_SOA_COLUMN(OuterPID, outerPID, float);
+DECLARE_SOA_COLUMN(GenEtaMask, genEtaMask, uint8_t);
 } // namespace LFEbyeTable
 
 DECLARE_SOA_TABLE(NucleiEbyeTables, "AOD", "NUCLEBYETABLE",
@@ -120,6 +137,27 @@ DECLARE_SOA_TABLE(McLambdaEbyeTables, "AOD", "MCLAMBEBYETABLE",
                   LFEbyeTable::PdgCode,
                   LFEbyeTable::IsReco);
 using McLambdaEbyeTable = McLambdaEbyeTables::iterator;
+
+DECLARE_SOA_TABLE(MiniTrkTables, "AOD", "MINITRKTABLE",
+                  o2::soa::Index<>,
+                  LFEbyeTable::MiniCollTableId,
+                  LFEbyeTable::Pt,
+                  LFEbyeTable::EtaMask,
+                  LFEbyeTable::SelMask,
+                  LFEbyeTable::OuterPID);
+using MiniTrkTable = MiniTrkTables::iterator;
+
+DECLARE_SOA_TABLE(McMiniTrkTables, "AOD", "MCMINITRKTABLE",
+                  o2::soa::Index<>,
+                  LFEbyeTable::MiniCollTableId,
+                  LFEbyeTable::Pt,
+                  LFEbyeTable::EtaMask,
+                  LFEbyeTable::SelMask,
+                  LFEbyeTable::OuterPID,
+                  LFEbyeTable::GenPt,
+                  LFEbyeTable::GenEtaMask,
+                  LFEbyeTable::IsReco);
+using McMiniTrkTable = McMiniTrkTables::iterator;
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFEBYETABLES_H_

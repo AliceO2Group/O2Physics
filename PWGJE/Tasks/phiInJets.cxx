@@ -708,7 +708,6 @@ struct phiInJets {
     double RealPhiCand = 0;
     double RealPhiCandWithJet = 0;
     double RealPhiCandInJet = 0;
-
     // Track Eff
     for (const auto& track : tracks) {
       auto originalTrack = track.track_as<myCompleteTracks>();

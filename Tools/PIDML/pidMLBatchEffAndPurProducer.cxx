@@ -45,11 +45,13 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                   //! particle's pt
 DECLARE_SOA_COLUMN(MlCertainty, mlCertainty, float); //! Machine learning model certainty value for track and pid
 DECLARE_SOA_COLUMN(NSigma, nSigma, float);           //! nSigma value for track and pid
 DECLARE_SOA_COLUMN(IsPidMC, isPidMc, bool);          //! Is track's mcParticle recognized as "Pid"
+DECLARE_SOA_COLUMN(HasTOF, hasTof, bool);            //! Does track have TOF detector signal
+DECLARE_SOA_COLUMN(HasTRD, hasTrd, bool);            //! Does track have TRD detector signal
 } // namespace effandpurpidresult
 
 DECLARE_SOA_TABLE(EffAndPurPidResult, "AOD", "PIDEFFANDPURRES", o2::soa::Index<>,
                   effandpurpidresult::TrackId, effandpurpidresult::Pid, effandpurpidresult::Pt, effandpurpidresult::MlCertainty,
-                  effandpurpidresult::NSigma, effandpurpidresult::IsPidMC);
+                  effandpurpidresult::NSigma, effandpurpidresult::IsPidMC, effandpurpidresult::HasTOF, effandpurpidresult::HasTRD);
 } // namespace o2::aod
 
 struct PidMlBatchEffAndPurProducer {
@@ -229,7 +231,7 @@ struct PidMlBatchEffAndPurProducer {
             nSigma_t nSigma = getNSigma(track, cfgPids.value[i]);
             bool isMCPid = mcPart.pdgCode() == cfgPids.value[i];
 
-            effAndPurPIDResult(track.index(), cfgPids.value[i], track.pt(), mlCertainty, nSigma.composed, isMCPid);
+            effAndPurPIDResult(track.index(), cfgPids.value[i], track.pt(), mlCertainty, nSigma.composed, isMCPid, track.hasTOF(), track.hasTRD());
           }
         }
       }

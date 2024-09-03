@@ -1092,13 +1092,6 @@ struct cascadeBuilder {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorrCascade, &dcaInfo);
     cascadecandidate.cascDCAxy = dcaInfo[0];
     cascadecandidate.cascDCAz = dcaInfo[1];
-    if (useCascadeMomentumAtPrimVtx) {
-      lCascadeTrack.getPxPyPzGlo(cascadecandidate.cascademom);
-    } else {
-      cascadecandidate.cascademom[0] = cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0];
-      cascadecandidate.cascademom[1] = cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1];
-      cascadecandidate.cascademom[2] = cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2];
-    }
 
     // Calculate masses a priori
     cascadecandidate.mXi = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
@@ -1126,6 +1119,14 @@ struct cascadeBuilder {
     cascadecandidate.v0dcadau = v0.dcaV0daughters();
     cascadecandidate.v0dcapostopv = v0.dcapostopv();
     cascadecandidate.v0dcanegtopv = v0.dcanegtopv();
+
+    if (useCascadeMomentumAtPrimVtx) {
+      lCascadeTrack.getPxPyPzGlo(cascadecandidate.cascademom);
+    } else {
+      cascadecandidate.cascademom[0] = cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0];
+      cascadecandidate.cascademom[1] = cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1];
+      cascadecandidate.cascademom[2] = cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2];
+    }
 
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)

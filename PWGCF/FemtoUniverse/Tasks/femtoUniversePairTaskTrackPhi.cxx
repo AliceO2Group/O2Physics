@@ -745,7 +745,7 @@ struct femtoUniversePairTaskTrackPhi {
         registryMCtruth.fill(HIST("MCtruthKp"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("MCtruthKpPt"), part.pt());
       }
-      if (pdgCode == 333) {
+      if ((pdgCode == 333)) {
         registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
         continue;
       }
@@ -775,7 +775,7 @@ struct femtoUniversePairTaskTrackPhi {
         continue; // no MC particle
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
       if (part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) {
-        if (mcpart.pdgMCTruth() == 333) {
+        if ((mcpart.pdgMCTruth() == 333) && (mcpart.partOriginMCTruth() == aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake)) {
           registryMCreco.fill(HIST("MCrecoPhi"), mcpart.pt(), mcpart.eta()); // phi
         }
       } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {
