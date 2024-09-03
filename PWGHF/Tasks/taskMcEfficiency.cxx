@@ -717,6 +717,14 @@ struct HfTaskMcEfficiency {
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataLc, "Process Lc data (no MC information needed)", false);
 
+  void processDataXic(soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi> const& candidates,
+                     TracksWithSelection const& tracks)
+  {
+    std::vector<int> pdgCodes{Pdg::kXiCPlus};
+    candidate3ProngLoop<false, false, false, false, true>(candidates, tracks, tracks, pdgCodes);
+  }
+  PROCESS_SWITCH(HfTaskMcEfficiency, processDataXic, "Process Xic data (no MC information needed)", false);
+
   void processDataDplusDs(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfSelDsToKKPi> const& candidates,
                           TracksWithSelection const& tracks)
   {
@@ -839,16 +847,6 @@ struct HfTaskMcEfficiency {
     candidate3ProngMcLoop<false, true, true, false>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDsLc, "Process MC for Ds+ and Lc signals", false);
-
-  void processMcLcXic(soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfSelXicToPKPi> const& candidates,
-                      TracksWithSelectionMC const& tracks,
-                      aod::McParticles const& mcParticles,
-                      aod::McCollisionLabels const& colls)
-  {
-    std::vector<int> pdgCodes{Pdg::kLambdaCPlus, Pdg::kXiCPlus};
-    candidate3ProngMcLoop<false, false, true, true>(candidates, tracks, mcParticles, colls, pdgCodes);
-  }
-  PROCESS_SWITCH(HfTaskMcEfficiency, processMcLcXic, "Process MC for Lc and XicPlus signals ", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
