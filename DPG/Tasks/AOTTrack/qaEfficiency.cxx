@@ -1050,7 +1050,7 @@ struct QaEfficiency {
       }
       if (doPtRadius) {
         hPtRadiusItsTpc[histogramIndex]->Fill(mcParticle.pt(), radius);
-         if (passedTOF) {
+       if (passedTOF) {
           hPtRadiusItsTpcTof[histogramIndex]->Fill(mcParticle.pt(), radius);
         }
       }
@@ -1085,19 +1085,19 @@ struct QaEfficiency {
         hEtaTrkItsTpcPrm[histogramIndex]->Fill(track.eta());
         hPhiItsTpcPrm[histogramIndex]->Fill(mcParticle.phi());
         hPhiTrkItsTpcPrm[histogramIndex]->Fill(track.phi());
-      if (passedTOF) {
+        if (passedTOF) {
           hPtItsTpcTofPrm[histogramIndex]->Fill(mcParticle.pt());
           hPtTrkItsTpcTofPrm[histogramIndex]->Fill(track.pt());
           hEtaItsTpcTofPrm[histogramIndex]->Fill(mcParticle.eta());
           hPhiItsTpcTofPrm[histogramIndex]->Fill(mcParticle.phi());
         }
         if (doPtRadius) {
-        hPtRadiusItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
-         if (passedTOF) {
-          hPtRadiusItsTpcTofPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
+           hPtRadiusItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
+           if (passedTOF) {
+             hPtRadiusItsTpcTofPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
+           }
         }
-       }
-     }
+      }
     } else if (mcParticle.getProcess() == 4) { // Particle decay
       // Checking mothers
       bool motherIsAccepted = true;
@@ -1119,27 +1119,25 @@ struct QaEfficiency {
       if (passedITS && passedTPC && motherIsAccepted) {
         hPtItsTpcStr[histogramIndex]->Fill(mcParticle.pt());
         hPtTrkItsTpcStr[histogramIndex]->Fill(track.pt());
-       if (passedTOF) {
-          hPtItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt());
+          if (passedTOF) {
+            hPtItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt());
+          }
+          if (doPtRadius) {
+            hPtRadiusItsTpcStr[histogramIndex]->Fill(mcParticle.pt(), radius);
+            if (passedTOF) {
+              hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
+            }
+          }
        }
-         if (doPtRadius) {
-        hPtRadiusItsTpcStr[histogramIndex]->Fill(mcParticle.pt(), radius);
-         if (passedTOF) {
-          hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
-        }
-       }
-      }
-     }
-      if (isFinal(mcParticle)) {
+    }
+       if (isFinal(mcParticle)) {
         if (passedITS && passedTPC && motherIsAccepted) {
           hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
           hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
           hPtRadiusItsTpcTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-
           if (passedTOF) {
             hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
             hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-
           }
         }
       }
@@ -1194,10 +1192,10 @@ struct QaEfficiency {
       hPtGeneratedPrm[histogramIndex]->Fill(mcParticle.pt());
       hEtaGeneratedPrm[histogramIndex]->Fill(mcParticle.eta());
       hPhiGeneratedPrm[histogramIndex]->Fill(mcParticle.phi());
-       if (doPtRadius) {
-      hPtRadiusGeneratedPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
-    }
-   } else {
+      if (doPtRadius) {
+        hPtRadiusGeneratedPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
+      }
+    } else {
       if (mcParticle.getProcess() == 4) { // Particle decay
         // Checking mothers
         bool motherIsAccepted = true;
@@ -1218,14 +1216,14 @@ struct QaEfficiency {
         }
         if (motherIsAccepted) {
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
-           if (doPtRadius) {
-             hPtRadiusGeneratedStr[histogramIndex]->Fill(mcParticle.pt(), radius);
+          if (doPtRadius) {
+            hPtRadiusGeneratedStr[histogramIndex]->Fill(mcParticle.pt(), radius);
           }
           if (isFinal(mcParticle)) {
             hPtGeneratedTer[histogramIndex]->Fill(mcParticle.pt());
-             if (doPtRadius) {
-        hPtRadiusGeneratedTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-       }
+            if (doPtRadius) {
+              hPtRadiusGeneratedTer[histogramIndex]->Fill(mcParticle.pt(), radius);
+            }
           }
         }
       } else { // Material
