@@ -251,7 +251,7 @@ DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
                   full::Y,
                   full::FlagMc,
                   full::OriginMcGen);
-                  // full::McParticleId);
+// full::McParticleId);
 
 } // namespace o2::aod
 
@@ -509,7 +509,7 @@ struct HfTreeCreatorLcToPKPi {
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen());
-          // particle.globalIndex());
+        // particle.globalIndex());
       }
     }
   }
