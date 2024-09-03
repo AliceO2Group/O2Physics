@@ -49,6 +49,10 @@ enum DecayChannels { DzeroToKPi = 0,
                      DplusToPhiPiToKKPi, // resonant channel with Phi, Dplus -> PhiPi -> KKPi
                      DsToPhiPiToKKPi,    // resonant channel with Phi, Ds -> PhiPi -> KKPi
                      DsToK0starKToKKPi,  // resonant channel with K0*, Ds -> K0*K -> KKPi
+                     Ds1ToDStarK0s,
+                     Ds2StarToDPlusK0s,
+                     D10ToDStarPi,
+                     D2Star0ToDPlusPi,
                      LcToPKPi,
                      LcToPiK0s,
                      XiCplusToPKPi,
@@ -58,23 +62,25 @@ enum DecayChannels { DzeroToKPi = 0,
                      OmegaCToXiPi,
                      nChannels }; // always keep nChannels at the end
 
-static constexpr int nMesonChannels = 6; // number of meson channels
+static constexpr int nMesonChannels = 10; // number of meson channels
 static constexpr int nOriginTypes = 2;   // number of origin types (prompt, non-prompt)
 static constexpr std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDPlus,
-                                                                o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus,
+                                                                o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS1, o2::constants::physics::Pdg::kDS2Star,
+                                                                o2::constants::physics::Pdg::kD10, o2::constants::physics::Pdg::kD2Star0, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus,
                                                                 o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiC0, o2::constants::physics::Pdg::kOmegaC0, o2::constants::physics::Pdg::kOmegaC0};
-static constexpr std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 3, 3, 3, 5, 4, 4, 4};
-static constexpr std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 2, 3, 2, 4, 3, 3, 3};
+static constexpr std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 5, 5, 4, 4, 3, 3, 3, 5, 4, 4, 4};
+static constexpr std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2, 3, 2, 4, 3, 3, 3};
 // keep coherent indexing with PDGArrayParticle
 // FIXME: look for a better solution
-static constexpr std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}};
-static constexpr std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {}, {}, {}, {}}};
-static constexpr std::array<std::array<int, 4>, nChannels> arrPDGFinal4Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {+kPiPlus, -kKPlus, -kPiPlus, +kProton}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}}};
-static constexpr std::array<std::array<int, 5>, nChannels> arrPDGFinal5Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, +kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {}, {}, {}}};
+static constexpr std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}};
+static constexpr std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {}, {}, {}, {}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {}, {}, {}, {}}};
+static constexpr std::array<std::array<int, 4>, nChannels> arrPDGFinal4Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus}, {}, {}, {}, {}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {+kPiPlus, -kKPlus, -kPiPlus, +kProton}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}}};
+static constexpr std::array<std::array<int, 5>, nChannels> arrPDGFinal5Prong = {{{}, {}, {}, {}, {}, {}, {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, {}, {}, {}, {}, {}, {+kPiPlus, +kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {}, {}, {}}};
 static constexpr std::string_view labels[nChannels] = {"D^{0} #rightarrow K#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{+} #rightarrow K#pi#pi", "D^{+} #rightarrow KK#pi", "D_{s}^{+} #rightarrow #Phi#pi #rightarrow KK#pi",
-                                                       "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi",
+                                                       "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "D_{s}1 #rightarrow D*^{+}K^{0}_{s}", "D_{s}2* #rightarrow D^{+}K^{0}_{s}", "D1^{0} #rightarrow D*^{+}#pi",
+                                                       "D2^{*} #rightarrow D^{+}#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi",
                                                        "#Xi_{c}^{+} #rightarrow #Xi#pi#pi", "#Xi_{c}^{0} #rightarrow #Xi#pi", "#Omega_{c}^{0} #rightarrow #Omega#pi", "#Omega_{c}^{0} #rightarrow #Xi#pi"};
-static constexpr std::string_view particleNames[nChannels] = {"DzeroToKPi", "DstarToDzeroPi", "DplusToPiKPi", "DplusToPhiPiToKKPi", "DsToPhiPiToKKPi", "DsToK0starKToKKPi",
+static constexpr std::string_view particleNames[nChannels] = {"DzeroToKPi", "DstarToDzeroPi", "DplusToPiKPi", "DplusToPhiPiToKKPi", "DsToPhiPiToKKPi", "DsToK0starKToKKPi", "Ds1ToDStarK0s", "Ds2StarToDPlusK0s", "D10ToDStarPi", "D2Star0ToDPlusPi",
                                                               "LcToPKPi", "LcToPiK0s", "XiCplusToPKPi", "XiCplusToXiPiPi", "XiCzeroToXiPi", "OmegaCToOmegaPi", "OmegaCToXiPi"};
 static constexpr std::string_view originNames[nOriginTypes] = {"Prompt", "NonPrompt"};
 } // namespace
@@ -100,7 +106,7 @@ struct HfTaskMcValidationGen {
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
-  AxisSpec axisNhadrons{10, -0.5, 9.5};
+  AxisSpec axisNhadrons{nChannels, -0.5, static_cast<float>(nChannels) - 0.5};
   AxisSpec axisNquarks{20, -0.5, 19.5};
   AxisSpec axisResiduals{100, -0.01, 0.01};
   AxisSpec axisPt{100, 0., 50.};
@@ -294,6 +300,14 @@ struct HfTaskMcValidationGen {
           if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal4Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
             continue;
           }
+          if (iD == D10ToDStarPi &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+o2::constants::physics::Pdg::kDStar, -kPiPlus}, true)) {
+            continue;
+          }
+          if (iD == D2Star0ToDPlusPi &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+o2::constants::physics::Pdg::kDPlus, -kPiPlus}, true)) {
+            continue;
+          }
           if ((iD == XiCzeroToXiPi || iD == OmegaCToXiPi) &&
               !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kXiMinus, +kPiPlus}, true)) {
             continue;
@@ -306,6 +320,16 @@ struct HfTaskMcValidationGen {
 
         if (nDaughters[iD] == 5) {
           if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal5Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
+            continue;
+          }
+          if (iD == Ds1ToDStarK0s &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kK0Short, +o2::constants::physics::Pdg::kDStar}, false, nullptr, 2) &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, -PDGArrayParticle[iD], std::array{+kK0Short, -o2::constants::physics::Pdg::kDStar}, false, nullptr, 2)) {
+            continue;
+          }
+          if (iD == Ds2StarToDPlusK0s &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kK0Short, +o2::constants::physics::Pdg::kDPlus}, false, nullptr, 2) &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, -PDGArrayParticle[iD], std::array{+kK0Short, -o2::constants::physics::Pdg::kDPlus}, false, nullptr, 2)) {
             continue;
           }
           if (iD == XiCplusToXiPiPi &&
@@ -515,6 +539,8 @@ struct HfTaskMcValidationRec {
      {"TrackToCollChecks/histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}},
      {"TrackToCollChecks/histFracGoodContributors", "Fraction of PV contributors originating from the correct collision;fraction;entries", {HistType::kTH1F, {{101, 0., 1.01}}}},
      {"TrackToCollChecks/histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;#it{R}_{xy} collision 1 (cm);#it{R}_{xy} collision 2 (cm);number of contributors from beauty collision 1;number of contributors from beauty collision 2;", {HistType::kTHnSparseF, {axisMult, axisMult, axisR, axisR, axisSmallNum, axisSmallNum}}}}};
+  HistogramRegistry registryMesons{"registryMesons"};
+  HistogramRegistry registryBaryons{"registryBaryons"};
 
   /// RMS calculation
   /// \param vec  vector of values to compute RMS
@@ -602,20 +628,39 @@ struct HfTaskMcValidationRec {
     histAmbiguousTracks->GetXaxis()->SetBinLabel(3, "charm");
     histAmbiguousTracks->GetXaxis()->SetBinLabel(4, "beauty");
     for (auto iHad = 0; iHad < nChannels; ++iHad) {
-      histDeltaPt[iHad] = registry.add<TH1>(Form("%s/histDeltaPt", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
-      histDeltaPx[iHad] = registry.add<TH1>(Form("%s/histDeltaPx", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
-      histDeltaPy[iHad] = registry.add<TH1>(Form("%s/histDeltaPy", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
-      histDeltaPz[iHad] = registry.add<TH1>(Form("%s/histDeltaPz", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
-      histDeltaSecondaryVertexX[iHad] = registry.add<TH1>(Form("%s/histDeltaSecondaryVertexX", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
-      histDeltaSecondaryVertexY[iHad] = registry.add<TH1>(Form("%s/histDeltaSecondaryVertexY", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
-      histDeltaSecondaryVertexZ[iHad] = registry.add<TH1>(Form("%s/histDeltaSecondaryVertexZ", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
-      histDeltaDecayLength[iHad] = registry.add<TH1>(Form("%s/histDeltaDecayLength", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
-      for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
-        histPtReco[iHad][iOrigin] = registry.add<TH1>(Form("%s/histPtReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
-        for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
-          histPtDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("%s/histPtDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
-          histEtaDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("%s/histEtaDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
-          histImpactParameterDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("%s/histImpactParameterDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+      if (iHad < nMesonChannels) {
+        histDeltaPt[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaPt", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+        histDeltaPx[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaPx", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+        histDeltaPy[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaPy", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+        histDeltaPz[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaPz", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+        histDeltaSecondaryVertexX[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaSecondaryVertexX", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+        histDeltaSecondaryVertexY[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaSecondaryVertexY", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+        histDeltaSecondaryVertexZ[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaSecondaryVertexZ", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+        histDeltaDecayLength[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaDecayLength", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+        for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
+          histPtReco[iHad][iOrigin] = registryMesons.add<TH1>(Form("%s/histPtReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
+          for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
+            histPtDau[iHad][iOrigin][iDau] = registryMesons.add<TH1>(Form("%s/histPtDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
+            histEtaDau[iHad][iOrigin][iDau] = registryMesons.add<TH1>(Form("%s/histEtaDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
+            histImpactParameterDau[iHad][iOrigin][iDau] = registryMesons.add<TH1>(Form("%s/histImpactParameterDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+          }
+        }
+      } else {
+        histDeltaPt[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaPt", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+        histDeltaPx[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaPx", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+        histDeltaPy[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaPy", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+        histDeltaPz[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaPz", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+        histDeltaSecondaryVertexX[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaSecondaryVertexX", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+        histDeltaSecondaryVertexY[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaSecondaryVertexY", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+        histDeltaSecondaryVertexZ[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaSecondaryVertexZ", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+        histDeltaDecayLength[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaDecayLength", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+        for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
+          histPtReco[iHad][iOrigin] = registryBaryons.add<TH1>(Form("%s/histPtReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
+          for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
+            histPtDau[iHad][iOrigin][iDau] = registryBaryons.add<TH1>(Form("%s/histPtDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
+            histEtaDau[iHad][iOrigin][iDau] = registryBaryons.add<TH1>(Form("%s/histEtaDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
+            histImpactParameterDau[iHad][iOrigin][iDau] = registryBaryons.add<TH1>(Form("%s/histImpactParameterDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+          }
         }
       }
     }

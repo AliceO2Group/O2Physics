@@ -103,10 +103,11 @@ void DielectronCut::SetChi2PerClusterITS(float min, float max)
   mMaxChi2PerClusterITS = max;
   LOG(info) << "Dielectron Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
 }
-void DielectronCut::SetMeanClusterSizeITSob(float min, float max)
+void DielectronCut::SetMeanClusterSizeITS(float min, float max, float maxP)
 {
   mMinMeanClusterSizeITS = min;
   mMaxMeanClusterSizeITS = max;
+  mMaxP_ITSClusterSize = maxP;
   LOG(info) << "Dielectron Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
 void DielectronCut::SetDca3DRange(float min, float max)
@@ -159,12 +160,11 @@ void DielectronCut::SetMuonExclusionTPC(bool flag)
   LOG(info) << "Dielectron Cut, set flag for muon exclusion in TPC: " << mMuonExclusionTPC;
 }
 
-void DielectronCut::SetTOFbetaRange(bool flag, float min, float max)
+void DielectronCut::SetTOFbetaRange(float min, float max)
 {
-  mApplyTOFbeta = flag;
   mMinTOFbeta = min;
   mMaxTOFbeta = max;
-  LOG(info) << "Dielectron Cut, set TOF beta rejection range: " << mMinTOFbeta << " - " << mMaxTOFbeta;
+  LOG(info) << "Dielectron Cut, set TOF beta range (TOFif): " << mMinTOFbeta << " - " << mMaxTOFbeta;
 }
 
 void DielectronCut::SetTPCNsigmaElRange(float min, float max)

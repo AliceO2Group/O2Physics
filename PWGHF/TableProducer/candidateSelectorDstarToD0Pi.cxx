@@ -45,6 +45,8 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<double> ptD0CandMax{"ptD0CandMax", 50., "Maximum D0 candidate pT"};
   Configurable<std::vector<double>> binsPtD0{"binsPtD0", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for D0"};
   Configurable<LabeledArray<double>> cutsD0{"cutsD0", {hf_cuts_d0_to_pi_k::cuts[0], hf_cuts_d0_to_pi_k::nBinsPt, hf_cuts_d0_to_pi_k::nCutVars, hf_cuts_d0_to_pi_k::labelsPt, hf_cuts_d0_to_pi_k::labelsCutVar}, "D0 candidate selection per pT bin"};
+  // Mass Cut for trigger analysis
+  Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   // Configurable specific to Dstar
   Configurable<double> ptDstarCandMin{"ptDstarCandMin", 0., "Minimum Dstar candidate pT"};
@@ -107,6 +109,8 @@ struct HfCandidateSelectorDstarToD0Pi {
   AxisSpec axisBdtScore{100, 0.f, 1.f};
   AxisSpec axisSelStatus{2, -0.5f, 1.5f};
   HistogramRegistry registry{"registry"};
+
+  HfTrigger2ProngCuts hfTriggerCuts;
 
   void init(InitContext&)
   {
@@ -282,6 +286,9 @@ struct HfCandidateSelectorDstarToD0Pi {
       if (std::abs(mInvD0 - massD0) > cutsD0->get(binPt, "m")) {
         return false;
       }
+      if (useTriggerMassCut && !isCandidateInMassRange(mInvD0, massD0, candidate.ptD0(), hfTriggerCuts)) {
+        return false;
+      }
       // cut on daughter pT
       auto d0prong0 = candidate.template prong0_as<TracksSel>();
       auto d0prong1 = candidate.template prong1_as<TracksSel>();
@@ -305,6 +312,9 @@ struct HfCandidateSelectorDstarToD0Pi {
       mInvAntiDstar = candidate.invMassAntiDstar();
       mInvD0Bar = candidate.invMassD0Bar();
       if (std::abs(mInvD0Bar - massD0) > cutsD0->get(binPt, "m")) {
+        return false;
+      }
+      if (useTriggerMassCut && !isCandidateInMassRange(mInvD0Bar, massD0, candidate.ptD0(), hfTriggerCuts)) {
         return false;
       }
       // cut on daughter pT

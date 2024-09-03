@@ -435,7 +435,7 @@ struct EventSelectionTask {
   Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
   Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
-  Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
+  Configurable<int> isMC{"isMC", 0, "-1 - autoset, 0 - data, 1 - MC"};
   // configurables for occupancy-based event selection
   Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};
   Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};
@@ -472,12 +472,22 @@ struct EventSelectionTask {
 
   void init(InitContext&)
   {
-    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = false;
+    if (metadataInfo.isFullyDefined()) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+      if (!doprocessRun2 && !doprocessRun3) {
+        LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = false;
+        }
+      }
+      if (isMC == -1) {
+        LOG(info) << "Autosetting the MC mode based on metadata";
+        if (metadataInfo.isMC()) {
+          isMC.value = 1;
+        } else {
+          isMC.value = 0;
+        }
       }
     }
 
@@ -502,7 +512,7 @@ struct EventSelectionTask {
     auto bc = col.bc_as<BCsWithBcSelsRun2>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
     bool* applySelection = par->GetSelection(muonSelection);
-    if (isMC) {
+    if (isMC == 1) {
       applySelection[kIsBBZAC] = 0;
       applySelection[kNoV0MOnVsOfPileup] = 0;
       applySelection[kNoSPDOnVsOfPileup] = 0;
@@ -558,7 +568,7 @@ struct EventSelectionTask {
     bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582);
 
     // fill counters
-    if (isMC || (!isINT1period && bc.alias_bit(kINT7)) || (isINT1period && bc.alias_bit(kINT1))) {
+    if (isMC == 1 || (!isINT1period && bc.alias_bit(kINT7)) || (isINT1period && bc.alias_bit(kINT1))) {
       histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
       if ((!isINT1period && sel7) || (isINT1period && sel1)) {
         histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);

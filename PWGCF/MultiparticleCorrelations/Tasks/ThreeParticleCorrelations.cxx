@@ -42,7 +42,9 @@ struct ThreePartCorr {
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs>>;
   using MyFilteredCollision = MyFilteredCollisions::iterator;
   using MyFilteredV0s = soa::Filtered<aod::V0Datas>;
-  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>>;
+  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
+                                                   aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
+                                                   aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
 
   // Mixed-events binning policy
   SliceCache cache;
@@ -81,9 +83,17 @@ struct ThreePartCorr {
     QARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{CentralityAxis}}});
     QARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{ZvtxAxis}}});
 
-    QARegistry.add("hNSigmaPion", "hNSigmaPion", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
-    QARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
-    QARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{28, 0.2, 3.0}, {161, -4.025, 4.025}}});
+    QARegistry.add("hdEdx", "hdEdx", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    QARegistry.add("hdEdxPion", "hdEdxPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    QARegistry.add("hdEdxKaon", "hdEdxKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    QARegistry.add("hdEdxProton", "hdEdxProton", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    QARegistry.add("hBeta", "hBeta", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
+    QARegistry.add("hBetaPion", "hBetaPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
+    QARegistry.add("hBetaKaon", "hBetaKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
+    QARegistry.add("hBetaProton", "hBetaProton", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
+    // QARegistry.add("hNSigmaPion", "hNSigmaPion", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
+    // QARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
+    // QARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{28, 0.2, 3.0}, {201, -5.025, 5.025}}});
 
     QARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {PtAxis}, {CentralityAxis}}});
     QARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {PtAxis}, {CentralityAxis}}});
@@ -118,12 +128,20 @@ struct ThreePartCorr {
         QARegistry.fill(HIST("hTrackPt"), track.pt());
         QARegistry.fill(HIST("hTrackEta"), track.eta());
         QARegistry.fill(HIST("hTrackPhi"), track.phi());
+        QARegistry.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
+        QARegistry.fill(HIST("hBeta"), track.p(), track.beta());
         if (A_PID[0] == 0.0) { // Pions
-          QARegistry.fill(HIST("hNSigmaPion"), track.pt(), track.tpcNSigmaPi());
+          QARegistry.fill(HIST("hdEdxPion"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaPion"), track.p(), track.beta());
+          // QARegistry.fill(HIST("hNSigmaPion"), track.pt(), track.tpcNSigmaPi());
         } else if (A_PID[0] == 1.0) { // Kaons
-          QARegistry.fill(HIST("hNSigmaKaon"), track.pt(), track.tpcNSigmaKa());
+          QARegistry.fill(HIST("hdEdxKaon"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaKaon"), track.p(), track.beta());
+          // QARegistry.fill(HIST("hNSigmaKaon"), track.pt(), track.tpcNSigmaKa());
         } else if (A_PID[0] == 2.0) { // Protons
-          QARegistry.fill(HIST("hNSigmaProton"), track.pt(), track.tpcNSigmaPr());
+          QARegistry.fill(HIST("hdEdxProton"), track.p(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaProton"), track.p(), track.beta());
+          // QARegistry.fill(HIST("hNSigmaProton"), track.pt(), track.tpcNSigmaPr());
         }
       }
     }
@@ -241,18 +259,28 @@ struct ThreePartCorr {
 
     static Double_t ID[2]; // {PID, NSigma}
 
-    Double_t NSigma[3];
-    NSigma[0] = TMath::Abs(Track.tpcNSigmaPi());
-    NSigma[1] = TMath::Abs(Track.tpcNSigmaKa());
-    NSigma[2] = TMath::Abs(Track.tpcNSigmaPr());
+    Double_t NSigmaTPC[3], NSigma[3];
+    Double_t NSigmaTOF[3] = {0.0, 0.0, 0.0};
+    NSigmaTPC[0] = Track.tpcNSigmaPi();
+    NSigmaTPC[1] = Track.tpcNSigmaKa();
+    NSigmaTPC[2] = Track.tpcNSigmaPr();
+    if (Track.hasTOF()) {
+      NSigmaTOF[0] = Track.tofNSigmaPi();
+      NSigmaTOF[1] = Track.tofNSigmaKa();
+      NSigmaTOF[2] = Track.tofNSigmaPr();
+    }
 
-    if (NSigma[0] < std::min(NSigma[1], NSigma[2])) { // Pions
+    NSigma[0] = TMath::Sqrt(pow(NSigmaTPC[0], 2) + pow(NSigmaTOF[0], 2));
+    NSigma[1] = TMath::Sqrt(pow(NSigmaTPC[1], 2) + pow(NSigmaTOF[1], 2));
+    NSigma[2] = TMath::Sqrt(pow(NSigmaTPC[2], 2) + pow(NSigmaTOF[2], 2));
+
+    if (NSigma[0] <= std::min(NSigma[1], NSigma[2])) { // Pions
       ID[0] = 0.0;
       ID[1] = NSigma[0];
-    } else if (NSigma[1] < std::min(NSigma[0], NSigma[2])) { // Kaons
+    } else if (NSigma[1] <= std::min(NSigma[0], NSigma[2])) { // Kaons
       ID[0] = 1.0;
       ID[1] = NSigma[1];
-    } else if (NSigma[2] < std::min(NSigma[0], NSigma[1])) { // Protons
+    } else if (NSigma[2] <= std::min(NSigma[0], NSigma[1])) { // Protons
       ID[0] = 2.0;
       ID[1] = NSigma[2];
     }

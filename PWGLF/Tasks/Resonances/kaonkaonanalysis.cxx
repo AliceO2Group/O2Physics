@@ -82,6 +82,7 @@ struct kaonkaonAnalysisRun3 {
   TF1* fMultMultPVCut = nullptr;
 
   // track
+  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -110,6 +111,7 @@ struct kaonkaonAnalysisRun3 {
   Configurable<int> c_nof_rotations{"c_nof_rotations", 3, "Number of random rotations in the rotational background"};
   ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
   ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
+  ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
 
   // different frames
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", true, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -155,9 +157,9 @@ struct kaonkaonAnalysisRun3 {
       histos.add("hmutiplicity", "Multiplicity percentile distribution", kTH1F, {axisMult});
       histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
       histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
-      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {axisMultdist});
+      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {axisMultdist});
+      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {axisMultdist});
     }
 
     if (QAPID) {
@@ -360,7 +362,7 @@ struct kaonkaonAnalysisRun3 {
 
       if (rotation) {
         for (int i = 0; i < c_nof_rotations; i++) {
-          float theta2 = rn->Uniform(0, TMath::Pi());
+          float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
           vec4.SetPtEtaPhiM(candidate1.pt(), candidate1.eta(), candidate1.phi() + theta2, massd1); // for rotated background
           vec5 = vec4 + vec2;
           histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, vec5.Pt(), vec5.M(), framecalculation);

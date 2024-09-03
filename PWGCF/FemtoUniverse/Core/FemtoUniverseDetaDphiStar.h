@@ -225,8 +225,6 @@ class FemtoUniverseDetaDphiStar
       for (int i = 0; i < 2; i++) {
         auto indexOfDaughterpart1 = (ChosenEventType == femtoUniverseContainer::EventType::mixed ? part1.globalIndex() : part1.index()) - 2 + i;
         auto indexOfDaughterpart2 = (ChosenEventType == femtoUniverseContainer::EventType::mixed ? part2.globalIndex() : part2.index()) - 2 + i;
-        // auto indexOfDaughterpart1 = part1.globalIndex() - 2 + i;
-        // auto indexOfDaughterpart2 = part2.globalIndex() - 2 + i;
         auto daughterpart1 = particles.begin() + indexOfDaughterpart1;
         auto daughterpart2 = particles.begin() + indexOfDaughterpart2;
         auto deta = daughterpart1.eta() - daughterpart2.eta();
@@ -239,7 +237,8 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if (pow(dphiAvg, 2) / pow(CutDeltaPhiStarMax, 2) + pow(deta, 2) / pow(CutDeltaEtaMax, 2) < 1.) {
+        // if (pow(dphiAvg, 2) / pow(CutDeltaPhiStarMax, 2) + pow(deta, 2) / pow(CutDeltaEtaMax, 2) < 1.) {
+        if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true;
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {

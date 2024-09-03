@@ -206,9 +206,13 @@ DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                  
 DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
 DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);
+DECLARE_SOA_COLUMN(NSigTofKaExpPi, nSigTofKaExpPi, float);
+DECLARE_SOA_COLUMN(NSigTofKaExpKa, nSigTofKaExpKa, float);
 DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);
 DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);
 DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);
+DECLARE_SOA_COLUMN(NSigTofPiExpPi, nSigTofPiExpPi, float);
+DECLARE_SOA_COLUMN(NSigTofPiExpKa, nSigTofPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);
 DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);
@@ -216,9 +220,13 @@ DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);
 DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);
 DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
 DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);
+DECLARE_SOA_COLUMN(NSigTpcKaExpPi, nSigTpcKaExpPi, float);
+DECLARE_SOA_COLUMN(NSigTpcKaExpKa, nSigTpcKaExpKa, float);
 DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);
 DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);
 DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);
+DECLARE_SOA_COLUMN(NSigTpcPiExpPi, nSigTpcPiExpPi, float);
+DECLARE_SOA_COLUMN(NSigTpcPiExpKa, nSigTpcPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);
 DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);
@@ -226,9 +234,13 @@ DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);
 DECLARE_SOA_COLUMN(NSigTpcTofKa0, nSigTpcTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);
 DECLARE_SOA_COLUMN(NSigTpcTofKa2, nSigTpcTofKa2, float);
+DECLARE_SOA_COLUMN(NSigTpcTofKaExpPi, nSigTpcTofKaExpPi, float);
+DECLARE_SOA_COLUMN(NSigTpcTofKaExpKa, nSigTpcTofKaExpKa, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPi0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPi1, nSigTpcTofPi1, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPiExpPi, nSigTpcTofPiExpPi, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPiExpKa, nSigTpcTofPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr0, nSigTpcTofPr0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr1, nSigTpcTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPr2, float);
@@ -287,18 +299,18 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate propertie
                   hf_cand::ImpactParameter1,
                   hf_cand_par::ImpactParameterNormalised0,
                   hf_cand_par::ImpactParameterNormalised1,
-                  hf_cand_par::NSigTpcPi0,
-                  hf_cand_par::NSigTpcKa0,
-                  hf_cand_par::NSigTofPi0,
-                  hf_cand_par::NSigTofKa0,
-                  hf_cand_par::NSigTpcTofPi0,
-                  hf_cand_par::NSigTpcTofKa0,
-                  hf_cand_par::NSigTpcPi1,
-                  hf_cand_par::NSigTpcKa1,
-                  hf_cand_par::NSigTofPi1,
-                  hf_cand_par::NSigTofKa1,
-                  hf_cand_par::NSigTpcTofPi1,
-                  hf_cand_par::NSigTpcTofKa1,
+                  hf_cand_par::NSigTpcPiExpPi,
+                  hf_cand_par::NSigTofPiExpPi,
+                  hf_cand_par::NSigTpcTofPiExpPi,
+                  hf_cand_par::NSigTpcKaExpPi,
+                  hf_cand_par::NSigTofKaExpPi,
+                  hf_cand_par::NSigTpcTofKaExpPi,
+                  hf_cand_par::NSigTpcPiExpKa,
+                  hf_cand_par::NSigTofPiExpKa,
+                  hf_cand_par::NSigTpcTofPiExpKa,
+                  hf_cand_par::NSigTpcKaExpKa,
+                  hf_cand_par::NSigTofKaExpKa,
+                  hf_cand_par::NSigTpcTofKaExpKa,
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct,
                   soa::Marker<MarkerD0>);
