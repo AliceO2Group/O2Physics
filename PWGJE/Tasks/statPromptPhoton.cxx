@@ -158,12 +158,12 @@ struct statPromptPhoton {
         if (!IsParticle) {
           if (!trackSelection(track)) {
             continue;
-					}
-				}
+          }
+        }
       } else {
         if (IsParticle) {
           if (track.pt() < 0.15) {
-						continue;
+            continue;
           }
           if (std::abs(track.eta()) > cfgtrkMaxEta) {
             continue;
