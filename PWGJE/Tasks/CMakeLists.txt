@@ -159,10 +159,10 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(bjet-tree-creator
                         SOURCES bjetTreeCreator.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-			COMPONENT_NAME Analysis)
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(stat-prompt-photon
                         SOURCES statPromptPhoton.cxx
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore		
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(full-jet-spectra-pp
                         SOURCES fulljetspectrapp.cxx
