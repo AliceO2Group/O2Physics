@@ -1127,31 +1127,29 @@ struct QaEfficiency {
           if (passedTOF) {
             hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
           }
-       }
-     }
-     if (isFinal(mcParticle)) {
-       if (passedITS && passedTPC && motherIsAccepted) {
-         hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
-         hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
-         if (passedTOF) {
-           hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
+        if (isFinal(mcParticle)) {
+          if (passedITS && passedTPC && motherIsAccepted) {
+            hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
+            hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
+            if (passedTOF) {
+              hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
+            }
+            if (doPtRadius) {
+              hPtRadiusItsTpcTer[histogramIndex]->Fill(mcParticle.pt(), radius);
+              if (passedTOF) {
+                hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
+              }
+            }
+          }
+        } else { // Material
+          if (passedITS && passedTPC) {
+            hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
+            hPtTrkItsTpcMat[histogramIndex]->Fill(track.pt());
+            if (passedTOF) {
+              hPtItsTpcTofMat[histogramIndex]->Fill(mcParticle.pt());
+            }
          }
-         if (doPtRadius) {
-           hPtRadiusItsTpcTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-           if (passedTOF) {
-             hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-           }
-         }
-       }
-    } else { // Material
-      if (passedITS && passedTPC) {
-        hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
-        hPtTrkItsTpcMat[histogramIndex]->Fill(track.pt());
-        if (passedTOF) {
-          hPtItsTpcTofMat[histogramIndex]->Fill(mcParticle.pt());
-        }
       }
-    }
   }
 
   template <int pdgSign, o2::track::PID::ID id, bool recoEv = false>
