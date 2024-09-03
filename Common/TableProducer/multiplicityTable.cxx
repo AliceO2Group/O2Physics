@@ -627,7 +627,7 @@ struct MultiplicityTable {
   Filter mcParticleFilter = (aod::mcparticle::eta < 4.9f) && (aod::mcparticle::eta > -3.3f);
   using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
 
-  void processMC(aod::McCollision const& collisionMC, mcParticlesFiltered const& mcParticles)
+  void processMC(aod::McCollision const&, mcParticlesFiltered const& mcParticles)
   {
     int multFT0A = 0;
     int multFT0C = 0;
@@ -662,7 +662,7 @@ struct MultiplicityTable {
       if (3.5 < mcPart.eta() && mcPart.eta() < 4.9)
         multFT0A++;
     }
-    tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10, collisionMC.posZ());
+    tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
   }
 
   Configurable<float> min_pt_globaltrack{"min_pt_globaltrack", 0.15, "min. pT for global tracks"};
