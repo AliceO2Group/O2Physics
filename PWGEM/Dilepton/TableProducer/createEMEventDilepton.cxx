@@ -37,7 +37,7 @@ using namespace o2::soa;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::Mults>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
 using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
 
@@ -69,11 +69,15 @@ struct CreateEMEventDilepton {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
   {
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
@@ -143,7 +147,7 @@ struct CreateEMEventDilepton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         continue;
       }
 
@@ -320,8 +324,6 @@ struct EMEventPropertyTask {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   using Run3Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
 
   Produces<aod::EMEventsProperty> evprop;
@@ -341,8 +343,6 @@ struct EMEventPropertyTask {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   void init(InitContext& initContext)
   {
-    getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-
     if (fillQAHistogram) {
       fRegistry.add("Spherocity/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{200, 0.0f, 10}}, false);
       fRegistry.add("Spherocity/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
@@ -350,8 +350,6 @@ struct EMEventPropertyTask {
       fRegistry.add("Spherocity/hSpherocity_ptunweighted", "spherocity;Number of used tracks;spherocity", kTH2F, {{101, -0.5, 100.5}, {100, 0.0f, 1}}, false);
     }
   }
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   template <typename TTracks>
   int getSpherocity(TTracks const& tracks, float& spherocity_ptweighted, float& spherocity_ptunweighted)
