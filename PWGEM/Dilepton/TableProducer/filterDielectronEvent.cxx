@@ -48,7 +48,7 @@ using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
 using MyTrackMC = MyTracksMC::iterator;
 
 struct filterDielectronEvent {
-  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
   using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 
   SliceCache cache;
@@ -62,9 +62,6 @@ struct filterDielectronEvent {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-
-  // for software triggers
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
 
   // Operation and minimisation criteria
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
@@ -411,7 +408,7 @@ struct filterDielectronEvent {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         filter(0, 0, 0);
         continue;
       }
@@ -473,7 +470,7 @@ struct filterDielectronEvent {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         filter(0, 0, 0);
         continue;
       }
@@ -562,7 +559,7 @@ struct filterDielectronEvent {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         filter(0, 0, 0);
         continue;
       }
@@ -627,7 +624,7 @@ struct filterDielectronEvent {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         filter(0, 0, 0);
         continue;
       }
@@ -726,7 +723,7 @@ struct filterDielectronEvent {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         filter(0, 0, 0);
         continue;
       }
@@ -788,7 +785,7 @@ struct filterDielectronEvent {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         filter(0, 0, 0);
         continue;
       }
@@ -900,11 +897,11 @@ struct createEMEvent2VP {
   using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
-  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::EMEventsNee, aod::EMEventsNgPCM>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::EMEventsNee, aod::EMEventsNgPCM, aod::EMEvSels>;
   using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
   using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
 
-  using MyCollisionsWithSWT = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::EMEventsNee, aod::EMEventsNgPCM, aod::EMSWTriggerInfosTMP>;
+  using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
   using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
   using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
 
@@ -925,16 +922,9 @@ struct createEMEvent2VP {
     kEvent_Cent_Qvec = 2,
   };
 
-  Configurable<bool> inherit_from_filter_dielectron_event{"inherit_from_filter_dielectron_event", true, "flag to inherit task options from filter-dielectron-event"};
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
-
   HistogramRegistry registry{"registry"};
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
-    if (inherit_from_filter_dielectron_event) {
-      getTaskOptionValue(initContext, "filter-dielectron-event", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-    }
-
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
@@ -972,7 +962,7 @@ struct createEMEvent2VP {
 
       auto bc = collision.template foundBC_as<TBCs>();
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         continue;
       }
 
