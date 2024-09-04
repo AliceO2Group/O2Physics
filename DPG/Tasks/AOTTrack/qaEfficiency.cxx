@@ -1149,8 +1149,8 @@ struct QaEfficiency {
             if (passedTOF) {
               hPtItsTpcTofMat[histogramIndex]->Fill(mcParticle.pt());
             }
-         }
-      }
+          }
+        }
   }
 
   template <int pdgSign, o2::track::PID::ID id, bool recoEv = false>
