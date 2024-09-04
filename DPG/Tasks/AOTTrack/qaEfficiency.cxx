@@ -1142,6 +1142,7 @@ struct QaEfficiency {
                 hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
               }
             }
+           }
           }
         } else { // Material
           if (passedITS && passedTPC) {
