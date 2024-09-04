@@ -33,4 +33,3 @@ struct CollisionSystemType {
 
   static int getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* grplhcif);
 };
-  
