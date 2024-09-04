@@ -189,13 +189,13 @@ class PairSHCentMultKt
     int multbinval;
     int absmultval = multval;
 
-    if ((absmultval > CentMultBins[0]) && (absmultval <= CentMultBins[1])) {
+    if ((absmultval >= CentMultBins[0]) && (absmultval < CentMultBins[1])) {
       multbinval = 0;
-    } else if (absmultval <= CentMultBins[2]) {
+    } else if (absmultval < CentMultBins[2]) {
       multbinval = 1;
-    } else if (absmultval <= CentMultBins[3]) {
+    } else if (absmultval < CentMultBins[3]) {
       multbinval = 2;
-    } else if (ktval <= CentMultBins[4]) {
+    } else if (ktval < CentMultBins[4]) {
       multbinval = 3;
     } else {
       return;
@@ -216,13 +216,13 @@ class PairSHCentMultKt
                       int maxl, int multval, float ktval)
   {
     int ktbinval = -1;
-    if ((ktval > KtBins[0]) && (ktval <= KtBins[1])) {
+    if ((ktval >= KtBins[0]) && (ktval < KtBins[1])) {
       ktbinval = 0;
-    } else if (ktval <= KtBins[2]) {
+    } else if (ktval < KtBins[2]) {
       ktbinval = 1;
-    } else if (ktval <= KtBins[3]) {
+    } else if (ktval < KtBins[3]) {
       ktbinval = 2;
-    } else if (ktval <= KtBins[4]) {
+    } else if (ktval < KtBins[4]) {
       ktbinval = 3;
     } else {
       return;
