@@ -266,8 +266,8 @@ struct FlowTask {
 
     // eta region
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
-    fGFW->AddRegion("refN00", -0.8, 0., 1, 1); // gap0 negative region
-    fGFW->AddRegion("refP00", 0., 0.8, 1, 1);   // gap0 positve region
+    fGFW->AddRegion("refN00", -0.8, 0., 1, 1);   // gap0 negative region
+    fGFW->AddRegion("refP00", 0., 0.8, 1, 1);    // gap0 positve region
     fGFW->AddRegion("refN02", -0.8, -0.1, 1, 1); // gap2 negative region
     fGFW->AddRegion("refP02", 0.1, 0.8, 1, 1);   // gap2 positve region
     fGFW->AddRegion("refN04", -0.8, -0.2, 1, 1); // gap4 negative region
@@ -322,7 +322,8 @@ struct FlowTask {
       LOGF(info, "User adding GFW CorrelatorConfig:");
       // attentaion: here we follow the index of cfgUserDefineGFWCorr
       for (int i = 0; i < UserDefineGFWCorr.size(); i++) {
-        if (i >= UserDefineGFWName.size()) continue;
+        if (i >= UserDefineGFWName.size())
+          continue;
         LOGF(info, "%d: %s %s", i, UserDefineGFWCorr.at(i).c_str(), UserDefineGFWName.at(i).c_str());
         corrconfigs.push_back(fGFW->GetCorrelatorConfig(UserDefineGFWCorr.at(i).c_str(), UserDefineGFWName.at(i).c_str(), kFALSE));
       }
