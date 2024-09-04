@@ -787,7 +787,7 @@ struct femtoUniversePairTaskTrackPhi {
         continue; // no MC particle
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
       if (part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) {
-        if ((mcpart.pdgMCTruth() == 333) && (mcpart.partOriginMCTruth() == aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake)) {
+        if ((mcpart.pdgMCTruth() == 333) && (mcpart.partOriginMCTruth() == aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary)) {
           registryMCreco.fill(HIST("MCrecoPhi"), mcpart.pt(), mcpart.eta()); // phi
         }
       } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {
