@@ -35,33 +35,33 @@ struct MultiplicityExtraTable {
 
   Produces<aod::Mults2BC> mult2bc;
   Produces<aod::BC2Mults> bc2mult;
-  
+
   // Allow for downscaling of BC table for less space use in derived data
   Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
   Configurable<float> minFT0CforBCTable{"minFT0CforBCTable", 25.0f, "Minimum FT0C amplitude to fill BC table to reduce data"};
-  
+
   // needed for downscale
   unsigned int randomSeed = 0;
-  
+
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   BCPattern CollidingBunch;
-  
+
   int newRunNumber = -999;
   int oldRunNumber = -999;
-  
+
   void init(InitContext&)
   {
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    
+
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
-  
+
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
-  
+
   void processBCs(BCsWithRun3Matchings const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, aod::Collisions const& collisions)
   {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
@@ -70,8 +70,8 @@ struct MultiplicityExtraTable {
     std::vector<int> bc2multArray(bcs.size());
     int atIndex = 0;
     for (const auto& bc : bcs) {
-      newBCindex[bc.globalIndex()]=-1;
-      bc2multArray[bc.globalIndex()]=-1;
+      newBCindex[bc.globalIndex()] = -1;
+      bc2multArray[bc.globalIndex()] = -1;
 
       // downscale if requested to do so
       if (bcDownscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > bcDownscaleFactor) {
@@ -91,7 +91,7 @@ struct MultiplicityExtraTable {
       if (multFT0C < minFT0CforBCTable) {
         continue; // skip this event
       }
-      newBCindex[bc.globalIndex()]=atIndex++;
+      newBCindex[bc.globalIndex()] = atIndex++;
     }
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
 
@@ -104,7 +104,7 @@ struct MultiplicityExtraTable {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
 
     for (const auto& bc : bcs) {
-      if(newBCindex[bc.globalIndex()]<0){ 
+      if (newBCindex[bc.globalIndex()] < 0) {
         continue; // don't keep if low mult or downsampled out
       }
 
@@ -115,7 +115,7 @@ struct MultiplicityExtraTable {
       float multFV0A = 0.f;
       float multFDDA = 0.f;
       float multFDDC = 0.f;
-      
+
       // ZDC amplitudes
       float multZEM1 = -1.f;
       float multZEM2 = -1.f;
@@ -123,34 +123,34 @@ struct MultiplicityExtraTable {
       float multZNC = -1.f;
       float multZPA = -1.f;
       float multZPC = -1.f;
-      
+
       uint8_t multFT0TriggerBits = 0;
       uint8_t multFV0TriggerBits = 0;
       uint8_t multFDDTriggerBits = 0;
       uint64_t multBCTriggerMask = bc.triggerMask();
-      
+
       // initialize - from Arvind
       newRunNumber = bc.runNumber();
       int localBC = bc.globalBC() % nBCsPerOrbit;
-      
+
       if (newRunNumber != oldRunNumber) {
         auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, newRunNumber);
         auto ts = soreor.first;
-        
+
         LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
         oldRunNumber = newRunNumber;
         auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
         CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
       } // new run number
-      
+
       bool collidingBC = CollidingBunch.test(localBC);
-      
+
       if (bc.has_ft0()) {
         auto ft0 = bc.ft0();
         std::bitset<8> triggers = ft0.triggerMask();
         Tvx = triggers[o2::fit::Triggers::bitVertex];
         multFT0TriggerBits = static_cast<uint8_t>(triggers.to_ulong());
-        
+
         // calculate T0 charge
         for (auto amplitude : ft0.amplitudeA()) {
           multFT0A += amplitude;
@@ -166,7 +166,7 @@ struct MultiplicityExtraTable {
         auto fv0 = bc.fv0a();
         std::bitset<8> fV0Triggers = fv0.triggerMask();
         multFV0TriggerBits = static_cast<uint8_t>(fV0Triggers.to_ulong());
-        
+
         for (auto amplitude : fv0.amplitude()) {
           multFV0A += amplitude;
         }
@@ -174,12 +174,12 @@ struct MultiplicityExtraTable {
       } else {
         multFV0A = -999.0f;
       }
-      
+
       if (bc.has_fdd()) {
         auto fdd = bc.fdd();
         std::bitset<8> fFDDTriggers = fdd.triggerMask();
         multFDDTriggerBits = static_cast<uint8_t>(fFDDTriggers.to_ulong());
-        
+
         for (auto amplitude : fdd.chargeA()) {
           multFDDA += amplitude;
         }
@@ -190,7 +190,7 @@ struct MultiplicityExtraTable {
         multFDDA = -999.0f;
         multFDDC = -999.0f;
       }
-      
+
       if (bc.has_zdc()) {
         multZNA = bc.zdc().amplitudeZNA();
         multZNC = bc.zdc().amplitudeZNC();
@@ -211,21 +211,21 @@ struct MultiplicityExtraTable {
       multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
     }
   }
-  
+
   void processCollisionNeighbors(aod::Collisions const& collisions)
   {
     std::vector<float> timeArray;
     timeArray.resize(collisions.size(), 1e+3);
-    
+
     for (const auto& collision : collisions) {
       timeArray[collision.globalIndex()] = collision.collisionTime();
     }
-    
+
     float deltaPrevious = 1e+6, deltaPrePrevious = 1e+6;
     float deltaNext = 1e+6, deltaNeNext = 1e+6;
     for (const auto& collision : collisions) {
       int ii = collision.globalIndex();
-      
+
       if (ii - 1 >= 0)
         deltaPrevious = timeArray[ii] - timeArray[ii - 1];
       if (ii - 2 >= 0)
@@ -234,11 +234,11 @@ struct MultiplicityExtraTable {
         deltaNext = timeArray[ii + 1] - timeArray[ii];
       if (ii + 2 < collisions.size())
         deltaNeNext = timeArray[ii + 2] - timeArray[ii];
-      
+
       multNeigh(deltaPrePrevious, deltaPrevious, deltaNext, deltaNeNext);
     }
   }
-  
+
   // Process switches
   PROCESS_SWITCH(MultiplicityExtraTable, processBCs, "Produce BC tables", true);
   PROCESS_SWITCH(MultiplicityExtraTable, processCollisionNeighbors, "Produce neighbor timing tables", true);
