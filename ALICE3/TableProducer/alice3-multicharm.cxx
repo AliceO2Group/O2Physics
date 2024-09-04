@@ -584,4 +584,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<alice3multicharm>(cfgc)};
 }
- 
