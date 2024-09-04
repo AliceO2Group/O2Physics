@@ -640,7 +640,8 @@ struct FlowTask {
       Magnetfield = getMagneticField(bc.timestamp());
     }
     float independent = cent;
-    if (cfgUseNch) independent = static_cast<float>(tracks.size());
+    if (cfgUseNch)
+      independent = static_cast<float>(tracks.size());
 
     for (auto& track : tracks) {
       if (track.tpcNClsFound() < cfgCutTPCclu)
