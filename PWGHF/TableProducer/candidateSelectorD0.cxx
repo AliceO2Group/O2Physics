@@ -72,6 +72,8 @@ struct HfCandidateSelectorD0 {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_D0ToKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  // Mass Cut for trigger analysis
+  Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
   std::vector<float> outputMlD0 = {};
@@ -80,6 +82,7 @@ struct HfCandidateSelectorD0 {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   HfHelper hfHelper;
+  HfTrigger2ProngCuts hfTriggerCuts;
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
@@ -209,12 +212,17 @@ struct HfCandidateSelectorD0 {
       if (std::abs(massD0 - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
+      if (useTriggerMassCut && !isCandidateInMassRange(massD0, o2::constants::physics::MassD0, candidate.pt(), hfTriggerCuts)) {
+        return false;
+      }
     } else {
       if (std::abs(massD0bar - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
+      if (useTriggerMassCut && !isCandidateInMassRange(massD0bar, o2::constants::physics::MassD0, candidate.pt(), hfTriggerCuts)) {
+        return false;
+      }
     }
-
     // cut on daughter pT
     if (trackPion.pt() < cuts->get(pTBin, "pT Pi") || trackKaon.pt() < cuts->get(pTBin, "pT K")) {
       return false;
