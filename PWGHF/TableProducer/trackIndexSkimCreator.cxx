@@ -3189,7 +3189,7 @@ struct HfTrackIndexSkimCreatorCascades {
           // invariant mass
           // re-calculate invariant masses with updated momenta, to fill the histogram
           mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
-          if (mass2K0sP < config.massPrK0sMin || mass2K0sP > config.massPrK0sMin) {
+          if (mass2K0sP < config.massPrK0sMin || mass2K0sP > config.massPrK0sMax) {
             continue;
           }
 
