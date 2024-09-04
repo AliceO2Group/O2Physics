@@ -417,7 +417,7 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
         }
         // Dplus flag
-        flagDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
+        flagDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
         // prompt and non-prompt division
         isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -524,7 +524,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      if (std::abs(particle1.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+      if (!TESTBIT(std::abs(particle1.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         continue;
       }
       double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
@@ -628,7 +628,7 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       // Dplus flag
-      bool flagDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
+      bool flagDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
       // prompt and non-prompt division
       bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
