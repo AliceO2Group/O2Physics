@@ -223,6 +223,7 @@ struct HfCandidateSelectorD0 {
         return false;
       }
     }
+
     // cut on daughter pT
     if (trackPion.pt() < cuts->get(pTBin, "pT Pi") || trackKaon.pt() < cuts->get(pTBin, "pT K")) {
       return false;
