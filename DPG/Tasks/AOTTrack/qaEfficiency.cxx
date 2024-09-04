@@ -1128,28 +1128,28 @@ struct QaEfficiency {
             hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
           }
         }
-     }
-     if (isFinal(mcParticle)) {
-       if (passedITS && passedTPC && motherIsAccepted) {
-         hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
-         hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
-         if (passedTOF) {
-           hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
-         }
-         if (doPtRadius) {
-           hPtRadiusItsTpcTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-           if (passedTOF) {
-             hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-           }
-         }
-       }
+      }
+      if (isFinal(mcParticle)) {
+        if (passedITS && passedTPC && motherIsAccepted) {
+          hPtItsTpcTer[histogramIndex]->Fill(mcParticle.pt());
+          hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
+          if (passedTOF) {
+            hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
+          }
+          if (doPtRadius) {
+            hPtRadiusItsTpcTer[histogramIndex]->Fill(mcParticle.pt(), radius);
+            if (passedTOF) {
+              hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
+            }
+          }
+        }
       }
     } else { // Material
       if (passedITS && passedTPC) {
         hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
         hPtTrkItsTpcMat[histogramIndex]->Fill(track.pt());
         if (passedTOF) {
-         hPtItsTpcTofMat[histogramIndex]->Fill(mcParticle.pt());
+          hPtItsTpcTofMat[histogramIndex]->Fill(mcParticle.pt());
         }
       }
     }
