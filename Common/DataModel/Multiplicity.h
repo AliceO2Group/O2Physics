@@ -51,7 +51,7 @@ DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                       //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta10, multMCNParticlesEta10, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
-DECLARE_SOA_COLUMN(MultMCPVz, multMCPVz, float); //!
+DECLARE_SOA_COLUMN(MultMCPVz, multMCPVz, float);                       //!
 
 // complementary / MultsExtra table
 DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int); //!
