@@ -13,7 +13,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "CCDB/BasicCCDBManager.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -33,7 +32,6 @@
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
 #include "TVector2.h"
-#include "EventFiltering/Zorro.h"
 
 #include "CommonDataFormat/InteractionRecord.h"
 
@@ -62,10 +60,6 @@ struct GammaJetTreeProducer {
 
   HistogramRegistry mHistograms{"GammaJetTreeProducerHisto"};
 
-  // configure zorro
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Zorro zorro;
-
   // ---------------
   // Configureables
   // ---------------
@@ -73,9 +67,7 @@ struct GammaJetTreeProducer {
   // event cuts
   Configurable<double> mVertexCut{"vertexCut", 10.0, "apply z-vertex cut with value in cm"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
-  Configurable<std::string> mSoftwareTrigger{"softwareTrigger", "", "If set, only process events with this software trigger using zorro, e.g. fGammaHighPtEMCAL,fGammaHighPtDCAL"};
-  Configurable<std::string> fConfigCcdbPathZorro{
-    "ccdb-path-zorro", "http://alice-ccdb.cern.ch", "base path to the ccdb object for zorro"};
+  Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<std::string>
     trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<float> trackMinPt{"trackMinPt", 0.15, "minimum track pT cut"};
@@ -90,17 +82,17 @@ struct GammaJetTreeProducer {
   int mRunNumber = 0;
   int eventSelection = -1;
   int trackSelection = -1;
+
+  std::map<int32_t, int32_t> collisionMapping;
+  std::vector<int> triggerMaskBits;
+
   void init(InitContext const&)
   {
-    ccdb->setURL(fConfigCcdbPathZorro);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
-
     using o2HistType = HistType;
     using o2Axis = AxisSpec;
 
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     // create histograms
@@ -114,19 +106,6 @@ struct GammaJetTreeProducer {
     mHistograms.add("trackPt", "pT of track", o2HistType::kTH1F, {ptAxis});
     mHistograms.add("chjetPt", "pT of charged jet", o2HistType::kTH1F, {ptAxis});
     mHistograms.add("chjetpt_vs_constpt", "pT of charged jet vs pT of constituents", o2HistType::kTH2F, {ptAxis, ptAxis});
-  }
-
-  void initCCDB(aod::JBC const& bc)
-  {
-
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-    if (mSoftwareTrigger->length() > 0) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), mSoftwareTrigger.value);
-      zorro.populateHistRegistry(mHistograms, bc.runNumber());
-      mRunNumber = bc.runNumber();
-    }
   }
 
   // ---------------------
@@ -157,21 +136,13 @@ struct GammaJetTreeProducer {
     return true;
   }
 
-  bool isEventAccepted(const auto& collision, const auto& bc)
+  bool isEventAccepted(const auto& collision)
   {
-    // get bc from collision
-    initCCDB(bc);
-
-    if (mSoftwareTrigger->length() > 0) {
-      if (!zorro.isSelected(bc.globalBC())) {
-        return false;
-      }
-    }
 
     if (collision.posZ() > mVertexCut) {
       return false;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return false;
     }
     if (!jetderiveddatautilities::eventEMCAL(collision)) {
@@ -230,21 +201,25 @@ struct GammaJetTreeProducer {
   // ---------------------
   // Processing functions
   // ---------------------
+  void processClearMaps(JetCollisions const&)
+  {
+    collisionMapping.clear();
+  }
+  PROCESS_SWITCH(GammaJetTreeProducer, processClearMaps, "process function that clears all the maps in each dataframe", true);
 
   // define cluster filter. It selects only those clusters which are of the type
   // sadly passing of the string at runtime is not possible for technical region so cluster definition is
   // an integer instead
   Filter clusterDefinitionSelection = (o2::aod::jcluster::definition == mClusterDefinition);
   // Process clusters
-  void processClusters(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, aod::JBCs const&, selectedClusters const& clusters, JetTracks const& tracks)
+  void processClusters(soa::Join<JetCollisions,aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, aod::JBCs const&, selectedClusters const& clusters, JetTracks const& tracks)
   {
-    // get bc
-    auto bc = collision.bc_as<aod::JBCs>();
-    if (!isEventAccepted(collision, bc)) {
+    if (!isEventAccepted(collision)) {
       return;
     }
 
-    eventsTable(collision.globalIndex(), collision.multiplicity(), collision.centrality(), collision.rho(), collision.eventSel(), collision.alias_raw());
+    eventsTable(collision.multiplicity(), collision.centrality(), collision.rho(), collision.eventSel(), collision.alias_raw());
+    collisionMapping.insert(std::make_pair(collision.globalIndex(), eventsTable.lastIndex()));
 
     // loop over clusters
     for (auto cluster : clusters) {
@@ -282,7 +257,7 @@ struct GammaJetTreeProducer {
       //   dEta = 0;
       // }
 
-      gammasTable(collision.globalIndex(), cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), isoraw, perpconerho, dPhi, dEta, p);
+      gammasTable(collisionMapping[collision.globalIndex()], cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), isoraw, perpconerho, dPhi, dEta, p);
     }
 
     // dummy loop over tracks
@@ -296,9 +271,8 @@ struct GammaJetTreeProducer {
   // Process charged jets
   void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, aod::JBCs const&, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const&)
   {
-    // get bc
-    auto bc = collision.bc_as<aod::JBCs>();
-    if (!isEventAccepted(collision, bc)) {
+    // event selection
+    if (!isEventAccepted(collision)) {
       return;
     }
 
@@ -313,7 +287,7 @@ struct GammaJetTreeProducer {
         nconst++;
       }
 
-      chargedJetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(), jet.energy(), jet.mass(), jet.area(), nconst);
+      chargedJetsTable(collisionMapping[collision.globalIndex()], jet.pt(), jet.eta(), jet.phi(), jet.energy(), jet.mass(), jet.area(), nconst);
       // fill histograms
       mHistograms.fill(HIST("chjetPt"), jet.pt());
     }
@@ -323,6 +297,6 @@ struct GammaJetTreeProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<GammaJetTreeProducer>(cfgc, TaskName{"gamma-jet-tree-producer"}, SetDefaultProcesses{{{"processClusters", true}, {"processChargedJets", true}}})};
+    adaptAnalysisTask<GammaJetTreeProducer>(cfgc, TaskName{"gamma-jet-tree-producer"}, SetDefaultProcesses{{{"processClearMaps",true},{"processClusters", true}, {"processChargedJets", true}}})};
   return workflow;
 }
