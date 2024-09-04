@@ -194,7 +194,7 @@ struct tofPidBetaQa {
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "hasTOF");
     h->GetXaxis()->SetBinLabel(3, "isGlobalTrack");
-    h->GetXaxis()->SetBinLabel(4, Format("TOF chi2 < %.2f", mMaxTOFChi2.value));
+    h->GetXaxis()->SetBinLabel(4, TString::Format("TOF chi2 < %.2f", mMaxTOFChi2.value));
   }
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
