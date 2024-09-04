@@ -1127,7 +1127,7 @@ struct QaEfficiency {
           if (passedTOF) {
             hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
           }
-         }
+        }
         }
         if (isFinal(mcParticle)) {
           if (passedITS && passedTPC && motherIsAccepted) {
