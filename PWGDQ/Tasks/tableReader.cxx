@@ -1332,10 +1332,10 @@ struct AnalysisSameEventPairing {
             if (useMiniTree.fConfigMiniTree) {
               float dileptonMass = VarManager::fgValues[VarManager::kMass];
               if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
-                dileptonMiniTree(VarManager::fgValues[VarManager::kMass], 
-                                 VarManager::fgValues[VarManager::kPt], 
-                                 VarManager::fgValues[VarManager::kRap], 
-                                 VarManager::fgValues[VarManager::kCentFT0C], 
+                dileptonMiniTree(VarManager::fgValues[VarManager::kMass],
+                                 VarManager::fgValues[VarManager::kPt],
+                                 VarManager::fgValues[VarManager::kRap],
+                                 VarManager::fgValues[VarManager::kCentFT0C],
                                  VarManager::fgValues[VarManager::kCos2DeltaPhi]);
               }
             }
