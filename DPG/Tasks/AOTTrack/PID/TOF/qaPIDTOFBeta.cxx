@@ -48,6 +48,7 @@ struct tofPidBetaQa {
   ConfigurableAxis tofBetaBins{"tofBetaBins", {4000, 0, 2.f}, "Binning in the TOF beta plot"};
   ConfigurableAxis trackLengthBins{"trackLengthBins", {100, 0, 1000.f}, "Binning in track length plot"};
   Configurable<bool> requireGoodMatchTracks{"requireGoodMatchTracks", false, "Require good match tracks"};
+  Configurable<float> mMaxTOFChi2{"maxTOFChi2", 3.f, "Maximum TOF Chi2"};
 
   void init(o2::framework::InitContext&)
   {
@@ -193,7 +194,7 @@ struct tofPidBetaQa {
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "hasTOF");
     h->GetXaxis()->SetBinLabel(3, "isGlobalTrack");
-    h->GetXaxis()->SetBinLabel(4, "goodTOFMatch");
+    h->GetXaxis()->SetBinLabel(4, TString::Format("TOF chi2 < %.2f", mMaxTOFChi2.value));
   }
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
@@ -244,7 +245,7 @@ struct tofPidBetaQa {
         continue;
       }
       histos.fill(HIST("event/trackselection"), 3.f);
-      if (requireGoodMatchTracks.value && !track.goodTOFMatch()) { // Skipping tracks without good match
+      if (track.tofChi2() > mMaxTOFChi2) { // Skipping tracks with large Chi2
         continue;
       }
       histos.fill(HIST("event/trackselection"), 4.f);
