@@ -75,7 +75,7 @@ struct FlowTask {
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
+  ConfigurableAxis axisIndependent{"axisIndependent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
   ConfigurableAxis axisCentForQA{"axisCentForQA", {100, 0, 100}, "centrality for QA"};
   ConfigurableAxis axisNch{"axisNch", {4000, 0, 4000}, "N_{ch}"};
   ConfigurableAxis axisT0C{"axisT0C", {70, 0, 70000}, "N_{ch} (T0C)"};
@@ -185,12 +185,12 @@ struct FlowTask {
     registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{50, -1, 1}, {50, 0, 10}}});
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
     // additional Output histograms
-    registry.add("hMeanPt", "", {HistType::kTProfile, {axisCentrality}});
-    registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisCentrality}});
-    registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisCentrality}});
-    registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisCentrality}});
+    registry.add("hMeanPt", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
 
     // initial array
     BootstrapArray.resize(cfgNbootstrap);
@@ -198,11 +198,11 @@ struct FlowTask {
       BootstrapArray[i].resize(kCount_ExtraProfile);
     }
     for (int i = 0; i < cfgNbootstrap; i++) {
-      BootstrapArray[i][kMeanPt_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisCentrality}});
-      BootstrapArray[i][kC22_Gap08_Weff] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisCentrality}});
-      BootstrapArray[i][kC22_Gap08_MeanPt] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisCentrality}});
-      BootstrapArray[i][kPtVarParA_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisCentrality}});
-      BootstrapArray[i][kPtVarParB_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kMeanPt_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
+      BootstrapArray[i][kC22_Gap08_Weff] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisIndependent}});
+      BootstrapArray[i][kC22_Gap08_MeanPt] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisIndependent}});
+      BootstrapArray[i][kPtVarParA_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
+      BootstrapArray[i][kPtVarParB_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -252,7 +252,7 @@ struct FlowTask {
     oba->Add(new TNamed("Ch10Gap24", "Ch10Gap24"));
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
-    fFC->Initialize(oba, axisCentrality, cfgNbootstrap);
+    fFC->Initialize(oba, axisIndependent, cfgNbootstrap);
     delete oba;
 
     // eta region
@@ -613,6 +613,8 @@ struct FlowTask {
       // magnet field dependence cut
       Magnetfield = getMagneticField(bc.timestamp());
     }
+    float independent = cent;
+    if (cfgUseNch) independent = static_cast<float>(tracks.size());
 
     for (auto& track : tracks) {
       if (track.tpcNClsFound() < cfgCutTPCclu)
@@ -661,19 +663,19 @@ struct FlowTask {
     // Filling TProfile
     // MeanPt
     if (weffEvent > 1e-6)
-      registry.fill(HIST("hMeanPt"), cent, ptSum / weffEvent, weffEvent);
+      registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
     if (weffEvent_WithinGap08 > 1e-6)
-      registry.fill(HIST("hMeanPtWithinGap08"), cent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
+      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
     // v22-Pt
     // c22_gap8 * pt_withGap8
     if (weffEvent_WithinGap08 > 1e-6)
-      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), cent);
+      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
     // PtVariance
     if (WeffEvent_diff_WithGap08 > 1e-6) {
-      registry.fill(HIST("PtVariance_partA_WithinGap08"), cent,
+      registry.fill(HIST("PtVariance_partA_WithinGap08"), independent,
                     (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
                     WeffEvent_diff_WithGap08);
-      registry.fill(HIST("PtVariance_partB_WithinGap08"), cent,
+      registry.fill(HIST("PtVariance_partB_WithinGap08"), independent,
                     (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
                     WeffEvent_diff_WithGap08);
     }
@@ -681,21 +683,21 @@ struct FlowTask {
     // Filling Bootstrap Samples
     int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
     if (weffEvent_WithinGap08 > 1e-6)
-      BootstrapArray[SampleIndex][kMeanPt_InGap08]->Fill(cent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
+      BootstrapArray[SampleIndex][kMeanPt_InGap08]->Fill(independent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
     if (weffEvent_WithinGap08 > 1e-6)
-      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, BootstrapArray[SampleIndex][kC22_Gap08_Weff], BootstrapArray[SampleIndex][kC22_Gap08_MeanPt], cent);
+      FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, BootstrapArray[SampleIndex][kC22_Gap08_Weff], BootstrapArray[SampleIndex][kC22_Gap08_MeanPt], independent);
     if (WeffEvent_diff_WithGap08 > 1e-6) {
-      BootstrapArray[SampleIndex][kPtVarParA_InGap08]->Fill(cent,
+      BootstrapArray[SampleIndex][kPtVarParA_InGap08]->Fill(independent,
                                                             (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
                                                             WeffEvent_diff_WithGap08);
-      BootstrapArray[SampleIndex][kPtVarParB_InGap08]->Fill(cent,
+      BootstrapArray[SampleIndex][kPtVarParB_InGap08]->Fill(independent,
                                                             (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
                                                             WeffEvent_diff_WithGap08);
     }
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(corrconfigs.at(l_ind), cent, l_Random);
+      FillFC(corrconfigs.at(l_ind), independent, l_Random);
     }
   }
 };
