@@ -316,7 +316,7 @@ struct alice3multicharm {
     return returnValue;
   }
 
-  // Association check for the XiCC pion 
+  // Association check for the XiCC pion
   template <typename TTrackType1, typename TTrackType2>
   bool checkSameMotherExtra(TTrackType1 const& track1, TTrackType2 const& track2)
   {
@@ -584,3 +584,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<alice3multicharm>(cfgc)};
 }
+ 
