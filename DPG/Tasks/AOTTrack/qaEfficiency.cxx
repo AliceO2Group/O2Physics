@@ -1142,18 +1142,18 @@ struct QaEfficiency {
                 hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
               }
             }
-           }
           }
-     } else { // Material
-       if (passedITS && passedTPC) {
-         hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
-         hPtTrkItsTpcMat[histogramIndex]->Fill(track.pt());
-         if (passedTOF) {
-           hPtItsTpcTofMat[histogramIndex]->Fill(mcParticle.pt());
-         }
+       }
+   } else { // Material
+     if (passedITS && passedTPC) {
+       hPtItsTpcMat[histogramIndex]->Fill(mcParticle.pt());
+       hPtTrkItsTpcMat[histogramIndex]->Fill(track.pt());
+       if (passedTOF) {
+         hPtItsTpcTofMat[histogramIndex]->Fill(mcParticle.pt());
        }
      }
    }
+ }
 
   template <int pdgSign, o2::track::PID::ID id, bool recoEv = false>
   void fillMCParticleHistograms(const o2::aod::McParticles::iterator& mcParticle, const bool doMakeHistograms)
