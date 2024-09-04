@@ -38,6 +38,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include <TFile.h>
 #include <TH1.h>
+#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoUniverse;
@@ -159,7 +160,8 @@ struct femtoUniversePairTaskTrackPhi {
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
 
   // Efficiency
-  Configurable<std::string> ConfLocalEfficiency{"ConfLocalEfficiency", "", "Local path to efficiency .root file"};
+  Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency th2d file"};
+  Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency th2d file"};
 
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
@@ -178,6 +180,10 @@ struct femtoUniversePairTaskTrackPhi {
   std::unique_ptr<TFile> plocalEffFile;
   std::unique_ptr<TH1> plocalEffp1;
   std::unique_ptr<TH1> plocalEffp2;
+
+  Service<ccdb::BasicCCDBManager> ccdb;
+  TH2D* protoneff;
+  TH2D* phieff;
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -423,15 +429,25 @@ struct femtoUniversePairTaskTrackPhi {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCutMin.value, ConfCPRdeltaPhiCutMax.value, ConfCPRdeltaEtaCutMin.value, ConfCPRdeltaEtaCutMax.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value, ConfCPRInvMassCutMin.value, ConfCPRInvMassCutMax.value);
     }
 
-    if (!ConfLocalEfficiency.value.empty()) {
-      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(ConfLocalEfficiency.value.c_str(), "read"));
-      if (!plocalEffFile || plocalEffFile.get()->IsZombie()) {
-        LOGF(fatal, "Could not load efficiency histogram from %s", ConfLocalEfficiency.value.c_str());
-      }
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
 
-      plocalEffp1 = (ConfTrack.ConfTrackSign > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus"));
-      plocalEffp2 = std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Phi"));
-      LOGF(info, "Loaded efficiency histograms for track-Phi.");
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+
+    if (!ConfLocalEfficiencyProton.value.empty()) {
+      protoneff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyProton.value.c_str(), -1);
+      if (!protoneff || protoneff->IsZombie()) {
+        LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfLocalEfficiencyProton.value.c_str());
+      }
+    }
+    if (!ConfLocalEfficiencyPhi.value.empty()) {
+      phieff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyPhi.value.c_str(), -1);
+      if (!phieff || phieff->IsZombie()) {
+        LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfLocalEfficiencyPhi.value.c_str());
+      }
     }
 
     vPIDPhiCandidate = ConfPhi.ConfPIDPhi.value;
@@ -549,8 +565,8 @@ struct femtoUniversePairTaskTrackPhi {
       }
 
       float weight = 1.0f;
-      if (plocalEffp1) {
-        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(track.pt(), track.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(phicandidate.pt(), phicandidate.eta()));
+      if (phieff) {
+        weight = protoneff->GetBinContent(protoneff->FindBin(track.pt(), track.eta())) * phieff->GetBinContent(phieff->FindBin(phicandidate.pt(), phicandidate.eta()));
         sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
       } else {
         sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
@@ -656,8 +672,8 @@ struct femtoUniversePairTaskTrackPhi {
       }
 
       float weight = 1.0f;
-      if (plocalEffp1) {
-        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(track.pt(), track.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(phicandidate.pt(), phicandidate.eta()));
+      if (protoneff) {
+        weight = protoneff->GetBinContent(protoneff->FindBin(track.pt(), track.eta())) * phieff->GetBinContent(phieff->FindBin(phicandidate.pt(), phicandidate.eta()));
         mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
       } else {
         mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
