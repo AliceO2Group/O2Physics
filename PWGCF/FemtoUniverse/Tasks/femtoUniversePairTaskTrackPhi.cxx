@@ -177,10 +177,6 @@ struct femtoUniversePairTaskTrackPhi {
   HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPhiMinvBackground{"registryPhiMinvBackground", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
-  std::unique_ptr<TFile> plocalEffFile;
-  std::unique_ptr<TH1> plocalEffp1;
-  std::unique_ptr<TH1> plocalEffp2;
-
   Service<ccdb::BasicCCDBManager> ccdb;
   TH2D* protoneff;
   TH2D* phieff;
