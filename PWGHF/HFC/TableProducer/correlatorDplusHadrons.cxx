@@ -404,7 +404,7 @@ struct HfCorrelatorDplusHadrons {
       // MC reco level
       bool isDplusPrompt = false;
       bool isDplusNonPrompt = false;
-      bool flagDplusSignal = false;
+      bool isDplusSignal = false;
       for (const auto& candidate : candidates) {
         // rapidity and pT selections
         if (std::abs(hfHelper.yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptCandMax) {
@@ -417,7 +417,7 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
         }
         // Dplus flag
-        flagDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+        isDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
         // prompt and non-prompt division
         isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -428,7 +428,7 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hMassDplusMcRec"), hfHelper.invMassDplusToPiKPi(candidate), efficiencyWeightD);
         registry.fill(HIST("hDplusBin"), poolBin);
 
-        if (flagDplusSignal) {
+        if (isDplusSignal) {
           // fill per-candidate distributions from Dplus true candidates
           registry.fill(HIST("hPtProng0MCRec"), candidate.ptProng0());
           registry.fill(HIST("hPtProng1MCRec"), candidate.ptProng1());
@@ -479,7 +479,7 @@ struct HfCorrelatorDplusHadrons {
                                track.eta() - candidate.eta(),
                                candidate.pt(),
                                track.pt(), poolBin);
-          entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), flagDplusSignal);
+          entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), isDplusSignal);
           entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
@@ -628,11 +628,11 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       // Dplus flag
-      bool flagDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+      bool isDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
       // prompt and non-prompt division
       bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
-      if (flagDplusSignal) {
+      if (isDplusSignal) {
         if (isDplusPrompt) {
           registry.fill(HIST("hPtCandMcRecSigPrompt"), candidate.pt());
           registry.fill(HIST("hPtVsMultiplicityMcRecPrompt"), candidate.pt(), 0);
@@ -666,7 +666,7 @@ struct HfCorrelatorDplusHadrons {
         std::vector<float> outputMl = {-1., -1., -1.};
         bool isPhysicalPrimary = false;
         int trackOrigin = -1;
-        bool flagDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
+        bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
         // prompt and non-prompt division
         bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         if (pAssoc.has_mcParticle()) {
@@ -681,7 +681,7 @@ struct HfCorrelatorDplusHadrons {
                              candidate.pt(),
                              pAssoc.pt(),
                              poolBin);
-        entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), flagDplusSignal);
+        entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), isDplusSignal);
         entryDplusHadronGenInfo(isDplusPrompt, isPhysicalPrimary, trackOrigin);
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
