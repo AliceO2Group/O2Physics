@@ -57,3 +57,4 @@ int CollisionSystemType::getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* g
   }
   return kCollSysUndef;
 }
+ 
