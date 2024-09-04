@@ -517,10 +517,14 @@ struct HfCorrelatorDplusHadrons {
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
     bool isDplusPrompt = false;
+    bool isDplusNonPrompt = false;
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
+        continue;
+      }
+      if (std::abs(particle1.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
         continue;
       }
       double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
@@ -535,9 +539,10 @@ struct HfCorrelatorDplusHadrons {
 
       // prompt and non-prompt division
       isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
+      isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
       if (isDplusPrompt) {
         registry.fill(HIST("hPtCandMcGenPrompt"), particle1.pt());
-      } else {
+      } else if (isDplusNonPrompt) {
         registry.fill(HIST("hPtCandMcGenNonPrompt"), particle1.pt());
       }
 
@@ -583,7 +588,7 @@ struct HfCorrelatorDplusHadrons {
         entryDplusHadronRecoInfo(MassDPlus, true);
         entryDplusHadronGenInfo(isDplusPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
       } // end associated loop
-    }   // end trigger
+    } // end trigger
     registry.fill(HIST("hcountDplusHadronPerEvent"), counterDplusHadron);
     registry.fill(HIST("hZvtx"), mcCollision.posZ());
     // registry.fill(HIST("hMultiplicity"), getTracksSize(mcCollision));
