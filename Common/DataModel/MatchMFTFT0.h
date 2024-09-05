@@ -19,17 +19,16 @@
 
 namespace o2::aod
 {
-  namespace indices
-  {//For bctoft0c
-  DECLARE_SOA_ARRAY_INDEX_COLUMN(FT0, ft0s);//has_ft0s works now, without it doesn't
-  DECLARE_SOA_ARRAY_INDEX_COLUMN(BC, bcs);//has_bcs works now, without it doesn't
-  }
-  namespace ambii
-  {//for MA2T
-  DECLARE_SOA_INDEX_COLUMN(MFTTrack, track);
-  } // namespace ambii
-  DECLARE_SOA_TABLE(MatchedToFT0, "AOD", "MAFT", indices::BCId, indices::FT0Ids);
+namespace indices
+{                                          // For bctoft0c
+DECLARE_SOA_ARRAY_INDEX_COLUMN(FT0, ft0s); // has_ft0s works now, without it doesn't
+DECLARE_SOA_ARRAY_INDEX_COLUMN(BC, bcs);   // has_bcs works now, without it doesn't
+} // namespace indices
+namespace ambii
+{ // for MA2T
+DECLARE_SOA_INDEX_COLUMN(MFTTrack, track);
+} // namespace ambii
+DECLARE_SOA_TABLE(MatchedToFT0, "AOD", "MAFT", indices::BCId, indices::FT0Ids);
 
-
-  DECLARE_SOA_TABLE(BCofMFT, "AOD", "BCOFMFT", ambii::MFTTrackId, indices::BCIds);
+DECLARE_SOA_TABLE(BCofMFT, "AOD", "BCOFMFT", ambii::MFTTrackId, indices::BCIds);
 } // namespace o2::aod
