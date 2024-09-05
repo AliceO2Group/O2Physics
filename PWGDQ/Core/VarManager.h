@@ -913,6 +913,10 @@ class VarManager : public TObject
   static void FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, const C& collision, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
+  static void FillPairCollision(C const& collision, T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2, typename M, typename P>
+  static void FillPairCollisionMatCorr(C const& collision, T1 const& t1, T2 const& t2, M const& materialCorr, P const& propagator, float* values = nullptr);
   template <typename T1, typename T2, typename T3>
   static void FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int pairType, typename T1, typename T2>
@@ -2536,6 +2540,116 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   }
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
+  }
+}
+
+template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
+void VarManager::FillPairCollision(const C& collision, T1 const& t1, T2 const& t2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
+
+    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
+
+      auto trackPart1 = getTrackPar(t1);
+      std::array<float, 2> dca1{1e10f, 1e10f};
+      trackPart1.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca1);
+
+      auto trackPart2 = getTrackPar(t2);
+      std::array<float, 2> dca2{1e10f, 1e10f};
+      trackPart2.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca2);
+
+      // Recalculated quantities
+      double dca1XY = dca1[0];
+      double dca2XY = dca2[0];
+      double dca1Z = dca1[1];
+      double dca2Z = dca2[1];
+      double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
+      double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
+      double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
+      double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
+
+      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
+      values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+      values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
+      values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
+      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * TMath::Sign(1., dca1sigXY) * TMath::Sign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+
+      double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
+      double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
+      if ((det1 < 0) || (det2 < 0)) {
+        values[kQuadDCAsigXYZ] = -999;
+      } else {
+        double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
+        double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+
+        double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
+        double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+
+        values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+      }
+    }
+  }
+}
+
+template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2, typename M, typename P>
+void VarManager::FillPairCollisionMatCorr(C const& collision, T1 const& t1, T2 const& t2, M const& materialCorr, P const& propagator, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
+
+    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
+
+      auto trackPart1 = getTrackPar(t1);
+      std::array<float, 2> dca1{1e10f, 1e10f};
+      std::array<float, 3> pVect1 = {t1.px(), t1.py(), t1.pz()};
+      // trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
+      propagator->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPart1, 2.f, materialCorr, &dca1);
+      getPxPyPz(trackPart1, pVect1);
+
+      auto trackPart2 = getTrackPar(t2);
+      std::array<float, 2> dca2{1e10f, 1e10f};
+      std::array<float, 3> pVect2 = {t2.px(), t2.py(), t2.pz()};
+      // trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
+      propagator->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPart2, 2.f, materialCorr, &dca2);
+      getPxPyPz(trackPart2, pVect2);
+
+      // Recalculated quantities
+      double dca1XY = dca1[0];
+      double dca2XY = dca2[0];
+      double dca1Z = dca1[1];
+      double dca2Z = dca2[1];
+      double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
+      double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
+      double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
+      double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
+
+      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
+      values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+      values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
+      values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
+      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * TMath::Sign(1., dca1sigXY) * TMath::Sign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+
+      double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
+      double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
+      if ((det1 < 0) || (det2 < 0)) {
+        values[kQuadDCAsigXYZ] = -999;
+      } else {
+        double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
+        double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
+
+        double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
+        double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
+
+        values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
+      }
+    }
   }
 }
 
