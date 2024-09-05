@@ -168,8 +168,8 @@ struct TableMakerMC {
   // Muon related options
   Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
   Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Correct global muon parameters"};
-  Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin",-4.0f,"Definition of the acceptance of muon tracks to be matched with MFT"};
-  Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax",-2.5f,"Definition of the acceptance of muon tracks to be matched with MFT"};
+  Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin", -4.0f, "Definition of the acceptance of muon tracks to be matched with MFT"};
+  Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax", -2.5f, "Definition of the acceptance of muon tracks to be matched with MFT"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::ccdb::CcdbApi fCCDBApi;
@@ -684,8 +684,8 @@ struct TableMakerMC {
       // recalculte pDca and global muon kinematics
       if (static_cast<int>(muon.trackType()) < 2 && fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
-	if (muontrack.eta() < fMuonMatchEtaMin ||muontrack.eta() > fMuonMatchEtaMax) {
-                continue;
+        if (muontrack.eta() < fMuonMatchEtaMin || muontrack.eta() > fMuonMatchEtaMax) {
+          continue;
         }
         auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
@@ -919,10 +919,10 @@ struct TableMakerMC {
           if constexpr (static_cast<bool>(TMFTFillMap)) {
             auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
             skimMuons<TMuonFillMap, TMFTFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks);
-	  }else{
+          } else {
             auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
             skimMuons<TMuonFillMap, 0u>(collision, muons, groupedMuonIndices, mcParticles, nullptr);
-	  }
+          }
         }
       } // end loop over skimmed collisions
     }

@@ -207,8 +207,8 @@ struct TableMaker {
   // Muon related options
   Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
   Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Correct global muon parameters"};
-  Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin",-4.0f,"Definition of the acceptance of muon tracks to be matched with MFT"};
-  Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax",-2.5f,"Definition of the acceptance of muon tracks to be matched with MFT"};
+  Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin", -4.0f, "Definition of the acceptance of muon tracks to be matched with MFT"};
+  Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax", -2.5f, "Definition of the acceptance of muon tracks to be matched with MFT"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -767,9 +767,9 @@ struct TableMaker {
       // recalculte pDca and global muon kinematics
       if (static_cast<int>(muon.trackType()) < 2 && fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
-	if (muontrack.eta() < fMuonMatchEtaMin ||muontrack.eta() > fMuonMatchEtaMax) {
-		continue;
-	}
+        if (muontrack.eta() < fMuonMatchEtaMin || muontrack.eta() > fMuonMatchEtaMax) {
+          continue;
+        }
         auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
@@ -963,7 +963,7 @@ struct TableMaker {
         if constexpr (static_cast<bool>(TMFTFillMap)) {
           auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
           skimMuons<TMuonFillMap, TMFTFillMap>(collision, bcs, muons, groupedMuonIndices, mftTracks);
-        }else{
+        } else {
           auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
           skimMuons<TMuonFillMap, 0u>(collision, bcs, muons, groupedMuonIndices, nullptr);
         }
@@ -1010,28 +1010,27 @@ struct TableMaker {
 
   // produce the barrel-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
   void processPPBarrelOnly(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
-                                     MyBarrelTracksWithCov const& tracksBarrel,
-                                     TrackAssoc const& trackAssocs)
+                           MyBarrelTracksWithCov const& tracksBarrel,
+                           TrackAssoc const& trackAssocs)
   {
     fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
   // produce the muon-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
   void processPPMuonOnly(MyEventsWithMults const& collisions, BCsWithTimestamps const& bcs,
-                                   MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs, MFTTracks const& mftTracks)
+                         MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs, MFTTracks const& mftTracks)
   {
     fullSkimming<gkEventFillMapWithMults, 0u, gkMuonFillMapWithCov, 0u>(collisions, bcs, nullptr, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr);
   }
 
   // produce the muon+mft DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
   void processPPMuonMFT(MyEventsWithMults const& collisions, BCsWithTimestamps const& bcs,
-                                  MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
-                                  FwdTrackAssoc const& fwdTrackAssocs, MFTTrackAssoc const& mftAssocs)
+                        MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
+                        FwdTrackAssoc const& fwdTrackAssocs, MFTTrackAssoc const& mftAssocs)
   {
     fullSkimming<gkEventFillMapWithMults, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs);
   }
 
- 
   // produce the full DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPb(MyEventsWithCentAndMults const& collisions, BCsWithTimestamps const& bcs,
                    MyBarrelTracksWithCov const& tracksBarrel,
