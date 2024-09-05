@@ -463,7 +463,7 @@ struct hJetAnalysis {
                   soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                   JetParticles const& particles)
   {
-    if (collision.posZ() < vertexZCut) { //For some reason declaring a filter doesnt work
+    if (collision.posZ() < vertexZCut) { // For some reason declaring a filter doesnt work
       return;
     }
     fillMCPHistograms(jets, jetsWTA, particles);
@@ -478,7 +478,7 @@ struct hJetAnalysis {
     if (collision.posZ() < vertexZCut) {
       return;
     }
-    fillMCPHistograms(jets, jetsWTA, particles,collision.weight());
+    fillMCPHistograms(jets, jetsWTA, particles, collision.weight());
   }
   PROCESS_SWITCH(hJetAnalysis, processMCPWeighted, "process MC particle level with event weights", false);
 
