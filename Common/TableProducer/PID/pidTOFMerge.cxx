@@ -52,6 +52,9 @@ using Run3Cols = aod::Collisions;
 using Run3TrksWtof = soa::Join<Run3Trks, aod::TOFSignal>;
 using Run3TrksWtofWevTime = soa::Join<Run3TrksWtof, aod::TOFEvTime, aod::pidEvTimeFlags>;
 
+using EvTimeCollisions = soa::Join<Run3Cols, aod::EvSels>;
+using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
+
 using Run2Trks = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
 using Run2TrksWtofWevTime = soa::Join<Run2Trks, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
 
@@ -146,45 +149,35 @@ struct TOFCalibConfig : ConfigurableGroup {
     }
   }
 
-  template <typename CCDBObject, typename TrackType>
+  template <typename CCDBObject, typename BcType>
   void processSetup(o2::pid::tof::TOFResoParamsV3& mRespParamsV3,
                     CCDBObject ccdb,
-                    const TrackType& tracks)
+                    const BcType& bc)
   {
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Skipping tracks without collisions
-        continue;
-      }
-      const auto& coll = track.collision();
-      if (!coll.has_bc()) {
-        continue;
-      }
-      const auto& bc = coll.template bc_as<aod::BCsWithTimestamps>();
-
-      // First we check if this run number was already processed
-      if (mLastRunNumber == bc.runNumber()) {
-        return;
-      }
-      mLastRunNumber = bc.runNumber();
-      mTimestamp.value = bc.timestamp();
-
-      // Check the beam type
-      o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf.value, mTimestamp.value);
-      mCollisionSystem.value = CollisionSystemType::getCollisionTypeFromGrp(grpo);
-
-      if (!mEnableTimeDependentResponse) {
-        return;
-      }
-      LOG(debug) << "Updating parametrization from path '" << mParametrizationPath.value << "' and timestamp " << mTimestamp.value;
-      if (!ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath.value, mTimestamp.value)->retrieveParameters(mRespParamsV3, mReconstructionPass.value)) {
-        if (mFatalOnPassNotAvailable) {
-          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.value.data());
-        } else {
-          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.value.data());
-        }
-      }
+    // First we check if this run number was already processed
+    if (mLastRunNumber == bc.runNumber()) {
       return;
     }
+    mLastRunNumber = bc.runNumber();
+    mTimestamp.value = bc.timestamp();
+
+    // Check the beam type
+    o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf.value,
+                                                                                                      mTimestamp.value);
+    mCollisionSystem.value = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+
+    if (!mEnableTimeDependentResponse) {
+      return;
+    }
+    LOG(debug) << "Updating parametrization from path '" << mParametrizationPath.value << "' and timestamp " << mTimestamp.value;
+    if (!ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath.value, mTimestamp.value)->retrieveParameters(mRespParamsV3, mReconstructionPass.value)) {
+      if (mFatalOnPassNotAvailable) {
+        LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.value.data());
+      } else {
+        LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.value.data());
+      }
+    }
+    return;
   }
 
  private:
@@ -473,11 +466,10 @@ struct tofEventTime {
   Preslice<Run3TrksWtof> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<Run3TrksWtof::iterator, pid>;
-  using EvTimeCollisions = soa::Join<Run3Cols, aod::EvSels>;
-  using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
   void processRun3(Run3TrksWtof& tracks,
                    aod::FT0s const&,
-                   EvTimeCollisionsFT0 const&)
+                   EvTimeCollisionsFT0 const&,
+                   aod::BCsWithTimestamps const&)
   {
     if (!enableTableTOFEvTime) {
       return;
@@ -489,7 +481,17 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
-    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, tracks); // Update the calibration parameters
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Skipping tracks without collisions
+        continue;
+      }
+      const auto& coll = track.collision_as<EvTimeCollisionsFT0>();
+      if (!coll.has_bc()) {
+        continue;
+      }
+      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
+      return;
+    }
 
     // Autoset the processing mode for the event time computation
     switch (mTOFCalibConfig.mCollisionSystem.value) {
@@ -940,7 +942,9 @@ struct tofPidMerge {
 
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Run3TrksWtofWevTime::iterator, pid>;
-  void processData(Run3TrksWtofWevTime const& tracks, Run3Cols const&, aod::BCsWithTimestamps const&)
+  void processData(Run3TrksWtofWevTime const& tracks,
+                   Run3Cols const&,
+                   aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -952,7 +956,17 @@ struct tofPidMerge {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, tracks);
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Skipping tracks without collisions
+        continue;
+      }
+      const auto& coll = track.collision();
+      if (!coll.has_bc()) {
+        continue;
+      }
+      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
+      return;
+    }
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size(), false);
