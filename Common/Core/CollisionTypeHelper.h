@@ -19,11 +19,7 @@
 #define COMMON_CORE_COLLISIONTYPEHELPER_H_
 
 #include <string>
-
-namespace o2::parameters
-{
-class GRPLHCIFData;
-} // namespace o2::parameters
+#include "DataFormatsParameters/GRPLHCIFData.h"
 
 // Container for the collision system type
 struct CollisionSystemType {
