@@ -69,6 +69,7 @@ struct TOFCalibConfig : ConfigurableGroup {
   Configurable<bool> mFatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   Configurable<bool> mEnableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   Configurable<int> mCollisionSystem{"collisionSystem", -1, "Collision system: -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
+  Configurable<bool> mAutoSetProcessFunctions{"mAutoSetProcessFunctions", true, "Flag to autodetect the process functions to use"};
 
   // @brief Set up the configuration from the calibration object from the init function of the task
   template <typename CCDBObject>
@@ -145,10 +146,10 @@ struct TOFCalibConfig : ConfigurableGroup {
     }
   }
 
-  template <typename CCDBObject>
+  template <typename CCDBObject, typename TrackType>
   void processSetup(o2::pid::tof::TOFResoParamsV3& mRespParamsV3,
                     CCDBObject ccdb,
-                    const Run3TrksWtofWevTime& tracks)
+                    const TrackType& tracks)
   {
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Skipping tracks without collisions
@@ -158,7 +159,7 @@ struct TOFCalibConfig : ConfigurableGroup {
       if (!coll.has_bc()) {
         continue;
       }
-      const auto& bc = coll.bc_as<aod::BCsWithTimestamps>();
+      const auto& bc = coll.template bc_as<aod::BCsWithTimestamps>();
 
       // First we check if this run number was already processed
       if (mLastRunNumber == bc.runNumber()) {
@@ -237,11 +238,14 @@ struct tofSignal {
       LOG(info) << "No table or process is enabled. Disabling task";
       return;
     }
-    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = false;
+    if (mTOFCalibConfig.mAutoSetProcessFunctions) {
+      LOG(info) << "Autodetecting process functions";
+      if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = false;
+        }
       }
     }
 
@@ -391,8 +395,24 @@ struct tofEventTime {
       return;
     }
 
-    if (metadataInfo.isFullyDefined() && metadataInfo.isRun3() && doprocessRun2) {
-      LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
+    if (mTOFCalibConfig.mAutoSetProcessFunctions) {
+      LOG(info) << "Autodetecting process functions";
+      if (metadataInfo.isFullyDefined()) {
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = true;
+        }
+      }
+    }
+
+    if (metadataInfo.isFullyDefined()) {
+      if (metadataInfo.isRun3() && doprocessRun2) {
+        LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
+      }
+      if (!metadataInfo.isRun3() && doprocessRun3) {
+        LOG(fatal) << "Run3 process function is enabled but the metadata says it is Run2";
+      }
     }
 
     trackSampleMinMomentum = minMomentum;
@@ -445,7 +465,7 @@ struct tofEventTime {
       tableEvTime(t.collision().collisionTime() * 1000.f, t.collision().collisionTimeRes() * 1000.f);
     }
   }
-  PROCESS_SWITCH(tofEventTime, processRun2, "Process with Run2 data", false);
+  PROCESS_SWITCH(tofEventTime, processRun2, "Process with Run2 data", true);
 
   ///
   /// Process function to prepare the event for each track on Run 3 data without the FT0
@@ -469,34 +489,21 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
-    // mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, tracks); // Update the calibration parameters
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, tracks); // Update the calibration parameters
 
     // Autoset the processing mode for the event time computation
-    if (mComputeEvTimeWithTOF == -1) {
-      switch (mTOFCalibConfig.mCollisionSystem.value) {
-        case CollisionSystemType::kCollSyspp: // pp
-          mComputeEvTimeWithTOF.value = 0;
-          break;
-        case CollisionSystemType::kCollSysPbPb: // PbPb
-          mComputeEvTimeWithTOF.value = 1;
-          break;
-        default:
-          LOG(fatal) << "Collision system not supported for TOF event time computation";
-          break;
-      }
-    }
-    if (mComputeEvTimeWithFT0 == -1) {
-      switch (mTOFCalibConfig.mCollisionSystem.value) {
-        case CollisionSystemType::kCollSyspp: // pp
-          mComputeEvTimeWithFT0.value = 0;
-          break;
-        case CollisionSystemType::kCollSysPbPb: // PbPb
-          mComputeEvTimeWithFT0.value = 1;
-          break;
-        default:
-          LOG(fatal) << "Collision system not supported for TOF event time computation";
-          break;
-      }
+    switch (mTOFCalibConfig.mCollisionSystem.value) {
+      case CollisionSystemType::kCollSyspp: // pp
+        mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
+        mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
+        break;
+      case CollisionSystemType::kCollSysPbPb: // PbPb
+        mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
+        mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
+        break;
+      default:
+        LOG(fatal) << "Collision system " << mTOFCalibConfig.mCollisionSystem.value << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.mCollisionSystem) << " not supported for TOF event time computation";
+        break;
     }
 
     if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 1) {
@@ -646,7 +653,7 @@ struct tofEventTime {
       LOG(fatal) << "Invalid configuration for TOF event time computation";
     }
   }
-  PROCESS_SWITCH(tofEventTime, processRun3, "Process the Run3 data", false);
+  PROCESS_SWITCH(tofEventTime, processRun3, "Process the Run3 data", true);
 };
 
 // Part 3 Nsigma computation
@@ -1114,11 +1121,15 @@ struct tofPidBeta {
       LOG(info) << "No table or process is enabled. Disabling task";
       return;
     }
-    if (metadataInfo.isFullyDefined()) {
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = true;
+
+    if (mTOFCalibConfig.mAutoSetProcessFunctions) {
+      LOG(info) << "Autodetecting process functions";
+      if (metadataInfo.isFullyDefined()) {
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = true;
+        }
       }
     }
 
@@ -1153,7 +1164,7 @@ struct tofPidBeta {
       }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", false);
+  PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
 
   o2::pid::tof::Beta<Run3TrksWtofWevTime::iterator> responseBeta;
   void processRun3(Run3TrksWtofWevTime const& tracks)
@@ -1178,7 +1189,7 @@ struct tofPidBeta {
       }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", false);
+  PROCESS_SWITCH(tofPidBeta, processRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
