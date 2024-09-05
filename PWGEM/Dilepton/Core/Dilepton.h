@@ -94,8 +94,9 @@ struct Dilepton {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  Configurable<std::string> spresoPath{"spresoPath", "Users/d/dsekihat/PWGEM/dilepton/Qvector/resolution/LHC23zzh/pass3/test", "Path of SP resolution file"};
   Configurable<bool> cfgApplySPresolution{"cfgApplySPresolution", false, "flag to apply resolution correction for flow analysis"};
+  Configurable<std::string> spresoPath{"spresoPath", "Users/d/dsekihat/PWGEM/dilepton/Qvector/resolution/LHC23zzh/pass3/test", "Path to SP resolution file"};
+  Configurable<std::string> spresoHistName{"spresoHistName", "h1_R2_FT0M_BPos_BNeg", "histogram name of SP resolution file"};
 
   Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kVM:5, kHFll:6"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
@@ -426,8 +427,9 @@ struct Dilepton {
     }
 
     if (cfgApplySPresolution) {
-      auto list = ccdb->getForTimeStamp<TList>(spresoPath, 10);
-      h1sp_resolution = reinterpret_cast<TH1D*>(list->FindObject("histo_SP_R2_FT0M_BPos_BNeg"));
+      auto list = ccdb->getForTimeStamp<TList>(spresoPath, collision.timestamp());
+      h1sp_resolution = reinterpret_cast<TH1D*>(list->FindObject(spresoHistName.value.data()));
+      // h1sp_resolution = ccdb->getForTimeStamp<TH1D>(spresoPath.value + "/" + spresoHistName.value, collision.timestamp());
       LOGF(info, "h1sp_resolution.GetBinContent(40) = %f", h1sp_resolution->GetBinContent(40));
     }
   }
