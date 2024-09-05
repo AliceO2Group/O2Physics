@@ -17,6 +17,7 @@
 
 #include "Common/Core/CollisionTypeHelper.h"
 
+#include <string>
 #include <fairlogger/Logger.h>
 
 #include "DataFormatsParameters/GRPLHCIFData.h"

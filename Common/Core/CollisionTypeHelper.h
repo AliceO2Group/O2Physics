@@ -15,7 +15,15 @@
 /// \brief  Utility to handle the collision type from the GRP information
 ///
 
+#ifndef COMMON_CORE_COLLISIONTYPEHELPER_H_
+#define COMMON_CORE_COLLISIONTYPEHELPER_H_
+
 #include "DataFormatsParameters/GRPLHCIFData.h"
+
+namespace o2::parameters
+{
+class GRPLHCIFData;
+} // namespace o2::parameters
 
 // Container for the collision system type
 struct CollisionSystemType {
@@ -33,3 +41,5 @@ struct CollisionSystemType {
 
   static int getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* grplhcif);
 };
+
+#endif // COMMON_CORE_COLLISIONTYPEHELPER_H_
