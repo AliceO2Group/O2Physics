@@ -51,6 +51,7 @@ DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                       //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta10, multMCNParticlesEta10, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
+DECLARE_SOA_COLUMN(MultMCPVz, multMCPVz, float);                       //!
 
 // complementary / MultsExtra table
 DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int); //!
@@ -76,7 +77,8 @@ DECLARE_SOA_COLUMN(MultNGlobalTracksPV, multNGlobalTracksPV, int);
 DECLARE_SOA_COLUMN(MultNGlobalTracksPVeta1, multNGlobalTracksPVeta1, int);
 DECLARE_SOA_COLUMN(MultNGlobalTracksPVetaHalf, multNGlobalTracksPVetaHalf, int);
 
-DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
+DECLARE_SOA_INDEX_COLUMN(BC, bc);
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 
 // even further QA: timing information for neighboring events
 DECLARE_SOA_COLUMN(TimeToPrePrevious, timeToPrePrevious, float); //!
@@ -111,12 +113,17 @@ using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
 using Mult = Mults::iterator;
 
 // for QA purposes
+DECLARE_SOA_TABLE(Mults2BC, "AOD", "MULTS2BC", //! Relate mult -> BC
+                  o2::soa::Index<>, mult::BCId);
+DECLARE_SOA_TABLE(BC2Mults, "AOD", "BC2MULTS", //! Relate BC -> mult
+                  o2::soa::Index<>, mult::CollisionId);
+
 DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
-                  mult::BCNumber, evsel::NumTracksInTimeRange);
+                  evsel::NumTracksInTimeRange);
 
 DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
                   mult::TimeToPrePrevious, mult::TimeToPrevious,
@@ -137,6 +144,7 @@ DECLARE_SOA_TABLE(MultsExtraMC, "AOD", "MULTEXTRAMC", //! Table for the MC infor
                   mult::MultMCNParticlesEta05,
                   mult::MultMCNParticlesEta08,
                   mult::MultMCNParticlesEta10,
+                  mult::MultMCPVz,
                   mult::IsInelGt0<mult::MultMCNParticlesEta10>,
                   mult::IsInelGt1<mult::MultMCNParticlesEta10>,
                   o2::soa::Marker<1>);
