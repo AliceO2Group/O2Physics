@@ -16,10 +16,8 @@
 ///
 
 #include "Common/Core/CollisionTypeHelper.h"
-
-#include <string>
 #include <fairlogger/Logger.h>
-
+#include <string>
 #include "DataFormatsParameters/GRPLHCIFData.h"
 
 std::string CollisionSystemType::getCollisionSystemName(collType collSys)
