@@ -66,6 +66,7 @@ struct JetFinderQATask {
   Configurable<int> nBinsEta{"nBinsEta", 200, "number of bins for eta axes"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
+  Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 200.0, "maximum pT selection on jet constituent"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
   Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
@@ -333,19 +334,29 @@ struct JetFinderQATask {
         return false;
       }
     }
-    if (leadingConstituentPtMin > -98.0) {
-      bool isMinleadingConstituent = false;
-      for (auto& constituent : jet.template tracks_as<T>()) {
-        if (constituent.pt() >= leadingConstituentPtMin) {
-          isMinleadingConstituent = true;
-          break;
-        }
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 200.0);
+    if (!checkConstituentMinPt && !checkConstituentMaxPt) {
+      return true;
+    }
+
+    bool isMinLeadingConstituent = !checkConstituentMinPt;
+
+    for (const auto& constituent : jet.template tracks_as<T>()) {
+      double pt = constituent.pt();
+
+      if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
+        isMinLeadingConstituent = true;
       }
-      if (!isMinleadingConstituent) {
+      if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
         return false;
       }
+      if (isMinLeadingConstituent && !checkConstituentMaxPt) {
+        return true;
+      }
     }
-    return true;
+
+    return isMinLeadingConstituent;
   }
 
   template <typename T>
