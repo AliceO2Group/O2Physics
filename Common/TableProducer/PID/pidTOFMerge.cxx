@@ -474,6 +474,7 @@ struct tofEventTime {
     if (!enableTableTOFEvTime) {
       return;
     }
+    LOG(debug) << "Processing Run3 data for TOF event time";
 
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
@@ -490,7 +491,6 @@ struct tofEventTime {
         continue;
       }
       mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      return;
     }
 
     // Autoset the processing mode for the event time computation
@@ -507,6 +507,7 @@ struct tofEventTime {
         LOG(fatal) << "Collision system " << mTOFCalibConfig.mCollisionSystem.value << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.mCollisionSystem) << " not supported for TOF event time computation";
         break;
     }
+    LOG(debug) << "Running on " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.mCollisionSystem) << " mComputeEvTimeWithTOF " << mComputeEvTimeWithTOF.value << " mComputeEvTimeWithFT0 " << mComputeEvTimeWithFT0.value;
 
     if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 1) {
       int lastCollisionId = -1;                                                                                       // Last collision ID analysed
@@ -965,7 +966,6 @@ struct tofPidMerge {
         continue;
       }
       mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      return;
     }
 
     for (auto const& pidId : mEnabledParticles) {
