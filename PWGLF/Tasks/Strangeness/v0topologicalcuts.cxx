@@ -350,12 +350,12 @@ struct v0topologicalcuts {
           rV0Parameters_MC_K0Smatch.fill(HIST("hDCANegtoPV_KzeroMC_Match"), v0.dcanegtopv());
 
           for (int j = 0; j < 20; j++) {
-            std::string cospacut = cuthistoskzerosh::cospacuts[j];   // Get the current cut value from the namespace
-            size_t pos = cospacut.find("_");                         // find the "_" which needs to change to a "." for it to be a number
-            cospacut[pos] = '.';                                     // change the "_" into an "."
-            const float cospacutvalue = std::stod(cospacut);         // make the string into a float value
-            if (v0.v0cosPA() > cospacutvalue) {                      // enforce the cut value
-              cuthistoskzerosh::cospaCut[j]->Fill(v0.mK0Short()); // fill the corresponding histo from the namespace with the invariant mass (of a Kzero here)
+            std::string cospacut = cuthistoskzerosh::cospacuts[j]; // Get the current cut value from the namespace
+            size_t pos = cospacut.find("_");                       // find the "_" which needs to change to a "." for it to be a number
+            cospacut[pos] = '.';                                   // change the "_" into an "."
+            const float cospacutvalue = std::stod(cospacut);       // make the string into a float value
+            if (v0.v0cosPA() > cospacutvalue) {                    // enforce the cut value
+              cuthistoskzerosh::cospaCut[j]->Fill(v0.mK0Short());  // fill the corresponding histo from the namespace with the invariant mass (of a Kzero here)
             }
           }
           for (int j = 0; j < 20; j++) {
