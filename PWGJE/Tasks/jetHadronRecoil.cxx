@@ -23,7 +23,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 
 #include "CommonConstants/MathConstants.h"
 #include "Common/Core/TrackSelection.h"
