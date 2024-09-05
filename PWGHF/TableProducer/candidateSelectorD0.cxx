@@ -162,7 +162,9 @@ struct HfCandidateSelectorD0 {
       return false;
     }
     // candidate DCA
-    // if (candidate.chi2PCA() > cuts[pTBin][1]) return false;
+    if (candidate.impactParameterXY() > cuts->get(pTBin, "DCA")) {
+      return false;
+    }
 
     // candidate topological chi2 over ndf when using KFParticle, need to add this selection to the SelectorCuts.h
     // if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
