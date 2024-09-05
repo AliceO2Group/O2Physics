@@ -119,7 +119,7 @@ struct qaTrackSplitting {
     if (!collision.sel8()) {
       return;
     }
-    typedef std::shared_ptr<TrackCandidates::iterator> trkType;
+    typedef std::shared_ptr<TrackCandidatesMC::iterator> trkType;
 
     std::map<int64_t, std::vector<trkType>> particleUsageCounter;
     for (auto track : tracks) {
@@ -143,11 +143,11 @@ struct qaTrackSplitting {
       histos.fill(HIST("tracks"), 4);
       particleUsageCounter[track.mcParticleId()].push_back(std::make_shared<decltype(track)>(track));
     }
-    for (const auto& [mcId, tracks] : particleUsageCounter) {
-      histos.fill(HIST("numberOfRecoed"), tracks.size());
-      if (tracks.size() > 1) {
+    for (const auto& [mcId, tracksMatched] : particleUsageCounter) {
+      histos.fill(HIST("numberOfRecoed"), tracksMatched.size());
+      if (tracksMatched.size() > 1) {
         bool isFirst = true;
-        for (const auto& track : tracks) {
+        for (const auto& track : tracksMatched) {
           if (isFirst) {
             isFirst = false;
             histos.fill(HIST("mapMC"),
@@ -156,7 +156,10 @@ struct qaTrackSplitting {
                         track->pt() - track->mcParticle().pt());
             continue;
           }
-          histos.fill(HIST("map"), track->eta() - tracks[0]->eta(), track->phi() - tracks[0]->phi(), track->pt() - tracks[0]->pt());
+          histos.fill(HIST("map"),
+                      track->eta() - tracksMatched[0]->eta(),
+                      track->phi() - tracksMatched[0]->phi(),
+                      track->pt() - tracksMatched[0]->pt());
         }
       }
     }
