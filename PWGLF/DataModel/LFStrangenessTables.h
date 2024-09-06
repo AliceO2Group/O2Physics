@@ -129,7 +129,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_001, "AOD", "STRAEVSELS", 1,         //! 
                             // stracollision::EnergyCommonZNA<mult::MultZNA>,
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
-                            
+
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
 DECLARE_SOA_TABLE(StraFT0CQVs, "AOD", "STRAFT0CQVS", //! t0c Qvec
