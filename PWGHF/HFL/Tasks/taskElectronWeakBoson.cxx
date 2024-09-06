@@ -149,9 +149,9 @@ struct HfTaskElectronWeakBoson {
       histos.fill(HIST("ITS_NCls_Hist"), track.itsNCls());
       histos.fill(HIST("TPC_NClsCrossedRows_Hist"), track.tpcNClsCrossedRows());
 
-      if(TMath::Abs(track.eta())>0.6)continue;
+      if(std::abs(track.eta())>0.6)continue;
       if(track.tpcNClsCrossedRows()<tpcNclCr_cut)continue;
-      if(TMath::Abs(track.dcaXY())>dcaxy_cut)continue;
+      if(std::abs(track.dcaXY())>dcaxy_cut)continue;
       if(track.itsChi2NCl() > itschi2_cut) continue;
       if(track.tpcChi2NCl() > tpcchi2_cut) continue;
       if (track.tpcNClsFound() < tpcNcl_cut) continue;
