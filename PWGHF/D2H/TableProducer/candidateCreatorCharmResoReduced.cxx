@@ -193,7 +193,6 @@ struct HfCandidateCreatorCharmResoReduced {
   template <DecayChannel channel, typename DRedTable>
   bool isDSelected(DRedTable const& candD)
   {
-    float massD{0.};
     float invMassD{0.};
     float ptD = candD.pt();
     int ptBin = findBin(binsPtD, ptD);
@@ -266,7 +265,7 @@ struct HfCandidateCreatorCharmResoReduced {
       return false;
     }
     // selection on kinematics and topology
-    if (candV0.dca() > cutsV0->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0->get(ptBin, "cpaMin") || candV0.radius() < cutsV0->get(ptBin, "radiusMin")){
+    if (candV0.dca() > cutsV0->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0->get(ptBin, "radiusMin")){
       return false;
     }
     return true;
@@ -361,7 +360,7 @@ struct HfCandidateCreatorCharmResoReduced {
                          invMassV0,
                          candV0.cpa(),
                          candV0.dca(),
-                         candV0.v0radius());
+                         candV0.v0Radius());
         if constexpr (fillMl) {
           mlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }
