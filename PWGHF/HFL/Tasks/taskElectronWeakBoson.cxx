@@ -8,10 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
+/// \ file taskElectronWeakBoson.cxx
 /// \ task for WeakBoson (W/Z) based on electron in mid-rapidity
-///        
-/// \S. Sakai & S. Ito
+/// \ author S. Sakai & S. Ito (Univ. of Tsukuba)
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
