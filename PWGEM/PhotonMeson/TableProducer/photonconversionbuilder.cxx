@@ -40,6 +40,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/TableHelper.h"
+#include "Common/Core/TPCVDriftManager.h"
 
 #include "Tools/KFparticle/KFUtilities.h"
 
@@ -84,6 +85,8 @@ struct PhotonConversionBuilder {
   // single track cuts
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
+  Configurable<bool> moveTPCTracks{"moveTPCTracks", true, "Move TPC-only tracks under the collision assumption"};
+
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
   Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.15, "max pT for ITSonly tracks at SV"};
@@ -128,6 +131,7 @@ struct PhotonConversionBuilder {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::aod::common::TPCVDriftManager mVDriftMgr;
 
   HistogramRegistry registry{
     "registry",
@@ -188,10 +192,12 @@ struct PhotonConversionBuilder {
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    if (useMatCorrType == 1)
+    if (useMatCorrType == 1) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-    if (useMatCorrType == 2)
+    }
+    if (useMatCorrType == 2) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -213,18 +219,19 @@ struct PhotonConversionBuilder {
     }
 
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
+    o2::parameters::GRPObject* grpo = nullptr;
+    o2::parameters::GRPMagField* grpmag = nullptr;
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
+    }
+    if (grpo != nullptr) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
+      if (grpmag == nullptr) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
@@ -239,8 +246,17 @@ struct PhotonConversionBuilder {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
     /// Set magnetic field for KF vertexing
-    float magneticField = o2::base::Propagator::Instance()->getNominalBz();
+    const float magneticField = o2::base::Propagator::Instance()->getNominalBz();
     KFParticle::SetField(magneticField);
+
+    mVDriftMgr.init(&ccdb->instance());
+  }
+
+  void updateCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    auto timestamp = bc.timestamp();
+
+    mVDriftMgr.update(timestamp);
   }
 
   std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
@@ -356,13 +372,13 @@ struct PhotonConversionBuilder {
            track.x(), track.y(), track.z(), track.tgl());
   }
 
-  template <bool isMC, class TCollisions, class TTracks, typename TV0>
+  template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>
   void fillV0Table(TV0 const& v0, const bool filltable)
   {
     // Get tracks
-    auto pos = v0.template posTrack_as<TTracks>();
-    auto ele = v0.template negTrack_as<TTracks>();
-    auto collision = v0.template collision_as<TCollisions>(); // collision where this v0 belongs.
+    const auto& pos = v0.template posTrack_as<TTracks>();
+    const auto& ele = v0.template negTrack_as<TTracks>();
+    const auto& collision = v0.template collision_as<TCollisions>(); // collision where this v0 belongs to.
 
     if (pos.sign() * ele.sign() > 0) { // reject same sign pair
       return;
@@ -379,6 +395,7 @@ struct PhotonConversionBuilder {
     if (isITSonlyTrack(pos) && !ele.hasITS()) {
       return;
     }
+
     if (isITSonlyTrack(ele) && !pos.hasITS()) {
       return;
     }
@@ -386,20 +403,31 @@ struct PhotonConversionBuilder {
     if (!checkV0leg<isMC>(pos) || !checkV0leg<isMC>(ele)) {
       return;
     }
+
     // LOGF(info, "v0.collisionId() = %d , v0.posTrackId() = %d , v0.negTrackId() = %d", v0.collisionId(), v0.posTrackId(), v0.negTrackId());
 
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
     auto pTrack = getTrackParCov(pos);
-    pTrack.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrack, 2.f, matCorr, &dcaInfo);
+    if (moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {
+      LOGP(error, "failed correction for positive tpc track");
+      return;
+    }
+    auto pTrackC = pTrack;
+    pTrackC.setPID(o2::track::PID::Electron);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackC, 2.f, matCorr, &dcaInfo);
     auto posdcaXY = dcaInfo[0];
     auto posdcaZ = dcaInfo[1];
 
     auto nTrack = getTrackParCov(ele);
-    nTrack.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrack, 2.f, matCorr, &dcaInfo);
+    if (moveTPCTracks && isTPConlyTrack(ele) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, ele, nTrack)) {
+      LOGP(error, "failed correction for negative tpc track");
+      return;
+    }
+    auto nTrackC = nTrack;
+    nTrackC.setPID(o2::track::PID::Electron);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackC, 2.f, matCorr, &dcaInfo);
     auto eledcaXY = dcaInfo[0];
     auto eledcaZ = dcaInfo[1];
 
@@ -408,7 +436,7 @@ struct PhotonConversionBuilder {
     }
 
     float xyz[3] = {0.f, 0.f, 0.f};
-    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
+    Vtx_recalculationParCov(o2::base::Propagator::Instance(), pTrack, nTrack, xyz, matCorr);
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
     if (rxy_tmp > maxX + margin_r_tpc) {
       return;
@@ -417,8 +445,8 @@ struct PhotonConversionBuilder {
       return; // RZ line cut
     }
 
-    KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
-    KFPTrack kfp_track_ele = createKFPTrackFromTrack(ele);
+    KFPTrack kfp_track_pos = createKFPTrackFromTrackParCov(pTrack, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
+    KFPTrack kfp_track_ele = createKFPTrackFromTrackParCov(nTrack, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
     KFParticle kfp_pos(kfp_track_pos, -11);
     KFParticle kfp_ele(kfp_track_ele, 11);
     const KFParticle* GammaDaughters[2] = {&kfp_pos, &kfp_ele};
@@ -647,7 +675,7 @@ struct PhotonConversionBuilder {
   template <bool isMC, bool isTriggerAnalysis, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
   void build(TCollisions const& collisions, TV0s const& v0s, TTracks const&, TBCs const&)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
           continue;
@@ -668,7 +696,7 @@ struct PhotonConversionBuilder {
 
       nv0_map[collision.globalIndex()] = 0;
 
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       registry.fill(HIST("hCollisionCounter"), 1);
 
@@ -676,11 +704,13 @@ struct PhotonConversionBuilder {
         continue;
       }
 
-      auto v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
+      updateCCDB(bc); // delay update until is needed
+
+      const auto& v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
       // LOGF(info, "n v0 = %d", v0s_per_coll.size());
-      for (auto& v0 : v0s_per_coll) {
+      for (const auto& v0 : v0s_per_coll) {
         // LOGF(info, "collision.globalIndex() = %d, v0.globalIndex() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", collision.globalIndex(), v0.globalIndex(), v0.posTrackId() , v0.negTrackId());
-        fillV0Table<isMC, TCollisions, TTracks>(v0, false);
+        fillV0Table<isMC, TBCs, TCollisions, TTracks>(v0, false);
       } // end of v0 loop
     } // end of collision loop
 
@@ -755,7 +785,7 @@ struct PhotonConversionBuilder {
         // LOGF(info, "collision_tmp.globalIndex() = %d, collision_tmp.neeuls() = %d, nv0_map = %d", collision_tmp.globalIndex(), collision_tmp.neeuls(), nv0_map[collision_tmp.globalIndex()]);
       }
 
-      fillV0Table<isMC, TCollisions, TTracks>(v0, true);
+      fillV0Table<isMC, TBCs, TCollisions, TTracks>(v0, true);
     } // end of fullv0Id loop
 
     for (auto& collision : collisions) {
