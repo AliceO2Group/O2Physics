@@ -8,9 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \ file taskElectronWeakBoson.cxx
-/// \ task for WeakBoson (W/Z) based on electron in mid-rapidity
-/// \ author S. Sakai & S. Ito (Univ. of Tsukuba)
+/// \file taskElectronWeakNoson.cxx
+/// \briff task for WeakBoson (W/Z) based on electron in mid-rapidity
+/// \author S. Sakai & S. Ito (Univ. of Tsukuba)
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -23,25 +23,26 @@
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
 
-#include "PWGJE/DataModel/EMCALClusters.h"
-
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
+
+#include "PWGJE/DataModel/EMCALClusters.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using SelectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
-
-// PbPb
-using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksExtra_001, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>>;
-
-// pp
-// using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
 
 struct HfTaskElectronWeakBoson {
+
+  using SelectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+
+  // PbPb
+  using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksExtra_001, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>>;
+
+  // pp
+  // using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
 
   Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
   Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalambiguousclusterId;
@@ -56,15 +57,9 @@ struct HfTaskElectronWeakBoson {
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
 
   // track cuts
-  Filter filter_globalTr = requireGlobalTrackInFilter();
-
   Configurable<float> etalow{"etalow", -0.6f, ""};
   Configurable<float> etaup{"etaup", 0.6f, ""};
-  Filter etafilter = (aod::track::eta < etaup) && (aod::track::eta > etalow);
-
   Configurable<float> dcaxy_cut{"dcaxy_cut", 2.0f, ""};
-  Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxy_cut);
-
   Configurable<float> mimpT_cut{"mimpT_cut", 3.0f, "minimum pT cut"};
   Configurable<float> itschi2_cut{"itschi2_cut", 15.0f, "its chi2 cut"};
   Configurable<float> tpcchi2_cut{"tpcchi2_cut", 4.0f, "tpc chi2 cut"};
@@ -72,8 +67,12 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> tpcNcl_cut{"tpcNcl_cut", 100.0f, "tpc # if cluster cut"};
   Configurable<float> tpcNclCr_cut{"tpcNclCr_cut", 100.0f, "tpc # of crossedRows cut"};
 
+  Filter filter_globalTr = requireGlobalTrackInFilter();
+  Filter etafilter = (aod::track::eta < etaup) && (aod::track::eta > etalow);
+  Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxy_cut);
+
   // cluster cut
-  Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
+  Configurable<int> mClusterDefinition{"mClusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
   Configurable<float> minTime{"minTime", -25., "Minimum cluster time for time cut"};
   Configurable<float> maxTime{"maxTime", +20., "Maximum cluster time for time cut"};
   Configurable<float> minM02{"minM02", 0.1, "Minimum M02 for M02 cut"};
@@ -130,7 +129,8 @@ struct HfTaskElectronWeakBoson {
     histos.add("EMCtimeHistogram", "EMCtimeHistogram", kTH1F, {axisEMCtime});
   }
 
-  void process(soa::Filtered<aod::Collisions>::iterator const& collision, selectedClusters const& emcClusters, TrackEle const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks)
+  // void process(soa::Filtered<aod::Collisions>::iterator const& collision, SelectedClusters const& clusters, TrackEle const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks)
+  void process(soa::Filtered<aod::Collisions>::iterator const& collision, SelectedClusters const& emcClusters, TrackEle const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
     histos.fill(HIST("hEventCounter"), 0.5);
 
@@ -141,7 +141,7 @@ struct HfTaskElectronWeakBoson {
 
     histos.fill(HIST("ZvtxHistogram"), collision.posZ());
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
 
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("ITS_Chi2_Hist"), track.itsChi2NCl());
@@ -150,7 +150,7 @@ struct HfTaskElectronWeakBoson {
       histos.fill(HIST("ITS_NCls_Hist"), track.itsNCls());
       histos.fill(HIST("TPC_NClsCrossedRows_Hist"), track.tpcNClsCrossedRows());
 
-      if (std::abs(track.eta()) > 0.6)
+      if (std::abs(track.eta()) > etaup)
         continue;
       if (track.tpcNClsCrossedRows() < tpcNclCr_cut)
         continue;
@@ -172,9 +172,9 @@ struct HfTaskElectronWeakBoson {
       // track - match
 
       if (emcClusters.size() < 1)
-         continue;
-      if (track.phi() < 1.39 || track.phi() > 3.265)
-         continue;
+        continue;
+      if (track.phi() < 1.39 || track.phi() > 3.15)
+        continue;
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, track.globalIndex());
 
       // LOGF(info, "Number of matched track: %d", tracksofcluster.size());
@@ -184,63 +184,59 @@ struct HfTaskElectronWeakBoson {
       double dEta_mim = 999.9;
 
       if (tracksofcluster.size() > 0) {
-            int nmatch = 0;
-            for (const auto& match : tracksofcluster) {
-                 if (match.emcalcluster_as<selectedClusters>().time() < minTime || match.emcalcluster_as<selectedClusters>().time() > maxTime)
-                    continue;
-                 if (match.emcalcluster_as<selectedClusters>().m02() < minM02 || match.emcalcluster_as<selectedClusters>().m02() > maxM02)
-                    continue;
+        int nmatch = 0;
+        for (const auto& match : tracksofcluster) {
+          if (match.emcalcluster_as<SelectedClusters>().time() < minTime || match.emcalcluster_as<SelectedClusters>().time() > maxTime)
+            continue;
+          if (match.emcalcluster_as<SelectedClusters>().m02() < minM02 || match.emcalcluster_as<SelectedClusters>().m02() > maxM02)
+            continue;
 
-                 double emc_m20 = match.emcalcluster_as<selectedClusters>().m20();
-                 double emc_m02 = match.emcalcluster_as<selectedClusters>().m02();
-                 double emc_energy = match.emcalcluster_as<selectedClusters>().energy();
-                 double emc_phi = match.emcalcluster_as<selectedClusters>().phi();
-                 double emc_eta = match.emcalcluster_as<selectedClusters>().eta();
-                 double emc_time = match.emcalcluster_as<selectedClusters>().time();
-                 // LOG(info) << "tr phi0 = " << match.track_as<TrackEle>().phi();
-                 // LOG(info) << "tr phi1 = " << track.phi();
-                 // LOG(info) << "emc phi = " << emc_phi;
-                 if (nmatch == 0) {
-                    double dPhi = match.track_as<TrackEle>().phi() - emc_phi;
-                    double dEta = match.track_as<TrackEle>().eta() - emc_eta;
+          double emc_m20 = match.emcalcluster_as<SelectedClusters>().m20();
+          double emc_m02 = match.emcalcluster_as<SelectedClusters>().m02();
+          double emc_energy = match.emcalcluster_as<SelectedClusters>().energy();
+          double emc_phi = match.emcalcluster_as<SelectedClusters>().phi();
+          double emc_eta = match.emcalcluster_as<SelectedClusters>().eta();
+          double emc_time = match.emcalcluster_as<SelectedClusters>().time();
+          // LOG(info) << "tr phi0 = " << match.track_as<TrackEle>().phi();
+          // LOG(info) << "tr phi1 = " << track.phi();
+          // LOG(info) << "emc phi = " << emc_phi;
+          if (nmatch == 0) {
+            double dPhi = match.track_as<TrackEle>().phi() - emc_phi;
+            double dEta = match.track_as<TrackEle>().eta() - emc_eta;
 
-                    histos.fill(HIST("MatchPhiHistogram"), emc_phi, match.track_as<TrackEle>().phi());
-                    histos.fill(HIST("MatchEtaHistogram"), emc_eta, match.track_as<TrackEle>().eta());
+            histos.fill(HIST("MatchPhiHistogram"), emc_phi, match.track_as<TrackEle>().phi());
+            histos.fill(HIST("MatchEtaHistogram"), emc_eta, match.track_as<TrackEle>().eta());
 
-                    double R = sqrt(pow(dPhi, 2)+pow(dEta, 2));
-                    if (R < Rmim)
-                      {
-                       Rmim = R;
-                       dPhi_mim = dPhi;
-                       dEta_mim = dEta;
-                      }
-                    histos.fill(HIST("TrMatchHistogram"), dPhi, dEta);
-                    histos.fill(HIST("EMCtimeHistogram"), emc_time);
+            double R = sqrt(pow(dPhi, 2) + pow(dEta, 2));
+            if (R < Rmim) {
+              Rmim = R;
+              dPhi_mim = dPhi;
+              dEta_mim = dEta;
+            }
+            histos.fill(HIST("TrMatchHistogram"), dPhi, dEta);
+            histos.fill(HIST("EMCtimeHistogram"), emc_time);
 
-                    if (R < MatchR_cut)
-                     continue;
+            if (R < MatchR_cut)
+              continue;
 
-                    double eop = emc_energy / match.track_as<TrackEle>().p();
-                    // LOG(info) << "E/p" << eop;
-                    histos.fill(HIST("EopNsigTPCHistogram"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
-                    histos.fill(HIST("M02Histogram"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m02);
-                    histos.fill(HIST("M20Histogram"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m20);
-                    if (match.track_as<TrackEle>().tpcNSigmaEl() > -1.0 && match.track_as<TrackEle>().tpcNSigmaEl()  <3)
-                       {
-                        histos.fill(HIST("EopHistogram"), match.track_as<TrackEle>().pt(), eop);
-                       }
-                   }
-                 nmatch++;
-              }
-           }
+            double eop = emc_energy / match.track_as<TrackEle>().p();
+            // LOG(info) << "E/p" << eop;
+            histos.fill(HIST("EopNsigTPCHistogram"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
+            histos.fill(HIST("M02Histogram"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m02);
+            histos.fill(HIST("M20Histogram"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m20);
+            if (match.track_as<TrackEle>().tpcNSigmaEl() > -1.0 && match.track_as<TrackEle>().tpcNSigmaEl() < 3) {
+              histos.fill(HIST("EopHistogram"), match.track_as<TrackEle>().pt(), eop);
+            }
+          }
 
+          nmatch++;
+        }
+      }
 
-           if (Rmim < 10.0)
-               {
-                // LOG(info) << "R mim = " << Rmim;
-                histos.fill(HIST("TrMatchHistogram_mim"), dPhi_mim, dEta_mim);
-               }
-
+      if (Rmim < 10.0) {
+        // LOG(info) << "R mim = " << Rmim;
+        histos.fill(HIST("TrMatchHistogram_mim"), dPhi_mim, dEta_mim);
+      }
 
     } // end of track loop
   }
