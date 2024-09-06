@@ -707,10 +707,10 @@ struct correlateStrangeness {
     }
 
     // Some QA plots
-    histos.add("hGeneratedQAPtTrigger", "hGeneratedQAPtTrigger", kTH2F, {axisPtQA, {5,-0.5f,4.5f}});
-    histos.add("hGeneratedQAPtAssociatedK0", "hGeneratedQAPtAssociatedK0", kTH2F, {axisPtQA, {5,-0.5f,4.5f}});
-    histos.add("hClosureQAPtTrigger", "hClosureQAPtTrigger", kTH2F, {axisPtQA, {5,-0.5f,4.5f}});
-    histos.add("hClosureQAPtAssociatedK0", "hClosureQAPtAssociatedK0", kTH2F, {axisPtQA, {5,-0.5f,4.5f}});
+    histos.add("hGeneratedQAPtTrigger", "hGeneratedQAPtTrigger", kTH2F, {axisPtQA, {5, -0.5f, 4.5f}});
+    histos.add("hGeneratedQAPtAssociatedK0", "hGeneratedQAPtAssociatedK0", kTH2F, {axisPtQA, {5, -0.5f, 4.5f}});
+    histos.add("hClosureQAPtTrigger", "hClosureQAPtTrigger", kTH2F, {axisPtQA, {5, -0.5f, 4.5f}});
+    histos.add("hClosureQAPtAssociatedK0", "hClosureQAPtAssociatedK0", kTH2F, {axisPtQA, {5, -0.5f, 4.5f}});
 
     histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
     histos.add("hK0ShortEtaVsPtVsPhi", "hK0ShortEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
@@ -1181,7 +1181,7 @@ struct correlateStrangeness {
 
     for (auto const& mcParticle : mcParticles) {
       Double_t geta = mcParticle.eta();
-      if(std::abs(geta)>0.8f){
+      if (std::abs(geta) > 0.8f) {
         continue;
       }
       Double_t gpt = mcParticle.pt();
@@ -1276,7 +1276,7 @@ struct correlateStrangeness {
 
     for (auto const& mcParticle : mcParticles) {
       Double_t geta = mcParticle.eta();
-      if(std::abs(geta)>0.8f){
+      if (std::abs(geta) > 0.8f) {
         continue;
       }
       Double_t gpt = mcParticle.pt();
@@ -1354,7 +1354,7 @@ struct correlateStrangeness {
 
     for (auto const& mcParticle : mcParticles) {
       Double_t geta = mcParticle.eta();
-      if(std::abs(geta)>0.8f){
+      if (std::abs(geta) > 0.8f) {
         continue;
       }
       Double_t gpt = mcParticle.pt();
@@ -1403,7 +1403,7 @@ struct correlateStrangeness {
 
     for (auto const& mcParticle : mcParticles) {
       Double_t geta = mcParticle.eta();
-      if(std::abs(geta)>0.8f){
+      if (std::abs(geta) > 0.8f) {
         continue;
       }
       Double_t gpt = mcParticle.pt();
