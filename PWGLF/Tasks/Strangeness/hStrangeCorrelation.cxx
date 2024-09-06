@@ -707,6 +707,11 @@ struct correlateStrangeness {
     }
 
     // Some QA plots
+    histos.add("hGeneratedQAPtTrigger", "hGeneratedQAPtTrigger", kTH2F, {axisPtQA, {5,-0.5f,4.5f}});
+    histos.add("hGeneratedQAPtAssociatedK0", "hGeneratedQAPtAssociatedK0", kTH2F, {axisPtQA, {5,-0.5f,4.5f}});
+    histos.add("hClosureQAPtTrigger", "hClosureQAPtTrigger", kTH2F, {axisPtQA, {5,-0.5f,4.5f}});
+    histos.add("hClosureQAPtAssociatedK0", "hClosureQAPtAssociatedK0", kTH2F, {axisPtQA, {5,-0.5f,4.5f}});
+
     histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
     histos.add("hK0ShortEtaVsPtVsPhi", "hK0ShortEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
     histos.add("hK0ShortEtaVsPtVsPhiBg", "hK0ShortEtaVsPtVsPhiBg", kTH3F, {axisPtQA, axisEta, axisPhi});
@@ -1175,6 +1180,22 @@ struct correlateStrangeness {
     histos.fill(HIST("hClosureTestEventCounter"), 2.5f);
 
     for (auto const& mcParticle : mcParticles) {
+      Double_t geta = mcParticle.eta();
+      Double_t gpt = mcParticle.pt();
+      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+        if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+          histos.fill(HIST("hGeneratedQAPtTrigger"), gpt, 0.0f); // step 1: before all selections
+        }
+      }
+
+      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+          histos.fill(HIST("hGeneratedQAPtAssociatedK0"), gpt, 0.0f); // step 1: before all selections
+        }
+      }
+    }
+
+    for (auto const& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary())
         continue;
       if (abs(mcParticle.pdgCode()) == 211)
@@ -1251,6 +1272,22 @@ struct correlateStrangeness {
     histos.fill(HIST("hClosureTestEventCounter"), 3.5f);
 
     for (auto const& mcParticle : mcParticles) {
+      Double_t geta = mcParticle.eta();
+      Double_t gpt = mcParticle.pt();
+      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+        if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+          histos.fill(HIST("hGeneratedQAPtTrigger"), gpt, 1.0f); // step 2: after event selection
+        }
+      }
+
+      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+          histos.fill(HIST("hGeneratedQAPtAssociatedK0"), gpt, 1.0f); // step 2: before all selections
+        }
+      }
+    }
+
+    for (auto const& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
@@ -1309,6 +1346,22 @@ struct correlateStrangeness {
     std::vector<uint32_t> omegaMinusIndices;
     std::vector<uint32_t> omegaPlusIndices;
 
+    for (auto const& mcParticle : mcParticles) {
+      Double_t geta = mcParticle.eta();
+      Double_t gpt = mcParticle.pt();
+      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+        if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+          histos.fill(HIST("hClosureQAPtTrigger"), gpt, 0.0f); // step 1: no event selection whatsoever
+        }
+      }
+
+      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+          histos.fill(HIST("hClosureQAPtAssociatedK0"), gpt, 0.0f); // step 1: no event selection whatsoever
+        }
+      }
+    }
+
     histos.fill(HIST("hClosureTestEventCounter"), 0.5f);
 
     int bestCollisionFT0Mpercentile = -1;
@@ -1338,6 +1391,22 @@ struct correlateStrangeness {
     }
 
     histos.fill(HIST("hClosureTestEventCounter"), 1.5f);
+
+    for (auto const& mcParticle : mcParticles) {
+      Double_t geta = mcParticle.eta();
+      Double_t gpt = mcParticle.pt();
+      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+        if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+          histos.fill(HIST("hClosureQAPtTrigger"), gpt, 1.0f); // step 2: after event selection
+        }
+      }
+
+      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+          histos.fill(HIST("hClosureQAPtAssociatedK0"), gpt, 1.0f); // step 2: after event selection
+        }
+      }
+    }
 
     int iteratorNum = -1;
     for (auto const& mcParticle : mcParticles) {
