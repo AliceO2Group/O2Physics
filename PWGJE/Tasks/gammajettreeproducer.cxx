@@ -132,7 +132,7 @@ struct GammaJetTreeProducer {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return false;
     }
-    if(!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)){
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return false;
     }
     if (!jetderiveddatautilities::eventEMCAL(collision)) {
@@ -202,7 +202,7 @@ struct GammaJetTreeProducer {
   // an integer instead
   Filter clusterDefinitionSelection = (o2::aod::jcluster::definition == mClusterDefinition);
   // Process clusters
-  void processClusters(soa::Join<JetCollisions,aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, JetTracks const& tracks)
+  void processClusters(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, JetTracks const& tracks)
   {
     if (!isEventAccepted(collision)) {
       return;
@@ -259,7 +259,7 @@ struct GammaJetTreeProducer {
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
   // Process charged jets
-  void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision,soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const&)
+  void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const&)
   {
     // event selection
     if (!isEventAccepted(collision)) {

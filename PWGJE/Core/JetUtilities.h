@@ -141,16 +141,16 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> MatchCl
 template <typename T, typename U>
 float deltaR(T const& A, U const& B)
 {
-  float dPhi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(A.phi() , -M_PI)- RecoDecay::constrainAngle(B.phi() , -M_PI), -M_PI);
+  float dPhi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(A.phi(), -M_PI) - RecoDecay::constrainAngle(B.phi(), -M_PI), -M_PI);
   float dEta = A.eta() - B.eta();
 
   return std::sqrt(dEta * dEta + dPhi * dPhi);
 }
- // same as deltaR but explicit specification of the eta and phi components
+// same as deltaR but explicit specification of the eta and phi components
 template <typename T, typename U, typename V, typename W>
 float deltaR(T const& eta1, U const& phi1, V const& eta2, W const& phi2)
 {
-  float dPhi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(phi1 , -M_PI)- RecoDecay::constrainAngle(phi2 , -M_PI), -M_PI);
+  float dPhi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(phi1, -M_PI) - RecoDecay::constrainAngle(phi2, -M_PI), -M_PI);
   float dEta = eta1 - eta2;
 
   return std::sqrt(dEta * dEta + dPhi * dPhi);
