@@ -81,6 +81,8 @@ class FlowPtContainer : public TNamed
   {
     sumP.clear();
     sumP.resize((mpar + 1) * (mpar + 1));
+    cmNum.clear();
+    cmDen.clear();
     fillCounter = 0;
   };
 
