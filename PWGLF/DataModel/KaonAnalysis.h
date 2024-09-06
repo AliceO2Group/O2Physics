@@ -60,15 +60,15 @@ static constexpr std::string_view hnsigmatpc[NpCharge] = {"nsigmatpc/pos/ka",
                                                           "nsigmatpc/neg/ka"};
 static constexpr std::string_view hdeltatof[NpCharge] = {"deltatof/pos/ka",
                                                          "deltatof/neg/ka"};
-static constexpr std::string_view hdeltatpc[NpCharge] = {"deltatpc/pos/ka", 
+static constexpr std::string_view hdeltatpc[NpCharge] = {"deltatpc/pos/ka",
                                                          "deltatpc/neg/ka"};
 static constexpr std::string_view hdcaxy[NpCharge] = {"dcaxy/pos/ka",
                                                       "dcaxy/neg/ka"};
-static constexpr std::string_view hdcaxytot[NpCharge] = {"dcaxytot/pos/ka", 
+static constexpr std::string_view hdcaxytot[NpCharge] = {"dcaxytot/pos/ka",
                                                          "dcaxytot/neg/ka"};
 static constexpr std::string_view hdcaz[NpCharge] = {"dcaz/pos/ka",
                                                      "dcaz/neg/ka"};
-static constexpr std::string_view hdcaztot[NpCharge] = {"dcaztot/pos/ka", 
+static constexpr std::string_view hdcaztot[NpCharge] = {"dcaztot/pos/ka",
                                                         "dcaztot/neg/ka"};
 static constexpr std::string_view hdcaxyphi[NpCharge] = {"dcaxyphi/pos/ka",
                                                          "dcaxyphi/neg/ka"};
@@ -85,13 +85,13 @@ static constexpr std::string_view hpt_num_prm[NpCharge] = {"MC/ka/pos/prm/pt/num
                                                            "MC/ka/neg/prm/pt/num"};
 static constexpr std::string_view hpt_numtof_prm[NpCharge] = {"MC/ka/pos/prm/pt/numtof",
                                                               "MC/ka/neg/prm/pt/numtof"};
-static constexpr std::string_view hpt_numtofgoodmatch_prm[NpCharge] = {"MC/ka/pos/prm/pt/numtofgoodmatch", 
+static constexpr std::string_view hpt_numtofgoodmatch_prm[NpCharge] = {"MC/ka/pos/prm/pt/numtofgoodmatch",
                                                                        "MC/ka/neg/prm/pt/numtofgoodmatch"};
 
 //********************************************RD**********************************************************************************************
-static constexpr std::string_view hpt_numtof_str[NpCharge] = {"MC/ka/pos/str/pt/numtof", 
+static constexpr std::string_view hpt_numtof_str[NpCharge] = {"MC/ka/pos/str/pt/numtof",
                                                               "MC/ka/neg/str/pt/numtof"};
-static constexpr std::string_view hpt_numtof_mat[NpCharge] = {"MC/ka/pos/mat/pt/numtof", 
+static constexpr std::string_view hpt_numtof_mat[NpCharge] = {"MC/ka/pos/mat/pt/numtof",
                                                               "MC/ka/neg/mat/pt/numtof"};
 static constexpr std::string_view hpt_den_prm[NpCharge] = {"MC/ka/pos/prm/pt/den",
                                                            "MC/ka/neg/prm/pt/den"};
@@ -99,19 +99,19 @@ static constexpr std::string_view hpt_den_prm_recoev[NpCharge] = {"MC/ka/pos/prm
                                                                   "MC/ka/neg/prm/pt/denrecoev"};
 static constexpr std::string_view hpt_den_prm_evsel[NpCharge] = {"MC/ka/pos/prm/pt/denevsel",
                                                                  "MC/ka/neg/prm/pt/denevsel"};
-static constexpr std::string_view hpt_den_prm_goodev[NpCharge] = {"MC/ka/pos/prm/pt/dengoodev", 
+static constexpr std::string_view hpt_den_prm_goodev[NpCharge] = {"MC/ka/pos/prm/pt/dengoodev",
                                                                   "MC/ka/neg/prm/pt/dengoodev"};
 static constexpr std::string_view hpt_den_prm_mcgoodev[NpCharge] = {"MC/ka/pos/prm/pt/denmcgoodev",
                                                                     "MC/ka/neg/prm/pt/denmcgoodev"};
 static constexpr std::string_view hpt_den_prm_mcbadev[NpCharge] = {"MC/ka/pos/prm/pt/denmcbadev",
                                                                    "MC/ka/neg/prm/pt/denmcbadev"};
-static constexpr std::string_view hpt_num_str[NpCharge] = {"MC/ka/pos/str/pt/num", 
+static constexpr std::string_view hpt_num_str[NpCharge] = {"MC/ka/pos/str/pt/num",
                                                            "MC/ka/neg/str/pt/num"};
 static constexpr std::string_view hpt_den_str[NpCharge] = {"MC/ka/pos/str/pt/den",
                                                            "MC/ka/neg/str/pt/den"};
 static constexpr std::string_view hpt_num_mat[NpCharge] = {"MC/ka/pos/mat/pt/num",
                                                            "MC/ka/neg/mat/pt/num"};
-static constexpr std::string_view hpt_den_mat[NpCharge] = {"MC/ka/pos/mat/pt/den",  
+static constexpr std::string_view hpt_den_mat[NpCharge] = {"MC/ka/pos/mat/pt/den",
                                                            "MC/ka/neg/mat/pt/den"};
 static constexpr std::string_view hdcaxyprm[NpCharge] = {"dcaxyprm/pos/ka",
                                                          "dcaxyprm/neg/ka"};
@@ -119,17 +119,17 @@ static constexpr std::string_view hdcaxyprm2[NpCharge] = {"dcaxyprm2/pos/ka",
                                                           "dcaxyprm2/neg/ka"};
 static constexpr std::string_view hdcaxyD0[NpCharge] = {"dcaxyD0/pos/ka",
                                                         "dcaxyD0/neg/ka"};
-static constexpr std::string_view hdcaxyprmgoodevs[NpCharge] = {"dcaxyprmgoodevs/pos/ka", 
+static constexpr std::string_view hdcaxyprmgoodevs[NpCharge] = {"dcaxyprmgoodevs/pos/ka",
                                                                 "dcaxyprmgoodevs/neg/ka"};
 static constexpr std::string_view hdcazprm[NpCharge] = {"dcazprm/pos/ka",
                                                         "dcazprm/neg/ka"};
-static constexpr std::string_view hdcazprm2[NpCharge] = {"dcazprm2/pos/ka", 
-                                                         "dcazprm2/neg/ka"};                    
+static constexpr std::string_view hdcazprm2[NpCharge] = {"dcazprm2/pos/ka",
+                                                         "dcazprm2/neg/ka"};
 static constexpr std::string_view hdcazD0[NpCharge] = {"dcazD0/pos/ka",
-                                                       "dcazD0/neg/ka"};      
+                                                       "dcazD0/neg/ka"};
 static constexpr std::string_view hdcazprmgoodevs[NpCharge] = {"dcazprmgoodevs/pos/ka",
                                                                "dcazprmgoodevs/neg/ka"};
-static constexpr std::string_view hdcaxystr[NpCharge] = {"dcaxystr/pos/ka", 
+static constexpr std::string_view hdcaxystr[NpCharge] = {"dcaxystr/pos/ka",
                                                          "dcaxystr/neg/ka"};
 static constexpr std::string_view hdcaxycharm[NpCharge] = {"dcaxycharm/pos/ka",
                                                            "dcaxycharm/neg/ka"};
@@ -137,12 +137,12 @@ static constexpr std::string_view hdcaxybeauty[NpCharge] = {"dcaxybeauty/pos/ka"
                                                             "dcaxybeauty/neg/ka"};
 static constexpr std::string_view hdcaxymat[NpCharge] = {"dcaxymat/pos/ka",
                                                          "dcaxymat/neg/ka"};
-static constexpr std::string_view hdcazstr[NpCharge] = {"dcazstr/pos/ka", 
+static constexpr std::string_view hdcazstr[NpCharge] = {"dcazstr/pos/ka",
                                                         "dcazstr/neg/ka"};
-static constexpr std::string_view hdcazcharm[NpCharge] = {"dcazcharm/pos/ka", 
+static constexpr std::string_view hdcazcharm[NpCharge] = {"dcazcharm/pos/ka",
                                                           "dcazcharm/neg/ka"};
-static constexpr std::string_view hdcazbeauty[NpCharge] = {"dcazbeauty/pos/ka", 
-                                                           "dcazbeauty/neg/ka"};  
+static constexpr std::string_view hdcazbeauty[NpCharge] = {"dcazbeauty/pos/ka",
+                                                           "dcazbeauty/neg/ka"};
 static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/ka",
                                                         "dcazmat/neg/ka"};
 
