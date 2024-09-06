@@ -132,8 +132,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// Event part
   Configurable<float> ConfV0MLow{"ConfV0MLow", 0.0, "Lower limit for V0M multiplicity"};
   Configurable<float> ConfV0MHigh{"ConfV0MHigh", 25000.0, "Upper limit for V0M multiplicity"};
-
   Filter collV0Mfilter = ((o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh));
+  using FilteredFDCollisions = soa::Filtered<aod::FDCollisions>;
+  using FilteredFDCollision = soa::Filtered<aod::FDCollisions>::iterator;
   // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
 
   /// Particle part
@@ -533,7 +534,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(soa::Filtered<o2::aod::FDCollisions>::iterator& col,
+  void processSameEvent(FilteredFDCollision& col,
                         FilteredFemtoFullParticles& parts)
   {
     fillCollision(col);
@@ -625,7 +626,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(soa::Filtered<o2::aod::FDCollisions>& cols,
+  void processMixedEvent(FilteredFDCollisions& cols,
                          FilteredFemtoFullParticles& parts)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
