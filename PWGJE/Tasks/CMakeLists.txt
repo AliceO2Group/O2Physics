@@ -167,7 +167,6 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(gamma-jet-tree-producer
                         SOURCES gammajettreeproducer.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::PWGJECore O2Physics::AnalysisCore
-                        O2Physics::EventFilteringUtils
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(bjet-tagging-ml
                         SOURCES bjetTaggingML.cxx

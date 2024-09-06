@@ -22,6 +22,7 @@
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/GammaJetAnalysisTree.h"
 
@@ -45,7 +46,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using bcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using selectedClusters = o2::soa::Filtered<o2::aod::JClusters>;
 
 #include "Framework/runDataProcessing.h"
@@ -83,7 +83,7 @@ struct GammaJetTreeProducer {
   int eventSelection = -1;
   int trackSelection = -1;
 
-  std::map<int32_t, int32_t> collisionMapping;
+  std::unordered_map<int32_t, int32_t> collisionMapping;
   std::vector<int> triggerMaskBits;
 
   void init(InitContext const&)
@@ -111,19 +111,6 @@ struct GammaJetTreeProducer {
   // ---------------------
   // Helper functions
   // ---------------------
-  template <typename T>
-  double deltaR(T const& eta1, T const& phi1, T const& eta2, T const& phi2)
-  {
-    // make sure both phi1 and phi2 are 0 to 2pi
-
-    double dPhi = TVector2::Phi_0_2pi(phi1) - TVector2::Phi_0_2pi(phi2);
-    if (abs(dPhi) > M_PI) {
-      dPhi = 2 * M_PI - abs(dPhi);
-    }
-    double dEta = eta1 - eta2;
-    return std::sqrt(dPhi * dPhi + dEta * dEta);
-  }
-
   bool isTrackSelected(const auto& track)
   {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -142,7 +129,10 @@ struct GammaJetTreeProducer {
     if (collision.posZ() > mVertexCut) {
       return false;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return false;
+    }
+    if(!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)){
       return false;
     }
     if (!jetderiveddatautilities::eventEMCAL(collision)) {
@@ -159,7 +149,7 @@ struct GammaJetTreeProducer {
         continue;
       }
       // make dR function live somwhere else
-      double dR = deltaR(cluster.eta(), cluster.phi(), track.eta(), track.phi());
+      float dR = jetutilities::deltaR(cluster, track);
       if (dR < radius) {
         iso += track.pt();
       }
@@ -183,8 +173,8 @@ struct GammaJetTreeProducer {
       if (!isTrackSelected(track)) {
         continue;
       }
-      dRLeft = deltaR(cluster.eta(), cPhiLeft, track.eta(), track.phi());
-      dRRight = deltaR(cluster.eta(), cPhiRight, track.eta(), track.phi());
+      dRLeft = jetutilities::deltaR(cluster.eta(), cPhiLeft, track.eta(), track.phi());
+      dRRight = jetutilities::deltaR(cluster.eta(), cPhiRight, track.eta(), track.phi());
 
       if (dRLeft < radius) {
         ptSumLeft += track.pt();
@@ -212,14 +202,14 @@ struct GammaJetTreeProducer {
   // an integer instead
   Filter clusterDefinitionSelection = (o2::aod::jcluster::definition == mClusterDefinition);
   // Process clusters
-  void processClusters(soa::Join<JetCollisions,aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, aod::JBCs const&, selectedClusters const& clusters, JetTracks const& tracks)
+  void processClusters(soa::Join<JetCollisions,aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, JetTracks const& tracks)
   {
     if (!isEventAccepted(collision)) {
       return;
     }
 
     eventsTable(collision.multiplicity(), collision.centrality(), collision.rho(), collision.eventSel(), collision.alias_raw());
-    collisionMapping.insert(std::make_pair(collision.globalIndex(), eventsTable.lastIndex()));
+    collisionMapping[collision.globalIndex()] = eventsTable.lastIndex();
 
     // loop over clusters
     for (auto cluster : clusters) {
@@ -257,7 +247,7 @@ struct GammaJetTreeProducer {
       //   dEta = 0;
       // }
 
-      gammasTable(collisionMapping[collision.globalIndex()], cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), isoraw, perpconerho, dPhi, dEta, p);
+      gammasTable(eventsTable.lastIndex(), cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), isoraw, perpconerho, dPhi, dEta, p);
     }
 
     // dummy loop over tracks
@@ -269,7 +259,7 @@ struct GammaJetTreeProducer {
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
   // Process charged jets
-  void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, aod::JBCs const&, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const&)
+  void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision,soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const&)
   {
     // event selection
     if (!isEventAccepted(collision)) {
@@ -286,8 +276,11 @@ struct GammaJetTreeProducer {
         mHistograms.fill(HIST("chjetpt_vs_constpt"), jet.pt(), constituent.pt());
         nconst++;
       }
-
-      chargedJetsTable(collisionMapping[collision.globalIndex()], jet.pt(), jet.eta(), jet.phi(), jet.energy(), jet.mass(), jet.area(), nconst);
+      int32_t storedColIndex = -1;
+      if (auto foundCol = collisionMapping.find(collision.globalIndex()); foundCol != collisionMapping.end()) {
+        storedColIndex = foundCol->second;
+      }
+      chargedJetsTable(storedColIndex, jet.pt(), jet.eta(), jet.phi(), jet.energy(), jet.mass(), jet.area(), nconst);
       // fill histograms
       mHistograms.fill(HIST("chjetPt"), jet.pt());
     }
@@ -297,6 +290,6 @@ struct GammaJetTreeProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<GammaJetTreeProducer>(cfgc, TaskName{"gamma-jet-tree-producer"}, SetDefaultProcesses{{{"processClearMaps",true},{"processClusters", true}, {"processChargedJets", true}}})};
+    adaptAnalysisTask<GammaJetTreeProducer>(cfgc, TaskName{"gamma-jet-tree-producer"})};
   return workflow;
 }
