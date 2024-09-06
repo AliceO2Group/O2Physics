@@ -409,7 +409,7 @@ struct ebyeMaker {
     return -999.f;
   }
 
-  float getV0M(uint64_t const id, float const zvtx, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs)
+  float getV0M(int64_t const id, float const zvtx, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs)
   {
     auto fv0a = fv0as.rawIteratorAt(id);
     auto fv0c = fv0cs.rawIteratorAt(id);
