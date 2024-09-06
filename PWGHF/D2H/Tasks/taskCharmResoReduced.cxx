@@ -38,6 +38,8 @@ enum DecayChannel : uint8_t {
 
 struct HfTaskReso{
 Configurable<float> ptMinReso{"ptMinReso", 5, "Discard events with smaller pT"};
+Configurable<bool> cutBeforeMixing{"cutBeforeMixing", false, "Apply pT cut to candidates before event mixing"};
+Configurable<bool> cutAfterMixing{"cutAfterMixing", false, "Apply pT cut to candidates after event mixing"};
 // Configurables axis for histos
 ConfigurableAxis configAxisPt{"configAxisPt", {VARIABLE_WIDTH,0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "axis for pT"};
 ConfigurableAxis configAxisPtProng0{"configAxisPtProng0", {VARIABLE_WIDTH,0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "axis for pT of D daughter"};
@@ -83,13 +85,13 @@ void init(InitContext&)
     registry.add("hNPvCont", "Collision number of PV contributors ; N contrib ; entries", {HistType::kTH1F, {{100, 0, 250}}});
     registry.add("hZvert", "Collision Z Vtx ; z PV [cm] ; entries", {HistType::kTH1F, {{120, -12., 12.}}});
     registry.add("hBz", "Collision Bz ; Bz [T] ; entries", {HistType::kTH1F, {{20, -10., 10.}}});
-    if (doprocessDs2StarData || doprocessDs2StarDataME){
+    if (doprocessDs1Data || doprocessDs1DataME || doprocessDs2StarData || doprocessDs2StarDataME){
       registry.add("hSparseMl", "THn for production studies with cosThStar and BDT scores", HistType::kTHnSparseF,{axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisInvMassProng1, axisCosThetaStar, axisBkgBdtScore, axisNonPromptBdtScore});
     }
     else{ 
       registry.add("hSparse", "THn for production studies with cosThStar", HistType::kTHnSparseF,{axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisInvMassProng1, axisCosThetaStar});
     }
-    if (doprocessDs2StarDataME){
+    if (doprocessDs1DataME || doprocessDs2StarDataME){
       registry.add("hNPvContCorr", "Collision number of PV contributors ; N contrib ; N contrib", {HistType::kTH2F, {{100, 0, 250}, {100, 0, 250}}});
       registry.add("hZvertCorr", "Collision Z Vtx ; z PV [cm] ; z PV [cm]", {HistType::kTH2F, {{120, -12., 12.},{120, -12., 12.}}});
       registry.add("hMassProng0Corr", "D daughters inv. mass", {HistType::kTH2F, {axisInvMassProng0,axisInvMassProng0}});
@@ -165,10 +167,27 @@ void processDataME ( Coll const& collisions, Candidates const& candidates){
   for (auto& [collision1, cands1, collision2, cands2] : pairs) {
     // For each couple of candidate resonances I can make 2 mixed candidates by swithching daughters
     for (const auto& [cand1, cand2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(cands1, cands2))) {
+      if (cutBeforeMixing && (cand1.pt() < ptMinReso || cand2.pt() < ptMinReso)){
+        continue;
+      }
       float ptME1 = RecoDecay::pt(RecoDecay::sumOfVec(cand1.pVectorProng0(),  cand2.pVectorProng1()));
-      if (ptME1 > ptMinReso ){
-        float invMassME1 = RecoDecay::m(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short});
-        float cosThetaStarME1 = RecoDecay::cosThetaStar(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short}, invMassME1, 1);
+      float invMassME1;
+      float cosThetaStarME1;
+      if (!cutAfterMixing || ptME1 > ptMinReso ){
+        switch (channel) {
+          case DecayChannel::Ds1ToDstarK0s:
+            invMassME1 = RecoDecay::m(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDStar, o2::constants::physics::MassK0Short});
+            cosThetaStarME1 = RecoDecay::cosThetaStar(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDStar, o2::constants::physics::MassK0Short}, invMassME1, 1);
+            break;
+          case DecayChannel::Ds2StarToDplusK0s:
+            invMassME1 = RecoDecay::m(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short});
+            cosThetaStarME1 = RecoDecay::cosThetaStar(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short}, invMassME1, 1);
+            break;
+          default:
+            invMassME1 = RecoDecay::m(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassLambda0});
+            cosThetaStarME1 = RecoDecay::cosThetaStar(std::array{cand1.pVectorProng0(), cand2.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassLambda0}, invMassME1, 1);
+            break;
+        }
         registry.fill(HIST("hMass"), invMassME1);
         registry.fill(HIST("hPt"), ptME1);
         registry.fill(HIST("hNPvContCorr"), collision1.numContrib(),collision2.numContrib());
@@ -182,30 +201,56 @@ void processDataME ( Coll const& collisions, Candidates const& candidates){
           registry.fill(HIST("hSparse"), ptME1, cand1.ptProng0(), cand2.ptProng1(), invMassME1, cand1.invMassProng0(), cand2.invMassProng1(), cosThetaStarME1);
         }
       }
-      // float ptME2 = RecoDecay::pt(cand2.pxProng0() + cand1.pxProng1(), cand2.pyProng0() + cand1.pyProng1());
-      // if (ptME2 > ptMinReso ){
-      //   float invMassME2 = RecoDecay::m(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short});
-      //   float cosThetaStarME2 = RecoDecay::cosThetaStar(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short}, invMassME2, 1);
-      //   registry.fill(HIST("hMass"), invMassME2);
-      //   registry.fill(HIST("hPt"), ptME2);
-      //   if constexpr (hasMl){
-      //     registry.fill(HIST("hSparseMl"), ptME2, cand2.ptProng0(), cand1.ptProng1(), invMassME2, cand2.invMassProng0(), cand1.invMassProng1(), cosThetaStarME2, cand2.mlScoreBkgProng0(), cand2.mlScoreNonpromptProng0());
-      //   }
-      //   else {
-      //     registry.fill(HIST("hSparse"), ptME2, cand2.ptProng0(), cand1.ptProng1(), invMassME2, cand2.invMassProng0(), cand1.invMassProng1(), cosThetaStarME2);
-      //   }
-      // }
-      
+      float ptME2 = RecoDecay::pt(cand2.pxProng0() + cand1.pxProng1(), cand2.pyProng0() + cand1.pyProng1());
+      float invMassME2;
+      float cosThetaStarME2;
+      if (!cutAfterMixing || ptME2 > ptMinReso ){
+        switch (channel) {
+          case DecayChannel::Ds1ToDstarK0s:
+            invMassME2 = RecoDecay::m(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDStar, o2::constants::physics::MassK0Short});
+            cosThetaStarME2 = RecoDecay::cosThetaStar(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDStar, o2::constants::physics::MassK0Short}, invMassME2, 1);
+            break;
+          case DecayChannel::Ds2StarToDplusK0s:
+            invMassME2 = RecoDecay::m(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short});
+            cosThetaStarME2 = RecoDecay::cosThetaStar(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0Short}, invMassME2, 1);
+            break;
+          default:
+            invMassME2 = RecoDecay::m(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassLambda0});
+            cosThetaStarME2 = RecoDecay::cosThetaStar(std::array{cand2.pVectorProng0(), cand1.pVectorProng1()}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassLambda0}, invMassME2, 1);
+            break;
+        }
+        registry.fill(HIST("hMass"), invMassME2);
+        registry.fill(HIST("hPt"), ptME2);
+        if constexpr (hasMl){
+          registry.fill(HIST("hSparseMl"), ptME2, cand2.ptProng0(), cand1.ptProng1(), invMassME2, cand2.invMassProng0(), cand1.invMassProng1(), cosThetaStarME2, cand2.mlScoreBkgProng0(), cand2.mlScoreNonpromptProng0());
+        }
+        else {
+          registry.fill(HIST("hSparse"), ptME2, cand2.ptProng0(), cand1.ptProng1(), invMassME2, cand2.invMassProng0(), cand1.invMassProng1(), cosThetaStarME2);
+        }
+      }
     }
   }
 }
 
 // process functions
+
+void processDs1Data(aod::HfRedCollisions const& collisions, reducedResoWithMl const& candidates)
+{
+  processData<DecayChannel::Ds1ToDstarK0s, true>(collisions, candidates);
+}
+PROCESS_SWITCH(HfTaskReso, processDs1Data, "Process data", true);
+
+void processDs1DataME(aod::HfRedCollisions const& collisions, reducedResoWithMl const& candidates)
+{
+  processDataME<DecayChannel::Ds1ToDstarK0s, true>(collisions, candidates);
+}
+PROCESS_SWITCH(HfTaskReso, processDs1DataME, "Process data with Event Mixing", false);
+
 void processDs2StarData(aod::HfRedCollisions const& collisions, reducedResoWithMl const& candidates)
 {
   processData<DecayChannel::Ds2StarToDplusK0s, true>(collisions, candidates);
 }
-PROCESS_SWITCH(HfTaskReso, processDs2StarData, "Process data", true);
+PROCESS_SWITCH(HfTaskReso, processDs2StarData, "Process data", false);
 
 void processDs2StarDataME(aod::HfRedCollisions const& collisions, reducedResoWithMl const& candidates)
 {

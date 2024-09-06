@@ -88,7 +88,7 @@ namespace hf_cuts_D_daughter
   // row labels
   static const std::vector<std::string> labelsPt{};
   // column labels
-  static const std::vector<std::string> labelsCutVarD = {"lowInvMassLimSignal", "highInvMassLimSignal", "lowInvMassLimLeftSB", "highInvMassLimLeftSB", "lowInvMassLimRightSB", "highInvMassLimRightSB"};
+  static const std::vector<std::string> labelsCutVarD = {"invMassSignalLow", "invMassSignalHigh", "invMassLeftSBLow", "invMassLeftSBHigh", "invMassRightSBLow", "invMassRightSBHigh"};
 } // namespace hf_cuts_D_daughter
 
 namespace hf_cuts_V0_daughter
@@ -116,7 +116,7 @@ namespace hf_cuts_V0_daughter
   // row labels
   static const std::vector<std::string> labelsPt{};
   // column labels
-  static const std::vector<std::string> labelsCutVarV0 = {"lowInvMassLim", "highInvMassLim", "minCPA", "maxDCA", "minRadius"};
+  static const std::vector<std::string> labelsCutVarV0 = {"invMassLow", "invMassHigh", "cpaMin", "dcaMax", "radiusMin"};
 } // namespace hf_cuts_V0_daughter
 
 struct HfCandidateCreatorCharmResoReduced {
@@ -211,15 +211,15 @@ struct HfCandidateCreatorCharmResoReduced {
     }
     //invariant mass selection
     if (!keepSideBands){
-      if (invMassD < cutsD->get(ptBin, "lowInvMassLimSignal") || invMassD > cutsD->get(ptBin, "highInvMassLimSignal")) {
+      if (invMassD < cutsD->get(ptBin, "invMassSignalLow") || invMassD > cutsD->get(ptBin, "invMassSignalHigh")) {
       return false;
       }
     }
     else{
-      if ((invMassD < cutsD->get(ptBin, "lowInvMassLimLeftSB")) || 
-          (invMassD > cutsD->get(ptBin, "highInvMassLimLeftSB") && invMassD < cutsD->get(ptBin, "lowInvMassLimSignal")) ||
-          (invMassD > cutsD->get(ptBin, "highInvMassLimSignal") && invMassD < cutsD->get(ptBin, "lowInvMassLimRightSB")) ||
-          (invMassD > cutsD->get(ptBin, "highInvMassLimRightSB"))) {
+      if ((invMassD < cutsD->get(ptBin, "invMassLeftSBLow")) || 
+          (invMassD > cutsD->get(ptBin, "invMassLeftSBHigh") && invMassD < cutsD->get(ptBin, "invMassSignalLow")) ||
+          (invMassD > cutsD->get(ptBin, "invMassSignalHigh") && invMassD < cutsD->get(ptBin, "invMassRightSBLow")) ||
+          (invMassD > cutsD->get(ptBin, "invMassRightSBHigh"))) {
       return false;
      }
     }
@@ -261,8 +261,12 @@ struct HfCandidateCreatorCharmResoReduced {
         return false;
       }
     }
-    // slection on V0 candidate mass
-    if ((invMassV0 - massV0) > cutsV0->get(ptBin, "lowInvMassLim") && (massV0 - invMassV0) < cutsV0->get(ptBin, "lowInvMassLim")) {
+    // selection on V0 candidate mass
+    if ((invMassV0 - massV0) > cutsV0->get(ptBin, "invMassLow") && (massV0 - invMassV0) < cutsV0->get(ptBin, "invMassLow")) {
+      return false;
+    }
+    // selection on kinematics and topology
+    if (candV0.dca() > cutsV0->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0->get(ptBin, "cpaMin") || candV0.radius() < cutsV0->get(ptBin, "radiusMin")){
       return false;
     }
     return true;
