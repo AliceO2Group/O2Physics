@@ -43,7 +43,14 @@ struct straevselsconverter {
                      values.multZPA(),
                      values.multZPC(),
                      values.trackOccupancyInTimeRange(),
-                     -1 /*dummy gap side value*/);
+                     -1 /*dummy gap side value*/,
+                     -999. /*dummy FT0-A value*/,
+                     -999. /*dummy FT0-C value*/,
+                     -999. /*dummy FV0-A value*/,
+                     -999. /*dummy FDD-A value*/,
+                     -999. /*dummy FDD-C value*/,
+                     -999. /*dummy ZN-A value*/,
+                     -999. /*dummy ZN-C value*/);
     }
   }
 };

@@ -175,6 +175,15 @@ struct strangederivedbuilder {
   Configurable<bool> fillTOFInformation{"fillTOFInformation", true, "Fill Daughter Track TOF information"};
 
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
+  struct : ConfigurableGroup {
+    ConfigurableAxis axisFT0A{"FT0Aamplitude", {100, 0.0f, 2000.0f}, "FT0Aamplitude"};
+    ConfigurableAxis axisFT0C{"FT0Camplitude", {100, 0.0f, 2000.0f}, "FT0Camplitude"};
+    ConfigurableAxis axisFV0A{"FV0Aamplitude", {100, 0.0f, 2000.0f}, "FV0Aamplitude"};
+    ConfigurableAxis axisFDDA{"FDDAamplitude", {100, 0.0f, 2000.0f}, "FDDAamplitude"};
+    ConfigurableAxis axisFDDC{"FDDCamplitude", {100, 0.0f, 2000.0f}, "FDDCamplitude"};
+    ConfigurableAxis axisZNA{"ZNAamplitude", {100, 0.0f, 250.0f}, "ZNAamplitude"};
+    ConfigurableAxis axisZNC{"ZNCamplitude", {100, 0.0f, 250.0f}, "ZNCamplitude"};
+  } axisDetectors;
 
   // For manual sliceBy
   Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
@@ -182,7 +191,7 @@ struct strangederivedbuilder {
   Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
-  Preslice<aod::UDCollsLabels> udCollisionsPerCollision = o2::aod::udcollision::collisionId;
+  Preslice<UDCollisionsFull> udCollisionsPerCollision = o2::aod::udcollision::collisionId;
 
   std::vector<uint32_t> genK0Short;
   std::vector<uint32_t> genLambda;
@@ -232,6 +241,14 @@ struct strangederivedbuilder {
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
+    
+    auto hFT0AMultVsFT0AUD = histos.add<TH2>("hFT0AMultVsFT0AUD", "hFT0AMultVsFT0AUD; FT0-A Mult; FT0-A UD", kTH2F, {axisDetectors.axisFT0A, axisDetectors.axisFT0A});
+    auto hFT0CMultVsFT0CUD = histos.add<TH2>("hFT0CMultVsFT0CUD", "hFT0CMultVsFT0CUD; FT0-C Mult; FT0-C UD", kTH2F, {axisDetectors.axisFT0C, axisDetectors.axisFT0C});
+    auto hFV0AMultVsFV0AUD = histos.add<TH2>("hFV0AMultVsFV0AUD", "hFV0AMultVsFV0AUD; FV0-A Mult; FV0-A UD", kTH2F, {axisDetectors.axisFV0A, axisDetectors.axisFV0A});
+    auto hFDDAMultVsFDDAUD = histos.add<TH2>("hFDDAMultVsFDDAUD", "hFDDAMultVsFDDAUD; FDD-A Mult; FDD-A UD", kTH2F, {axisDetectors.axisFDDA, axisDetectors.axisFDDA});
+    auto hFDDCMultVsFDDCUD = histos.add<TH2>("hFDDCMultVsFDDCUD", "hFDDCMultVsFDDCUD; FDD-C Mult; FDD-C UD", kTH2F, {axisDetectors.axisFDDC, axisDetectors.axisFDDC});
+    auto hZNAMultVsZNAUD = histos.add<TH2>("hZNAMultVsZNAUD", "hZNAMultVsZNAUD; ZNA Mult; ZNA UD", kTH2F, {axisDetectors.axisZNA, axisDetectors.axisZNA});
+    auto hZNCMultVsZNCUD = histos.add<TH2>("hZNCMultVsZNCUD", "hZNCMultVsZNCUD; ZNC Mult; ZNC UD", kTH2F, {axisDetectors.axisZNC, axisDetectors.axisZNC});
 
     for (int ii = 1; ii < 101; ii++) {
       float value = 100.5f - static_cast<float>(ii);
@@ -262,11 +279,27 @@ struct strangederivedbuilder {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
-      auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
       int gapSide = -1;
-      if (udCollision.size() == 1) {
-        for (auto& udColl : udCollision) {
-          gapSide = udColl.gapSide();
+      float totalFT0AmplitudeA = -999;
+      float totalFT0AmplitudeC = -999;
+      float totalFV0AmplitudeA = -999;
+      float totalFDDAmplitudeA = -999;
+      float totalFDDAmplitudeC = -999;
+      float energyCommonZNA = -999;
+      float energyCommonZNC = -999;
+      if (udCollisions.size() > 0) { // check that the UD collision table is not empty
+        auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
+        if (udCollision.size() == 1) { // check that the slicing provide a unique UD collision
+          for (auto& udColl : udCollision) {
+            gapSide = udColl.gapSide();
+            totalFT0AmplitudeA = udColl.totalFT0AmplitudeA();
+            totalFT0AmplitudeC = udColl.totalFT0AmplitudeC();
+            totalFV0AmplitudeA = udColl.totalFV0AmplitudeA();
+            totalFDDAmplitudeA = udColl.totalFDDAmplitudeA();
+            totalFDDAmplitudeC = udColl.totalFDDAmplitudeC();
+            energyCommonZNA = udColl.energyCommonZNA();
+            energyCommonZNC = udColl.energyCommonZNC();
+          }
         }
       }
 
@@ -294,7 +327,11 @@ struct strangederivedbuilder {
                       collision.multZPA() * static_cast<float>(fillRawZDC),
                       collision.multZPC() * static_cast<float>(fillRawZDC),
                       collision.trackOccupancyInTimeRange(),
-                      gapSide);
+                      // UPC info
+                      gapSide,
+                      totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
+                      totalFDDAmplitudeA, totalFDDAmplitudeC,
+                      energyCommonZNA, energyCommonZNC);
         strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -330,11 +367,35 @@ struct strangederivedbuilder {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
-      auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
       int gapSide = -1;
-      if (udCollision.size() == 1) {
-        for (auto& udColl : udCollision) {
-          gapSide = udColl.gapSide();
+      float totalFT0AmplitudeA = -999;
+      float totalFT0AmplitudeC = -999;
+      float totalFV0AmplitudeA = -999;
+      float totalFDDAmplitudeA = -999;
+      float totalFDDAmplitudeC = -999;
+      float energyCommonZNA = -999;
+      float energyCommonZNC = -999;
+      if (udCollisions.size() > 0) { // check that the UD collision table is not empty
+        auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
+        if (udCollision.size() == 1) { // check that the slicing provide a unique UD collision
+          for (auto& udColl : udCollision) {
+            gapSide = udColl.gapSide();
+            totalFT0AmplitudeA = udColl.totalFT0AmplitudeA();
+            totalFT0AmplitudeC = udColl.totalFT0AmplitudeC();
+            totalFV0AmplitudeA = udColl.totalFV0AmplitudeA();
+            totalFDDAmplitudeA = udColl.totalFDDAmplitudeA();
+            totalFDDAmplitudeC = udColl.totalFDDAmplitudeC();
+            energyCommonZNA = udColl.energyCommonZNA();
+            energyCommonZNC = udColl.energyCommonZNC();
+
+            histos.fill(HIST("hFT0AMultVsFT0AUD"), collision.multFT0A(), udColl.totalFT0AmplitudeA());
+            histos.fill(HIST("hFT0CMultVsFT0CUD"), collision.multFT0C(), udColl.totalFT0AmplitudeC());
+            histos.fill(HIST("hFV0AMultVsFV0AUD"), collision.multFV0A(), udColl.totalFV0AmplitudeA());
+            histos.fill(HIST("hFDDAMultVsFDDAUD"), collision.multFDDA(), udColl.totalFDDAmplitudeA());
+            histos.fill(HIST("hFDDCMultVsFDDCUD"), collision.multFDDC(), udColl.totalFDDAmplitudeC());
+            histos.fill(HIST("hZNAMultVsZNAUD"), collision.multZNA(), udColl.energyCommonZNA());
+            histos.fill(HIST("hZNCMultVsZNCUD"), collision.multZNC(), udColl.energyCommonZNC());
+          }
         }
       }
 
@@ -362,7 +423,11 @@ struct strangederivedbuilder {
                       collision.multZPA() * static_cast<float>(fillRawZDC),
                       collision.multZPC() * static_cast<float>(fillRawZDC),
                       collision.trackOccupancyInTimeRange(),
-                      gapSide);
+                      // UPC info
+                      gapSide,
+                      totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
+                      totalFDDAmplitudeA, totalFDDAmplitudeC,
+                      energyCommonZNA, energyCommonZNC);
         strangeStamps(bc.runNumber(), bc.timestamp());
       }
 
@@ -428,11 +493,35 @@ struct strangederivedbuilder {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
-      auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
       int gapSide = -1;
-      if (udCollision.size() == 1) {
-        for (auto& udColl : udCollision) {
-          gapSide = udColl.gapSide();
+      float totalFT0AmplitudeA = -999;
+      float totalFT0AmplitudeC = -999;
+      float totalFV0AmplitudeA = -999;
+      float totalFDDAmplitudeA = -999;
+      float totalFDDAmplitudeC = -999;
+      float energyCommonZNA = -999;
+      float energyCommonZNC = -999;
+      if (udCollisions.size() > 0) { // check that the UD collision table is not empty
+        auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
+        if (udCollision.size() == 1) { // check that the slicing provide a unique UD collision
+          for (auto& udColl : udCollision) {
+            gapSide = udColl.gapSide();
+            totalFT0AmplitudeA = udColl.totalFT0AmplitudeA();
+            totalFT0AmplitudeC = udColl.totalFT0AmplitudeC();
+            totalFV0AmplitudeA = udColl.totalFV0AmplitudeA();
+            totalFDDAmplitudeA = udColl.totalFDDAmplitudeA();
+            totalFDDAmplitudeC = udColl.totalFDDAmplitudeC();
+            energyCommonZNA = udColl.energyCommonZNA();
+            energyCommonZNC = udColl.energyCommonZNC();
+
+            histos.fill(HIST("hFT0AMultVsFT0AUD"), collision.multFT0A(), udColl.totalFT0AmplitudeA());
+            histos.fill(HIST("hFT0CMultVsFT0CUD"), collision.multFT0C(), udColl.totalFT0AmplitudeC());
+            histos.fill(HIST("hFV0AMultVsFV0AUD"), collision.multFV0A(), udColl.totalFV0AmplitudeA());
+            histos.fill(HIST("hFDDAMultVsFDDAUD"), collision.multFDDA(), udColl.totalFDDAmplitudeA());
+            histos.fill(HIST("hFDDCMultVsFDDCUD"), collision.multFDDC(), udColl.totalFDDAmplitudeC());
+            histos.fill(HIST("hZNAMultVsZNAUD"), collision.multZNA(), udColl.energyCommonZNA());
+            histos.fill(HIST("hZNCMultVsZNCUD"), collision.multZNC(), udColl.energyCommonZNC());
+          }
         }
       }
 
@@ -461,7 +550,11 @@ struct strangederivedbuilder {
                       collision.multZPA() * static_cast<float>(fillRawZDC),
                       collision.multZPC() * static_cast<float>(fillRawZDC),
                       collision.trackOccupancyInTimeRange(),
-                      gapSide);
+                      // UPC info
+                      gapSide,
+                      totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
+                      totalFDDAmplitudeA, totalFDDAmplitudeC,
+                      energyCommonZNA, energyCommonZNC);
         strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (const auto& v0 : V0Table_thisColl)

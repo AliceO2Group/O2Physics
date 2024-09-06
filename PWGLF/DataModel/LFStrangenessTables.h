@@ -29,16 +29,22 @@ namespace o2::aod
 
 namespace stracollision
 {
+DECLARE_SOA_DYNAMIC_COLUMN(IsUPC, isUPC, //! check whether this is a UPC or hadronic collision
+                           [](int value) -> bool { return value <= 2 ? true : false; });
 DECLARE_SOA_DYNAMIC_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, //! get the total sum of the FV0 A amplitudes
-                           [](float value) -> bool { return value; });
+                           [](float value) -> float { return value; });
 DECLARE_SOA_DYNAMIC_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, //! get the total sum of the FT0 A amplitudes
-                           [](float value) -> bool { return value; });
+                           [](float value) -> float { return value; });
 DECLARE_SOA_DYNAMIC_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, //! get the total sum of the FT0 C amplitudes
-                           [](float value) -> bool { return value; });
+                           [](float value) -> float { return value; });
+DECLARE_SOA_DYNAMIC_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, //! get the total sum of the FDD A amplitudes
+                           [](float value) -> float { return value; });
+DECLARE_SOA_DYNAMIC_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, //! get the total sum of the FDD C amplitudes
+                           [](float value) -> float { return value; });
 DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNA, energyCommonZNA, //! get the total sum of the ZN A amplitudes
-                           [](float value) -> bool { return value; });
+                           [](float value) -> float { return value; });
 DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total sum of the ZN A amplitudes
-                           [](float value) -> bool { return value; });
+                           [](float value) -> float { return value; });
 } // namespace stracollision
 
 //______________________________________________________
@@ -105,14 +111,25 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_001, "AOD", "STRAEVSELS", 1,         //! 
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC,
                             evsel::NumTracksInTimeRange, // add occupancy as extra
+                            udcollision::GapSide,   // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA, // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC, // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
 
                             // Dynamic columns for manipulating information
-                            stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
-                            stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
-                            stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
-                            stracollision::EnergyCommonZNA<mult::MultZNA>,
-                            stracollision::EnergyCommonZNC<mult::MultZNC>,
-                            udcollision::GapSide);   // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
+                            // stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
+                            // stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
+                            // stracollision::TotalFDDAmplitudeA<mult::MultFDDA>,
+                            // stracollision::TotalFDDAmplitudeC<mult::MultFDDC>,
+                            // stracollision::EnergyCommonZNA<mult::MultZNA>,
+                            // stracollision::EnergyCommonZNC<mult::MultZNC>,
+                            stracollision::IsUPC<udcollision::GapSide>);
+                            
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
 DECLARE_SOA_TABLE(StraFT0CQVs, "AOD", "STRAFT0CQVS", //! t0c Qvec
