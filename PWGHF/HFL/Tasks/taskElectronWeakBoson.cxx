@@ -14,14 +14,17 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Framework/ASoAHelpers.h"
 
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
+
 #include "PWGJE/DataModel/EMCALClusters.h"
+
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
