@@ -56,7 +56,7 @@ std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionMat;
 
 class RecoDecay
 {
-public: 
+public:
     /// Default constructor
     RecoDecay() = default;
 
