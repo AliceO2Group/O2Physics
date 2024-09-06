@@ -296,8 +296,6 @@ void FlowPtContainer::FillVnDeltaPtProfiles(const double& centmult, const double
 }
 void FlowPtContainer::FillCMProfiles(const double& centmult, const double& rn)
 {
-  cmNum.clear();
-  cmDen.clear();
   if (sumP[GetVectorIndex(0, 0)] == 0)
     return;
   double tau1 = sumP[GetVectorIndex(2, 0)] / pow(sumP[GetVectorIndex(1, 0)], 2);
