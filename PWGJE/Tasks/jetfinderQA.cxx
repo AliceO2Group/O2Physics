@@ -66,9 +66,11 @@ struct JetFinderQATask {
   Configurable<int> nBinsEta{"nBinsEta", 200, "number of bins for eta axes"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
+  Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
   Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
-  Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
+  Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
 
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
@@ -150,6 +152,7 @@ struct JetFinderQATask {
       registry.add("h_jet_phat", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0, 350}}});
       registry.add("h_jet_ptcut", "p_{T} cut;p_{T,jet} (GeV/#it{c});N;entries", {HistType::kTH2F, {{200, 0, 200}, {20, 0, 5}}});
       registry.add("h_jet_phat_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0, 350}}});
+      registry.add("h3_centrality_occupancy_jet_pt", "centrality; occupancy; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH3F, {{120, -10.0, 110.0}, {60, 0, 30000}, jetPtAxis}});
     }
 
     if (doprocessJetsRhoAreaSubData || doprocessJetsRhoAreaSubMCD) {
@@ -172,9 +175,10 @@ struct JetFinderQATask {
       registry.add("h3_jet_r_jet_pt_track_eta_rhoareasubtracted", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#eta_{jet tracks}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxisRhoAreaSub, trackEtaAxis}});
       registry.add("h3_jet_r_jet_pt_track_phi_rhoareasubtracted", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#varphi_{jet tracks}", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxisRhoAreaSub, {160, -1.0, 7.}}});
       registry.add("h3_jet_r_jet_pt_jet_pt_rhoareasubtracted", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH3F, {{jetRadiiBins, ""}, jetPtAxis, jetPtAxisRhoAreaSub}});
+      registry.add("h3_centrality_occupancy_jet_pt_rhoareasubtracted", "centrality; occupancy; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH3F, {{120, -10.0, 110.0}, {60, 0, 30000}, jetPtAxisRhoAreaSub}});
     }
 
-    if (doprocessEvtWiseConstSubJetsData) {
+    if (doprocessEvtWiseConstSubJetsData || doprocessEvtWiseConstSubJetsMCD) {
       registry.add("h_jet_pt_eventwiseconstituentsubtracted", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {jetPtAxis}});
       registry.add("h_jet_eta_eventwiseconstituentsubtracted", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {jetEtaAxis}});
       registry.add("h_jet_phi_eventwiseconstituentsubtracted", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
@@ -298,6 +302,7 @@ struct JetFinderQATask {
       registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {{1200, -10.0, 110.0}, {4, 0.0, 4.0}}});
       registry.add("h3_centrality_track_pt_track_phi", "centrality vs track pT vs track #varphi; centrality; #it{p}_{T,track} (GeV/#it{c}); #varphi_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, {160, -1.0, 7.}}});
       registry.add("h3_centrality_track_pt_track_eta", "centrality vs track pT vs track #eta; centrality; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, trackEtaAxis}});
+      registry.add("h3_centrality_track_pt_track_dcaxy", "centrality vs track pT vs track DCA_{xy}; centrality; #it{p}_{T,track} (GeV/#it{c}); track DCA_{xy}", {HistType::kTH3F, {{120, -10.0, 110.0}, {20, 0., 100.}, {200, -0.15, 0.15}}});
       registry.add("h3_track_pt_track_eta_track_phi", "track pT vs track #eta vs track #varphi; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}; #varphi_{track}", {HistType::kTH3F, {{200, 0., 200.}, trackEtaAxis, {160, -1.0, 7.}}});
       if (doprocessTracksWeighted) {
         registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
@@ -329,23 +334,35 @@ struct JetFinderQATask {
         return false;
       }
     }
-    if (leadingConstituentPtMin > -98.0) {
-      bool isMinleadingConstituent = false;
-      for (auto& constituent : jet.template tracks_as<T>()) {
-        if (constituent.pt() >= leadingConstituentPtMin) {
-          isMinleadingConstituent = true;
-          break;
+    bool checkConstituentPt = true;
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    if (!checkConstituentMinPt && !checkConstituentMaxPt) {
+      checkConstituentPt = false;
+    }
+
+    if (checkConstituentPt) {
+      bool isMinLeadingConstituent = !checkConstituentMinPt;
+      bool isMaxLeadingConstituent = true;
+
+      for (const auto& constituent : jet.template tracks_as<T>()) {
+        double pt = constituent.pt();
+
+        if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
+          isMinLeadingConstituent = true;
+        }
+        if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
+          isMaxLeadingConstituent = false;
         }
       }
-      if (!isMinleadingConstituent) {
-        return false;
-      }
+      return isMinLeadingConstituent && isMaxLeadingConstituent;
     }
+
     return true;
   }
 
   template <typename T>
-  void fillHistograms(T const& jet, float centrality, float weight = 1.0)
+  void fillHistograms(T const& jet, float centrality, float occupancy, float weight = 1.0)
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
@@ -364,6 +381,7 @@ struct JetFinderQATask {
       registry.fill(HIST("h2_centrality_jet_eta"), centrality, jet.eta(), weight);
       registry.fill(HIST("h2_centrality_jet_phi"), centrality, jet.phi(), weight);
       registry.fill(HIST("h2_centrality_jet_ntracks"), centrality, jet.tracksIds().size(), weight);
+      registry.fill(HIST("h3_centrality_occupancy_jet_pt"), centrality, occupancy, jet.pt(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_jet_pt_centrality"), jet.r() / 100.0, jet.pt(), centrality, weight);
@@ -382,7 +400,7 @@ struct JetFinderQATask {
   }
 
   template <typename T>
-  void fillRhoAreaSubtractedHistograms(T const& jet, float centrality, float rho, float weight = 1.0)
+  void fillRhoAreaSubtractedHistograms(T const& jet, float centrality, float occupancy, float rho, float weight = 1.0)
   {
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jet.pt() - (rho * jet.area()), weight);
@@ -390,6 +408,7 @@ struct JetFinderQATask {
       registry.fill(HIST("h_jet_phi_rhoareasubtracted"), jet.phi(), weight);
       registry.fill(HIST("h_jet_ntracks_rhoareasubtracted"), jet.tracksIds().size(), weight);
       registry.fill(HIST("h2_centrality_jet_pt_rhoareasubtracted"), centrality, jet.pt() - (rho * jet.area()), weight);
+      registry.fill(HIST("h3_centrality_occupancy_jet_pt_rhoareasubtracted"), centrality, occupancy, jet.pt() - (rho * jet.area()), weight);
       if (jet.pt() - (rho * jet.area()) > 0) {
         registry.fill(HIST("h2_centrality_jet_eta_rhoareasubtracted"), centrality, jet.eta(), weight);
         registry.fill(HIST("h2_centrality_jet_phi_rhoareasubtracted"), centrality, jet.phi(), weight);
@@ -556,7 +575,8 @@ struct JetFinderQATask {
         continue;
       }
       registry.fill(HIST("h3_centrality_track_pt_track_phi"), collision.centrality(), track.pt(), track.phi(), weight);
-      registry.fill(HIST("h3_centrality_track_pt_track_eta"), collision.centrality(), track.pt(), track.phi(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_eta"), collision.centrality(), track.pt(), track.eta(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_dcaxy"), collision.centrality(), track.pt(), track.dcaXY(), weight);
       registry.fill(HIST("h3_track_pt_track_eta_track_phi"), track.pt(), track.eta(), track.phi(), weight);
     }
   }
@@ -567,7 +587,7 @@ struct JetFinderQATask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     TRandom3 randomNumber(0);
@@ -617,6 +637,9 @@ struct JetFinderQATask {
 
   void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracks const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -624,7 +647,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality());
+      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsData, "jet finder QA data", false);
@@ -633,6 +656,9 @@ struct JetFinderQATask {
                                  soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                                  JetTracks const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (auto jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -640,7 +666,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<JetTracks>(jet)) {
         continue;
       }
-      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.rho());
+      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsRhoAreaSubData, "jet finder QA for rho-area subtracted jets", false);
@@ -649,6 +675,9 @@ struct JetFinderQATask {
                                 soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
                                 JetTracks const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (auto jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -656,13 +685,16 @@ struct JetFinderQATask {
       if (!isAcceptedJet<JetTracks>(jet)) {
         continue;
       }
-      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.rho());
+      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsRhoAreaSubMCD, "jet finder QA for rho-area subtracted mcd jets", false);
 
   void processEvtWiseConstSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets, JetTracksSub const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -675,11 +707,31 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processEvtWiseConstSubJetsData, "jet finder QA for eventwise constituent-subtracted jets data", false);
 
-  void processJetsSubMatched(soa::Filtered<JetCollisions>::iterator const&,
+  void processEvtWiseConstSubJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelEventWiseSubtractedJets, aod::ChargedMCDetectorLevelEventWiseSubtractedJetConstituents> const& jets, JetTracksSub const&)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto const& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<JetTracksSub>(jet)) {
+        continue;
+      }
+      fillEventWiseConstituentSubtractedHistograms(jet, collision.centrality());
+    }
+  }
+  PROCESS_SWITCH(JetFinderQATask, processEvtWiseConstSubJetsMCD, "jet finder QA for eventwise constituent-subtracted mcd jets", false);
+
+  void processJetsSubMatched(soa::Filtered<JetCollisions>::iterator const& collision,
                              soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets> const& jets,
                              soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets> const&,
                              JetTracks const&, JetTracksSub const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -694,6 +746,9 @@ struct JetFinderQATask {
 
   void processJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, JetTracks const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -701,13 +756,16 @@ struct JetFinderQATask {
       if (!isAcceptedJet<JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality());
+      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCD, "jet finder QA mcd", false);
 
   void processJetsMCDWeighted(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets, JetTracks const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -721,7 +779,7 @@ struct JetFinderQATask {
           registry.fill(HIST("h_jet_ptcut"), jet.pt(), N * 0.25, jet.eventWeight());
         }
       }
-      fillHistograms(jet, collision.centrality(), jet.eventWeight());
+      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), jet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
@@ -736,7 +794,7 @@ struct JetFinderQATask {
     }
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-      if (collisionspermcpjet.size() >= 1) {
+      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
         fillMCPHistograms(jet);
       }
     } else {
@@ -770,11 +828,14 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPWeighted, "jet finder QA mcp with weighted events", false);
 
-  void processJetsMCPMCDMatched(soa::Filtered<JetCollisions>::iterator const&,
+  void processJetsMCPMCDMatched(soa::Filtered<JetCollisions>::iterator const& collision,
                                 soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcdjets,
                                 soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const&,
                                 JetTracks const&, JetParticles const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -787,11 +848,14 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPMCDMatched, "jet finder QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(soa::Filtered<JetCollisions>::iterator const&,
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<JetCollisions>::iterator const& collision,
                                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights> const& mcdjets,
                                         soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights> const&,
                                         JetTracks const&, JetParticles const&)
   {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -937,7 +1001,7 @@ struct JetFinderQATask {
   PROCESS_SWITCH(JetFinderQATask, processTriggeredData, "QA for charged jet trigger", false);
 
   void processTracks(soa::Filtered<JetCollisions>::iterator const& collision,
-                     soa::Filtered<JetTracks> const& tracks)
+                     soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
   {
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
@@ -946,7 +1010,7 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
@@ -957,7 +1021,7 @@ struct JetFinderQATask {
 
   void processTracksWeighted(soa::Join<JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                              JetMcCollisions const&,
-                             soa::Filtered<JetTracks> const& tracks)
+                             soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
@@ -967,11 +1031,11 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
-    registry.fill(HIST("h_collisions_weighted"), 2.5);
+    registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
     fillTrackHistograms(collision, tracks, eventWeight);
   }
   PROCESS_SWITCH(JetFinderQATask, processTracksWeighted, "QA for charged tracks weighted", false);
@@ -982,12 +1046,12 @@ struct JetFinderQATask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     for (auto const& track : tracks) {
       registry.fill(HIST("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.phi());
-      registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.phi());
+      registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.eta());
       registry.fill(HIST("h3_track_pt_track_eta_track_phi_eventwiseconstituentsubtracted"), track.pt(), track.eta(), track.phi());
     }
   }
@@ -998,7 +1062,7 @@ struct JetFinderQATask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    if (collision.trackOccupancyInTimeRange() > trackOccupancyInTimeRangeMax) {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     int nTracks = 0;

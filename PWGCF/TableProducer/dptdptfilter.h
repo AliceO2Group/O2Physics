@@ -94,12 +94,16 @@ enum CentMultEstimatorType {
 /// \enum TriggerSelectionType
 /// \brief The type of trigger to apply for event selection
 enum TriggerSelectionType {
-  kNONE = 0,         ///< do not use trigger selection
-  kMB,               ///< Minimum bias trigger
-  kVTXTOFMATCHED,    ///< at least one vertex contributor is matched to TOF
-  kVTXTRDMATCHED,    ///< at least one vertex contributor is matched to TRD
-  kVTXTRDTOFMATCHED, ///< at least one vertex contributor is matched to TRD and TOF
-  knEventSelection   ///< number of triggers for event selection
+  kNONE = 0,              ///< do not use trigger selection
+  kMB,                    ///< Minimum bias trigger
+  kMBEXTRA,               ///< Additional Run3 event quality
+  kVTXTOFMATCHED,         ///< at least one vertex contributor is matched to TOF
+  kVTXTRDMATCHED,         ///< at least one vertex contributor is matched to TRD
+  kVTXTRDTOFMATCHED,      ///< at least one vertex contributor is matched to TRD and TOF
+  kEXTRAVTXTOFMATCHED,    ///< Additional Run3 event quality and at least one vertex contributor is matched to TOF
+  kEXTRAVTXTRDMATCHED,    ///< Additional Run3 event quality and at least one vertex contributor is matched to TRD
+  kEXTRAVTXTRDTOFMATCHED, ///< Additional Run3 event quality and at least one vertex contributor is matched to TRD and TOF
+  knEventSelection        ///< number of triggers for event selection
 };
 
 /// \enum StrongDebugging
@@ -312,12 +316,20 @@ inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
   if (triggstr.empty() || triggstr == "MB") {
     return kMB;
+  } else if (triggstr == "MBEXTRA") {
+    return kMBEXTRA;
   } else if (triggstr == "VTXTOFMATCHED") {
     return kVTXTOFMATCHED;
   } else if (triggstr == "VTXTRDMATCHED") {
     return kVTXTRDMATCHED;
   } else if (triggstr == "VTXTRDTOFMATCHED") {
     return kVTXTRDTOFMATCHED;
+  } else if (triggstr == "EXTRAVTXTOFMATCHED") {
+    return kEXTRAVTXTOFMATCHED;
+  } else if (triggstr == "EXTRAVTXTRDMATCHED") {
+    return kEXTRAVTXTRDMATCHED;
+  } else if (triggstr == "EXTRAVTXTRDTOFMATCHED") {
+    return kEXTRAVTXTRDTOFMATCHED;
   } else if (triggstr == "None") {
     return kNONE;
   } else {
@@ -481,9 +493,10 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kppRun3:
     case kPbPbRun3: {
       auto run3Accepted = [](auto const& coll) {
+        return coll.sel8();
+      };
+      auto run3ExtraAccepted = [](auto const& coll) {
         return coll.sel8() &&
-               coll.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
-               coll.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
                coll.selection_bit(aod::evsel::kNoSameBunchPileup) &&
                coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
                coll.selection_bit(aod::evsel::kIsVertexITSTPC);
@@ -491,6 +504,11 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
       switch (fTriggerSelection) {
         case kMB:
           if (run3Accepted(collision)) {
+            trigsel = true;
+          }
+          break;
+        case kMBEXTRA:
+          if (run3ExtraAccepted(collision)) {
             trigsel = true;
           }
           break;
@@ -506,6 +524,21 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
           break;
         case kVTXTRDTOFMATCHED:
           if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTOFMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTRDMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTRDTOFMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
             trigsel = true;
           }
           break;

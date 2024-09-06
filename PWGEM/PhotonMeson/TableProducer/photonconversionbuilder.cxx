@@ -40,7 +40,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/TableHelper.h"
-#include "EventFiltering/Zorro.h"
 
 #include "Tools/KFparticle/KFUtilities.h"
 
@@ -56,7 +55,8 @@ using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 using std::array;
 
-using MyCollisions = Join<aod::Collisions, aod::EvSels>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi>;
@@ -74,11 +74,7 @@ struct PhotonConversionBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<bool> inherit_from_filter_dielectron_event{"inherit_from_filter_dielectron_event", false, "flag to inherit task options from filter-dielectron-event"};
-  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
   Configurable<bool> inherit_from_emevent_photon{"inherit_from_emevent_photon", false, "flag to inherit task options from emevent-photon"};
-  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
-  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -125,7 +121,6 @@ struct PhotonConversionBuilder {
   Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
   Configurable<bool> reject_v0_on_itsib{"reject_v0_on_itsib", true, "flag to reject v0s on ITSib"};
 
-  Zorro zorro;
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -178,18 +173,8 @@ struct PhotonConversionBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if (inherit_from_emevent_dilepton && inherit_from_filter_dielectron_event) {
-      LOGF(fatal, "Cannot enable inherit_from_emevent_dilepton and inherit_from_filter_dielectron_event at the same time. Please choose one.");
-    }
-
-    if (inherit_from_emevent_dilepton) {
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);                           // for EM users.
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
-    } else if (inherit_from_filter_dielectron_event) {
-      getTaskOptionValue(initContext, "filter-dielectron-event", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-      getTaskOptionValue(initContext, "filter-dielectron-event", "enable_swt", enable_swt.value, true);                           // for EM users.
-      getTaskOptionValue(initContext, "filter-dielectron-event", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
+    if (inherit_from_emevent_photon) {
+      getTaskOptionValue(initContext, "create-emevent-photon", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true);
     }
 
     if (useMatCorrType == 1) {
@@ -213,10 +198,6 @@ struct PhotonConversionBuilder {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
-    }
-
-    if (enable_swt) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -653,7 +634,7 @@ struct PhotonConversionBuilder {
 
       fillTrackTable(pos, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
       fillTrackTable(ele, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
-    }                                                           // end of fill table
+    } // end of fill table
   }
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
@@ -663,12 +644,24 @@ struct PhotonConversionBuilder {
   std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t>> stored_fullv0Ids; // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())
   std::unordered_map<int64_t, int> nv0_map;                                     // map collisionId -> nv0
 
-  template <bool isMC, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
+  template <bool isMC, bool isTriggerAnalysis, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
   void build(TCollisions const& collisions, TV0s const& v0s, TTracks const&, TBCs const&)
   {
     for (auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
+          continue;
+        }
+      }
+
+      if constexpr (enableFilter) {
+        if (!collision.isSelected()) {
+          continue;
+        }
+      }
+
+      if constexpr (isTriggerAnalysis) {
+        if (collision.swtaliastmp_raw() == 0) {
           continue;
         }
       }
@@ -682,9 +675,6 @@ struct PhotonConversionBuilder {
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
-        continue;
-      }
 
       auto v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
       // LOGF(info, "n v0 = %d", v0s_per_coll.size());
@@ -692,7 +682,7 @@ struct PhotonConversionBuilder {
         // LOGF(info, "collision.globalIndex() = %d, v0.globalIndex() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", collision.globalIndex(), v0.globalIndex(), v0.posTrackId() , v0.negTrackId());
         fillV0Table<isMC, TCollisions, TTracks>(v0, false);
       } // end of v0 loop
-    }   // end of collision loop
+    } // end of collision loop
 
     stored_v0Ids.reserve(pca_map.size());     // number of photon candidates per DF
     stored_fullv0Ids.reserve(pca_map.size()); // number of photon candidates per DF
@@ -792,21 +782,33 @@ struct PhotonConversionBuilder {
 
   void processRec(MyCollisions const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    build<false, false>(collisions, v0s, tracks, bcs);
+    build<false, false, false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
+  void processRec_SWT(MyCollisionsWithSWT const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    build<false, true, false>(collisions, v0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT, "process reconstructed info for data", false);
+
   void processMC(MyCollisionsMC const& collisions, filteredV0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    build<true, false>(collisions, v0s, tracks, bcs);
+    build<true, false, false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 
-  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEvSels, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    build<false, true>(collisions, v0s, tracks, bcs);
+    build<false, false, true>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec_OnlyIfDielectron, "process reconstructed info for data", false);
+
+  void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEvSels, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    build<false, true, true>(collisions, v0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT_OnlyIfDielectron, "process reconstructed info for data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

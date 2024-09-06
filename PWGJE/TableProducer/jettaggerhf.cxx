@@ -33,11 +33,12 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename JetTableData, typename JetTableMCD, typename JetTaggingTableData, typename JetTaggingTableMCD>
+template <typename JetTableData, typename JetTableMCD, typename JetTableMCP, typename JetTaggingTableData, typename JetTaggingTableMCD, typename JetTaggingTableMCP>
 struct JetTaggerHFTask {
 
   Produces<JetTaggingTableData> taggingTableData;
   Produces<JetTaggingTableMCD> taggingTableMCD;
+  Produces<JetTaggingTableMCP> taggingTableMCP;
 
   // configuration topological cut for track and sv
   Configurable<float> trackDcaXYMax{"trackDcaXYMax", 1, "minimum DCA xy acceptance for tracks [cm]"};
@@ -111,6 +112,9 @@ struct JetTaggerHFTask {
           }
           if (origin == JetTaggingSpecies::lightflavour) {
             jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, jet, jtracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
+          }
+          if (origin != JetTaggingSpecies::charm && origin != JetTaggingSpecies::beauty && origin != JetTaggingSpecies::lightflavour) {
+            jetProb.push_back(-1);
           }
         }
       }
@@ -325,6 +329,33 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCDWithSV, "Fill tagging decision for mcd jets with sv", false);
 
+  void processMCP(JetMcCollision const& /*collision*/, JetTableMCP const& mcpjets, JetParticles const& particles)
+  {
+    for (auto& mcpjet : mcpjets) {
+      bool flagtaggedjetIP = 0;
+      bool flagtaggedjetSV = 0;
+      typename JetParticles::iterator hfparticle;
+      int origin = 0;
+      // TODO
+      if (removeGluonShower) {
+        if (jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, searchUpToQuark))
+          origin = jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, searchUpToQuark);
+        else
+          origin = 0;
+      } else {
+        if (jettaggingutilities::jetParticleFromHFShower(mcpjet, particles, hfparticle, searchUpToQuark))
+          origin = jettaggingutilities::jetParticleFromHFShower(mcpjet, particles, hfparticle, searchUpToQuark);
+        else
+          origin = 0;
+      }
+      jetProb.clear();
+      jetProb.reserve(maxOrder);
+      jetProb.push_back(-1);
+      taggingTableMCP(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processMCP, "Fill tagging decision for mcp jets with sv", false);
+
   void processTraining(JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
   {
     // To create table for ML
@@ -332,8 +363,8 @@ struct JetTaggerHFTask {
   PROCESS_SWITCH(JetTaggerHFTask, processTraining, "Fill tagging decision for mcd jets", false);
 };
 
-using JetTaggerChargedJets = JetTaggerHFTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedJetTags, aod::ChargedMCDetectorLevelJetTags>;
-using JetTaggerFullJets = JetTaggerHFTask<soa::Join<aod::FullJets, aod::FullJetConstituents>, soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>, aod::FullJetTags, aod::FullMCDetectorLevelJetTags>;
+using JetTaggerChargedJets = JetTaggerHFTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, aod::ChargedJetTags, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCParticleLevelJetTags>;
+using JetTaggerFullJets = JetTaggerHFTask<soa::Join<aod::FullJets, aod::FullJetConstituents>, soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>, soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>, aod::FullJetTags, aod::FullMCDetectorLevelJetTags, aod::FullMCParticleLevelJetTags>;
 // using JetTaggerNeutralJets = JetTaggerHFTask<soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>,soa::Join<aod::NeutralMCDetectorLevelJets, aod::NeutralMCDetectorLevelJetConstituents>, aod::NeutralJetTags, aod::NeutralMCDetectorLevelJetTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -113,6 +113,10 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MultTPC_MultFT0A", "MultTPC vs MultFT0A", false, 100, 0, 50000.0, VarManager::kMultTPC, 100, 0, 100000.0, VarManager::kMultFT0A);
         hm->AddHistogram(histClass, "MultTPC_MultFT0C", "MultTPC vs MultFT0C", false, 100, 0, 50000.0, VarManager::kMultTPC, 100, 0, 100000.0, VarManager::kMultFT0C);
         hm->AddHistogram(histClass, "MultFT0A_MultFT0C", "MultFT0A vs MultFT0C", false, 100, 0, 100000.0, VarManager::kMultFT0A, 100, 0, 100000.0, VarManager::kMultFT0C);
+        hm->AddHistogram(histClass, "TPCpileupZA", "TPC pileup Z, A-side", false, 200, -50.0, 50.0, VarManager::kNTPCpileupZA);
+        hm->AddHistogram(histClass, "TPCpileupZC", "TPC pileup Z, C-side", false, 200, -50.0, 50.0, VarManager::kNTPCpileupZC);
+        hm->AddHistogram(histClass, "TPCpileupNcontribA", "TPC pileup n-contributors, A-side", false, 1000, 0.0, 10000.0, VarManager::kNTPCpileupContribA);
+        hm->AddHistogram(histClass, "TPCpileupNcontribC", "TPC pileup n-contributors, C-side", false, 1000, 0.0, 10000.0, VarManager::kNTPCpileupContribC);
       }
     }
     if (subGroupStr.Contains("ftmulpbpb")) {
@@ -143,6 +147,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MCVtxZ_VtxX", "Vtx X vs Vtx Z", false, 60, -15.0, 15.0, VarManager::kMCVtxZ, 200, -0.2, 0.2, VarManager::kMCVtxX);
       hm->AddHistogram(histClass, "MCVtxX_VtxY", "Vtx X vs Vtx Y", false, 200, 15.0, 15.0, VarManager::kMCVtxZ, 200, -0.2, 0.2, VarManager::kMCVtxY);
       hm->AddHistogram(histClass, "MCImpPar", "MC impact param", false, 20, 0.0, 20.0, VarManager::kMCEventImpParam);
+    }
+    if (subGroupStr.Contains("subgen")) {
+      hm->AddHistogram(histClass, "SubGenID", "SubGenerator ID", false, 11, -0.5, 10.5, VarManager::kMCEventSubGeneratorId);
     }
     if (subGroupStr.Contains("qvector")) {
       int varZNA[3] = {VarManager::kQ1ZNAX, VarManager::kQ1ZNAY, VarManager::kCentFT0C};
@@ -981,12 +988,27 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         double xmaxpT[5] = {5., 3., 100, 1., 3.14};
         hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE", "", 5, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
+
       if (subGroupStr.Contains("dimuon-polarization-cs-pbpb")) {
         int varsCSpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int binspT[5] = {150, 30, 10, 10, 10};
         double xminpT[5] = {2., 0., 0, -1., -3.14};
         double xmaxpT[5] = {5., 3., 100, 1., 3.14};
         hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
+      if (subGroupStr.Contains("dimuon-rap-polarization-he-pbpb")) {
+        int varsHEpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kRap};
+        int binspT[5] = {150, 30, 10, 10, 8};
+        double xminpT[5] = {2., 0., 0, -1., 2.0};
+        double xmaxpT[5] = {5., 3., 100, 1., 4.5};
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE_Rap", "", 5, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
+      if (subGroupStr.Contains("dimuon-rap-polarization-cs-pbpb")) {
+        int varsCSpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kRap};
+        int binspT[5] = {150, 30, 10, 10, 8};
+        double xminpT[5] = {2., 0., 0, -1., 2.0};
+        double xmaxpT[5] = {5., 3., 100, 1., 4.5};
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_Rap", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("multiplicity-fvoa")) {
         int varsFV0AMulHE[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaHE, VarManager::kPhiHE};

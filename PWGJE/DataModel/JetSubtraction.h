@@ -63,33 +63,32 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, Dielectrons, "_0");
 
 DECLARE_SOA_TABLE(BkgChargedRhos, "AOD", "BkgCRho",
                   o2::soa::Index<>,
-                  bkgcharged::JCollisionId,
                   bkgrho::Rho,
                   bkgrho::RhoM);
 
 DECLARE_SOA_TABLE(BkgD0Rhos, "AOD", "BkgD0Rho",
                   o2::soa::Index<>,
-                  bkgd0::CandidateId,
                   bkgrho::Rho,
-                  bkgrho::RhoM);
+                  bkgrho::RhoM,
+                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(BkgLcRhos, "AOD", "BkgLcRho",
                   o2::soa::Index<>,
-                  bkglc::CandidateId,
                   bkgrho::Rho,
-                  bkgrho::RhoM);
+                  bkgrho::RhoM,
+                  o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE(BkgBplusRhos, "AOD", "BkgBPlRho",
                   o2::soa::Index<>,
-                  bkgbplus::CandidateId,
                   bkgrho::Rho,
-                  bkgrho::RhoM);
+                  bkgrho::RhoM,
+                  o2::soa::Marker<3>);
 
 DECLARE_SOA_TABLE(BkgDielectronRhos, "AOD", "BkgDIELRho",
                   o2::soa::Index<>,
-                  bkgdielectron::CandidateId,
                   bkgrho::Rho,
-                  bkgrho::RhoM);
+                  bkgrho::RhoM,
+                  o2::soa::Marker<4>);
 
 namespace jtracksub
 {
