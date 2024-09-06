@@ -178,12 +178,12 @@ DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float); //!
 DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float); //!
 DECLARE_SOA_COLUMN(MultBCFDDC, multBCFDDC, float); //!
 
-DECLARE_SOA_COLUMN(MultBCFZNA, multBCFZNA, float);   //!
-DECLARE_SOA_COLUMN(MultBCFZNC, multBCFZNC, float);   //!
-DECLARE_SOA_COLUMN(MultBCFZEM1, multBCFZEM1, float); //!
-DECLARE_SOA_COLUMN(MultBCFZEM2, multBCFZEM2, float); //!
-DECLARE_SOA_COLUMN(MultBCFZPA, multBCFZPA, float);   //!
-DECLARE_SOA_COLUMN(MultBCFZPC, multBCFZPC, float);   //!
+DECLARE_SOA_COLUMN(MultBCZNA, multBCZNA, float);   //!
+DECLARE_SOA_COLUMN(MultBCZNC, multBCZNC, float);   //!
+DECLARE_SOA_COLUMN(MultBCZEM1, multBCZEM1, float); //!
+DECLARE_SOA_COLUMN(MultBCZEM2, multBCZEM2, float); //!
+DECLARE_SOA_COLUMN(MultBCZPA, multBCZPA, float);   //!
+DECLARE_SOA_COLUMN(MultBCZPC, multBCZPC, float);   //!
 
 DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);                          //!
 DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool);                    //!
@@ -192,19 +192,25 @@ DECLARE_SOA_COLUMN(MultBCT0triggerBits, multBCT0triggerBits, uint8_t);   //!
 DECLARE_SOA_COLUMN(MultBCFDDtriggerBits, multBCFDDtriggerBits, uint8_t); //!
 DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);      //! CTP trigger mask
 DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);              //! CTP trigger mask
+
+DECLARE_SOA_COLUMN(MultBCFT0PosZ, multBCFT0PosZ, float);          //! Position along Z computed with the FT0 information within the BC
+DECLARE_SOA_COLUMN(MultBCFT0PosZValid, multBCFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information within the BC
+
 } // namespace multBC
 DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
                   multBC::MultBCFT0C,
+                  multBC::MultBCFT0PosZ,
+                  multBC::MultBCFT0PosZValid,
                   multBC::MultBCFV0A,
                   multBC::MultBCFDDA,
                   multBC::MultBCFDDC,
-                  multBC::MultBCFZNA,
-                  multBC::MultBCFZNC,
-                  multBC::MultBCFZEM1,
-                  multBC::MultBCFZEM2,
-                  multBC::MultBCFZPA,
-                  multBC::MultBCFZPC,
+                  multBC::MultBCZNA,
+                  multBC::MultBCZNC,
+                  multBC::MultBCZEM1,
+                  multBC::MultBCZEM2,
+                  multBC::MultBCZPA,
+                  multBC::MultBCZPC,
                   multBC::MultBCTVX,
                   multBC::MultBCFV0OrA,
                   multBC::MultBCV0triggerBits,
