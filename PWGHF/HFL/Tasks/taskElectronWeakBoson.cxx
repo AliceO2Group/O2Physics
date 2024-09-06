@@ -156,11 +156,11 @@ struct HfTaskElectronWeakBoson {
         continue;
       if (std::abs(track.dcaXY()) > dcaxy_cut)
         continue;
-      if (track.itsChi2NCl() > itschi2_cut) 
+      if (track.itsChi2NCl() > itschi2_cut)
         continue;
-      if (track.tpcChi2NCl() > tpcchi2_cut) 
+      if (track.tpcChi2NCl() > tpcchi2_cut)
         continue;
-      if (track.tpcNClsFound() < tpcNcl_cut) 
+      if (track.tpcNClsFound() < tpcNcl_cut)
         continue;
       if (track.itsNCls() < itsNcl_cut)
         continue;
@@ -170,7 +170,7 @@ struct HfTaskElectronWeakBoson {
       histos.fill(HIST("TPCElHistogram"), track.p(), track.tpcNSigmaEl());
 
       // track - match
-   
+
       if (emcClusters.size() < 1)
          continue;
       if (track.phi() < 1.39 || track.phi() > 3.265)
@@ -230,8 +230,6 @@ struct HfTaskElectronWeakBoson {
                         histos.fill(HIST("EopHistogram"), match.track_as<TrackEle>().pt(), eop);
                        }
                    }
-               
- 
                  nmatch++;
               }
            }
