@@ -69,7 +69,7 @@ struct hJetAnalysis {
 
   Filter jetCuts = aod::jet::r == nround(jetR.node() * 100.0f);
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = nabs(aod::jcollision::posZ) < vertexZCut;
+  Filter eventTrackLevelCuts = nabs(aod::jcollision::posZ) < vertexZCut;
 
   HistogramRegistry registry{"registry",
                              {{"hNtrig", "number of triggers;trigger type;entries", {HistType::kTH1F, {{2, 0, 2}}}},
@@ -123,6 +123,8 @@ struct hJetAnalysis {
   int eventSelection = -1;
   int trackSelection = -1;
 
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   void init(InitContext const&)
   {
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
@@ -130,7 +132,7 @@ struct hJetAnalysis {
 
     Filter jetCuts = aod::jet::r == nround(jetR.node() * 100.0f);
     Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-    Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
+    Filter eventTrackLevelCuts = nabs(aod::jcollision::posZ) < vertexZCut;
   }
 
   template <typename T, typename U, typename W>
@@ -268,6 +270,13 @@ struct hJetAnalysis {
       is_sig_col = false;
 
     for (auto& particle : particles) {
+      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (!pdgParticle) {
+        continue;
+      }
+      if ((pdgParticle->Charge() == 0.0) || (!particle.isPhysicalPrimary())) {
+        continue;
+      }
       if (is_sig_col && particle.pt() < pt_TTsig_max && particle.pt() > pt_TTsig_min) {
         phi_TT_ar.push_back(particle.phi());
         n_TT++;
@@ -436,7 +445,7 @@ struct hJetAnalysis {
   }
   PROCESS_SWITCH(hJetAnalysis, processMCD, "process MC detector level", false);
 
-  void processMCDWeighted(soa::Join<JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+  void processMCDWeighted(soa::Join<soa::Filtered<JetCollisions>, aod::JMcCollisionLbs>::iterator const& collision,
                           soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
                           soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
                           soa::Filtered<JetTracks> const& tracks)
@@ -448,21 +457,27 @@ struct hJetAnalysis {
   }
   PROCESS_SWITCH(hJetAnalysis, processMCDWeighted, "process MC detector level with event weights", false);
 
-  void processMCP(JetMcCollision const& /*collision*/,
+  void processMCP(JetMcCollision const& collision,
                   soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets>> const& jets,
                   soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                   JetParticles const& particles)
   {
+    if (collision.posZ() < vertexZCut) { // For some reason declaring a filter doesnt work
+      return;
+    }
     fillMCPHistograms(jets, jetsWTA, particles);
   }
   PROCESS_SWITCH(hJetAnalysis, processMCP, "process MC particle level", false);
 
-  void processMCPWeighted(soa::Join<JetMcCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+  void processMCPWeighted(JetMcCollision const& collision,
                           soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets>> const& jets,
                           soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                           JetParticles const& particles)
   {
-    fillMCPHistograms(jets, jetsWTA, particles, collision.mcCollision().weight());
+    if (collision.posZ() < vertexZCut) {
+      return;
+    }
+    fillMCPHistograms(jets, jetsWTA, particles, collision.weight());
   }
   PROCESS_SWITCH(hJetAnalysis, processMCPWeighted, "process MC particle level with event weights", false);
 

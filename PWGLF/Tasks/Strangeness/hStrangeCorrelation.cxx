@@ -726,6 +726,8 @@ struct correlateStrangeness {
     histos.add("hTriggerPrimaryEtaVsPt", "hTriggerPrimaryEtaVsPt", kTH3F, {axisPtQA, axisEta, axisMult});
     histos.add("hTriggerAllSelectedEtaVsPt", "hTriggerAllSelectedEtaVsPt", kTH3F, {axisPtQA, axisEta, axisMult});
 
+    histos.add("hClosureTestEventCounter", "hClosureTestEventCounter", kTH1F, {{10, 0, 10}});
+
     histos.add("hNumberOfRejectedPairsV0", "hNumberOfRejectedPairsV0", kTH1F, {{1, 0, 1}});
     histos.add("hNumberOfRejectedPairsCascades", "hNumberOfRejectedPairsCascades", kTH1F, {{1, 0, 1}});
     histos.add("hNumberOfRejectedPairsPions", "hNumberOfRejectedPairsPions", kTH1F, {{1, 0, 1}});
@@ -1168,8 +1170,9 @@ struct correlateStrangeness {
     }
   }
 
-  void processMCGenerated(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& collisions, aod::McParticles const& mcParticles)
+  void processMCGenerated(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& collisions, aod::McParticles const& mcParticles)
   {
+    histos.fill(HIST("hClosureTestEventCounter"), 2.5f);
 
     for (auto const& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary())
@@ -1245,6 +1248,8 @@ struct correlateStrangeness {
     if (!bestCollisionINELgtZERO)
       return;
 
+    histos.fill(HIST("hClosureTestEventCounter"), 3.5f);
+
     for (auto const& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
@@ -1290,7 +1295,7 @@ struct correlateStrangeness {
       }
     }
   }
-  void processClosureTest(aod::McCollision const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& recCollisions, aod::McParticles const& mcParticles)
+  void processClosureTest(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& recCollisions, aod::McParticles const& mcParticles)
   {
 
     std::vector<uint32_t> triggerIndices;
@@ -1303,6 +1308,8 @@ struct correlateStrangeness {
     std::vector<uint32_t> xiPlusIndices;
     std::vector<uint32_t> omegaMinusIndices;
     std::vector<uint32_t> omegaPlusIndices;
+
+    histos.fill(HIST("hClosureTestEventCounter"), 0.5f);
 
     int bestCollisionFT0Mpercentile = -1;
     float bestCollisionVtxZ = 0.0f;
@@ -1329,6 +1336,8 @@ struct correlateStrangeness {
         return;
       }
     }
+
+    histos.fill(HIST("hClosureTestEventCounter"), 1.5f);
 
     int iteratorNum = -1;
     for (auto const& mcParticle : mcParticles) {
@@ -1416,7 +1425,7 @@ struct correlateStrangeness {
               continue;
             if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
               continue;
-            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger, gphiassoc), getatrigger - getaassoc, ptassoc, pttrigger, collision.posZ(), bestCollisionFT0Mpercentile);
+            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger, gphiassoc), getatrigger - getaassoc, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionFT0Mpercentile);
           }
         }
       });

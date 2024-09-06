@@ -316,6 +316,33 @@ struct alice3multicharm {
     return returnValue;
   }
 
+  // Association check for the XiCC pion
+  template <typename TTrackType1, typename TTrackType2>
+  bool checkSameMotherExtra(TTrackType1 const& track1, TTrackType2 const& track2)
+  {
+    bool returnValue = false;
+    // This might perhaps be a bit excessive
+    // Could be joined with `checkSameMother` but leaving as is for now
+    if (track1.has_mcParticle() && track2.has_mcParticle()) {
+      auto mcParticle1 = track1.template mcParticle_as<aod::McParticles>();
+      auto mcParticle2 = track2.template mcParticle_as<aod::McParticles>();
+      if (mcParticle1.has_mothers() && mcParticle2.has_mothers()) {
+        for (auto& mcParticleMother1 : mcParticle1.template mothers_as<aod::McParticles>()) {
+          if (mcParticleMother1.has_mothers()) {
+            for (auto& mcParticleGrandMother1 : mcParticleMother1.template mothers_as<aod::McParticles>()) {
+              for (auto& mcParticleMother2 : mcParticle2.template mothers_as<aod::McParticles>()) {
+                if (mcParticleGrandMother1.globalIndex() == mcParticleMother2.globalIndex()) {
+                  returnValue = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    } // end association check
+    return returnValue;
+  }
+
   void init(InitContext&)
   {
     // initialize O2 2-prong fitter (only once)
@@ -347,9 +374,9 @@ struct alice3multicharm {
     // --- 2: attempt XiCC, 3: success XiCC
     histos.add("hCharmBuilding", "hCharmBuilding", kTH1D, {{10, -0.5, 9.5f}});
 
-    histos.add("h2dGenXi", "h2dGenXi", kTH1D, {axisPt, axisEta});
-    histos.add("h2dGenXiC", "h2dGenXiC", kTH1D, {axisPt, axisEta});
-    histos.add("h2dGenXiCC", "h2dGenXiCC", kTH1D, {axisPt, axisEta});
+    histos.add("h2dGenXi", "h2dGenXi", kTH2D, {axisPt, axisEta});
+    histos.add("h2dGenXiC", "h2dGenXiC", kTH2D, {axisPt, axisEta});
+    histos.add("h2dGenXiCC", "h2dGenXiCC", kTH2D, {axisPt, axisEta});
 
     histos.add("hMassXi", "hMassXi", kTH1D, {axisXiMass});
     histos.add("hMassXiC", "hMassXiC", kTH1D, {axisXiCMass});
@@ -357,6 +384,7 @@ struct alice3multicharm {
 
     histos.add("hEtaXiCC", "hEtaXiCC", kTH1D, {axisEta});
     histos.add("hPtXiCC", "hPtXiCC", kTH1D, {axisPt});
+    histos.add("hMcPtXiCC", "hMcPtXiCC", kTH1D, {axisPt});
     histos.add("h3dMassXiCC", "h3dMassXiCC", kTH3D, {axisPt, axisEta, axisXiCCMass});
 
     histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1D, {axisDCAXiCDaughters});
@@ -382,8 +410,10 @@ struct alice3multicharm {
       histos.fill(HIST("h2dGenXi"), mcParticle.pt(), mcParticle.eta());
     for (auto const& mcParticle : trueXiC)
       histos.fill(HIST("h2dGenXiC"), mcParticle.pt(), mcParticle.eta());
-    for (auto const& mcParticle : trueXiCC)
+    for (auto const& mcParticle : trueXiCC) {
       histos.fill(HIST("h2dGenXiCC"), mcParticle.pt(), mcParticle.eta());
+      histos.fill(HIST("hMcPtXiCC"), mcParticle.pt());
+    }
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -491,8 +521,8 @@ struct alice3multicharm {
               continue; // avoid using any track that was already used
             if (picc.pt() < minPiCCPt)
               continue;
-
-            // to-do: check same mother here
+            if (mcSameMotherCheck && !checkSameMotherExtra(xi, picc))
+              continue;
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
             nCombinationsCC++;
             histos.fill(HIST("hCharmBuilding"), 2.0f);

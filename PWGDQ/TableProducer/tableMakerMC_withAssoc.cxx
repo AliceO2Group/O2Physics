@@ -168,6 +168,8 @@ struct TableMakerMC {
   // Muon related options
   Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
   Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Correct global muon parameters"};
+  Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin", -4.0f, "Definition of the acceptance of muon tracks to be matched with MFT"};
+  Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax", -2.5f, "Definition of the acceptance of muon tracks to be matched with MFT"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::ccdb::CcdbApi fCCDBApi;
@@ -652,8 +654,8 @@ struct TableMakerMC {
     }
   }
 
-  template <uint32_t TMuonFillMap, typename TEvent, typename TMuons>
-  void skimMuons(TEvent const& collision, TMuons const& muons, FwdTrackAssoc const& muonAssocs, aod::McParticles const& mcTracks, MFTTracks const& /*mftTracks*/)
+  template <uint32_t TMuonFillMap, uint32_t TMFTFillMap, typename TEvent, typename TMuons, typename TMFTTracks>
+  void skimMuons(TEvent const& collision, TMuons const& muons, FwdTrackAssoc const& muonAssocs, aod::McParticles const& mcTracks, TMFTTracks const& /*mftTracks*/)
   {
     // Skim the fwd-tracks (muons)
     // Loop over the collision-track associations, recompute track properties depending on the collision assigned, and apply track cuts for selection
@@ -672,6 +674,7 @@ struct TableMakerMC {
       auto muon = assoc.template fwdtrack_as<TMuons>();
 
       trackFilteringTag = uint8_t(0);
+      trackTempFilterMap = uint8_t(0);
       VarManager::FillTrack<TMuonFillMap>(muon);
       // NOTE: If a muon is associated to multiple collisions, depending on the selections,
       //       it may be accepted for some associations and rejected for other
@@ -681,6 +684,9 @@ struct TableMakerMC {
       // recalculte pDca and global muon kinematics
       if (static_cast<int>(muon.trackType()) < 2 && fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
+        if (muontrack.eta() < fMuonMatchEtaMin || muontrack.eta() > fMuonMatchEtaMax) {
+          continue;
+        }
         auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
@@ -909,9 +915,14 @@ struct TableMakerMC {
           auto groupedMFTIndices = mftAssocs.sliceBy(mfttrackIndicesPerCollision, origIdx);
           skimMFT<TMFTFillMap>(collision, mftTracks, groupedMFTIndices);
         }
-        if constexpr (static_cast<bool>(TMuonFillMap) && static_cast<bool>(TMFTFillMap)) {
-          auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
-          skimMuons<TMuonFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks);
+        if constexpr (static_cast<bool>(TMuonFillMap)) {
+          if constexpr (static_cast<bool>(TMFTFillMap)) {
+            auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
+            skimMuons<TMuonFillMap, TMFTFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks);
+          } else {
+            auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
+            skimMuons<TMuonFillMap, 0u>(collision, muons, groupedMuonIndices, mcParticles, nullptr);
+          }
         }
       } // end loop over skimmed collisions
     }
