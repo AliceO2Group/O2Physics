@@ -102,6 +102,7 @@ struct hyperCandidate {
   std::array<float, 3> gDecVtx;
   uint16_t tpcSignalHe3 = 0u;
   uint16_t tpcSignalPi = 0u;
+  float tpcChi2He3 = 0.f;
   uint8_t nTPCClustersHe3 = 0u;
   uint8_t nTPCClustersPi = 0u;
   uint32_t clusterSizeITSHe3 = 0u;
@@ -186,7 +187,7 @@ struct hyperRecoTask {
   std::vector<int> recoCollisionIds;
   std::vector<bool> isSurvEvSelCollision;
   std::vector<bool> goodCollision;
-  std::vector<bool> isTracked;
+  std::vector<int> trackedClSize;
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
@@ -382,6 +383,7 @@ struct hyperRecoTask {
     hypCand.clusterSizeITSHe3 = heTrack.itsClusterSizes();
     hypCand.nTPCClustersPi = piTrack.tpcNClsFound();
     hypCand.tpcSignalPi = piTrack.tpcSignal();
+    hypCand.tpcChi2He3 = heTrack.tpcChi2NCl();
     hypCand.clusterSizeITSPi = piTrack.itsClusterSizes();
     bool heliumPID = heTrack.pidForTracking() == o2::track::PID::Helium3 || heTrack.pidForTracking() == o2::track::PID::Alpha;
     hypCand.momHe3TPC = (heliumPID && cfgCompensatePIDinTracking) ? heTrack.tpcInnerParam() / 2 : heTrack.tpcInnerParam();
@@ -440,7 +442,7 @@ struct hyperRecoTask {
 
     hH3LMassBefSel->Fill(massH3L);
     hH4LMassBefSel->Fill(massH4L);
-    if (!isTracked.empty() && isTracked[hypCand.v0ID]) {
+    if (!trackedClSize.empty() && trackedClSize[hypCand.v0ID] > 0) {
       hH3LMassTracked->Fill(massH3L);
       hH4LMassTracked->Fill(massH4L);
     }
@@ -618,10 +620,10 @@ struct hyperRecoTask {
 
   void processDataTracked(CollisionsFull const& collisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
   {
-    isTracked.clear();
-    isTracked.resize(V0s.size(), false);
+    trackedClSize.clear();
+    trackedClSize.resize(V0s.size(), 0);
     for (const auto& tV0 : tV0s) {
-      isTracked[tV0.v0Id()] = true;
+      trackedClSize[tV0.v0Id()] = tV0.itsClsSize();
     }
     processData(collisions, V0s, tracks, ambiTracks, bcs);
   }
@@ -646,8 +648,8 @@ struct hyperRecoTask {
                       hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
-                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, !isTracked.empty() && isTracked[hypCand.v0ID]);
+                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID]);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
@@ -675,8 +677,8 @@ struct hyperRecoTask {
                               hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                               hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                               hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
-                              hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                              hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, !isTracked.empty() && isTracked[hypCand.v0ID]);
+                              hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
+                              hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID]);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
@@ -708,8 +710,8 @@ struct hyperRecoTask {
                     hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
-                    hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, !isTracked.empty() && isTracked[hypCand.v0ID],
+                    hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
+                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID],
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
                     hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
@@ -782,7 +784,7 @@ struct hyperRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1, -1,
-                    -1, -1, -1, false,
+                    -1, -1, -1, false, -1,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
                     hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
@@ -792,10 +794,10 @@ struct hyperRecoTask {
 
   void processMCTracked(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
-    isTracked.clear();
-    isTracked.resize(V0s.size(), false);
+    trackedClSize.clear();
+    trackedClSize.resize(V0s.size(), 0);
     for (const auto& tV0 : tV0s) {
-      isTracked[tV0.v0Id()] = true;
+      trackedClSize[tV0.v0Id()] = tV0.itsClsSize();
     }
     processMC(collisions, mcCollisions, V0s, tracks, ambiTracks, bcs, trackLabelsMC, particlesMC);
   }
