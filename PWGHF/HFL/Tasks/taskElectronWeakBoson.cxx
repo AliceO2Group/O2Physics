@@ -33,7 +33,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 struct HfTaskElectronWeakBoson {
 
   using SelectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
