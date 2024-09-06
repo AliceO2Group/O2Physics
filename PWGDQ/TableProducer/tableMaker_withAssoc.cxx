@@ -525,7 +525,7 @@ struct TableMaker {
         }
       } else {
         if (!fEventCut->IsSelected(VarManager::fgValues)) {
-          return;
+          continue;
         }
       }
 
