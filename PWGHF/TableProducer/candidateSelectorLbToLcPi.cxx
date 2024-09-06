@@ -50,6 +50,7 @@ struct HfCandidateSelectorLbToLcPi {
   Configurable<float> impactParameterMaximum{"impactParameterMaximum", 0.2, "Maximum impact parameter for single tracks"};
   Configurable<float> maxDecayLengthError{"maxDecayLengthError", 0.015, "decay length error quality selection"};
   Configurable<float> maxDecayLengthXYError{"maxDecayLengthXYError", 0.01, "decay length xy error quality selection"};
+  Configurable<float> maxVertexDistanceLbLc{"maxVertexDistanceLbLc", 0.05, "maximum distance between Lb and Lc vertex"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lb_to_lc_pi::cuts[0], hf_cuts_lb_to_lc_pi::nBinsPt, hf_cuts_lb_to_lc_pi::nCutVars, hf_cuts_lb_to_lc_pi::labelsPt, hf_cuts_lb_to_lc_pi::labelsCutVar}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
@@ -139,6 +140,15 @@ struct HfCandidateSelectorLbToLcPi {
 
     // d0 of Lc+
     if (std::abs(hfCandLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc+")) {
+      return false;
+    }
+
+    // distance between Lb and Lc decay
+    float diffXVert = hfCandLb.xSecondaryVertex() - hfCandLc.xSecondaryVertex();
+    float diffYVert = hfCandLb.ySecondaryVertex() - hfCandLc.ySecondaryVertex();
+    float diffZVert = hfCandLb.zSecondaryVertex() - hfCandLc.zSecondaryVertex();
+    float vertexDistance = sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
+    if (vertexDistance > maxVertexDistanceLbLc) {
       return false;
     }
 

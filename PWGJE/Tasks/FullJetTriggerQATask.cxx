@@ -688,55 +688,51 @@ struct JetTriggerQA {
       setTrigger(TriggerType_t::kEmcalMB);
     }
 
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::fullHigh)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::jetFullHighPt)) {
       fillEventSelectionCounter(3);
       setTrigger(TriggerType_t::kEmcalJetFull);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::fullLow)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::jetFullLowPt)) {
       fillEventSelectionCounter(4);
       setTrigger(TriggerType_t::kEmcalJetFullLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::neutralHigh)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::jetNeutralHighPt)) {
       fillEventSelectionCounter(5);
       setTrigger(TriggerType_t::kEmcalJetNeutral);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::neutralLow)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::jetNeutralLowPt)) {
       fillEventSelectionCounter(6);
       setTrigger(TriggerType_t::kEmcalJetNeutralLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::neutralLow)) {
-      fillEventSelectionCounter(6);
-      setTrigger(TriggerType_t::kEmcalJetNeutralLow);
-    }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryHighEMCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryHighPtEMCAL)) {
       fillEventSelectionCounter(7);
       setTrigger(TriggerType_t::kEmcalGammaVeryHigh);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryHighDCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryHighPtDCAL)) {
       fillEventSelectionCounter(8);
       setTrigger(TriggerType_t::kDcalGammaVeryHigh);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaHighEMCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaHighPtEMCAL)) {
       fillEventSelectionCounter(9);
       setTrigger(TriggerType_t::kEmcalGammaHigh);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaHighDCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaHighPtDCAL)) {
       fillEventSelectionCounter(10);
       setTrigger(TriggerType_t::kDcalGammaHigh);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaLowEMCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaLowPtEMCAL)) {
       fillEventSelectionCounter(11);
       setTrigger(TriggerType_t::kEmcalGammaLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaLowDCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaLowPtDCAL)) {
       fillEventSelectionCounter(12);
       setTrigger(TriggerType_t::kDcalGammaLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryLowEMCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryLowPtEMCAL)) {
       fillEventSelectionCounter(13);
       setTrigger(TriggerType_t::kEmcalGammaVeryLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryLowDCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryLowPtDCAL)) {
       fillEventSelectionCounter(14);
       setTrigger(TriggerType_t::kDcalGammaVeryLow);
     }

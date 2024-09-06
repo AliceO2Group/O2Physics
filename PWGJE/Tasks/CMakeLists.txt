@@ -132,6 +132,10 @@ if(FastJet_FOUND)
                         SOURCES phiInJets.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(nuclei-in-jets
+                        SOURCES nucleiInJets.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-taggerhf-qa
                         SOURCES jettaggerhfQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -156,9 +160,17 @@ if(FastJet_FOUND)
                         SOURCES bjetTreeCreator.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(stat-prompt-photon
+                        SOURCES statPromptPhoton.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(full-jet-spectra-pp
                         SOURCES fulljetspectrapp.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(bjet-tagging-ml
+                        SOURCES bjetTaggingML.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::MLCore
                         COMPONENT_NAME Analysis)
 
 endif()

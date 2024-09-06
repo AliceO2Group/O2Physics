@@ -620,16 +620,10 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("kaonPosPID4DCAz")) {
+  if (!nameStr.compare("kaonPosPID4Pt05")) {
     cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
     cut->AddCut(GetAnalysisCut("posTrack"));
-    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
-    return cut;
-  }
-
-  if (!nameStr.compare("kaonPosPID5")) {
-    cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
-    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
     return cut;
   }
 
@@ -639,22 +633,10 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("kaonNegPID4DCAz")) {
+  if (!nameStr.compare("kaonNegPID4Pt05")) {
     cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
     cut->AddCut(GetAnalysisCut("negTrack"));
-    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
-    return cut;
-  }
-
-  if (!nameStr.compare("kaonNegPID5")) {
-    cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
-    cut->AddCut(GetAnalysisCut("negTrack"));
-    return cut;
-  }
-
-  if (!nameStr.compare("kaonPID4_PVC")) {
-    cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
-    cut->AddCut(GetAnalysisCut("primaryVertexContributor"));
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
     return cut;
   }
 
@@ -688,13 +670,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pionPosPIDDCAz")) {
-    cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
-    cut->AddCut(GetAnalysisCut("posTrack"));
-    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
-    return cut;
-  }
-
   if (!nameStr.compare("pionPosPID2")) {
     cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
     cut->AddCut(GetAnalysisCut("posTrack"));
@@ -707,35 +682,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pionNegPIDDCAz")) {
-    cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
-    cut->AddCut(GetAnalysisCut("negTrack"));
-    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
-    return cut;
-  }
-
   if (!nameStr.compare("pionNegPID2")) {
     cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
-    cut->AddCut(GetAnalysisCut("negTrack"));
-    return cut;
-  }
-
-  if (!nameStr.compare("pionPID_PVC")) {
-    cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
-    cut->AddCut(GetAnalysisCut("primaryVertexContributor"));
-    return cut;
-  }
-
-  if (!nameStr.compare("pionPosPID2_PVC")) {
-    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
-    cut->AddCut(GetAnalysisCut("primaryVertexContributor"));
-    cut->AddCut(GetAnalysisCut("posTrack"));
-    return cut;
-  }
-
-  if (!nameStr.compare("pionNegPID2_PVC")) {
-    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
-    cut->AddCut(GetAnalysisCut("primaryVertexContributor"));
     cut->AddCut(GetAnalysisCut("negTrack"));
     return cut;
   }
@@ -746,10 +694,10 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("protonPosPIDDCAz")) {
+  if (!nameStr.compare("protonPosPIDPt05")) {
     cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF"));
     cut->AddCut(GetAnalysisCut("posTrack"));
-    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
     return cut;
   }
 
@@ -759,18 +707,37 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("protonNegPIDPt05")) {
+    cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
+    return cut;
+  }
+
   if (!nameStr.compare("PrimaryTrack_DCAz")) {
     cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
     return cut;
   }
 
-  if (!nameStr.compare("pionPosPrimaryNoPID")) {
+  if (!nameStr.compare("posPrimaryTrack_DCAz")) {
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("negPrimaryTrack_DCAz")) {
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("posStandardPrimaryTrackDCA")) {
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));
     cut->AddCut(GetAnalysisCut("posTrack"));
     return cut;
   }
 
-  if (!nameStr.compare("pionNegPrimaryNoPID")) {
+  if (!nameStr.compare("negStandardPrimaryTrackDCA")) {
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));
     cut->AddCut(GetAnalysisCut("negTrack"));
     return cut;
@@ -783,6 +750,39 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("negTrack")) {
     cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow04")) {
+    cut->AddCut(GetAnalysisCut("pTLow04"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow03")) {
+    cut->AddCut(GetAnalysisCut("pTLow03"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow02")) {
+    cut->AddCut(GetAnalysisCut("pTLow02"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow05DCAzHigh03")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow04DCAzHigh03")) {
+    cut->AddCut(GetAnalysisCut("pTLow04"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow03DCAzHigh03")) {
+    cut->AddCut(GetAnalysisCut("pTLow03"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
     return cut;
   }
 
@@ -1290,6 +1290,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       cut->AddCut(GetAnalysisCut("lmeeStandardKine_pt04"));
       cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
       cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("lmee%s_TrackCuts_Resol", vecTypetrack.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("openEtaSel")); // No pt cut and wider eta cut to produce resolution maps
+      cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
       return cut;
     }
 
@@ -3183,6 +3190,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   std::string nameStr = cutName;
   // ---------------------------------------------------------------
   // Event cuts
+  if (!nameStr.compare("noEventCut")) {
+    return cut;
+  }
+
   if (!nameStr.compare("eventNoTFBorder")) {
     cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
     return cut;
@@ -3592,6 +3603,21 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("PIDStandardKine3")) {
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     cut->AddCut(VarManager::kPt, 0.5, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow04")) {
+    cut->AddCut(VarManager::kPt, 0.4, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow03")) {
+    cut->AddCut(VarManager::kPt, 0.3, 1000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pTLow02")) {
+    cut->AddCut(VarManager::kPt, 0.2, 1000.0);
     return cut;
   }
 

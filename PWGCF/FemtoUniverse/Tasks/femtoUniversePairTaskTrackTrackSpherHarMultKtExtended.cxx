@@ -149,7 +149,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.ConfUse3D>> to true in order to use)"};
   ConfigurableAxis ConfmultBins3D{"ConfmultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.ConfUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {60, 0.0, 0.3}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
@@ -413,7 +413,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   template <typename CollisionType>
   void fillCollision(CollisionType col)
   {
-    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
+    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
     eventHisto.fillQA(col);
   }
 
@@ -544,15 +544,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     bool fillQA = true;
 
     if (cfgProcessPM) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
+      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
     }
 
     if (cfgProcessPP) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA);
+      doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
     }
 
     if (cfgProcessMM) {
-      doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
+      doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processSameEvent, "Enable processing same event", true);
@@ -628,9 +628,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   void processMixedEvent(soa::Filtered<o2::aod::FDCollisions>& cols,
                          FilteredFemtoFullParticles& parts)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
-      const int multiplicityCol = collision1.multNtr();
+      const int multiplicityCol = collision1.multV0M();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       const auto& magFieldTesla1 = collision1.magField();
@@ -688,9 +688,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
                            soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& /*parts*/,
                            o2::aod::FDMCParticles&)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
-      const int multiplicityCol = collision1.multNtr();
+      const int multiplicityCol = collision1.multV0M();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       const auto& magFieldTesla1 = collision1.magField();

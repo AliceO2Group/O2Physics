@@ -250,7 +250,7 @@ struct tableMakerJpsiHf {
 
     bool isCollSel{false};
     if (configDebug) {
-      for (auto& dmeson : dmesons) {
+      for (auto const& dmeson : dmesons) {
         if (!TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
           continue;
         }
@@ -292,6 +292,7 @@ struct tableMakerJpsiHf {
     auto dileptons = computeDileptonCombinatorial<TPairType, TTrackFillMap>(leptons);
 
     // loop over dileptons
+    std::vector<int> filledDmesonIds{}; // keep track of the D-mesons filled in the table to avoid repetitions
     for (auto dilepton : dileptons) {
       auto massJPsi = dilepton.mass();
       bool isJPsiFilled{false};
@@ -308,9 +309,15 @@ struct tableMakerJpsiHf {
       }
 
       // loop over D mesons
-      for (auto& dmeson : dmesons) {
+      for (auto const& dmeson : dmesons) {
         if (!TESTBIT(dmeson.hfflag(), DecayType::D0ToPiK)) {
           continue;
+        }
+
+        int dmesonIdx = dmeson.globalIndex();
+        bool isDmesonFilled{false};
+        if (std::find(filledDmesonIds.begin(), filledDmesonIds.end(), dmesonIdx) != filledDmesonIds.end()) { // we already included this D meson in the table, skip it
+          isDmesonFilled = true;
         }
 
         auto rapD0 = hfHelper.yD0(dmeson);
@@ -336,20 +343,25 @@ struct tableMakerJpsiHf {
             }
             isJPsiFilled = true;
           }
-          redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
+          if (!isDmesonFilled) {
+            redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
+            filledDmesonIds.push_back(dmesonIdx);
+          }
           std::array<float, 6> scores = {999., -999., -999., 999., -999., -999.}; // D0 + D0bar
           if constexpr (withBdt) {
-            if (dmeson.mlProbD0().size() == 3) {
-              for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
-                scores[iScore] = dmeson.mlProbD0()[iScore];
+            if (!isDmesonFilled) {
+              if (dmeson.mlProbD0().size() == 3) {
+                for (auto iScore{0u}; iScore < dmeson.mlProbD0().size(); ++iScore) {
+                  scores[iScore] = dmeson.mlProbD0()[iScore];
+                }
               }
-            }
-            if (dmeson.mlProbD0bar().size() == 3) {
-              for (auto iScore{0u}; iScore < dmeson.mlProbD0bar().size(); ++iScore) {
-                scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
+              if (dmeson.mlProbD0bar().size() == 3) {
+                for (auto iScore{0u}; iScore < dmeson.mlProbD0bar().size(); ++iScore) {
+                  scores[iScore + 3] = dmeson.mlProbD0bar()[iScore];
+                }
               }
+              redDmesBdts(scores[0], scores[1], scores[2], scores[3], scores[4], scores[5]);
             }
-            redDmesBdts(scores[0], scores[1], scores[2], scores[3], scores[4], scores[5]);
           }
 
           if (dmeson.isSelD0() >= 1) {
@@ -364,7 +376,9 @@ struct tableMakerJpsiHf {
             fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
             VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
-          redD0Masses(massD0, massD0bar);
+          if (!isDmesonFilled) {
+            redD0Masses(massD0, massD0bar);
+          }
         }
       }
     }
@@ -376,7 +390,7 @@ struct tableMakerJpsiHf {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates.sliceBy(perCollisionDmeson, collision.globalIndex());
       auto groupedLeptonCandidates = muonCandidates.sliceBy(perCollisionMuons, collision.globalIndex());
       runDileptonDmeson<false, false, VarManager::kDecayToMuMu, gkMuonFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
@@ -389,7 +403,7 @@ struct tableMakerJpsiHf {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates.sliceBy(perCollisionDmeson, collision.globalIndex());
       auto groupedLeptonCandidates = electronCandidates.sliceBy(perCollisionElectrons, collision.globalIndex());
       runDileptonDmeson<false, false, VarManager::kDecayToEE, gkTrackFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
@@ -402,7 +416,7 @@ struct tableMakerJpsiHf {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt.sliceBy(perCollisionDmesonWithBdt, collision.globalIndex());
       auto groupedLeptonCandidates = muonCandidates.sliceBy(perCollisionMuons, collision.globalIndex());
       runDileptonDmeson<false, true, VarManager::kDecayToMuMu, gkMuonFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
@@ -415,7 +429,7 @@ struct tableMakerJpsiHf {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt.sliceBy(perCollisionDmesonWithBdt, collision.globalIndex());
       auto groupedLeptonCandidates = electronCandidates.sliceBy(perCollisionElectrons, collision.globalIndex());
       runDileptonDmeson<false, true, VarManager::kDecayToEE, gkTrackFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);

@@ -31,6 +31,8 @@
 #include "CCDB/BasicCCDBManager.h"
 
 #include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -124,6 +126,7 @@ struct hyperRecoTask {
   Produces<aod::MCHypCands> outputMCTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // PDG codes
   Configurable<int> hyperPdg{"hyperPDG", 1010010030, "PDG code of the hyper-mother (could be 3LamH or 4LamH)"};
@@ -196,6 +199,8 @@ struct hyperRecoTask {
   void init(InitContext const&)
   {
 
+    zorroSummary.setObject(zorro.getZorroSummary());
+
     mRunNumber = 0;
     d_bz = 0;
 
@@ -261,6 +266,7 @@ struct hyperRecoTask {
     }
     if (cfgSkimmedProcessing) {
       zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
+      zorro.populateHistRegistry(qaRegistry, bc.runNumber());
     }
     auto run3grp_timestamp = bc.timestamp();
 

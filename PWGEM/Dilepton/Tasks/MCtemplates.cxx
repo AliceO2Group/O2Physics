@@ -243,13 +243,13 @@ struct AnalysisTrackSelection {
     if (fConfigQA) {
       if (fConfigMCTruthGen) {
         // Add histogram classes for each MC signal at generated level
-        std::vector<TString> mcnamesgen;
+        // std::vector<TString> mcnamesgen;
         for (int isig = 0; isig < sigNamesArray->GetEntries(); ++isig) {
           MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(sigNamesArray->At(isig)->GetName());
           if (sig) {
             if (sig->GetNProngs() == 1) { // NOTE: only 1 prong signals
               TString nameStr2 = Form("MCTruthGenTrack_%s", sig->GetName());
-              mcnamesgen.push_back(nameStr2);
+              // mcnamesgen.push_back(nameStr2);
               histClasses += Form("%s;", nameStr2.Data()); // TODO: Add these names to a std::vector to avoid using Form in the process function
             }
           }

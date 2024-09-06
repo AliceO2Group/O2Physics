@@ -225,7 +225,7 @@ class DielectronCut : public TNamed
     std::vector<float> inputFeatures{static_cast<float>(collision.numContrib()), track.p(), track.tgl(),
                                      track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                                      track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                                     track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl()))};
+                                     track.meanClusterSizeITS() * std::cos(std::atan(track.tgl()))};
 
     // calculate classifier
     float prob_ele = mPIDModel->evalModel(inputFeatures)[0];
@@ -291,8 +291,7 @@ class DielectronCut : public TNamed
   bool PassTPConly(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    return is_el_included_TPC && is_pi_excluded_TPC;
+    return is_el_included_TPC;
   }
 
   template <typename T>
@@ -342,7 +341,7 @@ class DielectronCut : public TNamed
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
       case DielectronCuts::kITSCluserSize:
-        return mMinMeanClusterSizeITS < track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
+        return track.p() < mMaxP_ITSClusterSize ? mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS : true;
 
       case DielectronCuts::kPrefilter:
         return track.pfb() <= 0;
@@ -368,7 +367,7 @@ class DielectronCut : public TNamed
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
-  void SetMeanClusterSizeITSob(float min, float max);
+  void SetMeanClusterSizeITS(float min, float max, float maxP = 0.f);
 
   void SetPIDScheme(int scheme);
   void SetMinPinTOF(float min);
@@ -441,6 +440,7 @@ class DielectronCut : public TNamed
   bool mApplyPhiV{true};
   bool mApplyPF{false};
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
+  float mMaxP_ITSClusterSize{0.0};
 
   // pid cuts
   int mPIDScheme{-1};

@@ -918,6 +918,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
+  Produces<aod::DileptonsMiniTree> dileptonMiniTree;
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -947,6 +948,13 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> fCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
+
+  // Configurables to create output tree (flat tables or minitree)
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigMiniTree{"useMiniTree.cfgMiniTree", false, "Produce a single flat table with minimal information for analysis"};
+    Configurable<float> fConfigMiniTreeMinMass{"useMiniTree.cfgMiniTreeMinMass", 2, "Min. mass cut for minitree"};
+    Configurable<float> fConfigMiniTreeMaxMass{"useMiniTree.cfgMiniTreeMaxMass", 5, "Max. mass cut for minitree"};
+  } useMiniTree;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
@@ -1180,6 +1188,9 @@ struct AnalysisSameEventPairing {
       dielectronAllList.reserve(1);
       dimuonAllList.reserve(1);
     }
+    if (useMiniTree.fConfigMiniTree) {
+      dileptonMiniTree.reserve(1);
+    }
 
     if (fConfigMultDimuons.value) {
 
@@ -1317,6 +1328,16 @@ struct AnalysisSameEventPairing {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
             if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
               fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][0].Data()), VarManager::fgValues);
+            }
+            if (useMiniTree.fConfigMiniTree) {
+              float dileptonMass = VarManager::fgValues[VarManager::kMass];
+              if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
+                dileptonMiniTree(VarManager::fgValues[VarManager::kMass],
+                                 VarManager::fgValues[VarManager::kPt],
+                                 VarManager::fgValues[VarManager::kRap],
+                                 VarManager::fgValues[VarManager::kCentFT0C],
+                                 VarManager::fgValues[VarManager::kCos2DeltaPhi]);
+              }
             }
           } else {
             if (t1.sign() > 0) {

@@ -628,6 +628,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);                                     //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                                     //!
 DECLARE_SOA_BITMAP_COLUMN(FilterMap, filterMap, 32);                     //!
 DECLARE_SOA_BITMAP_COLUMN(PairFilterMap, pairFilterMap, 32);             //!
+DECLARE_SOA_BITMAP_COLUMN(CommonFilterMap, commonFilterMap, 32);         //!
 DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                    //!
 DECLARE_SOA_COLUMN(Tauz, tauz, float);                                   //! Longitudinal pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);                             //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
@@ -808,6 +809,9 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::VertexPz,
                   reducedpair::SVertex);
 
+DECLARE_SOA_TABLE(DileptonsMiniTree, "AOD", "RTDILEPTMTREE", //!
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::CentFT0C, reducedpair::Cos2DeltaPhi);
+
 using Dielectron = Dielectrons::iterator;
 using StoredDielectron = StoredDielectrons::iterator;
 using Dimuon = Dimuons::iterator;
@@ -818,12 +822,13 @@ using DileptonFlow = DileptonsFlow::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
 using DielectronAll = DielectronsAll::iterator;
 using DimuonAll = DimuonsAll::iterator;
+using DileptonMiniTree = DileptonsMiniTree::iterator;
 
 // Tables for using analysis-dilepton-track with analysis-asymmetric-pairing
 DECLARE_SOA_TABLE(Ditracks, "AOD", "RTDITRACK", //!
                   o2::soa::Index<>, reducedpair::ReducedEventId,
                   reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
-                  reducedpair::FilterMap, reducedpair::PairFilterMap,
+                  reducedpair::FilterMap, reducedpair::PairFilterMap, reducedpair::CommonFilterMap,
                   reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
                   reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
                   reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
