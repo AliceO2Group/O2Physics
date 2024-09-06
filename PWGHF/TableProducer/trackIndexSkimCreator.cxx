@@ -3137,20 +3137,21 @@ struct HfTrackIndexSkimCreatorCascades {
             continue;
           }
 
-          const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
-          // we build the neutral track to then build the cascade
-          std::array<float, 21> covV = {0.};
-          constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-          for (int i = 0; i < 6; i++) {
-            covV[MomInd[i]] = v0.momentumCovMat()[i];
-            covV[i] = v0.positionCovMat()[i];
-          }
-          auto trackV0 = o2::track::TrackParCov(vertexV0, pVecV0, covV, 0, true);
-          trackV0.setAbsCharge(0);
-          trackV0.setPID(o2::track::PID::K0);
-
           // now we find the DCA between the V0 and the bachelor, for the cascade
           if (config.useDCAFitter) {
+
+            const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+            // we build the neutral track to then build the cascade
+            std::array<float, 21> covV = {0.};
+            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+            for (int i = 0; i < 6; i++) {
+              covV[MomInd[i]] = v0.momentumCovMat()[i];
+              covV[i] = v0.positionCovMat()[i];
+            }
+            auto trackV0 = o2::track::TrackParCov(vertexV0, pVecV0, covV, 0, true);
+            trackV0.setAbsCharge(0);
+            trackV0.setPID(o2::track::PID::K0);
+
             int nCand2 = 0;
             try {
               nCand2 = df2.process(trackV0, trackBach);
