@@ -2976,7 +2976,7 @@ struct HfTrackIndexSkimCreatorCascades {
     Configurable<double> etaMaxV0Daugh{"etaMaxV0Daugh", 1.1, "max. pseudorapidity V0 daughters"};
     Configurable<double> ptMinV0Daugh{"ptMinV0Daugh", 0.05, "min. pT V0 daughters"};
     // v0 cuts
-    Configurable<double> cpaV0Min{"cpaV0Min", 0.95, "min. cos PA V0"};                    // as in the task that create the V0s
+    Configurable<double> cpaV0Min{"cpaV0Min", 0.95, "min. cos PA V0"}; // as in the task that create the V0s
     Configurable<double> cutInvMassV0{"cutInvMassV0", 0.05, "V0 candidate invariant mass difference wrt PDG"};
     // cascade cuts
     Configurable<double> ptCascCandMin{"ptCascCandMin", -1., "min. pT of the cascade candidate"};                    // PbPb 2018: use 1
