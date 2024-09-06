@@ -1181,6 +1181,9 @@ struct correlateStrangeness {
 
     for (auto const& mcParticle : mcParticles) {
       Double_t geta = mcParticle.eta();
+      if(std::abs(geta)>0.8f){
+        continue;
+      }
       Double_t gpt = mcParticle.pt();
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
@@ -1273,6 +1276,9 @@ struct correlateStrangeness {
 
     for (auto const& mcParticle : mcParticles) {
       Double_t geta = mcParticle.eta();
+      if(std::abs(geta)>0.8f){
+        continue;
+      }
       Double_t gpt = mcParticle.pt();
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
@@ -1348,6 +1354,9 @@ struct correlateStrangeness {
 
     for (auto const& mcParticle : mcParticles) {
       Double_t geta = mcParticle.eta();
+      if(std::abs(geta)>0.8f){
+        continue;
+      }
       Double_t gpt = mcParticle.pt();
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
@@ -1394,6 +1403,9 @@ struct correlateStrangeness {
 
     for (auto const& mcParticle : mcParticles) {
       Double_t geta = mcParticle.eta();
+      if(std::abs(geta)>0.8f){
+        continue;
+      }
       Double_t gpt = mcParticle.pt();
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
