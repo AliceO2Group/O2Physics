@@ -69,6 +69,11 @@ o2physics_add_dpl_workflow(spectra-tof
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(kaon-analysis
+    SOURCES KaonAnalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(spectra-tof-run2
     SOURCES spectraTOFRun2.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
