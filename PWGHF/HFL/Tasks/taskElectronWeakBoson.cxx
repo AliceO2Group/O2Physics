@@ -56,7 +56,7 @@ struct HfTaskElectronWeakBoson {
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
 
   // track cuts
-  Filter filter_globalTr = requireGlobalTrackInFilter();  
+  Filter filter_globalTr = requireGlobalTrackInFilter();
 
   Configurable<float> etalow{"etalow", -0.6f, ""};
   Configurable<float> etaup{"etaup", 0.6f, ""};
