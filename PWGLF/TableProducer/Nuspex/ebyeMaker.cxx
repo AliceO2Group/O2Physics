@@ -55,7 +55,7 @@ using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 namespace
 {
 constexpr int kNpart = 2;
-constexpr double trackSels[10]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */};
+constexpr double trackSels[10]{/* 60, */ 80, 100, 2, 3, /* 4,  */0.05, 0.1, /* 0.15,  */0.5, 1, /* 1.5, */ 2, 3/* , 4 */};
 constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 constexpr double estimatorsCorrelationCoef[2]{-0.669108, 1.04489};
 constexpr double estimatorsSigmaPars[4]{0.933321, 0.0416976, -0.000936344, 8.92179e-06};
@@ -394,7 +394,7 @@ struct ebyeMaker {
     // o2::base::Propagator::Instance()->setMatLUT(lut);
   }
 
-  template <class T>
+  template<class T>
   float getOuterPID(T const& track)
   {
     if (doprocessMiniRun2) {
@@ -409,30 +409,40 @@ struct ebyeMaker {
     return -999.f;
   }
 
-  template <class T>
+  float getV0M(uint64_t const id, float const zvtx, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs)
+  {
+    auto fv0a = fv0as.rawIteratorAt(id);
+    auto fv0c = fv0cs.rawIteratorAt(id);
+    float multFV0A = 0;
+    float multFV0C = 0;
+    for (float amplitude : fv0a.amplitude()) {
+      multFV0A += amplitude;
+    }
+
+    for (float amplitude : fv0c.amplitude()) {
+      multFV0C += amplitude;
+    }
+
+    float v0m = multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(zvtx)) +
+                multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(zvtx));
+
+    return v0m;
+  }
+
+  template<class T>
   int getTrackSelMask(T const& track)
   {
     int mask = 0x0;
-    if (track.tpcncls > cfgTrackSels->get("tpcClsTight"))
-      mask |= kTPCclsTight;
-    else if (track.tpcncls > cfgTrackSels->get("tpcClsMid"))
-      mask |= kTPCclsMid;
-    if (track.tpcchi2 < cfgTrackSels->get("chi2TpcTight"))
-      mask |= kChi2TPCTight;
-    else if (track.tpcchi2 < cfgTrackSels->get("chi2TpcMid"))
-      mask |= kChi2TPCMid;
-    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight"))
-      mask |= kDCAxyTight;
-    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid"))
-      mask |= kDCAxyMid;
-    if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazTight"))
-      mask |= kDCAzTight;
-    else if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazMid"))
-      mask |= kDCAzMid;
-    if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaTight"))
-      mask |= kTPCPIDTight;
-    else if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaMid"))
-      mask |= kTPCPIDMid;
+    if (track.tpcncls > cfgTrackSels->get("tpcClsTight")) mask |= kTPCclsTight;
+    else if (track.tpcncls > cfgTrackSels->get("tpcClsMid") ) mask |= kTPCclsMid;
+    if (track.tpcchi2 < cfgTrackSels->get("chi2TpcTight")) mask |= kChi2TPCTight;
+    else if (track.tpcchi2 < cfgTrackSels->get("chi2TpcMid")) mask |= kChi2TPCMid;
+    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight")) mask |= kDCAxyTight;
+    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid")) mask |= kDCAxyMid;
+    if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazTight")) mask |= kDCAzTight;
+    else if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazMid")) mask |= kDCAzMid;
+    if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaTight")) mask |= kTPCPIDTight;
+    else if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaMid")) mask |= kTPCPIDMid;
     // if (track.itsnsigma < 2) mask |= kITSPIDTight;
     // else if (track.itsnsigma < 3) mask |= kITSPIDMid;
     return mask;
@@ -1017,20 +1027,7 @@ struct ebyeMaker {
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
 
-      auto fv0a = fv0as.rawIteratorAt(bc.globalIndex());
-      auto fv0c = fv0cs.rawIteratorAt(bc.globalIndex());
-      float multFV0A = 0;
-      float multFV0C = 0;
-      for (float amplitude : fv0a.amplitude()) {
-        multFV0A += amplitude;
-      }
-
-      for (float amplitude : fv0c.amplitude()) {
-        multFV0C += amplitude;
-      }
-
-      float v0m = multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
-                  multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
+      float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
       float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
@@ -1049,8 +1046,7 @@ struct ebyeMaker {
         float outerPID = getOuterPID(tk);
         candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
         int selMask = getTrackSelMask(candidateTrack);
-        if (candidateTrack.outerPID < -4)
-          continue;
+        if (candidateTrack.outerPID < -4) continue;
         miniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
@@ -1194,6 +1190,53 @@ struct ebyeMaker {
     }
   }
   PROCESS_SWITCH(ebyeMaker, processMcRun2, "process MC (Run 2)", false);
+
+  void processMiniMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullPID const& tracks, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
+  {
+
+    for (const auto& collision : collisions) {
+      auto bc = collision.bc_as<BCsWithRun2Info>();
+      initCCDB(bc);
+
+      if (std::abs(collision.posZ()) > zVtxMax)
+        continue;
+
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
+        continue;
+
+      float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
+      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+
+      histos.fill(HIST("QA/zVtx"), collision.posZ());
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      V0Table_thisCollision.bindExternalIndices(&tracks);
+
+      fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
+      fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
+
+      miniCollTable(std::abs(collision.posZ()), 0x0, nTrackletsColl, cV0M);
+
+      for (auto& candidateTrack : candidateTracks[0]) { // protons
+        auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
+        float outerPID = getOuterPID(tk);
+        candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
+        int selMask = getTrackSelMask(candidateTrack);
+        if (candidateTrack.outerPID < -4) continue;
+        mcMiniTrkTable(
+          miniCollTable.lastIndex(),
+          candidateTrack.pt,
+          std::abs(candidateTrack.eta) * 10.,
+          selMask,
+          candidateTrack.outerPID,
+          candidateTrack.genpt,
+          candidateTrack.geneta,
+          candidateTrack.isreco);
+      }
+    }
+  }
+  PROCESS_SWITCH(ebyeMaker, processMiniMcRun2, "process mini tables for mc(Run 2)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
