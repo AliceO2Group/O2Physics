@@ -106,11 +106,11 @@ void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& 
     delete fCovList;
   fCovList = new TList();
   fCovList->SetOwner(kTRUE);
-  for (int m = 0; m < mpar; ++m){
+  for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("corr_%ipar", m + 1), nMultiBins, &multiBins[0]));
   }
   for (int m = 0; m < 4; ++m) {
-    for (int i = 0; i <= m; ++i){
+    for (int i = 0; i <= m; ++i) {
       fCMTermList->Add(new BootstrapProfile(Form("cm%i_Mpt%i", m + 1, i), Form("cm%i_Mpt%i", m + 1, i), nMultiBins, &multiBins[0]));
     }
   }
@@ -119,7 +119,7 @@ void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& 
       if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
         continue;
       if (fUseCentralMoments) {
-        for (auto j = 0; j < m; ++j){
+        for (auto j = 0; j < m; ++j) {
           fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), nMultiBins, &multiBins[0]));
         }
       } else {
@@ -150,11 +150,11 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
     delete fCorrList;
   fCorrList = new TList();
   fCorrList->SetOwner(kTRUE);
-  for (int m = 0; m < mpar; ++m){
+  for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xbins));
   }
   for (int m = 0; m < 4; ++m) {
-    for (int i = 0; i <= m; ++i){
+    for (int i = 0; i <= m; ++i) {
       fCMTermList->Add(new BootstrapProfile(Form("cm%i_Mpt%i", m + 1, i), Form("cm%i_Mpt%i", m + 1, i), nbinsx, xbins));
     }
   }
@@ -163,7 +163,7 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
       if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
         continue;
       if (fUseCentralMoments) {
-        for (auto j = 0; j < m; ++j){
+        for (auto j = 0; j < m; ++j) {
           fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), nbinsx, xbins));
         }
       } else {
@@ -193,11 +193,11 @@ void FlowPtContainer::Initialise(int nbinsx, double xlow, double xhigh, const in
     delete fCorrList;
   fCorrList = new TList();
   fCorrList->SetOwner(kTRUE);
-  for (int m = 0; m < mpar; ++m){
+  for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xlow, xhigh));
   }
   for (int m = 0; m < 4; ++m) {
-    for (int i = 0; i <= m; ++i){
+    for (int i = 0; i <= m; ++i) {
       fCMTermList->Add(new BootstrapProfile(Form("cm%i_Mpt%i", m + 1, i), Form("cm%i_Mpt%i", m + 1, i), nbinsx, xlow, xhigh));
     }
   }
@@ -206,7 +206,7 @@ void FlowPtContainer::Initialise(int nbinsx, double xlow, double xhigh, const in
       if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
         continue;
       if (fUseCentralMoments) {
-        for (auto j = 0; j < m; ++j){
+        for (auto j = 0; j < m; ++j) {
           fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, m - j - 1), nbinsx, xlow, xhigh));
         }
       } else {
@@ -288,7 +288,7 @@ void FlowPtContainer::FillVnDeltaPtProfiles(const double& centmult, const double
       continue;
     for (auto i = 0; i < m; ++i) {
       if (cmDen[m - 1] != 0)
-        dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * cmNum[m * (m - 1) / 2 + (m-i)], (fEventWeight == kUnity) ? 1.0 : flowtuples * cmDen[m - 1], rn);
+        dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * cmNum[m * (m - 1) / 2 + (m - i)], (fEventWeight == kUnity) ? 1.0 : flowtuples * cmDen[m - 1], rn);
       ++fillCounter;
     }
   }
