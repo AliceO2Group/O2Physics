@@ -110,15 +110,15 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_001, "AOD", "STRAEVSELS", 1,         //! 
                             mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC,
-                            evsel::NumTracksInTimeRange, // add occupancy as extra
-                            udcollision::GapSide,   // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            evsel::NumTracksInTimeRange,     // add occupancy as extra
+                            udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
                             udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
                             udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
                             udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
                             udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
                             udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
-                            udzdc::EnergyCommonZNA, // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
-                            udzdc::EnergyCommonZNC, // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
 
                             // Dynamic columns for manipulating information
                             // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,

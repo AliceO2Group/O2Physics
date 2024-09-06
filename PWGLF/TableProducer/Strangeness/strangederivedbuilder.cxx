@@ -241,7 +241,7 @@ struct strangederivedbuilder {
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
-    
+
     auto hFT0AMultVsFT0AUD = histos.add<TH2>("hFT0AMultVsFT0AUD", "hFT0AMultVsFT0AUD; FT0-A Mult; FT0-A UD", kTH2F, {axisDetectors.axisFT0A, axisDetectors.axisFT0A});
     auto hFT0CMultVsFT0CUD = histos.add<TH2>("hFT0CMultVsFT0CUD", "hFT0CMultVsFT0CUD; FT0-C Mult; FT0-C UD", kTH2F, {axisDetectors.axisFT0C, axisDetectors.axisFT0C});
     auto hFV0AMultVsFV0AUD = histos.add<TH2>("hFV0AMultVsFV0AUD", "hFV0AMultVsFV0AUD; FV0-A Mult; FV0-A UD", kTH2F, {axisDetectors.axisFV0A, axisDetectors.axisFV0A});
