@@ -39,7 +39,7 @@ using GjEvent = GjEvents::iterator;
 
 namespace gjgamma
 {
-DECLARE_SOA_INDEX_COLUMN(GjEvent, gjevent);                           //! event index
+DECLARE_SOA_INDEX_COLUMN(GjEvent, gjevent);                            //! event index
 DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
 DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
 DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
