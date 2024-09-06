@@ -67,7 +67,7 @@ public:
     enum OriginType { None = 0,
                       Prompt,
                       NonPrompt };
-    
+
     template <typename T>
     static int getCharmHadronOrigin(const T& particlesMC,
                                     const typename T::iterator& particle,
@@ -1356,7 +1356,7 @@ struct KaonAnalysis {
     }                                                                                          \
   }                                                                                            \
   PROCESS_SWITCH(KaonAnalysis, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
-    
+
 // Full tables
 #define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, TOFFull, TPCFull)
 
@@ -1487,7 +1487,7 @@ struct KaonAnalysis {
     if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
       return;
     }
-      
+
     if (enableDCAxyzHistograms) {
       hDcaXYZTot[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
     } else {
@@ -1521,7 +1521,7 @@ struct KaonAnalysis {
         // DCAxy for all non primaries
         histos.fill(HIST(hdcaxyprm2[i]), track.pt(), track.dcaXY());
         histos.fill(HIST(hdcazprm2[i]), track.pt(), track.dcaZ());
-      
+
         //bool IsD0Mother{false};
         bool IsCharmMother{false};
         bool IsBeautyMother{false};
@@ -1557,7 +1557,7 @@ struct KaonAnalysis {
             histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
           }
 
-        
+
 
         if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
           histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
