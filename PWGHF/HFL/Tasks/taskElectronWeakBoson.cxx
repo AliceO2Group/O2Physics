@@ -119,14 +119,14 @@ struct HfTaskElectronWeakBoson {
     histos.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
     histos.add("TPCElHistogram", "TPCElHistogram", kTH2F, {{axisPt}, {axisNsigma}});
     histos.add("EnergyHistogram", "EnergyHistogram", kTH1F, {axisE});
-    histos.add("M02Histogram", "M02Histogram", kTH2F, {{axisNsigma},{axisM02}});
-    histos.add("M20Histogram", "M20Histogram", kTH2F, {{axisNsigma},{axisM02}});
-    histos.add("TrMatchHistogram", "TrMatchHistogram", kTH2F, {{axisdPhi},{axisdEta}});
-    histos.add("TrMatchHistogram_mim", "TrMatchHistogram_mim", kTH2F, {{axisdPhi},{axisdEta}});
-    histos.add("MatchPhiHistogram", "MatchPhiHistogram", kTH2F, {{axisPhi},{axisPhi}});
-    histos.add("MatchEtaHistogram", "MatchEtaHistogram", kTH2F, {{axisEta},{axisEta}});
-    histos.add("EopHistogram", "EopHistogram", kTH2F, {{axisPt},{axisEop}});
-    histos.add("EopNsigTPCHistogram", "EopNsigTPCHistogram", kTH2F, {{axisNsigma},{axisEop}});
+    histos.add("M02Histogram", "M02Histogram", kTH2F, {{axisNsigma}, {axisM02}});
+    histos.add("M20Histogram", "M20Histogram", kTH2F, {{axisNsigma}, {axisM02}});
+    histos.add("TrMatchHistogram", "TrMatchHistogram", kTH2F, {{axisdPhi}, {axisdEta}});
+    histos.add("TrMatchHistogram_mim", "TrMatchHistogram_mim", kTH2F, {{axisdPhi}, {axisdEta}});
+    histos.add("MatchPhiHistogram", "MatchPhiHistogram", kTH2F, {{axisPhi}, {axisPhi}});
+    histos.add("MatchEtaHistogram", "MatchEtaHistogram", kTH2F, {{axisEta}, {axisEta}});
+    histos.add("EopHistogram", "EopHistogram", kTH2F, {{axisPt}, {axisEop}});
+    histos.add("EopNsigTPCHistogram", "EopNsigTPCHistogram", kTH2F, {{axisNsigma}, {axisEop}});
     histos.add("EMCtimeHistogram", "EMCtimeHistogram", kTH1F, {axisEMCtime});
   }
 
@@ -200,12 +200,12 @@ struct HfTaskElectronWeakBoson {
                  // LOG(info) << "tr phi0 = " << match.track_as<TrackEle>().phi();
                  // LOG(info) << "tr phi1 = " << track.phi();
                  // LOG(info) << "emc phi = " << emc_phi;
-                 if (nmatch==0) {
+                 if (nmatch == 0) {
                     double dPhi = match.track_as<TrackEle>().phi() - emc_phi;
                     double dEta = match.track_as<TrackEle>().eta() - emc_eta;
 
-                    histos.fill(HIST("MatchPhiHistogram"), emc_phi,match.track_as<TrackEle>().phi());
-                    histos.fill(HIST("MatchEtaHistogram"), emc_eta,match.track_as<TrackEle>().eta());
+                    histos.fill(HIST("MatchPhiHistogram"), emc_phi, match.track_as<TrackEle>().phi());
+                    histos.fill(HIST("MatchEtaHistogram"), emc_eta, match.track_as<TrackEle>().eta());
 
                     double R = sqrt(pow(dPhi, 2)+pow(dEta, 2));
                     if (R < Rmim)
