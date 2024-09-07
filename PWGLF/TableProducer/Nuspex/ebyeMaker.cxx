@@ -409,6 +409,26 @@ struct ebyeMaker {
     return -999.f;
   }
 
+  float getV0M(int64_t const id, float const zvtx, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs)
+  {
+    auto fv0a = fv0as.rawIteratorAt(id);
+    auto fv0c = fv0cs.rawIteratorAt(id);
+    float multFV0A = 0;
+    float multFV0C = 0;
+    for (float amplitude : fv0a.amplitude()) {
+      multFV0A += amplitude;
+    }
+
+    for (float amplitude : fv0c.amplitude()) {
+      multFV0C += amplitude;
+    }
+
+    float v0m = multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(zvtx)) +
+                multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(zvtx));
+
+    return v0m;
+  }
+
   template <class T>
   int getTrackSelMask(T const& track)
   {
@@ -1017,20 +1037,7 @@ struct ebyeMaker {
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
 
-      auto fv0a = fv0as.rawIteratorAt(bc.globalIndex());
-      auto fv0c = fv0cs.rawIteratorAt(bc.globalIndex());
-      float multFV0A = 0;
-      float multFV0C = 0;
-      for (float amplitude : fv0a.amplitude()) {
-        multFV0A += amplitude;
-      }
-
-      for (float amplitude : fv0c.amplitude()) {
-        multFV0C += amplitude;
-      }
-
-      float v0m = multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
-                  multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
+      float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
       float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
@@ -1194,6 +1201,54 @@ struct ebyeMaker {
     }
   }
   PROCESS_SWITCH(ebyeMaker, processMcRun2, "process MC (Run 2)", false);
+
+  void processMiniMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullPID const& tracks, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
+  {
+
+    for (const auto& collision : collisions) {
+      auto bc = collision.bc_as<BCsWithRun2Info>();
+      initCCDB(bc);
+
+      if (std::abs(collision.posZ()) > zVtxMax)
+        continue;
+
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
+        continue;
+
+      float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
+      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+
+      histos.fill(HIST("QA/zVtx"), collision.posZ());
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      V0Table_thisCollision.bindExternalIndices(&tracks);
+
+      fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
+      fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
+
+      miniCollTable(std::abs(collision.posZ()), 0x0, nTrackletsColl, cV0M);
+
+      for (auto& candidateTrack : candidateTracks[0]) { // protons
+        auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
+        float outerPID = getOuterPID(tk);
+        candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
+        int selMask = getTrackSelMask(candidateTrack);
+        if (candidateTrack.outerPID < -4)
+          continue;
+        mcMiniTrkTable(
+          miniCollTable.lastIndex(),
+          candidateTrack.pt,
+          std::abs(candidateTrack.eta) * 10.,
+          selMask,
+          candidateTrack.outerPID,
+          candidateTrack.genpt,
+          candidateTrack.geneta,
+          candidateTrack.isreco);
+      }
+    }
+  }
+  PROCESS_SWITCH(ebyeMaker, processMiniMcRun2, "process mini tables for mc(Run 2)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
