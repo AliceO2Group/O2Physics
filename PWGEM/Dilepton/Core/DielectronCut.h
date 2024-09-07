@@ -200,10 +200,10 @@ class DielectronCut : public TNamed
       return false;
     }
 
-    // TOF beta cut
-    if (track.hasTOF() && (track.beta() < mMinTOFbeta || mMaxTOFbeta < track.beta())) {
-      return false;
-    }
+    // // TOF beta cut
+    // if (track.hasTOF() && (track.beta() < mMinTOFbeta || mMaxTOFbeta < track.beta())) {
+    //   return false;
+    // }
 
     // PID cuts
     if constexpr (isML) {
@@ -284,7 +284,8 @@ class DielectronCut : public TNamed
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
     bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
     bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
-    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
+    bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) : true;
+    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC && is_el_included_TOF;
   }
 
   template <typename T>
