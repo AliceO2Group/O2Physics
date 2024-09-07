@@ -136,7 +136,7 @@ class RecoDecay
       return OriginType::Prompt;
     }
     return OriginType::None;
-    }
+  }
 };
 
 // Spectra task
