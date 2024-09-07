@@ -86,6 +86,7 @@ struct PhotonConversionBuilder {
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
   Configurable<bool> moveTPCTracks{"moveTPCTracks", true, "Move TPC-only tracks under the collision assumption"};
+  Configurable<bool> disableITSonlyTracks{"disableITSonlyTracks", false, "disable ITSonly tracks in V0 legs"};
 
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
@@ -269,6 +270,10 @@ struct PhotonConversionBuilder {
       }
     }
 
+    if (disableITSonlyTracks && isITSonlyTrack(track)) {
+      return false;
+    }
+
     if (track.x() > maxX) {
       return false;
     }
@@ -360,8 +365,8 @@ struct PhotonConversionBuilder {
     return cospaRZ;
   }
 
-  template <typename TTrack, typename TKFParticle>
-  void fillTrackTable(TTrack const& track, TKFParticle const& kfp, float dcaXY, float dcaZ)
+  template <typename TTrack, typename TShiftedTrack, typename TKFParticle>
+  void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, float dcaXY, float dcaZ)
   {
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
@@ -369,7 +374,7 @@ struct PhotonConversionBuilder {
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
            track.tpcNSigmaEl(), track.tpcNSigmaPi(),
            track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
-           track.x(), track.y(), track.z(), track.tgl());
+           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ(), shiftedtrack.getTgl());
   }
 
   template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>
@@ -441,7 +446,7 @@ struct PhotonConversionBuilder {
     if (rxy_tmp > maxX + margin_r_tpc) {
       return;
     }
-    if (rxy_tmp < abs(xyz[2]) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+    if (rxy_tmp < fabs(xyz[2]) * std::tan(2 * std::atan(std::exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
 
@@ -479,7 +484,7 @@ struct PhotonConversionBuilder {
     if (rxy > maxX + margin_r_tpc) {
       return;
     }
-    if (rxy < abs(gammaKF_DecayVtx.GetZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+    if (rxy < fabs(gammaKF_DecayVtx.GetZ()) * std::tan(2 * std::atan(std::exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
     if (rxy < min_v0radius) {
@@ -488,30 +493,30 @@ struct PhotonConversionBuilder {
 
     if (!filltable) {
       if (isITSTPCTrack(pos) && isITSTPCTrack(ele)) {
-        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSTPC"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSTPC"), std::min(pTrack.getX(), nTrack.getX()), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       } else if (isITSonlyTrack(pos) && isITSonlyTrack(ele)) {
-        registry.fill(HIST("V0/hRxy_minX_ITSonly_ITSonly"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSonly_ITSonly"), std::min(pTrack.getX(), nTrack.getX()), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       } else if ((isITSTPCTrack(pos) && isITSonlyTrack(ele)) || (isITSTPCTrack(ele) && isITSonlyTrack(pos))) {
-        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSonly"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSonly"), std::min(pTrack.getX(), nTrack.getX()), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       } else if (isITSTPCTrack(pos) && !ele.hasITS()) {
-        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(pos.x(), 83.f), std::min(pos.x(), 83.f) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(pTrack.getX(), 83.f), std::min(pTrack.getX(), 83.f) - rxy); // trackiu.x() - rxy should be positive
       } else if (isITSTPCTrack(ele) && !pos.hasITS()) {
-        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(ele.x(), 83.f), std::min(ele.x(), 83.f) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(nTrack.getX(), 83.f), std::min(nTrack.getX(), 83.f) - rxy); // trackiu.x() - rxy should be positive
       } else {
         registry.fill(HIST("V0/hRxy_minX_TPC_TPC"), std::min(83.f, 83.f), std::min(83.f, 83.f) - rxy); // trackiu.x() - rxy should be positive
       }
     }
 
     if (pos.hasITS() && ele.hasITS()) { // ITSonly-ITSonly, ITSTPC-ITSTPC, ITSTPC-ITSonly
-      if (rxy > std::min(pos.x(), ele.x()) + margin_r_its) {
+      if (rxy > std::min(pTrack.getX(), nTrack.getX()) + margin_r_its) {
         return;
       }
     } else if (!pos.hasITS() && ele.hasITS()) { // ITSTPC-TPC
-      if (rxy > std::min(83.f, ele.x()) + margin_r_itstpc_tpc) {
+      if (rxy > std::min(83.f, nTrack.getX()) + margin_r_itstpc_tpc) {
         return;
       }
     } else if (pos.hasITS() && !ele.hasITS()) { // ITSTPC-TPC
-      if (rxy > std::min(pos.x(), 83.f) + margin_r_itstpc_tpc) {
+      if (rxy > std::min(pTrack.getX(), 83.f) + margin_r_itstpc_tpc) {
         return;
       }
     } else if (!pos.hasITS() && !ele.hasITS()) { // TPC-TPC
@@ -624,7 +629,7 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hPCA_CosPA"), cospa_kf, pca_kf);
       registry.fill(HIST("V0/hPCA_Rxy"), rxy, pca_kf);
       registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
-      registry.fill(HIST("V0/hPCA_diffX"), pca_kf, std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+      registry.fill(HIST("V0/hPCA_diffX"), pca_kf, std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
 
       float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
       float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
@@ -644,8 +649,9 @@ struct PhotonConversionBuilder {
       for (auto& leg : {pos, ele}) {
         registry.fill(HIST("V0Leg/hdEdx_Pin"), leg.tpcInnerParam(), leg.tpcSignal());
         registry.fill(HIST("V0Leg/hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
-        registry.fill(HIST("V0Leg/hXZ"), leg.z(), leg.x());
       } // end of leg loop
+      registry.fill(HIST("V0Leg/hXZ"), pTrack.getZ(), pTrack.getX());
+      registry.fill(HIST("V0Leg/hXZ"), nTrack.getZ(), nTrack.getX());
       registry.fill(HIST("V0Leg/hDCAxyz"), posdcaXY, posdcaZ);
       registry.fill(HIST("V0Leg/hDCAxyz"), eledcaXY, eledcaZ);
 
@@ -660,8 +666,8 @@ struct PhotonConversionBuilder {
                   v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
-      fillTrackTable(pos, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
-      fillTrackTable(ele, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
+      fillTrackTable(pos, pTrack, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
+      fillTrackTable(ele, nTrack, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
     } // end of fill table
   }
 
