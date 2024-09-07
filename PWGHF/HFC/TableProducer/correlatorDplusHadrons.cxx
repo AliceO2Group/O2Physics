@@ -162,7 +162,8 @@ struct HfCorrelatorDplusHadrons {
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
+  Configurable<bool> removeDaughters{"removeDaughters", true, "Flag for removing D-meson daughters from correlations"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
@@ -352,8 +353,10 @@ struct HfCorrelatorDplusHadrons {
             continue;
           }
           // Removing Dplus daughters by checking track indices
-          if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
-            continue;
+          if (removeDaughters) {
+            if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
+              continue;
+            }
           }
           entryDplusHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                                track.eta() - candidate.eta(),
@@ -472,8 +475,10 @@ struct HfCorrelatorDplusHadrons {
             continue;
           }
           // Removing Dplus daughters by checking track indices
-          if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
-            continue;
+          if (removeDaughters) {
+            if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
+              continue;
+            }
           }
           entryDplusHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                                track.eta() - candidate.eta(),
@@ -568,8 +573,10 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
           continue;
         }
-        if (particleAssoc.globalIndex() == prongsId[0] || particleAssoc.globalIndex() == prongsId[1] || particleAssoc.globalIndex() == prongsId[2]) {
-          continue;
+        if (removeDaughters) {
+          if (particleAssoc.globalIndex() == prongsId[0] || particleAssoc.globalIndex() == prongsId[1] || particleAssoc.globalIndex() == prongsId[2]) {
+            continue;
+          }
         }
         if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue;
