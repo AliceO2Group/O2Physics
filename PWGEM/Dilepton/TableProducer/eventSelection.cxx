@@ -118,5 +118,5 @@ struct EMEventSelection {
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<EMEventSelection>(cfgc, TaskName{"event-selection"})};
+  return WorkflowSpec{adaptAnalysisTask<EMEventSelection>(cfgc, TaskName{"em-event-selection"})};
 }

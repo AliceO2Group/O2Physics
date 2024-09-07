@@ -83,8 +83,6 @@ struct skimmerPrimaryElectron {
   Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.5, "max. TPC n sigma for proton exclusion"};
   Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", -2.5, "min. TPC n sigma for proton exclusion"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
-  Configurable<float> minTOFbeta{"minTOFbeta", 0.97, "min TOF beta for single track"}; // |beta - 1| < 0.015 corresponds to 3 sigma in pp
-  Configurable<float> maxTOFbeta{"maxTOFbeta", 1.03, "max TOF beta for single track"}; // |beta - 1| < 0.015 corresponds to 3 sigma in pp
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -236,7 +234,7 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if ((0.0 < track.beta() && track.beta() < minTOFbeta) || maxTOFbeta < track.beta()) {
+    if (track.hasTOF() && (maxTOFNsigmaEl < fabs(track.tofNSigmaEl()))) {
       return false;
     }
 
@@ -249,11 +247,11 @@ struct skimmerPrimaryElectron {
     float dcaXY = dcaInfo[0];
     float dcaZ = dcaInfo[1];
 
-    if (abs(dcaXY) > dca_xy_max || abs(dcaZ) > dca_z_max) {
+    if (fabs(dcaXY) > dca_xy_max || fabs(dcaZ) > dca_z_max) {
       return false;
     }
 
-    if (track_par_cov_recalc.getPt() < minpt || abs(track_par_cov_recalc.getEta()) > maxeta) {
+    if (track_par_cov_recalc.getPt() < minpt || fabs(track_par_cov_recalc.getEta()) > maxeta) {
       return false;
     }
 
@@ -263,7 +261,7 @@ struct skimmerPrimaryElectron {
       dca_3d = 999.f;
     } else {
       float chi2 = (dcaXY * dcaXY * track_par_cov_recalc.getSigmaZ2() + dcaZ * dcaZ * track_par_cov_recalc.getSigmaY2() - 2. * dcaXY * dcaZ * track_par_cov_recalc.getSigmaZY()) / det;
-      dca_3d = std::sqrt(std::abs(chi2) / 2.);
+      dca_3d = std::sqrt(std::fabs(chi2) / 2.);
     }
     if (dca_3d > dca_3d_sigma_max) {
       return false;
@@ -293,7 +291,7 @@ struct skimmerPrimaryElectron {
     if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
       return false;
     }
-    if (!(track.beta() < 0.f || (minTOFbeta < track.beta() && track.beta() < maxTOFbeta))) {
+    if (track.hasTOF() && (maxTOFNsigmaEl < fabs(track.tofNSigmaEl()))) {
       return false;
     }
     return true;
@@ -305,10 +303,7 @@ struct skimmerPrimaryElectron {
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
       return false;
     }
-    if (!(track.beta() < 0.f || (minTOFbeta < track.beta() && track.beta() < maxTOFbeta))) {
-      return false;
-    }
-    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
   template <typename TCollision, typename TTrack>
@@ -404,7 +399,7 @@ struct skimmerPrimaryElectron {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   std::vector<std::pair<int, int>> stored_trackIds;
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
-  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((minTOFbeta < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < maxTOFbeta) || o2::aod::pidtofbeta::beta < 0.f) && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
+  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && (o2::aod::pidtpc::tpcNSigmaPi < minTPCNsigmaPi || maxTPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -728,14 +723,14 @@ struct prefilterPrimaryElectron {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
     getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
-    if (abs(dcaInfo[0]) < min_dcatopv) {
+    if (fabs(dcaInfo[0]) < min_dcatopv) {
       return false;
     }
 
     if (isITSonlyTrack(track) && track_par_cov_recalc.getPt() > max_pt_itsonly) {
       return false;
     }
-    if (abs(track_par_cov_recalc.getEta()) > maxeta) {
+    if (fabs(track_par_cov_recalc.getEta()) > maxeta) {
       return false;
     }
 
@@ -786,7 +781,6 @@ struct prefilterPrimaryElectron {
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
-  // Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& min_dcatopv < nabs(o2::aod::track::dcaXY) && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
