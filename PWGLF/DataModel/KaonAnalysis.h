@@ -243,7 +243,7 @@ DECLARE_SOA_COLUMN(LastTRDCluster, lastTRDCluster, int8_t);                     
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                                        //! Has or not the TRD match
 DECLARE_SOA_COLUMN(TPCNSigmaStoreKa, tpcNSigmaStoreKa, binningNSigma::binned_t); //! Stored binned nsigma with the TPC detector for kaon
 DECLARE_SOA_COLUMN(TOFNSigmaStoreKa, tofNSigmaStoreKa, binningNSigma::binned_t); //! Stored binned nsigma with the TOF detector for kaon
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa, tpcNSigmaKa, //! Unpacked NSigma TPC Ka
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa, tpcNSigmaKa,                             //! Unpacked NSigma TPC Ka
                            [](binningNSigma::binned_t binned) -> float { return unPack<binningNSigma>(binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaKa, tofNSigmaKa, //! Unpacked NSigma TOF Ka
                            [](binningNSigma::binned_t binned) -> float { return unPack<binningNSigma>(binned); });
@@ -266,11 +266,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(TRDSignal, trdSignal, //! Dummy
                            [](float /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float /*v*/) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
-DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
-DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float /*v*/) -> uint32_t { return 0; });      // Dummy
+DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                       // if a track passed the isGlobalTrack requirement
+DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                             // if a track passed the isGlobalTrackWoDCA requirement
+DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float /*v*/) -> uint32_t { return 0; });          // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float /*v*/) -> uint8_t { return 0; }); // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
+DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                                //! Track rapidity, computed under the mass assumption given as input
                            [](float signedPt, float eta, float mass) -> float {
                              const auto pt = std::abs(signedPt);
                              const auto p = std::abs(signedPt) * cosh(eta);

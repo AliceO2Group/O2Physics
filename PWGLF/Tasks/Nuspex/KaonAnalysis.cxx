@@ -427,40 +427,40 @@ struct KaonAnalysis {
     histos.add("Data/neg/pt/its", "neg ITS", kTH1D, {ptAxis});
     histos.add("Data/pos/pt/tpc", "pos TPC", kTH1D, {ptAxis});
     histos.add("Data/neg/pt/tpc", "neg TPC", kTH1D, {ptAxis});
-//    if (doprocessOccupancy) {
-//      const AxisSpec nsigmaTPCAxisOccupancy{binsOptions.binsnsigmaTPC, "nsigmaTPC"};
-//      histos.add("nsigmatpc/test_occupancy/Mult_vs_Occupancy", "occuppancy vs Multiplicity", kTHnSparseD, {multAxis, occupancyAxis});
-//      histos.add("nsigmatpc/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
-//      histos.add("nsigmatpc/test_occupancy/neg/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
-//
-//      histos.add("nsigmatof/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
-//      histos.add("nsigmatof/test_occupancy/neg/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
-//    }
+    //    if (doprocessOccupancy) {
+    //      const AxisSpec nsigmaTPCAxisOccupancy{binsOptions.binsnsigmaTPC, "nsigmaTPC"};
+    //      histos.add("nsigmatpc/test_occupancy/Mult_vs_Occupancy", "occuppancy vs Multiplicity", kTHnSparseD, {multAxis, occupancyAxis});
+    //      histos.add("nsigmatpc/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+    //      histos.add("nsigmatpc/test_occupancy/neg/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+    //
+    //      histos.add("nsigmatof/test_occupancy/pos/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+    //      histos.add("nsigmatof/test_occupancy/neg/ka", "occuppancy dependent kaon", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis, occupancyAxis});
+    //    }
 
-//    if (doprocessMC) {
-//      histos.add("MC/fake/pos", "Fake positive tracks", kTH1D, {ptAxis});
-//      histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
-//      histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
-//      histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
-//      if (doprocessMCgen) {
-//        histos.add("MC/test/ka/pos/prm/pt/den", "generated MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
-//        histos.add("MC/test/ka/neg/prm/pt/den", "generated MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
-//        if (doprocessMCgen_RecoEvs) {
-//          histos.add("MC/test/RecoEvs/ka/pos/prm/pt/den", "generated MC K^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-//          histos.add("MC/test/RecoEvs/ka/neg/prm/pt/den", "generated MC K^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
-//        }
-//      }
-//      auto hh = histos.add<TH1>("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{10, 0.5, 10.5}});
-//      hh->GetXaxis()->SetBinLabel(1, "Collisions generated");
-//      hh->GetXaxis()->SetBinLabel(2, "Collisions reconstructed");
-//      hh->GetXaxis()->SetBinLabel(3, "INEL>0");
-//      hh->GetXaxis()->SetBinLabel(4, "INEL>1");
-//      hh->GetXaxis()->SetBinLabel(5, "hasParticleInFT0C && hasParticleInFT0A");
-//      histos.add("MC/MultiplicityRecoEv", "MC multiplicity", kTH1D, {multAxis});
-//      histos.add("MC/Multiplicity", "MC multiplicity", kTH1D, {multAxis});
-//      histos.add("MC/MultiplicityMCINELgt0", "MC multiplicity", kTH1D, {multAxis});
-//      histos.add("MC/MultiplicityMCINELgt1", "MC multiplicity", kTH1D, {multAxis});
-//    }
+    //    if (doprocessMC) {
+    //      histos.add("MC/fake/pos", "Fake positive tracks", kTH1D, {ptAxis});
+    //      histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
+    //      histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
+    //      histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
+    //      if (doprocessMCgen) {
+    //        histos.add("MC/test/ka/pos/prm/pt/den", "generated MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
+    //        histos.add("MC/test/ka/neg/prm/pt/den", "generated MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
+    //        if (doprocessMCgen_RecoEvs) {
+    //          histos.add("MC/test/RecoEvs/ka/pos/prm/pt/den", "generated MC K^{+} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+    //          histos.add("MC/test/RecoEvs/ka/neg/prm/pt/den", "generated MC K^{-} from recons. events", kTHnSparseD, {ptAxis, impParamAxis});
+    //        }
+    //      }
+    //      auto hh = histos.add<TH1>("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{10, 0.5, 10.5}});
+    //      hh->GetXaxis()->SetBinLabel(1, "Collisions generated");
+    //      hh->GetXaxis()->SetBinLabel(2, "Collisions reconstructed");
+    //      hh->GetXaxis()->SetBinLabel(3, "INEL>0");
+    //      hh->GetXaxis()->SetBinLabel(4, "INEL>1");
+    //      hh->GetXaxis()->SetBinLabel(5, "hasParticleInFT0C && hasParticleInFT0A");
+    //      histos.add("MC/MultiplicityRecoEv", "MC multiplicity", kTH1D, {multAxis});
+    //      histos.add("MC/Multiplicity", "MC multiplicity", kTH1D, {multAxis});
+    //      histos.add("MC/MultiplicityMCINELgt0", "MC multiplicity", kTH1D, {multAxis});
+    //      histos.add("MC/MultiplicityMCINELgt1", "MC multiplicity", kTH1D, {multAxis});
+    //    }
 
     hMultiplicityvsPercentile = histos.add<TH2>("Mult/vsPercentile", "Multiplicity vs percentile", HistType::kTH2D, {{150, 0, 150}, {100, 0, 100, "Track multiplicity"}});
 
@@ -468,59 +468,58 @@ struct KaonAnalysis {
       switch (i) {
         case 0:
         case Np:
-          if (doprocessFullKa == false && doprocessLfFullKa == false && doprocessDerived == false)
-          {
+          if (doprocessFullKa == false && doprocessLfFullKa == false && doprocessDerived == false) {
             continue;
           }
           break;
       }
 
-//      const AxisSpec nsigmaTPCAxis{binsOptions.binsnsigmaTPC, Form("N_{#sigma}^{TPC}(%s)", pTCharge[i])};
-//      const AxisSpec nsigmaTOFAxis{binsOptions.binsnsigmaTOF, Form("N_{#sigma}^{TOF}(%s)", pTCharge[i])};
-//      const AxisSpec deltaTPCAxis{binsOptions.binsdeltaTPC, Form("#Delta^{TPC}(%s)", pTCharge[i])};
-//      const AxisSpec deltaTOFAxis{binsOptions.binsdeltaTOF, Form("#Delta^{TOF}(%s)", pTCharge[i])};
-//      if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
-//        histos.add(hnsigmatof[i].data(), pTCharge[i], kTH2D, {ptAxis, nsigmaTOFAxis});
-//        histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH2D, {ptAxis, nsigmaTPCAxis});
-//        if (enableDeltaHistograms) {
-//          histos.add(hdeltatof[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTOFAxis});
-//          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTPCAxis});
-//        }
-//        if (enableTPCTOFHistograms) {
-//          if (enableTPCTOFvsEtaHistograms) {
-//            histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis});
-//          } else {
-//            histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
-//          }
-//        }
-//      } else {
-//        if (makeTHnSparseChoice) {                                                                                  // RD
-//          histos.add(hnsigmatof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTOFAxis, multAxis, dcaXyAxis}); // RD
-//          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, multAxis, dcaXyAxis}); // RD
-//        } else {
-//          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTOFAxis, multAxis});
-//          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTPCAxis, multAxis});
-//        }
-//        if (enableDeltaHistograms) {
-//          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3D, {ptAxis, deltaTOFAxis, multAxis});
-//          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3D, {ptAxis, deltaTPCAxis, multAxis});
-//        }
-//        if (enableTPCTOFHistograms) {
-//          if (enableTPCTOFVsMult) {
-//            if (enableTPCTOFvsEtaHistograms) {
-//              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis, multAxis});
-//            } else {
-//              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis, multAxis});
-//            }
-//          } else {
-//            if (enableTPCTOFvsEtaHistograms) {
-//              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis});
-//            } else {
-//              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
-//            }
-//          }
-//        }
-//      }
+      //      const AxisSpec nsigmaTPCAxis{binsOptions.binsnsigmaTPC, Form("N_{#sigma}^{TPC}(%s)", pTCharge[i])};
+      //      const AxisSpec nsigmaTOFAxis{binsOptions.binsnsigmaTOF, Form("N_{#sigma}^{TOF}(%s)", pTCharge[i])};
+      //      const AxisSpec deltaTPCAxis{binsOptions.binsdeltaTPC, Form("#Delta^{TPC}(%s)", pTCharge[i])};
+      //      const AxisSpec deltaTOFAxis{binsOptions.binsdeltaTOF, Form("#Delta^{TOF}(%s)", pTCharge[i])};
+      //      if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
+      //        histos.add(hnsigmatof[i].data(), pTCharge[i], kTH2D, {ptAxis, nsigmaTOFAxis});
+      //        histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH2D, {ptAxis, nsigmaTPCAxis});
+      //        if (enableDeltaHistograms) {
+      //          histos.add(hdeltatof[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTOFAxis});
+      //          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTPCAxis});
+      //        }
+      //        if (enableTPCTOFHistograms) {
+      //          if (enableTPCTOFvsEtaHistograms) {
+      //            histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis});
+      //          } else {
+      //            histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
+      //          }
+      //        }
+      //      } else {
+      //        if (makeTHnSparseChoice) {                                                                                  // RD
+      //          histos.add(hnsigmatof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTOFAxis, multAxis, dcaXyAxis}); // RD
+      //          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, multAxis, dcaXyAxis}); // RD
+      //        } else {
+      //          histos.add(hnsigmatof[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTOFAxis, multAxis});
+      //          histos.add(hnsigmatpc[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTPCAxis, multAxis});
+      //        }
+      //        if (enableDeltaHistograms) {
+      //          histos.add(hdeltatof[i].data(), pTCharge[i], kTH3D, {ptAxis, deltaTOFAxis, multAxis});
+      //          histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3D, {ptAxis, deltaTPCAxis, multAxis});
+      //        }
+      //        if (enableTPCTOFHistograms) {
+      //          if (enableTPCTOFVsMult) {
+      //            if (enableTPCTOFvsEtaHistograms) {
+      //              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis, multAxis});
+      //            } else {
+      //              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis, multAxis});
+      //            }
+      //          } else {
+      //            if (enableTPCTOFvsEtaHistograms) {
+      //              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis});
+      //            } else {
+      //              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
+      //            }
+      //          }
+      //        }
+      //      }
       if (enableDCAxyphiHistograms) {
         histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH3D, {phiAxis, dcaXyAxis, dcaZAxis});
       }
@@ -646,265 +645,265 @@ struct KaonAnalysis {
   } // end of the process function
   PROCESS_SWITCH(KaonAnalysis, processBC, "Processor of BCs for the FT0 calibration", true);
 
-//  template <bool fillFullInfo, PID::ID id, typename T, typename C>
-//  void fillParticleHistos(const T& track, const C& collision)
-//  {
-//    if (abs(track.rapidity(PID::getMass(id))) > trkselOptions.cfgCutY) {
-//      return;
-//    }
-//    if constexpr (id == PID::Kaon) {
-//      if (kaonIsPvContrib && !track.isPVContributor()) {
-//        return;
-//      }
-//    }
-//    const auto& nsigmaTOF = o2::aod::pidutils::tofNSigma<id>(track);
-//    const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
-//    // const auto id = track.sign() > 0 ? id : id + Np;
-//    const float multiplicity = getMultiplicity(collision);
-//
-//    if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
-//      if (track.sign() > 0) {
-//        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC);
-//      } else {
-//        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC);
-//      }
-//    } else if (makeTHnSparseChoice) {                                                               // RD
-//      if (track.sign() > 0) {                                                                       // RD
-//        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY());      // RD
-//      } else {                                                                                      // RD
-//        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY()); // RD
-//      }
-//    } else {
-//      if (track.sign() > 0) {
-//        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity);
-//      } else {
-//        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC, multiplicity);
-//      }
-//    }
-//
-//    if constexpr (fillFullInfo) {
-//      if (enableDeltaHistograms) {
-//        const auto& deltaTPC = o2::aod::pidutils::tpcExpSignalDiff<id>(track);
-//        if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
-//          if (track.sign() > 0) {
-//            histos.fill(HIST(hdeltatpc[id]), track.pt(), deltaTPC);
-//          } else {
-//            histos.fill(HIST(hdeltatpc[id + Np]), track.pt(), deltaTPC);
-//          }
-//        } else {
-//          if (track.sign() > 0) {
-//            histos.fill(HIST(hdeltatpc[id]), track.pt(), deltaTPC, multiplicity);
-//          } else {
-//            histos.fill(HIST(hdeltatpc[id + Np]), track.pt(), deltaTPC, multiplicity);
-//          }
-//        }
-//      }
-//    }
-//
-//    // TOF part
-//    if (!track.hasTOF()) {
-//      return;
-//    }
-//    if (trkselOptions.requireTrdOnly == true && !track.hasTRD()) {
-//      return;
-//    }
-//    if (trkselOptions.requireNoTrd == true && track.hasTRD()) {
-//      return;
-//    }
-//    histos.fill(HIST("evtime_tof"), 0.f);
-//    if (track.isEvTimeDefined()) {
-//      histos.fill(HIST("evtime_tof"), 1.f);
-//    }
-//    if (track.isEvTimeTOF()) {
-//      histos.fill(HIST("evtime_tof"), 2.f);
-//    }
-//    if (track.isEvTimeT0AC()) {
-//      histos.fill(HIST("evtime_tof"), 3.f);
-//    }
-//    if (track.isEvTimeTOFT0AC()) {
-//      histos.fill(HIST("evtime_tof"), 4.f);
-//    }
-//    switch (trkselOptions.selectEvTime) {
-//      case 0:
-//        break;
-//      case 1:
-//        if (!track.isEvTimeDefined()) {
-//          return;
-//        }
-//        break;
-//      case 2:
-//        if (!track.isEvTimeTOF()) {
-//          return;
-//        }
-//        break;
-//      case 3:
-//        if (!track.isEvTimeT0AC()) {
-//          return;
-//        }
-//        break;
-//      case 4:
-//        if (!track.isEvTimeTOFT0AC()) {
-//          return;
-//        }
-//        break;
-//      case 5:
-//        if (track.isEvTimeDefined()) {
-//          return;
-//        }
-//        break;
-//      default:
-//        LOG(fatal) << "Fatal did not recognise value select event time" << trkselOptions.selectEvTime;
-//    }
-//    histos.fill(HIST("evtime_tof"), 5.f);
-//    if (track.isEvTimeDefined()) {
-//      histos.fill(HIST("evtime_tof"), 6.f);
-//    }
-//    if (track.isEvTimeTOF()) {
-//      histos.fill(HIST("evtime_tof"), 7.f);
-//    }
-//    if (track.isEvTimeT0AC()) {
-//      histos.fill(HIST("evtime_tof"), 8.f);
-//    }
-//    if (track.isEvTimeTOFT0AC()) {
-//      histos.fill(HIST("evtime_tof"), 9.f);
-//    }
-//
-//    if (track.hasTRD() && (trkselOptions.lastRequiredTrdCluster > 0)) {
-//      int lastLayer = 0;
-//      for (int l = 7; l >= 0; l--) {
-//        if (track.trdPattern() & (1 << l)) {
-//          lastLayer = l;
-//          break;
-//        }
-//      }
-//      if (lastLayer < trkselOptions.lastRequiredTrdCluster) {
-//        return;
-//      }
-//    }
-//
-//    if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
-//      if (track.sign() > 0) {
-//        histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF);
-//      } else {
-//        histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF);
-//      }
-//    } else {
-//      if (makeTHnSparseChoice) {                                                                      // RD
-//        if (track.sign() > 0) {                                                                       // RD
-//          histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY());      // RD
-//        } else {                                                                                      // RD
-//          histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY()); // RD
-//        }
-//      } else {
-//        if (track.sign() > 0) {
-//          histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity);
-//        } else {
-//          histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity);
-//        }
-//      }
-//    }
-//
-//    if (enableTPCTOFHistograms) {
-//      if (enableTPCTOFVsMult) {
-//        if (enableTPCTOFvsEtaHistograms) {
-//          if (track.sign() > 0) {
-//            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF, multiplicity);
-//          } else {
-//            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF, multiplicity);
-//          }
-//        } else {
-//          if (track.sign() > 0) {
-//            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), nsigmaTPC, nsigmaTOF, multiplicity);
-//          } else {
-//            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), nsigmaTPC, nsigmaTOF, multiplicity);
-//          }
-//        }
-//      } else {
-//        if (enableTPCTOFvsEtaHistograms) {
-//          if (track.sign() > 0) {
-//            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF);
-//          } else {
-//            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF);
-//          }
-//        } else {
-//          if (track.sign() > 0) {
-//            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), nsigmaTPC, nsigmaTOF);
-//          } else {
-//            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), nsigmaTPC, nsigmaTOF);
-//          }
-//        }
-//      }
-//    }
-//
-//    if constexpr (fillFullInfo) {
-//      if (enableDeltaHistograms) {
-//        const auto& deltaTOF = o2::aod::pidutils::tofExpSignalDiff<id>(track);
-//        if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
-//          if (track.sign() > 0) {
-//            histos.fill(HIST(hdeltatof[id]), track.pt(), deltaTOF);
-//          } else {
-//            histos.fill(HIST(hdeltatof[id + Np]), track.pt(), deltaTOF);
-//          }
-//        } else {
-//          if (track.sign() > 0) {
-//            histos.fill(HIST(hdeltatof[id]), track.pt(), deltaTOF, multiplicity);
-//          } else {
-//            histos.fill(HIST(hdeltatof[id + Np]), track.pt(), deltaTOF, multiplicity);
-//          }
-//        }
-//      }
-//    }
-//
-//    // Filling DCA info with the TPC+TOF PID
-//    bool isDCAPureSample = (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.f);
-//    if (track.pt() <= 0.4) {
-//      isDCAPureSample = (nsigmaTPC < 1.f);
-//    }
-//    if (isDCAPureSample) {
-//      const bool isInPtRangeForPhi = track.pt() < 1.1f && track.pt() > 0.9f;
-//      if (enableDCAxyzHistograms) {
-//        if (track.sign() > 0) {
-//          hDcaXYZ[id]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
-//          if (isInPtRangeForPhi) {
-//            if (enableDCAxyphiHistograms) {
-//              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY(), track.dcaZ());
-//            }
-//          }
-//        } else {
-//          hDcaXYZ[id + Np]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
-//          if (isInPtRangeForPhi) {
-//            if (enableDCAxyphiHistograms) {
-//              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
-//            }
-//          }
-//        }
-//      } else {
-//        if (track.sign() > 0) {
-//          histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
-//          histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
-//          if (isInPtRangeForPhi) {
-//            if (enableDCAxyphiHistograms) {
-//              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
-//            }
-//          }
-//        } else {
-//          histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
-//          histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
-//          if (isInPtRangeForPhi) {
-//            if (enableDCAxyphiHistograms) {
-//              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
-//            }
-//          }
-//        }
-//      }
-//    }
-//    if (!passesDCAxyCut(track)) {
-//      return;
-//    }
-//
-//    if constexpr (fillFullInfo) {
-//    }
-//  }
+  //  template <bool fillFullInfo, PID::ID id, typename T, typename C>
+  //  void fillParticleHistos(const T& track, const C& collision)
+  //  {
+  //    if (abs(track.rapidity(PID::getMass(id))) > trkselOptions.cfgCutY) {
+  //      return;
+  //    }
+  //    if constexpr (id == PID::Kaon) {
+  //      if (kaonIsPvContrib && !track.isPVContributor()) {
+  //        return;
+  //      }
+  //    }
+  //    const auto& nsigmaTOF = o2::aod::pidutils::tofNSigma<id>(track);
+  //    const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
+  //    // const auto id = track.sign() > 0 ? id : id + Np;
+  //    const float multiplicity = getMultiplicity(collision);
+  //
+  //    if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
+  //      if (track.sign() > 0) {
+  //        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC);
+  //      } else {
+  //        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC);
+  //      }
+  //    } else if (makeTHnSparseChoice) {                                                               // RD
+  //      if (track.sign() > 0) {                                                                       // RD
+  //        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY());      // RD
+  //      } else {                                                                                      // RD
+  //        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC, multiplicity, track.dcaXY()); // RD
+  //      }
+  //    } else {
+  //      if (track.sign() > 0) {
+  //        histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC, multiplicity);
+  //      } else {
+  //        histos.fill(HIST(hnsigmatpc[id + Np]), track.pt(), nsigmaTPC, multiplicity);
+  //      }
+  //    }
+  //
+  //    if constexpr (fillFullInfo) {
+  //      if (enableDeltaHistograms) {
+  //        const auto& deltaTPC = o2::aod::pidutils::tpcExpSignalDiff<id>(track);
+  //        if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
+  //          if (track.sign() > 0) {
+  //            histos.fill(HIST(hdeltatpc[id]), track.pt(), deltaTPC);
+  //          } else {
+  //            histos.fill(HIST(hdeltatpc[id + Np]), track.pt(), deltaTPC);
+  //          }
+  //        } else {
+  //          if (track.sign() > 0) {
+  //            histos.fill(HIST(hdeltatpc[id]), track.pt(), deltaTPC, multiplicity);
+  //          } else {
+  //            histos.fill(HIST(hdeltatpc[id + Np]), track.pt(), deltaTPC, multiplicity);
+  //          }
+  //        }
+  //      }
+  //    }
+  //
+  //    // TOF part
+  //    if (!track.hasTOF()) {
+  //      return;
+  //    }
+  //    if (trkselOptions.requireTrdOnly == true && !track.hasTRD()) {
+  //      return;
+  //    }
+  //    if (trkselOptions.requireNoTrd == true && track.hasTRD()) {
+  //      return;
+  //    }
+  //    histos.fill(HIST("evtime_tof"), 0.f);
+  //    if (track.isEvTimeDefined()) {
+  //      histos.fill(HIST("evtime_tof"), 1.f);
+  //    }
+  //    if (track.isEvTimeTOF()) {
+  //      histos.fill(HIST("evtime_tof"), 2.f);
+  //    }
+  //    if (track.isEvTimeT0AC()) {
+  //      histos.fill(HIST("evtime_tof"), 3.f);
+  //    }
+  //    if (track.isEvTimeTOFT0AC()) {
+  //      histos.fill(HIST("evtime_tof"), 4.f);
+  //    }
+  //    switch (trkselOptions.selectEvTime) {
+  //      case 0:
+  //        break;
+  //      case 1:
+  //        if (!track.isEvTimeDefined()) {
+  //          return;
+  //        }
+  //        break;
+  //      case 2:
+  //        if (!track.isEvTimeTOF()) {
+  //          return;
+  //        }
+  //        break;
+  //      case 3:
+  //        if (!track.isEvTimeT0AC()) {
+  //          return;
+  //        }
+  //        break;
+  //      case 4:
+  //        if (!track.isEvTimeTOFT0AC()) {
+  //          return;
+  //        }
+  //        break;
+  //      case 5:
+  //        if (track.isEvTimeDefined()) {
+  //          return;
+  //        }
+  //        break;
+  //      default:
+  //        LOG(fatal) << "Fatal did not recognise value select event time" << trkselOptions.selectEvTime;
+  //    }
+  //    histos.fill(HIST("evtime_tof"), 5.f);
+  //    if (track.isEvTimeDefined()) {
+  //      histos.fill(HIST("evtime_tof"), 6.f);
+  //    }
+  //    if (track.isEvTimeTOF()) {
+  //      histos.fill(HIST("evtime_tof"), 7.f);
+  //    }
+  //    if (track.isEvTimeT0AC()) {
+  //      histos.fill(HIST("evtime_tof"), 8.f);
+  //    }
+  //    if (track.isEvTimeTOFT0AC()) {
+  //      histos.fill(HIST("evtime_tof"), 9.f);
+  //    }
+  //
+  //    if (track.hasTRD() && (trkselOptions.lastRequiredTrdCluster > 0)) {
+  //      int lastLayer = 0;
+  //      for (int l = 7; l >= 0; l--) {
+  //        if (track.trdPattern() & (1 << l)) {
+  //          lastLayer = l;
+  //          break;
+  //        }
+  //      }
+  //      if (lastLayer < trkselOptions.lastRequiredTrdCluster) {
+  //        return;
+  //      }
+  //    }
+  //
+  //    if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
+  //      if (track.sign() > 0) {
+  //        histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF);
+  //      } else {
+  //        histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF);
+  //      }
+  //    } else {
+  //      if (makeTHnSparseChoice) {                                                                      // RD
+  //        if (track.sign() > 0) {                                                                       // RD
+  //          histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY());      // RD
+  //        } else {                                                                                      // RD
+  //          histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY()); // RD
+  //        }
+  //      } else {
+  //        if (track.sign() > 0) {
+  //          histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity);
+  //        } else {
+  //          histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity);
+  //        }
+  //      }
+  //    }
+  //
+  //    if (enableTPCTOFHistograms) {
+  //      if (enableTPCTOFVsMult) {
+  //        if (enableTPCTOFvsEtaHistograms) {
+  //          if (track.sign() > 0) {
+  //            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF, multiplicity);
+  //          } else {
+  //            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF, multiplicity);
+  //          }
+  //        } else {
+  //          if (track.sign() > 0) {
+  //            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), nsigmaTPC, nsigmaTOF, multiplicity);
+  //          } else {
+  //            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), nsigmaTPC, nsigmaTOF, multiplicity);
+  //          }
+  //        }
+  //      } else {
+  //        if (enableTPCTOFvsEtaHistograms) {
+  //          if (track.sign() > 0) {
+  //            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF);
+  //          } else {
+  //            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF);
+  //          }
+  //        } else {
+  //          if (track.sign() > 0) {
+  //            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), nsigmaTPC, nsigmaTOF);
+  //          } else {
+  //            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), nsigmaTPC, nsigmaTOF);
+  //          }
+  //        }
+  //      }
+  //    }
+  //
+  //    if constexpr (fillFullInfo) {
+  //      if (enableDeltaHistograms) {
+  //        const auto& deltaTOF = o2::aod::pidutils::tofExpSignalDiff<id>(track);
+  //        if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
+  //          if (track.sign() > 0) {
+  //            histos.fill(HIST(hdeltatof[id]), track.pt(), deltaTOF);
+  //          } else {
+  //            histos.fill(HIST(hdeltatof[id + Np]), track.pt(), deltaTOF);
+  //          }
+  //        } else {
+  //          if (track.sign() > 0) {
+  //            histos.fill(HIST(hdeltatof[id]), track.pt(), deltaTOF, multiplicity);
+  //          } else {
+  //            histos.fill(HIST(hdeltatof[id + Np]), track.pt(), deltaTOF, multiplicity);
+  //          }
+  //        }
+  //      }
+  //    }
+  //
+  //    // Filling DCA info with the TPC+TOF PID
+  //    bool isDCAPureSample = (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.f);
+  //    if (track.pt() <= 0.4) {
+  //      isDCAPureSample = (nsigmaTPC < 1.f);
+  //    }
+  //    if (isDCAPureSample) {
+  //      const bool isInPtRangeForPhi = track.pt() < 1.1f && track.pt() > 0.9f;
+  //      if (enableDCAxyzHistograms) {
+  //        if (track.sign() > 0) {
+  //          hDcaXYZ[id]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
+  //          if (isInPtRangeForPhi) {
+  //            if (enableDCAxyphiHistograms) {
+  //              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY(), track.dcaZ());
+  //            }
+  //          }
+  //        } else {
+  //          hDcaXYZ[id + Np]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
+  //          if (isInPtRangeForPhi) {
+  //            if (enableDCAxyphiHistograms) {
+  //              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
+  //            }
+  //          }
+  //        }
+  //      } else {
+  //        if (track.sign() > 0) {
+  //          histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
+  //          histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
+  //          if (isInPtRangeForPhi) {
+  //            if (enableDCAxyphiHistograms) {
+  //              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+  //            }
+  //          }
+  //        } else {
+  //          histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
+  //          histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
+  //          if (isInPtRangeForPhi) {
+  //            if (enableDCAxyphiHistograms) {
+  //              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
+  //            }
+  //          }
+  //        }
+  //      }
+  //    }
+  //    if (!passesDCAxyCut(track)) {
+  //      return;
+  //    }
+  //
+  //    if constexpr (fillFullInfo) {
+  //    }
+  //  }
 
   template <bool fillHistograms = false, bool fillMultiplicity = false, typename CollisionType>
   bool isEventSelected(CollisionType const& collision)
@@ -1260,23 +1259,23 @@ struct KaonAnalysis {
     if (!isEventSelected<true, true>(collision)) {
       return;
     }
-    //int occupancy = collision.trackOccupancyInTimeRange();
-    //const float multiplicity = collision.centFT0C();
-    //histos.fill(HIST("nsigmatpc/test_occupancy/Mult_vs_Occupancy"), multiplicity, occupancy);
+    // int occupancy = collision.trackOccupancyInTimeRange();
+    // const float multiplicity = collision.centFT0C();
+    // histos.fill(HIST("nsigmatpc/test_occupancy/Mult_vs_Occupancy"), multiplicity, occupancy);
     for (const auto& track : tracks) {
       if (!isTrackSelected<true>(track)) {
         continue;
       }
-      //const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
-      //const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
-      //histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
-      //histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
+      // const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
+      // const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
+      // histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
+      // histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
 
-      //histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
-      //histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
+      // histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
+      // histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
 
     } // track
-  }   // process function
+  } // process function
   PROCESS_SWITCH(KaonAnalysis, processOccupancy, "check for occupancy plots", false);
 
   void processStandard(CollisionCandidates::iterator const& collision,
@@ -1308,13 +1307,13 @@ struct KaonAnalysis {
         if (!isTrackSelected<true>(track)) {
           continue;
         }
-         //fillParticleHistos<false, PID::Kaon>(track, collision);
+        // fillParticleHistos<false, PID::Kaon>(track, collision);
       }
     }
   } // end of the process function
   PROCESS_SWITCH(KaonAnalysis, processDerived, "Derived data processor", false);
-//
-//#define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)   \
+  //
+  // #define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)   \
 //  void process##processorName##inputPid(CollisionCandidates::iterator const& collision,        \
 //                                        soa::Join<TrackCandidates,                             \
 //                                                  aod::pid##tofTable##inputPid,                \
@@ -1443,8 +1442,7 @@ struct KaonAnalysis {
   bool isParticleEnabled()
   {
     if constexpr (id == 0 || id == Np) {
-      if (doprocessFullKa == true || doprocessLfFullKa == true)
-      {
+      if (doprocessFullKa == true || doprocessLfFullKa == true) {
         return true;
       }
     } else {
@@ -1514,42 +1512,40 @@ struct KaonAnalysis {
         histos.fill(HIST(hdcaxyprm2[i]), track.pt(), track.dcaXY());
         histos.fill(HIST(hdcazprm2[i]), track.pt(), track.dcaZ());
 
-        //bool IsD0Mother{false};
+        // bool IsD0Mother{false};
         bool IsCharmMother{false};
         bool IsBeautyMother{false};
         if (mcParticle.has_mothers()) {
-            for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
-                int motherPdgCode = mother.pdgCode();
-                if (motherPdgCode == 421) {
-                    std::cout << "Mother PDG Code: " << motherPdgCode << std::endl;
-                    histos.fill(HIST(hdcaxyD0[i]), track.pt(), track.dcaXY());
-                    histos.fill(HIST(hdcazD0[i]), track.pt(), track.dcaZ());
-                    //IsD0Mother = true;
-                }
-                if (RecoDecay::OriginType::NonPrompt) {
-                  if ((motherPdgCode) / 1000 == 5 || (motherPdgCode) / 100 == 5) {
-                    std::cout << "Mother PDG Code starts with 5: " << motherPdgCode << std::endl;
-                    histos.fill(HIST(hdcaxybeauty[i]), track.pt(), track.dcaXY());
-                    histos.fill(HIST(hdcazbeauty[i]), track.pt(), track.dcaZ());
-                    IsBeautyMother = true;
-                  }
-                }
-                if (RecoDecay::OriginType::Prompt) {
-                  if ((motherPdgCode) / 1000 == 4 || (motherPdgCode) / 100 == 4) {
-                     std::cout << "Mother PDG Code starts with 4: " << motherPdgCode << std::endl;
-                     histos.fill(HIST(hdcaxycharm[i]), track.pt(), track.dcaXY());
-                     histos.fill(HIST(hdcazcharm[i]), track.pt(), track.dcaZ());
-                     IsCharmMother = true;
-                  }
-                }
+          for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+            int motherPdgCode = mother.pdgCode();
+            if (motherPdgCode == 421) {
+              std::cout << "Mother PDG Code: " << motherPdgCode << std::endl;
+              histos.fill(HIST(hdcaxyD0[i]), track.pt(), track.dcaXY());
+              histos.fill(HIST(hdcazD0[i]), track.pt(), track.dcaZ());
+              // IsD0Mother = true;
+            }
+            if (RecoDecay::OriginType::NonPrompt) {
+              if ((motherPdgCode) / 1000 == 5 || (motherPdgCode) / 100 == 5) {
+                std::cout << "Mother PDG Code starts with 5: " << motherPdgCode << std::endl;
+                histos.fill(HIST(hdcaxybeauty[i]), track.pt(), track.dcaXY());
+                histos.fill(HIST(hdcazbeauty[i]), track.pt(), track.dcaZ());
+                IsBeautyMother = true;
               }
+            }
+            if (RecoDecay::OriginType::Prompt) {
+              if ((motherPdgCode) / 1000 == 4 || (motherPdgCode) / 100 == 4) {
+                std::cout << "Mother PDG Code starts with 4: " << motherPdgCode << std::endl;
+                histos.fill(HIST(hdcaxycharm[i]), track.pt(), track.dcaXY());
+                histos.fill(HIST(hdcazcharm[i]), track.pt(), track.dcaZ());
+                IsCharmMother = true;
+              }
+            }
           }
-          if (!IsCharmMother && !IsBeautyMother) {
-            histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
-            histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
-          }
-
-
+        }
+        if (!IsCharmMother && !IsBeautyMother) {
+          histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
+        }
 
         if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
           histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
@@ -1765,15 +1761,15 @@ struct KaonAnalysis {
                  RecoMCCollisions const& collisions)
   {
     // Fill number of generated and reconstructed collisions for normalization
-    //histos.fill(HIST("MC/GenRecoCollisions"), 1.f, mcCollisions.size());
-    //histos.fill(HIST("MC/GenRecoCollisions"), 2.f, collisions.size());
+    // histos.fill(HIST("MC/GenRecoCollisions"), 1.f, mcCollisions.size());
+    // histos.fill(HIST("MC/GenRecoCollisions"), 2.f, collisions.size());
 
     for (const auto& track : tracks) {
       if (!track.has_collision()) {
         if (track.sign() > 0) {
-          //histos.fill(HIST("MC/no_collision/pos"), track.pt());
+          // histos.fill(HIST("MC/no_collision/pos"), track.pt());
         } else {
-          //histos.fill(HIST("MC/no_collision/neg"), track.pt());
+          // histos.fill(HIST("MC/no_collision/neg"), track.pt());
         }
         continue;
       }
@@ -1785,9 +1781,9 @@ struct KaonAnalysis {
       }
       if (!track.has_mcParticle()) {
         if (track.sign() > 0) {
-          //histos.fill(HIST("MC/fake/pos"), track.pt());
+          // histos.fill(HIST("MC/fake/pos"), track.pt());
         } else {
-          //histos.fill(HIST("MC/fake/neg"), track.pt());
+          // histos.fill(HIST("MC/fake/neg"), track.pt());
         }
         continue;
       }
@@ -1849,7 +1845,7 @@ struct KaonAnalysis {
       }
 
       if (isEventSelected<false, false>(collision)) {
-       // histos.fill(HIST("MC/MultiplicityRecoEv"), getMultiplicityMC(mcCollision));
+        // histos.fill(HIST("MC/MultiplicityRecoEv"), getMultiplicityMC(mcCollision));
       }
       for (const auto& mcParticle : particlesInCollision) {
         if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
@@ -1866,7 +1862,7 @@ struct KaonAnalysis {
       if (abs(mcCollision.posZ()) > evselOptions.cfgCutVertex) {
         continue;
       }
-      //histos.fill(HIST("MC/Multiplicity"), getMultiplicityMC(mcCollision));
+      // histos.fill(HIST("MC/Multiplicity"), getMultiplicityMC(mcCollision));
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       bool hasParticleInFT0C = false;
       bool hasParticleInFT0A = false;
@@ -1875,13 +1871,13 @@ struct KaonAnalysis {
           continue;
         }
       }
-      //histos.fill(HIST("MC/MultiplicityMCINELgt0"), getMultiplicityMC(mcCollision));
+      // histos.fill(HIST("MC/MultiplicityMCINELgt0"), getMultiplicityMC(mcCollision));
       if (evselOptions.cfgINELCut.value == 2) {
         if (!o2::pwglf::isINELgt1mc(particlesInCollision, pdgDB)) {
           continue;
         }
       }
-      //histos.fill(HIST("MC/MultiplicityMCINELgt1"), getMultiplicityMC(mcCollision));
+      // histos.fill(HIST("MC/MultiplicityMCINELgt1"), getMultiplicityMC(mcCollision));
       for (const auto& mcParticle : particlesInCollision) {
         if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
           continue;
@@ -1897,7 +1893,7 @@ struct KaonAnalysis {
       //   histos.fill(HIST("MC/GenRecoCollisions"), 4.f);
       // }
       if (hasParticleInFT0C && hasParticleInFT0A) {
-        //histos.fill(HIST("MC/GenRecoCollisions"), 5.f);
+        // histos.fill(HIST("MC/GenRecoCollisions"), 5.f);
       }
     }
   }
