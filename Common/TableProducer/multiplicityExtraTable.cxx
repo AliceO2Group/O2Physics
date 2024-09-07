@@ -124,6 +124,9 @@ struct MultiplicityExtraTable {
       float multZPA = -1.f;
       float multZPC = -1.f;
 
+      float posZFT0 = -1e+3;
+      bool posZFT0valid = false;
+
       uint8_t multFT0TriggerBits = 0;
       uint8_t multFV0TriggerBits = 0;
       uint8_t multFDDTriggerBits = 0;
@@ -146,7 +149,7 @@ struct MultiplicityExtraTable {
       bool collidingBC = CollidingBunch.test(localBC);
 
       if (bc.has_ft0()) {
-        auto ft0 = bc.ft0();
+        const auto& ft0 = bc.ft0();
         std::bitset<8> triggers = ft0.triggerMask();
         Tvx = triggers[o2::fit::Triggers::bitVertex];
         multFT0TriggerBits = static_cast<uint8_t>(triggers.to_ulong());
@@ -158,6 +161,8 @@ struct MultiplicityExtraTable {
         for (auto amplitude : ft0.amplitudeC()) {
           multFT0C += amplitude;
         }
+        posZFT0 = ft0.posZ();
+        posZFT0valid = ft0.isValidTime();
       } else {
         multFT0A = -999.0f;
         multFT0C = -999.0f;
@@ -208,7 +213,7 @@ struct MultiplicityExtraTable {
       }
 
       bc2mult(bc2multArray[bc.globalIndex()]);
-      multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
+      multBC(multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
     }
   }
 

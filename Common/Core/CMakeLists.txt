@@ -34,3 +34,7 @@ o2physics_target_root_dictionary(AnalysisCore
         PID/TPCPIDResponse.h
         CollisionTypeHelper.h
         LINKDEF AnalysisCoreLinkDef.h)
+
+o2physics_add_header_only_library(TPCDriftManager
+        HEADERS TPCVDriftManager.h
+        INTERFACE_LINK_LIBRARIES O2::DataFormatsTPC)
