@@ -9,14 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-///
-/// \file   spectraTOF.cxx
-/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-///
-/// \brief Task for the analysis of the spectra with the TOF detector.
-///        Depending on the configuration it can also run on tiny tables.
-///
-
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
