@@ -80,6 +80,12 @@ struct HfCorrelatorDstarHadronsCollisionSelector {
 
 struct HfCorrelatorDstarHadrons {
   Produces<aod::DstarHadronPair> rowsDstarHadronPair;
+  Produces<aod::Dstar> rowsDstar;
+  Produces<aod::Hadron> rowsAssoTrack;
+
+  // Enable separate tables for Dstar and Track for offline Event mixing
+  Configurable<bool> enableSeparateTables{"enableSeparateTables", false, "Enable separate tables for Dstar and Track for offline Event mixing"};
+
   // Dstar candidate related configurable
   Configurable<bool> selectOnlyCollisionWDstar{"selectOnlyCollisionWDstar", true, " select on collisions which have atleast a Dstar candidate"};
   Configurable<bool> selectionFlagDstar{"selectionFlagDstar", true, "selection flag for Dstar"};
@@ -185,40 +191,51 @@ struct HfCorrelatorDstarHadrons {
 
         auto binNumber = binningScheme.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
 
-        // Fill table
-        if (triggerParticle.signSoftPi() > 0) { // Fill Dstar candidate
+        // Inv Mass of Dstar and D0 Candidate
+        float invMassDstarParticle = -999.;
+        float invMassD0Particle = -999.;
 
-          ///////////////////////////////////////
-          triggerParticle.invMassD0();
-          ///////////////////////////////////////
-          rowsDstarHadronPair(collision.globalIndex(),
-                              gItriggerParticle,
-                              triggerParticle.phi(),
-                              triggerParticle.eta(),
-                              triggerParticle.pt(),
-                              triggerParticle.invMassDstar(),
-                              triggerParticle.invMassD0(),
-                              gIassocParticle,
-                              assocParticle.phi(),
-                              assocParticle.eta(),
-                              assocParticle.pt(),
-                              timestamp,
-                              binNumber);
-        } else { // Fill AntiDstar candidate
-          rowsDstarHadronPair(collision.globalIndex(),
-                              gItriggerParticle,
-                              triggerParticle.phi(),
-                              triggerParticle.eta(),
-                              triggerParticle.pt(),
-                              triggerParticle.invMassAntiDstar(),
-                              triggerParticle.invMassD0Bar(),
-                              gIassocParticle,
-                              assocParticle.phi(),
-                              assocParticle.eta(),
-                              assocParticle.pt(),
-                              timestamp,
-                              binNumber);
-        } // endif
+        if (triggerParticle.signSoftPi() > 0) {
+          invMassDstarParticle = triggerParticle.invMassDstar();
+          invMassD0Particle = triggerParticle.invMassD0();
+        } else {
+          invMassDstarParticle = triggerParticle.invMassAntiDstar();
+          invMassD0Particle = triggerParticle.invMassD0Bar();
+        }
+
+        // Fill Tables
+        rowsDstarHadronPair(collision.globalIndex(),
+                            gItriggerParticle,
+                            triggerParticle.phi(),
+                            triggerParticle.eta(),
+                            triggerParticle.pt(),
+                            invMassDstarParticle,
+                            invMassD0Particle,
+                            gIassocParticle,
+                            assocParticle.phi(),
+                            assocParticle.eta(),
+                            assocParticle.pt(),
+                            timestamp,
+                            binNumber);
+
+        if (enableSeparateTables) {
+          rowsDstar(collision.globalIndex(),
+                    gItriggerParticle,
+                    triggerParticle.phi(),
+                    triggerParticle.eta(),
+                    triggerParticle.pt(),
+                    invMassDstarParticle,
+                    invMassD0Particle,
+                    timestamp,
+                    binNumber);
+
+          rowsAssoTrack(assocParticle.phi(),
+                        assocParticle.eta(),
+                        assocParticle.pt(),
+                        binNumber,
+                        collision.globalIndex(),
+                        timestamp);
+        }
 
       } // D-H pair loop
 
@@ -252,36 +269,33 @@ struct HfCorrelatorDstarHadrons {
         } // endif
 
         int binNumber = binningScheme.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
-        // Fill table
-        if (triggerParticle.signSoftPi() > 0) { // Fill Dstar candidate
-          rowsDstarHadronPair(c2.globalIndex(), // taking c2, why not c1?
-                              gItriggerParticle,
-                              triggerParticle.phi(),
-                              triggerParticle.eta(),
-                              triggerParticle.pt(),
-                              triggerParticle.invMassDstar(),
-                              triggerParticle.invMassD0(),
-                              gIassocParticle,
-                              assocParticle.phi(),
-                              assocParticle.eta(),
-                              assocParticle.pt(),
-                              timestamp,
-                              binNumber);
-        } else { // Fill AntiDstar candidate
-          rowsDstarHadronPair(c2.globalIndex(),
-                              gItriggerParticle,
-                              triggerParticle.phi(),
-                              triggerParticle.eta(),
-                              triggerParticle.pt(),
-                              triggerParticle.invMassAntiDstar(),
-                              triggerParticle.invMassD0Bar(),
-                              gIassocParticle,
-                              assocParticle.phi(),
-                              assocParticle.eta(),
-                              assocParticle.pt(),
-                              timestamp,
-                              binNumber);
-        } // endif
+
+        // Inv Mass of Dstar and D0 Candidate
+        float invMassDstarParticle = -999.;
+        float invMassD0Particle = -999.;
+
+        if (triggerParticle.signSoftPi() > 0) {
+          invMassDstarParticle = triggerParticle.invMassDstar();
+          invMassD0Particle = triggerParticle.invMassD0();
+        } else {
+          invMassDstarParticle = triggerParticle.invMassAntiDstar();
+          invMassD0Particle = triggerParticle.invMassD0Bar();
+        }
+
+        // Fill Table
+        rowsDstarHadronPair(c2.globalIndex(), // taking c2, why not c1?
+                            gItriggerParticle,
+                            triggerParticle.phi(),
+                            triggerParticle.eta(),
+                            triggerParticle.pt(),
+                            invMassDstarParticle,
+                            invMassD0Particle,
+                            gIassocParticle,
+                            assocParticle.phi(),
+                            assocParticle.eta(),
+                            assocParticle.pt(),
+                            timestamp,
+                            binNumber);
 
       } // D-H loop
 

@@ -43,15 +43,18 @@ struct QAHistograms {
   Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
   Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+  Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
+  Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
   Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
+  Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
 
   Configurable<int> _sign{"sign", 1, "sign of a track"};
   Configurable<float> _vertexZ{"VertexZ", 10.0, "abs vertexZ value limit"};
   Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.0, "upper mometum limit"};
   Configurable<float> _eta{"eta", 100.0, "abs eta value limit"};
-  Configurable<float> _dcaXY{"dcaXY", 10.0, "abs dcaXY value limit"};
-  Configurable<float> _dcaZ{"dcaZ", 10.0, "abs dcaZ value limit"};
+  Configurable<std::vector<float>> _dcaXY{"dcaXY", std::vector<float>{0.3f, 0.0f, 0.0f}, "abs dcaXY value limit; formula: [0] + [1]*pT^[2]"};
+  Configurable<std::vector<float>> _dcaZ{"dcaZ", std::vector<float>{0.3f, 0.0f, 0.0f}, "abs dcaZ value limit; formula: [0] + [1]*pT^[2]"};
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
   Configurable<float> _tpcChi2NCl{"tpcChi2NCl", 100.0, "upper limit for chi2 value of a fit over TPC clasters"};
   Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0, "lower limit of TPC CrossedRows/FindableCls value"};
@@ -80,9 +83,6 @@ struct QAHistograms {
                         o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) < _tpcChi2NCl &&
                         o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) > _tpcCrossedRowsOverFindableCls;
 
-  Filter dcaFilter = nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) < _dcaXY &&
-                     nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaZ)) < _dcaZ;
-
   Filter itsTrkFilter = o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) < _itsChi2NCl;
 
   Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) < _vertexZ;
@@ -103,10 +103,10 @@ struct QAHistograms {
     registry.add("p", "p", kTH1F, {{100, 0., 5., "p"}});
     registry.add("pt", "pt", kTH1F, {{100, 0., 5., "pt"}});
     registry.add("sign", "sign", kTH1F, {{3, -1.5, 1.5, "sign"}});
-    registry.add("dcaxy_to_p", "dcaxy_to_p", kTH2F, {{100, 0., 5.0, "p"}, {200, -1., 1., "dcaxy"}});
-    registry.add("dcaxy_to_pt", "dcaxy_to_pt", kTH2F, {{100, 0., 5., "pt"}, {200, -1., 1., "dcaxy"}});
-    registry.add("dcaz_to_p", "dcaz_to_p", kTH2F, {{100, 0., 5., "p"}, {200, -1., 1., "dcaz"}});
-    registry.add("dcaz_to_pt", "dcaz_to_pt", kTH2F, {{100, 0., 5., "pt"}, {200, -1., 1., "dcaz"}});
+    registry.add("dcaxy_to_p", "dcaxy_to_p", kTH2F, {{100, 0., 5.0, "p"}, {501, -0.5, 0.5, "dcaxy"}});
+    registry.add("dcaxy_to_pt", "dcaxy_to_pt", kTH2F, {{100, 0., 5., "pt"}, {501, -0.5, 0.5, "dcaxy"}});
+    registry.add("dcaz_to_p", "dcaz_to_p", kTH2F, {{100, 0., 5., "p"}, {501, -0.5, 0.5, "dcaz"}});
+    registry.add("dcaz_to_pt", "dcaz_to_pt", kTH2F, {{100, 0., 5., "pt"}, {501, -0.5, 0.5, "dcaz"}});
     registry.add("TPCClusters", "TPCClusters", kTH1F, {{163, -0.5, 162.5, "NTPCClust"}});
     registry.add("TPCCrossedRowsOverFindableCls", "TPCCrossedRowsOverFindableCls", kTH1F, {{100, 0.0, 10.0, "NcrossedRowsOverFindable"}});
     registry.add("TPCFractionSharedCls", "TPCFractionSharedCls", kTH1F, {{100, 0.0, 1.0, "TPCsharedFraction"}});
@@ -143,6 +143,7 @@ struct QAHistograms {
     registry.add("posZ", "posZ", kTH1F, {{300, -16., 16., "posZ"}});
     registry.add("mult", "mult", kTH1F, {axisMult});
     registry.add("MultVsCent", "MultVsCent", kTH2F, {axisMult, axisPerc});
+    registry.add("IRvsOccupancy", "IRvsOccupancy", kTH2I, {{10000, 0, 10000, "Occupancy"}, {50, 0, 50, "IR, kHz"}});
   }
 
   template <bool FillExtra, typename ColsType, typename TracksType>
@@ -155,14 +156,21 @@ struct QAHistograms {
         continue;
       if (_requestVertexITSTPC && !collision.isVertexITSTPC())
         continue;
+      if (_requestVertexTOForTRDmatched > collision.isVertexTOForTRDmatched())
+        continue;
+      if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
+        continue;
       if (collision.multPerc() < _centCut.value.first || collision.multPerc() >= _centCut.value.second)
         continue;
       if (collision.hadronicRate() < _IRcut.value.first || collision.hadronicRate() >= _IRcut.value.second)
+        continue;
+      if (collision.occupancy() < _OccupancyCut.value.first || collision.occupancy() >= _OccupancyCut.value.second)
         continue;
 
       registry.fill(HIST("posZ"), collision.posZ());
       registry.fill(HIST("mult"), collision.mult());
       registry.fill(HIST("MultVsCent"), collision.mult(), collision.multPerc());
+      registry.fill(HIST("IRvsOccupancy"), collision.occupancy(), collision.hadronicRate());
     }
 
     for (auto& track : tracks) {
@@ -173,6 +181,10 @@ struct QAHistograms {
         continue;
       if (_requestVertexITSTPC && !track.template singleCollSel_as<ColsType>().isVertexITSTPC())
         continue;
+      if (_requestVertexTOForTRDmatched > track.template singleCollSel_as<ColsType>().isVertexTOForTRDmatched())
+        continue;
+      if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<ColsType>().noCollInTimeRangeStandard())
+        continue;
 
       if (abs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
         continue;
@@ -180,7 +192,11 @@ struct QAHistograms {
         continue;
       if (track.template singleCollSel_as<ColsType>().hadronicRate() < _IRcut.value.first || track.template singleCollSel_as<ColsType>().hadronicRate() >= _IRcut.value.second)
         continue;
+      if (track.template singleCollSel_as<ColsType>().occupancy() < _OccupancyCut.value.first || track.template singleCollSel_as<ColsType>().occupancy() >= _OccupancyCut.value.second)
+        continue;
       if ((track.tpcFractionSharedCls()) > _tpcFractionSharedCls || (track.itsNCls()) < _itsNCls)
+        continue;
+      if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
         continue;
 
       if constexpr (FillExtra) {

@@ -50,13 +50,16 @@ struct FemtoCorrelations {
   Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
   Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+  Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
+  Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
   Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
+  Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
 
   Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.0, "upper mometum limit"};
   Configurable<float> _eta{"eta", 100.0, "abs eta value limit"};
-  Configurable<float> _dcaXY{"dcaXY", 10.0, "abs dcaXY value limit"};
-  Configurable<float> _dcaZ{"dcaZ", 10.0, "abs dcaZ value limit"};
+  Configurable<std::vector<float>> _dcaXY{"dcaXY", std::vector<float>{0.3f, 0.0f, 0.0f}, "abs dcaXY value limit; formula: [0] + [1]*pT^[2]"};
+  Configurable<std::vector<float>> _dcaZ{"dcaZ", std::vector<float>{0.3f, 0.0f, 0.0f}, "abs dcaZ value limit; formula: [0] + [1]*pT^[2]"};
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
   Configurable<float> _tpcChi2NCl{"tpcChi2NCl", 100.0, "upper limit for chi2 value of a fit over TPC clasters"};
   Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0, "lower limit of TPC CrossedRows/FindableCls value"};
@@ -85,6 +88,7 @@ struct FemtoCorrelations {
   Configurable<float> _deta{"deta", 0.01, "minimum allowed defference in eta between two tracks in a pair"};
   Configurable<float> _dphi{"dphi", 0.01, "minimum allowed defference in phi_star between two tracks in a pair"};
   Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
+  Configurable<float> _avgSepTPC{"avgSepTPC", 10, "average sep. (cm) in TPC"};
 
   Configurable<int> _vertexNbinsToMix{"vertexNbinsToMix", 10, "Number of vertexZ bins for the mixing"};
   Configurable<std::vector<float>> _centBins{"multBins", std::vector<float>{0.0f, 100.0f}, "multiplicity percentile/centrality binning (min:0, max:100)"};
@@ -130,9 +134,6 @@ struct FemtoCorrelations {
   Filter tpcTrkFilter = o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound &&
                         o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) < _tpcChi2NCl &&
                         o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) > _tpcCrossedRowsOverFindableCls;
-
-  Filter dcaFilter = nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) < _dcaXY &&
-                     nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaZ)) < _dcaZ;
 
   Filter itsTrkFilter = o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) < _itsChi2NCl;
 
@@ -231,8 +232,8 @@ struct FemtoCorrelations {
             continue;
 
           for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
-            auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/SE_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{628, -M_PI / 2.0, M_PI / 2.0, "dphi*"}, {200, -0.5, 0.5, "deta"}});
-            auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/ME_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{628, -M_PI / 2.0, M_PI / 2.0, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+            auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/SE_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}});
+            auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/ME_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}});
 
             DoubleTrack_SE_histos_perMult.push_back(std::move(hDblTrk_SE));
             DoubleTrack_ME_histos_perMult.push_back(std::move(hDblTrk_ME));
@@ -284,7 +285,9 @@ struct FemtoCorrelations {
         if (_fillDetaDphi % 2 == 0)
           DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
 
-        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+        if (_deta > 0 && _dphi > 0 && Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
+        if (_avgSepTPC > 0 && Pair->IsClosePair(_avgSepTPC))
           continue;
 
         if (_fillDetaDphi > 0)
@@ -334,7 +337,9 @@ struct FemtoCorrelations {
             DoubleTrack_ME_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         }
 
-        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+        if (_deta > 0 && _dphi > 0 && Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
+        if (_avgSepTPC > 0 && Pair->IsClosePair(_avgSepTPC))
           continue;
 
         if (_fillDetaDphi > 0) {
@@ -383,11 +388,19 @@ struct FemtoCorrelations {
         continue;
       if (_requestVertexITSTPC && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexITSTPC())
         continue;
+      if (_requestVertexTOForTRDmatched > track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexTOForTRDmatched())
+        continue;
+      if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().noCollInTimeRangeStandard())
+        continue;
       if (track.tpcFractionSharedCls() > _tpcFractionSharedCls || track.itsNCls() < _itsNCls)
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() < *_centBins.value.begin() || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() >= *(_centBins.value.end() - 1))
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() < _IRcut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() >= _IRcut.value.second)
+        continue;
+      if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() < _OccupancyCut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() >= _OccupancyCut.value.second)
+        continue;
+      if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
         continue;
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) { // filling the map: eventID <-> selected particles1
@@ -442,12 +455,18 @@ struct FemtoCorrelations {
         continue;
       if (collision.hadronicRate() < _IRcut.value.first || collision.hadronicRate() >= _IRcut.value.second)
         continue;
+      if (collision.occupancy() < _OccupancyCut.value.first || collision.occupancy() >= _OccupancyCut.value.second)
+        continue;
 
       if (_removeSameBunchPileup && !collision.isNoSameBunchPileup())
         continue;
       if (_requestGoodZvtxFT0vsPV && !collision.isGoodZvtxFT0vsPV())
         continue;
       if (_requestVertexITSTPC && !collision.isVertexITSTPC())
+        continue;
+      if (_requestVertexTOForTRDmatched > collision.isVertexTOForTRDmatched())
+        continue;
+      if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
         continue;
 
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {

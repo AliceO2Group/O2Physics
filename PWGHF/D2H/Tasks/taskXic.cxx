@@ -56,6 +56,7 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
   //
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
@@ -86,7 +87,6 @@ struct HfTaskXic {
       {"MC/generated/hEtaGen", "MC particles; #it{eta}^{gen} ;#it{p}_{T}^{gen.};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
       {"MC/generated/hYGen", "MC particles;  #it{y}^{gen} ;#it{p}_{T}^{gen.} ;entries", {HistType::kTH1F, {{100, -2., 2.}}}},
       // add generated in acceptance!!
-
     }};
 
   void init(InitContext&)
@@ -198,6 +198,8 @@ struct HfTaskXic {
     if (enableTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T}(#Xi_{c}^{+}) (GeV/#it{c})"};
+      const AxisSpec thnAxisPtMC{thnConfigAxisPt, "#it{p}_{T}(#Xi_{c}^{+} MC) (GeV/#it{c})"};
+      const AxisSpec thnAxisYMC{thnConfigAxisYMC, "#it{y}_{MC}(#Xi_{c}^{+} MC)"};
       const AxisSpec thnAxisChi2PCA{thnConfigAxisChi2PCA, "Chi2PCA to sec. vertex (cm)"};
       const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length (cm)"};
       const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length (cm)"};
@@ -206,11 +208,12 @@ struct HfTaskXic {
       const AxisSpec thnAxisBdtScoreXicPrompt{thnConfigAxisBdtScoreSignal, "BDT prompt score (Xic)"};
       const AxisSpec thnAxisBdtScoreXicNonPrompt{thnConfigAxisBdtScoreSignal, "BDT non-prompt score (Xic)"};
       const AxisSpec thnAxisMcOrigin{3, -0.5, 2.5, "MC origin"};
+      const AxisSpec thnAxisMCAllProngAccepted{2, -0.5, 1.5, "All MC prongs accepted"};
 
       if (doprocessDataWithMl || doprocessMcWithMl) { // with ML
-        registry.add("hnXicVarsWithBdt", "THn for Xic candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisBdtScoreXicBkg, thnAxisBdtScoreXicPrompt, thnAxisBdtScoreXicNonPrompt, thnAxisMcOrigin});
+        registry.add("hnXicVarsWithBdt", "THn for Xic candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisBdtScoreXicBkg, thnAxisBdtScoreXicPrompt, thnAxisBdtScoreXicNonPrompt, thnAxisMcOrigin, thnAxisPtMC, thnAxisYMC, thnAxisMCAllProngAccepted});
       } else {
-        registry.add("hnXicVars", "THn for Xic candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisMcOrigin});
+        registry.add("hnXicVars", "THn for Xic candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisMcOrigin, thnAxisPtMC, thnAxisYMC, thnAxisMCAllProngAccepted});
       }
     }
   } // end init
@@ -334,9 +337,9 @@ struct HfTaskXic {
               outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate Xic
-            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0);
+            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0, 0.0, 0.0, false);
           } else {
-            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), 0);
+            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), 0, 0.0, 0.0, false);
           }
         }
         if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
@@ -348,9 +351,9 @@ struct HfTaskXic {
               outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0);
+            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0, 0.0, 0.0, false);
           } else {
-            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), 0);
+            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), 0, 0.0, 0.0, false);
           }
         }
       } // thn for Xic
@@ -403,6 +406,9 @@ struct HfTaskXic {
         // Get the corresponding MC particle.
         auto mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
         auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
+        auto yProng0 = RecoDecay::y(mcParticleProng0.pVector(), o2::constants::physics::MassXiCPlus);
+        std::array<float, 3> ptProngs;
+        std::array<float, 3> etaProngs;
         // Signal
         registry.fill(HIST("MC/reconstructed/signal/hPtRecSig"), ptCandidate); // rec. level pT
 
@@ -434,8 +440,16 @@ struct HfTaskXic {
         if (enableTHn) {
           double massXic(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+          bool allProngsInAcceptance = false;
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
             massXic = hfHelper.invMassXicToPKPi(candidate);
+            int counter = 0;
+            for (const auto& daught : mcParticleProng0.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>()) {
+              ptProngs[counter] = daught.pt();
+              etaProngs[counter] = daught.eta();
+              counter++;
+            }
+            allProngsInAcceptance = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]) && isProngInAcceptance(etaProngs[2], ptProngs[2]);
             if constexpr (useMl) {
               if (candidate.mlProbXicToPKPi().size() == 3) {
                 outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
@@ -443,13 +457,20 @@ struct HfTaskXic {
                 outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec());
+              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             } else {
-              registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec());
+              registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             }
           }
           if ((candidate.isSelXicToPiKP() >= selectionFlagXic) && pdgCodeProng0 == kPiPlus) {
             massXic = hfHelper.invMassXicToPiKP(candidate);
+            int counter = 0;
+            for (const auto& daught : mcParticleProng0.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>()) {
+              ptProngs[counter] = daught.pt();
+              etaProngs[counter] = daught.eta();
+              counter++;
+            }
+            allProngsInAcceptance = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]) && isProngInAcceptance(etaProngs[2], ptProngs[2]);
             if constexpr (useMl) {
               if (candidate.mlProbXicToPiKP().size() == 3) {
                 outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
@@ -457,9 +478,10 @@ struct HfTaskXic {
                 outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec());
+              // add here the pT_Mother, y_Mother, level (reco, Gen, Gen + Acc)
+              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             } else {
-              registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec());
+              registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             }
           }
         } // enable THn
@@ -512,7 +534,6 @@ struct HfTaskXic {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-
         registry.fill(HIST("MC/generated/hPtGen"), ptParticle);
         registry.fill(HIST("MC/generated/hEtaGen"), particle.eta(), ptParticle);
         registry.fill(HIST("MC/generated/hYGen"), yParticle, ptParticle);
@@ -526,7 +547,6 @@ struct HfTaskXic {
       }
     }
   }
-
   void processMcStd(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                     aod::TracksWMc const& tracksWithMc)

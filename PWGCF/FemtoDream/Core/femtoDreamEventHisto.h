@@ -31,7 +31,7 @@ class FemtoDreamEventHisto
   virtual ~FemtoDreamEventHisto() = default;
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  void init(HistogramRegistry* registry, bool isMC)
+  void init(HistogramRegistry* registry, bool isMC = false)
   {
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/hZvtx", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
@@ -49,7 +49,7 @@ class FemtoDreamEventHisto
   /// Some basic QA of the event
   /// \tparam T type of the collision
   /// \param col Collision
-  template <bool isMC, typename T>
+  template <bool isMC = false, typename T>
   void fillQA(T const& col)
   {
     if (mHistogramRegistry) {

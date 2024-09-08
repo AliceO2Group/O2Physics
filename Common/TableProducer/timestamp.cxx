@@ -23,10 +23,13 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonDataFormat/InteractionRecord.h"
 #include "DetectorsRaw/HBFUtils.h"
+#include "MetadataHelper.h"
 
 using namespace o2::framework;
 using namespace o2::header;
 using namespace o2;
+
+MetadataHelper metadataInfo; // Metadata helper
 
 struct TimestampTask {
   Produces<aod::Timestamps> timestampTable;  /// Table with SOR timestamps produced by the task
@@ -41,7 +44,7 @@ struct TimestampTask {
   Configurable<std::string> rct_path{"rct-path", "RCT/Info/RunInformation", "path to the ccdb RCT objects for the SOR timestamps"};
   Configurable<std::string> orbit_reset_path{"orbit-reset-path", "CTP/Calib/OrbitReset", "path to the ccdb orbit-reset objects"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB database"};
-  Configurable<bool> isRun2MC{"isRun2MC", false, "Running mode: enable only for Run 2 MC. Timestamps are set to SOR timestamp"};
+  Configurable<int> isRun2MC{"isRun2MC", -1, "Running mode: enable only for Run 2 MC. Timestamps are set to SOR timestamp. Default: -1 (autoset from metadata) 0 (Standard) 1 (Run 2 MC)"};
 
   void init(o2::framework::InitContext&)
   {
@@ -50,6 +53,14 @@ struct TimestampTask {
     ccdb_api.init(url.value);
     if (!ccdb_api.isHostReachable()) {
       LOGF(fatal, "CCDB host %s is not reacheable, cannot go forward", url.value.data());
+    }
+    if (isRun2MC.value == -1) {
+      if ((!metadataInfo.isRun3()) && metadataInfo.isMC()) {
+        isRun2MC.value = 1;
+        LOG(info) << "Autosetting the Run2 MC mode based on metadata";
+      } else {
+        isRun2MC.value = 0;
+      }
     }
   }
 
@@ -66,21 +77,12 @@ struct TimestampTask {
       orbitResetTimestamp = mapRunToOrbitReset[runNumber];
     } else { // The run was not requested before: need to acccess CCDB!
       LOGF(debug, "Getting start-of-run and end-of-run timestamps from CCDB");
-      std::map<std::string, std::string> metadata, headers;
-      const std::string run_path = Form("%s/%i", rct_path.value.data(), runNumber);
-      headers = ccdb_api.retrieveHeaders(run_path, metadata, -1);
-      if (headers.count("SOR") == 0) {
-        LOGF(fatal, "Cannot find start-of-run timestamp for run number in path '%s'.", run_path.data());
-      }
-      if (headers.count("EOR") == 0) {
-        LOGF(fatal, "Cannot find end-of-run timestamp for run number in path '%s'.", run_path.data());
-      }
+      auto timestamps = ccdb->getRunDuration(runNumber, true); /// fatalise if timestamps are not found
+      int64_t sorTimestamp = timestamps.first;                 // timestamp of the SOR in ms
+      int64_t eorTimestamp = timestamps.second;                // timestamp of the EOR in ms
 
-      int64_t sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
-      int64_t eorTimestamp = atol(headers["EOR"].c_str()); // timestamp of the EOR in ms
-
-      bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
-      if (isRun2MC || isUnanchoredRun3MC) {
+      const bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
+      if (isRun2MC.value == 1 || isUnanchoredRun3MC) {
         // isRun2MC: bc/orbit distributions are not simulated in Run2 MC. All bcs are set to 0.
         // isUnanchoredRun3MC: assuming orbit-reset is done in the beginning of each run
         // Setting orbit-reset timestamp to start-of-run timestamp
@@ -115,5 +117,8 @@ struct TimestampTask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
+
   return WorkflowSpec{adaptAnalysisTask<TimestampTask>(cfgc)};
 }

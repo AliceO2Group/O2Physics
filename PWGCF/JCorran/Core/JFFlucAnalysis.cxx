@@ -17,38 +17,40 @@
 #include <algorithm>
 #include "JFFlucAnalysis.h"
 
-JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis() : TNamed(),
+                                   fVertex(0),
                                    fCent(0),
                                    fImpactParameter(-1),
                                    subeventMask(kSubEvent_A | kSubEvent_B),
                                    flags(0),
-                                   fEta_min(0),
-                                   fEta_max(0)
+                                   pqvecs(0),
+                                   pqvecsRef(0)
 {
   //
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : TNamed(),
+                                                       fVertex(0),
                                                        fCent(0),
                                                        fImpactParameter(-1),
                                                        subeventMask(kSubEvent_A | kSubEvent_B),
                                                        flags(0),
-                                                       fEta_min(0),
-                                                       fEta_max(0)
+                                                       pqvecs(0),
+                                                       pqvecsRef(0)
 {
   //
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : fVertex(a.fVertex),
+JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : TNamed(a),
+                                                          fVertex(a.fVertex),
                                                           fCent(a.fCent),
                                                           fImpactParameter(a.fImpactParameter),
                                                           subeventMask(a.subeventMask),
                                                           flags(a.flags),
-                                                          fEta_min(a.fEta_min),
-                                                          fEta_max(a.fEta_max),
-                                                          pqvecs(a.pqvecs)
+                                                          pqvecs(a.pqvecs),
+                                                          pqvecsRef(a.pqvecsRef)
 {
   // copy constructor
 }
@@ -77,33 +79,31 @@ JFFlucAnalysis::~JFFlucAnalysis()
   //
 }
 
-#define A i
-#define B (1 - i)
 #define C(u) TComplex::Conjugate(u)
 // TODO: conjugate macro
-inline TComplex TwoGap(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t a, UInt_t b)
+inline TComplex TwoGap(const TComplex (&Qa)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], const TComplex (&Qb)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t a, UInt_t b)
 {
-  return pQq[A][a][1] * C(pQq[B][b][1]);
+  return Qa[a][1] * C(Qb[b][1]);
 }
 
-inline TComplex ThreeGap(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t a, UInt_t b, UInt_t c)
+inline TComplex ThreeGap(const TComplex (&Qa)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], const TComplex (&Qb)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t a, UInt_t b, UInt_t c)
 {
-  return pQq[A][a][1] * C(pQq[B][b][1] * pQq[B][c][1] - pQq[B][b + c][2]);
+  return Qa[a][1] * C(Qb[b][1] * Qb[c][1] - Qb[b + c][2]);
 }
 
-inline TComplex FourGap22(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t a, UInt_t b, UInt_t c, UInt_t d)
+inline TComplex FourGap22(const TComplex (&Qa)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], const TComplex (&Qb)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t a, UInt_t b, UInt_t c, UInt_t d)
 {
-  return pQq[A][a][1] * pQq[A][b][1] * C(pQq[B][c][1] * pQq[B][d][1]) - pQq[A][a + b][2] * C(pQq[B][c][1] * pQq[B][d][1]) - pQq[A][a][1] * pQq[A][b][1] * C(pQq[B][c + d][2]) + pQq[A][a + b][2] * C(pQq[B][c + d][2]);
+  return Qa[a][1] * Qa[b][1] * C(Qb[c][1] * Qb[d][1]) - Qa[a + b][2] * C(Qb[c][1] * Qb[d][1]) - Qa[a][1] * Qa[b][1] * C(Qb[c + d][2]) + Qa[a + b][2] * C(Qb[c + d][2]);
 }
 
-inline TComplex FourGap13(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t a, UInt_t b, UInt_t c, UInt_t d)
+inline TComplex FourGap13(const TComplex (&Qa)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], const TComplex (&Qb)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t a, UInt_t b, UInt_t c, UInt_t d)
 {
-  return pQq[A][a][1] * C(pQq[B][b][1] * pQq[B][c][1] * pQq[B][d][1] - pQq[B][b + c][2] * pQq[B][d][1] - pQq[B][b + d][2] * pQq[B][c][1] - pQq[B][c + d][2] * pQq[B][b][1] + 2.0 * pQq[B][b + c + d][3]);
+  return Qa[a][1] * C(Qb[b][1] * Qb[c][1] * Qb[d][1] - Qb[b + c][2] * Qb[d][1] - Qb[b + d][2] * Qb[c][1] - Qb[c + d][2] * Qb[b][1] + 2.0 * Qb[b + c + d][3]);
 }
 
-inline TComplex SixGap33(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t n1, UInt_t n2, UInt_t n3, UInt_t n4, UInt_t n5, UInt_t n6)
+inline TComplex SixGap33(const TComplex (&Qa)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], const TComplex (&Qb)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t n1, UInt_t n2, UInt_t n3, UInt_t n4, UInt_t n5, UInt_t n6)
 {
-  return pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) + 2.0 * pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n5 + n6][3]) + 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) + 4.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n5 + n6][3]);
+  return Qa[n1][1] * Qa[n2][1] * Qa[n3][1] * C(Qb[n4][1] * Qb[n5][1] * Qb[n6][1]) - Qa[n1][1] * Qa[n2][1] * Qa[n3][1] * C(Qb[n4 + n5][2] * Qb[n6][1]) - Qa[n1][1] * Qa[n2][1] * Qa[n3][1] * C(Qb[n4 + n6][2] * Qb[n5][1]) - Qa[n1][1] * Qa[n2][1] * Qa[n3][1] * C(Qb[n5 + n6][2] * Qb[n4][1]) + 2.0 * Qa[n1][1] * Qa[n2][1] * Qa[n3][1] * C(Qb[n4 + n5 + n6][3]) - Qa[n1 + n2][2] * Qa[n3][1] * C(Qb[n4][1] * Qb[n5][1] * Qb[n6][1]) + Qa[n1 + n2][2] * Qa[n3][1] * C(Qb[n4 + n5][2] * Qb[n6][1]) + Qa[n1 + n2][2] * Qa[n3][1] * C(Qb[n4 + n6][2] * Qb[n5][1]) + Qa[n1 + n2][2] * Qa[n3][1] * C(Qb[n5 + n6][2] * Qb[n4][1]) - 2.0 * Qa[n1 + n2][2] * Qa[n3][1] * C(Qb[n4 + n5 + n6][3]) - Qa[n1 + n3][2] * Qa[n2][1] * C(Qb[n4][1] * Qb[n5][1] * Qb[n6][1]) + Qa[n1 + n3][2] * Qa[n2][1] * C(Qb[n4 + n5][2] * Qb[n6][1]) + Qa[n1 + n3][2] * Qa[n2][1] * C(Qb[n4 + n6][2] * Qb[n5][1]) + Qa[n1 + n3][2] * Qa[n2][1] * C(Qb[n5 + n6][2] * Qb[n4][1]) - 2.0 * Qa[n1 + n3][2] * Qa[n2][1] * C(Qb[n4 + n5 + n6][3]) - Qa[n2 + n3][2] * Qa[n1][1] * C(Qb[n4][1] * Qb[n5][1] * Qb[n6][1]) + Qa[n2 + n3][2] * Qa[n1][1] * C(Qb[n4 + n5][2] * Qb[n6][1]) + Qa[n2 + n3][2] * Qa[n1][1] * C(Qb[n4 + n6][2] * Qb[n5][1]) + Qa[n2 + n3][2] * Qa[n1][1] * C(Qb[n5 + n6][2] * Qb[n4][1]) - 2.0 * Qa[n2 + n3][2] * Qa[n1][1] * C(Qb[n4 + n5 + n6][3]) + 2.0 * Qa[n1 + n2 + n3][3] * C(Qb[n4][1] * Qb[n5][1] * Qb[n6][1]) - 2.0 * Qa[n1 + n2 + n3][3] * C(Qb[n4 + n5][2] * Qb[n6][1]) - 2.0 * Qa[n1 + n2 + n3][3] * C(Qb[n4 + n6][2] * Qb[n5][1]) - 2.0 * Qa[n1 + n2 + n3][3] * C(Qb[n5 + n6][2] * Qb[n4][1]) + 4.0 * Qa[n1 + n2 + n3][3] * C(Qb[n4 + n5 + n6][3]);
 }
 
 TComplex JFFlucAnalysis::Q(int n, int p)
@@ -127,22 +127,22 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* popt)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting) false positive: https://github.com/cpplint/cpplint/issues/131
 {
   TComplex corr[kNH][nKL];
   TComplex ncorr[kNH][nKL];
   TComplex ncorr2[kNH][nKL][kcNH][nKL];
 
-  const TComplex(*pQq)[kNH][nKL] = pqvecs->QvectorQCgap;
-
   for (UInt_t i = 0; i < 2; ++i) {
     if ((subeventMask & (1 << i)) == 0)
       continue;
-    Double_t ref_2p = TwoGap(pQq, i, 0, 0).Re();
-    Double_t ref_3p = ThreeGap(pQq, i, 0, 0, 0).Re();
-    Double_t ref_4p = FourGap22(pQq, i, 0, 0, 0, 0).Re();
-    Double_t ref_4pB = FourGap13(pQq, i, 0, 0, 0, 0).Re();
-    Double_t ref_6p = SixGap33(pQq, i, 0, 0, 0, 0, 0, 0).Re();
+    decltype(pqvecs->QvectorQCgap[i])& Qa = pqvecs->QvectorQCgap[i];
+    decltype(pqvecs->QvectorQCgap[1 - i])& Qb = (pqvecsRef ? pqvecsRef : pqvecs)->QvectorQCgap[1 - i]; // A & B subevents from POI and REF, when given
+    Double_t ref_2p = TwoGap(Qa, Qb, 0, 0).Re();
+    Double_t ref_3p = ThreeGap(Qa, Qb, 0, 0, 0).Re();
+    Double_t ref_4p = FourGap22(Qa, Qb, 0, 0, 0, 0).Re();
+    Double_t ref_4pB = FourGap13(Qa, Qb, 0, 0, 0, 0).Re();
+    Double_t ref_6p = SixGap33(Qa, Qb, 0, 0, 0, 0, 0, 0).Re();
 
     Double_t ebe_2p_weight = 1.0;
     Double_t ebe_3p_weight = 1.0;
@@ -167,31 +167,31 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
     if (flags & kFlucEbEWeighting) {
       for (UInt_t ik = 3; ik < 2 * nKL; ik++) {
         double dk = static_cast<double>(ik);
-        ref_2Np[ik] = ref_2Np[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
-        ebe_2Np_weight[ik] = ebe_2Np_weight[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
+        ref_2Np[ik] = ref_2Np[ik - 1] * std::max(Qa[0][1].Re() - dk, 1.0) * std::max(Qb[0][1].Re() - dk, 1.0);
+        ebe_2Np_weight[ik] = ebe_2Np_weight[ik - 1] * std::max(Qa[0][1].Re() - dk, 1.0) * std::max(Qb[0][1].Re() - dk, 1.0);
       }
     } else {
       for (UInt_t ik = 3; ik < 2 * nKL; ik++) {
         double dk = static_cast<double>(ik);
-        ref_2Np[ik] = ref_2Np[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
+        ref_2Np[ik] = ref_2Np[ik - 1] * std::max(Qa[0][1].Re() - dk, 1.0) * std::max(Qb[0][1].Re() - dk, 1.0);
         ebe_2Np_weight[ik] = 1.0;
       }
     }
 
     for (UInt_t ih = 2; ih < kNH; ih++) {
-      corr[ih][1] = TwoGap(pQq, i, ih, ih);
+      corr[ih][1] = TwoGap(Qa, Qb, ih, ih);
       for (UInt_t ik = 2; ik < nKL; ik++)
         corr[ih][ik] = corr[ih][ik - 1] * corr[ih][1]; // TComplex::Power(corr[ih][1],ik);
       ncorr[ih][1] = corr[ih][1];
-      ncorr[ih][2] = FourGap22(pQq, i, ih, ih, ih, ih);
-      ncorr[ih][3] = SixGap33(pQq, i, ih, ih, ih, ih, ih, ih);
+      ncorr[ih][2] = FourGap22(Qa, Qb, ih, ih, ih, ih);
+      ncorr[ih][3] = SixGap33(Qa, Qb, ih, ih, ih, ih, ih, ih);
       for (UInt_t ik = 4; ik < nKL; ik++)
         ncorr[ih][ik] = corr[ih][ik]; // for 8,...-particle correlations, ignore the autocorrelation / weight dependency for now
 
       for (UInt_t ihh = 2; ihh < kcNH; ihh++) {
-        ncorr2[ih][1][ihh][1] = FourGap22(pQq, i, ih, ihh, ih, ihh);
-        ncorr2[ih][1][ihh][2] = SixGap33(pQq, i, ih, ihh, ihh, ih, ihh, ihh);
-        ncorr2[ih][2][ihh][1] = SixGap33(pQq, i, ih, ih, ihh, ih, ih, ihh);
+        ncorr2[ih][1][ihh][1] = FourGap22(Qa, Qb, ih, ihh, ih, ihh);
+        ncorr2[ih][1][ihh][2] = SixGap33(Qa, Qb, ih, ihh, ihh, ih, ihh, ihh);
+        ncorr2[ih][2][ihh][1] = SixGap33(Qa, Qb, ih, ih, ihh, ih, ih, ihh);
         for (UInt_t ik = 2; ik < nKL; ik++)
           for (UInt_t ikk = 2; ikk < nKL; ikk++)
             ncorr2[ih][ik][ihh][ikk] = ncorr[ih][ik] * ncorr[ihh][ikk];
@@ -214,37 +214,37 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
     }
 
     //************************************************************************
-    TComplex V4V2star_2 = pQq[A][4][1] * pQq[B][2][1] * pQq[B][2][1];
-    TComplex V4V2starv2_2 = V4V2star_2 * corr[2][1] / ref_2Np[0];                                       // vn[2][1]
-    TComplex V4V2starv2_4 = V4V2star_2 * corr[2][2] / ref_2Np[1];                                       // vn2[2][2]
-    TComplex V5V2starV3starv2_2 = pQq[A][5][1] * pQq[B][2][1] * pQq[B][3][1] * corr[2][1] / ref_2Np[0]; // vn2[2][1]
-    TComplex V5V2starV3star = pQq[A][5][1] * pQq[B][2][1] * pQq[B][3][1];
+    TComplex V4V2star_2 = Qa[4][1] * Qb[2][1] * Qb[2][1];
+    TComplex V4V2starv2_2 = V4V2star_2 * corr[2][1] / ref_2Np[0];                           // vn[2][1]
+    TComplex V4V2starv2_4 = V4V2star_2 * corr[2][2] / ref_2Np[1];                           // vn2[2][2]
+    TComplex V5V2starV3starv2_2 = Qa[5][1] * Qb[2][1] * Qb[3][1] * corr[2][1] / ref_2Np[0]; // vn2[2][1]
+    TComplex V5V2starV3star = Qa[5][1] * Qb[2][1] * Qb[3][1];
     TComplex V5V2starV3startv3_2 = V5V2starV3star * corr[3][1] / ref_2Np[0]; // vn2[3][1]
-    TComplex V6V2star_3 = pQq[A][6][1] * pQq[B][2][1] * pQq[B][2][1] * pQq[B][2][1];
-    TComplex V6V3star_2 = pQq[A][6][1] * pQq[B][3][1] * pQq[B][3][1];
-    TComplex V6V2starV4star = pQq[A][6][1] * pQq[B][2][1] * pQq[B][4][1];
-    TComplex V7V2star_2V3star = pQq[A][7][1] * pQq[B][2][1] * pQq[B][2][1] * pQq[B][3][1];
-    TComplex V7V2starV5star = pQq[A][7][1] * pQq[B][2][1] * pQq[B][5][1];
-    TComplex V7V3starV4star = pQq[A][7][1] * pQq[B][3][1] * pQq[B][4][1];
-    TComplex V8V2starV3star_2 = pQq[A][8][1] * pQq[B][2][1] * pQq[B][3][1] * pQq[B][3][1];
-    TComplex V8V2star_4 = pQq[A][8][1] * TComplex::Power(pQq[B][2][1], 4);
+    TComplex V6V2star_3 = Qa[6][1] * Qb[2][1] * Qb[2][1] * Qb[2][1];
+    TComplex V6V3star_2 = Qa[6][1] * Qb[3][1] * Qb[3][1];
+    TComplex V6V2starV4star = Qa[6][1] * Qb[2][1] * Qb[4][1];
+    TComplex V7V2star_2V3star = Qa[7][1] * Qb[2][1] * Qb[2][1] * Qb[3][1];
+    TComplex V7V2starV5star = Qa[7][1] * Qb[2][1] * Qb[5][1];
+    TComplex V7V3starV4star = Qa[7][1] * Qb[3][1] * Qb[4][1];
+    TComplex V8V2starV3star_2 = Qa[8][1] * Qb[2][1] * Qb[3][1] * Qb[3][1];
+    TComplex V8V2star_4 = Qa[8][1] * TComplex::Power(Qb[2][1], 4);
 
     // New correlators (Modified by You's correction term for self-correlations)
-    TComplex nV4V2star_2 = ThreeGap(pQq, i, 4, 2, 2) / ref_3p;
-    TComplex nV5V2starV3star = ThreeGap(pQq, i, 5, 2, 3) / ref_3p;
-    TComplex nV6V2star_3 = FourGap13(pQq, i, 6, 2, 2, 2) / ref_4pB;
-    TComplex nV6V3star_2 = ThreeGap(pQq, i, 6, 3, 3) / ref_3p;
-    TComplex nV6V2starV4star = ThreeGap(pQq, i, 6, 2, 4) / ref_3p;
-    TComplex nV7V2star_2V3star = FourGap13(pQq, i, 7, 2, 2, 3) / ref_4pB;
-    TComplex nV7V2starV5star = ThreeGap(pQq, i, 7, 2, 5) / ref_3p;
-    TComplex nV7V3starV4star = ThreeGap(pQq, i, 7, 3, 4) / ref_3p;
-    TComplex nV8V2starV3star_2 = FourGap13(pQq, i, 8, 2, 3, 3) / ref_4pB;
+    TComplex nV4V2star_2 = ThreeGap(Qa, Qb, 4, 2, 2) / ref_3p;
+    TComplex nV5V2starV3star = ThreeGap(Qa, Qb, 5, 2, 3) / ref_3p;
+    TComplex nV6V2star_3 = FourGap13(Qa, Qb, 6, 2, 2, 2) / ref_4pB;
+    TComplex nV6V3star_2 = ThreeGap(Qa, Qb, 6, 3, 3) / ref_3p;
+    TComplex nV6V2starV4star = ThreeGap(Qa, Qb, 6, 2, 4) / ref_3p;
+    TComplex nV7V2star_2V3star = FourGap13(Qa, Qb, 7, 2, 2, 3) / ref_4pB;
+    TComplex nV7V2starV5star = ThreeGap(Qa, Qb, 7, 2, 5) / ref_3p;
+    TComplex nV7V3starV4star = ThreeGap(Qa, Qb, 7, 3, 4) / ref_3p;
+    TComplex nV8V2starV3star_2 = FourGap13(Qa, Qb, 8, 2, 3, 3) / ref_4pB;
 
-    TComplex nV4V4V2V2 = FourGap22(pQq, i, 4, 2, 4, 2) / ref_4p;
-    TComplex nV3V3V2V2 = FourGap22(pQq, i, 3, 2, 3, 2) / ref_4p;
-    TComplex nV5V5V2V2 = FourGap22(pQq, i, 5, 2, 5, 2) / ref_4p;
-    TComplex nV5V5V3V3 = FourGap22(pQq, i, 5, 3, 5, 3) / ref_4p;
-    TComplex nV4V4V3V3 = FourGap22(pQq, i, 4, 3, 4, 3) / ref_4p;
+    TComplex nV4V4V2V2 = FourGap22(Qa, Qb, 4, 2, 4, 2) / ref_4p;
+    TComplex nV3V3V2V2 = FourGap22(Qa, Qb, 3, 2, 3, 2) / ref_4p;
+    TComplex nV5V5V2V2 = FourGap22(Qa, Qb, 5, 2, 5, 2) / ref_4p;
+    TComplex nV5V5V3V3 = FourGap22(Qa, Qb, 5, 3, 5, 3) / ref_4p;
+    TComplex nV4V4V3V3 = FourGap22(Qa, Qb, 4, 3, 4, 3) / ref_4p;
 
     pht[HIST_THN_V4V2starv2_2]->Fill(fCent, V4V2starv2_2.Re());
     pht[HIST_THN_V4V2starv2_4]->Fill(fCent, V4V2starv2_4.Re());
@@ -282,37 +282,36 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
     pht[HIST_THN_V7V2starV5star]->Fill(fCent, nV7V2starV5star.Re(), ebe_3p_weight);
     pht[HIST_THN_V7V3starV4star]->Fill(fCent, nV7V3starV4star.Re(), ebe_3p_weight);
 
-    enum { kSubA,
-           kSubB,
-           kNSub };
-
-    Double_t event_weight_four = 1.0;
-    Double_t event_weight_two = 1.0;
     Double_t event_weight_two_gap = 1.0;
     if (flags & kFlucEbEWeighting) {
-      event_weight_four = Four(0, 0, 0, 0).Re();
-      event_weight_two = Two(0, 0).Re();
-      event_weight_two_gap = (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
+      event_weight_two_gap = (Qa[0][1] * Qb[0][1]).Re();
     }
 
     for (UInt_t ih = 2; ih < kNH; ih++) {
-      for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) {
-        TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
-
-        pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, ih, ihh, scfour.Re(), event_weight_four);
-      }
-
-      TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
-      pht[HIST_THN_SC_with_QC_2corr]->Fill(fCent, ih, sctwo.Re(), event_weight_two);
-
-      TComplex sctwoGap = (pqvecs->QvectorQCgap[kSubA][ih][1] * TComplex::Conjugate(pqvecs->QvectorQCgap[kSubB][ih][1])) / (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
+      TComplex sctwoGap = (Qa[ih][1] * TComplex::Conjugate(Qb[ih][1])) / (Qa[0][1] * Qb[0][1]).Re();
       pht[HIST_THN_SC_with_QC_2corr_gap]->Fill(fCent, ih, sctwoGap.Re(), event_weight_two_gap);
     }
+  }
+
+  Double_t event_weight_four = 1.0;
+  Double_t event_weight_two = 1.0;
+  if (flags & kFlucEbEWeighting) {
+    event_weight_four = Four(0, 0, 0, 0).Re();
+    event_weight_two = Two(0, 0).Re();
+  }
+
+  for (UInt_t ih = 2; ih < kNH; ih++) {
+    for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : static_cast<UInt_t>(kcNH)); ihh < mm; ihh++) {
+      TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
+      pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, ih, ihh, scfour.Re(), event_weight_four);
+    }
+    TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
+    pht[HIST_THN_SC_with_QC_2corr]->Fill(fCent, ih, sctwo.Re(), event_weight_two);
   }
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* popt)
+void JFFlucAnalysis::Terminate(Option_t* /*popt*/) // NOLINT(readability/casting) false positive: https://github.com/cpplint/cpplint/issues/131
 {
   //
 }

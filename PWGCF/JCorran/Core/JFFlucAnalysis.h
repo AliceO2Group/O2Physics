@@ -43,12 +43,7 @@ class JFFlucAnalysis : public TNamed
   inline void SetEventCentrality(float cent) { fCent = cent; }
   inline float GetEventCentrality() const { return fCent; }
   inline void SetEventImpactParameter(float ip) { fImpactParameter = ip; }
-  inline void SetEventVertex(const Double_t* vtx) { fVertex = vtx; }
-  inline void SetEtaRange(Double_t eta_min, Double_t eta_max)
-  {
-    fEta_min = eta_min;
-    fEta_max = eta_max;
-  }
+  inline void SetEventVertex(float zvertex) { fVertex = zvertex; }
   enum SubEvent {
     kSubEvent_A = 0x1,
     kSubEvent_B = 0x2
@@ -64,8 +59,6 @@ class JFFlucAnalysis : public TNamed
     HIST_THN_PHIETAZ,
     HIST_THN_PTETA,
     HIST_THN_PHIETA,
-    // HIST_THN_VN,
-    // HIST_THN_VN_VN,
     HIST_THN_SC_with_QC_4corr,
     HIST_THN_SC_with_QC_2corr,
     HIST_THN_SC_with_QC_2corr_gap,
@@ -130,25 +123,31 @@ class JFFlucAnalysis : public TNamed
          kK4,
          nKL }; // order
   using JQVectorsT = JQVectors<TComplex, kNH, nKL, true>;
-  inline void SetJQVectors(const JQVectorsT* _pqvecs) { pqvecs = _pqvecs; }
+  inline void SetJQVectors(const JQVectorsT* _pqvecs)
+  {
+    pqvecs = _pqvecs;
+    pqvecsRef = 0;
+  }
+  inline void SetJQVectors(const JQVectorsT* _pqvecs, const JQVectorsT* _pqvecsRef)
+  {
+    pqvecs = _pqvecs;
+    pqvecsRef = _pqvecsRef;
+  }
 
   template <class T>
   using hasWeightNUA = decltype(std::declval<T&>().weightNUA());
   template <class T>
   using hasWeightEff = decltype(std::declval<T&>().weightEff());
+  template <class T>
+  using hasType = decltype(std::declval<T&>().particleType());
 
   template <class JInputClass>
-  inline void FillQA(JInputClass& inputInst)
+  inline void FillQA(JInputClass& inputInst, UInt_t type = 0)
   {
     ph1[HIST_TH1_CENTRALITY]->Fill(fCent);
     ph1[HIST_TH1_IMPACTPARAM]->Fill(fImpactParameter);
 
     for (auto& track : inputInst) {
-      pht[HIST_THN_PHIETAZ]->Fill(fCent, track.phi(), track.eta(), fVertex[2]);
-
-      if (TMath::Abs(track.eta()) < fEta_min || TMath::Abs(track.eta()) > fEta_max)
-        continue;
-
       Double_t corrInv = 1.0;
       using JInputClassIter = typename JInputClass::iterator;
       if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
@@ -157,25 +156,24 @@ class JFFlucAnalysis : public TNamed
       if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
         corrInv /= track.weightNUA();
       pht[HIST_THN_PHIETA]->Fill(fCent, track.phi(), track.eta(), corrInv);
+      if constexpr (std::experimental::is_detected<hasType, const JInputClassIter>::value)
+        type = track.particleType();
+      pht[HIST_THN_PHIETAZ]->Fill(fCent, static_cast<Double_t>(type), track.phi(), track.eta(), fVertex, corrInv);
     }
 
-    // for (UInt_t iaxis = 0; iaxis < 3; iaxis++)
-    // fh_vertex[iaxis]->Fill(fVertex[iaxis]);
-    ph1[HIST_TH1_ZVERTEX]->Fill(fVertex[2]);
+    ph1[HIST_TH1_ZVERTEX]->Fill(fVertex);
   }
 
 #define kcNH kH6 // max second dimension + 1
  protected:
-  const Double_t* fVertex;  //!
+  Float_t fVertex;          //!
   Float_t fCent;            //!
   Float_t fImpactParameter; //!
   UInt_t subeventMask;      //!
   UInt_t flags;             //!
 
-  Double_t fEta_min;
-  Double_t fEta_max;
-
-  const JQVectorsT* pqvecs; //!
+  const JQVectorsT* pqvecs;    //!
+  const JQVectorsT* pqvecsRef; //!
 
   TH1* ph1[HIST_TH1_COUNT];              //!
   THn* pht[HIST_THN_COUNT];              //!

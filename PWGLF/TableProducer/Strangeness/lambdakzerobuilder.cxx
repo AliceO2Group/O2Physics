@@ -337,6 +337,7 @@ struct lambdakzeroBuilder {
   // Helper struct to do bookkeeping of building parameters
   struct {
     std::array<int32_t, kNV0Steps> v0stats;
+    std::array<int32_t, kNV0Steps> v0statsUnassociated;
     std::array<int32_t, 10> posITSclu;
     std::array<int32_t, 10> negITSclu;
     int32_t exceptions;
@@ -408,8 +409,10 @@ struct lambdakzeroBuilder {
   {
     statisticsRegistry.exceptions = 0;
     statisticsRegistry.eventCounter = 0;
-    for (Int_t ii = 0; ii < kNV0Steps; ii++)
+    for (Int_t ii = 0; ii < kNV0Steps; ii++) {
       statisticsRegistry.v0stats[ii] = 0;
+      statisticsRegistry.v0statsUnassociated[ii] = 0;
+    }
     for (Int_t ii = 0; ii < 10; ii++) {
       statisticsRegistry.posITSclu[ii] = 0;
       statisticsRegistry.negITSclu[ii] = 0;
@@ -420,8 +423,10 @@ struct lambdakzeroBuilder {
   {
     registry.fill(HIST("hEventCounter"), 0.0, statisticsRegistry.eventCounter);
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
-    for (Int_t ii = 0; ii < kNV0Steps; ii++)
+    for (Int_t ii = 0; ii < kNV0Steps; ii++) {
       registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
+      registry.fill(HIST("hV0CriteriaUnassociated"), ii, statisticsRegistry.v0statsUnassociated[ii]);
+    }
     if (qaConfigurations.d_doTrackQA) {
       for (Int_t ii = 0; ii < 10; ii++) {
         registry.fill(HIST("hPositiveITSClusters"), ii, statisticsRegistry.posITSclu[ii]);
@@ -449,6 +454,17 @@ struct lambdakzeroBuilder {
     h->GetXaxis()->SetBinLabel(7, "Within momentum range");
     h->GetXaxis()->SetBinLabel(8, "Count: Standard V0");
     h->GetXaxis()->SetBinLabel(9, "Count: V0 exc. for casc");
+
+    auto h2 = registry.add<TH1>("hV0CriteriaUnassociated", "hV0CriteriaUnassociated", kTH1D, {{10, -0.5f, 9.5f}});
+    h2->GetXaxis()->SetBinLabel(1, "All sel");
+    h2->GetXaxis()->SetBinLabel(2, "TPC requirement");
+    h2->GetXaxis()->SetBinLabel(3, "DCAxy Dau to PV");
+    h2->GetXaxis()->SetBinLabel(4, "DCA V0 Dau");
+    h2->GetXaxis()->SetBinLabel(5, "CosPA");
+    h2->GetXaxis()->SetBinLabel(6, "Radius");
+    h2->GetXaxis()->SetBinLabel(7, "Within momentum range");
+    h2->GetXaxis()->SetBinLabel(8, "Count: Standard V0");
+    h2->GetXaxis()->SetBinLabel(9, "Count: V0 exc. for casc");
 
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
@@ -801,6 +817,9 @@ struct lambdakzeroBuilder {
 
     // value 0.5: any considered V0
     statisticsRegistry.v0stats[kV0All]++;
+    if (!V0.has_collision())
+      statisticsRegistry.v0statsUnassociated[kV0All]++;
+
     if (tpcrefit) {
       if (!(posTrack.trackType() & o2::aod::track::TPCrefit)) {
         return false;
@@ -812,6 +831,8 @@ struct lambdakzeroBuilder {
 
     // Passes TPC refit
     statisticsRegistry.v0stats[kV0TPCrefit]++;
+    if (!V0.has_collision())
+      statisticsRegistry.v0statsUnassociated[kV0TPCrefit]++;
 
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
@@ -834,6 +855,8 @@ struct lambdakzeroBuilder {
 
     // passes DCAxy
     statisticsRegistry.v0stats[kV0DCAxy]++;
+    if (!V0.has_collision())
+      statisticsRegistry.v0statsUnassociated[kV0DCAxy]++;
 
     // Change strangenessBuilder tracks
     lPositiveTrack = getTrackParCov(posTrack);
@@ -881,6 +904,8 @@ struct lambdakzeroBuilder {
 
     // Passes DCA between daughters check
     statisticsRegistry.v0stats[kV0DCADau]++;
+    if (!V0.has_collision())
+      statisticsRegistry.v0statsUnassociated[kV0DCADau]++;
 
     v0candidate.cosPA = RecoDecay::cpa(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, array{v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2]}, array{v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1], v0candidate.posP[2] + v0candidate.negP[2]});
     if (v0candidate.cosPA < v0cospa) {
@@ -896,6 +921,8 @@ struct lambdakzeroBuilder {
 
     // Passes CosPA check
     statisticsRegistry.v0stats[kV0CosPA]++;
+    if (!V0.has_collision())
+      statisticsRegistry.v0statsUnassociated[kV0CosPA]++;
 
     v0candidate.V0radius = RecoDecay::sqrtSumOfSquares(v0candidate.pos[0], v0candidate.pos[1]);
     if (v0candidate.V0radius < v0radius) {
@@ -904,6 +931,8 @@ struct lambdakzeroBuilder {
 
     // Passes radius check
     statisticsRegistry.v0stats[kV0Radius]++;
+    if (!V0.has_collision())
+      statisticsRegistry.v0statsUnassociated[kV0Radius]++;
     // Return OK: passed all v0 candidate selecton criteria
 
     auto px = v0candidate.posP[0] + v0candidate.negP[0];
@@ -931,6 +960,8 @@ struct lambdakzeroBuilder {
 
     // Passes momentum window check
     statisticsRegistry.v0stats[kWithinMomentumRange]++;
+    if (!V0.has_collision())
+      statisticsRegistry.v0statsUnassociated[kWithinMomentumRange]++;
 
     // Calculate masses
     auto lGammaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
@@ -1164,6 +1195,9 @@ struct lambdakzeroBuilder {
 
         // populates the various tables for analysis
         statisticsRegistry.v0stats[kCountStandardV0]++;
+        if (!V0.has_collision())
+          statisticsRegistry.v0statsUnassociated[kCountStandardV0]++;
+
         v0indices(V0.posTrackId(), V0.negTrackId(),
                   V0.collisionId(), V0.globalIndex());
         v0trackXs(v0candidate.posTrackX, v0candidate.negTrackX);
@@ -1343,7 +1377,7 @@ struct lambdakzeroPreselector {
   Configurable<int> minITSCluITSOnly{"minITSCluITSOnly", 0, "minimum number of ITS clusters to ask for if daughter track does not have TPC"};
 
   // for bit-packed maps
-  std::vector<uint16_t> selectionMask;
+  std::vector<uint32_t> selectionMask;
   enum v0bit { bitInteresting = 0,
                bitTrackQuality,
                bitTrueGamma,
@@ -1352,6 +1386,7 @@ struct lambdakzeroPreselector {
                bitTrueAntiLambda,
                bitTrueHypertriton,
                bitTrueAntiHypertriton,
+               bitPhysicalPrimary,
                bitdEdxGamma,
                bitdEdxK0Short,
                bitdEdxLambda,
@@ -1385,7 +1420,7 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TV0Object>
-  void checkTrackQuality(TV0Object const& lV0Candidate, uint16_t& maskElement, bool passdEdx = false)
+  void checkTrackQuality(TV0Object const& lV0Candidate, uint32_t& maskElement, bool passdEdx = false)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1428,9 +1463,10 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TV0Object>
-  void checkPDG(TV0Object const& lV0Candidate, uint16_t& maskElement)
+  void checkPDG(TV0Object const& lV0Candidate, uint32_t& maskElement)
   {
     int lPDG = -1;
+    bool physicalPrimary = false;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
@@ -1444,6 +1480,7 @@ struct lambdakzeroPreselector {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
             if (lNegMother.globalIndex() == lPosMother.globalIndex() && (!dIfMCselectPhysicalPrimary || lNegMother.isPhysicalPrimary())) {
               lPDG = lNegMother.pdgCode();
+              physicalPrimary = lNegMother.isPhysicalPrimary();
 
               // additionally check PDG of the mother particle if requested
               if (dIfMCselectV0MotherPDG != 0) {
@@ -1473,10 +1510,12 @@ struct lambdakzeroPreselector {
       bitset(maskElement, bitTrueHypertriton);
     if (lPDG == -1010010030)
       bitset(maskElement, bitTrueAntiHypertriton);
+    if (physicalPrimary)
+      bitset(maskElement, bitPhysicalPrimary);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   template <class TTrackTo, typename TV0Object>
-  void checkdEdx(TV0Object const& lV0Candidate, uint16_t& maskElement)
+  void checkdEdx(TV0Object const& lV0Candidate, uint32_t& maskElement)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1559,7 +1598,8 @@ struct lambdakzeroPreselector {
       }
       v0tags(validV0,
              bitcheck(selectionMask[ii], bitTrueGamma), bitcheck(selectionMask[ii], bitTrueK0Short), bitcheck(selectionMask[ii], bitTrueLambda),
-             bitcheck(selectionMask[ii], bitTrueAntiLambda), bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton),
+             bitcheck(selectionMask[ii], bitTrueAntiLambda),
+             bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton), bitcheck(selectionMask[ii], bitPhysicalPrimary),
              bitcheck(selectionMask[ii], bitdEdxGamma), bitcheck(selectionMask[ii], bitdEdxK0Short), bitcheck(selectionMask[ii], bitdEdxLambda),
              bitcheck(selectionMask[ii], bitdEdxAntiLambda), bitcheck(selectionMask[ii], bitdEdxHypertriton), bitcheck(selectionMask[ii], bitdEdxAntiHypertriton),
              bitcheck(selectionMask[ii], bitUsedInCascade), bitcheck(selectionMask[ii], bitUsedInTrackedCascade));

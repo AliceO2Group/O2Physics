@@ -25,6 +25,7 @@
 #include <string>
 #include <optional>
 #include <tuple>
+#include <algorithm>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -37,11 +38,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/Core/JetCandidateUtilities.h"
 
 namespace jetmatchingutilities
 {
@@ -366,15 +364,15 @@ template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename 
 void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& /*candidatesBase*/, M const& /*candidatesTag*/, N const& tracksBase, O const& tracksTag)
 {
   for (const auto& jetBase : jetsBasePerCollision) {
-    const auto candidateBase = jetBase.template hfcandidates_first_as<V>();
+    const auto candidateBase = jetBase.template candidates_first_as<V>();
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetBase.r()) != std::round(jetTag.r())) {
         continue;
       }
       if constexpr (jetsBaseIsMc || jetsTagIsMc) {
-        if (jethfutilities::isMatchedHFCandidate(candidateBase)) {
-          const auto candidateBaseMcId = jethfutilities::matchedParticleId(candidateBase, tracksBase, tracksTag);
-          const auto candidateTag = jetTag.template hfcandidates_first_as<M>();
+        if (jetcandidateutilities::isMatchedCandidate(candidateBase)) {
+          const auto candidateBaseMcId = jetcandidateutilities::matchedParticleId(candidateBase, tracksBase, tracksTag);
+          const auto candidateTag = jetTag.template candidates_first_as<M>();
           const auto candidateTagId = candidateTag.mcParticleId();
           if (candidateBaseMcId == candidateTagId) {
             baseToTagMatchingHF[jetBase.globalIndex()].push_back(jetTag.globalIndex());
@@ -382,7 +380,7 @@ void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
           }
         }
       } else {
-        const auto candidateTag = jetTag.template hfcandidates_first_as<M>();
+        const auto candidateTag = jetTag.template candidates_first_as<M>();
         if (candidateBase.globalIndex() == candidateTag.globalIndex()) {
           baseToTagMatchingHF[jetBase.globalIndex()].push_back(jetTag.globalIndex());
           tagToBaseMatchingHF[jetTag.globalIndex()].push_back(jetBase.globalIndex());
@@ -393,7 +391,7 @@ void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
 }
 
 template <bool isMc, typename T>
-auto constexpr getTrackId(T const& track)
+auto constexpr getConstituentId(T const& track)
 {
   if constexpr (isMc) {
 
@@ -408,38 +406,94 @@ auto constexpr getTrackId(T const& track)
   }
 }
 
-template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U>
-float getPtSum(T const& tracksBase, U const& tracksTag)
+template <bool isEMCAL, bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename O>
+float getPtSum(T const& tracksBase, U const& clustersBase, V const& tracksTag, O const& clustersTag)
 {
+  std::vector<int> particleTracker;
   float ptSum = 0.;
   for (const auto& trackBase : tracksBase) {
-    auto trackBaseId = getTrackId<jetsTagIsMc>(trackBase);
+    auto trackBaseId = getConstituentId<jetsTagIsMc>(trackBase);
     for (const auto& trackTag : tracksTag) {
-      auto trackTagId = getTrackId<jetsBaseIsMc>(trackTag);
+      auto trackTagId = getConstituentId<jetsBaseIsMc>(trackTag);
       if (trackBaseId != -1 && trackBaseId == trackTagId) {
         ptSum += trackBase.pt();
+        if constexpr (jetsBaseIsMc) {
+          particleTracker.push_back(trackBaseId);
+        }
         break;
+      }
+    }
+  }
+  if constexpr (isEMCAL) {
+    if constexpr (jetsTagIsMc) {
+      for (const auto& clusterBase : clustersBase) {
+        for (const auto& clusterBaseParticleId : clusterBase.mcParticleIds()) {
+          bool isClusterMatched = false;
+          for (const auto& trackTag : tracksTag) {
+            if (clusterBaseParticleId != -1 && clusterBaseParticleId == trackTag.globalIndex()) {
+              ptSum += clusterBase.energy() / std::cosh(clusterBase.eta());
+              isClusterMatched = true;
+              break;
+            }
+          }
+          if (isClusterMatched) {
+            break;
+          }
+        }
+      }
+    }
+    if constexpr (jetsBaseIsMc) {
+      for (const auto& trackBase : tracksBase) {
+        if (std::find(particleTracker.begin(), particleTracker.end(), trackBase.globalIndex()) != particleTracker.end()) {
+          continue;
+        }
+        auto trackBaseId = trackBase.globalIndex();
+        for (const auto& clusterTag : clustersTag) {
+          bool isClusterMatched = false;
+          for (const auto& clusterTagParticleId : clusterTag.mcParticleIds()) {
+            if (trackBaseId != -1 && trackBaseId == clusterTagParticleId) {
+              ptSum += trackBase.pt();
+              isClusterMatched = true;
+              break;
+            }
+          }
+          if (isClusterMatched) {
+            break;
+          }
+        }
       }
     }
   }
   return ptSum;
 }
 
-template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M>
-void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingPt, V const& /*tracksBase*/, M const& /*tracksTag*/, float minPtFraction)
+template <typename T, typename U>
+auto getConstituents(T const& jet, U const& /*constituents*/)
+{
+  if constexpr (jetfindingutilities::isEMCALTable<U>()) {
+    return jet.template clusters_as<U>();
+  } else {
+    return jet.template tracks_as<U>();
+  }
+}
+
+template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O>
+void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingPt, V const& tracksBase, M const& clustersBase, N const& tracksTag, O const& clustersTag, float minPtFraction)
 {
   float ptSumBase;
   float ptSumTag;
   for (const auto& jetBase : jetsBasePerCollision) {
-    auto jetBaseTracks = jetBase.template tracks_as<V>();
+    auto jetBaseTracks = getConstituents(jetBase, tracksBase);
+    auto jetBaseClusters = getConstituents(jetBase, clustersBase);
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetBase.r()) != std::round(jetTag.r())) {
         continue;
       }
-      auto jetTagTracks = jetTag.template tracks_as<M>();
+      auto jetTagTracks = getConstituents(jetTag, tracksTag);
+      auto jetTagClusters = getConstituents(jetTag, clustersTag);
 
-      ptSumBase = getPtSum<jetsBaseIsMc, jetsTagIsMc>(jetBaseTracks, jetTagTracks);
-      ptSumTag = getPtSum<jetsTagIsMc, jetsBaseIsMc>(jetTagTracks, jetBaseTracks);
+      ptSumBase = getPtSum < jetfindingutilities::isEMCALTable<M>() || jetfindingutilities::isEMCALTable<O>(), jetsBaseIsMc, jetsTagIsMc > (jetBaseTracks, jetBaseClusters, jetTagTracks, jetTagClusters);
+      ptSumTag = getPtSum < jetfindingutilities::isEMCALTable<M>() || jetfindingutilities::isEMCALTable<O>(), jetsTagIsMc, jetsBaseIsMc > (jetTagTracks, jetTagClusters, jetBaseTracks, jetBaseClusters);
       if (ptSumBase > jetBase.pt() * minPtFraction) {
         baseToTagMatchingPt[jetBase.globalIndex()].push_back(jetTag.globalIndex());
       }
@@ -451,8 +505,8 @@ void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
 }
 
 // function that calls all the Match functions
-template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingGeo, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingGeo, std::vector<std::vector<int>>& tagToBaseMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& candidatesBase, M const& candidatesTag, N const& tracksBase, O const& tracksTag, bool doMatchingGeo, bool doMatchingHf, bool doMatchingPt, float maxMatchingDistance, float minPtFraction)
+template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename R>
+void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingGeo, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingGeo, std::vector<std::vector<int>>& tagToBaseMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& candidatesBase, M const& candidatesTag, N const& tracksBase, O const& clustersBase, P const& tracksTag, R const& clustersTag, bool doMatchingGeo, bool doMatchingHf, bool doMatchingPt, float maxMatchingDistance, float minPtFraction)
 {
   // geometric matching
   if (doMatchingGeo) {
@@ -460,10 +514,10 @@ void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, 
   }
   // pt matching
   if (doMatchingPt) {
-    MatchPt<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingPt, tagToBaseMatchingPt, tracksBase, tracksTag, minPtFraction);
+    MatchPt<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingPt, tagToBaseMatchingPt, tracksBase, clustersBase, tracksTag, clustersTag, minPtFraction);
   }
   // HF matching
-  if constexpr (jethfutilities::isHFTable<V>()) {
+  if constexpr (jetcandidateutilities::isCandidateTable<V>()) {
     if (doMatchingHf) {
       MatchHF<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingHF, tagToBaseMatchingHF, candidatesBase, candidatesTag, tracksBase, tracksTag);
     }

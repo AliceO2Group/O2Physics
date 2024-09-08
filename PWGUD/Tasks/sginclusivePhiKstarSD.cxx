@@ -269,7 +269,7 @@ struct SGResonanceAnalyzer {
       if (v0.Eta() < EtaGapMin && v0.Eta() > -EtaGapMax) {
         trackgapC++;
       }
-      if (TMath::Abs(v0.Eta()) > EtaGapMax) {
+      if (TMath::Abs(v0.Eta()) > EtaGapMax || TMath::Abs(v0.Eta()) < EtaGapMin) {
         trackextra++;
       }
       if (TMath::Abs(v0.Eta()) > EtaDG) {
@@ -334,37 +334,46 @@ struct SGResonanceAnalyzer {
       }
       if (rapidity_gap) {
         if (trackgapC > 0 && trackgapA == 0 && trackextra == 0) {
-          if (gapSide == 0)
+          if (gapSide == 0) {
             registry.fill(HIST("event_rap_gap"), 1);
-          registry.fill(HIST("rap_mult1"), trackgapC);
-          if (gapSide == 1)
+            registry.fill(HIST("rap_mult1"), trackgapC);
+          }
+          if (gapSide == 1) {
             registry.fill(HIST("event_rap_gap"), 4);
-          registry.fill(HIST("rap1_mult1"), trackgapC);
-          if (gapSide == 2)
+            registry.fill(HIST("rap1_mult1"), trackgapC);
+          }
+          if (gapSide == 2) {
             registry.fill(HIST("event_rap_gap"), 7);
-          registry.fill(HIST("rap2_mult1"), trackgapC);
+            registry.fill(HIST("rap2_mult1"), trackgapC);
+          }
         }
         if (trackgapC == 0 && trackgapA > 0 && trackextra == 0) {
-          if (gapSide == 0)
+          if (gapSide == 0) {
             registry.fill(HIST("event_rap_gap"), 2);
-          registry.fill(HIST("rap_mult2"), trackgapA);
-          if (gapSide == 1)
+            registry.fill(HIST("rap_mult2"), trackgapA);
+          }
+          if (gapSide == 1) {
             registry.fill(HIST("event_rap_gap"), 5);
-          registry.fill(HIST("rap1_mult2"), trackgapA);
-          if (gapSide == 2)
+            registry.fill(HIST("rap1_mult2"), trackgapA);
+          }
+          if (gapSide == 2) {
             registry.fill(HIST("event_rap_gap"), 8);
-          registry.fill(HIST("rap2_mult3"), trackgapA);
+            registry.fill(HIST("rap2_mult2"), trackgapA);
+          }
         }
         if (trackDG > 0 && trackextraDG == 0) {
-          if (gapSide == 0)
+          if (gapSide == 0) {
             registry.fill(HIST("event_rap_gap"), 3);
-          registry.fill(HIST("rap_mult3"), trackDG);
-          if (gapSide == 1)
+            registry.fill(HIST("rap_mult3"), trackDG);
+          }
+          if (gapSide == 1) {
             registry.fill(HIST("event_rap_gap"), 6);
-          registry.fill(HIST("rap1_mult3"), trackDG);
-          if (gapSide == 2)
+            registry.fill(HIST("rap1_mult3"), trackDG);
+          }
+          if (gapSide == 2) {
             registry.fill(HIST("event_rap_gap"), 9);
-          registry.fill(HIST("rap2_mult3"), trackDG);
+            registry.fill(HIST("rap2_mult3"), trackDG);
+          }
         }
       }
     }

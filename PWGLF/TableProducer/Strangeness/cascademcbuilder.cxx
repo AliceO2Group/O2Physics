@@ -50,25 +50,71 @@ struct cascademcbuilder {
   Produces<aod::McTraCascLabels> tracasclabels; // MC labels for tracked cascades
   Produces<aod::McCascBBTags> bbtags;           // bb tags (inv structure tagging)
   Produces<aod::CascMCCores> cascmccores;       // optionally aggregate information from MC side for posterior analysis (derived data)
+  Produces<aod::CascCoreMCLabels> cascCoreMClabels; // optionally aggregate information from MC side for posterior analysis (derived data)
+  Produces<aod::CascMCCollRefs> cascmccollrefs;     // references MC collisions from MC cascades
 
-  Configurable<bool> populateCascMCCores{"populateCascMCCores", false, "populate CascMCCores table for derived data analysis"};
+  Configurable<bool> populateCascMCCoresSymmetric{"populateCascMCCoresSymmetric", false, "populate CascMCCores table for derived data analysis, keep CascMCCores joinable with CascCores"};
+  Configurable<bool> populateCascMCCoresAsymmetric{"populateCascMCCoresAsymmetric", false, "populate CascMCCores table for derived data analysis, create CascCores -> CascMCCores interlink. Saves only labeled Cascades."};
 
-  void init(InitContext const&) {}
+  Configurable<bool> addGeneratedXiMinus{"addGeneratedXiMinus", false, "add CascMCCore entry for generated, not-recoed XiMinus"};
+  Configurable<bool> addGeneratedXiPlus{"addGeneratedXiPlus", false, "add CascMCCore entry for generated, not-recoed XiPlus"};
+  Configurable<bool> addGeneratedOmegaMinus{"addGeneratedOmegaMinus", false, "add CascMCCore entry for generated, not-recoed OmegaMinus"};
+  Configurable<bool> addGeneratedOmegaPlus{"addGeneratedOmegaPlus", false, "add CascMCCore entry for generated, not-recoed OmegaPlus"};
 
-  template <typename TCascadeTable>
-  void generateCascadeMCinfo(TCascadeTable cascTable)
+  Configurable<float> rapidityWindow{"rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
+
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // Helper struct to contain CascMCCore information prior to filling
+  struct mcCascinfo {
+    int label;
+    int motherLabel;
+    int mcCollision;
+    int pdgCode;
+    int pdgCodeMother;
+    int pdgCodeV0;
+    int pdgCodePositive;
+    int pdgCodeNegative;
+    int pdgCodeBachelor;
+    bool isPhysicalPrimary;
+    int processPositive = -1;
+    int processNegative = -1;
+    int processBachelor = -1;
+    std::array<float, 3> xyz;
+    std::array<float, 3> lxyz;
+    std::array<float, 3> posP;
+    std::array<float, 3> negP;
+    std::array<float, 3> bachP;
+    std::array<float, 3> momentum;
+    int mcParticlePositive;
+    int mcParticleNegative;
+    int mcParticleBachelor;
+  };
+  mcCascinfo thisInfo;
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+
+  template <typename TCascadeTable, typename TMCParticleTable>
+  void generateCascadeMCinfo(TCascadeTable cascTable, TMCParticleTable mcParticles)
   {
+
+    // to be used if using the asymmetric mode, kept empty otherwise
+    std::vector<mcCascinfo> mcCascinfos;                           // V0MCCore information
+    std::vector<bool> mcParticleIsReco(mcParticles.size(), false); // mc Particle not recoed by V0s
+
     for (auto& casc : cascTable) {
-      int pdgCode = -1, pdgCodeMother = -1;
-      int pdgCodePositive = -1, pdgCodeNegative = -1, pdgCodeBachelor = -1, pdgCodeV0 = -1;
-      bool isPhysicalPrimary = false;
-      float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
-      float xlmc = -999.0f, ylmc = -999.0f, zlmc = -999.0f;
-      float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
-      float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
-      float pxbachmc = -999.0f, pybachmc = -999.0f, pzbachmc = -999.0f;
-      float px = -999.0f, py = -999.0f, pz = -999.0f;
-      int lLabel = -1, lMotherLabel = -1;
+      thisInfo.pdgCode = -1, thisInfo.pdgCodeMother = -1;
+      thisInfo.pdgCodePositive = -1, thisInfo.pdgCodeNegative = -1;
+      thisInfo.pdgCodeBachelor = -1, thisInfo.pdgCodeV0 = -1;
+      thisInfo.isPhysicalPrimary = false;
+      thisInfo.xyz[0] = -999.0f, thisInfo.xyz[1] = -999.0f, thisInfo.xyz[2] = -999.0f;
+      thisInfo.lxyz[0] = -999.0f, thisInfo.lxyz[1] = -999.0f, thisInfo.lxyz[2] = -999.0f;
+      thisInfo.posP[0] = -999.0f, thisInfo.posP[1] = -999.0f, thisInfo.posP[2] = -999.0f;
+      thisInfo.negP[0] = -999.0f, thisInfo.negP[1] = -999.0f, thisInfo.negP[2] = -999.0f;
+      thisInfo.bachP[0] = -999.0f, thisInfo.bachP[1] = -999.0f, thisInfo.bachP[2] = -999.0f;
+      thisInfo.momentum[0] = -999.0f, thisInfo.momentum[1] = -999.0f, thisInfo.momentum[2] = -999.0f;
+      thisInfo.label = -1, thisInfo.motherLabel = -1;
+      thisInfo.mcParticlePositive = -1;
+      thisInfo.mcParticleNegative = -1;
+      thisInfo.mcParticleBachelor = -1;
 
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.template bachelor_as<aod::McTrackLabels>();
@@ -82,18 +128,24 @@ struct cascademcbuilder {
         auto lMCNegTrack = lNegTrack.template mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.template mcParticle_as<aod::McParticles>();
 
-        pdgCodePositive = lMCPosTrack.pdgCode();
-        pdgCodeNegative = lMCNegTrack.pdgCode();
-        pdgCodeBachelor = lMCBachTrack.pdgCode();
-        pxposmc = lMCPosTrack.px();
-        pyposmc = lMCPosTrack.py();
-        pzposmc = lMCPosTrack.pz();
-        pxnegmc = lMCNegTrack.px();
-        pynegmc = lMCNegTrack.py();
-        pznegmc = lMCNegTrack.pz();
-        pxbachmc = lMCBachTrack.px();
-        pybachmc = lMCBachTrack.py();
-        pzbachmc = lMCBachTrack.pz();
+        thisInfo.mcParticlePositive = lMCPosTrack.globalIndex();
+        thisInfo.mcParticleNegative = lMCNegTrack.globalIndex();
+        thisInfo.mcParticleBachelor = lMCBachTrack.globalIndex();
+        thisInfo.pdgCodePositive = lMCPosTrack.pdgCode();
+        thisInfo.pdgCodeNegative = lMCNegTrack.pdgCode();
+        thisInfo.pdgCodeBachelor = lMCBachTrack.pdgCode();
+        thisInfo.posP[0] = lMCPosTrack.px();
+        thisInfo.posP[1] = lMCPosTrack.py();
+        thisInfo.posP[2] = lMCPosTrack.pz();
+        thisInfo.negP[0] = lMCNegTrack.px();
+        thisInfo.negP[1] = lMCNegTrack.py();
+        thisInfo.negP[2] = lMCNegTrack.pz();
+        thisInfo.bachP[0] = lMCBachTrack.px();
+        thisInfo.bachP[1] = lMCBachTrack.py();
+        thisInfo.bachP[2] = lMCBachTrack.pz();
+        thisInfo.processPositive = lMCPosTrack.getProcess();
+        thisInfo.processNegative = lMCNegTrack.getProcess();
+        thisInfo.processBachelor = lMCBachTrack.getProcess();
 
         // Step 1: check if the mother is the same, go up a level
         if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
@@ -101,10 +153,10 @@ struct cascademcbuilder {
             for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
               if (lNegMother == lPosMother) {
                 // acquire information
-                xlmc = lMCPosTrack.vx();
-                ylmc = lMCPosTrack.vy();
-                zlmc = lMCPosTrack.vz();
-                pdgCodeV0 = lNegMother.pdgCode();
+                thisInfo.lxyz[0] = lMCPosTrack.vx();
+                thisInfo.lxyz[1] = lMCPosTrack.vy();
+                thisInfo.lxyz[2] = lMCPosTrack.vz();
+                thisInfo.pdgCodeV0 = lNegMother.pdgCode();
 
                 // if we got to this level, it means the mother particle exists and is the same
                 // now we have to go one level up and compare to the bachelor mother too
@@ -112,19 +164,24 @@ struct cascademcbuilder {
                   for (auto& lV0Mother : lNegMother.template mothers_as<aod::McParticles>()) {
                     for (auto& lBachMother : lMCBachTrack.template mothers_as<aod::McParticles>()) {
                       if (lV0Mother == lBachMother) {
-                        lLabel = lV0Mother.globalIndex();
-                        pdgCode = lV0Mother.pdgCode();
-                        isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
-                        xmc = lMCBachTrack.vx();
-                        ymc = lMCBachTrack.vy();
-                        zmc = lMCBachTrack.vz();
-                        px = lV0Mother.px();
-                        py = lV0Mother.py();
-                        pz = lV0Mother.pz();
+                        thisInfo.label = lV0Mother.globalIndex();
+
+                        if (lV0Mother.has_mcCollision()) {
+                          thisInfo.mcCollision = lV0Mother.mcCollisionId(); // save this reference, please
+                        }
+
+                        thisInfo.pdgCode = lV0Mother.pdgCode();
+                        thisInfo.isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
+                        thisInfo.xyz[0] = lMCBachTrack.vx();
+                        thisInfo.xyz[1] = lMCBachTrack.vy();
+                        thisInfo.xyz[2] = lMCBachTrack.vz();
+                        thisInfo.momentum[0] = lV0Mother.px();
+                        thisInfo.momentum[1] = lV0Mother.py();
+                        thisInfo.momentum[2] = lV0Mother.pz();
                         if (lV0Mother.has_mothers()) {
                           for (auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
-                            pdgCodeMother = lV0GrandMother.pdgCode();
-                            lMotherLabel = lV0GrandMother.globalIndex();
+                            thisInfo.pdgCodeMother = lV0GrandMother.pdgCode();
+                            thisInfo.motherLabel = lV0GrandMother.globalIndex();
                           }
                         }
                       }
@@ -138,32 +195,165 @@ struct cascademcbuilder {
       }     // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       casclabels(
-        lLabel, lMotherLabel);
-      if (populateCascMCCores) {
+        thisInfo.label, thisInfo.motherLabel);
+
+      // Mark mcParticle as recoed (no searching necessary afterwards)
+      if (thisInfo.label > -1) {
+        mcParticleIsReco[thisInfo.label] = true;
+      }
+
+      if (populateCascMCCoresSymmetric) {
         cascmccores(
-          pdgCode, pdgCodeMother, pdgCodeV0, isPhysicalPrimary,
-          pdgCodePositive, pdgCodeNegative, pdgCodeBachelor,
-          xmc, ymc, zmc, xlmc, ylmc, zlmc,
-          pxposmc, pyposmc, pzposmc,
-          pxnegmc, pynegmc, pznegmc,
-          pxbachmc, pybachmc, pzbachmc,
-          px, py, pz);
+          thisInfo.pdgCode, thisInfo.pdgCodeMother, thisInfo.pdgCodeV0, thisInfo.isPhysicalPrimary,
+          thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative, thisInfo.pdgCodeBachelor,
+          thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
+          thisInfo.lxyz[0], thisInfo.lxyz[1], thisInfo.lxyz[2],
+          thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
+          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
+          thisInfo.bachP[0], thisInfo.bachP[1], thisInfo.bachP[2],
+          thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
+        cascmccollrefs(thisInfo.mcCollision);
+      }
+
+      if (populateCascMCCoresAsymmetric) {
+        int thisCascMCCoreIndex = -1;
+        // step 1: check if this element is already provided in the table
+        //         using the packedIndices variable calculated above
+        for (uint32_t ii = 0; ii < mcCascinfos.size(); ii++) {
+          if (thisInfo.label == mcCascinfos[ii].label && mcCascinfos[ii].label > -1) {
+            thisCascMCCoreIndex = ii;
+            break; // this exists already in list
+          }
+        }
+        if (thisCascMCCoreIndex < 0) {
+          // this CascMCCore does not exist yet. Create it and reference it
+          thisCascMCCoreIndex = mcCascinfos.size();
+          mcCascinfos.push_back(thisInfo);
+        }
+        cascCoreMClabels(thisCascMCCoreIndex); // interlink: reconstructed -> MC index
       }
     } // end casctable loop
+
+    // now populate V0MCCores if in asymmetric mode
+    if (populateCascMCCoresAsymmetric) {
+      // first step: add any un-recoed v0mmcores that were requested
+      for (auto& mcParticle : mcParticles) {
+        thisInfo.pdgCode = -1, thisInfo.pdgCodeMother = -1;
+        thisInfo.pdgCodePositive = -1, thisInfo.pdgCodeNegative = -1;
+        thisInfo.pdgCodeBachelor = -1, thisInfo.pdgCodeV0 = -1;
+        thisInfo.isPhysicalPrimary = false;
+        thisInfo.xyz[0] = 0.0f, thisInfo.xyz[1] = 0.0f, thisInfo.xyz[2] = 0.0f;
+        thisInfo.lxyz[0] = 0.0f, thisInfo.lxyz[1] = 0.0f, thisInfo.lxyz[2] = 0.0f;
+        thisInfo.posP[0] = 0.0f, thisInfo.posP[1] = 0.0f, thisInfo.posP[2] = 0.0f;
+        thisInfo.negP[0] = 0.0f, thisInfo.negP[1] = 0.0f, thisInfo.negP[2] = 0.0f;
+        thisInfo.bachP[0] = 0.0f, thisInfo.bachP[1] = 0.0f, thisInfo.bachP[2] = 0.0f;
+        thisInfo.momentum[0] = 0.0f, thisInfo.momentum[1] = 0.0f, thisInfo.momentum[2] = 0.0f;
+        thisInfo.label = -1, thisInfo.motherLabel = -1;
+        thisInfo.mcParticlePositive = -1;
+        thisInfo.mcParticleNegative = -1;
+        thisInfo.mcParticleBachelor = -1;
+
+        if (mcParticleIsReco[mcParticle.globalIndex()] == true)
+          continue; // skip if already created in list
+
+        if (TMath::Abs(mcParticle.y()) > rapidityWindow)
+          continue; // skip outside midrapidity
+
+        if (
+          (addGeneratedXiMinus && mcParticle.pdgCode() == 3312) ||
+          (addGeneratedXiPlus && mcParticle.pdgCode() == -3312) ||
+          (addGeneratedOmegaMinus && mcParticle.pdgCode() == 3334) ||
+          (addGeneratedOmegaPlus && mcParticle.pdgCode() == -3334)) {
+          thisInfo.pdgCode = mcParticle.pdgCode();
+          thisInfo.isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+
+          if (mcParticle.has_mcCollision()) {
+            thisInfo.mcCollision = mcParticle.mcCollisionId(); // save this reference, please
+          }
+          thisInfo.momentum[0] = mcParticle.px();
+          thisInfo.momentum[1] = mcParticle.py();
+          thisInfo.momentum[2] = mcParticle.pz();
+          thisInfo.label = mcParticle.globalIndex();
+
+          if (mcParticle.has_daughters()) {
+            auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
+            for (auto& dau : daughters) {
+              if (dau.getProcess() != 4) // check whether the daughter comes from a decay
+                continue;
+
+              if (TMath::Abs(dau.pdgCode()) == 211 || TMath::Abs(dau.pdgCode()) == 321) {
+                thisInfo.pdgCodeBachelor = dau.pdgCode();
+                thisInfo.bachP[0] = dau.px();
+                thisInfo.bachP[1] = dau.py();
+                thisInfo.bachP[2] = dau.pz();
+                thisInfo.xyz[0] = dau.vx();
+                thisInfo.xyz[1] = dau.vy();
+                thisInfo.xyz[2] = dau.vz();
+                thisInfo.mcParticleBachelor = dau.globalIndex();
+              }
+              if (TMath::Abs(dau.pdgCode()) == 2212) {
+                thisInfo.pdgCodeV0 = dau.pdgCode();
+
+                for (auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
+                  if (v0Dau.getProcess() != 4)
+                    continue;
+
+                  if (v0Dau.pdgCode() > 0) {
+                    thisInfo.pdgCodePositive = v0Dau.pdgCode();
+                    thisInfo.processPositive = v0Dau.getProcess();
+                    thisInfo.posP[0] = v0Dau.px();
+                    thisInfo.posP[1] = v0Dau.py();
+                    thisInfo.posP[2] = v0Dau.pz();
+                    thisInfo.lxyz[0] = v0Dau.vx();
+                    thisInfo.lxyz[1] = v0Dau.vy();
+                    thisInfo.lxyz[2] = v0Dau.vz();
+                    thisInfo.mcParticlePositive = v0Dau.globalIndex();
+                  }
+                  if (v0Dau.pdgCode() < 0) {
+                    thisInfo.pdgCodeNegative = v0Dau.pdgCode();
+                    thisInfo.processNegative = v0Dau.getProcess();
+                    thisInfo.negP[0] = v0Dau.px();
+                    thisInfo.negP[1] = v0Dau.py();
+                    thisInfo.negP[2] = v0Dau.pz();
+                    thisInfo.mcParticleNegative = v0Dau.globalIndex();
+                  }
+                }
+              }
+            }
+          }
+
+          // if I got here, it means this MC particle was not recoed and is of interest. Add it please
+          mcCascinfos.push_back(thisInfo);
+        }
+      }
+
+      for (auto thisInfo : mcCascinfos) {
+        cascmccores( // a lot of the info below will be compressed in case of not-recoed MC (good!)
+          thisInfo.pdgCode, thisInfo.pdgCodeMother, thisInfo.pdgCodeV0, thisInfo.isPhysicalPrimary,
+          thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative, thisInfo.pdgCodeBachelor,
+          thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
+          thisInfo.lxyz[0], thisInfo.lxyz[1], thisInfo.lxyz[2],
+          thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
+          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
+          thisInfo.bachP[0], thisInfo.bachP[1], thisInfo.bachP[2],
+          thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
+        cascmccollrefs(thisInfo.mcCollision);
+      }
+    }
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build cascade labels
-  void processCascades(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& /*v0table*/, aod::McTrackLabels const&, aod::McParticles const&)
+  void processCascades(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& /*v0table*/, aod::McTrackLabels const&, aod::McParticles const& mcParticles)
   {
-    generateCascadeMCinfo(casctable);
+    generateCascadeMCinfo(casctable, mcParticles);
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build findable cascade labels
-  void processFindableCascades(aod::CascDatas const& casctable, aod::FindableV0sLinked const&, aod::V0Datas const& /*v0table*/, aod::McTrackLabels const&, aod::McParticles const&)
+  void processFindableCascades(aod::CascDatas const& casctable, aod::FindableV0sLinked const&, aod::V0Datas const& /*v0table*/, aod::McTrackLabels const&, aod::McParticles const& mcParticles)
   {
-    generateCascadeMCinfo(casctable);
+    generateCascadeMCinfo(casctable, mcParticles);
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*

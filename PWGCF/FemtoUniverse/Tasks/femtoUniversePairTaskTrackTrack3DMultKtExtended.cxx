@@ -484,7 +484,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
       }
     } else {
       /// Now build the combinations for identical particles pairs
-      TRandom2* randgen = new TRandom2(1);
+      TRandom2* randgen = new TRandom2(0);
       double rand;
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
 

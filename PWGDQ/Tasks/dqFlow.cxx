@@ -60,10 +60,14 @@ using namespace o2::aod;
 using namespace o2::analysis;
 
 // Declarations of various short names
+using MyBcs = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+// using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+// using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QvectorTPCallVecs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -81,7 +85,7 @@ using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2;
 constexpr static uint32_t gkEventFillMapRun3 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkEventFillMapRun3Qvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionQvect;
+constexpr static uint32_t gkEventFillMapRun3Qvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionQvectCentr;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -97,7 +101,11 @@ struct DQEventQvector {
   Produces<ReducedEventsQvector> eventQvector;
   Produces<ReducedEventsQvectorExtra> eventQvectorExtra;
   Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
+  Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra;
   Produces<ReducedEventsRefFlow> eventRefFlow;
+  Produces<ReducedEventsQvectorZN> eventQvectorZN;
+  Produces<ReducedZdc> eventReducedZdc;
+  Produces<ReducedZdcExtra> eventReducedZdcExtra;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
@@ -288,14 +296,15 @@ struct DQEventQvector {
 
     // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
+      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+      eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
     }
   }
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void runFillQvector(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracks1)
+  void runFillQvector(TEvent const& collision, MyBcs const&, TTracks const& tracks1, aod::Zdcs const&)
   {
     // Fill the event properties within the VarManager
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -307,7 +316,8 @@ struct DQEventQvector {
 
     fGFW->Clear();
     float centrality;
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<MyBcs>();
     // Load weights from CCDB
     loadCorrections(bc.timestamp());
     constexpr bool eventHasCentRun2 = ((TEventFillMap & VarManager::ObjTypes::CollisionCentRun2) > 0);
@@ -456,8 +466,14 @@ struct DQEventQvector {
       eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
     }
 
-    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
       VarManager::FillQVectorFromCentralFW(collision);
+
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        VarManager::FillSpectatorPlane(zdc);
+      }
+
       if ((tracks1.size() > 0) && (VarManager::fgValues[VarManager::kMultA] * VarManager::fgValues[VarManager::kMultB] * VarManager::fgValues[VarManager::kMultC] != 0.0)) {
         if (fConfigQA) {
           fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
@@ -467,28 +483,40 @@ struct DQEventQvector {
         }
       }
       if (fEventCut->IsSelected(VarManager::fgValues)) {
-        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
+        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+        eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+        if (bc.has_zdc()) {
+          eventQvectorZN(VarManager::fgValues[VarManager::kQ1ZNAX], VarManager::fgValues[VarManager::kQ1ZNAY], VarManager::fgValues[VarManager::kQ1ZNCX], VarManager::fgValues[VarManager::kQ1ZNCY]);
+          eventReducedZdc(VarManager::fgValues[VarManager::kEnergyCommonZNA], VarManager::fgValues[VarManager::kEnergyCommonZNC], VarManager::fgValues[VarManager::kEnergyCommonZPA], VarManager::fgValues[VarManager::kEnergyCommonZPC],
+                          VarManager::fgValues[VarManager::kTimeZNA], VarManager::fgValues[VarManager::kTimeZNC], VarManager::fgValues[VarManager::kTimeZPA], VarManager::fgValues[VarManager::kTimeZPC]);
+          eventReducedZdcExtra(VarManager::fgValues[VarManager::kEnergyZNA1], VarManager::fgValues[VarManager::kEnergyZNA2], VarManager::fgValues[VarManager::kEnergyZNA3], VarManager::fgValues[VarManager::kEnergyZNA4],
+                               VarManager::fgValues[VarManager::kEnergyZNC1], VarManager::fgValues[VarManager::kEnergyZNC2], VarManager::fgValues[VarManager::kEnergyZNC3], VarManager::fgValues[VarManager::kEnergyZNC4]);
+        } else {
+          eventQvectorZN(-999, -999, -999, -999);
+          eventReducedZdc(-999, -999, -999, -999, -999, -999, -999, -999);
+          eventReducedZdcExtra(-999, -999, -999, -999, -999, -999, -999, -999);
+        }
       }
     }
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 2
-  void processBarrelQvectorRun2(MyEventsWithCent::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processBarrelQvectorRun2(MyEventsWithCent::iterator const& collisions, MyBcs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks, zdcs);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processBarrelQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processBarrelQvector(MyEventsWithCentRun3::iterator const& collisions, MyBcs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMapRun3, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMapRun3, gkTrackFillMap>(collisions, bcs, tracks, zdcs);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processAllQvector(MyEventsWithCentQvectRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processAllQvector(MyEventsWithCentQvectRun3::iterator const& collisions, MyBcs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMapRun3Qvect, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMapRun3Qvect, gkTrackFillMap>(collisions, bcs, tracks, zdcs);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
@@ -498,9 +526,9 @@ struct DQEventQvector {
   }
 
   // Process to fill Q vector using forward tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
+  void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, MyBcs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMapRun3, 0u>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMapRun3, 0u>(collisions, bcs, tracks, zdcs);
   }
 
   // TODO: dummy function for the case when no process function is enabled

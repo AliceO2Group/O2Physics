@@ -181,7 +181,7 @@ struct centralityStudy {
     if constexpr (requires { collision.centFT0C(); }) {
       // process FT0C centrality plots
       histos.fill(HIST("hNContribsVsCentrality"), collision.centFT0C(), collision.multPVTotalContributors());
-      histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
+      histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSTPC());
       histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
       histos.fill(HIST("hNGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
       histos.fill(HIST("hPVChi2VsCentrality"), collision.centFT0C(), collision.multPVChi2());
@@ -193,7 +193,12 @@ struct centralityStudy {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentrality(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs>::iterator const& collision)
+  void processCollisionsWithCentrality(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>::iterator const& collision)
+  {
+    genericProcessCollision(collision);
+  }
+
+  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs>::iterator const& collision)
   {
     genericProcessCollision(collision);
   }
@@ -217,8 +222,9 @@ struct centralityStudy {
     histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C());
   }
 
-  PROCESS_SWITCH(centralityStudy, processCollisions, "per-collision analysis", true);
+  PROCESS_SWITCH(centralityStudy, processCollisions, "per-collision analysis", false);
   PROCESS_SWITCH(centralityStudy, processCollisionsWithCentrality, "per-collision analysis", true);
+  PROCESS_SWITCH(centralityStudy, processCollisionsWithCentralityWithNeighbours, "per-collision analysis", false);
   PROCESS_SWITCH(centralityStudy, processBCs, "per-BC analysis", true);
 };
 

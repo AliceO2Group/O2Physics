@@ -19,6 +19,8 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
+#include "TRandom3.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -125,6 +127,10 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
+
+  // manual downscale factors
+  Configurable<bool> applyDownscale{"applyDownscale", false, "Flag to enable or disable the application of downscale factors"};
+  Configurable<LabeledArray<double>> downscaleFactors{"downscaleFactors", {defDownscaleFactors[0], kNtriggersHF, 1, hfTriggerNames, labelsDownscaleFactor}, "Downscale factors for each trigger (from 0 to 1)"};
 
   // array of BDT thresholds
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
@@ -289,8 +295,7 @@ struct HfFilter { // Main struct for HF triggers
 
       bool keepEvent[kNtriggersHF]{false};
       if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx
-
-        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P]);
+        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P]);
         continue;
       }
 
@@ -376,6 +381,11 @@ struct HfFilter { // Main struct for HF triggers
           continue;
         }
 
+        keepEvent[kSingleCharm2P] = true;
+        if (isBeautyTagged) {
+          keepEvent[kSingleNonPromptCharm2P] = true;
+        }
+
         auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
         auto pt2Prong = RecoDecay::pt(pVec2Prong);
 
@@ -418,7 +428,7 @@ struct HfFilter { // Main struct for HF triggers
 
           if (!keepEvent[kBeauty3P] && isBeautyTagged) {
             auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParThird, dcaThird, kBeauty3P);
-            if (isTrackSelected && ((TESTBIT(selD0, 0) && track.sign() < 0) || (TESTBIT(selD0, 1) && track.sign() > 0))) {
+            if (isTrackSelected && ((TESTBIT(selD0, 0) && track.sign() > 0) || (TESTBIT(selD0, 1) && track.sign() < 0))) {
               auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
@@ -588,7 +598,7 @@ struct HfFilter { // Main struct for HF triggers
                 }
 
                 int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackBachelor, trackParBachelor, dcaBachelor, -1);
-                if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() < 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() > 0))) {
+                if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() > 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() < 0))) {
                   std::array<float, 2> massDausD0{massPi, massKa};
                   auto massD0dau = massD0Cand;
                   if (trackBachelor.sign() < 0) {
@@ -766,6 +776,11 @@ struct HfFilter { // Main struct for HF triggers
 
         if (!std::accumulate(isSignalTagged.begin(), isSignalTagged.end(), 0)) {
           continue;
+        }
+
+        keepEvent[kSingleCharm3P] = true;
+        if (std::accumulate(isBeautyTagged.begin(), isBeautyTagged.end(), 0)) {
+          keepEvent[kSingleNonPromptCharm3P] = true;
         }
 
         if ((!keepOnlyDplusForDouble3Prongs && std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) || (keepOnlyDplusForDouble3Prongs && isCharmTagged[kDplus - 1])) {
@@ -1010,9 +1025,9 @@ struct HfFilter { // Main struct for HF triggers
 
             auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecPhoton);
             auto ptCand = RecoDecay::pt(pVecReso3Prong);
-            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 1u)) {
-              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 1u));
-              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 1u));
+            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 2u)) {
+              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 2u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 2u));
+              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 2u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 2u));
               if (isGoodDsStarToKKPi || isGoodDsStarToPiKK) {
                 if (activateQA) {
                   if (isGoodDsStarToKKPi) {
@@ -1282,7 +1297,17 @@ struct HfFilter { // Main struct for HF triggers
         keepEvent[kDoubleCharmMix] = true;
       }
 
-      tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P]);
+      // apply downscale factors, if required
+      if (applyDownscale) {
+        auto rndValue = gRandom->Rndm();
+        for (int iTrigger{0}; iTrigger < kNtriggersHF; ++iTrigger) {
+          if (rndValue > downscaleFactors->get(iTrigger, 0u)) {
+            keepEvent[iTrigger] = false;
+          }
+        }
+      }
+
+      tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P]);
 
       if (!std::accumulate(keepEvent, keepEvent + kNtriggersHF, 0)) {
         hProcessedEvents->Fill(1);

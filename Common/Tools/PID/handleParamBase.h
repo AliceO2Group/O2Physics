@@ -145,26 +145,41 @@ void setupTimestamps(int64_t& timestamp,
     const std::string run_path = Form("%s/%i", rct_path.data(), runnumber);
 
     headers = api.retrieveHeaders(run_path, metadata, -1);
-    if (headers.count("SOR") == 0) {
-      LOGF(fatal, "Cannot find run-number SOR in path '%s'.", run_path.data());
+
+    if (headers.count("STF") == 0) {
+      LOGF(warning, "Cannot find STF for run %d in path '%s'. Using SOR as fallback", runnumber, run_path.data());
+      if (headers.count("SOR") == 0) {
+        LOGF(fatal, "Cannot find SOR in path '%s'.", run_path.data());
+      }
+      sor = atol(headers["SOR"].c_str());
+    } else {
+      sor = atol(headers["STF"].c_str());
     }
-    sor = atol(headers["SOR"].c_str());
-    if (headers.count("EOR") == 0) {
-      LOGF(fatal, "Cannot find run-number EOR in path '%s'.", run_path.data());
+
+    if (headers.count("ETF") == 0) {
+      LOGF(warning, "Cannot find ETF for run %d in path '%s'. Using EOR as fallback", runnumber, run_path.data());
+      if (headers.count("EOR") == 0) {
+        LOGF(fatal, "Cannot find EOR in path '%s'.", run_path.data());
+      }
+      eor = atol(headers["EOR"].c_str());
+    } else {
+      eor = atol(headers["ETF"].c_str());
     }
-    eor = atol(headers["EOR"].c_str());
-    LOG(info) << "Getting timestamp for run " << runnumber << " from CCDB in path " << run_path << " -> SOR " << sor << " (" << timeStampToHReadble(sor) << ")"
-              << ", EOR " << eor << " (" << timeStampToHReadble(eor) << ")";
+
+    LOG(info) << "Getting timestamp for run " << runnumber << " from CCDB in path " << run_path << " -> STF " << sor << " (" << timeStampToHReadble(sor) << ")"
+              << ", ETF " << eor << " (" << timeStampToHReadble(eor) << ")";
   };
 
   if (minRunNumber != 0) {
     int64_t SOR = 0, EOR = 0;
     getSOREOR(minRunNumber, SOR, EOR);
     timestamp = SOR; // timestamp of the SOR in ms
-    LOG(info) << "Setting timestamp of object from run number " << minRunNumber << ": " << validityStart << " -> " << timeStampToHReadble(validityStart);
+    LOG(info) << "Setting timestamp of object from run number " << minRunNumber << ": " << timestamp << " -> " << timeStampToHReadble(timestamp);
     if (validityStart == 0) { // Start of validity from first run number
       validityStart = SOR;
       LOG(info) << "Setting validityStart of object from run number " << minRunNumber << ": " << validityStart << " -> " << timeStampToHReadble(validityStart);
+      validityStart -= 120000; // add 2 minute margin before start of validity from RCT
+      LOG(info) << "Adding 2-minute margin to validityStart: " << validityStart << " -> " << timeStampToHReadble(validityStart);
     }
     if (validityStop == 0) {
       if (minRunNumber != maxRunNumber) {
@@ -175,6 +190,8 @@ void setupTimestamps(int64_t& timestamp,
         validityStop = EOR;
         LOG(info) << "Setting validityStop of object from run number " << minRunNumber << ": " << validityStop << " -> " << timeStampToHReadble(validityStop);
       }
+      validityStop += 120000; // add 2 minute margin after end of validity from RCT
+      LOG(info) << "Adding 2-minute margin to validityStop: " << validityStop << " -> " << timeStampToHReadble(validityStop);
     }
   }
   if (validityStop == 0) { // Default value for validityStop

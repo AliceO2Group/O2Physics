@@ -71,17 +71,22 @@ struct EventByEventQuantities {
 // *) QA:
 //    Remark: I keep new histograms in this group, until I need them permanently in the analysis. Then, they are moved to EventHistograms or ParticleHistograms (yes, even if they are 2D).
 struct QualityAssurance {
-  TList* fQAList = NULL;                                                    //!<! base list to hold all QA output object
-  TProfile* fQAHistogramsPro = NULL;                                        //!<! keeps flags relevant for the QA histograms
-  Bool_t fCheckUnderflowAndOverflow = kFALSE;                               // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
-  TH2D* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
-  Bool_t fFillQAEventHistograms2D = kTRUE;                                  // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
-  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};        // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
-  Double_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
-  TString fEventHistogramsName2D[eQAEventHistograms2D_N] = {""};            // name of fQAEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
-  Double_t fCentrality[eCentralityEstimators_N] = {0.};                     // used mostly in QA correlation plots
-  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""};         //
-} qa;                                                                       // "qa" is a common label for objects in this struct
+  TList* fQAList = NULL;                                                          //!<! base list to hold all QA output object
+  TProfile* fQAHistogramsPro = NULL;                                              //!<! keeps flags relevant for the QA histograms
+  Bool_t fCheckUnderflowAndOverflow = kFALSE;                                     // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
+  TH2D* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};          //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAEventHistograms2D = kTRUE;                                        // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};              // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
+  Double_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}};       // [type - see enum][x,y][nBins,min,max]
+  TString fEventHistogramsName2D[eQAEventHistograms2D_N] = {""};                  // name of fQAEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  TH2D* fQAParticleHistograms2D[eQAParticleHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eQAParticleHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookQAParticleHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAParticleHistograms2D[eQAParticleHistograms2D_N] = {kTRUE};        // book or not this 2D histogram, see configurable cfBookQAParticleHistograms2D
+  Double_t fParticleHistogramsBins2D[eQAParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+  TString fParticleHistogramsName2D[eQAParticleHistograms2D_N] = {""};            // name of fQAParticleHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  Double_t fCentrality[eCentralityEstimators_N] = {0.};                           // used mostly in QA correlation plots
+  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""};               //
+} qa;                                                                             // "qa" is a common label for objects in this struct
 
 // *) Event histograms:
 struct EventHistograms {
@@ -144,6 +149,7 @@ struct ParticleCuts {
   Double_t fdParticleCuts[eParticleCuts_N][2] = {{0.}};       // particles cuts defined via [min,max) . Remark: I use here eParticleHistograms_N , not to duplicate these enums for ParticleCuts.
   TString fsParticleCuts[eParticleCuts_N] = {""};             // particles cuts defined via booleans via string
   TH1D* fParticleCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each particle cut triggered
+  TFormula* fPtDependentDCAxyFormula = NULL;                  // the actual formula, used to evaluate for a given pT, the corresponding DCAxy, where the parameterization is given by configurable cfPtDependentDCAxyParameterization
 } pc;                                                         // "pc" is a common label for objects in this struct
 
 // *) Q-vectors:
