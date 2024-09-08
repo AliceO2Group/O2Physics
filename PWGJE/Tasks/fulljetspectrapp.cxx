@@ -129,6 +129,8 @@ struct FullJetSpectrapp {
       h_collisions_unweighted->GetXaxis()->SetBinLabel(7, "JetsMCD w/o kTVXinEMC");
       h_collisions_unweighted->GetXaxis()->SetBinLabel(8, "Tracks w/o kTVXinEMC");
       h_collisions_unweighted->GetXaxis()->SetBinLabel(9, "JetsMCPMCDMatched w/o kTVXinEMC");
+      h_collisions_unweighted->GetXaxis()->SetBinLabel(10, "Fake Matched MCD Jets");
+      h_collisions_unweighted->GetXaxis()->SetBinLabel(11, "Fake Matched MCP Jets");
     }
 
     if (doprocessTracksWeighted) {
@@ -165,7 +167,7 @@ struct FullJetSpectrapp {
 
     // Track QA histograms
     if (doprocessTracks || doprocessTracksWeighted) {
-      registry.add("h_collisions_unweighted", "event status; event status;entries", {HistType::kTH1F, {{11, 0., 11.0}}});
+      registry.add("h_collisions_unweighted", "event status; event status;entries", {HistType::kTH1F, {{12, 0., 12.0}}});
 
       registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
       registry.add("h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1., 1.}}});
@@ -232,7 +234,7 @@ struct FullJetSpectrapp {
       registry.add("h_full_jet_pt_part", "jet pT;#it{p}_{T_jet} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
       registry.add("h_full_jet_eta_part", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1., 1.}}});
       registry.add("h_full_jet_phi_part", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, 0., 7.}}});
-      registry.add("h2_full_jet_NEF_part", "#it{p}_{T,jet} vs NEF at Part Level;#it{p}_{T,jet} (GeV/#it{c});NEF", {HistType::kTH2F, {{350, 0., 350.}, {100, 0.0, 1.5}}});
+      registry.add("h2_full_jet_NEF_part", "#it{p}_{T,jet} vs NEF at Part Level;#it{p}_{T,jet} (GeV/#it{c});NEF", {HistType::kTH2F, {{350, 0., 350.}, {105, 0., 1.05}}});
 
       registry.add("h_Partjet_ntracks", "#it{p}_{T,constituent};#it{p}_{T_constituent} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
       registry.add("h2_full_jet_chargedconstituents_part", "Number of charged constituents at Part Level;#it{p}_{T,jet} (GeV/#it{c});N_{ch}", {HistType::kTH2F, {{350, 0., 350.},{100, 0.,100.}}});
@@ -717,6 +719,8 @@ struct FullJetSpectrapp {
   {
     registry.fill(HIST("h_collisions_unweighted"), 1.0);  //total events
     bool eventAccepted = false;
+    int fakemcdjet = 0;
+    int fakemcpjet = 0;
 
     if (fabs(collision.posZ()) > VertexZCut) {  //making double sure this condition is satisfied
       return;
@@ -745,27 +749,28 @@ struct FullJetSpectrapp {
     //**end of event selection**
 
     for (const auto& mcdjet : mcdjets) {
+      // Check if MCD jet is within the EMCAL fiducial region
+      if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax || mcdjet.eta() < jetEtaMin || mcdjet.eta() > jetEtaMax) {
+        fakemcdjet++;
+        registry.fill(HIST("h_collisions_unweighted"), 10.0);            // Fake Matched MCD Jets
+        registry.fill(HIST("h2_full_fakemcdjets"), mcdjet.pt(), fakemcdjet, 1.0);
+        continue;
+      }
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       if (!isAcceptedJet<JetTracks>(mcdjet)) {
         continue;
       }
-      if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax) {
-        continue;
-      }
-      if (!mcdjet.has_matchedJetGeo()) {
-        continue;
-      }
       for (auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {
-
-        if (!mcpjet.has_matchedJetGeo()) {
-          continue;
-        }
         // apply emcal fiducial cuts to the matched particle level jets
-        if (mcpjet.eta() > jetEtaMax || mcpjet.phi() > jetPhiMax || !jetfindingutilities::isInEtaAcceptance(mcpjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        if (mcpjet.eta() > jetEtaMax || mcpjet.eta() < jetEtaMin || mcpjet.phi() > jetPhiMax ||  mcpjet.phi() < jetPhiMin) {
+          fakemcpjet++;
+          registry.fill(HIST("h_collisions_unweighted"), 11.0);  //Fake Matched MCP Jets
+          registry.fill(HIST("h2_full_fakemcpjets"), mcpjet.pt(), fakemcpjet, 1.0);
           continue;
         }
+        // Fill MCD jet histograms if a valid MCP jet match was found within the EMCAL region
         registry.fill(HIST("h_full_matchedmcpjet_eta"), mcpjet.eta(), 1.0);
         registry.fill(HIST("h_full_matchedmcpjet_phi"), mcpjet.phi(), 1.0);
         fillMatchedHistograms<typename JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet);
@@ -812,7 +817,6 @@ struct FullJetSpectrapp {
     }
 
     for (const auto& mcdjet : mcdjets) {
-
       // Check if MCD jet is within the EMCAL fiducial region
       if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax || mcdjet.eta() < jetEtaMin || mcdjet.eta() > jetEtaMax) {
         fakemcdjet++;
@@ -826,7 +830,6 @@ struct FullJetSpectrapp {
       if (!isAcceptedJet<JetTracks>(mcdjet)) {
         continue;
       }
-
       for (auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedWeightedJoined>()) {
         // apply emcal fiducial cuts to the matched particle level jets
         if (mcpjet.eta() > jetEtaMax || mcpjet.eta() < jetEtaMin || mcpjet.phi() > jetPhiMax ||  mcpjet.phi() < jetPhiMin) {
