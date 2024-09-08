@@ -1471,6 +1471,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kBC] = event.globalBC();
     values[kBCOrbit] = event.globalBC() % o2::constants::lhc::LHCMaxBunches;
     values[kTimestamp] = event.timestamp();
+    values[kTimeFromSOR] = (fgSOR > 0 ? (event.timestamp() - fgSOR) / 60000. : -1.0);
     values[kCentVZERO] = event.centRun2V0M();
     values[kCentFT0C] = event.centFT0C();
     if (fgUsedVars[kIsNoITSROFBorderRecomputed]) {
