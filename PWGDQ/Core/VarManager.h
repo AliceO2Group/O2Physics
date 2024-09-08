@@ -1666,6 +1666,55 @@ void VarManager::FillEvent(T const& event, float* values)
 }
 
 template <uint32_t fillMap, typename TEvent, typename TAssoc, typename TTracks>
+void VarManager::FillEventTrackEstimators(TEvent const& collision, TAssoc const& assocs, TTracks const& /*tracks*/, float* values) {
+  // Compute median Z for the large dcaZ tracks in the TPC
+  // This is for studies of the pileup impact on the TPC
+
+  if (!values) {
+    values = fgValues;
+  }
+
+  if constexpr ((fillMap & Track) > 0 && (fillMap & TrackDCA) > 0) {
+  
+    std::vector<float> tracksP;
+    std::vector<float> tracksM;
+
+    for (const auto& assoc : assocs) {
+      auto track = assoc.template track_as<TTracks>();
+      // compute the dca of this track wrt the collision
+      auto trackPar = getTrackPar(track);
+      std::array<float, 2> dca{1e10f, 1e10f};
+      trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
+
+      // if it is a displaced track longitudinally, add it to the track vector
+      if(abs(dca[0]) < 3.0 && abs(dca[1]) > 4.0) {
+        if(track.tgl() > 0.1) {
+          tracksP.push_back(track.z());
+        }
+        if(track.tgl() < -0.1) {
+          tracksM.push_back(track.z());
+        }
+      }
+    }  // end loop over associations
+
+    // compute the number of pileup contributors and the median z for pileup
+    if (tracksP.size() > 0) {
+      std::sort(tracksP.begin(), tracksP.end());
+      auto midP = tracksP.size() / 2;
+      values[kNTPCpileupContribA] = tracksP.size();
+      values[kNTPCpileupZA] = (tracksP.size() % 2 ? (tracksP[midP] + tracksP[midP-1]) / 2 : tracksP[midP]);
+    }
+  
+    if (tracksM.size() > 0) {
+      std::sort(tracksM.begin(), tracksM.end());
+      values[kNTPCpileupContribC] = tracksM.size();
+      auto midM = tracksM.size() / 2;
+      values[kNTPCpileupZC] = (tracksM.size() % 2 ? (tracksM[midM] + tracksM[midM-1]) / 2 : tracksM[midM]);
+    }
+  }
+}
+
+template <uint32_t fillMap, typename TEvent, typename TAssoc, typename TTracks>
 void VarManager::FillEventTrackEstimators(TEvent const& collision, TAssoc const& assocs, TTracks const& /*tracks*/, float* values)
 {
   // Compute median Z for the large dcaZ tracks in the TPC
