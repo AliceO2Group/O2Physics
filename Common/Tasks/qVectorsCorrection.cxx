@@ -73,6 +73,8 @@ struct qVectorsCorrection {
 
   Configurable<bool> cfgQAAll{"cfgQAAll", false, "draw all q-vector steps"};
   Configurable<bool> cfgQAFinal{"cfgQAFinal", false, "draw final q-vector steps"};
+  Configurable<bool> cfgQAFlowStudy{"cfgQAFlowStudy", false, "configurable for flow study"};
+  Configurable<bool> cfgQAOccupancyStudy{"cfgQAOccupancyStudy", false, "configurable for occupancy study"};
 
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
@@ -90,6 +92,7 @@ struct qVectorsCorrection {
   ConfigurableAxis cfgaxispt{"cfgaxispt", {100, 0, 10}, ""};
   ConfigurableAxis cfgaxisCentMerged{"cfgaxisCentMerged", {20, 0, 100}, ""};
   ConfigurableAxis cfgaxisAzimuth{"cfgaxisAzimuth", {72, 0, 2.0 * constants::math::PI}, ""};
+  ConfigurableAxis cfgaxisOccupancy{"cfgaxisOccupancy", {VARIABLE_WIDTH, -1, 0, 100, 500, 1000, 2000, 3000, 4000, 5000, 10000, 99999}, ""};
 
   // Helper variables.
   EventPlaneHelper helperEP;
@@ -169,6 +172,8 @@ struct qVectorsCorrection {
     AxisSpec axisPt{cfgaxispt, "trasverse momentum"};
     AxisSpec axisCentMerged{cfgaxisCentMerged, "merged centrality"};
     AxisSpec axisAzimuth{cfgaxisAzimuth, "relative azimuthal angle"};
+    AxisSpec axisOccupancy{cfgaxisOccupancy, "Occupancy"};
+
     histosQA.add("histCentFull", "Centrality distribution for valid events",
                  HistType::kTH1F, {axisCent});
 
@@ -181,10 +186,22 @@ struct qVectorsCorrection {
       histosQA.add(Form("histEvtPlRefAUncorV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
       histosQA.add(Form("histEvtPlRefBUncorV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
 
+      if (cfgQAOccupancyStudy) {
+        histosQA.add(Form("histQvecOccUncorV%d", cfgnMods->at(i)), "", {HistType::kTHnSparseF, {axisQvecF, axisQvecF, axisCent, axisOccupancy}});
+        histosQA.add(Form("histQvecRefAOccUncorV%d", cfgnMods->at(i)), "", {HistType::kTHnSparseF, {axisQvecF, axisQvecF, axisCent, axisOccupancy}});
+        histosQA.add(Form("histQvecRefBOccUncorV%d", cfgnMods->at(i)), "", {HistType::kTHnSparseF, {axisQvecF, axisQvecF, axisCent, axisOccupancy}});
+      }
+
       if (cfgQAFinal) {
         histosQA.add(Form("histQvecFinalV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
         histosQA.add(Form("histQvecRefAFinalV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
         histosQA.add(Form("histQvecRefBFinalV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
+
+        if (cfgQAOccupancyStudy) {
+          histosQA.add(Form("histQvecOccFinalV%d", cfgnMods->at(i)), "", {HistType::kTHnSparseF, {axisQvecF, axisQvecF, axisCent, axisOccupancy}});
+          histosQA.add(Form("histQvecRefAOccFinalV%d", cfgnMods->at(i)), "", {HistType::kTHnSparseF, {axisQvecF, axisQvecF, axisCent, axisOccupancy}});
+          histosQA.add(Form("histQvecRefBOccFinalV%d", cfgnMods->at(i)), "", {HistType::kTHnSparseF, {axisQvecF, axisQvecF, axisCent, axisOccupancy}});
+        }
 
         histosQA.add(Form("histQvecRes_SigRefAV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisQvecF, axisCent}});
         histosQA.add(Form("histQvecRes_SigRefBV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisQvecF, axisCent}});
@@ -303,9 +320,15 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[DetId] > 1e-8) {
         histosQA.fill(HIST("histQvecUncorV2"), vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], vec.cent());
         histosQA.fill(HIST("histEvtPlUncorV2"), helperEP.GetEventPlane(vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecOccUncorV2"), vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
           histosQA.fill(HIST("histQvecFinalV2"), vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlFinalV2"), helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), vec.cent());
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecOccFinalV2"), vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           if (cfgQAAll) {
             histosQA.fill(HIST("histQvecRectrV2"), vec.qvecRe()[DetInd + 1], vec.qvecIm()[DetInd + 1], vec.cent());
             histosQA.fill(HIST("histQvecTwistV2"), vec.qvecRe()[DetInd + 2], vec.qvecIm()[DetInd + 2], vec.cent());
@@ -318,9 +341,15 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[RefAId] > 1e-8) {
         histosQA.fill(HIST("histQvecRefAUncorV2"), vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], vec.cent());
         histosQA.fill(HIST("histEvtPlRefAUncorV2"), helperEP.GetEventPlane(vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecRefAOccUncorV2"), vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
           histosQA.fill(HIST("histQvecRefAFinalV2"), vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlRefAFinalV2"), helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), vec.cent());
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecRefAOccFinalV2"), vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           if (cfgQAAll) {
             histosQA.fill(HIST("histQvecRefARectrV2"), vec.qvecRe()[RefAInd + 1], vec.qvecIm()[RefAInd + 1], vec.cent());
             histosQA.fill(HIST("histQvecRefATwistV2"), vec.qvecRe()[RefAInd + 2], vec.qvecIm()[RefAInd + 2], vec.cent());
@@ -333,9 +362,15 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[RefBId] > 1e-8) {
         histosQA.fill(HIST("histQvecRefBUncorV2"), vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], vec.cent());
         histosQA.fill(HIST("histEvtPlRefBUncorV2"), helperEP.GetEventPlane(vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecRefBOccUncorV2"), vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
           histosQA.fill(HIST("histQvecRefBFinalV2"), vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlRefBFinalV2"), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), vec.cent());
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecRefBOccFinalV2"), vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           if (cfgQAAll) {
             histosQA.fill(HIST("histQvecRefBRectrV2"), vec.qvecRe()[RefBInd + 1], vec.qvecIm()[RefBInd + 1], vec.cent());
             histosQA.fill(HIST("histQvecRefBTwistV2"), vec.qvecRe()[RefBInd + 2], vec.qvecIm()[RefBInd + 2], vec.cent());
@@ -358,7 +393,13 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[DetId] > 1e-8) {
         histosQA.fill(HIST("histQvecUncorV3"), vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], vec.cent());
         histosQA.fill(HIST("histEvtPlUncorV3"), helperEP.GetEventPlane(vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecOccUncorV3"), vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecOccFinalV3"), vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           histosQA.fill(HIST("histQvecFinalV3"), vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlFinalV3"), helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), vec.cent());
           if (cfgQAAll) {
@@ -373,9 +414,15 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[RefAId] > 1e-8) {
         histosQA.fill(HIST("histQvecRefAUncorV3"), vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], vec.cent());
         histosQA.fill(HIST("histEvtPlRefAUncorV3"), helperEP.GetEventPlane(vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecRefAOccUncorV3"), vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
           histosQA.fill(HIST("histQvecRefAFinalV3"), vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlRefAFinalV3"), helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), vec.cent());
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecRefAOccFinalV3"), vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           if (cfgQAAll) {
             histosQA.fill(HIST("histQvecRefARectrV3"), vec.qvecRe()[RefAInd + 1], vec.qvecIm()[RefAInd + 1], vec.cent());
             histosQA.fill(HIST("histQvecRefATwistV3"), vec.qvecRe()[RefAInd + 2], vec.qvecIm()[RefAInd + 2], vec.cent());
@@ -388,9 +435,15 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[RefBId] > 1e-8) {
         histosQA.fill(HIST("histQvecRefBUncorV3"), vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], vec.cent());
         histosQA.fill(HIST("histEvtPlRefBUncorV3"), helperEP.GetEventPlane(vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecRefBOccUncorV3"), vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
           histosQA.fill(HIST("histQvecRefBFinalV3"), vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlRefBFinalV3"), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), vec.cent());
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecRefBOccFinalV3"), vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           if (cfgQAAll) {
             histosQA.fill(HIST("histQvecRefBRectrV3"), vec.qvecRe()[RefBInd + 1], vec.qvecIm()[RefBInd + 1], vec.cent());
             histosQA.fill(HIST("histQvecRefBTwistV3"), vec.qvecRe()[RefBInd + 2], vec.qvecIm()[RefBInd + 2], vec.cent());
@@ -413,9 +466,15 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[DetId] > 1e-8) {
         histosQA.fill(HIST("histQvecUncorV4"), vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], vec.cent());
         histosQA.fill(HIST("histEvtPlUncorV4"), helperEP.GetEventPlane(vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecOccUncorV4"), vec.qvecRe()[DetInd], vec.qvecIm()[DetInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
           histosQA.fill(HIST("histQvecFinalV4"), vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlFinalV4"), helperEP.GetEventPlane(vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], nmode), vec.cent());
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecOccFinalV4"), vec.qvecRe()[DetInd + 3], vec.qvecIm()[DetInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           if (cfgQAAll) {
             histosQA.fill(HIST("histQvecRectrV4"), vec.qvecRe()[DetInd + 1], vec.qvecIm()[DetInd + 1], vec.cent());
             histosQA.fill(HIST("histQvecTwistV4"), vec.qvecRe()[DetInd + 2], vec.qvecIm()[DetInd + 2], vec.cent());
@@ -428,9 +487,15 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[RefAId] > 1e-8) {
         histosQA.fill(HIST("histQvecRefAUncorV4"), vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], vec.cent());
         histosQA.fill(HIST("histEvtPlRefAUncorV4"), helperEP.GetEventPlane(vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecRefAOccUncorV4"), vec.qvecRe()[RefAInd], vec.qvecIm()[RefAInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
           histosQA.fill(HIST("histQvecRefAFinalV4"), vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlRefAFinalV4"), helperEP.GetEventPlane(vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], nmode), vec.cent());
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecRefAOccFinalV4"), vec.qvecRe()[RefAInd + 3], vec.qvecIm()[RefAInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           if (cfgQAAll) {
             histosQA.fill(HIST("histQvecRefARectrV4"), vec.qvecRe()[RefAInd + 1], vec.qvecIm()[RefAInd + 1], vec.cent());
             histosQA.fill(HIST("histQvecRefATwistV4"), vec.qvecRe()[RefAInd + 2], vec.qvecIm()[RefAInd + 2], vec.cent());
@@ -443,9 +508,15 @@ struct qVectorsCorrection {
       if (vec.qvecAmp()[RefBId] > 1e-8) {
         histosQA.fill(HIST("histQvecRefBUncorV4"), vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], vec.cent());
         histosQA.fill(HIST("histEvtPlRefBUncorV4"), helperEP.GetEventPlane(vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], nmode), vec.cent());
+        if (cfgQAOccupancyStudy) {
+          histosQA.fill(HIST("histQvecRefBOccUncorV4"), vec.qvecRe()[RefBInd], vec.qvecIm()[RefBInd], vec.cent(), vec.trackOccupancyInTimeRange());
+        }
         if (cfgQAFinal) {
           histosQA.fill(HIST("histQvecRefBFinalV4"), vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], vec.cent());
           histosQA.fill(HIST("histEvtPlRefBFinalV4"), helperEP.GetEventPlane(vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], nmode), vec.cent());
+          if (cfgQAOccupancyStudy) {
+            histosQA.fill(HIST("histQvecRefBOccFinalV4"), vec.qvecRe()[RefBInd + 3], vec.qvecIm()[RefBInd + 3], vec.cent(), vec.trackOccupancyInTimeRange());
+          }
           if (cfgQAAll) {
             histosQA.fill(HIST("histQvecRefBRectrV4"), vec.qvecRe()[RefBInd + 1], vec.qvecIm()[RefBInd + 1], vec.cent());
             histosQA.fill(HIST("histQvecRefBTwistV4"), vec.qvecRe()[RefBInd + 2], vec.qvecIm()[RefBInd + 2], vec.cent());
@@ -480,7 +551,7 @@ struct qVectorsCorrection {
 
     for (uint i = 0; i < cfgnMods->size(); i++) {
       fillHistosQvec(qVec, cfgnMods->at(i));
-      if (cfgQAFinal) {
+      if (cfgQAFinal && cfgQAFlowStudy) {
         fillHistosFlow(qVec, tracks, cfgnMods->at(i));
       }
     }

@@ -492,11 +492,6 @@ struct JetFinderHFQATask {
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perBplusCandidateTracks = aod::bkgbplus::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perDielectronCandidateTracks = aod::bkgdielectron::candidateId;
 
-  PresliceOptional<BkgRhoTable> perD0CandidateRhos = aod::bkgd0::candidateId;
-  PresliceOptional<BkgRhoTable> perLcCandidateRhos = aod::bkglc::candidateId;
-  PresliceOptional<BkgRhoTable> perBplusCandidateRhos = aod::bkgbplus::candidateId;
-  PresliceOptional<BkgRhoTable> perDielectronCandidateRhos = aod::bkgdielectron::candidateId;
-
   template <typename T, typename U, typename V>
   bool isAcceptedJet(V const& jet)
   {
@@ -945,15 +940,14 @@ struct JetFinderHFQATask {
     }
   }
 
-  template <typename T, typename U, typename V, typename M, typename N>
-  void randomCone(T const& collision, U const& jets, V const& candidates, M const& bkgRhos, N const& tracks)
+  template <typename T, typename U, typename V, typename M>
+  void randomCone(T const& collision, U const& jets, V const& candidates, M const& tracks)
   {
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
     for (auto const& candidate : candidates) {
-      auto bkgRho = jetcandidateutilities::slicedPerCandidate(bkgRhos, candidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos, perDielectronCandidateRhos).iteratorAt(0);
       TRandom3 randomNumber(0);
       float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       float randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
@@ -967,7 +961,7 @@ struct JetFinderHFQATask {
           }
         }
       }
-      registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * bkgRho.rho());
+      registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * candidate.rho());
 
       // removing the leading jet from the random cone
       if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
@@ -995,7 +989,7 @@ struct JetFinderHFQATask {
           }
         }
       }
-      registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * bkgRho.rho());
+      registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * candidate.rho());
       break; // currently only fills it for the first candidate in the event (not pT ordered). Jet is pT ordered so results for excluding leading jet might not be as expected
     }
   }
@@ -1020,9 +1014,8 @@ struct JetFinderHFQATask {
   PROCESS_SWITCH(JetFinderHFQATask, processJetsData, "jet finder HF QA data", false);
 
   void processJetsRhoAreaSubData(soa::Filtered<JetCollisions>::iterator const& collision,
-                                 BkgRhoTable const& bkgRhos,
                                  JetTableDataJoined const& jets,
-                                 CandidateTableData const&,
+                                 soa::Join<CandidateTableData, BkgRhoTable> const&,
                                  JetTracks const&)
   {
     for (auto const& jet : jets) {
@@ -1032,17 +1025,15 @@ struct JetFinderHFQATask {
       if (!isAcceptedJet<JetTracks, CandidateTableData>(jet)) {
         continue;
       }
-      auto const jetCandidate = jet.template candidates_first_as<CandidateTableData>();
-      auto bkgRho = jetcandidateutilities::slicedPerCandidate(bkgRhos, jetCandidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos, perDielectronCandidateRhos).iteratorAt(0);
-      fillRhoAreaSubtractedHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centrality(), bkgRho.rho());
+      auto const candidate = jet.template candidates_first_as<soa::Join<CandidateTableData, BkgRhoTable>>();
+      fillRhoAreaSubtractedHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centrality(), candidate.rho());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsRhoAreaSubData, "jet finder HF QA for rho-area subtracted jets", false);
 
   void processJetsRhoAreaSubMCD(soa::Filtered<JetCollisions>::iterator const& collision,
-                                BkgRhoTable const& bkgRhos,
                                 JetTableMCDJoined const& jets,
-                                CandidateTableMCD const&,
+                                soa::Join<CandidateTableMCD, BkgRhoTable> const&,
                                 JetTracks const&)
   {
     for (auto const& jet : jets) {
@@ -1052,9 +1043,8 @@ struct JetFinderHFQATask {
       if (!isAcceptedJet<JetTracks, CandidateTableMCD>(jet)) {
         continue;
       }
-      auto const jetCandidate = jet.template candidates_first_as<CandidateTableMCD>();
-      auto bkgRho = jetcandidateutilities::slicedPerCandidate(bkgRhos, jetCandidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos, perDielectronCandidateRhos).iteratorAt(0);
-      fillRhoAreaSubtractedHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centrality(), bkgRho.rho());
+      auto const candidate = jet.template candidates_first_as<soa::Join<CandidateTableMCD, BkgRhoTable>>();
+      fillRhoAreaSubtractedHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centrality(), candidate.rho());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsRhoAreaSubMCD, "jet finder HF QA for rho-area subtracted mcd jets", false);
@@ -1520,13 +1510,12 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processTracksSub, "QA for charged event-wise embedded subtracted tracks", false);
 
-  void processRho(JetCollision const& collision, CandidateTableData const& candidates, BkgRhoTable const& bkgRhos, soa::Filtered<JetTracks> const& tracks)
+  void processRho(JetCollision const& collision, soa::Join<CandidateTableData, BkgRhoTable> const& candidates, soa::Filtered<JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
     for (auto const& candidate : candidates) {
-      auto bkgRho = jetcandidateutilities::slicedPerCandidate(bkgRhos, candidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos, perDielectronCandidateRhos).iteratorAt(0);
       int nTracks = 0;
       for (auto const& track : tracks) {
         if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -1534,24 +1523,24 @@ struct JetFinderHFQATask {
         }
       }
       registry.fill(HIST("h2_centrality_ntracks"), collision.centrality(), nTracks);
-      registry.fill(HIST("h2_ntracks_rho"), nTracks, bkgRho.rho());
-      registry.fill(HIST("h2_ntracks_rhom"), nTracks, bkgRho.rhoM());
-      registry.fill(HIST("h2_centrality_rho"), collision.centrality(), bkgRho.rho());
-      registry.fill(HIST("h2_centrality_rhom"), collision.centrality(), bkgRho.rhoM());
+      registry.fill(HIST("h2_ntracks_rho"), nTracks, candidate.rho());
+      registry.fill(HIST("h2_ntracks_rhom"), nTracks, candidate.rhoM());
+      registry.fill(HIST("h2_centrality_rho"), collision.centrality(), candidate.rho());
+      registry.fill(HIST("h2_centrality_rhom"), collision.centrality(), candidate.rhoM());
       break; // currently only fills it for the first candidate in the event (not pT ordered)
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processRho, "QA for rho-area subtracted jets", false);
 
-  void processRandomConeData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataJoined const& jets, CandidateTableData const& candidates, BkgRhoTable const& bkgRhos, soa::Filtered<JetTracks> const& tracks)
+  void processRandomConeData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataJoined const& jets, soa::Join<CandidateTableData, BkgRhoTable> const& candidates, soa::Filtered<JetTracks> const& tracks)
   {
-    randomCone(collision, jets, candidates, bkgRhos, tracks);
+    randomCone(collision, jets, candidates, tracks);
   }
   PROCESS_SWITCH(JetFinderHFQATask, processRandomConeData, "QA for random cone estimation of background fluctuations in data", false);
 
-  void processRandomConeMCD(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDJoined const& jets, CandidateTableMCD const& candidates, BkgRhoTable const& bkgRhos, soa::Filtered<JetTracks> const& tracks)
+  void processRandomConeMCD(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDJoined const& jets, soa::Join<CandidateTableMCD, BkgRhoTable> const& candidates, soa::Filtered<JetTracks> const& tracks)
   {
-    randomCone(collision, jets, candidates, bkgRhos, tracks);
+    randomCone(collision, jets, candidates, tracks);
   }
   PROCESS_SWITCH(JetFinderHFQATask, processRandomConeMCD, "QA for random cone estimation of background fluctuations in mcd", false);
 

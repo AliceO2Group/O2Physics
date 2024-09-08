@@ -94,8 +94,9 @@ struct Dilepton {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  Configurable<std::string> spresoPath{"spresoPath", "Users/d/dsekihat/PWGEM/dilepton/Qvector/resolution/LHC23zzh/pass3/test", "Path of SP resolution file"};
   Configurable<bool> cfgApplySPresolution{"cfgApplySPresolution", false, "flag to apply resolution correction for flow analysis"};
+  Configurable<std::string> spresoPath{"spresoPath", "Users/d/dsekihat/PWGEM/dilepton/Qvector/resolution/LHC23zzh/pass3/test", "Path to SP resolution file"};
+  Configurable<std::string> spresoHistName{"spresoHistName", "h1_R2_FT0M_BPos_BNeg", "histogram name of SP resolution file"};
 
   Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kVM:5, kHFll:6"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
@@ -166,8 +167,6 @@ struct Dilepton {
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
-    Configurable<float> cfg_min_TOFbeta{"cfg_min_TOFbeta", 0.985, "min TOF beta for single track"}; //|beta - 1 | < 0.015 corresponds to 3 sigma in pp
-    Configurable<float> cfg_max_TOFbeta{"cfg_max_TOFbeta", 1.015, "max TOF beta for single track"}; //|beta - 1 | < 0.015 corresponds to 3 sigma in pp
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -247,7 +246,7 @@ struct Dilepton {
   float beamE2 = 0.f;                                // beam energy
   float beamP1 = 0.f;                                // beam momentum
   float beamP2 = 0.f;                                // beam momentum
-  TH1D* h1sp_resolution = nullptr;
+  TH2D* h2sp_resolution = nullptr;
 
   void init(InitContext& /*context*/)
   {
@@ -426,9 +425,9 @@ struct Dilepton {
     }
 
     if (cfgApplySPresolution) {
-      auto list = ccdb->getForTimeStamp<TList>(spresoPath, 10);
-      h1sp_resolution = reinterpret_cast<TH1D*>(list->FindObject("histo_SP_R2_FT0M_BPos_BNeg"));
-      LOGF(info, "h1sp_resolution.GetBinContent(40) = %f", h1sp_resolution->GetBinContent(40));
+      auto list = ccdb->getForTimeStamp<TList>(spresoPath, collision.timestamp());
+      h2sp_resolution = reinterpret_cast<TH2D*>(list->FindObject(spresoHistName.value.data()));
+      LOGF(info, "h2sp_resolution.GetBinContent(40, 1) = %f", h2sp_resolution->GetBinContent(40, 1));
     }
   }
 
@@ -440,6 +439,7 @@ struct Dilepton {
     emh_neg = 0x0;
 
     map_mixed_eventId_to_centrality.clear();
+    map_mixed_eventId_to_occupancy.clear();
     map_mixed_eventId_to_qvector.clear();
     map_mixed_eventId_to_globalBC.clear();
 
@@ -449,7 +449,7 @@ struct Dilepton {
     if (eid_bdt) {
       delete eid_bdt;
     }
-    delete h1sp_resolution;
+    delete h2sp_resolution;
   }
 
   void addhistograms()
@@ -630,7 +630,6 @@ struct Dilepton {
     fDielectronCut.SetMaxDcaZ(dielectroncuts.cfg_max_dcaz);
 
     // for eID
-    fDielectronCut.SetTOFbetaRange(dielectroncuts.cfg_min_TOFbeta, dielectroncuts.cfg_max_TOFbeta);
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
     fDielectronCut.SetTPCNsigmaElRange(dielectroncuts.cfg_min_TPCNsigmaEl, dielectroncuts.cfg_max_TPCNsigmaEl);
     fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
@@ -687,7 +686,7 @@ struct Dilepton {
   {
     bool is_good = true;
     for (auto& qn : qvectors[nmod]) {
-      if (abs(qn[0]) > 10.f || abs(qn[1]) > 10.f) {
+      if (fabs(qn[0]) > 20.f || fabs(qn[1]) > 20.f) {
         is_good = false;
         break;
       }
@@ -695,12 +694,28 @@ struct Dilepton {
     return is_good;
   }
 
-  float getSPresolution(const float centrality)
+  float getSPresolution(const float centrality, const int occupancy)
   {
-    if (h1sp_resolution == nullptr) {
+    if (h2sp_resolution == nullptr) {
       return 1.f;
     } else {
-      return h1sp_resolution->GetBinContent(h1sp_resolution->FindBin(centrality));
+      int binId_cen = h2sp_resolution->GetXaxis()->FindBin(centrality);
+      int binId_occ = h2sp_resolution->GetYaxis()->FindBin(occupancy);
+
+      if (centrality < h2sp_resolution->GetXaxis()->GetXmin()) {
+        binId_cen = 1;
+      }
+      if (h2sp_resolution->GetXaxis()->GetXmax() < centrality) {
+        binId_cen = h2sp_resolution->GetXaxis()->GetNbins();
+      }
+
+      if (occupancy < h2sp_resolution->GetYaxis()->GetXmin()) {
+        binId_occ = 1;
+      }
+      if (h2sp_resolution->GetYaxis()->GetXmax() < occupancy) {
+        binId_occ = h2sp_resolution->GetYaxis()->GetNbins();
+      }
+      return h2sp_resolution->GetBinContent(binId_cen, binId_occ);
     }
   }
 
@@ -852,9 +867,9 @@ struct Dilepton {
       };
 
       if constexpr (ev_id == 0) {
-        // LOGF(info, "collision.centFT0C() = %f, getSPresolution = %f", collision.centFT0C(), getSPresolution(collision.centFT0C()));
+        // LOGF(info, "collision.centFT0C() = %f, collision.trackOccupancyInTimeRange() = %d, getSPresolution = %f", collision.centFT0C(), collision.trackOccupancyInTimeRange(), getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange()));
 
-        float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C());
+        float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange());
         if (t1.sign() * t2.sign() < 0) { // ULS
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, weight);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ"), v12.M(), v12.Pt(), pair_dca, sp, weight);
@@ -1003,7 +1018,7 @@ struct Dilepton {
   SliceCache cache;
   Preslice<MyElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
   Filter trackFilter_electron = dielectroncuts.cfg_min_pt_track < o2::aod::track::pt && dielectroncuts.cfg_min_eta_track < o2::aod::track::eta && o2::aod::track::eta < dielectroncuts.cfg_max_eta_track && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
-  Filter pidFilter_electron = (dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < dielectroncuts.cfg_min_TPCNsigmaPi || dielectroncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi) && ((dielectroncuts.cfg_min_TOFbeta < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < dielectroncuts.cfg_max_TOFbeta) || o2::aod::pidtofbeta::beta < 0.f);
+  Filter pidFilter_electron = (dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < dielectroncuts.cfg_min_TPCNsigmaPi || dielectroncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
   Partition<FilteredMyElectrons> positive_electrons = o2::aod::emprimaryelectron::sign > int8_t(0);
   Partition<FilteredMyElectrons> negative_electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
@@ -1018,6 +1033,7 @@ struct Dilepton {
   TEMH* emh_neg = nullptr;
   std::map<std::pair<int, int>, std::vector<std::vector<std::array<float, 2>>>> map_mixed_eventId_to_qvector;
   std::map<std::pair<int, int>, float> map_mixed_eventId_to_centrality;
+  std::map<std::pair<int, int>, int> map_mixed_eventId_to_occupancy;
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   std::vector<std::pair<int, int>> used_trackIds;
@@ -1210,13 +1226,6 @@ struct Dilepton {
 
       // run mixed event loop for flow measurement. Don't divide mixed-event categories by event planes, if you do flow measurement.
       if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
-        // if (selected_posTracks_in_this_event.size() + selected_negTracks_in_this_event.size() <= 0) {
-        //   continue;
-        // }
-        // fRegistry.fill(HIST("Pair/mix/ev1/hPrf_SP12_CentFT0C"), centrality, RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][subdet2])); // current collision
-        // fRegistry.fill(HIST("Pair/mix/ev1/hPrf_SP13_CentFT0C"), centrality, RecoDecay::dotProd(qvectors[nmod][cfgQvecEstimator], qvectors[nmod][subdet3])); // current collision
-        // fRegistry.fill(HIST("Pair/mix/ev1/hPrf_SP23_CentFT0C"), centrality, RecoDecay::dotProd(qvectors[nmod][subdet2], qvectors[nmod][subdet3]));          // current collision
-
         for (int epbin_tmp = 0; epbin_tmp < static_cast<int>(ep_bin_edges.size()) - 1; epbin_tmp++) {
           std::tuple<int, int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin_tmp, occbin);
           auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
@@ -1230,6 +1239,7 @@ struct Dilepton {
             }
 
             auto centrality_mix = map_mixed_eventId_to_centrality[mix_dfId_collisionId];
+            auto occupancy_mix = map_mixed_eventId_to_occupancy[mix_dfId_collisionId];
             auto qvectors_mix = map_mixed_eventId_to_qvector[mix_dfId_collisionId];
             auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
             uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
@@ -1237,35 +1247,31 @@ struct Dilepton {
               continue;
             }
 
-            // fRegistry.fill(HIST("Pair/mix/ev2/hPrf_SP12_CentFT0C"), centrality_mix, RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][subdet2])); // another collision
-            // fRegistry.fill(HIST("Pair/mix/ev2/hPrf_SP13_CentFT0C"), centrality_mix, RecoDecay::dotProd(qvectors_mix[nmod][cfgQvecEstimator], qvectors_mix[nmod][subdet3])); // another collision
-            // fRegistry.fill(HIST("Pair/mix/ev2/hPrf_SP23_CentFT0C"), centrality_mix, RecoDecay::dotProd(qvectors_mix[nmod][subdet2], qvectors_mix[nmod][subdet3]));          // another collision
-
             auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
             auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
             // LOGF(info, "Do event mixing: current event (%d, %d) | event pool (%d, %d), npos = %d , nneg = %d", ndf, collision.globalIndex(), mix_dfId, mix_collisionId, posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
 
             for (auto& pos : selected_posTracks_in_this_event) { // ULS mix
               for (auto& neg : negTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(pos, neg, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix);
+                fillMixedPairInfoForFlow(pos, neg, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
               }
             }
 
             for (auto& neg : selected_negTracks_in_this_event) { // ULS mix
               for (auto& pos : posTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(neg, pos, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix);
+                fillMixedPairInfoForFlow(neg, pos, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
               }
             }
 
             for (auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
               for (auto& pos2 : posTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(pos1, pos2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix);
+                fillMixedPairInfoForFlow(pos1, pos2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
               }
             }
 
             for (auto& neg1 : selected_negTracks_in_this_event) { // LS-- mix
               for (auto& neg2 : negTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(neg1, neg2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix);
+                fillMixedPairInfoForFlow(neg1, neg2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
               }
             }
           } // end of loop over mixed event pool
@@ -1278,6 +1284,7 @@ struct Dilepton {
         if (nmod > 0) {
           map_mixed_eventId_to_qvector[key_df_collision] = qvectors;
           map_mixed_eventId_to_centrality[key_df_collision] = collision.centFT0C();
+          map_mixed_eventId_to_occupancy[key_df_collision] = collision.trackOccupancyInTimeRange();
         }
         map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
         emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
@@ -1290,7 +1297,7 @@ struct Dilepton {
   } // end of DF
 
   template <typename TTrack1, typename TTrack2, typename TCut, typename TQvectors, typename TMixedQvectors>
-  bool fillMixedPairInfoForFlow(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TQvectors const& qvectors, TMixedQvectors const& qvectors_mix, const float centrality, const float centrality_mix)
+  bool fillMixedPairInfoForFlow(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TQvectors const& qvectors, TMixedQvectors const& qvectors_mix, const float centrality, const float centrality_mix, const int occupancy, const int occupancy_mix)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto v1ambIds = t1.ambiguousElectronsIds();
@@ -1331,8 +1338,8 @@ struct Dilepton {
       pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
     }
 
-    float sp1 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v1.Phi())), static_cast<float>(std::sin(nmod * v1.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(centrality);
-    float sp2 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v2.Phi())), static_cast<float>(std::sin(nmod * v2.Phi()))}, qvectors_mix[nmod][cfgQvecEstimator]) / getSPresolution(centrality_mix);
+    float sp1 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v1.Phi())), static_cast<float>(std::sin(nmod * v1.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(centrality, occupancy);
+    float sp2 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v2.Phi())), static_cast<float>(std::sin(nmod * v2.Phi()))}, qvectors_mix[nmod][cfgQvecEstimator]) / getSPresolution(centrality_mix, occupancy_mix);
     float cos_dphi1 = std::cos(nmod * (v1.Phi() - v12.Phi()));
     float cos_dphi2 = std::cos(nmod * (v2.Phi() - v12.Phi()));
     float cos_dphi12 = std::cos(nmod * (v1.Phi() - v2.Phi()));

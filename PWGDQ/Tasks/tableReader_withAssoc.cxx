@@ -907,7 +907,7 @@ struct AnalysisSameEventPairing {
   Configurable<string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
 
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
-  Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
+  // Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
 
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> fConfigCcdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
@@ -927,6 +927,8 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> fConfigCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
   Configurable<float> fConfigCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
+  // Track related options
+  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -1290,6 +1292,10 @@ struct AnalysisSameEventPairing {
           }
 
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
+          // compute quantities which depend on the associated collision, such as DCA
+          if (fPropTrack) {
+            VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
+          }
           if constexpr (TTwoProngFitter) {
             VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigPropToPCA);
           }
@@ -1351,6 +1357,10 @@ struct AnalysisSameEventPairing {
           }
 
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
+          // compute quantities which depend on the associated collision, such as DCA
+          if (fPropTrack) {
+            VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
+          }
           if constexpr (TTwoProngFitter) {
             VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigPropToPCA);
           }

@@ -72,7 +72,6 @@ struct statPromptPhoton {
   Configurable<int> cfgMinNCells{"MinNCelss", 2, "Minimal amount of cells per cluster"};
   Configurable<int> cfgMaxNLM{"MaxNLM", 2, "Maximal amount of local Maxima per cluster"};
   Configurable<bool> cfgExoticContribution{"ExoticContribution", false, "Exotic cluster in the data"};
-
   Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.15, "set track min pT"};
   Configurable<double> cfgtrkMaxEta{"cfgtrkMaxEta", 0.6, "set track max Eta"};
   Configurable<float> cfgMinR{"MinR", 0.1, "Min. Radii of Delta R cone around photon trigger"};
@@ -116,6 +115,7 @@ struct statPromptPhoton {
   Filter mcPosZFilter = nabs(aod::mccollision::posZ) < cfgVtxCut;
 
   using MCCells = o2::soa::Join<aod::Calos, aod::McCaloLabels_001>;
+
   using MCClusters = o2::soa::Join<o2::aod::EMCALMCClusters, o2::aod::EMCALClusters>;
   using selectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using selectedMCCollisions = aod::McCollisions;
@@ -136,10 +136,10 @@ struct statPromptPhoton {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
   template <typename Tracks, typename Trigger>
+
   double GetPtHadSum(const Tracks& tracks, const Trigger& trigger, double MinR, double MaxR, bool IsStern, bool IsParticle, bool DodR)
   {
     double eta_trigger, phi_trigger;
-
     if constexpr (requires { trigger.eta(); }) {
       eta_trigger = trigger.eta();
       phi_trigger = trigger.phi();
@@ -153,6 +153,7 @@ struct statPromptPhoton {
       double phi_track = track.phi();
       double eta_track = track.eta();
       double pt_track = track.pt();
+
       if constexpr (requires { track.isPVContributor(); }) {
         if (!IsParticle) {
           if (!trackSelection(track)) {
@@ -259,6 +260,7 @@ struct statPromptPhoton {
   }; // end of track selection
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
+
   /////////////////////////////////////////////////////////////////////////////
   // PROCESS
 
@@ -372,6 +374,7 @@ struct statPromptPhoton {
       if (!recocoll.sel8())
         return;
       if (fabs(recocoll.posZ()) > cfgVtxCut)
+
         return;
     }
 

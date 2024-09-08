@@ -329,7 +329,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCDWithSV, "Fill tagging decision for mcd jets with sv", false);
 
-  void processMCP(JetCollision const& /*collision*/, JetTableMCP const& mcpjets, JetParticles const& particles)
+  void processMCP(JetMcCollision const& /*collision*/, JetTableMCP const& mcpjets, JetParticles const& particles)
   {
     for (auto& mcpjet : mcpjets) {
       bool flagtaggedjetIP = 0;

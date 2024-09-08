@@ -180,9 +180,9 @@ struct nuclei_in_jets {
     registryMC.add("antiproton_all_ue", "antiproton_all_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
     // Antiproton Reweighting
-    registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
-    registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
-    registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
+    registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
+    registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
+    registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
   }
 
   // Single-Track Selection for Particles inside Jets
@@ -748,12 +748,16 @@ struct nuclei_in_jets {
   {
     for (const auto& collision : collisions) {
 
+      registryMC.fill(HIST("number_of_events_mc"), 3.5);
+
       // Event Selection
       if (!collision.sel8())
         continue;
+      registryMC.fill(HIST("number_of_events_mc"), 4.5);
 
       if (abs(collision.posZ()) > zVtx)
         continue;
+      registryMC.fill(HIST("number_of_events_mc"), 5.5);
 
       auto tracks_per_coll = mcTracks.sliceBy(perCollision, collision.globalIndex());
 
@@ -871,7 +875,8 @@ struct nuclei_in_jets {
         isSelected[i] = 1;
       }
       if (n_jets_selected == 0)
-        return;
+        continue;
+      registryMC.fill(HIST("number_of_events_mc"), 6.5);
 
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
@@ -928,9 +933,12 @@ struct nuclei_in_jets {
   {
     for (const auto& mccollision : mcCollisions) {
 
+      registryMC.fill(HIST("number_of_events_mc"), 7.5);
+
       // Selection on z_{vertex}
       if (abs(mccollision.posZ()) > 10)
         continue;
+      registryMC.fill(HIST("number_of_events_mc"), 8.5);
 
       // MC Particles per Collision
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
@@ -1107,7 +1115,7 @@ struct nuclei_in_jets {
         isSelected[i] = 1;
       }
       if (n_jets_selected == 0)
-        return;
+        continue;
 
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
