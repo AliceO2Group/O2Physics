@@ -51,7 +51,6 @@ struct tofPidBetaQa {
   Configurable<float> mMaxTOFChi2{"maxTOFChi2", 3.f, "Maximum TOF Chi2"};
   Configurable<float> mEtaWindow{"etaWindow", 0.8f, "Window in eta for tracks"};
 
-
   void init(o2::framework::InitContext&)
   {
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
