@@ -211,10 +211,10 @@ DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   multBC::MultBCColliding);
 using MultBC = MultBCs::iterator;
 
-// crosslinks 
+// crosslinks
 namespace mult
 {
-DECLARE_SOA_INDEX_COLUMN(MultBC, multBC); 
+DECLARE_SOA_INDEX_COLUMN(MultBC, multBC);
 }
 namespace multBC
 {
