@@ -67,7 +67,7 @@ struct UPCPionAnalysis {
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  //_____________________________________________________________________________
+  //_____________________________________________________________________________________________
   Double_t CosThetaHelicityFrame(TLorentzVector pionPositive,
                                  TLorentzVector pionNegative,
                                  TLorentzVector possibleRhoZero)
@@ -405,7 +405,7 @@ struct UPCPionAnalysis {
     registry.add("hCostheta6Pion", "Costheta;#it{Cos#Theta};", kTH1F, {{300, -1.5, 1.5}});
     registry.add("hCostheta8Pion", "Costheta;#it{Cos#Theta};", kTH1F, {{300, -1.5, 1.5}});
 
-    // using Angular Correlation method
+    // Using Angular Correlation method
 
     registry.add("TwoPion/Coherent/AccoplAngle", "AccoplAngle", kTH1F, {{250, -0.2, 0.2}});
     registry.add("TwoPion/Coherent/CosTheta", "CosTheta", kTH1F, {{300, -1.5, 1.5}});
@@ -427,7 +427,7 @@ struct UPCPionAnalysis {
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
@@ -476,17 +476,21 @@ struct UPCPionAnalysis {
       registry.fill(HIST("hSelectionCounter"), 5);
 
       for (auto t : tracks) {
-        if (!t.isPVContributor()) {
+
+        /*if (!t.isPVContributor()) {
           continue;
-        }
+        }*/
+
+        if (!trackselector(t, parameters))
+          continue;
 
         int NFindable = t.tpcNClsFindable();
         int NMinusFound = t.tpcNClsFindableMinusFound();
         int NCluster = NFindable - NMinusFound;
 
-        if (NCluster < TPC_cluster) {
-          continue;
-        }
+        /*if (NCluster < TPC_cluster) {
+           continue;
+         }*/
 
         double dEdx = t.tpcSignal();
 
@@ -586,7 +590,7 @@ struct UPCPionAnalysis {
           }
         }
       }
-      //_____________________________________
+      //_____________________________________________________________________________________________________
       // Six pions analysis
       if (collision.numContrib() == 6) {
         if ((rawPionTracks.size() == 6) && (onlyPionTracks.size() == 6)) {
