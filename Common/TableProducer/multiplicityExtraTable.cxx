@@ -30,7 +30,7 @@ using BCPattern = std::bitset<o2::constants::lhc::LHCMaxBunches>;
 const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct MultiplicityExtraTable {
-  Produces<aod::MultsBC> multBC;
+  Produces<aod::MultBCs> multBC;
   Produces<aod::MultNeighs> multNeigh;
 
   Produces<aod::Mults2BC> mult2bc;
