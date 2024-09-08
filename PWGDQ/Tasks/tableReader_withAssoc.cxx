@@ -222,14 +222,14 @@ struct AnalysisEventSelection {
       uint64_t eor = std::atol(header["EOR"].c_str());
       VarManager::SetSORandEOR(sor, eor);
       LOG(info) << "============================= SOR / EOR :: " << sor << " / " << eor;
-      
+
       auto alppar = fCCDB->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", events.begin().timestamp());
       EventSelectionParams* par = fCCDB->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", events.begin().timestamp());
       int itsROFrameStartBorderMargin = fConfigITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : fConfigITSROFrameStartBorderMargin;
       int itsROFrameEndBorderMargin = fConfigITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : fConfigITSROFrameEndBorderMargin;
       VarManager::SetITSROFBorderselection(alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
       LOGP(debug, "==============++++++++++++========== roBias / roLength / start / end :: {} / {} / {} / {}", alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
-      
+
       fCurrentRun = events.begin().runNumber();
     }
 
@@ -1238,7 +1238,7 @@ struct AnalysisSameEventPairing {
   {
     if (events.size() > 0) { // Additional protection to avoid crashing of events.begin().runNumber()
       if (fCurrentRun != events.begin().runNumber()) {
-        initParamsFromCCDB(events.begin().timestamp(), events.begin().runNumber(), TTwoProngFitter);        
+        initParamsFromCCDB(events.begin().timestamp(), events.begin().runNumber(), TTwoProngFitter);
         fCurrentRun = events.begin().runNumber();
       }
     }
