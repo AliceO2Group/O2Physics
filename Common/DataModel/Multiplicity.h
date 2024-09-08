@@ -77,9 +77,6 @@ DECLARE_SOA_COLUMN(MultNGlobalTracksPV, multNGlobalTracksPV, int);
 DECLARE_SOA_COLUMN(MultNGlobalTracksPVeta1, multNGlobalTracksPVeta1, int);
 DECLARE_SOA_COLUMN(MultNGlobalTracksPVetaHalf, multNGlobalTracksPVetaHalf, int);
 
-DECLARE_SOA_INDEX_COLUMN(BC, bc);
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-
 // even further QA: timing information for neighboring events
 DECLARE_SOA_COLUMN(TimeToPrePrevious, timeToPrePrevious, float); //!
 DECLARE_SOA_COLUMN(TimeToPrevious, timeToPrevious, float);       //!
@@ -111,12 +108,6 @@ DECLARE_SOA_TABLE(PVMults, "AOD", "PVMULT", //! Multiplicity from the PV contrib
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
 using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
 using Mult = Mults::iterator;
-
-// for QA purposes
-DECLARE_SOA_TABLE(Mults2BC, "AOD", "MULTS2BC", //! Relate mult -> BC
-                  o2::soa::Index<>, mult::BCId);
-DECLARE_SOA_TABLE(BC2Mults, "AOD", "BC2MULTS", //! Relate BC -> mult
-                  o2::soa::Index<>, mult::CollisionId);
 
 DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
@@ -197,7 +188,7 @@ DECLARE_SOA_COLUMN(MultBCFT0PosZ, multBCFT0PosZ, float);          //! Position a
 DECLARE_SOA_COLUMN(MultBCFT0PosZValid, multBCFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information within the BC
 
 } // namespace multBC
-DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
+DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
                   multBC::MultBCFT0C,
                   multBC::MultBCFT0PosZ,
@@ -218,7 +209,23 @@ DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFDDtriggerBits,
                   multBC::MultBCTriggerMask,
                   multBC::MultBCColliding);
-using MultBC = MultsBC::iterator;
+using MultBC = MultBCs::iterator;
+
+// crosslinks
+namespace mult
+{
+DECLARE_SOA_INDEX_COLUMN(MultBC, multBC);
+}
+namespace multBC
+{
+DECLARE_SOA_INDEX_COLUMN(Mult, mult);
+}
+
+// for QA purposes
+DECLARE_SOA_TABLE(Mults2BC, "AOD", "MULTS2BC", //! Relate mult -> BC
+                  o2::soa::Index<>, mult::MultBCId);
+DECLARE_SOA_TABLE(BC2Mults, "AOD", "BC2MULTS", //! Relate BC -> mult
+                  o2::soa::Index<>, multBC::MultId);
 
 } // namespace o2::aod
 
