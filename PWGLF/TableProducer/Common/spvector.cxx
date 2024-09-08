@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// author: prottay das 07/09/2024
-// email: prottay.das@cern.ch
+// \author: prottay das 07/09/2024
+// \email: prottay.das@cern.ch
 
 // C++/ROOT includes.
 #include <TH1F.h>
@@ -19,6 +19,11 @@
 #include <vector>
 #include <TComplex.h>
 #include <TMath.h>
+#include <array>
+#include <cmath>
+#include "Math/Vector4D.h"
+#include "TRandom3.h"
+#include "TF1.h"
 
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
@@ -26,33 +31,17 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "FT0Base/Geometry.h"
 #include "FV0Base/Geometry.h"
-
-// o2 includes.
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include <array>
-#include <cmath>
-#include "Math/Vector4D.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/EventPlaneHelper.h"
@@ -63,15 +52,14 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "PWGLF/DataModel/SPCalibrationTables.h"
-#include "TRandom3.h"
-#include "TF1.h"
+
+// o2 includes.
+#include "CCDB/CcdbApi.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DetectorsCommonDataFormats/AlignParam.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -128,8 +116,6 @@ struct spvector {
   template <typename TCollision>
   bool eventSelected(TCollision collision, const float& centrality)
   {
-    if (collision.alias_bit(kTVXinTRD)) {
-    }
     auto multNTracksPV = collision.multNTracksPV();
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
       return 0;
@@ -269,9 +255,9 @@ struct spvector {
 
         if (iChA < 4) {
 
-          if (znaEnergy[iChA] <= 0.0)
+          if (znaEnergy[iChA] <= 0.0) {
             return;
-          else {
+          } else {
             float ampl = gainequal * znaEnergy[iChA];
             qxZDCA = qxZDCA + ampl * x[iChA];
             qyZDCA = qyZDCA + ampl * y[iChA];
@@ -281,9 +267,9 @@ struct spvector {
           }
         } else {
 
-          if (zncEnergy[iChA - 4] <= 0.0)
+          if (zncEnergy[iChA - 4] <= 0.0) {
             return;
-          else {
+          } else {
             float ampl = gainequal * zncEnergy[iChA - 4];
             qxZDCC = qxZDCC + ampl * x[iChA - 4];
             qyZDCC = qyZDCC + ampl * y[iChA - 4];
