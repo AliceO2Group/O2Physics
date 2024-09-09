@@ -107,6 +107,7 @@ DECLARE_SOA_TABLE(PVMults, "AOD", "PVMULT", //! Multiplicity from the PV contrib
                   mult::IsInelGt1<mult::MultNTracksPVeta1>);
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
 using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
+using FT0Mult = FT0Mults::iterator;
 using Mult = Mults::iterator;
 
 DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
@@ -211,21 +212,21 @@ DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   multBC::MultBCColliding);
 using MultBC = MultBCs::iterator;
 
-// crosslinks
+// crosslinks 
 namespace mult
 {
-DECLARE_SOA_INDEX_COLUMN(MultBC, multBC);
+DECLARE_SOA_INDEX_COLUMN(MultBC, multBC); 
 }
 namespace multBC
 {
-DECLARE_SOA_INDEX_COLUMN(Mult, mult);
+DECLARE_SOA_INDEX_COLUMN(FT0Mult, ft0Mult);
 }
 
 // for QA purposes
 DECLARE_SOA_TABLE(Mults2BC, "AOD", "MULTS2BC", //! Relate mult -> BC
                   o2::soa::Index<>, mult::MultBCId);
 DECLARE_SOA_TABLE(BC2Mults, "AOD", "BC2MULTS", //! Relate BC -> mult
-                  o2::soa::Index<>, multBC::MultId);
+                  o2::soa::Index<>, multBC::FT0MultId);
 
 } // namespace o2::aod
 
