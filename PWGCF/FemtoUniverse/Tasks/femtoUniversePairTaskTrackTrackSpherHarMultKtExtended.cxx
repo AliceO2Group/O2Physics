@@ -475,7 +475,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
-        sameEventMultCont.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT);
+        sameEventMultCont.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
       }
     } else {
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
@@ -507,9 +507,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           case 2: {
             rand = randgen->Rndm();
             if (rand > 0.5) {
-              sameEventMultContPP.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT);
+              sameEventMultContPP.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
             } else if (rand <= 0.5) {
-              sameEventMultContPP.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::same, 2, multCol, kT);
+              sameEventMultContPP.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
             }
             break;
           }
@@ -517,9 +517,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           case 3: {
             rand = randgen->Rndm();
             if (rand > 0.5) {
-              sameEventMultContMM.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT);
+              sameEventMultContMM.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
             } else if (rand <= 0.5) {
-              sameEventMultContMM.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::same, 2, multCol, kT);
+              sameEventMultContMM.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
             }
             break;
           }
@@ -606,15 +606,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
       switch (ContType) {
         case 1: {
-          mixedEventMultCont.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT);
+          mixedEventMultCont.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
           break;
         }
         case 2: {
-          mixedEventMultContPP.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT);
+          mixedEventMultContPP.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
           break;
         }
         case 3: {
-          mixedEventMultContMM.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT);
+          mixedEventMultContMM.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
           break;
         }
         default:
