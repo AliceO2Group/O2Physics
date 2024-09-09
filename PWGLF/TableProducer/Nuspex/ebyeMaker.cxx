@@ -303,7 +303,7 @@ struct ebyeMaker {
         track.tpcNClsShared() > v0trackNsharedClusTpc) {
       return false;
     }
-    if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2) {
+    if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
       if (!(track.trackType() & o2::aod::track::Run2Track) ||
           !(track.flags() & o2::aod::track::TPCrefit)) {
         return false;
@@ -332,7 +332,7 @@ struct ebyeMaker {
         track.itsChi2NCl() > 36.f) {
       return false;
     }
-    if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2) {
+    if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
       if (!(track.trackType() & o2::aod::track::Run2Track) ||
           !(track.flags() & o2::aod::track::TPCrefit) ||
           !(track.flags() & o2::aod::track::ITSrefit)) {
@@ -362,7 +362,7 @@ struct ebyeMaker {
     auto timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (doprocessRun2 || doprocessMcRun2 || doprocessMiniRun2) {
+    if (doprocessRun2 || doprocessMcRun2 || doprocessMiniRun2 || doprocessMiniMcRun2) {
       auto grpPath{"GLO/GRP/GRP"};
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
       if (!grpo) {
@@ -397,7 +397,7 @@ struct ebyeMaker {
   template <class T>
   float getOuterPID(T const& track)
   {
-    if (doprocessMiniRun2) {
+    if (doprocessMiniRun2 || doprocessMiniMcRun2) {
       if (track.hasTOF() && track.pt() > antipPtTof)
         return track.tofNSigmaPr();
       // else if (track.pt() < antipPtTof && track.pt() > antipPtMin) {
@@ -625,7 +625,7 @@ struct ebyeMaker {
         if (!posSelect || !negSelect)
           continue;
 
-        if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2) {
+        if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
           bool checkPosPileUp = posTrack.hasTOF() || (posTrack.flags() & o2::aod::track::ITSrefit);
           bool checkNegPileUp = negTrack.hasTOF() || (negTrack.flags() & o2::aod::track::ITSrefit);
           if (!checkPosPileUp && !checkNegPileUp) {
