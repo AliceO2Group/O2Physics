@@ -8,8 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file taskElectronWeakNoson.cxx
-/// \briff task for WeakBoson (W/Z) based on electron in mid-rapidity
+
+/// \file taskElectronWeakBoson.cxx
+/// \brief task for WeakBoson (W/Z) based on electron in mid-rapidity
 /// \author S. Sakai & S. Ito (Univ. of Tsukuba)
 
 #include "Framework/runDataProcessing.h"
@@ -43,47 +44,54 @@ struct HfTaskElectronWeakBoson {
   // pp
   // using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
 
-  Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
-  Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalambiguousclusterId;
-  PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
+  // configurable parameters
+  Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pt registry"};
+  Configurable<float> BinPtmax{"BinPtmax", 100.0, "maximum pt registry"};
+  Configurable<int> nBinsE{"nBinsE", 100, "N bins in E registry"};
+  Configurable<float> BinEmax{"BinEmax", 100.0, "maximum E registry"};
 
-  Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pt histo"};
-  Configurable<int> nBinsE{"nBinsE", 100, "N bins in E histo"};
-
-  // event filter
-  Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
 
-  // track cuts
-  Configurable<float> etalow{"etalow", -0.6f, ""};
-  Configurable<float> etaup{"etaup", 0.6f, ""};
-  Configurable<float> dcaxy_cut{"dcaxy_cut", 2.0f, ""};
-  Configurable<float> mimpT_cut{"mimpT_cut", 3.0f, "minimum pT cut"};
+  Configurable<float> etalow_cut{"etalow_cut", -0.6f, "eta lower cut"};
+  Configurable<float> etaup_cut{"etaup_cut", 0.6f, "eta upper cut"};
+  Configurable<float> dcaxy_cut{"dcaxy_cut", 2.0f, "dca xy cut"};
   Configurable<float> itschi2_cut{"itschi2_cut", 15.0f, "its chi2 cut"};
+  Configurable<float> mimpT_cut{"mimpT_cut", 3.0f, "minimum pT cut"};
   Configurable<float> tpcchi2_cut{"tpcchi2_cut", 4.0f, "tpc chi2 cut"};
   Configurable<float> itsNcl_cut{"itsNcl_cut", 2.0f, "its # of cluster cut"};
   Configurable<float> tpcNcl_cut{"tpcNcl_cut", 100.0f, "tpc # if cluster cut"};
   Configurable<float> tpcNclCr_cut{"tpcNclCr_cut", 100.0f, "tpc # of crossedRows cut"};
+  Configurable<float> tpcNsiglow_cut{"tpcNsiglow_cut", -1.0, "tpc Nsig lower cut"};
+  Configurable<float> tpcNsigup_cut{"tpcNsigup_cut", 3.0, "tpc Nsig upper cut"};
 
-  Filter filter_globalTr = requireGlobalTrackInFilter();
-  Filter etafilter = (aod::track::eta < etaup) && (aod::track::eta > etalow);
-  Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxy_cut);
-
-  // cluster cut
+  Configurable<float> emcacc_phimin{"emcacc_phimin", 1.39, "Maximum M20"};
+  Configurable<float> emcacc_phimax{"emcacc_phimax", 3.36, "Maximum M20"};
   Configurable<int> mClusterDefinition{"mClusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
-  Configurable<float> minTime{"minTime", -25., "Minimum cluster time for time cut"};
-  Configurable<float> maxTime{"maxTime", +20., "Maximum cluster time for time cut"};
-  Configurable<float> minM02{"minM02", 0.1, "Minimum M02 for M02 cut"};
-  Configurable<float> maxM02{"maxM02", 0.9, "Maximum M02 for M02 cut"};
-  Configurable<float> minM20{"minM20", 0.1, "Minimum M20 for M20 cut"};
-  Configurable<float> maxM20{"maxM20", 0.6, "Maximum M20 for M20 cut"};
+  Configurable<float> minTime{"minTime", -25., "Minimum cluster time"};
+  Configurable<float> maxTime{"maxTime", +20., "Maximum cluster time"};
+  Configurable<float> minM02{"minM02", 0.1, "Minimum M02"};
+  Configurable<float> maxM02{"maxM02", 0.9, "Maximum M02"};
+  Configurable<float> minM20{"minM20", 0.1, "Minimum M20"};
+  Configurable<float> maxM20{"maxM20", 0.6, "Maximum M20"};
   Configurable<float> MatchR_cut{"MatchR_cut", 0.1, "cluster - track matching cut"};
+
+  // Filter
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
+
+  Filter etafilter = (aod::track::eta < etaup_cut) && (aod::track::eta > etalow_cut);
+  Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxy_cut);
+  Filter filter_globalTr = requireGlobalTrackInFilter();
 
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02) && (o2::aod::emcalcluster::m02 < maxM02);
 
-  // Histogram registry: an object to hold your histograms
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // Data Handling Objects
+  Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalambiguousclusterId;
+  PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
+
+  // Histogram registry: an object to hold your registrygrams
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
@@ -92,9 +100,9 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisZvtx{400, -20, 20, "Zvtx"};
     const AxisSpec axisCounter{1, 0, 1, "events"};
     const AxisSpec axisEta{200, -1.0, 1.0, "#eta"};
-    const AxisSpec axisPt{nBinsPt, 0, 10, "p_{T}"};
+    const AxisSpec axisPt{nBinsPt, 0, BinPtmax, "p_{T}"};
     const AxisSpec axisNsigma{100, -5, 5, "N#sigma"};
-    const AxisSpec axisE{nBinsE, 0, 10, "Energy"};
+    const AxisSpec axisE{nBinsE, 0, BinEmax, "Energy"};
     const AxisSpec axisM02{100, 0, 1, "M02"};
     const AxisSpec axisdPhi{200, -1, 1, "dPhi"};
     const AxisSpec axisdEta{200, -1, 1, "dEta"};
@@ -105,51 +113,51 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisITSNCls{20, 0.0, 20, "counts"};
     const AxisSpec axisEMCtime{200, -100.0, 100, "EMC time"};
 
-    // create histograms
-    histos.add("ZvtxHistogram", "ZvtxHistogram", kTH1F, {axisZvtx});
-    histos.add("hEventCounter", "hEventCounter", kTH1F, {axisCounter});
-    histos.add("ITS_Chi2_Hist", "ITS #chi^{2} Hist", kTH1F, {axisChi2});
-    histos.add("TPC_Chi2_Hist", "TPC #chi^{2} Hist", kTH1F, {axisChi2});
-    histos.add("TPC_NCls_Hist", "TPC_NCls_Hist", kTH1F, {axisCluster});
-    histos.add("ITS_NCls_Hist", "ITS_NCls_Hist", kTH1F, {axisITSNCls});
-    histos.add("TPC_NClsCrossedRows_Hist", "TPC_NClsCrossedRows_Hist", kTH1F, {axisCluster});
-    histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
-    histos.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
-    histos.add("TPCElHistogram", "TPCElHistogram", kTH2F, {{axisPt}, {axisNsigma}});
-    histos.add("EnergyHistogram", "EnergyHistogram", kTH1F, {axisE});
-    histos.add("M02Histogram", "M02Histogram", kTH2F, {{axisNsigma}, {axisM02}});
-    histos.add("M20Histogram", "M20Histogram", kTH2F, {{axisNsigma}, {axisM02}});
-    histos.add("TrMatchHistogram", "TrMatchHistogram", kTH2F, {{axisdPhi}, {axisdEta}});
-    histos.add("TrMatchHistogram_mim", "TrMatchHistogram_mim", kTH2F, {{axisdPhi}, {axisdEta}});
-    histos.add("MatchPhiHistogram", "MatchPhiHistogram", kTH2F, {{axisPhi}, {axisPhi}});
-    histos.add("MatchEtaHistogram", "MatchEtaHistogram", kTH2F, {{axisEta}, {axisEta}});
-    histos.add("EopHistogram", "EopHistogram", kTH2F, {{axisPt}, {axisEop}});
-    histos.add("EopNsigTPCHistogram", "EopNsigTPCHistogram", kTH2F, {{axisNsigma}, {axisEop}});
-    histos.add("EMCtimeHistogram", "EMCtimeHistogram", kTH1F, {axisEMCtime});
+    // create registrygrams
+    registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
+    registry.add("hEventCounter", "hEventCounter", kTH1F, {axisCounter});
+    registry.add("hITS_Chi2", "ITS #chi^{2}", kTH1F, {axisChi2});
+    registry.add("hTPC_Chi2", "TPC #chi^{2}", kTH1F, {axisChi2});
+    registry.add("hTPC_NCls", "TPC NCls", kTH1F, {axisCluster});
+    registry.add("hITS_NCls", "ITS NCls", kTH1F, {axisITSNCls});
+    registry.add("hTPC_NClsCrossedRows", "TPC NClsCrossedRows", kTH1F, {axisCluster});
+    registry.add("hEta", "track eta", kTH1F, {axisEta});
+    registry.add("hPt", "track pt", kTH1F, {axisPt});
+    registry.add("hTPCNsigma", "TPC electron Nsigma", kTH2F, {{axisPt}, {axisNsigma}});
+    registry.add("hEnergy", "EMC cluster energy", kTH1F, {axisE});
+    registry.add("hM02", "EMC M02", kTH2F, {{axisNsigma}, {axisM02}});
+    registry.add("hM20", "EMC M20", kTH2F, {{axisNsigma}, {axisM02}});
+    registry.add("hTrMatch", "Track EMC Match", kTH2F, {{axisdPhi}, {axisdEta}});
+    registry.add("hTrMatch_mim", "Track EMC Match minimu minimumm", kTH2F, {{axisdPhi}, {axisdEta}});
+    registry.add("hMatchPhi", "Match in Phi", kTH2F, {{axisPhi}, {axisPhi}});
+    registry.add("hMatchEta", "Match in Eta", kTH2F, {{axisEta}, {axisEta}});
+    registry.add("hEop", "energy momentum match", kTH2F, {{axisPt}, {axisEop}});
+    registry.add("hEopNsigTPC", "Eop vs. Nsigma", kTH2F, {{axisNsigma}, {axisEop}});
+    registry.add("hEMCtime", "EMC timing", kTH1F, {axisEMCtime});
   }
 
   // void process(soa::Filtered<aod::Collisions>::iterator const& collision, SelectedClusters const& clusters, TrackEle const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks)
   void process(soa::Filtered<aod::Collisions>::iterator const& collision, SelectedClusters const& emcClusters, TrackEle const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
-    histos.fill(HIST("hEventCounter"), 0.5);
+    registry.fill(HIST("hEventCounter"), 0.5);
 
     // LOGF(info, "Collision index : %d", collision.index());
     // LOGF(info, "Number of tracks: %d", tracks.size());
     // LOGF(info, "Number of clusters: %d", clusters.size());
     // LOGF(info, "Number of clusters: %d", emcClusters.size());
 
-    histos.fill(HIST("ZvtxHistogram"), collision.posZ());
+    registry.fill(HIST("hZvtx"), collision.posZ());
 
     for (const auto& track : tracks) {
 
-      histos.fill(HIST("etaHistogram"), track.eta());
-      histos.fill(HIST("ITS_Chi2_Hist"), track.itsChi2NCl());
-      histos.fill(HIST("TPC_Chi2_Hist"), track.tpcChi2NCl());
-      histos.fill(HIST("TPC_NCls_Hist"), track.tpcNClsFound());
-      histos.fill(HIST("ITS_NCls_Hist"), track.itsNCls());
-      histos.fill(HIST("TPC_NClsCrossedRows_Hist"), track.tpcNClsCrossedRows());
+      registry.fill(HIST("hEta"), track.eta());
+      registry.fill(HIST("hITS_Chi2"), track.itsChi2NCl());
+      registry.fill(HIST("hTPC_Chi2"), track.tpcChi2NCl());
+      registry.fill(HIST("hTPC_NCls"), track.tpcNClsFound());
+      registry.fill(HIST("hITS_NCls"), track.itsNCls());
+      registry.fill(HIST("hTPC_NClsCrossedRows"), track.tpcNClsCrossedRows());
 
-      if (std::abs(track.eta()) > etaup)
+      if (std::abs(track.eta()) > etaup_cut)
         continue;
       if (track.tpcNClsCrossedRows() < tpcNclCr_cut)
         continue;
@@ -165,14 +173,14 @@ struct HfTaskElectronWeakBoson {
         continue;
       if (track.pt() < mimpT_cut)
         continue;
-      histos.fill(HIST("ptHistogram"), track.pt());
-      histos.fill(HIST("TPCElHistogram"), track.p(), track.tpcNSigmaEl());
+      registry.fill(HIST("hPt"), track.pt());
+      registry.fill(HIST("hTPCNsigma"), track.p(), track.tpcNSigmaEl());
 
       // track - match
 
-      if (emcClusters.size() < 1)
+      if (!emcClusters.size())
         continue;
-      if (track.phi() < 1.39 || track.phi() > 3.15)
+      if (track.phi() < emcacc_phimin || track.phi() > emcacc_phimax)
         continue;
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, track.globalIndex());
 
@@ -182,7 +190,7 @@ struct HfTaskElectronWeakBoson {
       double dPhi_mim = 999.9;
       double dEta_mim = 999.9;
 
-      if (tracksofcluster.size() > 0) {
+      if (tracksofcluster.size()) {
         int nmatch = 0;
         for (const auto& match : tracksofcluster) {
           if (match.emcalcluster_as<SelectedClusters>().time() < minTime || match.emcalcluster_as<SelectedClusters>().time() > maxTime)
@@ -190,9 +198,9 @@ struct HfTaskElectronWeakBoson {
           if (match.emcalcluster_as<SelectedClusters>().m02() < minM02 || match.emcalcluster_as<SelectedClusters>().m02() > maxM02)
             continue;
 
-          double emc_m20 = match.emcalcluster_as<SelectedClusters>().m20();
-          double emc_m02 = match.emcalcluster_as<SelectedClusters>().m02();
-          double emc_energy = match.emcalcluster_as<SelectedClusters>().energy();
+          float emc_m20 = match.emcalcluster_as<SelectedClusters>().m20();
+          float emc_m02 = match.emcalcluster_as<SelectedClusters>().m02();
+          float emc_energy = match.emcalcluster_as<SelectedClusters>().energy();
           double emc_phi = match.emcalcluster_as<SelectedClusters>().phi();
           double emc_eta = match.emcalcluster_as<SelectedClusters>().eta();
           double emc_time = match.emcalcluster_as<SelectedClusters>().time();
@@ -200,31 +208,37 @@ struct HfTaskElectronWeakBoson {
           // LOG(info) << "tr phi1 = " << track.phi();
           // LOG(info) << "emc phi = " << emc_phi;
           if (nmatch == 0) {
-            double dPhi = match.track_as<TrackEle>().phi() - emc_phi;
             double dEta = match.track_as<TrackEle>().eta() - emc_eta;
+            double dPhi = match.track_as<TrackEle>().phi() - emc_phi;
+            if (dPhi > o2::constants::math::PI) {
+              dPhi -= 2 * o2::constants::math::PI;
+            } else if (dPhi < -o2::constants::math::PI) {
+              dPhi += 2 * o2::constants::math::PI;
+            }
 
-            histos.fill(HIST("MatchPhiHistogram"), emc_phi, match.track_as<TrackEle>().phi());
-            histos.fill(HIST("MatchEtaHistogram"), emc_eta, match.track_as<TrackEle>().eta());
+            registry.fill(HIST("hMatchPhi"), emc_phi, match.track_as<TrackEle>().phi());
+            registry.fill(HIST("hMatchEta"), emc_eta, match.track_as<TrackEle>().eta());
 
-            double R = sqrt(pow(dPhi, 2) + pow(dEta, 2));
+            double R = std::sqrt(std::pow(dPhi, 2) + std::pow(dEta, 2));
             if (R < Rmim) {
               Rmim = R;
               dPhi_mim = dPhi;
               dEta_mim = dEta;
             }
-            histos.fill(HIST("TrMatchHistogram"), dPhi, dEta);
-            histos.fill(HIST("EMCtimeHistogram"), emc_time);
+            registry.fill(HIST("hTrMatch"), dPhi, dEta);
+            registry.fill(HIST("hEMCtime"), emc_time);
+            registry.fill(HIST("hEnergy"), emc_energy);
 
             if (R < MatchR_cut)
               continue;
 
             double eop = emc_energy / match.track_as<TrackEle>().p();
             // LOG(info) << "E/p" << eop;
-            histos.fill(HIST("EopNsigTPCHistogram"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
-            histos.fill(HIST("M02Histogram"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m02);
-            histos.fill(HIST("M20Histogram"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m20);
-            if (match.track_as<TrackEle>().tpcNSigmaEl() > -1.0 && match.track_as<TrackEle>().tpcNSigmaEl() < 3) {
-              histos.fill(HIST("EopHistogram"), match.track_as<TrackEle>().pt(), eop);
+            registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
+            registry.fill(HIST("hM02"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m02);
+            registry.fill(HIST("hM20"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m20);
+            if (match.track_as<TrackEle>().tpcNSigmaEl() > tpcNsiglow_cut && match.track_as<TrackEle>().tpcNSigmaEl() < tpcNsigup_cut) {
+              registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
             }
           }
 
@@ -232,9 +246,9 @@ struct HfTaskElectronWeakBoson {
         }
       }
 
-      if (Rmim < 10.0) {
+      if (Rmim < MatchR_cut) {
         // LOG(info) << "R mim = " << Rmim;
-        histos.fill(HIST("TrMatchHistogram_mim"), dPhi_mim, dEta_mim);
+        registry.fill(HIST("hTrMatch_mim"), dPhi_mim, dEta_mim);
       }
 
     } // end of track loop
