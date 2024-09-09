@@ -300,7 +300,7 @@ struct v0topologicalcuts {
     rV0Parameters_MC_AntiLambdamatch.add("hDCAV0Daughters_AntiLambdaMC_Match", "hDCAV0Daughters_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
     rV0Parameters_MC_AntiLambdamatch.add("hV0CosPA_AntiLambdaMC_Match", "hV0CosPA_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
     rV0Parameters_MC_AntiLambdamatch.add("hV0Radius_AntiLambdaMC_Match", "hV0Radius_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.2f, 5.0f}}});
-    rV0Parameters_MC_AntiLambdamatch.add("hDCAPostoPV_AntiLambdaMC_Match", "hDCANegtoPV_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 5.0f}}});
+    rV0Parameters_MC_AntiLambdamatch.add("hDCAPostoPV_AntiLambdaMC_Match", "hDCAPostoPV_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 5.0f}}});
     rV0Parameters_MC_AntiLambdamatch.add("hDCANegtoPV_AntiLambdaMC_Match", "hDCANegtoPV_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 5.0f}}});
 
     // V0s Data
@@ -346,8 +346,8 @@ struct v0topologicalcuts {
           rV0Parameters_MC_K0Smatch.fill(HIST("hDCAV0Daughters_KzeroMC_Match"), v0.dcaV0daughters());
           rV0Parameters_MC_K0Smatch.fill(HIST("hV0CosPA_KzeroMC_Match"), v0.v0cosPA());
           rV0Parameters_MC_K0Smatch.fill(HIST("hV0Radius_KzeroMC_Match"), v0.v0radius());
-          rV0Parameters_MC_K0Smatch.fill(HIST("hDCAPostoPV_KzeroMC_Match"), v0.dcapostopv());
-          rV0Parameters_MC_K0Smatch.fill(HIST("hDCANegtoPV_KzeroMC_Match"), v0.dcanegtopv());
+          rV0Parameters_MC_K0Smatch.fill(HIST("hDCAPostoPV_KzeroMC_Match"), TMath::Abs(v0.dcapostopv()));
+          rV0Parameters_MC_K0Smatch.fill(HIST("hDCANegtoPV_KzeroMC_Match"), TMath::Abs(v0.dcanegtopv()));
 
           for (int j = 0; j < 20; j++) {
             std::string cospacut = cuthistoskzerosh::cospacuts[j]; // Get the current cut value from the namespace
@@ -381,7 +381,7 @@ struct v0topologicalcuts {
             size_t pos = dcapostopcut.find("_");
             dcapostopcut[pos] = '.';
             const float dcapostopcutvalue = std::stod(dcapostopcut);
-            if (v0.dcapostopv() > dcapostopcutvalue) {
+            if (TMath::Abs(v0.dcapostopv()) > dcapostopcutvalue) {
               cuthistoskzerosh::dcapostopCut[j]->Fill(v0.mK0Short());
             }
           }
@@ -390,7 +390,7 @@ struct v0topologicalcuts {
             size_t pos = dcanegtopcut.find("_");
             dcanegtopcut[pos] = '.';
             const float dcanegtopcutvalue = std::stod(dcanegtopcut);
-            if (v0.dcanegtopv() > dcanegtopcutvalue) {
+            if (TMath::Abs(v0.dcanegtopv()) > dcanegtopcutvalue) {
               cuthistoskzerosh::dcanegtopCut[j]->Fill(v0.mK0Short());
             }
           }
@@ -399,8 +399,8 @@ struct v0topologicalcuts {
           rV0Parameters_MC_Lambdamatch.fill(HIST("hDCAV0Daughters_LambdaMC_Match"), v0.dcaV0daughters());
           rV0Parameters_MC_Lambdamatch.fill(HIST("hV0CosPA_LambdaMC_Match"), v0.v0cosPA());
           rV0Parameters_MC_Lambdamatch.fill(HIST("hV0Radius_LambdaMC_Match"), v0.v0radius());
-          rV0Parameters_MC_Lambdamatch.fill(HIST("hDCAPostoPV_LambdaMC_Match"), v0.dcapostopv());
-          rV0Parameters_MC_Lambdamatch.fill(HIST("hDCANegtoPV_LambdaMC_Match"), v0.dcanegtopv());
+          rV0Parameters_MC_Lambdamatch.fill(HIST("hDCAPostoPV_LambdaMC_Match"), TMath::Abs(v0.dcapostopv()));
+          rV0Parameters_MC_Lambdamatch.fill(HIST("hDCANegtoPV_LambdaMC_Match"), TMath::Abs(v0.dcanegtopv()));
 
           // for explanation look at the first Kzero  plot above
           for (int j = 0; j < 20; j++) {
@@ -435,7 +435,7 @@ struct v0topologicalcuts {
             size_t pos = dcapostopcutlambda.find("_");
             dcapostopcutlambda[pos] = '.';
             const float dcapostopcutlambdavalue = std::stod(dcapostopcutlambda);
-            if (v0.dcapostopv() > dcapostopcutlambdavalue) {
+            if (TMath::Abs(v0.dcapostopv()) > dcapostopcutlambdavalue) {
               cuthistoslambda::dcapostopCut[j]->Fill(v0.mLambda());
             }
           }
@@ -444,7 +444,7 @@ struct v0topologicalcuts {
             size_t pos = dcanegtopcutlambda.find("_");
             dcanegtopcutlambda[pos] = '.';
             const float dcanegtopcutlambdavalue = std::stod(dcanegtopcutlambda);
-            if (v0.dcanegtopv() > dcanegtopcutlambdavalue) {
+            if (TMath::Abs(v0.dcanegtopv()) > dcanegtopcutlambdavalue) {
               cuthistoslambda::dcanegtopCut[j]->Fill(v0.mLambda());
             }
           }
@@ -453,8 +453,8 @@ struct v0topologicalcuts {
           rV0Parameters_MC_AntiLambdamatch.fill(HIST("hDCAV0Daughters_AntiLambdaMC_Match"), v0.dcaV0daughters());
           rV0Parameters_MC_AntiLambdamatch.fill(HIST("hV0CosPA_AntiLambdaMC_Match"), v0.v0cosPA());
           rV0Parameters_MC_AntiLambdamatch.fill(HIST("hV0Radius_AntiLambdaMC_Match"), v0.v0radius());
-          rV0Parameters_MC_AntiLambdamatch.fill(HIST("hDCAPostoPV_AntiLambdaMC_Match"), v0.dcapostopv());
-          rV0Parameters_MC_AntiLambdamatch.fill(HIST("hDCANegtoPV_AntiLambdaMC_Match"), v0.dcanegtopv());
+          rV0Parameters_MC_AntiLambdamatch.fill(HIST("hDCAPostoPV_AntiLambdaMC_Match"), TMath::Abs(v0.dcapostopv()));
+          rV0Parameters_MC_AntiLambdamatch.fill(HIST("hDCANegtoPV_AntiLambdaMC_Match"), TMath::Abs(v0.dcanegtopv()));
           // for explanation look at the first Kzero  plot above
           for (int j = 0; j < 20; j++) {
             std::string cospacutantilambda = cuthistosantilambda::cospacuts[j];
@@ -488,7 +488,7 @@ struct v0topologicalcuts {
             size_t pos = dcapostopantilambda.find("_");
             dcapostopantilambda[pos] = '.';
             const float dcapostopcutantilambdavalue = std::stod(dcapostopantilambda);
-            if (v0.dcapostopv() > dcapostopcutantilambdavalue) {
+            if (TMath::Abs(v0.dcapostopv()) > dcapostopcutantilambdavalue) {
               cuthistosantilambda::dcapostopCut[j]->Fill(v0.mAntiLambda());
             }
           }
@@ -497,7 +497,7 @@ struct v0topologicalcuts {
             size_t pos = dcanegtopantilambda.find("_");
             dcanegtopantilambda[pos] = '.';
             const float dcanegtopcutantilambdavalue = std::stod(dcanegtopantilambda);
-            if (v0.dcanegtopv() > dcanegtopcutantilambdavalue) {
+            if (TMath::Abs(v0.dcanegtopv()) > dcanegtopcutantilambdavalue) {
               cuthistosantilambda::dcanegtopCut[j]->Fill(v0.mAntiLambda());
             }
           }
@@ -518,8 +518,8 @@ struct v0topologicalcuts {
       rV0Parameters_Data.fill(HIST("hV0CosPA_V0_Data"), v0.v0cosPA());
       rV0Parameters_Data.fill(HIST("hV0Radius_V0_Data"), v0.v0radius());
       rV0Parameters_Data.fill(HIST("hV0Radius_Full_V0_Data"), v0.v0radius());
-      rV0Parameters_Data.fill(HIST("hDCAPostoPV_V0_Data"), v0.dcapostopv());
-      rV0Parameters_Data.fill(HIST("hDCANegtoPV_V0_Data"), v0.dcanegtopv());
+      rV0Parameters_Data.fill(HIST("hDCAPostoPV_V0_Data"), TMath::Abs(v0.dcapostopv()));
+      rV0Parameters_Data.fill(HIST("hDCANegtoPV_V0_Data"), TMath::Abs(v0.dcanegtopv()));
 
       // Filling the five Kzero invariant mass plots for different cuts (which are taken from namespace), for full explanation see the first kzero cut filling in the MC process
       for (int j = 0; j < 20; j++) {
@@ -554,7 +554,7 @@ struct v0topologicalcuts {
         size_t pos = dcapostopcut.find("_");
         dcapostopcut[pos] = '.';
         const float dcapostopcutvalue = std::stod(dcapostopcut);
-        if (v0.dcapostopv() > dcapostopcutvalue) {
+        if (TMath::Abs(v0.dcapostopv()) > dcapostopcutvalue) {
           cuthistoskzerosh::dcapostopCut[j]->Fill(v0.mK0Short());
         }
       }
@@ -563,7 +563,7 @@ struct v0topologicalcuts {
         size_t pos = dcanegtopcut.find("_");
         dcanegtopcut[pos] = '.';
         const float dcanegtopcutvalue = std::stod(dcanegtopcut);
-        if (v0.dcanegtopv() > dcanegtopcutvalue) {
+        if (TMath::Abs(v0.dcanegtopv()) > dcanegtopcutvalue) {
           cuthistoskzerosh::dcanegtopCut[j]->Fill(v0.mK0Short());
         }
       }
@@ -600,7 +600,7 @@ struct v0topologicalcuts {
         size_t pos = dcapostopcutlambda.find("_");
         dcapostopcutlambda[pos] = '.';
         const float dcapostopcutlambdavalue = std::stod(dcapostopcutlambda);
-        if (v0.dcapostopv() > dcapostopcutlambdavalue) {
+        if (TMath::Abs(v0.dcapostopv()) > dcapostopcutlambdavalue) {
           cuthistoslambda::dcapostopCut[j]->Fill(v0.mLambda());
         }
       }
@@ -609,7 +609,7 @@ struct v0topologicalcuts {
         size_t pos = dcanegtopcutlambda.find("_");
         dcanegtopcutlambda[pos] = '.';
         const float dcanegtopcutlambdavalue = std::stod(dcanegtopcutlambda);
-        if (v0.dcanegtopv() > dcanegtopcutlambdavalue) {
+        if (TMath::Abs(v0.dcanegtopv()) > dcanegtopcutlambdavalue) {
           cuthistoslambda::dcanegtopCut[j]->Fill(v0.mLambda());
         }
       }
@@ -646,7 +646,7 @@ struct v0topologicalcuts {
         size_t pos = dcapostopantilambda.find("_");
         dcapostopantilambda[pos] = '.';
         const float dcapostopcutantilambdavalue = std::stod(dcapostopantilambda);
-        if (v0.dcapostopv() > dcapostopcutantilambdavalue) {
+        if (TMath::Abs(v0.dcapostopv()) > dcapostopcutantilambdavalue) {
           cuthistosantilambda::dcapostopCut[j]->Fill(v0.mAntiLambda());
         }
       }
@@ -655,7 +655,7 @@ struct v0topologicalcuts {
         size_t pos = dcanegtopantilambda.find("_");
         dcanegtopantilambda[pos] = '.';
         const float dcanegtopcutantilambdavalue = std::stod(dcanegtopantilambda);
-        if (v0.dcanegtopv() > dcanegtopcutantilambdavalue) {
+        if (TMath::Abs(v0.dcanegtopv()) > dcanegtopcutantilambdavalue) {
           cuthistosantilambda::dcanegtopCut[j]->Fill(v0.mAntiLambda());
         }
       }
