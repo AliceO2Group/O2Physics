@@ -81,8 +81,8 @@ struct TimestampTask {
     } else { // The run was not requested before: need to acccess CCDB!
       LOGF(debug, "Getting start-of-run and end-of-run timestamps from CCDB");
       runDuration = ccdb->getRunDuration(runNumber, true); /// fatalise if timestamps are not found
-      int64_t sorTimestamp = runDuration.first;                 // timestamp of the SOR in ms
-      int64_t eorTimestamp = runDuration.second;                // timestamp of the EOR in ms
+      int64_t sorTimestamp = runDuration.first;            // timestamp of the SOR in ms
+      int64_t eorTimestamp = runDuration.second;           // timestamp of the EOR in ms
 
       const bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
       if (isRun2MC.value == 1 || isUnanchoredRun3MC) {
