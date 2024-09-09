@@ -607,20 +607,19 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
-
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles
     randomConePt = 0;
     for (auto const& track : tracks) {
       if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
         float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, 2 * M_PI) - randomConePhi, static_cast<float>(-M_PI)); // ignores actual phi of track
-        float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax); - randomConeEta; // ignores actual eta of track
+        float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax);
+        -randomConeEta; // ignores actual eta of track
         if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
           randomConePt += track.pt();
         }
       }
     }
     registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
-
 
     // removing the leading jet from the random cone
     if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
