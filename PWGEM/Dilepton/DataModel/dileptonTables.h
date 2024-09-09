@@ -244,7 +244,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
                            });
 } // namespace emmcparticle
 
-// This table contains all MC truth tracks (both v0 and calos)
+// This table contains all MC truth tracks
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMMCEventId,
                        mcparticle::PdgCode, mcparticle::Flags,
@@ -264,6 +264,31 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using EMMCParticle = EMMCParticles::iterator;
+
+namespace emmcgenvectormeson
+{
+DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emmcevent);
+DECLARE_SOA_COLUMN(DownScalingFactor, dsf, float); //! down scaling factor to store this mc particle in reduced AO2D.root
+} // namespace emmcgenvectormeson
+
+DECLARE_SOA_TABLE_FULL(EMMCGenVectorMesons, "EMMCGenVectorMesons", "AOD", "EMMCGENVM", //!  generated omega, phi information
+                       o2::soa::Index<>, emmcgenvectormeson::EMMCEventId,
+                       mcparticle::PdgCode, mcparticle::Flags,
+                       mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
+                       emmcgenvectormeson::DownScalingFactor,
+
+                       // dynamic column
+                       emmcparticle::Pt<mcparticle::Px, mcparticle::Py>,
+                       emmcparticle::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                       emmcparticle::Phi<mcparticle::Px, mcparticle::Py>,
+
+                       emmcparticle::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                       emmcparticle::Y<mcparticle::Pz, mcparticle::E>,
+                       mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                       mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                       mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
+
+using EMMCGenVectorMeson = EMMCGenVectorMesons::iterator;
 
 namespace smearedtrack
 {
