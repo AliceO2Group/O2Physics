@@ -230,9 +230,9 @@ struct BcSelectionTask {
     // extract ITS time frame parameters
     int run = bcs.iteratorAt(0).runNumber();
     auto timestamps = ccdb->getRunDuration(run, true); /// fatalise if timestamps are not found
-    int64_t sorTimestamp = timestamps.first;                 // timestamp of the SOR in ms
-    int64_t eorTimestamp = timestamps.second;                // timestamp of the EOR in ms
-    int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;        // timestamp of the middle of the run
+    int64_t sorTimestamp = timestamps.first;           // timestamp of the SOR in ms
+    int64_t eorTimestamp = timestamps.second;          // timestamp of the EOR in ms
+    int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;  // timestamp of the middle of the run
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
     TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", ts);
