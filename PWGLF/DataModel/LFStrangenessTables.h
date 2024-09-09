@@ -22,9 +22,30 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 namespace o2::aod
 {
+
+namespace stracollision
+{
+DECLARE_SOA_DYNAMIC_COLUMN(IsUPC, isUPC, //! check whether this is a UPC or hadronic collision
+                           [](int value) -> bool { return value <= 2 ? true : false; });
+DECLARE_SOA_DYNAMIC_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, //! get the total sum of the FV0 A amplitudes
+                           [](float value) -> float { return value; });
+DECLARE_SOA_DYNAMIC_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, //! get the total sum of the FT0 A amplitudes
+                           [](float value) -> float { return value; });
+DECLARE_SOA_DYNAMIC_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, //! get the total sum of the FT0 C amplitudes
+                           [](float value) -> float { return value; });
+DECLARE_SOA_DYNAMIC_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, //! get the total sum of the FDD A amplitudes
+                           [](float value) -> float { return value; });
+DECLARE_SOA_DYNAMIC_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, //! get the total sum of the FDD C amplitudes
+                           [](float value) -> float { return value; });
+DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNA, energyCommonZNA, //! get the total sum of the ZN A amplitudes
+                           [](float value) -> float { return value; });
+DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total sum of the ZN A amplitudes
+                           [](float value) -> float { return value; });
+} // namespace stracollision
 
 //______________________________________________________
 // Collision declarations for derived data analysis
@@ -35,13 +56,16 @@ DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision pr
 DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
+// !!! DEPRECATED TABLE: StraRawCents_000 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information
                   mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
+// !!! DEPRECATED TABLE: StraRawCents_001 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE_VERSIONED(StraRawCents_001, "AOD", "STRARAWCENTS", 1,     //! debug information
                             mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
                             mult::MultNTracksPVeta1,                        // track multiplicities
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC);
+// !!! DEPRECATED TABLE: StraRawCents_002 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE_VERSIONED(StraRawCents_002, "AOD", "STRARAWCENTS", 2,            //! debug information
                             mult::MultFT0A, mult::MultFT0C, mult::MultFV0A,        // FIT detectors
                             mult::MultNTracksPVeta1,                               // track multiplicities with eta cut for INEL>0
@@ -49,6 +73,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_002, "AOD", "STRARAWCENTS", 2,         
                             mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC, // track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,          // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC);
+// !!! DEPRECATED TABLE: StraRawCents_003 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE_VERSIONED(StraRawCents_003, "AOD", "STRARAWCENTS", 3,     //! debug information
                             mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
                             mult::MultNTracksPVeta1,                        // track multiplicities with eta cut for INEL>0
@@ -59,6 +84,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_003, "AOD", "STRARAWCENTS", 3,     //! 
                             mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC);
+// !!! DEPRECATED TABLE: StraRawCents_004 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE_VERSIONED(StraRawCents_004, "AOD", "STRARAWCENTS", 4,     //! debug information
                             mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
                             mult::MultNTracksPVeta1,                        // track multiplicities with eta cut for INEL>0
@@ -70,8 +96,40 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_004, "AOD", "STRARAWCENTS", 4,     //! 
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC,
                             evsel::NumTracksInTimeRange); // add occupancy as extra
-DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
+DECLARE_SOA_TABLE(StraEvSels_000, "AOD", "STRAEVSELS",    //! event selection: sel8
                   evsel::Sel8, evsel::Selection);
+DECLARE_SOA_TABLE_VERSIONED(StraEvSels_001, "AOD", "STRAEVSELS", 1,         //! debug information
+                            evsel::Sel8, evsel::Selection,                  //! event selection: sel8
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultFDDA, mult::MultFDDC,
+                            mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                // number of PV contribs total
+                            mult::MultNTracksGlobal,                      // global track multiplicities
+                            mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange,     // add occupancy as extra
+                            udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
+
+                            // Dynamic columns for manipulating information
+                            // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
+                            // stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
+                            // stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
+                            // stracollision::TotalFDDAmplitudeA<mult::MultFDDA>,
+                            // stracollision::TotalFDDAmplitudeC<mult::MultFDDC>,
+                            // stracollision::EnergyCommonZNA<mult::MultZNA>,
+                            // stracollision::EnergyCommonZNC<mult::MultZNC>,
+                            stracollision::IsUPC<udcollision::GapSide>);
+
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
 DECLARE_SOA_TABLE(StraFT0CQVs, "AOD", "STRAFT0CQVS", //! t0c Qvec
@@ -89,6 +147,7 @@ DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing ma
                   bc::RunNumber, timestamp::Timestamp);
 
 using StraRawCents = StraRawCents_004;
+using StraEvSels = StraEvSels_001;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
 
