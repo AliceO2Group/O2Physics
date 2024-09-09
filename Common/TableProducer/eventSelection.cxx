@@ -48,6 +48,7 @@ struct BcSelectionTask {
   Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"};
   Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};
+  Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};
 
   int lastRunNumber = -1;
   int64_t bcSOR = -1;                    // global bc of the start of the first orbit
@@ -230,8 +231,8 @@ struct BcSelectionTask {
     // extract ITS time frame parameters
     int run = bcs.iteratorAt(0).runNumber();
     auto timestamps = ccdb->getRunDuration(run, true); /// fatalise if timestamps are not found
-    int64_t sorTimestamp = timestamps.first;           // timestamp of the SOR in ms
-    int64_t eorTimestamp = timestamps.second;          // timestamp of the EOR in ms
+    int64_t sorTimestamp = timestamps.first;           // timestamp of the SOR/SOX/STF in ms
+    int64_t eorTimestamp = timestamps.second;          // timestamp of the EOR/EOX/ETF in ms
     int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;  // timestamp of the middle of the run
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
@@ -420,6 +421,11 @@ struct BcSelectionTask {
           histos.get<TH1>(HIST("hCounterZNCafterBCcuts"))->Fill(srun, 1);
           histos.get<TH1>(HIST("hLumiZNCafterBCcuts"))->Fill(srun, 1. / csZNC);
         }
+      }
+
+      if (confCheckRunDurationLimits.value && (bc.timestamp() < sorTimestamp || bc.timestamp() > eorTimestamp)) {
+        alias = 0u;
+        selection = 0u;
       }
 
       // Fill bc selection columns
