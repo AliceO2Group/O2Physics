@@ -131,7 +131,7 @@ DECLARE_SOA_TABLE(MultSelections, "AOD", "MULTSELECTIONS", //!
                   evsel::Selection);                       // for derived data / QA studies
 using MultExtra = MultsExtra::iterator;
 
-// mc collisions table - indexed to Mult 
+// mc collisions table - indexed to Mult
 DECLARE_SOA_TABLE(MultMCExtras, "AOD", "MULTMCEXTRA", //! Table for the MC information
                   mult::MultMCFT0A,
                   mult::MultMCFT0C,
@@ -145,10 +145,10 @@ DECLARE_SOA_TABLE(MultMCExtras, "AOD", "MULTMCEXTRA", //! Table for the MC infor
 using MultMCExtra = MultMCExtras::iterator;
 using MultsExtraMC = MultMCExtras; // for backwards compatibility with previous naming scheme
 
-// crosslinks 
+// crosslinks
 namespace mult
 {
-DECLARE_SOA_INDEX_COLUMN(MultMCExtra, multMCExtra); 
+DECLARE_SOA_INDEX_COLUMN(MultMCExtra, multMCExtra);
 }
 
 DECLARE_SOA_TABLE(MC2Mults, "AOD", "MC2MULTS", //! Relate BC -> mult
