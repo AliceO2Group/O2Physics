@@ -293,7 +293,7 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
 
   if (registry) {
     mHistogramRegistry = registry;
-    fillSelectionHistogram<part>();  // cascade - moze tego nie trzeba ?
+    fillSelectionHistogram<part>();  // cascade
     fillSelectionHistogram<daugh>(); // pos, neg
     fillSelectionHistogram<bach>();  // bach
 
@@ -314,9 +314,6 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
       LOG(fatal) << "FemtoUniverseCascadeCuts: Number of selections to large for your "
                     "container - quitting!";
     }
-    // SPRAWDZIC czy to jest potrzebne:
-    // std::string folderName = static_cast<std::string>(
-    //   o2::aod::femtouniverseparticle::ParticleTypeName[part]);
 
     PosDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild,
@@ -430,6 +427,7 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
 
   const float cpav0 = cascade.v0cosPA(col.posX(), col.posY(), col.posZ());
   const float cpaCasc = cascade.casccosPA(col.posX(), col.posY(), col.posZ());
+  const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
   const float invMassLambda = cascade.mLambda();
   const float invMassXi = cascade.mXi();
 
@@ -480,11 +478,22 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
     return false;
   }
   for (size_t i = 0; i < decVtx.size(); i++) {
-    if (nDecVtxMax > 0 && decVtx.at(i) > DecVtxMax) { // for cascades
+    if (nDecVtxMax > 0 && decVtx.at(i) > DecVtxMax) {
       return false;
     }
   }
-  // ADD: DCA pos neg bach v0
+  if (nDCAPosToPV > 0 && abs(cascade.dcapostopv()) < DCAPosToPV) {
+    return false;
+  }
+  if (nDCANegToPV > 0 && abs(cascade.dcanegtopv()) < DCANegToPV) {
+    return false;
+  }
+  if (nDCABachToPV > 0 && abs(cascade.dcabachtopv()) < DCABachToPV) {
+    return false;
+  }
+  if (nDCAV0ToPV > 0 && abs(dcav0topv) < DCAV0ToPV) {
+    return false;
+  }
 
   if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
@@ -527,6 +536,7 @@ void FemtoUniverseCascadeSelection::fillCascadeQA(Col const& col, Casc const& ca
   // const std::vector<float> decVtx = {cascade.x(), cascade.y(), cascade.z()};
   const float cpav0 = cascade.v0cosPA(col.posX(), col.posY(), col.posZ());
   const float cpaCasc = cascade.casccosPA(col.posX(), col.posY(), col.posZ());
+  const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
 
   const float invMassLambda = cascade.mLambda();
   const float invMassXi = cascade.mXi();
@@ -545,7 +555,7 @@ void FemtoUniverseCascadeSelection::fillCascadeQA(Col const& col, Casc const& ca
   mHistogramRegistry->fill(HIST("CascadeQA/hDCAPosToPV"), cascade.dcapostopv());
   mHistogramRegistry->fill(HIST("CascadeQA/hDCANegToPV"), cascade.dcanegtopv());
   mHistogramRegistry->fill(HIST("CascadeQA/hDCABachToPV"), cascade.dcabachtopv());
-  mHistogramRegistry->fill(HIST("CascadeQA/hDCAV0ToPV"), cascade.cascradius());
+  mHistogramRegistry->fill(HIST("CascadeQA/hDCAV0ToPV"), dcav0topv);
 
   // is this necessary
   /*

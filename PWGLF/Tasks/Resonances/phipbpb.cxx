@@ -389,7 +389,7 @@ struct phipbpb {
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
-    if (std::abs(pglobal - ptpc) > ConfFakeKaonCut) {
+    if (TMath::Abs(pglobal - ptpc) > ConfFakeKaonCut) {
       return true;
     }
     return false;
@@ -799,7 +799,7 @@ struct phipbpb {
         histos.fill(HIST("hMC"), 5);
         continue;
       }
-      if (std::abs(RecCollision.posZ()) > cfgCutVertex) {
+      if (TMath::Abs(RecCollision.posZ()) > cfgCutVertex) {
         histos.fill(HIST("hMC"), 6);
         continue;
       }
@@ -848,8 +848,8 @@ struct phipbpb {
           }
           const auto mctrack1 = track1.mcParticle();
           const auto mctrack2 = track2.mcParticle();
-          int track1PDG = std::abs(mctrack1.pdgCode());
-          int track2PDG = std::abs(mctrack2.pdgCode());
+          int track1PDG = TMath::Abs(mctrack1.pdgCode());
+          int track2PDG = TMath::Abs(mctrack2.pdgCode());
           if (!mctrack1.isPhysicalPrimary()) {
             continue;
           }
@@ -867,10 +867,10 @@ struct phipbpb {
               if (mothertrack1 != mothertrack2) {
                 continue;
               }
-              if (std::abs(mothertrack1.y()) > confRapidity) {
+              if (TMath::Abs(mothertrack1.y()) > confRapidity) {
                 continue;
               }
-              if (std::abs(mothertrack1.pdgCode()) != 333) {
+              if (TMath::Abs(mothertrack1.pdgCode()) != 333) {
                 continue;
               }
               if (!selectionPID(track1) || !selectionPID(track2)) {
@@ -935,7 +935,7 @@ struct phipbpb {
       }
       // loop over generated particle
       for (auto& mcParticle : GenParticles) {
-        if (std::abs(mcParticle.y()) > confRapidity) {
+        if (TMath::Abs(mcParticle.y()) > confRapidity) {
           continue;
         }
         if (mcParticle.pdgCode() != 333) {

@@ -82,6 +82,7 @@ class JetFinder
   fastjet::AreaDefinition areaDef;
   fastjet::Selector selJets;
   fastjet::Selector selGhosts;
+  double fastjetExtraParam = -99.0;
 
   /// Sets the jet finding parameters
   void setParams();

@@ -24,6 +24,7 @@ ExperimentalAutoDetectBinPacking: false
 IndentCaseLabels: true
 IndentFunctionDeclarationAfterType: true
 IndentWidth:     2
+InsertNewlineAtEOF: true
 # It is broken on windows. Breaks all #include "header.h"
 ---
 Language:        Cpp

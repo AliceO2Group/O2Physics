@@ -121,14 +121,17 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
-  Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtouniverse tables"};
+  Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", false, "Activate filling of V0 into femtouniverse tables"};
+  Configurable<bool> ConfActivateSecondaries{"ConfActivateSecondaries", false, "Fill secondary MC gen particles that were reconstructed"};
   Configurable<bool> ConfIsActivateCascade{"ConfIsActivateCascade", true, "Activate filling of Cascade into femtouniverse tables"};
   Configurable<bool> ConfIsActivatePhi{"ConfIsActivatePhi", false, "Activate filling of Phi into femtouniverse tables"};
   Configurable<bool> ConfMCTruthAnalysisWithPID{"ConfMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
   Configurable<std::vector<int>> ConfMCTruthPDGCodes{"ConfMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
   Configurable<float> ConfCentFT0Min{"ConfCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
   Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
-
+  Configurable<bool> ConfEvIsGoodZvtxFT0vsPV{"ConfEvIsGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection on Events."};
+  Configurable<bool> ConfEvNoSameBunchPileup{"ConfEvNoSameBunchPileup", true, "Require kNoSameBunchPileup selection on Events."};
+  Configurable<bool> ConfEvIsVertexITSTPC{"ConfEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
   Filter CustomCollCentFilter = (aod::cent::centFT0C > ConfCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfCentFT0Max);
 
@@ -194,19 +197,21 @@ struct femtoUniverseProducerTask {
     Configurable<float> ConfPtLowFilterCut{"ConfPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
     Configurable<float> ConfPtHighFilterCut{"ConfPtHighFilterCut", 5.0, "Higher limit for Pt for the global track"}; // pT high
     Configurable<float> ConfEtaFilterCut{"ConfEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
-    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"};      // max dca to vertex XY
-    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};         // max dca to vertex Z
-    Configurable<uint8_t> ConfITSNCls{"ConfITSNCls", 5, "Value for the number of ITS clusters."};
-    Configurable<int16_t> ConfTPCNClsCrossedRows{"ConfTPCNClsCrossedRows", 89, "Value for the number of TPC crossed rows clusters."};
+    Configurable<bool> ConfDxaXYCustom0Cut{"ConfDxaXYCustom0Cut", false, "Enable Custom Dcaxy < [0] cut."};
+    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"}; // max dca to vertex XY
+    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};    // max dca to vertex Z
+    Configurable<bool> ConfDcaXYCustom1Cut{"ConfDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
+    Configurable<float> ConfDcaXYCustom11FilterCut{"ConfDcaXY1FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> ConfDcaXYCustom12FilterCut{"ConfDcaXY2FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
   } ConfFilterCuts;
 
   Filter GlobalCutFilter = requireGlobalTrackInFilter();
-
   Filter CustomTrackFilter = (aod::track::pt > ConfFilterCuts.ConfPtLowFilterCut) &&
                              (aod::track::pt < ConfFilterCuts.ConfPtHighFilterCut) &&
                              (nabs(aod::track::eta) < ConfFilterCuts.ConfEtaFilterCut) &&
-                             (aod::track::dcaXY < ConfFilterCuts.ConfDcaXYFilterCut) &&
-                             (aod::track::dcaZ < ConfFilterCuts.ConfDcaZFilterCut);
+                             (!ConfFilterCuts.ConfDxaXYCustom0Cut || (aod::track::dcaXY < ConfFilterCuts.ConfDcaXYFilterCut)) && // true if configurable set to false or if configurable is true and it passes the selection
+                             (aod::track::dcaZ < ConfFilterCuts.ConfDcaZFilterCut) &&
+                             (!ConfFilterCuts.ConfDcaXYCustom1Cut || (nabs(aod::track::dcaXY) < ConfFilterCuts.ConfDcaXYCustom11FilterCut + ConfFilterCuts.ConfDcaXYCustom12FilterCut / aod::track::pt)); // same logic here
 
   // CASCADE
   FemtoUniverseCascadeSelection cascadeCuts;
@@ -253,11 +258,16 @@ struct femtoUniverseProducerTask {
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> ConfLooseTPCNSigma{"ConfLooseTPCNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
     Configurable<float> ConfLooseTPCNSigmaValue{"ConfLooseTPCNSigmaValue", 10, "Value for the loose TPC N Sigma for Kaon PID."};
+    Configurable<bool> ConfLooseTOFNSigma{"ConfLooseTOFNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
+    Configurable<float> ConfLooseTOFNSigmaValue{"ConfLooseTOFNSigmaValue", 10, "Value for the loose TOF N Sigma for Kaon PID."};
     Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
     Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
-    Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
-    Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
+    Configurable<float> ConfNsigmaRejectPion{"ConfNsigmaRejectPion", 3.0, "Reject if particle could be a Pion combined nsigma value."};
+    Configurable<float> ConfNsigmaRejectProton{"ConfNsigmaRejectProton", 3.0, "Reject if particle could be a Proton combined nsigma value."};
   } ConfPhiSelection;
+
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
+  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
@@ -271,78 +281,135 @@ struct femtoUniverseProducerTask {
   {
 
     if (mom < 0.3) { // 0.0-0.3
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 3.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 2.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
-          return true;
-        } else {
-          return false;
-        }
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
       } else {
-        if (TMath::Abs(nsigmaTPCK) < 1.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
           return true;
-        } else {
-          return false;
         }
-
       } else {
-        if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
-          {
-            return true;
-          }
-        } else {
-          return false;
-        }
+        return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if (ConfPhiSelection.ConfLooseTPCNSigma) {
-        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
-          return true;
-        } else {
-          return false;
-        }
-
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
       } else {
-        if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool IsKaonNSigmaTPCLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool IsKaonNSigmaTOFLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
           return true;
-        } else {
-          return false;
         }
+      } else {
+        return false;
+      }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool IsKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
+  {
+    if (mom < 0.5) {
+      if (TMath::Abs(nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion) {
+        return true;
+      } else if (TMath::Abs(nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton) {
+        return true;
+      }
+    }
+    if (mom > 0.5) {
+      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion) {
+        return true;
+      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton) {
+        return true;
+      } else {
+        return false;
       }
     } else {
       return false;
@@ -357,6 +424,7 @@ struct femtoUniverseProducerTask {
   // for now do not know why
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry cascadeQaRegistry{"CascadeQAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
   int mRunNumber;
   float mMagField;
@@ -364,10 +432,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -484,7 +552,7 @@ struct femtoUniverseProducerTask {
       cascadeCuts.setChildPIDSpecies(femtoUniverseCascadeSelection::kBachTrack, ConfV0Selection.ConfChildPIDspecies);
 
       // check if works correctly for bachelor track
-      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::cutContainerType>(&cascadeQaRegistry);
       // invmass cuts
       cascadeCuts.setInvMassLimits(ConfCascadeSelection.ConfCascInvMassLowLimit, ConfCascadeSelection.ConfCascInvMassUpLimit);
 
@@ -597,7 +665,7 @@ struct femtoUniverseProducerTask {
       int particleOrigin = 99;
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
-      if (abs(pdgCode) == abs(ConfPhiSelection.ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPhiSelection.ConfPDGCodePartTwo.value)) {
+      if (abs(pdgCode) == abs(ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPDGCodePartTwo.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
@@ -612,6 +680,61 @@ struct femtoUniverseProducerTask {
       }
 
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+      outputPartsMCLabels(outputPartsMC.lastIndex());
+    } else {
+      outputPartsMCLabels(-1);
+    }
+  }
+
+  template <typename ParticleType>
+  void fillMCParticlePhi(ParticleType const& kaon1, ParticleType const& kaon2)
+  {
+    if (kaon1.has_mcParticle() && kaon2.has_mcParticle()) {
+      // get corresponding MC particle and its info
+      auto kaon1MC = kaon1.mcParticle();
+      auto kaon2MC = kaon2.mcParticle();
+      auto pdgCode1 = kaon1MC.pdgCode();
+      auto pdgCode2 = kaon2MC.pdgCode();
+
+      int phiOrigin = 99;
+      auto motherskaon1MC = kaon1MC.template mothers_as<aod::McParticles>();
+      auto motherskaon2MC = kaon2MC.template mothers_as<aod::McParticles>();
+
+      if (abs(pdgCode1) == abs(321) || abs(pdgCode2) == abs(-321)) {
+        if ((kaon1MC.isPhysicalPrimary() && kaon2MC.isPhysicalPrimary()) && (!motherskaon1MC.empty() && !motherskaon2MC.empty())) {
+          for (auto& particleMotherOfNeg : motherskaon1MC) {
+            for (auto& particleMotherOfPos : motherskaon2MC) {
+              if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 333) {
+                phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
+              } else {
+                phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake;
+              }
+            }
+          }
+        } else {
+          phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake;
+        }
+      } else {
+        phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kFake;
+      }
+
+      TLorentzVector part1Vec;
+      TLorentzVector part2Vec;
+
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
+
+      part1Vec.SetPtEtaPhiM(kaon1MC.pt(), kaon1MC.eta(), kaon1MC.phi(), mMassOne);
+      part2Vec.SetPtEtaPhiM(kaon2MC.pt(), kaon2MC.eta(), kaon2MC.phi(), mMassTwo);
+
+      TLorentzVector sumVec(part1Vec);
+      sumVec += part2Vec;
+
+      float phiEta = sumVec.Eta();
+      float phiPt = sumVec.Pt();
+      float phiPhi = sumVec.Phi();
+
+      outputPartsMC(phiOrigin, 333, phiPt, phiEta, phiPhi);
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
       outputPartsMCLabels(-1);
@@ -643,7 +766,7 @@ struct femtoUniverseProducerTask {
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        if (ConfDoSpher) {
+        if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
           outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
         } else {
           outputCollision(vtxZ, mult, multNtr, 2, mMagField);
@@ -995,6 +1118,7 @@ struct femtoUniverseProducerTask {
     double invMassD0 = 0.0;
     double invMassD0bar = 0.0;
     bool isD0D0bar = false;
+    uint8_t daughFlag = 0; // flag = 0 (daugh of D0 or D0bar), 1 (daug of D0), -1 (daugh of D0bar)
 
     for (auto const& hfCand : hfCands) {
 
@@ -1023,14 +1147,17 @@ struct femtoUniverseProducerTask {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
         isD0D0bar = true;
+        daughFlag = 1;
       } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
         invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
         isD0D0bar = true;
+        daughFlag = -1;
       } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
         isD0D0bar = true;
+        daughFlag = 0;
       } else {
         invMassD0 = 0.0;
         invMassD0bar = 0.0;
@@ -1047,12 +1174,12 @@ struct femtoUniverseProducerTask {
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
                     -999,
                     childIDs,
-                    0,  // D0 mass
-                    0); // D0bar mass
+                    postrack.sign(), // D0 mass -> positive daughter of D0/D0bar
+                    daughFlag);      // D0bar mass -> sign that the daugh is from D0 or D0 decay
         const int rowOfPosTrack = outputParts.lastIndex();
-        /*if constexpr (isMC) {
-          fillMCParticle(tracks, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
-        }*/
+        if constexpr (isMC) {
+          fillMCParticle(postrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
+        }
         // int negtrackID = hfCand.prong1().globalIndex();
         int negtrackID = hfCand.prong1Id();
         int rowInPrimaryTrackTableNeg = -1;
@@ -1069,12 +1196,12 @@ struct femtoUniverseProducerTask {
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
                     -999,
                     childIDs,
-                    0,
-                    0);
+                    negtrack.sign(), // negative daughter of D0/D0bar
+                    daughFlag);      // sign that the daugh is from D0 or D0 decay
         const int rowOfNegTrack = outputParts.lastIndex();
-        /*if constexpr (isMC) {
-        fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
-        }*/
+        if constexpr (isMC) {
+          fillMCParticle(negtrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
+        }
         std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
 
         outputParts(outputCollision.lastIndex(),
@@ -1108,21 +1235,49 @@ struct femtoUniverseProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     // lorentz vectors and filling the tables
     for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
-      // implementing PID cuts for phi children
-      if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+      if (!trackCuts.isSelectedMinimal(p1) || !trackCuts.isSelectedMinimal(p1)) {
         continue;
       }
-      if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+      // implementing PID cuts for phi children
+      if (ConfPhiSelection.ConfLooseTPCNSigma) {
+        if (!(IsKaonNSigmaTPCLoose(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigmaTPCLoose(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
+      }
+      if (ConfPhiSelection.ConfLooseTOFNSigma) {
+        if (!(IsKaonNSigmaTOFLoose(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigmaTOFLoose(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
+      } else {
+        if (!(IsKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+          continue;
+        }
+        if (!(IsKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+          continue;
+        }
+      }
+      if (IsKaonRejected(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion))) {
         continue;
-      } else if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
+      }
+      if (IsKaonRejected(p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion))) {
+        continue;
+      }
+
+      if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
         continue;
       }
 
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPhiSelection.ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPhiSelection.ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
+      float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
+      float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -1152,7 +1307,7 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiSelection.ConfPDGCodePartOne, ConfPhiSelection.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
+      phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, 321, -321); ///\todo fill QA also for daughters
 
       int postrackID = p1.globalIndex();
       int rowInPrimaryTrackTablePos = -1; // does it do anything?
@@ -1212,16 +1367,17 @@ struct femtoUniverseProducerTask {
         fillDebugParticle<true, false, false>(p2); // QA for negative daughter
         fillDebugParticle<false, true, false>(p1); // QA for phi
       }
-      // if constexpr (isMC) {
-      //   fillMCParticle(v0, o2::aod::femtouniverseparticle::ParticleType::kV0);
-      // }
+      if constexpr (isMC) {
+        fillMCParticlePhi(p1, p2);
+      }
     }
   }
 
-  template <typename TrackType, bool transientLabels = false>
+  template <typename TrackType, bool transientLabels = false, bool resolveDaughs = false>
   void fillParticles(TrackType const& tracks, std::optional<std::reference_wrapper<const std::set<int>>> recoMcIds = std::nullopt)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack;
 
     for (auto& particle : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
@@ -1239,10 +1395,10 @@ struct femtoUniverseProducerTask {
         std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
+            if ((pdgCode == 333)) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary() || (recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
+              if (particle.isPhysicalPrimary() || (ConfActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1263,6 +1419,10 @@ struct femtoUniverseProducerTask {
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       // now the table is filled
+      if constexpr (resolveDaughs) {
+        tmpIDtrack.push_back(particle.globalIndex());
+        continue;
+      }
       outputParts(outputCollision.lastIndex(),
                   particle.pt(),
                   particle.eta(),
@@ -1282,6 +1442,42 @@ struct femtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
+      }
+    }
+    if constexpr (resolveDaughs) {
+      childIDs[0] = 0;
+      childIDs[1] = 0;
+      for (int i = 0; i < tmpIDtrack.size(); i++) {
+        const auto& particle = tracks.iteratorAt(tmpIDtrack[i] - tracks.begin().globalIndex());
+        for (int daughIndex = 0, n = std::min(2ul, particle.daughtersIds().size()); daughIndex < n; daughIndex++) {
+          // loop to find the corresponding index of the daughters
+          for (int j = 0; j < tmpIDtrack.size(); j++) {
+            if (tmpIDtrack[j] == particle.daughtersIds()[daughIndex]) {
+              childIDs[daughIndex] = i - j;
+              break;
+            }
+          }
+        }
+        outputParts(outputCollision.lastIndex(),
+                    particle.pt(),
+                    particle.eta(),
+                    particle.phi(),
+                    aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                    0,
+                    static_cast<uint32_t>(particle.pdgCode()),
+                    particle.pdgCode(),
+                    childIDs,
+                    0,
+                    0);
+        if (ConfIsDebug) {
+          fillDebugParticle<false, true, false>(particle);
+        }
+
+        // Workaround to keep the FDParticles and MC label tables
+        // aligned, so that they can be joined in the task.
+        if constexpr (transientLabels) {
+          outputPartsMCLabels(-1);
+        }
       }
     }
   }
@@ -1398,6 +1594,21 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiMC, "Provide MC data for track Phi analysis", false);
 
+  void processTrackD0MC(aod::FemtoFullCollisionMC const& col,
+                        aod::BCsWithTimestamps const&,
+                        soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                        aod::McCollisions const&,
+                        aod::McParticles const&)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisions<true>(col, tracks);
+    fillTracks<true>(tracks);
+    // fillD0mesons<true>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackD0MC, "Provide MC data for track D0 analysis", false);
+
   void processTrackData(aod::FemtoFullCollision const& col,
                         aod::BCsWithTimestamps const&,
                         aod::FemtoFullTracks const& tracks)
@@ -1453,6 +1664,14 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCTruth, "Provide MC data for MC truth track analysis", false);
 
+  void processTrackMCGen(aod::McCollision const& col,
+                         aod::McParticles const& mcParticles)
+  {
+    outputCollision(col.posZ(), 0, 0, 2, 0);
+    fillParticles(mcParticles);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCGen, "Provide MC Generated for model comparisons", false);
+
   Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> recoCollsPerMCColl = aod::mcparticle::mcCollisionId;
   Preslice<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> perCollisionTracks = aod::track::collisionId;
@@ -1461,7 +1680,7 @@ struct femtoUniverseProducerTask {
     aod::McCollisions const& mccols,
     aod::McParticles const& mcParticles,
     soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
-    soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+    soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
     soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
     aod::BCsWithTimestamps const&)
   {
@@ -1472,16 +1691,18 @@ struct femtoUniverseProducerTask {
       auto groupedV0s = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedV0s);
-      for (auto& track : groupedTracks)
-        recoMcIds.insert(track.mcParticleId());
+      for (auto& track : groupedTracks) {
+        if (trackCuts.isSelectedMinimal(track))
+          recoMcIds.insert(track.mcParticleId());
+      }
     }
 
     // truth
     for (auto& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
-      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                     // fills the reco collisions for mc collision
-      fillParticles<decltype(groupedMCParticles), true>(groupedMCParticles, recoMcIds); // fills mc particles
+      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                           // fills the reco collisions for mc collision
+      fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
     }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTruthAndFullMC, "Provide both MC truth and reco for tracks and V0s", false);

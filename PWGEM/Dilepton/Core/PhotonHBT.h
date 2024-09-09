@@ -72,7 +72,7 @@ using namespace o2::aod::pwgem::dilepton::core::photonhbt;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMSWTriggerInfos, aod::EMEventsProperty>;
+using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMSWTriggerInfos>;
 using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -98,14 +98,15 @@ struct PhotonHBT {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
-  Configurable<float> cfgSpherocityMin{"cfgSpherocityMin", -999.f, "min. spherocity"};
-  Configurable<float> cfgSpherocityMax{"cfgSpherocityMax", +999.f, "max. spherocity"};
+  // Configurable<float> cfgSpherocityMin{"cfgSpherocityMin", -999.f, "min. spherocity"};
+  // Configurable<float> cfgSpherocityMax{"cfgSpherocityMax", +999.f, "max. spherocity"};
   Configurable<float> maxY{"maxY", 0.8, "maximum rapidity for reconstructed particles"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
   Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
+  Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 5, "difference in global BC required in mixed events"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
-  ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
+  ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
@@ -127,6 +128,7 @@ struct PhotonHBT {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
   } eventcuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -160,7 +162,7 @@ struct PhotonHBT {
   struct : ConfigurableGroup {
     std::string prefix = "dielectroncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
-    Configurable<float> cfg_max_mass{"cfg_max_mass", 2.5, "max mass"}; // this is valid, because only ULS is used.
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 0.015, "max mass"}; // this is valid, because only ULS is used.
     Configurable<float> cfg_min_pair_pt{"cfg_min_pair_pt", 0.0, "min pair pT"};
     Configurable<float> cfg_max_pair_pt{"cfg_max_pair_pt", 1e+10, "max pair pT"};
     Configurable<float> cfg_min_pair_y{"cfg_min_pair_y", -0.8, "min pair rapidity"};
@@ -184,8 +186,9 @@ struct PhotonHBT {
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
-    Configurable<float> cfg_min_TOFbeta{"cfg_min_TOFbeta", 0.985, "min TOF beta for single track"}; //|beta - 1| < 0.015 corresponds to 3 sigma in pp
-    Configurable<float> cfg_max_TOFbeta{"cfg_max_TOFbeta", 1.015, "max TOF beta for single track"}; //|beta - 1| < 0.015 corresponds to 3 sigma in pp
+    Configurable<float> cfg_min_its_cluster_size{"cfg_min_its_cluster_size", 0.f, "min ITS cluster size"};
+    Configurable<float> cfg_max_its_cluster_size{"cfg_max_its_cluster_size", 16.f, "max ITS cluster size"};
+    Configurable<float> cfg_max_p_its_cluster_size{"cfg_max_p_its_cluster_size", 0.2, "max p to apply ITS cluster size cut"};
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -227,6 +230,8 @@ struct PhotonHBT {
     delete emh2;
     emh2 = 0x0;
 
+    map_mixed_eventId_to_globalBC.clear();
+
     used_photonIds.clear();
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
@@ -253,17 +258,73 @@ struct PhotonHBT {
 
   void init(InitContext& /*context*/)
   {
-    zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
-    zvtx_bin_edges.erase(zvtx_bin_edges.begin());
+    if (ConfVtxBins.value[0] == VARIABLE_WIDTH) {
+      zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
+      zvtx_bin_edges.erase(zvtx_bin_edges.begin());
+      for (auto& edge : zvtx_bin_edges) {
+        LOGF(info, "VARIABLE_WIDTH: zvtx_bin_edges = %f", edge);
+      }
+    } else {
+      int nbins = static_cast<int>(ConfVtxBins.value[0]);
+      float xmin = static_cast<float>(ConfVtxBins.value[1]);
+      float xmax = static_cast<float>(ConfVtxBins.value[2]);
+      zvtx_bin_edges.resize(nbins + 1);
+      for (int i = 0; i < nbins + 1; i++) {
+        zvtx_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+        LOGF(info, "FIXED_WIDTH: zvtx_bin_edges[%d] = %f", i, zvtx_bin_edges[i]);
+      }
+    }
 
-    cent_bin_edges = std::vector<float>(ConfCentBins.value.begin(), ConfCentBins.value.end());
-    cent_bin_edges.erase(cent_bin_edges.begin());
+    if (ConfCentBins.value[0] == VARIABLE_WIDTH) {
+      cent_bin_edges = std::vector<float>(ConfCentBins.value.begin(), ConfCentBins.value.end());
+      cent_bin_edges.erase(cent_bin_edges.begin());
+      for (auto& edge : cent_bin_edges) {
+        LOGF(info, "VARIABLE_WIDTH: cent_bin_edges = %f", edge);
+      }
+    } else {
+      int nbins = static_cast<int>(ConfCentBins.value[0]);
+      float xmin = static_cast<float>(ConfCentBins.value[1]);
+      float xmax = static_cast<float>(ConfCentBins.value[2]);
+      cent_bin_edges.resize(nbins + 1);
+      for (int i = 0; i < nbins + 1; i++) {
+        cent_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+        LOGF(info, "FIXED_WIDTH: cent_bin_edges[%d] = %f", i, cent_bin_edges[i]);
+      }
+    }
 
-    ep_bin_edges = std::vector<float>(ConfEPBins.value.begin(), ConfEPBins.value.end());
-    ep_bin_edges.erase(ep_bin_edges.begin());
+    if (ConfEPBins.value[0] == VARIABLE_WIDTH) {
+      ep_bin_edges = std::vector<float>(ConfEPBins.value.begin(), ConfEPBins.value.end());
+      ep_bin_edges.erase(ep_bin_edges.begin());
+      for (auto& edge : ep_bin_edges) {
+        LOGF(info, "VARIABLE_WIDTH: ep_bin_edges = %f", edge);
+      }
+    } else {
+      int nbins = static_cast<int>(ConfEPBins.value[0]);
+      float xmin = static_cast<float>(ConfEPBins.value[1]);
+      float xmax = static_cast<float>(ConfEPBins.value[2]);
+      ep_bin_edges.resize(nbins + 1);
+      for (int i = 0; i < nbins + 1; i++) {
+        ep_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+        LOGF(info, "FIXED_WIDTH: ep_bin_edges[%d] = %f", i, ep_bin_edges[i]);
+      }
+    }
 
-    occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
-    occ_bin_edges.erase(occ_bin_edges.begin());
+    if (ConfOccupancyBins.value[0] == VARIABLE_WIDTH) {
+      occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
+      occ_bin_edges.erase(occ_bin_edges.begin());
+      for (auto& edge : occ_bin_edges) {
+        LOGF(info, "VARIABLE_WIDTH: occ_bin_edges = %f", edge);
+      }
+    } else {
+      int nbins = static_cast<int>(ConfOccupancyBins.value[0]);
+      float xmin = static_cast<float>(ConfOccupancyBins.value[1]);
+      float xmax = static_cast<float>(ConfOccupancyBins.value[2]);
+      occ_bin_edges.resize(nbins + 1);
+      for (int i = 0; i < nbins + 1; i++) {
+        occ_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+        LOGF(info, "FIXED_WIDTH: occ_bin_edges[%d] = %f", i, occ_bin_edges[i]);
+      }
+    }
 
     emh1 = new MyEMH(ndepth);
     emh2 = new MyEMH(ndepth);
@@ -278,6 +339,7 @@ struct PhotonHBT {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{1001, -0.5, 1000.5}}, true);
     if (doprocessTriggerAnalysis) {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
     }
@@ -344,14 +406,14 @@ struct PhotonHBT {
     const AxisSpec axis_qside{60, -0.3, +0.3, "q_{side} (GeV/c)"}; // qside does not change between LAB and LCMS frame
     const AxisSpec axis_qlong{60, -0.3, +0.3, "q_{long} (GeV/c)"};
 
-    if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
-      fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_qinv, axis_qabs_lcms, axis_kt}, true);
-    } else { // identical particle femtoscopy
-      fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_kstar, axis_qabs_lcms, axis_kt}, true);
-    }
-
     if (cfgDo3D) {
       fRegistry.add("Pair/same/hs_3d", "diphoton correlation 3D LCMS", kTHnSparseD, {axis_qout, axis_qside, axis_qlong, axis_kt}, true);
+    } else {
+      if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
+        fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_qinv, axis_qabs_lcms, axis_kt}, true);
+      } else { // non-identical particle femtoscopy
+        fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_kstar, axis_qabs_lcms, axis_kt}, true);
+      }
     }
 
     if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // dr, dz of conversion points
@@ -375,6 +437,7 @@ struct PhotonHBT {
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+    fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
   }
 
   void DefinePCMCut()
@@ -457,12 +520,11 @@ struct PhotonHBT {
     fDielectronCut.SetChi2PerClusterTPC(0.0, dielectroncuts.cfg_max_chi2tpc);
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
-    fDielectronCut.SetMeanClusterSizeITSob(0, 16);
+    fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size, dielectroncuts.cfg_max_p_its_cluster_size);
     fDielectronCut.SetMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
     fDielectronCut.SetMaxDcaZ(dielectroncuts.cfg_max_dcaz);
 
     // for eID
-    fDielectronCut.SetTOFbetaRange(dielectroncuts.cfg_min_TOFbeta, dielectroncuts.cfg_max_TOFbeta);
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
     fDielectronCut.SetTPCNsigmaElRange(dielectroncuts.cfg_min_TPCNsigmaEl, dielectroncuts.cfg_max_TPCNsigmaEl);
     fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
@@ -546,13 +608,14 @@ struct PhotonHBT {
     // float qabs_lcms_tmp = q12_lcms.P();
     // LOGF(info, "qabs_lcms = %f, qabs_lcms_tmp = %f", qabs_lcms, qabs_lcms_tmp);
 
-    if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), qinv, qabs_lcms, kt, weight);
-    } else {
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), kstar, qabs_lcms, kt, weight);
-    }
     if (cfgDo3D) {
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), qout_lcms, qside_lcms, qlong_lcms, kt, weight);
+    } else {
+      if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), qinv, qabs_lcms, kt, weight);
+      } else {
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), kstar, qabs_lcms, kt, weight);
+      }
     }
   }
 
@@ -570,10 +633,10 @@ struct PhotonHBT {
         if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
           continue;
         }
-        if (collision.spherocity_ptunweighted() < cfgSpherocityMin || cfgSpherocityMax < collision.spherocity_ptunweighted()) {
-          continue;
-        }
-        fRegistry.fill(HIST("Event/after/hSpherocity"), collision.spherocity_ptunweighted());
+        // if (collision.spherocity_ptunweighted() < cfgSpherocityMin || cfgSpherocityMax < collision.spherocity_ptunweighted()) {
+        //   continue;
+        // }
+        // fRegistry.fill(HIST("Event/after/hSpherocity"), collision.spherocity_ptunweighted());
       }
       const float eventplanes_2_for_mix[6] = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg()};
       float ep2 = eventplanes_2_for_mix[cfgEP2Estimator_for_Mix];
@@ -794,7 +857,7 @@ struct PhotonHBT {
               }
             }
           } // end of g2 loop
-        }   // end of g1 loop
+        } // end of g1 loop
         used_pairs_per_collision.clear();
         used_pairs_per_collision.shrink_to_fit();
       } else if constexpr (pairtype == ggHBTPairType::kPCMEE) {
@@ -867,7 +930,7 @@ struct PhotonHBT {
               used_dileptonIds.emplace_back(tuple_tmp_id2);
             }
           } // end of g2 loop
-        }   // end of g1 loop
+        } // end of g1 loop
       }
 
       // event mixing
@@ -888,6 +951,13 @@ struct PhotonHBT {
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+            continue;
+          }
+
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+          if (diffBC < ndiff_bc_mix) {
             continue;
           }
 
@@ -915,6 +985,12 @@ struct PhotonHBT {
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+            continue;
+          }
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+          if (diffBC < ndiff_bc_mix) {
             continue;
           }
 
@@ -963,13 +1039,19 @@ struct PhotonHBT {
               fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }
-        }                                                       // end of loop over mixed event pool
+        } // end of loop over mixed event pool
       } else if constexpr (pairtype == ggHBTPairType::kPCMEE) { // [photon1 from event1, photon2 from event2] and [photon1 from event2, photon2 from event1]
         for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+            continue;
+          }
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+          if (diffBC < ndiff_bc_mix) {
             continue;
           }
 
@@ -999,6 +1081,12 @@ struct PhotonHBT {
           if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
             continue;
           }
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+          if (diffBC < ndiff_bc_mix) {
+            continue;
+          }
 
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), nll = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons2_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
@@ -1023,6 +1111,7 @@ struct PhotonHBT {
       if (ndiphoton > 0) {
         emh1->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh2->AddCollisionIdAtLast(key_bin, key_df_collision);
+        map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
       }
     } // end of collision loop
   }
@@ -1044,9 +1133,9 @@ struct PhotonHBT {
         if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
           continue;
         }
-        if (collision.spherocity_ptunweighted() < cfgSpherocityMin || cfgSpherocityMax < collision.spherocity_ptunweighted()) {
-          continue;
-        }
+        // if (collision.spherocity_ptunweighted() < cfgSpherocityMin || cfgSpherocityMax < collision.spherocity_ptunweighted()) {
+        //   continue;
+        // }
       }
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
@@ -1073,7 +1162,7 @@ struct PhotonHBT {
         }
         passed_pairIds.emplace_back(std::make_pair(pos.globalIndex(), ele.globalIndex()));
       } // end of dielectron pairing loop
-    }   // end of collision loop
+    } // end of collision loop
 
     for (auto& pairId : passed_pairIds) {
       auto t1 = tracks.rawIteratorAt(std::get<0>(pairId));
@@ -1098,7 +1187,7 @@ struct PhotonHBT {
   }
 
   Filter trackFilter = dielectroncuts.cfg_min_pt_track < o2::aod::track::pt && dielectroncuts.cfg_min_eta_track < o2::aod::track::eta && o2::aod::track::eta < dielectroncuts.cfg_max_eta_track && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
-  Filter pidFilter = (dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < dielectroncuts.cfg_min_TPCNsigmaPi || dielectroncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi) && ((dielectroncuts.cfg_min_TOFbeta < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < dielectroncuts.cfg_max_TOFbeta) || o2::aod::pidtofbeta::beta < 0.f);
+  Filter pidFilter = (dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < dielectroncuts.cfg_min_TPCNsigmaPi || dielectroncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   Filter ttcaFilter = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
 
   Partition<FilteredMyTracks> positrons = o2::aod::emprimaryelectron::sign > int8_t(0);
@@ -1109,6 +1198,7 @@ struct PhotonHBT {
   MyEMH* emh2 = nullptr;
   std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
+  std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   SliceCache cache;
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emeventId;
@@ -1116,6 +1206,7 @@ struct PhotonHBT {
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
+  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   int ndf = 0;
