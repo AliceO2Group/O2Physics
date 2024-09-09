@@ -492,7 +492,7 @@ struct singleTrackSelector {
       return;
     }
 
-    if (abs(mcCollision.posZ()) > _vertexZ) {
+    if (fabs(mcCollision.posZ()) > _vertexZ) {
       return;
     }
 

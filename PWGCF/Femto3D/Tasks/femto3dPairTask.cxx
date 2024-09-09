@@ -380,7 +380,7 @@ struct FemtoCorrelations {
       LOGF(fatal, "One of passed PDG is 0!!!");
 
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
+      if (fabs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
         continue;
       if (_removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
         continue;
@@ -400,7 +400,7 @@ struct FemtoCorrelations {
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() < _OccupancyCut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() >= _OccupancyCut.value.second)
         continue;
-      if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
+      if (fabs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || fabs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
         continue;
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) { // filling the map: eventID <-> selected particles1
