@@ -54,15 +54,15 @@ enum V0Type : uint8_t {
 
 const int nBinsPt = 7;
 constexpr double binsPt[nBinsPt + 1] = {
-    1.,
-    2.,
-    4.,
-    6.,
-    8.,
-    12.,
-    24.,
-    1000.};
-  auto vecBinsPt = std::vector<double> {binsPt, binsPt + nBinsPt + 1};
+  1.,
+  2.,
+  4.,
+  6.,
+  8.,
+  12.,
+  24.,
+  1000.};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 struct HfCandidateCreatorCharmResoReduced {
   // Produces: Tables with resonance info
@@ -90,7 +90,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
   Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
   Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
- 
+
   // Useful constants
   double massK0{0.};
   double massLambda{0.};
@@ -153,21 +153,20 @@ struct HfCandidateCreatorCharmResoReduced {
       else
         invMassD = candD.invMassAntiDstar();
     }
-    //invariant mass selection
-    if (!keepSideBands){
+    // invariant mass selection
+    if (!keepSideBands) {
       if (invMassD < cutsD->get(ptBin, "invMassSignalLow") || invMassD > cutsD->get(ptBin, "invMassSignalHigh")) {
-      return false;
+        return false;
       }
-    }
-    else{
-      if ((invMassD < cutsD->get(ptBin, "invMassLeftSBLow")) || 
+    } else {
+      if ((invMassD < cutsD->get(ptBin, "invMassLeftSBLow")) ||
           (invMassD > cutsD->get(ptBin, "invMassLeftSBHigh") && invMassD < cutsD->get(ptBin, "invMassSignalLow")) ||
           (invMassD > cutsD->get(ptBin, "invMassSignalHigh") && invMassD < cutsD->get(ptBin, "invMassRightSBLow")) ||
           (invMassD > cutsD->get(ptBin, "invMassRightSBHigh"))) {
-      return false;
-     }
+        return false;
+      }
     }
-  return true;
+    return true;
   }
 
   /// Basic selection of V0 candidates
@@ -210,7 +209,7 @@ struct HfCandidateCreatorCharmResoReduced {
       return false;
     }
     // selection on kinematics and topology
-    if (candV0.dca() > cutsV0->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0->get(ptBin, "radiusMin")){
+    if (candV0.dca() > cutsV0->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0->get(ptBin, "radiusMin")) {
       return false;
     }
     return true;
@@ -241,7 +240,7 @@ struct HfCandidateCreatorCharmResoReduced {
       if (candD.dType() == -2)
         invMassD = candD.invMassAntiDstar();
       std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
-      std::array<int, 3> dDaughtersIds ={candD.prong0Id(),candD.prong1Id(), candD.prong2Id()};
+      std::array<int, 3> dDaughtersIds = {candD.prong0Id(), candD.prong1Id(), candD.prong2Id()};
       ;
       // loop on V0 candidates
       bool alreadyCounted{false};
