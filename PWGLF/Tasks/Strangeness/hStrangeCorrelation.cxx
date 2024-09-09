@@ -1426,7 +1426,7 @@ struct correlateStrangeness {
       Double_t geta = mcParticle.eta();
       Double_t gpt = mcParticle.pt();
       Double_t gphi = mcParticle.phi();
-      if (abs(geta) > 0.8) {
+      if (std::abs(geta) > 0.8f) {
         continue;
       }
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
