@@ -92,6 +92,13 @@ struct spvector {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
 
+  Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
+  Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
+  Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
+  Configurable<int> ZDCgainNbins{"ZDCgainNbins", 500, "Number of bins in Gaineq histograms"};
+  Configurable<float> lbinZDCgain{"lbinZDCgain", 0.0, "lower bin value in Gaineq histograms"};
+  Configurable<float> hbinZDCgain{"hbinZDCgain", 1000.0, "higher bin value in Gaineq histograms"};
+
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", false, "use Recentering"};
   Configurable<bool> useShift{"useShift", false, "use Shift"};
@@ -100,9 +107,9 @@ struct spvector {
   Configurable<std::string> ConfShift{"ConfShift", "Users/p/prottay/My/Object/Finaltest2/recenereall", "Path for Shift"};
 
   ConfigurableAxis configAxisCentrality{"configAxisCentrality", {80, 0.0, 80}, "centrality bining"};
-  ConfigurableAxis configAxisZDCgain{"configAxisZDCgain", {200, 0.0, 100.0}, "gainamplitude bining"};
-  ConfigurableAxis configAxisQx{"configAxisQx", {400, -100.0, 100.0}, "qx bining"};
-  ConfigurableAxis configAxisQy{"configAxisQy", {400, -100.0, 100.0}, "qy bining"};
+  // ConfigurableAxis configAxisZDCgain{"configAxisZDCgain", {ZDCgainNbins, lbinZDCgain, hbinZDCgain}, "gainamplitude bining"};
+  // ConfigurableAxis configAxisQx{"configAxisQx", {QxyNbins, lbinQxy, hbinQxy}, "qx bining"};
+  // ConfigurableAxis configAxisQy{"configAxisQy", {QxyNbins, lbinQxy, hbinQxy}, "qy bining"};
 
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -140,11 +147,12 @@ struct spvector {
 
     const AxisSpec centAxis{configAxisCentrality, "V0M (%)"};
 
-    AxisSpec amplitudeZDC = {configAxisZDCgain, "ZDC amplitude"};
+    // AxisSpec amplitudeZDC = {configAxisZDCgain, "ZDC amplitude"};
+    AxisSpec amplitudeZDC = {ZDCgainNbins, lbinZDCgain, hbinZDCgain, "ZDC amplitude"};
     AxisSpec channelZDCAxis = {8, 0.0, 8.0, "ZDC tower"};
-    AxisSpec qxZDCAxis = {configAxisQx, "Qx"};
-    AxisSpec qyZDCAxis = {configAxisQy, "Qy"};
-    AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
+    AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
+    AxisSpec qyZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qy"};
+    AxisSpec phiAxis = {50, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {20, -10, 10, "vz"};
 
     histos.add("hCentrality", "hCentrality", kTH1F, {{8, 0, 80.0}});
