@@ -78,3 +78,4 @@ static const std::vector<std::string> labelsPt{};
 // column labels
 static const std::vector<std::string> labelsCutVar = {"invMassLow", "invMassHigh", "cpaMin", "dcaMax", "radiusMin"};
 } // namespace hf_cuts_v0_daughter
+#endif // PWGHF_D2H_CORE_SELECTORCUTSREDDATAFORMAT_H_
