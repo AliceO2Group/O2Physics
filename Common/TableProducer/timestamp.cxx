@@ -35,6 +35,7 @@ struct TimestampTask {
   Produces<aod::Timestamps> timestampTable;  /// Table with SOR timestamps produced by the task
   Service<o2::ccdb::BasicCCDBManager> ccdb;  /// CCDB manager to access orbit-reset timestamp
   o2::ccdb::CcdbApi ccdb_api;                /// API to access CCDB headers
+  Configurable<bool> fatalOnInvalidTimestamp{"fatalOnInvalidTimestamp", false, "Generate fatal error for invalid timestamps"};
   std::map<int, int64_t> mapRunToOrbitReset; /// Cache of orbit reset timestamps
   std::map<int, std::pair<int64_t, int64_t>> mapRunToRunDuration; /// Cache of run duration timestamps
   int lastRunNumber = 0;                     /// Last run number processed
@@ -81,8 +82,8 @@ struct TimestampTask {
     } else { // The run was not requested before: need to acccess CCDB!
       LOGF(debug, "Getting start-of-run and end-of-run timestamps from CCDB");
       runDuration = ccdb->getRunDuration(runNumber, true); /// fatalise if timestamps are not found
-      int64_t sorTimestamp = runDuration.first;            // timestamp of the SOR in ms
-      int64_t eorTimestamp = runDuration.second;           // timestamp of the EOR in ms
+      int64_t sorTimestamp = runDuration.first;            // timestamp of the SOR/SOX/STF in ms
+      int64_t eorTimestamp = runDuration.second;           // timestamp of the EOR/EOX/ETF in ms
 
       const bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
       if (isRun2MC.value == 1 || isUnanchoredRun3MC) {
@@ -116,7 +117,11 @@ struct TimestampTask {
     }
     int64_t timestamp{(orbitResetTimestamp + int64_t(bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000}; // us -> ms
     if (timestamp < runDuration.first || timestamp > runDuration.second) {
-      LOGF(warn, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);
+      if (fatalOnInvalidTimestamp.value) {
+        LOGF(fatal, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);
+      } else {
+        LOGF(warn, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);
+      }
     }
     timestampTable(timestamp);
   }
