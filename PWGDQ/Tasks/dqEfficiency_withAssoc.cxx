@@ -506,7 +506,7 @@ struct AnalysisTrackSelection {
       if (filterMap > 0) {
         for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
           if (track.has_reducedMCTrack()) {
-            if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
+            if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -774,7 +774,7 @@ struct AnalysisMuonSelection {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
           if (track.has_reducedMCTrack()) {
-            if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
+            if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -1439,7 +1439,7 @@ struct AnalysisSameEventPairing {
           mcDecision = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
             if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
-              if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+              if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
                 mcDecision |= (uint32_t(1) << isig);
               }
             }
@@ -1489,7 +1489,7 @@ struct AnalysisSameEventPairing {
           mcDecision = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
             if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
-              if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+              if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
                 mcDecision |= (uint32_t(1) << isig);
               }
             }
@@ -1651,9 +1651,9 @@ struct AnalysisSameEventPairing {
         bool checked = false;
         /*if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
           auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
-          checked = sig.CheckSignal(false, mctrack_raw);
+          checked = sig.CheckSignal(true, mctrack_raw);
         } else {*/
-        checked = sig.CheckSignal(false, mctrack);
+        checked = sig.CheckSignal(true, mctrack);
         //}
         if (checked) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
@@ -1672,7 +1672,7 @@ struct AnalysisSameEventPairing {
             if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required here
               continue;
             }
-            if (sig.CheckSignal(false, t1_raw, t2_raw)) {
+            if (sig.CheckSignal(true, t1_raw, t2_raw)) {
               VarManager::FillPairMC(t1, t2);
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
             }
@@ -1961,7 +1961,7 @@ struct AnalysisDileptonTrack {
           mcDecision = 0;
           isig = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-            if ((*sig).CheckSignal(false, lepton1MC, lepton2MC, trackMC)) {
+            if ((*sig).CheckSignal(true, lepton1MC, lepton2MC, trackMC)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -1982,7 +1982,7 @@ struct AnalysisDileptonTrack {
           mcDecision = 0;
           isig = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-            if ((*sig).CheckSignal(false, lepton1MC, lepton2MC, trackMC)) {
+            if ((*sig).CheckSignal(true, lepton1MC, lepton2MC, trackMC)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -2070,7 +2070,7 @@ struct AnalysisDileptonTrack {
       // TODO:  Use the mcReducedFlags to select signals
       isig = 0;
       for (auto& sig : fGenMCSignals) {
-        if (sig.CheckSignal(false, track)) {
+        if (sig.CheckSignal(true, track)) {
           fHistMan->FillHistClass(fHistNamesMCgen[isig++], VarManager::fgValues);
         }
       }
