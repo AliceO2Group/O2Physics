@@ -15,6 +15,13 @@
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, Università degli Studi di Torino
 
 // namespace with D selections for reduced charmed-resonances analysis
+
+#ifndef PWGHF_D2H_CORE_SELECTORCUTSREDDATAFORMAT_H_
+#define PWGHF_D2H_CORE_SELECTORCUTSREDDATAFORMAT_H_
+
+#include <string> // std::string
+#include <vector> // std::vector
+
 namespace hf_cuts_d_daughter
 {
 const int nBinsPt = 7;
