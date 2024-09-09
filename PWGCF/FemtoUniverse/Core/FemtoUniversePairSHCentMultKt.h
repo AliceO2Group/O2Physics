@@ -269,7 +269,7 @@ class PairSHCentMultKt
     std::vector<std::complex<double>> fYlmBuffer(fMaxJM);
     std::vector<double> f3d;
     f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo,
-                                        isiden);
+                                         isiden);
 
     const float qout = f3d[1];
     const float qside = f3d[2];
