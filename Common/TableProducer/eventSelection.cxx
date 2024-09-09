@@ -228,10 +228,14 @@ struct BcSelectionTask {
 
     bcsel.reserve(bcs.size());
     // extract ITS time frame parameters
-
-    int64_t ts = bcs.iteratorAt(0).timestamp();
+    int run = bcs.iteratorAt(0).runNumber();
+    auto timestamps = ccdb->getRunDuration(run, true); /// fatalise if timestamps are not found
+    int64_t sorTimestamp = timestamps.first;           // timestamp of the SOR in ms
+    int64_t eorTimestamp = timestamps.second;          // timestamp of the EOR in ms
+    int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;  // timestamp of the middle of the run
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
-
+    EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+    TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", ts);
     // map from GlobalBC to BcId needed to find triggerBc
     std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
     for (auto& bc : bcs) {
@@ -239,12 +243,10 @@ struct BcSelectionTask {
     }
     int triggerBcShift = confTriggerBcShift;
     if (confTriggerBcShift == 999) {
-      int run = bcs.iteratorAt(0).runNumber();
       triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294;
     }
 
     // extract run number and related information
-    int run = bcs.iteratorAt(0).runNumber();
     if (run != lastRunNumber) {
       lastRunNumber = run; // do it only once
       if (run >= 500000) { // access CCDB for data or anchored MC only
@@ -278,8 +280,6 @@ struct BcSelectionTask {
 
     // bc loop
     for (auto bc : bcs) {
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
       int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
