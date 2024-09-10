@@ -14,6 +14,7 @@
 /// \note adapted from taskBs.cxx
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
+/// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"

@@ -12,7 +12,8 @@
 /// \file treeCreatorXicToXiPiPi.cxx
 /// \brief Writer of Ξc± → Ξ∓ π± π± candidates in the form of flat tables to be stored in TTrees.
 ///
-/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, CERN
+/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
+/// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -29,11 +30,7 @@ namespace o2::aod
 {
 namespace full
 {
-// track indices
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int); //! Selection flag of candidate (output of candidateSelector)
-DECLARE_SOA_INDEX_COLUMN_FULL(Xi, xi, int, Tracks, "_pi0");
-DECLARE_SOA_INDEX_COLUMN_FULL(Pi0, pi0, int, Tracks, "_pi0");
-DECLARE_SOA_INDEX_COLUMN_FULL(Pi1, pi1, int, Tracks, "_pi1");
 // vertices
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
@@ -41,13 +38,19 @@ DECLARE_SOA_COLUMN(ZPv, zPv, float);
 DECLARE_SOA_COLUMN(XPvErr, xPvErr, float);
 DECLARE_SOA_COLUMN(YPvErr, yPvErr, float);
 DECLARE_SOA_COLUMN(ZPvErr, zPvErr, float);
+DECLARE_SOA_COLUMN(XPvGen, xPvGen, float);
+DECLARE_SOA_COLUMN(YPvGen, yPvGen, float);
+DECLARE_SOA_COLUMN(ZPvGen, zPvGen, float);
 DECLARE_SOA_COLUMN(XSv, xSv, float);
 DECLARE_SOA_COLUMN(YSv, ySv, float);
 DECLARE_SOA_COLUMN(ZSv, zSv, float);
-DECLARE_SOA_COLUMN(Chi2Sv, chi2Sv, float);
 DECLARE_SOA_COLUMN(XSvErr, xSvErr, float);
 DECLARE_SOA_COLUMN(YSvErr, ySvErr, float);
 DECLARE_SOA_COLUMN(ZSvErr, zSvErr, float);
+DECLARE_SOA_COLUMN(Chi2Sv, chi2Sv, float);
+DECLARE_SOA_COLUMN(XSvGen, xSvGen, float);
+DECLARE_SOA_COLUMN(YSvGen, ySvGen, float);
+DECLARE_SOA_COLUMN(ZSvGen, zSvGen, float);
 DECLARE_SOA_COLUMN(XDecVtxXi, xDecVtxXi, float);
 DECLARE_SOA_COLUMN(YDecVtxXi, yDecVtxXi, float);
 DECLARE_SOA_COLUMN(ZDecVtxXi, zDecVtxXi, float);
@@ -298,24 +301,17 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::DcaXiDaughters,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
-DECLARE_SOA_TABLE(HfCandXicToXiPiPiDauInds, "AOD", "HFXICXI2PIDAUIN",
-                  full::XiId,
-                  full::Pi0Id,
-                  full::Pi1Id);
-
-DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullEvs, "AOD", "HFXICXI2PIFULEV",
-                  collision::BCId,
-                  collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ);
-
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
-                  collision::BCId,
+                  full::XPvGen,
+                  full::YPvGen,
+                  full::ZPvGen,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
+                  full::XSvGen,
+                  full::YSvGen,
+                  full::ZSvGen,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen);
 } // namespace o2::aod
 
@@ -325,13 +321,10 @@ struct HfTreeCreatorXicToXiPiPi {
   Produces<o2::aod::HfCandXicToXiPiPiLiteKfs> rowCandidateLiteKf;
   Produces<o2::aod::HfCandXicToXiPiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfCandXicToXiPiPiFullKfs> rowCandidateFullKf;
-  Produces<o2::aod::HfCandXicToXiPiPiDauInds> rowCandidateDauIndices;
-  Produces<o2::aod::HfCandXicToXiPiPiFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXicToXiPiPiFullPs> rowCandidateFullParticles;
 
   Configurable<int> selectionFlagXic{"selectionXic", 1, "Selection Flag for Xic"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-  Configurable<bool> fillCandidateDauIndexTable{"fillCandidateDauIndexTable", false, "Switch to fill table with Xic daughters track indices"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
@@ -353,26 +346,6 @@ struct HfTreeCreatorXicToXiPiPi {
 
   void init(InitContext const&)
   {
-  }
-
-  template <typename T>
-  void fillEvent(const T& collision)
-  {
-    rowCandidateFullEvents(
-      collision.bcId(),
-      collision.numContrib(),
-      collision.posX(),
-      collision.posY(),
-      collision.posZ());
-  }
-
-  template <typename T>
-  void fillIndexTable(const T& candidate)
-  {
-    rowCandidateDauIndices(
-      candidate.cascadeId(),
-      candidate.pi0Id(),
-      candidate.pi1Id());
   }
 
   template <bool doMc, bool doKf, typename T>
@@ -591,16 +564,7 @@ struct HfTreeCreatorXicToXiPiPi {
                    SelectedCandidates const& candidates,
                    TracksWPid const&)
   {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision);
-    }
-
     // Filling candidate properties
-    if (fillCandidateDauIndexTable) {
-      rowCandidateDauIndices.reserve(candidates.size());
-    }
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     } else {
@@ -614,9 +578,6 @@ struct HfTreeCreatorXicToXiPiPi {
         }
       }
       fillCandidateTable<false, false>(candidate);
-      if (fillCandidateDauIndexTable) {
-        fillIndexTable(candidate);
-      }
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processData, "Process data", true);
@@ -625,16 +586,7 @@ struct HfTreeCreatorXicToXiPiPi {
                      SelectedCandidatesKf const& candidates,
                      TracksWPid const&)
   {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision);
-    }
-
     // Filling candidate properties
-    if (fillCandidateDauIndexTable) {
-      rowCandidateDauIndices.reserve(candidates.size());
-    }
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     } else {
@@ -648,9 +600,6 @@ struct HfTreeCreatorXicToXiPiPi {
         }
       }
       fillCandidateTable<false, true>(candidate);
-      if (fillCandidateDauIndexTable) {
-        fillIndexTable(candidate);
-      }
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataKf, "Process data with KF Particle reconstruction", false);
@@ -661,17 +610,10 @@ struct HfTreeCreatorXicToXiPiPi {
                  soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
                  TracksWPid const&)
   {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision);
-    }
+    std::vector<int> arrDaughIndex;
 
     // Filling candidate properties
     if (fillOnlySignal) {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recSig.size());
       } else {
@@ -679,14 +621,8 @@ struct HfTreeCreatorXicToXiPiPi {
       }
       for (const auto& candidate : recSig) {
         fillCandidateTable<true, false>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     } else if (fillOnlyBackground) {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recBg.size());
       } else {
@@ -698,14 +634,8 @@ struct HfTreeCreatorXicToXiPiPi {
           continue;
         }
         fillCandidateTable<true, false>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     } else {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(candidates.size());
       } else {
@@ -713,22 +643,28 @@ struct HfTreeCreatorXicToXiPiPi {
       }
       for (const auto& candidate : candidates) {
         fillCandidateTable<true, false>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
+        arrDaughIndex.clear();
+        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+        auto daugh0 = mcParticles.rawIteratorAt(arrDaughIndex[0]);
+
         rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
+          particle.vx(),
+          particle.vy(),
+          particle.vz(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+          daugh0.vx(),
+          daugh0.vx(),
+          daugh0.vz(),
           particle.flagMcMatchGen());
       }
     }
@@ -741,17 +677,10 @@ struct HfTreeCreatorXicToXiPiPi {
                    soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
                    TracksWPid const&)
   {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision);
-    }
+    std::vector<int> arrDaughIndex;
 
     // Filling candidate properties
     if (fillOnlySignal) {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recSigKf.size());
       } else {
@@ -759,14 +688,8 @@ struct HfTreeCreatorXicToXiPiPi {
       }
       for (const auto& candidate : recSigKf) {
         fillCandidateTable<true, true>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     } else if (fillOnlyBackground) {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recBgKf.size());
       } else {
@@ -778,14 +701,8 @@ struct HfTreeCreatorXicToXiPiPi {
           continue;
         }
         fillCandidateTable<true, true>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     } else {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(candidates.size());
       } else {
@@ -793,22 +710,28 @@ struct HfTreeCreatorXicToXiPiPi {
       }
       for (const auto& candidate : candidates) {
         fillCandidateTable<true, true>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
+        arrDaughIndex.clear();
+        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+        auto daugh0 = mcParticles.rawIteratorAt(arrDaughIndex[0]);
+
         rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
+          particle.vx(),
+          particle.vy(),
+          particle.vz(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+          daugh0.vx(),
+          daugh0.vx(),
+          daugh0.vz(),
           particle.flagMcMatchGen());
       }
     }
