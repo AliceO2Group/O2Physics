@@ -161,7 +161,7 @@ struct qaEventTrack {
 
     if (checksTRD.activateChecksTRD) {
       std::array<bool, 2> casesTRD = {checksTRD.forceTRD, checksTRD.forceNotTRD};
-      if (std::accumulate(casesTRD.begin(), processes.end(), 0) != 1) {
+      if (std::accumulate(casesTRD.begin(), casesTRD.end(), 0) != 1) {
         LOGP(fatal, "One and only one case between forceTRD and forceNotTRD can be true at a time. Fix it!");
       }
     }
@@ -1285,18 +1285,6 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     return;
   }
 
-  // TRD checks (debug)
-  if (checksTRD.activateChecksTRD) {
-    if (checksTRD.forceTRD && !track.has_TRD()) {
-      /// We want only tracks that match TRD, but the current one does not match it. Let's skip it.
-      continue;
-    }
-    if (checksTRD.forceNotTRD && track.has_TRD()) {
-      /// We want only tracks that do not match TRD, but the current one matches it. Let's skip it.
-      continue;
-    }
-  }
-
   int nFilteredTracks = 0;
   for (const auto& track : tracks) {
     if (checkOnlyPVContributor && !track.isPVContributor()) {
@@ -1523,6 +1511,17 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     }
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
+    }
+    // TRD checks (debug)
+    if (checksTRD.activateChecksTRD) {
+      if (checksTRD.forceTRD && !track.hasTRD()) {
+        /// We want only tracks that match TRD, but the current one does not match it. Let's skip it.
+        continue;
+      }
+      if (checksTRD.forceNotTRD && track.hasTRD()) {
+        /// We want only tracks that do not match TRD, but the current one matches it. Let's skip it.
+        continue;
+      }
     }
     // fill kinematic variables
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
