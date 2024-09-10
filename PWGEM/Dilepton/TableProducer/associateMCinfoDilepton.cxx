@@ -28,7 +28,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
 using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
 using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 
@@ -46,8 +46,6 @@ struct AssociateMCInfoDilepton {
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
 
-  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<float> min_eta_gen_primary{"min_eta_gen_primary", -1.2, "min rapidity Y to store generated information"};  // smearing might be applied at analysis stage. set wider value.
   Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", +1.2, "max rapidity Y to store generated information"};  // smearing might be applied at analysis stage. set wider value.
   Configurable<float> min_eta_gen_primary_fwd{"min_eta_gen_primary_fwd", -4.5, "min eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
@@ -55,12 +53,8 @@ struct AssociateMCInfoDilepton {
 
   HistogramRegistry registry{"EMMCEvent"};
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
-    if (inherit_from_emevent_dilepton) {
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true);
-    }
-
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{6, 0.5f, 6.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "has mc collision");
@@ -154,7 +148,7 @@ struct AssociateMCInfoDilepton {
         continue;
       }
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         continue;
       }
 
@@ -216,8 +210,8 @@ struct AssociateMCInfoDilepton {
               motherid = -999;
             }
           } // end of mother chain loop
-        }   // end of ndau protection
-      }     // end of mc electron loop
+        } // end of ndau protection
+      } // end of mc electron loop
 
       for (auto& mctrack : mcmuons_per_collision) { // store necessary information for denominator of efficiency
         if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
@@ -268,8 +262,8 @@ struct AssociateMCInfoDilepton {
               motherid = -999;
             }
           } // end of mother chain loop
-        }   // end of ndau protection
-      }     // end of mc muon loop
+        } // end of ndau protection
+      } // end of mc muon loop
 
       for (auto& mctrack : mcvectormesons_per_collision) { // store necessary information for denominator of efficiency
         // Be careful!! dilepton rapidity is different from meson rapidity! No acceptance cut here.
@@ -335,7 +329,7 @@ struct AssociateMCInfoDilepton {
             }
           }
         } // end of ndau protection
-      }   // end of generated vector mesons loop
+      } // end of generated vector mesons loop
 
       for (auto& mctrack : mcvectormesons_per_collision) { // store necessary information for denominator of efficiency
         // Be careful!! dilepton rapidity is different from meson rapidity! No acceptance cut here.
@@ -360,7 +354,7 @@ struct AssociateMCInfoDilepton {
             fCounters[0]++;
           }
         } // end of ndau protection
-      }   // end of generated vector mesons loop for efficiency of omega, phi pT spectra
+      } // end of generated vector mesons loop for efficiency of omega, phi pT spectra
 
     } // end of reconstructed collision loop
 
@@ -423,8 +417,8 @@ struct AssociateMCInfoDilepton {
               motherid = -999;
             }
           } // end of mother chain loop
-        }   // end of leg loop
-      }     // end of v0 loop
+        } // end of leg loop
+      } // end of v0 loop
     }
 
     if constexpr (static_cast<bool>(system & kElectron)) {

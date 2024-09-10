@@ -28,6 +28,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Framework/runDataProcessing.h"
 #include "CommonConstants/LHCConstants.h"
+#include "DataFormatsFT0/Digit.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -170,32 +171,63 @@ struct tofPidCollisionTimeQa {
       return;
     }
     const AxisSpec diffAxis{1000, -1000, 1000, "Difference"};
-    histos.add("MC/diff", "", HistType::kTH1F, {diffAxis});
-    histos.add("MC/diffFT0", "", HistType::kTH1F, {diffAxis});
+    histos.add<TH1>("MC/diff/All", "All", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t^{MC}_{ev}-t^{All}_{ev} (ps)");
+    histos.add<TH1>("MC/diff/FT0", "FT0", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t^{MC}_{ev}-t_{FT0}_{ev} (ps)");
+    histos.add<TH1>("MC/diff/TOF", "TOF", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t^{MC}_{ev}-t_{TOF}_{ev} (ps)");
+
+    histos.add<TH2>("MC/diffvsZ/All", "All", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t^{MC}_{ev}-t^{All}_{ev}_{ev} (ps)");
+    histos.add<TH2>("MC/diffvsZ/FT0", "FT0", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t^{MC}_{ev}-t_{FT0}_{ev} (ps)");
+    histos.add<TH2>("MC/diffvsZ/TOF", "TOF", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t^{MC}_{ev}-t_{TOF}_{ev} (ps)");
 
     // pion
-    histos.add("MC/pdg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/pdgNeg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdgNeg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    // kaon
-    histos.add("MC/pdg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/pdgNeg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdgNeg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    // proton
-    histos.add("MC/pdg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/pdgNeg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdgNeg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add<TH2>("MC/particle/pdg211/all/particleDiff", "particleDiff", HistType::kTH2F, {ptAxis, diffAxis})->GetYaxis()->SetTitle("t^{MC}_{ev}-t^{part}_{MC} (ps)");
+    histos.add<TH2>("MC/particle/pdg211/all/delta", "delta", HistType::kTH2F, {ptAxis, diffAxis})->GetYaxis()->SetTitle("t_{TOF}-t^{MC}_{ev}-t_{exp} (ps)");
+    histos.add<TH2>("MC/particle/pdg211/all/deltaTRD", "deltaTRD", HistType::kTH2F, {ptAxis, diffAxis})->GetYaxis()->SetTitle("t_{TOF}-t^{MC}_{ev}-t_{exp} (ps)");
+    histos.add<TH2>("MC/particle/pdg211/all/deltaNoTRD", "deltaNoTRD", HistType::kTH2F, {ptAxis, diffAxis})->GetYaxis()->SetTitle("t_{TOF}-t^{MC}_{ev}-t_{exp} (ps)");
+    histos.addClone("MC/particle/pdg211/all/", "MC/particle/pdg211/prm/");
 
-    histos.add("MC/t", "", HistType::kTH1F, {{1000, -1000, 1000, "MC time"}});
+    histos.addClone("MC/particle/pdg211/", "MC/particle/pdgNeg211/");
+
+    // kaon
+    histos.addClone("MC/particle/pdg211/", "MC/particle/pdg321/");
+    histos.addClone("MC/particle/pdg211/", "MC/particle/pdgNeg321/");
+    // proton
+    histos.addClone("MC/particle/pdg211/", "MC/particle/pdg2212/");
+    histos.addClone("MC/particle/pdg211/", "MC/particle/pdgNeg2212/");
+
+    const AxisSpec mcTimeAxis{1000, -1000, 1000, "MC coll time (ps)"};
+
+    histos.add("MC/CollisionTime/eventtimeMC", "", HistType::kTH1F, {mcTimeAxis});
+    histos.add<TH1>("MC/CollisionTime/All", "", HistType::kTH1F, {mcTimeAxis})->GetXaxis()->SetTitle("All (ps)");
+    histos.add<TH1>("MC/CollisionTime/FT0", "", HistType::kTH1F, {mcTimeAxis})->GetXaxis()->SetTitle("FT0 (ps)");
+    histos.add<TH1>("MC/CollisionTime/TOF", "", HistType::kTH1F, {mcTimeAxis})->GetXaxis()->SetTitle("TOF (ps)");
+    histos.add<TH2>("MC/CollisionTime/eventtimeMCvsAll", "", HistType::kTH2F, {mcTimeAxis, mcTimeAxis})->GetYaxis()->SetTitle("All (ps)");
+    histos.add<TH2>("MC/CollisionTime/eventtimeMCvsFT0", "", HistType::kTH2F, {mcTimeAxis, mcTimeAxis})->GetYaxis()->SetTitle("FT0 (ps)");
+    histos.add<TH2>("MC/CollisionTime/eventtimeMCvsTOF", "", HistType::kTH2F, {mcTimeAxis, mcTimeAxis})->GetYaxis()->SetTitle("TOF (ps)");
+
+    const AxisSpec axisBCID{o2::constants::lhc::LHCMaxBunches, -0.5, -0.5 + o2::constants::lhc::LHCMaxBunches, "BC ID in orbit"};
+    const AxisSpec axisBCIDMC{o2::constants::lhc::LHCMaxBunches, -0.5, -0.5 + o2::constants::lhc::LHCMaxBunches, "MC BC ID in orbit"};
+
+    histos.add("collisions/Reco/BCvsMCBC", "BC vs MC BC", kTH2D, {axisBCID, axisBCIDMC});
+    histos.add<TH2>("collisions/Reco/FoundBCvsMCBC", "Found BC vs MC BC", kTH2D, {axisBCID, axisBCIDMC})->GetXaxis()->SetTitle("Found BC ID in orbit");
+    histos.add<TH2>("collisions/Reco/FoundBCvsBC", "Found BC vs MC BC", kTH2D, {axisBCID, axisBCID})->GetXaxis()->SetTitle("Found BC ID in orbit");
+    histos.add("collisions/Reco/bcMinusfoundBc", "bcMinusfoundBc", kTH1D, {{1600, -1000, 1000, "bc - foundBc (ns)"}});
+    histos.add("collisions/Reco/bcMinusfoundBcRatio", "bcMinusfoundBcRatio", kTH1D, {{1600, -40, 40, "(bc - foundBc)/collisionTimeRes"}});
+    histos.add("collisions/Reco/bcMinusMcBc", "bcMinusMcBc", kTH1D, {{1600, -1000, 1000, "bc - mcBc (ns)"}});
+    histos.add("collisions/Reco/foundbcMinusMcBc", "foundbcMinusMcBc", kTH1D, {{1600, -1000, 1000, "foundBc - mcBc (ns)"}});
+    histos.add("collisions/Reco/bcMinusMcBcRatio", "bcMinusMcBcRatio", kTH1D, {{1600, -40, 40, "(bc - mcBc)/collisionTimeRes"}});
+    histos.add("collisions/Reco/foundbcMinusMcBcRatio", "foundbcMinusMcBcRatio", kTH1D, {{1600, -40, 40, "(foundBc-mcBc)/collisionTimeRes"}});
+
+    histos.add("ft0/FT0AMinusFT0ACorrected", "", kTH1D, {{1600, -1000, 1000, "FT0A - FT0A_{corr} (ps)"}});
+    histos.add("ft0/FT0CMinusFT0CCorrected", "", kTH1D, {{1600, -1000, 1000, "FT0C - FT0C_{corr} (ps)"}});
+    histos.add("ft0/FT0ACMinusFT0ACCorrected", "", kTH1D, {{1600, -1000, 1000, "FT0AC - FT0AC_{corr} (ps)"}});
+    histos.add("ft0/diffPosZ", "", kTH1D, {{100, -10, 10, "z_{mc} - z_{FT0} (cm)"}});
   }
 
   using Trks = soa::Join<aod::TracksIU, aod::TracksExtra,
                          aod::TOFSignal,
                          aod::TOFEvTime, aod::EvTimeTOFOnly, aod::pidEvTimeFlags,
-                         aod::pidTOFbeta, aod::pidTOFmass, aod::EvTimeTOFOnly>;
+                         aod::pidTOFbeta, aod::pidTOFmass>;
   using TrksData = soa::Join<Trks, aod::TrackSelection>;
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
   // Define slice per collision
@@ -417,79 +449,154 @@ struct tofPidCollisionTimeQa {
     for (auto& trk : tracks) {
       if (!trk.has_collision()) { // Track was not assigned to a collision
         continue;
-      } else if (trk.collisionId() == lastCollisionId) { // Event was already processed
-        continue;
       }
-      lastCollisionId = trk.collisionId(); /// Cache last collision ID
       const auto& collision = trk.collision_as<EvTimeCollisionsMC>();
       if (!collision.has_mcCollision()) {
         continue;
       }
-      float t0AC[2] = {0.f, 0.f};
-      if (collision.has_foundFT0()) { // T0 measurement is available
-        // const auto& ft0 = collision.foundFT0();
-        if (collision.t0ACValid()) {
-          t0AC[0] = collision.t0AC() * 1000.f;
-          t0AC[1] = collision.t0resolution() * 1000.f;
+      const auto& collisionMC = collision.mcCollision_as<aod::McCollisions>();
+      const int64_t bcMCtime = static_cast<int64_t>((collisionMC.t() + 2.f) / o2::constants::lhc::LHCBunchSpacingNS);
+      const float eventtimeMC = (collisionMC.t() - bcMCtime * o2::constants::lhc::LHCBunchSpacingNS) * 1000.f;
+
+      if (trk.has_mcParticle()) {
+        const auto& particle = trk.mcParticle();
+        const auto& mcCollTimeMinusFormationTime = particle.vt() - collisionMC.t();
+        const auto& mcTOFvalue = trk.tofSignal() - eventtimeMC - trk.tofExpTime(2);
+        LOG(debug) << "Track " << particle.vt() << " vs " << eventtimeMC;
+        switch (particle.pdgCode()) {
+          case 211:
+            histos.fill(HIST("MC/particle/pdg211/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            histos.fill(HIST("MC/particle/pdg211/all/delta"), particle.pt(), mcTOFvalue);
+            if (trk.hasTRD()) {
+              histos.fill(HIST("MC/particle/pdg211/all/deltaTRD"), particle.pt(), mcTOFvalue);
+            } else {
+              histos.fill(HIST("MC/particle/pdg211/all/deltaNoTRD"), particle.pt(), mcTOFvalue);
+            }
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdg211/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case -211:
+            histos.fill(HIST("MC/particle/pdgNeg211/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            histos.fill(HIST("MC/particle/pdgNeg211/all/delta"), particle.pt(), mcTOFvalue);
+            histos.fill(HIST("MC/particle/pdgNeg211/all/delta"), particle.pt(), mcTOFvalue);
+            if (trk.hasTRD()) {
+              histos.fill(HIST("MC/particle/pdgNeg211/all/deltaTRD"), particle.pt(), mcTOFvalue);
+            } else {
+              histos.fill(HIST("MC/particle/pdgNeg211/all/deltaNoTRD"), particle.pt(), mcTOFvalue);
+            }
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdgNeg211/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case 321:
+            histos.fill(HIST("MC/particle/pdg321/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdg321/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case -321:
+            histos.fill(HIST("MC/particle/pdgNeg321/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdgNeg321/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case 2212:
+            histos.fill(HIST("MC/particle/pdg2212/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdg2212/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case -2212:
+            histos.fill(HIST("MC/particle/pdgNeg2212/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdgNeg2212/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          default:
+            break;
         }
       }
 
-      const auto& collisionMC = collision.mcCollision_as<aod::McCollisions>();
-      // timeInBCNS + bc2ns();
-      const auto& mcBC = collisionMC.bc();
-      // bc* o2::constants::lhc::LHCBunchSpacingNS + orbit* o2::constants::lhc::LHCOrbitNS;
-      // int64_t(mcBC.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3))
-      const int64_t bcMCtime = static_cast<int64_t>((collisionMC.t() + 2.f) / o2::constants::lhc::LHCBunchSpacingNS);
-      const float eventtimeMC = collisionMC.t() - bcMCtime * o2::constants::lhc::LHCBunchSpacingNS;
-      LOG(debug) << mcBC.globalBC() - bcMCtime << " MC collision time: " << eventtimeMC << " collision time: " << collision.collisionTime() << " TOF event time: " << trk.tofEvTime();
-      histos.fill(HIST("MC/t"), eventtimeMC);
-      histos.fill(HIST("MC/diff"), eventtimeMC - trk.tofEvTime());
-      histos.fill(HIST("MC/diffFT0"), eventtimeMC - t0AC[0]);
-      if (!trk.has_mcParticle()) {
+      if (trk.collisionId() == lastCollisionId) { // Event was already processed
         continue;
       }
-      const auto& particle = trk.mcParticle();
-      LOG(debug) << "Track " << particle.vt() << " vs " << eventtimeMC;
-      switch (particle.pdgCode()) {
-        case 211:
-          histos.fill(HIST("MC/pdg211/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/prm/pdg211/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          }
-          break;
-        case -211:
-          histos.fill(HIST("MC/pdgNeg211/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/prm/pdgNeg211/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          }
-          break;
-        case 321:
-          histos.fill(HIST("MC/pdg321/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/prm/pdg321/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          }
-          break;
-        case -321:
-          histos.fill(HIST("MC/pdgNeg321/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/prm/pdgNeg321/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          }
-          break;
-        case 2212:
-          histos.fill(HIST("MC/pdg2212/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/prm/pdg2212/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          }
-          break;
-        case -2212:
-          histos.fill(HIST("MC/pdgNeg2212/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/prm/pdgNeg2212/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
-          }
-          break;
-        default:
-          break;
+      lastCollisionId = trk.collisionId(); /// Cache last collision ID
+
+      float t0AC[2] = {0.f, 0.f};
+      // const auto& ft0 = collision.foundFT0();
+      if (collision.t0ACValid()) {
+        t0AC[0] = collision.t0AC() * 1000.f;
+        t0AC[1] = collision.t0resolution() * 1000.f;
       }
+
+      float t0A = 1e10;
+      float t0C = 1e10;
+
+      constexpr float dummyTime = 30.; // Due to HW limitations time can be only within range (-25,25) ns, dummy time is around 32 ns
+      if (collision.has_foundFT0()) {  // Get the non corrected FT0AC
+        const auto& ft0 = collision.foundFT0();
+        const std::bitset<8>& triggers = ft0.triggerMask();
+        const bool ora = triggers[o2::ft0::Triggers::bitA];
+        const bool orc = triggers[o2::ft0::Triggers::bitC];
+        if (ora && ft0.timeA() < dummyTime) {
+          t0A = ft0.timeA();
+        }
+        if (orc && ft0.timeC() < dummyTime) {
+          t0C = ft0.timeC();
+        }
+        if (ft0.isValidTime()) {
+          histos.fill(HIST("ft0/diffPosZ"), ft0.posZ() - collisionMC.posZ());
+        }
+      }
+      if (collision.t0ACorrectedValid()) {
+        histos.fill(HIST("ft0/FT0AMinusFT0ACorrected"), (t0A - collision.t0ACorrected()) * 1000.f);
+      }
+      if (collision.t0CCorrectedValid()) {
+        histos.fill(HIST("ft0/FT0CMinusFT0CCorrected"), (t0C - collision.t0CCorrected()) * 1000.f);
+      }
+      if (collision.t0ACValid()) {
+        histos.fill(HIST("ft0/FT0ACMinusFT0ACCorrected"), (0.5 * (t0A + t0C) - collision.t0AC()) * 1000.f);
+      }
+
+      const auto& recoBC = collision.bc();
+      const auto& foundBC = collision.foundBC();
+      const auto& mcBC = collisionMC.bc();
+
+      const auto& recoBCid = recoBC.globalBC() % o2::constants::lhc::LHCMaxBunches;
+      const auto& mcBCid = mcBC.globalBC() % o2::constants::lhc::LHCMaxBunches;
+      const auto& foundBCid = foundBC.globalBC() % o2::constants::lhc::LHCMaxBunches;
+      const int diffRecoFoundBC = foundBC.globalBC() - recoBC.globalBC();
+      const int diffRecoMCBC = recoBC.globalBC() - mcBC.globalBC();
+      const int diffFoundMCBC = foundBC.globalBC() - mcBC.globalBC();
+      histos.fill(HIST("collisions/Reco/BCvsMCBC"), recoBCid, mcBCid);
+      histos.fill(HIST("collisions/Reco/FoundBCvsMCBC"), foundBCid, mcBCid);
+      histos.fill(HIST("collisions/Reco/FoundBCvsBC"), foundBCid, recoBCid);
+      histos.fill(HIST("collisions/Reco/bcMinusMcBc"), (diffRecoMCBC)*o2::constants::lhc::LHCBunchSpacingNS);
+      histos.fill(HIST("collisions/Reco/foundbcMinusMcBc"), (diffFoundMCBC)*o2::constants::lhc::LHCBunchSpacingNS);
+      histos.fill(HIST("collisions/Reco/bcMinusfoundBc"), (diffRecoFoundBC)*o2::constants::lhc::LHCBunchSpacingNS);
+      histos.fill(HIST("collisions/Reco/bcMinusfoundBcRatio"), (diffRecoFoundBC)*o2::constants::lhc::LHCBunchSpacingNS / collision.collisionTimeRes());
+      histos.fill(HIST("collisions/Reco/foundbcMinusMcBcRatio"), (diffFoundMCBC)*o2::constants::lhc::LHCBunchSpacingNS / collision.collisionTimeRes());
+      histos.fill(HIST("collisions/Reco/bcMinusMcBcRatio"), (diffRecoMCBC)*o2::constants::lhc::LHCBunchSpacingNS / collision.collisionTimeRes());
+
+      // timeInBCNS + bc2ns();
+      // bc* o2::constants::lhc::LHCBunchSpacingNS + orbit* o2::constants::lhc::LHCOrbitNS;
+      // int64_t(mcBC.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3))
+
+      histos.fill(HIST("MC/CollisionTime/eventtimeMC"), eventtimeMC);
+      histos.fill(HIST("MC/CollisionTime/All"), trk.tofEvTime());
+      histos.fill(HIST("MC/CollisionTime/FT0"), t0AC[0]);
+      histos.fill(HIST("MC/CollisionTime/TOF"), trk.evTimeTOF());
+      histos.fill(HIST("MC/CollisionTime/eventtimeMCvsAll"), eventtimeMC, trk.tofEvTime());
+      histos.fill(HIST("MC/CollisionTime/eventtimeMCvsFT0"), eventtimeMC, t0AC[0]);
+      histos.fill(HIST("MC/CollisionTime/eventtimeMCvsTOF"), eventtimeMC, trk.evTimeTOF());
+
+      histos.fill(HIST("MC/diff/All"), eventtimeMC - trk.tofEvTime());
+      histos.fill(HIST("MC/diff/FT0"), eventtimeMC - t0AC[0]);
+      histos.fill(HIST("MC/diff/TOF"), eventtimeMC - trk.evTimeTOF());
+      histos.fill(HIST("MC/diffvsZ/All"), eventtimeMC - trk.tofEvTime(), collisionMC.posZ());
+      histos.fill(HIST("MC/diffvsZ/FT0"), eventtimeMC - t0AC[0], collisionMC.posZ());
+      histos.fill(HIST("MC/diffvsZ/TOF"), eventtimeMC - trk.evTimeTOF(), collisionMC.posZ());
     }
   }
   PROCESS_SWITCH(tofPidCollisionTimeQa, processMC, "Process MC", false);

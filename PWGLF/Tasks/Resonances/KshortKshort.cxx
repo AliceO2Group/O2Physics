@@ -65,6 +65,7 @@ struct strangeness_tutorial {
   Configurable<bool> QAv0_daughters{"QAv0_daughters", false, "QA of v0 daughters"};
   Configurable<bool> QAevents{"QAevents", false, "QA of events"};
   Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
+  Configurable<bool> correlation2Dhist{"correlation2Dhist", true, "Lamda K0 mass correlation"};
   Configurable<bool> DCAv0topv{"DCAv0topv", false, "DCA V0 to PV"};
   Configurable<bool> armcut{"armcut", true, "arm cut"};
 
@@ -203,6 +204,19 @@ struct strangeness_tutorial {
     hglue.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
 
     // K0s topological/PID cuts
+    if (correlation2Dhist) {
+      rKzeroShort.add("mass_lambda_kshort_before", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after1", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after2", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after3", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after4", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after5", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after6", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after7", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after8", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after9", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after10", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+    }
     if (QAv0) {
       // Invariant Mass
       rKzeroShort.add("hMassK0Shortbefore", "hMassK0Shortbefore", kTHnSparseF, {K0ShortMassAxis, ptAxis});
@@ -215,8 +229,7 @@ struct strangeness_tutorial {
       rKzeroShort.add("Mass_lambda", "Mass under lambda hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("mass_AntiLambda", "Mass under anti-lambda hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("mass_Gamma", "Mass under Gamma hypothesis", kTH1F, {glueballMassAxis});
-      rKzeroShort.add("mass_lambda_kshort_before", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+
       // rKzeroShort.add("mass_Hypertriton", "Mass under hypertriton hypothesis", kTH1F, {glueballMassAxis});
       // rKzeroShort.add("mass_AnitHypertriton", "Mass under anti-hypertriton hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("rapidity", "Rapidity distribution", kTH1F, {{100, -1.0f, 1.0f}});
@@ -346,22 +359,26 @@ struct strangeness_tutorial {
       rKzeroShort.fill(HIST("halpha"), candidate.alpha());
       rKzeroShort.fill(HIST("hqtarmbyalpha"), arm);
       rKzeroShort.fill(HIST("hpsipair"), candidate.psipair());
-      rKzeroShort.fill(HIST("mass_lambda_kshort_before"), candidate.mK0Short(), candidate.mLambda());
     }
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_before"), candidate.mK0Short(), candidate.mLambda());
 
     hglue.fill(HIST("htrackscheck_v0"), 0.5);
 
-    if (!DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
 
     hglue.fill(HIST("htrackscheck_v0"), 1.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after1"), candidate.mK0Short(), candidate.mLambda());
 
     if (rapidityks && TMath::Abs(candidate.yK0Short()) >= ConfKsrapidity) {
       return false;
     }
 
     hglue.fill(HIST("htrackscheck_v0"), 2.5);
+    rKzeroShort.fill(HIST("mass_lambda_kshort_after2"), candidate.mK0Short(), candidate.mLambda());
 
     // if (isStandarv0 && candidate.isStandardV0 == 0) {
     //   return false;
@@ -371,45 +388,61 @@ struct strangeness_tutorial {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 3.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after3"), candidate.mK0Short(), candidate.mLambda());
 
     if (dcaDaughv0 > ConfV0DCADaughMax) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 4.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after4"), candidate.mK0Short(), candidate.mLambda());
 
     if (cpav0 < ConfV0CPAMin) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 5.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after5"), candidate.mK0Short(), candidate.mLambda());
 
     if (tranRad < ConfV0TranRadV0Min) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 6.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after6"), candidate.mK0Short(), candidate.mLambda());
 
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 7.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after7"), candidate.mK0Short(), candidate.mLambda());
 
     if (fabs(CtauK0s) > cMaxV0LifeTime) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 8.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after8"), candidate.mK0Short(), candidate.mLambda());
 
-    if (!armcut && arm < Confarmcut) {
+    if (armcut && arm < Confarmcut) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 9.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after9"), candidate.mK0Short(), candidate.mLambda());
 
     if (apply_competingcut && (TMath::Abs(candidate.mLambda() - PDGdatabase->Mass(3122)) <= competingcascrejlambda || TMath::Abs(candidate.mAntiLambda() - PDGdatabase->Mass(-3122)) <= competingcascrejlambdaanti)) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 10.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after10"), candidate.mK0Short(), candidate.mLambda());
 
     if (QAv0) {
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after"), candidate.mK0Short(), candidate.mLambda());
+      // rKzeroShort.fill(HIST("mass_lambda_kshort_after"), candidate.mK0Short(), candidate.mLambda());
     }
 
     if (candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {

@@ -506,7 +506,7 @@ struct AnalysisTrackSelection {
       if (filterMap > 0) {
         for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
           if (track.has_reducedMCTrack()) {
-            if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
+            if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -774,7 +774,7 @@ struct AnalysisMuonSelection {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
           if (track.has_reducedMCTrack()) {
-            if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
+            if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -874,6 +874,8 @@ struct AnalysisPrefilterSelection {
   Configurable<std::string> fConfigPrefilterTrackCut{"cfgPrefilterTrackCut", "", "Prefilter track cut"};
   Configurable<std::string> fConfigPrefilterPairCut{"cfgPrefilterPairCut", "", "Prefilter pair cut"};
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Track cuts for which to run the prefilter"};
+  // Track related options
+  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
 
   std::map<uint32_t, uint32_t> fPrefilterMap;
   AnalysisCompositeCut* fPairCut;
@@ -938,8 +940,8 @@ struct AnalysisPrefilterSelection {
     VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
   }
 
-  template <uint32_t TTrackFillMap, typename TTracks>
-  void runPrefilter(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, TTracks const& /*tracks*/)
+  template <uint32_t TTrackFillMap, typename TEvent, typename TTracks>
+  void runPrefilter(TEvent const& event, soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, TTracks const& /*tracks*/)
   {
 
     for (auto& [assoc1, assoc2] : o2::soa::combinations(assocs, assocs)) {
@@ -964,6 +966,9 @@ struct AnalysisPrefilterSelection {
 
       // compute pair quantities
       VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(track1, track2);
+      if (fPropTrack) {
+        VarManager::FillPairCollision<VarManager::kDecayToEE, TTrackFillMap>(event, track1, track2);
+      }
       // if the pair fullfils the criteria, add an entry into the prefilter map for the two tracks
       if (fPairCut->IsSelected(VarManager::fgValues)) {
         if (fPrefilterMap.find(track1.globalIndex()) == fPrefilterMap.end() && track1Candidate > 0) {
@@ -984,7 +989,7 @@ struct AnalysisPrefilterSelection {
     for (auto& event : events) {
       auto groupedAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       if (groupedAssocs.size() > 1) {
-        runPrefilter<gkTrackFillMap>(groupedAssocs, tracks);
+        runPrefilter<gkTrackFillMap>(event, groupedAssocs, tracks);
       }
     }
     uint32_t mymap = -1;
@@ -1055,6 +1060,9 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
   Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
   Configurable<bool> fConfigSkimSignalOnly{"fConfigSkimSignalOnly", false, "Configurable to select only matched candidates"};
+
+  // Track related options
+  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -1431,7 +1439,7 @@ struct AnalysisSameEventPairing {
           mcDecision = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
             if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
-              if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+              if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
                 mcDecision |= (uint32_t(1) << isig);
               }
             }
@@ -1442,6 +1450,9 @@ struct AnalysisSameEventPairing {
           }
 
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
+          if (fPropTrack) {
+            VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
+          }
           if constexpr (TTwoProngFitter) {
             VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigPropToPCA);
           }
@@ -1478,7 +1489,7 @@ struct AnalysisSameEventPairing {
           mcDecision = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
             if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
-              if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+              if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
                 mcDecision |= (uint32_t(1) << isig);
               }
             }
@@ -1490,6 +1501,9 @@ struct AnalysisSameEventPairing {
           }
 
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
+          if (fPropTrack) {
+            VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
+          }
           if constexpr (TTwoProngFitter) {
             VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigPropToPCA);
           }
@@ -1637,9 +1651,9 @@ struct AnalysisSameEventPairing {
         bool checked = false;
         /*if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
           auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
-          checked = sig.CheckSignal(false, mctrack_raw);
+          checked = sig.CheckSignal(true, mctrack_raw);
         } else {*/
-        checked = sig.CheckSignal(false, mctrack);
+        checked = sig.CheckSignal(true, mctrack);
         //}
         if (checked) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
@@ -1658,7 +1672,7 @@ struct AnalysisSameEventPairing {
             if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required here
               continue;
             }
-            if (sig.CheckSignal(false, t1_raw, t2_raw)) {
+            if (sig.CheckSignal(true, t1_raw, t2_raw)) {
               VarManager::FillPairMC(t1, t2);
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
             }
@@ -1947,7 +1961,7 @@ struct AnalysisDileptonTrack {
           mcDecision = 0;
           isig = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-            if ((*sig).CheckSignal(false, lepton1MC, lepton2MC, trackMC)) {
+            if ((*sig).CheckSignal(true, lepton1MC, lepton2MC, trackMC)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -1968,7 +1982,7 @@ struct AnalysisDileptonTrack {
           mcDecision = 0;
           isig = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-            if ((*sig).CheckSignal(false, lepton1MC, lepton2MC, trackMC)) {
+            if ((*sig).CheckSignal(true, lepton1MC, lepton2MC, trackMC)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -2056,7 +2070,7 @@ struct AnalysisDileptonTrack {
       // TODO:  Use the mcReducedFlags to select signals
       isig = 0;
       for (auto& sig : fGenMCSignals) {
-        if (sig.CheckSignal(false, track)) {
+        if (sig.CheckSignal(true, track)) {
           fHistMan->FillHistClass(fHistNamesMCgen[isig++], VarManager::fgValues);
         }
       }

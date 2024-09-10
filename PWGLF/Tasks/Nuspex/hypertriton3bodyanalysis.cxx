@@ -62,6 +62,9 @@ struct hypertriton3bodyQa {
       {"hPtAntiProton", "hPtAntiProton", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hPtPionPlus", "hPtPionPlus", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hPtAntiDeuteron", "hPtAntiDeuteron", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+      {"hDCAXYProtonToPV", "hDCAXYProtonToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
+      {"hDCAXYPionToPV", "hDCAXYPionToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
+      {"hDCAXYDeuteronToPV", "hDCAXYDeuteronToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCAProtonToPV", "hDCAProtonToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCAPionToPV", "hDCAPionToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCADeuteronToPV", "hDCADeuteronToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
@@ -103,6 +106,8 @@ struct hypertriton3bodyQa {
         registry.fill(HIST("hPtProton"), track0.pt());
         registry.fill(HIST("hPtPionMinus"), track1.pt());
         registry.fill(HIST("hPtDeuteron"), track2.pt());
+        registry.fill(HIST("hDCAXYProtonToPV"), vtx.dcaXYtrack0topv());
+        registry.fill(HIST("hDCAXYPionToPV"), vtx.dcaXYtrack1topv());
         registry.fill(HIST("hDCAProtonToPV"), vtx.dcatrack0topv());
         registry.fill(HIST("hDCAPionToPV"), vtx.dcatrack1topv());
         registry.fill(HIST("hProtonTPCNcls"), track0.tpcNClsCrossedRows());
@@ -111,11 +116,14 @@ struct hypertriton3bodyQa {
         registry.fill(HIST("hPtPionPlus"), track0.pt());
         registry.fill(HIST("hPtAntiProton"), track1.pt());
         registry.fill(HIST("hPtAntiDeuteron"), track2.pt());
+        registry.fill(HIST("hDCAXYProtonToPV"), vtx.dcaXYtrack1topv());
+        registry.fill(HIST("hDCAXYPionToPV"), vtx.dcaXYtrack0topv());
         registry.fill(HIST("hDCAProtonToPV"), vtx.dcatrack1topv());
         registry.fill(HIST("hDCAPionToPV"), vtx.dcatrack0topv());
         registry.fill(HIST("hProtonTPCNcls"), track1.tpcNClsCrossedRows());
         registry.fill(HIST("hPionTPCNcls"), track0.tpcNClsCrossedRows());
       }
+      registry.fill(HIST("hDCAXYDeuteronToPV"), vtx.dcaXYtrack2topv());
       registry.fill(HIST("hDCADeuteronToPV"), vtx.dcatrack2topv());
       registry.fill(HIST("hDeuteronTPCNcls"), track2.tpcNClsCrossedRows());
     }
@@ -165,6 +173,9 @@ struct hypertriton3bodyAnalysis {
       {"hPtAntiProton", "hPtAntiProton", {HistType::kTH1F, {{200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}}}},
       {"hPtPionPlus", "hPtPionPlus", {HistType::kTH1F, {{200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}}}},
       {"hPtAntiDeuteron", "hPtAntiDeuteron", {HistType::kTH1F, {{200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}}}},
+      {"hDCAXYProtonToPV", "hDCAXYProtonToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
+      {"hDCAXYPionToPV", "hDCAXYPionToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
+      {"hDCAXYDeuteronToPV", "hDCAXYDeuteronToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCAProtonToPV", "hDCAProtonToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCAPionToPV", "hDCAPionToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCADeuteronToPV", "hDCADeuteronToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
@@ -371,6 +382,8 @@ struct hypertriton3bodyAnalysis {
       registry.fill(HIST("hPtProton"), trackProton.pt());
       registry.fill(HIST("hPtPionMinus"), trackPion.pt());
       registry.fill(HIST("hPtDeuteron"), trackDeuteron.pt());
+      registry.fill(HIST("hDCAXYProtonToPV"), candData.dcaXYtrack0topv());
+      registry.fill(HIST("hDCAXYPionToPV"), candData.dcaXYtrack1topv());
       registry.fill(HIST("hDCAProtonToPV"), candData.dcatrack0topv());
       registry.fill(HIST("hDCAPionToPV"), candData.dcatrack1topv());
 
@@ -392,6 +405,8 @@ struct hypertriton3bodyAnalysis {
       registry.fill(HIST("hPtAntiProton"), trackProton.pt());
       registry.fill(HIST("hPtPionPlus"), trackPion.pt());
       registry.fill(HIST("hPtAntiDeuteron"), trackDeuteron.pt());
+      registry.fill(HIST("hDCAXYProtonToPV"), candData.dcaXYtrack1topv());
+      registry.fill(HIST("hDCAXYPionToPV"), candData.dcaXYtrack0topv());
       registry.fill(HIST("hDCAProtonToPV"), candData.dcatrack1topv());
       registry.fill(HIST("hDCAPionToPV"), candData.dcatrack0topv());
 
@@ -408,6 +423,7 @@ struct hypertriton3bodyAnalysis {
     } else {
       return;
     }
+    registry.fill(HIST("hDCAXYDeuteronToPV"), candData.dcaXYtrack2topv());
     registry.fill(HIST("hDCADeuteronToPV"), candData.dcatrack2topv());
     registry.fill(HIST("hVtxCosPA"), candData.vtxcosPA(dCollision.posX(), dCollision.posY(), dCollision.posZ()));
     registry.fill(HIST("hDCAVtxDau"), candData.dcaVtxdaughters());

@@ -67,7 +67,7 @@ class MCSignal : public TNamed
  public:
   MCSignal();
   MCSignal(int nProngs, const char* name = "", const char* title = "");
-  MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<short> commonAncestors);
+  MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<short> commonAncestors, bool excludeCommonAncestor = false);
   MCSignal(const MCSignal& c) = default;
   ~MCSignal() override = default;
 
@@ -100,6 +100,7 @@ class MCSignal : public TNamed
   std::vector<MCProng> fProngs;
   unsigned int fNProngs;
   std::vector<short> fCommonAncestorIdxs;
+  bool fExcludeCommonAncestor;
   int fTempAncestorLabel;
 
   template <typename T>
@@ -139,14 +140,15 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
       if (i == 0) {
         fTempAncestorLabel = currentMCParticle.globalIndex();
       } else {
-        if (currentMCParticle.globalIndex() != fTempAncestorLabel) {
+        if (currentMCParticle.globalIndex() != fTempAncestorLabel && !fExcludeCommonAncestor)
           return false;
-        }
+        else if (currentMCParticle.globalIndex() == fTempAncestorLabel && fExcludeCommonAncestor)
+          return false;
       }
     }
 
     // Update the currentMCParticle by moving either back in time (towards mothers, grandmothers, etc)
-    //    or in time (towards daughters) depending on how this was configured in the MSignal
+    // or in time (towards daughters) depending on how this was configured in the MC Signal
     if (!fProngs[i].fCheckGenerationsInTime) {
       // make sure that a mother exists in the stack before moving one generation further in history
       if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
