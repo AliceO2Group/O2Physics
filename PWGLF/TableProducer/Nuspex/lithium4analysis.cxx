@@ -67,21 +67,21 @@ using std::array;
 
 namespace
 {
-constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
-static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+  constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+  static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
-constexpr float he3Mass = o2::constants::physics::MassHelium3;
-constexpr float protonMass = o2::constants::physics::MassProton;
-constexpr int li4PDG = 1000030040;
-constexpr int prPDG = 2212;
-constexpr int hePDG = 1000020030;
+  constexpr float he3Mass = o2::constants::physics::MassHelium3;
+  constexpr float protonMass = o2::constants::physics::MassProton;
+  constexpr int li4PDG = 1000030040;
+  constexpr int prPDG = 2212;
+  constexpr int hePDG = 1000020030;
 
-enum Selections {
-  kNoCuts = 0,
-  kTrackCuts,
-  kPID,
-  kAll
-};
+  enum Selections {
+    kNoCuts = 0,
+    kTrackCuts,
+    kPID,
+    kAll
+  };
 
 } // namespace
 
@@ -123,7 +123,7 @@ struct Lithium4Candidate {
   uint32_t itsClSizePr = 0u;
   uint8_t sharedClustersHe3 = 0u;
   uint8_t sharedClustersPr = 0u;
-
+  
   bool isBkgUS = false;
   bool isBkgEM = false;
 
@@ -736,6 +736,7 @@ struct lithium4analysis {
     }
   }
   PROCESS_SWITCH(lithium4analysis, processMC, "Process MC", false);
+
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
