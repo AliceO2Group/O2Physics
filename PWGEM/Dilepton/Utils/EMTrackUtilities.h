@@ -56,6 +56,30 @@ float fwdDcaXYinSigma(T const& track)
   }
 }
 //_______________________________________________________________________
+template <typename T>
+float sigmaPt(T const& track)
+{
+  return std::sqrt(track.c1Pt21Pt2()) / std::pow(track.signed1Pt(), 2); // pT resolution
+}
+//_______________________________________________________________________
+template <typename T>
+float sigmaPhi(T const& track)
+{
+  return std::sqrt(track.cSnpSnp()) / std::sqrt(1.f - std::pow(track.snp(), 2)); // phi resolution
+}
+//_______________________________________________________________________
+template <typename T>
+float sigmaLambda(T const& track)
+{
+  return std::sqrt(track.cTglTgl()) / (1.f + std::pow(track.tgl(), 2)); // theta resolution = lambda resolution. // lambda = pi/2 - theta. theta is polar angle.
+}
+//_______________________________________________________________________
+template <typename T>
+float sigmaP(T const& track)
+{
+  // p = pT x cosh(eta);
+  return std::sqrt(std::pow(std::cosh(track.eta()) * sigmaPt(track), 2) + std::pow(track.pt() * std::sinh(track.eta()) * std::cosh(track.eta()) * sigmaLambda(track), 2));
+}
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 #endif // PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_
