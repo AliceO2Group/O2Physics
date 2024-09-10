@@ -402,9 +402,9 @@ struct PhotonHBT {
     const AxisSpec axis_qinv{60, 0.0, +0.3, "q_{inv} (GeV/c)"};
     const AxisSpec axis_kstar{60, 0.0, +0.3, "k* (GeV/c)"};
     const AxisSpec axis_qabs_lcms{60, 0.0, +0.3, "|#bf{q}|^{LCMS} (GeV/c)"};
-    const AxisSpec axis_qout{60, -0.3, +0.3, "q_{out} (GeV/c)"};   // qout does not change between LAB and LCMS frame
-    const AxisSpec axis_qside{60, -0.3, +0.3, "q_{side} (GeV/c)"}; // qside does not change between LAB and LCMS frame
-    const AxisSpec axis_qlong{60, -0.3, +0.3, "q_{long} (GeV/c)"};
+    const AxisSpec axis_qout{60, 0.0, +0.3, "q_{out} (GeV/c)"};   // qout does not change between LAB and LCMS frame
+    const AxisSpec axis_qside{60, 0.0, +0.3, "q_{side} (GeV/c)"}; // qside does not change between LAB and LCMS frame
+    const AxisSpec axis_qlong{60, 0.0, +0.3, "q_{long} (GeV/c)"};
 
     if (cfgDo3D) {
       fRegistry.add("Pair/same/hs_3d", "diphoton correlation 3D LCMS", kTHnSparseD, {axis_qout, axis_qside, axis_qlong, axis_kt}, true);
@@ -555,19 +555,16 @@ struct PhotonHBT {
   template <int ev_id, typename TCollision>
   void fillPairHistogram(TCollision const&, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float weight = 1.f)
   {
-
     // Lab. frame
     ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
     ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
     float qinv = -q12.M(); // for identical particles -> qinv = 2 x kstar
     float kt = k12.Pt();
-    // float mt = std::sqrt(std::pow(k12.M(), 2) + std::pow(kt, 2));
 
     // ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
     ROOT::Math::XYZVector uv_out(k12.Px() / k12.Pt(), k12.Py() / k12.Pt(), 0); // unit vector for out. i.e. parallel to kt
     ROOT::Math::XYZVector uv_long(0, 0, 1);                                    // unit vector for long, beam axis
     ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long);                     // unit vector for side
-    // float qlong_lab = q_3d.Dot(uv_long);
 
     ROOT::Math::PxPyPzEVector v1_cartesian(v1);
     ROOT::Math::PxPyPzEVector v2_cartesian(v2);
@@ -586,11 +583,14 @@ struct PhotonHBT {
     float qlong_lcms = q_3d_lcms.Dot(uv_long);
     float qabs_lcms = q_3d_lcms.R();
 
+    // float qabs_lcms_tmp = std::sqrt(std::pow(qout_lcms, 2) + std::pow(qside_lcms, 2) + std::pow(qlong_lcms, 2));
+    // LOGF(info, "qabs_lcms = %f, qabs_lcms_tmp = %f", qabs_lcms, qabs_lcms_tmp);
+
     // pair rest frame (PRF)
     ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-beta_x, -beta_y, -beta_z);
-    ROOT::Math::PxPyPzEVector v1_pfr = boostPRF(v1_cartesian);
-    ROOT::Math::PxPyPzEVector v2_pfr = boostPRF(v2_cartesian);
-    ROOT::Math::PxPyPzEVector rel_k = v1_pfr - v2_pfr;
+    ROOT::Math::PxPyPzEVector v1_prf = boostPRF(v1_cartesian);
+    ROOT::Math::PxPyPzEVector v2_prf = boostPRF(v2_cartesian);
+    ROOT::Math::PxPyPzEVector rel_k = v1_prf - v2_prf;
     float kstar = 0.5 * rel_k.P();
     // LOGF(info, "qabs_lcms = %f, qinv = %f, kstar = %f", qabs_lcms, qinv, kstar);
 
@@ -609,7 +609,7 @@ struct PhotonHBT {
     // LOGF(info, "qabs_lcms = %f, qabs_lcms_tmp = %f", qabs_lcms, qabs_lcms_tmp);
 
     if (cfgDo3D) {
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), qout_lcms, qside_lcms, qlong_lcms, kt, weight);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_3d"), fabs(qout_lcms), fabs(qside_lcms), fabs(qlong_lcms), kt, weight); // qosl can be [-inf, +inf] and CF is symmetric for pos and neg qosl. To reduce stat. unc. absolute value is taken here.
     } else {
       if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // identical particle femtoscopy
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_1d"), qinv, qabs_lcms, kt, weight);
