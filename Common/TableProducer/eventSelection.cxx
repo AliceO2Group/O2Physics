@@ -82,6 +82,7 @@ struct BcSelectionTask {
     histos.add("hCounterTCEafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEMafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterInvalidBCTimestamp", "", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
@@ -423,9 +424,13 @@ struct BcSelectionTask {
         }
       }
 
-      if (confCheckRunDurationLimits.value && (bc.timestamp() < sorTimestamp || bc.timestamp() > eorTimestamp)) {
-        alias = 0u;
-        selection = 0u;
+      if (bc.timestamp() < static_cast<uint64_t>(sorTimestamp) || bc.timestamp() > static_cast<uint64_t>(eorTimestamp)) {
+        histos.get<TH1>(HIST("hCounterInvalidBCTimestamp"))->Fill(srun, 1);
+        if (confCheckRunDurationLimits.value) {
+          LOGF(warn, "Invalid BC timestamp: %d, run: %d, sor: %d, eor: %d", bc.timestamp(), run, sorTimestamp, eorTimestamp);
+          alias = 0u;
+          selection = 0u;
+        }
       }
 
       // Fill bc selection columns
