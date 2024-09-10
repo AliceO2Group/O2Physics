@@ -1372,7 +1372,8 @@ struct strangeYieldPbPb {
     } // event is accepted
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-    if (studyUPConly && selGapSide < -0.5) return;
+    if (studyUPConly && selGapSide < -0.5)
+      return;
 
     for (auto& v0 : fullV0s) {
       if (v0.v0Type() != v0cuts.v0TypeSelection && v0cuts.v0TypeSelection > 0)
@@ -1395,7 +1396,8 @@ struct strangeYieldPbPb {
     } // event is accepted
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-    if (studyUPConly && selGapSide < -0.5) return;
+    if (studyUPConly && selGapSide < -0.5)
+      return;
 
     for (auto& casc : fullCascades) {
       std::bitset<selNum> selMap = computeBitmapCascade(casc, collision);
