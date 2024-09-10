@@ -258,7 +258,7 @@ struct spvector {
       for (std::size_t iChA = 0; iChA < 8; iChA++) {
         auto chanelid = iChA;
         if (useGainCallib && gainprofile) {
-          gainequal = gainprofile->GetBinContent(gainprofile->FindBin(chanelid,vz));
+          gainequal = gainprofile->GetBinContent(gainprofile->FindBin(chanelid, vz));
         }
 
         if (iChA < 4) {
