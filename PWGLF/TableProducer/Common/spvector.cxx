@@ -102,7 +102,7 @@ struct spvector {
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", false, "use Recentering"};
   Configurable<bool> useShift{"useShift", false, "use Shift"};
-  Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/test100", "Path to gain calibration"};
+  Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentere"};
   Configurable<std::string> ConfShift{"ConfShift", "Users/p/prottay/My/Object/Finaltest2/recenereall", "Path for Shift"};
 
@@ -257,8 +257,8 @@ struct spvector {
 
       for (std::size_t iChA = 0; iChA < 8; iChA++) {
         auto chanelid = iChA;
-        if (useGainCallib) {
-          gainequal = gainprofile->GetBinContent(gainprofile->FindBin(chanelid));
+        if (useGainCallib && gainprofile) {
+          gainequal = gainprofile->GetBinContent(gainprofile->FindBin(chanelid,vz));
         }
 
         if (iChA < 4) {
