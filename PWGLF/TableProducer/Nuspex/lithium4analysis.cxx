@@ -63,21 +63,21 @@ using std::array;
 
 namespace
 {
-  constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
-  static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
-  constexpr float he3Mass = o2::constants::physics::MassHelium3;
-  constexpr float protonMass = o2::constants::physics::MassProton;
-  constexpr int li4PDG = 1000030040;
-  constexpr int prPDG = 2212;
-  constexpr int hePDG = 1000020030;
+constexpr float he3Mass = o2::constants::physics::MassHelium3;
+constexpr float protonMass = o2::constants::physics::MassProton;
+constexpr int li4PDG = 1000030040;
+constexpr int prPDG = 2212;
+constexpr int hePDG = 1000020030;
 
-  enum Selections {
-    kNoCuts = 0,
-    kTrackCuts,
-    kPID,
-    kAll
-  };
+enum Selections {
+  kNoCuts = 0,
+  kTrackCuts,
+  kPID,
+  kAll
+};
 
 } // namespace
 
@@ -109,7 +109,7 @@ struct Lithium4Candidate {
   float nSigmaPr = -10.f;
   float chi2TPCHe3 = -10.f;
   float chi2TPCPr = -10.f;
-  
+
   float massTOFHe3 = -10;
   float massTOFPr = -10;
 
@@ -118,10 +118,10 @@ struct Lithium4Candidate {
 
   uint32_t itsClSizeHe3 = 0u;
   uint32_t itsClSizePr = 0u;
-  
+
   uint8_t sharedClustersHe3 = 0u;
   uint8_t sharedClustersPr = 0u;
-  
+
   bool isBkgUS = false;
   bool isBkgEM = false;
 
@@ -166,12 +166,11 @@ struct lithium4analysis {
   using McIter = aod::McParticles::iterator;
   using CollBracket = o2::math_utils::Bracket<int>;
   Filter collZfilter = nabs(aod::collision::posZ) < setting_cutVertex;
-  using CollisionsFull = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;//, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
-  using CollisionsFullMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>;//, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using CollisionsFull = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;                           //, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using CollisionsFullMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>; //, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime>;
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
-  
   o2::pid::tof::Beta<TrackCandidates::iterator> m_responseBeta;
   o2::pid::tof::Beta<TrackCandidatesMC::iterator> m_responseBetaMC;
 
@@ -192,22 +191,20 @@ struct lithium4analysis {
   std::vector<SVCand> m_trackPairs;
 
   HistogramRegistry m_hAnalysis{
-    "histos", 
-    {
-      {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
-      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
-      {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"hLitInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
-      {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
-      {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
-      {"h2dEdxHe3candidates", "dEdx distribution; Signed #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-      {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}({}^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
-      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}}
-    }, 
+    "histos",
+    {{"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
+     {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
+     {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hLitInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
+     {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
+     {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
+     {"h2dEdxHe3candidates", "dEdx distribution; Signed #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+     {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}({}^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
+     {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}}},
     OutputObjHandlingPolicy::AnalysisObject,
     false,
     true};
@@ -480,65 +477,65 @@ struct lithium4analysis {
   {
     if (!isMC) {
       m_outputDataTable(
-        li4cand.recoPtHe3(), 
-        li4cand.recoEtaHe3(), 
+        li4cand.recoPtHe3(),
+        li4cand.recoEtaHe3(),
         li4cand.recoPhiHe3(),
-        li4cand.recoPtPr(), 
-        li4cand.recoEtaPr(), 
+        li4cand.recoPtPr(),
+        li4cand.recoEtaPr(),
         li4cand.recoPhiPr(),
-        li4cand.DCAxyHe3, 
-        li4cand.DCAzHe3,   
-        li4cand.DCAxyPr, 
+        li4cand.DCAxyHe3,
+        li4cand.DCAzHe3,
+        li4cand.DCAxyPr,
         li4cand.DCAzPr,
-        li4cand.tpcSignalHe3, 
-        li4cand.momHe3TPC, 
-        li4cand.tpcSignalPr, 
-        li4cand.momPrTPC,                
+        li4cand.tpcSignalHe3,
+        li4cand.momHe3TPC,
+        li4cand.tpcSignalPr,
+        li4cand.momPrTPC,
         li4cand.nTPCClustersHe3,
-        li4cand.nSigmaHe3, 
-        li4cand.nSigmaPr, 
+        li4cand.nSigmaHe3,
+        li4cand.nSigmaPr,
         li4cand.chi2TPCHe3,
         li4cand.chi2TPCPr,
-        li4cand.massTOFHe3, 
+        li4cand.massTOFHe3,
         li4cand.massTOFPr,
-        li4cand.PIDtrkHe3, 
-        li4cand.PIDtrkPr, 
-        li4cand.itsClSizeHe3, 
+        li4cand.PIDtrkHe3,
+        li4cand.PIDtrkPr,
+        li4cand.itsClSizeHe3,
         li4cand.itsClSizePr,
-        li4cand.sharedClustersHe3, 
+        li4cand.sharedClustersHe3,
         li4cand.sharedClustersPr,
-        li4cand.isBkgUS, 
+        li4cand.isBkgUS,
         li4cand.isBkgEM);
     } else {
       m_outputMCTable(
-        li4cand.recoPtHe3(), 
-        li4cand.recoEtaHe3(), 
+        li4cand.recoPtHe3(),
+        li4cand.recoEtaHe3(),
         li4cand.recoPhiHe3(),
-        li4cand.recoPtPr(), 
-        li4cand.recoEtaPr(), 
+        li4cand.recoPtPr(),
+        li4cand.recoEtaPr(),
         li4cand.recoPhiPr(),
-        li4cand.DCAxyHe3, 
-        li4cand.DCAzHe3,   
-        li4cand.DCAxyPr, 
+        li4cand.DCAxyHe3,
+        li4cand.DCAzHe3,
+        li4cand.DCAxyPr,
         li4cand.DCAzPr,
-        li4cand.tpcSignalHe3, 
-        li4cand.momHe3TPC, 
-        li4cand.tpcSignalPr, 
-        li4cand.momPrTPC,                
+        li4cand.tpcSignalHe3,
+        li4cand.momHe3TPC,
+        li4cand.tpcSignalPr,
+        li4cand.momPrTPC,
         li4cand.nTPCClustersHe3,
-        li4cand.nSigmaHe3, 
-        li4cand.nSigmaPr, 
+        li4cand.nSigmaHe3,
+        li4cand.nSigmaPr,
         li4cand.chi2TPCHe3,
         li4cand.chi2TPCPr,
-        li4cand.massTOFHe3, 
+        li4cand.massTOFHe3,
         li4cand.massTOFPr,
-        li4cand.PIDtrkHe3, 
-        li4cand.PIDtrkPr, 
-        li4cand.itsClSizeHe3, 
+        li4cand.PIDtrkHe3,
+        li4cand.PIDtrkPr,
+        li4cand.itsClSizeHe3,
         li4cand.itsClSizePr,
-        li4cand.sharedClustersHe3, 
+        li4cand.sharedClustersHe3,
         li4cand.sharedClustersPr,
-        li4cand.isBkgUS, 
+        li4cand.isBkgUS,
         li4cand.isBkgEM,
         li4cand.momHe3MC,
         li4cand.etaHe3MC,
@@ -581,7 +578,7 @@ struct lithium4analysis {
 
       pairTracksSameEvent(TrackTable_thisCollision);
 
-      for (auto& trackPair: m_trackPairs) {     
+      for (auto& trackPair : m_trackPairs) {
 
         auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
         auto prTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
@@ -591,7 +588,7 @@ struct lithium4analysis {
           continue;
         }
         fillHistograms(li4cand);
-        fillTable(li4cand, false);  
+        fillTable(li4cand, false);
       }
     }
   }
@@ -603,7 +600,7 @@ struct lithium4analysis {
     pairTracksEventMixing();
 
     for (auto& trackPair : m_trackPairs) {
-      
+
       auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
       auto prTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
 
@@ -704,7 +701,6 @@ struct lithium4analysis {
     }
   }
   PROCESS_SWITCH(lithium4analysis, processMC, "Process MC", false);
-
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
