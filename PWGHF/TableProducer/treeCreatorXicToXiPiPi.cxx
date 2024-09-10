@@ -101,6 +101,13 @@ DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
 DECLARE_SOA_COLUMN(DcaXiDaughters, dcaXiDaughters, float);
 DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
 DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
+// residuals
+DECLARE_SOA_COLUMN(XPvRes, xPvRes, float);
+DECLARE_SOA_COLUMN(YPvRes, yPvRes, float);
+DECLARE_SOA_COLUMN(ZPvRes, zPvRes, float);
+DECLARE_SOA_COLUMN(XSvRes, xSvRes, float);
+DECLARE_SOA_COLUMN(YSvRes, ySvRes, float);
+DECLARE_SOA_COLUMN(ZSvRes, zSvRes, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
@@ -560,9 +567,7 @@ struct HfTreeCreatorXicToXiPiPi {
     }
   }
 
-  void processData(aod::Collisions const& collisions,
-                   SelectedCandidates const& candidates,
-                   TracksWPid const&)
+  void processData(SelectedCandidates const& candidates)
   {
     // Filling candidate properties
     if (fillCandidateLiteTable) {
@@ -582,9 +587,7 @@ struct HfTreeCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processData, "Process data", true);
 
-  void processDataKf(aod::Collisions const& collisions,
-                     SelectedCandidatesKf const& candidates,
-                     TracksWPid const&)
+  void processDataKf(SelectedCandidatesKf const& candidates)
   {
     // Filling candidate properties
     if (fillCandidateLiteTable) {
@@ -604,11 +607,8 @@ struct HfTreeCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataKf, "Process data with KF Particle reconstruction", false);
 
-  void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const&,
-                 SelectedCandidatesMc const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
-                 TracksWPid const&)
+  void processMc(SelectedCandidatesMc const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles)
   {
     std::vector<int> arrDaughIndex;
 
@@ -649,10 +649,10 @@ struct HfTreeCreatorXicToXiPiPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
         arrDaughIndex.clear();
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-        auto daugh0 = mcParticles.rawIteratorAt(arrDaughIndex[0]);
+        auto daugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
 
         rowCandidateFullParticles(
           particle.vx(),
@@ -671,11 +671,8 @@ struct HfTreeCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMc, "Process MC", false);
 
-  void processMcKf(aod::Collisions const& collisions,
-                   aod::McCollisions const&,
-                   SelectedCandidatesKfMc const& candidates,
-                   soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
-                   TracksWPid const&)
+  void processMcKf(SelectedCandidatesKfMc const& candidates,
+                   soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles)
   {
     std::vector<int> arrDaughIndex;
 
@@ -716,10 +713,10 @@ struct HfTreeCreatorXicToXiPiPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
         arrDaughIndex.clear();
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-        auto daugh0 = mcParticles.rawIteratorAt(arrDaughIndex[0]);
+        auto daugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
 
         rowCandidateFullParticles(
           particle.vx(),
