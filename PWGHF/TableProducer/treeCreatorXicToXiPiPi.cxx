@@ -726,12 +726,12 @@ struct HfTreeCreatorXicToXiPiPi {
             svResiduals[2] = candidate.zSecondaryVertex() - xicDaugh0.vz();
             // pulls
             try {
-              pvPulls[0] = pvResiduals[0]/candidate.xPvErr();
-              pvPulls[1] = pvResiduals[1]/candidate.yPvErr();
-              pvPulls[2] = pvResiduals[2]/candidate.zPvErr();
-              svPulls[0] = svResiduals[0]/candidate.xSvErr();
-              svPulls[1] = svResiduals[1]/candidate.ySvErr();
-              svPulls[2] = svResiduals[2]/candidate.zSvErr();
+              pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
+              pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
+              pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
+              svPulls[0] = svResiduals[0] / candidate.xSvErr();
+              svPulls[1] = svResiduals[1] / candidate.ySvErr();
+              svPulls[2] = svResiduals[2] / candidate.zSvErr();
             } catch (const std::runtime_error& error) {
               LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -999.9.";
             }
@@ -850,12 +850,12 @@ struct HfTreeCreatorXicToXiPiPi {
             svResiduals[2] = candidate.zSecondaryVertex() - xicDaugh0.vz();
             // pulls
             try {
-              pvPulls[0] = pvResiduals[0]/candidate.xPvErr();
-              pvPulls[1] = pvResiduals[1]/candidate.yPvErr();
-              pvPulls[2] = pvResiduals[2]/candidate.zPvErr();
-              svPulls[0] = svResiduals[0]/candidate.xSvErr();
-              svPulls[1] = svResiduals[1]/candidate.ySvErr();
-              svPulls[2] = svResiduals[2]/candidate.zSvErr();
+              pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
+              pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
+              pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
+              svPulls[0] = svResiduals[0] / candidate.xSvErr();
+              svPulls[1] = svResiduals[1] / candidate.ySvErr();
+              svPulls[2] = svResiduals[2] / candidate.zSvErr();
             } catch (const std::runtime_error& error) {
               LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -999.9.";
             }
