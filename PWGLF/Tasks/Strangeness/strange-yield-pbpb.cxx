@@ -243,7 +243,8 @@ struct strangeYieldPbPb {
     }
   }
 
-  void addTopoHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade) {
+  void addTopoHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade)
+  {
     if (isCascade) {
       histos.add(particleName + "/hCascCosPA", "hCascCosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
       histos.add(particleName + "/hDCACascDaughters", "hDCACascDaughters", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
@@ -272,21 +273,22 @@ struct strangeYieldPbPb {
     }
   }
 
-  void addTPCQAHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade) {
+  void addTPCQAHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade)
+  {
     histos.add(particleName + "/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
     histos.add(particleName + "/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
     histos.add(particleName + "/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
     histos.add(particleName + "/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
-    
+
     histos.add(particleName + "/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
     histos.add(particleName + "/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-    
+
     histos.add(particleName + "/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
     histos.add(particleName + "/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
-    
+
     histos.add(particleName + "/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
     histos.add(particleName + "/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-    
+
     histos.add(particleName + "/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
     histos.add(particleName + "/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
 
@@ -300,7 +302,8 @@ struct strangeYieldPbPb {
     }
   }
 
-  void addTOFQAHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade) {
+  void addTOFQAHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade)
+  {
     histos.add(particleName + "/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
     histos.add(particleName + "/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
     histos.add(particleName + "/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
@@ -308,13 +311,14 @@ struct strangeYieldPbPb {
     histos.add(particleName + "/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
     histos.add(particleName + "/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
     if (isCascade) {
-          histos.add(particleName + "/h3dBachTOFdeltaT", "h3dBachTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-          histos.add(particleName + "/h3dBachTOFdeltaTvsTrackPtot", "h3dBachTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-          histos.add(particleName + "/h3dBachTOFdeltaTvsTrackPt", "h3dBachTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+      histos.add(particleName + "/h3dBachTOFdeltaT", "h3dBachTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+      histos.add(particleName + "/h3dBachTOFdeltaTvsTrackPtot", "h3dBachTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+      histos.add(particleName + "/h3dBachTOFdeltaTvsTrackPt", "h3dBachTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
     }
   }
 
-  void addDetectorPropHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade) {
+  void addDetectorPropHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade)
+  {
     if (PIDConfigurations.doDetectPropQA == 1) {
       if (isCascade) {
         histos.add(particleName + "/h8dDetectPropVsCentrality", "h8dDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
@@ -334,10 +338,11 @@ struct strangeYieldPbPb {
       histos.add(particleName + "/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisXiMass});
       histos.add(particleName + "/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisXiMass});
       histos.add(particleName + "/h5dBachDetectPropVsCentrality", "h5dBachDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisXiMass});
-    }    
+    }
   }
 
-  void addHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade) {
+  void addHistograms(HistogramRegistry& histos, const std::string& particleName, const bool isCascade)
+  {
     if (PIDConfigurations.doPlainTopoQA) {
       addTopoHistograms(histos, particleName, isCascade);
     }
@@ -350,7 +355,8 @@ struct strangeYieldPbPb {
     addDetectorPropHistograms(histos, particleName, isCascade);
   }
 
-  void addCollisionAssocHistograms(HistogramRegistry& histos, const std::string& particleName) {
+  void addCollisionAssocHistograms(HistogramRegistry& histos, const std::string& particleName)
+  {
     histos.add(particleName + "/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
     histos.add(particleName + "/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
   }
@@ -1165,7 +1171,7 @@ struct strangeYieldPbPb {
         histos.fill(HIST("Xi/h3dBachTPCsignal"), centrality, casc.pt(), bachTrackExtra.tpcSignal());
         histos.fill(HIST("Xi/h3dPosNsigmaTPCvsTrackPtot"), centrality, casc.positivept() * TMath::CosH(casc.positiveeta()), posTrackExtra.tpcNSigmaPi());
         histos.fill(HIST("Xi/h3dNegNsigmaTPCvsTrackPtot"), centrality, casc.negativept() * TMath::CosH(casc.negativeeta()), negTrackExtra.tpcNSigmaPi());
-        histos.fill(HIST("Xi/h3dBachNsigmaTPCvsTrackPtot"), centrality, casc.bachelorpt() * TMath::CosH(casc.bacheloreta()), bachTrackExtra.tpcNSigmaPi()); 
+        histos.fill(HIST("Xi/h3dBachNsigmaTPCvsTrackPtot"), centrality, casc.bachelorpt() * TMath::CosH(casc.bacheloreta()), bachTrackExtra.tpcNSigmaPi());
         histos.fill(HIST("Xi/h3dPosTPCsignalVsTrackPtot"), centrality, casc.positivept() * TMath::CosH(casc.positiveeta()), posTrackExtra.tpcSignal());
         histos.fill(HIST("Xi/h3dNegTPCsignalVsTrackPtot"), centrality, casc.negativept() * TMath::CosH(casc.negativeeta()), negTrackExtra.tpcSignal());
         histos.fill(HIST("Xi/h3dBachTPCsignalVsTrackPtot"), centrality, casc.bachelorpt() * TMath::CosH(casc.bacheloreta()), bachTrackExtra.tpcSignal());
