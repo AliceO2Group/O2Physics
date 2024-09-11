@@ -58,6 +58,7 @@ DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);                   // TPC
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                                // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
 DECLARE_SOA_COLUMN(TPCmom3H, tpcMom3H, float);                            // TPC momentum of the 3H daughter
 DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);                            // TPC momentum of the Pi daughter
+DECLARE_SOA_COLUMN(MassTrTOF, massTrTOF, float);                           // TOF 3H mass
 DECLARE_SOA_COLUMN(ITSclusterSizes3H, itsClusterSizes3H, uint32_t);       // ITS cluster size of the 3H daughter
 DECLARE_SOA_COLUMN(ITSclusterSizesPi, itsClusterSizesPi, uint32_t);       // ITS cluster size of the Pi daughter
 DECLARE_SOA_COLUMN(Dca3H, dca3H, float);                                  // DCA between 3H daughter and V0
@@ -80,13 +81,14 @@ DECLARE_SOA_TABLE(DataLnnCands, "AOD", "LNNCANDS",
                   lnnrec::CentralityFT0A, lnnrec::CentralityFT0C, lnnrec::CentralityFT0M,
                   lnnrec::XPrimVtx, lnnrec::YPrimVtx, lnnrec::ZPrimVtx,
 
-                  lnnrec::IsMatter,
+                  lnnrec::IsMatter, 
                   lnnrec::Pt3H, lnnrec::Phi3H, lnnrec::Eta3H,
                   lnnrec::PtPi, lnnrec::PhiPi, lnnrec::EtaPi,
                   lnnrec::XDecVtx, lnnrec::YDecVtx, lnnrec::ZDecVtx,
                   lnnrec::DcaV0Daug, lnnrec::Dca3H, lnnrec::DcaPi,
                   lnnrec::NSigma3H, lnnrec::NTPCclus3H, lnnrec::NTPCclusPi,
                   lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi,
+                  lnnrec::MassTrTOF,
                   lnnrec::ITSclusterSizes3H, lnnrec::ITSclusterSizesPi,
                   lnnrec::Flags);
 
@@ -95,13 +97,14 @@ DECLARE_SOA_TABLE(MCLnnCands, "AOD", "MCLNNCANDS",
                   lnnrec::CentralityFT0A, lnnrec::CentralityFT0C, lnnrec::CentralityFT0M,
                   lnnrec::XPrimVtx, lnnrec::YPrimVtx, lnnrec::ZPrimVtx,
 
-                  lnnrec::IsMatter,
+                  lnnrec::IsMatter, 
                   lnnrec::Pt3H, lnnrec::Phi3H, lnnrec::Eta3H,
                   lnnrec::PtPi, lnnrec::PhiPi, lnnrec::EtaPi,
                   lnnrec::XDecVtx, lnnrec::YDecVtx, lnnrec::ZDecVtx,
                   lnnrec::DcaV0Daug, lnnrec::Dca3H, lnnrec::DcaPi,
                   lnnrec::NSigma3H, lnnrec::NTPCclus3H, lnnrec::NTPCclusPi,
                   lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi,
+                  lnnrec::MassTrTOF,
                   lnnrec::ITSclusterSizes3H, lnnrec::ITSclusterSizesPi,
                   lnnrec::Flags,
                   lnnrec::GenPt,
