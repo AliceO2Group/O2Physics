@@ -549,8 +549,7 @@ struct statPromptPhoton {
 	   histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0/sternPt);
 	  if(sterncount<sternPt) {
 	    sterncount++;
-	  }
-	  else {
+	  } else {
 	    doStern=false;
 	  }
 	}// While sternin'
