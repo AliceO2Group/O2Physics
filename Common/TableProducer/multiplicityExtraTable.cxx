@@ -62,7 +62,7 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void processBCs(BCsWithRun3Matchings const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, aod::Collisions const& collisions)
+  void processBCs(BCsWithRun3Matchings const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     // determine saved BCs and corresponding new BC table index
@@ -98,8 +98,8 @@ struct MultiplicityExtraTable {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     // interlink: collision -> valid BC, BC -> collision
     for (const auto& collision : collisions) {
-      mult2bc(newBCindex[collision.bcId()]);
-      bc2multArray[collision.bcId()] = collision.globalIndex();
+      mult2bc(newBCindex[collision.foundBCId()]);
+      bc2multArray[collision.foundBCId()] = collision.globalIndex();
     }
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
 
