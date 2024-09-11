@@ -659,6 +659,12 @@ struct lithium4analysis {
       if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
       }
+      if (setting_skimmedProcessing) {
+        bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
+        if (zorroSelected) {
+          m_qaRegistry.fill(HIST("hEvents"), 2);
+        }
+      }
 
       m_qaRegistry.fill(HIST("hEvents"), 1);
       m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
