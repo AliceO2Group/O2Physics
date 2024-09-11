@@ -86,7 +86,7 @@ struct MultiplicityTable {
   Produces<aod::FDDMultZeqs> tableFDDZeqs;      // 11
   Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
   Produces<aod::MultMCExtras> tableExtraMc;     // 13
-  Produces<aod::MC2Mults> tableExtraMc2Mults;
+  Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
   Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
 
   // For vertex-Z corrections in calibration
@@ -669,7 +669,7 @@ struct MultiplicityTable {
 
   void processMC2Mults(soa::Join<aod::McCollisionLabels, aod::Collisions>::iterator const& collision)
   {
-    tableExtraMc2Mults(collision.mcCollisionId()); // interlink
+    tableExtraMult2MCExtras(collision.mcCollisionId()); // interlink
   }
 
   Configurable<float> min_pt_globaltrack{"min_pt_globaltrack", 0.15, "min. pT for global tracks"};
