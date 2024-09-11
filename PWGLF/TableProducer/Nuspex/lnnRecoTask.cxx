@@ -145,7 +145,7 @@ struct lnnRecoTask {
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
   Configurable<bool> isTPCRefit{"TPCRefit", true, "if true, select the tracks"};
   Configurable<bool> isITSRefit{"ITSRefit", true, "if true, select the tracks"};
-  //Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
+  // Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -303,7 +303,7 @@ struct lnnRecoTask {
     }
 
     TLorentzVector LorentzV_Triton{};
-    TLorentzVector LorentzV_AntiTriton{};  
+    TLorentzVector LorentzV_AntiTriton{};
 
     for (auto& v0 : V0s) {
 
@@ -316,7 +316,7 @@ struct lnnRecoTask {
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax) {
         continue;
       }
-       
+
       if (std::abs(LorentzV_Triton.Rapidity()) > yMax) {
         continue;
       }
@@ -349,18 +349,18 @@ struct lnnRecoTask {
       // Describing lnn as matter candidate
       lnnCandidate lnnCand;
       lnnCand.isMatter = is3H && isAnti3H ? std::abs(nSigmaTPCpos) < std::abs(nSigmaTPCneg) : is3H;
-      auto& h3track = lnnCand.isMatter ? posTrack : negTrack; 
+      auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
-      
+
       if (h3Rigidity < TPCRigidityMin3H ||
-      h3track.tpcNClsFound() < nTPCClusMin3H || 
-      h3track.tpcChi2NCl() > Chi2nClusTPC ||
-      h3track.itsChi2NCl() > Chi2nClusITS ||
-      h3track.itsNCls() < nClusITS ||
-      h3track.tpcNClsCrossedRows() < nClusTPCRows ||
-      h3track.tpcNClsCrossedRows() < 0.8 * h3track.tpcNClsFindable() ||
-      !h3track.passedTPCRefit() ||
-      !h3track.passedITSRefit()) {
+          h3track.tpcNClsFound() < nTPCClusMin3H ||
+          h3track.tpcChi2NCl() > Chi2nClusTPC ||
+          h3track.itsChi2NCl() > Chi2nClusITS ||
+          h3track.itsNCls() < nClusITS ||
+          h3track.tpcNClsCrossedRows() < nClusTPCRows ||
+          h3track.tpcNClsCrossedRows() < 0.8 * h3track.tpcNClsFindable() ||
+          !h3track.passedTPCRefit() ||
+          !h3track.passedITSRefit()) {
         continue;
       }
 
@@ -450,7 +450,7 @@ struct lnnRecoTask {
         beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
         float TPCinnerParam3H = h3track.tpcInnerParam();
         lnnCand.massTrTOF = TPCinnerParam3H * std::sqrt(1.f / (beta * beta) - 1.f);
-      }      
+      }
 
       // if survived all selections, propagate decay daughters to PV
       gpu::gpustd::array<float, 2> dcaInfo;
