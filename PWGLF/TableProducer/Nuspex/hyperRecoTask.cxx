@@ -640,6 +640,7 @@ struct hyperRecoTask {
 
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
+      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                       collision.posX(), collision.posY(), collision.posZ(),
                       hypCand.isMatter,
@@ -649,7 +650,7 @@ struct hyperRecoTask {
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
-                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID]);
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
@@ -666,6 +667,7 @@ struct hyperRecoTask {
 
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
+      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                               collision.psiFT0A(), collision.multFT0A(),
                               collision.psiFT0C(), collision.multFT0C(),
@@ -678,7 +680,7 @@ struct hyperRecoTask {
                               hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                               hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                               hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
-                              hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID]);
+                              hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
@@ -702,6 +704,7 @@ struct hyperRecoTask {
       if (!hypCand.isSignal && mcSignalOnly)
         continue;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
+      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                     collision.posX(), collision.posY(), collision.posZ(),
                     hypCand.isMatter,
@@ -711,7 +714,7 @@ struct hyperRecoTask {
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                     hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
-                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID],
+                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
                     hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
@@ -783,8 +786,8 @@ struct hyperRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,
-                    -1, -1, -1, -1,
-                    -1, -1, -1, false, -1,
+                    -1, -1, -1, -1, -1,
+                    -1, -1, -1, false,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
                     hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
