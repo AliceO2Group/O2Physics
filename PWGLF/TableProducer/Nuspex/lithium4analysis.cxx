@@ -32,16 +32,17 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+// #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Framework/HistogramRegistry.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Framework/StepTHn.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Framework/ASoAHelpers.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -178,8 +179,8 @@ struct lithium4analysis {
   using McIter = aod::McParticles::iterator;
   using CollBracket = o2::math_utils::Bracket<int>;
   Filter collZfilter = nabs(aod::collision::posZ) < setting_cutVertex;
-  using CollisionsFull = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;                           //, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
-  using CollisionsFullMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>; //, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using CollisionsFull = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;                           //, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>>;
+  using CollisionsFullMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>; //, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime>;
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
@@ -213,7 +214,9 @@ struct lithium4analysis {
       {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
       {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
-      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}} {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}} {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
+      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
+      {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hLitInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
@@ -229,14 +232,17 @@ struct lithium4analysis {
 
   void init(o2::framework::InitContext&)
   {
+    LOG(info) << "Initializing lithium4 analysis";
     m_zorroSummary.setObject(m_zorro.getZorroSummary());
     m_runNumber = 0;
 
+    LOG(info) << "Initializing CCDB";
     m_ccdb->setURL(setting_ccdburl);
     m_ccdb->setCaching(true);
     m_ccdb->setLocalObjectValidityChecking();
     m_ccdb->setFatalWhenNull(false);
 
+    LOG(info) << "Initializing PID response";
     for (int i = 0; i < 5; i++) {
       m_BBparamsHe[i] = setting_BetheBlochParams->get("He3", Form("p%i", i));
     }
@@ -253,47 +259,22 @@ struct lithium4analysis {
     }
   }
 
-  void initCCDB(const aod::BCsWithTimestamps& bc)
+  void initCCDB(const aod::BCsWithTimestamps::iterator& bc)
   {
+    LOG(info) << "Initializing CCDB for run " << bc.runNumber();
     if (m_runNumber == bc.runNumber()) {
       return;
     }
+    LOG(info) << "Initializing zorro for run " << bc.runNumber();
     if (setting_skimmedProcessing) {
       m_zorro.initCCDB(m_ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
       m_zorro.populateHistRegistry(m_qaRegistry, bc.runNumber());
     }
+    LOG(info) << "Initializing CCDB for run " << bc.runNumber() << " done";
+    m_runNumber = bc.runNumber();
   }
 
   // ==================================================================================================================
-
-  template <bool isMC = false, typename C>
-  void selectCollisions(const C& collisions)
-  {
-    for (const auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      if constexpr (isMC) {
-        if (!collision.sel8() || std::abs(collision.posZ()) > setting_cutVertex) {
-          continue;
-        }
-      } else {
-        if (!collision.sel8() || std::abs(collision.posZ()) > setting_cutVertex) {
-          continue;
-        }
-      }
-
-      if (setting_skimmedProcessing) {
-        bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
-        if (zorroSelected) {
-          m_qaRegistry.fill(HIST("hEvents"), 2);
-        }
-      }
-
-      m_qaRegistry.fill(HIST("hVtxZ"), collision.posZ());
-      m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
-      m_goodCollisions[collision.globalIndex()] = true;
-    }
-  }
 
   template <typename T>
   bool selectionTrack(const T& candidate)
@@ -600,7 +581,6 @@ struct lithium4analysis {
 
   void fillHistograms(const Lithium4Candidate& li4cand)
   {
-    int candSign = li4cand.sign;
     m_qaRegistry.fill(HIST("hHe3Pt"), li4cand.recoPtHe3());
     m_qaRegistry.fill(HIST("hProtonPt"), li4cand.recoPtPr());
     m_qaRegistry.fill(HIST("hLitInvMass"), li4cand.invMass);
@@ -613,18 +593,22 @@ struct lithium4analysis {
   void processSameEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCs&)
   {
     for (auto& collision : collisions) {
-
+      LOG(info) << "Processing collision " << collision.globalIndex();
       m_trackPairs.clear();
-
+      m_qaRegistry.fill(HIST("hEvents"), 0);
+      LOG(info) << "Collision " << collision.globalIndex() << " selected";
       if (!collision.sel8() || std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
       }
+      LOG(info) << "Collision " << collision.globalIndex() << " passed";
       if (setting_skimmedProcessing) {
         bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
         if (zorroSelected) {
           m_qaRegistry.fill(HIST("hEvents"), 2);
         }
       }
+      LOG(info) << "Collision " << collision.globalIndex() << " passed - after zorro";
+      m_qaRegistry.fill(HIST("hEvents"), 1);
       m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
       m_qaRegistry.fill(HIST("hVtxZ"), collision.posZ());
 
@@ -634,6 +618,7 @@ struct lithium4analysis {
 
       pairTracksSameEvent(TrackTable_thisCollision);
 
+      LOG(info) << "Collision " << collision.globalIndex() << " passed - after pairTracksSameEvent";
       for (auto& trackPair : m_trackPairs) {
 
         auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
@@ -647,6 +632,7 @@ struct lithium4analysis {
         fillTable(li4cand, false);
       }
     }
+    LOG(info) << "End of collision loop";
   }
   PROCESS_SWITCH(lithium4analysis, processSameEvent, "Process Same event", false);
 
@@ -677,7 +663,7 @@ struct lithium4analysis {
     for (auto& collision : collisions) {
 
       m_trackPairs.clear();
-
+      m_qaRegistry.fill(HIST("hEvents"), 0);
       if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
       }
@@ -687,7 +673,7 @@ struct lithium4analysis {
           m_qaRegistry.fill(HIST("hEvents"), 2);
         }
       }
-
+      m_qaRegistry.fill(HIST("hEvents"), 1);
       m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
       m_qaRegistry.fill(HIST("hVtxZ"), collision.posZ());
 
