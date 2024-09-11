@@ -12,7 +12,8 @@
 /// \file treeCreatorXicToXiPiPi.cxx
 /// \brief Writer of Ξc± → Ξ∓ π± π± candidates in the form of flat tables to be stored in TTrees.
 ///
-/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, CERN
+/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
+/// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -29,11 +30,7 @@ namespace o2::aod
 {
 namespace full
 {
-// track indices
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int); //! Selection flag of candidate (output of candidateSelector)
-DECLARE_SOA_INDEX_COLUMN_FULL(Xi, xi, int, Tracks, "_pi0");
-DECLARE_SOA_INDEX_COLUMN_FULL(Pi0, pi0, int, Tracks, "_pi0");
-DECLARE_SOA_INDEX_COLUMN_FULL(Pi1, pi1, int, Tracks, "_pi1");
 // vertices
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
@@ -41,13 +38,19 @@ DECLARE_SOA_COLUMN(ZPv, zPv, float);
 DECLARE_SOA_COLUMN(XPvErr, xPvErr, float);
 DECLARE_SOA_COLUMN(YPvErr, yPvErr, float);
 DECLARE_SOA_COLUMN(ZPvErr, zPvErr, float);
+DECLARE_SOA_COLUMN(XPvGen, xPvGen, float);
+DECLARE_SOA_COLUMN(YPvGen, yPvGen, float);
+DECLARE_SOA_COLUMN(ZPvGen, zPvGen, float);
 DECLARE_SOA_COLUMN(XSv, xSv, float);
 DECLARE_SOA_COLUMN(YSv, ySv, float);
 DECLARE_SOA_COLUMN(ZSv, zSv, float);
-DECLARE_SOA_COLUMN(Chi2Sv, chi2Sv, float);
 DECLARE_SOA_COLUMN(XSvErr, xSvErr, float);
 DECLARE_SOA_COLUMN(YSvErr, ySvErr, float);
 DECLARE_SOA_COLUMN(ZSvErr, zSvErr, float);
+DECLARE_SOA_COLUMN(Chi2Sv, chi2Sv, float);
+DECLARE_SOA_COLUMN(XSvGen, xSvGen, float);
+DECLARE_SOA_COLUMN(YSvGen, ySvGen, float);
+DECLARE_SOA_COLUMN(ZSvGen, zSvGen, float);
 DECLARE_SOA_COLUMN(XDecVtxXi, xDecVtxXi, float);
 DECLARE_SOA_COLUMN(YDecVtxXi, yDecVtxXi, float);
 DECLARE_SOA_COLUMN(ZDecVtxXi, zDecVtxXi, float);
@@ -98,6 +101,21 @@ DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
 DECLARE_SOA_COLUMN(DcaXiDaughters, dcaXiDaughters, float);
 DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
 DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
+// residuals and pulls
+DECLARE_SOA_COLUMN(PtResidual, ptResidual, float);
+DECLARE_SOA_COLUMN(PResidual, pResidual, float);
+DECLARE_SOA_COLUMN(XPvResidual, xPvResidual, float);
+DECLARE_SOA_COLUMN(YPvResidual, yPvResidual, float);
+DECLARE_SOA_COLUMN(ZPvResidual, zPvResidual, float);
+DECLARE_SOA_COLUMN(XPvPull, xPvPull, float);
+DECLARE_SOA_COLUMN(YPvPull, yPvPull, float);
+DECLARE_SOA_COLUMN(ZPvPull, zPvPull, float);
+DECLARE_SOA_COLUMN(XSvResidual, xSvResidual, float);
+DECLARE_SOA_COLUMN(YSvResidual, ySvResidual, float);
+DECLARE_SOA_COLUMN(ZSvResidual, zSvResidual, float);
+DECLARE_SOA_COLUMN(XSvPull, xSvPull, float);
+DECLARE_SOA_COLUMN(YSvPull, ySvPull, float);
+DECLARE_SOA_COLUMN(ZSvPull, zSvPull, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
@@ -298,25 +316,34 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::DcaXiDaughters,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec);
 
-DECLARE_SOA_TABLE(HfCandXicToXiPiPiDauInds, "AOD", "HFXICXI2PIDAUIN",
-                  full::XiId,
-                  full::Pi0Id,
-                  full::Pi1Id);
-
-DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullEvs, "AOD", "HFXICXI2PIFULEV",
-                  collision::BCId,
-                  collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ);
-
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
-                  collision::BCId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
+                  full::XPvGen,
+                  full::YPvGen,
+                  full::ZPvGen,
+                  full::XSvGen,
+                  full::YSvGen,
+                  full::ZSvGen,
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen);
+
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiResiduals, "AOD", "HFXICXI2PIRESID",
+                  full::PResidual,
+                  full::PtResidual,
+                  full::XPvResidual,
+                  full::YPvResidual,
+                  full::ZPvResidual,
+                  full::XPvPull,
+                  full::YPvPull,
+                  full::ZPvPull,
+                  full::XSvResidual,
+                  full::YSvResidual,
+                  full::ZSvResidual,
+                  full::XSvPull,
+                  full::YSvPull,
+                  full::ZSvPull);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -325,13 +352,12 @@ struct HfTreeCreatorXicToXiPiPi {
   Produces<o2::aod::HfCandXicToXiPiPiLiteKfs> rowCandidateLiteKf;
   Produces<o2::aod::HfCandXicToXiPiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfCandXicToXiPiPiFullKfs> rowCandidateFullKf;
-  Produces<o2::aod::HfCandXicToXiPiPiDauInds> rowCandidateDauIndices;
-  Produces<o2::aod::HfCandXicToXiPiPiFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXicToXiPiPiFullPs> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandXicToXiPiPiResiduals> rowCandidateResiduals;
 
   Configurable<int> selectionFlagXic{"selectionXic", 1, "Selection Flag for Xic"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-  Configurable<bool> fillCandidateDauIndexTable{"fillCandidateDauIndexTable", false, "Switch to fill table with Xic daughters track indices"};
+  Configurable<bool> fillResidualTable{"fillResidualTable", false, "Switch to fill table with residuals for MC candidates"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
@@ -346,6 +372,8 @@ struct HfTreeCreatorXicToXiPiPi {
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
 
+  Preslice<aod::McParticles> genParticlesPerCollision = aod::mcparticle::mcCollisionId;
+
   Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != int8_t(0);
   Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == int8_t(0);
   Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != int8_t(0);
@@ -353,26 +381,6 @@ struct HfTreeCreatorXicToXiPiPi {
 
   void init(InitContext const&)
   {
-  }
-
-  template <typename T>
-  void fillEvent(const T& collision)
-  {
-    rowCandidateFullEvents(
-      collision.bcId(),
-      collision.numContrib(),
-      collision.posX(),
-      collision.posY(),
-      collision.posZ());
-  }
-
-  template <typename T>
-  void fillIndexTable(const T& candidate)
-  {
-    rowCandidateDauIndices(
-      candidate.cascadeId(),
-      candidate.pi0Id(),
-      candidate.pi1Id());
   }
 
   template <bool doMc, bool doKf, typename T>
@@ -587,20 +595,9 @@ struct HfTreeCreatorXicToXiPiPi {
     }
   }
 
-  void processData(aod::Collisions const& collisions,
-                   SelectedCandidates const& candidates,
-                   TracksWPid const&)
+  void processData(SelectedCandidates const& candidates)
   {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision);
-    }
-
     // Filling candidate properties
-    if (fillCandidateDauIndexTable) {
-      rowCandidateDauIndices.reserve(candidates.size());
-    }
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     } else {
@@ -614,27 +611,13 @@ struct HfTreeCreatorXicToXiPiPi {
         }
       }
       fillCandidateTable<false, false>(candidate);
-      if (fillCandidateDauIndexTable) {
-        fillIndexTable(candidate);
-      }
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processData, "Process data", true);
 
-  void processDataKf(aod::Collisions const& collisions,
-                     SelectedCandidatesKf const& candidates,
-                     TracksWPid const&)
+  void processDataKf(SelectedCandidatesKf const& candidates)
   {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision);
-    }
-
     // Filling candidate properties
-    if (fillCandidateDauIndexTable) {
-      rowCandidateDauIndices.reserve(candidates.size());
-    }
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     } else {
@@ -648,30 +631,17 @@ struct HfTreeCreatorXicToXiPiPi {
         }
       }
       fillCandidateTable<false, true>(candidate);
-      if (fillCandidateDauIndexTable) {
-        fillIndexTable(candidate);
-      }
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataKf, "Process data with KF Particle reconstruction", false);
 
-  void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const&,
-                 SelectedCandidatesMc const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
-                 TracksWPid const&)
+  void processMc(SelectedCandidatesMc const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles)
   {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision);
-    }
+    std::vector<int> arrDaughIndex;
 
     // Filling candidate properties
     if (fillOnlySignal) {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recSig.size());
       } else {
@@ -679,14 +649,8 @@ struct HfTreeCreatorXicToXiPiPi {
       }
       for (const auto& candidate : recSig) {
         fillCandidateTable<true, false>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     } else if (fillOnlyBackground) {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recBg.size());
       } else {
@@ -698,14 +662,8 @@ struct HfTreeCreatorXicToXiPiPi {
           continue;
         }
         fillCandidateTable<true, false>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     } else {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(candidates.size());
       } else {
@@ -713,45 +671,101 @@ struct HfTreeCreatorXicToXiPiPi {
       }
       for (const auto& candidate : candidates) {
         fillCandidateTable<true, false>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
+        arrDaughIndex.clear();
+        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+        auto xicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+
         rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+          particle.vx(),
+          particle.vy(),
+          particle.vz(),
+          xicDaugh0.vx(),
+          xicDaugh0.vx(),
+          xicDaugh0.vz(),
           particle.flagMcMatchGen());
       }
+    }
+
+    if (fillResidualTable) {
+      rowCandidateResiduals.reserve(recSig.size());
+      for (const auto& candidate : recSig) {
+        auto thisCollId = candidate.collisionId();
+        auto groupedParticles = particles.sliceBy(genParticlesPerCollision, thisCollId);
+
+        for (const auto& particle : groupedParticles) {
+          std::array<float, 3> pvResiduals;
+          std::array<float, 3> svResiduals;
+          std::array<float, 3> pvPulls = {-999.9};
+          std::array<float, 3> svPulls = {-999.9};
+
+          arrDaughIndex.clear();
+          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+
+          if ((candidate.cascadeId() == arrDaughIndex[0] || candidate.cascadeId() == arrDaughIndex[1] || candidate.cascadeId() == arrDaughIndex[2]) && (candidate.pi0Id() == arrDaughIndex[0] || candidate.pi0Id() == arrDaughIndex[1] || candidate.pi0Id() == arrDaughIndex[2]) && (candidate.pi1Id() == arrDaughIndex[0] || candidate.pi1Id() == arrDaughIndex[1] || candidate.pi1Id() == arrDaughIndex[2])) {
+            auto xicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+
+            // residuals
+            float pResidual = candidate.p() - particle.p();
+            float ptResidual = candidate.pt() - particle.pt();
+            pvResiduals[0] = candidate.posX() - particle.vx();
+            pvResiduals[1] = candidate.posY() - particle.vy();
+            pvResiduals[2] = candidate.posZ() - particle.vz();
+            svResiduals[0] = candidate.xSecondaryVertex() - xicDaugh0.vx();
+            svResiduals[1] = candidate.ySecondaryVertex() - xicDaugh0.vy();
+            svResiduals[2] = candidate.zSecondaryVertex() - xicDaugh0.vz();
+            // pulls
+            try {
+              pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
+              pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
+              pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
+              svPulls[0] = svResiduals[0] / candidate.xSvErr();
+              svPulls[1] = svResiduals[1] / candidate.ySvErr();
+              svPulls[2] = svResiduals[2] / candidate.zSvErr();
+            } catch (const std::runtime_error& error) {
+              LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -999.9.";
+            }
+
+            // fill table
+            rowCandidateResiduals(
+              pResidual,
+              ptResidual,
+              pvResiduals[0],
+              pvResiduals[1],
+              pvResiduals[2],
+              pvPulls[0],
+              pvPulls[1],
+              pvPulls[2],
+              svResiduals[0],
+              svResiduals[1],
+              svResiduals[2],
+              svPulls[0],
+              svPulls[1],
+              svPulls[2]);
+          }
+        } // loop over generated particles
+      } // loop over reconstructed candidates
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMc, "Process MC", false);
 
-  void processMcKf(aod::Collisions const& collisions,
-                   aod::McCollisions const&,
-                   SelectedCandidatesKfMc const& candidates,
-                   soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
-                   TracksWPid const&)
+  void processMcKf(SelectedCandidatesKfMc const& candidates,
+                   soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles)
   {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision);
-    }
+    std::vector<int> arrDaughIndex;
 
     // Filling candidate properties
     if (fillOnlySignal) {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recSigKf.size());
       } else {
@@ -759,14 +773,8 @@ struct HfTreeCreatorXicToXiPiPi {
       }
       for (const auto& candidate : recSigKf) {
         fillCandidateTable<true, true>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     } else if (fillOnlyBackground) {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recBgKf.size());
       } else {
@@ -778,14 +786,8 @@ struct HfTreeCreatorXicToXiPiPi {
           continue;
         }
         fillCandidateTable<true, true>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     } else {
-      if (fillCandidateDauIndexTable) {
-        rowCandidateDauIndices.reserve(candidates.size());
-      }
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(candidates.size());
       } else {
@@ -793,24 +795,90 @@ struct HfTreeCreatorXicToXiPiPi {
       }
       for (const auto& candidate : candidates) {
         fillCandidateTable<true, true>(candidate);
-        if (fillCandidateDauIndexTable) {
-          fillIndexTable(candidate);
-        }
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
+        arrDaughIndex.clear();
+        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+        auto xicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+
         rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+          particle.vx(),
+          particle.vy(),
+          particle.vz(),
+          xicDaugh0.vx(),
+          xicDaugh0.vx(),
+          xicDaugh0.vz(),
           particle.flagMcMatchGen());
       }
+    }
+
+    if (fillResidualTable) {
+      rowCandidateResiduals.reserve(recSigKf.size());
+      for (const auto& candidate : recSigKf) {
+        auto thisCollId = candidate.collisionId();
+        auto groupedParticles = particles.sliceBy(genParticlesPerCollision, thisCollId);
+
+        for (const auto& particle : groupedParticles) {
+          std::array<float, 3> pvResiduals;
+          std::array<float, 3> svResiduals;
+          std::array<float, 3> pvPulls = {-999.9};
+          std::array<float, 3> svPulls = {-999.9};
+
+          arrDaughIndex.clear();
+          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+
+          if ((candidate.cascadeId() == arrDaughIndex[0] || candidate.cascadeId() == arrDaughIndex[1] || candidate.cascadeId() == arrDaughIndex[2]) && (candidate.pi0Id() == arrDaughIndex[0] || candidate.pi0Id() == arrDaughIndex[1] || candidate.pi0Id() == arrDaughIndex[2]) && (candidate.pi1Id() == arrDaughIndex[0] || candidate.pi1Id() == arrDaughIndex[1] || candidate.pi1Id() == arrDaughIndex[2])) {
+            auto xicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+
+            // residuals
+            float pResidual = candidate.p() - particle.p();
+            float ptResidual = candidate.pt() - particle.pt();
+            pvResiduals[0] = candidate.posX() - particle.vx();
+            pvResiduals[1] = candidate.posY() - particle.vy();
+            pvResiduals[2] = candidate.posZ() - particle.vz();
+            svResiduals[0] = candidate.xSecondaryVertex() - xicDaugh0.vx();
+            svResiduals[1] = candidate.ySecondaryVertex() - xicDaugh0.vy();
+            svResiduals[2] = candidate.zSecondaryVertex() - xicDaugh0.vz();
+            // pulls
+            try {
+              pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
+              pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
+              pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
+              svPulls[0] = svResiduals[0] / candidate.xSvErr();
+              svPulls[1] = svResiduals[1] / candidate.ySvErr();
+              svPulls[2] = svResiduals[2] / candidate.zSvErr();
+            } catch (const std::runtime_error& error) {
+              LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -999.9.";
+            }
+
+            // fill table
+            rowCandidateResiduals(
+              pResidual,
+              ptResidual,
+              pvResiduals[0],
+              pvResiduals[1],
+              pvResiduals[2],
+              pvPulls[0],
+              pvPulls[1],
+              pvPulls[2],
+              svResiduals[0],
+              svResiduals[1],
+              svResiduals[2],
+              svPulls[0],
+              svPulls[1],
+              svPulls[2]);
+          }
+        } // loop over generated particles
+      } // loop over reconstructed candidates
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMcKf, "Process MC with KF Particle reconstruction", false);
