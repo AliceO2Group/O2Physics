@@ -244,7 +244,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
                            });
 } // namespace emmcparticle
 
-// This table contains all MC truth tracks (both v0 and calos)
+// This table contains all MC truth tracks
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMMCEventId,
                        mcparticle::PdgCode, mcparticle::Flags,
@@ -264,6 +264,31 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using EMMCParticle = EMMCParticles::iterator;
+
+namespace emmcgenvectormeson
+{
+DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emmcevent);
+DECLARE_SOA_COLUMN(DownScalingFactor, dsf, float); //! down scaling factor to store this mc particle in reduced AO2D.root
+} // namespace emmcgenvectormeson
+
+DECLARE_SOA_TABLE_FULL(EMMCGenVectorMesons, "EMMCGenVectorMesons", "AOD", "EMMCGENVM", //!  generated omega, phi information
+                       o2::soa::Index<>, emmcgenvectormeson::EMMCEventId,
+                       mcparticle::PdgCode, mcparticle::Flags,
+                       mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
+                       emmcgenvectormeson::DownScalingFactor,
+
+                       // dynamic column
+                       emmcparticle::Pt<mcparticle::Px, mcparticle::Py>,
+                       emmcparticle::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                       emmcparticle::Phi<mcparticle::Px, mcparticle::Py>,
+
+                       emmcparticle::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                       emmcparticle::Y<mcparticle::Pz, mcparticle::E>,
+                       mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                       mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                       mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
+
+using EMMCGenVectorMeson = EMMCGenVectorMesons::iterator;
 
 namespace smearedtrack
 {
@@ -330,6 +355,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, [](float tgl) -> float { return M_PI_2 - std::atan(tgl); });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -399,6 +425,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   emprimaryelectron::Px<track::Pt, track::Phi>,
                   emprimaryelectron::Py<track::Pt, track::Phi>,
                   emprimaryelectron::Pz<track::Pt, track::Eta>,
+                  emprimaryelectron::Theta<track::Tgl>,
                   emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                   emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
@@ -451,6 +478,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, [](float tgl) -> float { return M_PI_2 - std::atan(tgl); });
 DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY, [](float dcaX, float dcaY) -> float { return std::sqrt(dcaX * dcaX + dcaY * dcaY); });
 DECLARE_SOA_DYNAMIC_COLUMN(NClustersMFT, nClustersMFT, //! Number of MFT clusters
                            [](uint64_t mftClusterSizesAndTrackFlags) -> uint8_t {
@@ -495,6 +523,7 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
                   emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
                   emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>,
+                  emprimarymuon::Theta<fwdtrack::Tgl>,
                   emprimarymuon::DcaXY<fwdtrack::FwdDcaX, fwdtrack::FwdDcaY>);
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;

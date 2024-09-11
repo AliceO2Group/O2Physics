@@ -840,7 +840,7 @@ inline bool matchTrackType(TrackObject const& track)
           }
         };
         auto checkDcaZcut = [&](auto const& track) {
-          return ((maxDcaZPtDep) ? abs(track.dcaZ()) <= maxDcaZPtDep(track.pt()) : true);
+          return ((maxDcaZPtDep) ? std::fabs(track.dcaZ()) <= maxDcaZPtDep(track.pt()) : true);
         };
 
         /* tight pT dependent DCAz cut */

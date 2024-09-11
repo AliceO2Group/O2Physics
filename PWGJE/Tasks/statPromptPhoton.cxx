@@ -136,6 +136,7 @@ struct statPromptPhoton {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
   template <typename Tracks, typename Trigger>
+
   double GetPtHadSum(const Tracks& tracks, const Trigger& trigger, double MinR, double MaxR, bool IsStern, bool IsParticle, bool DodR)
   {
     double eta_trigger, phi_trigger;

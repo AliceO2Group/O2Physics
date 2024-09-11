@@ -184,24 +184,24 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fill_mult_NumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                        int maxl, int multval, float ktval)
+                        int maxl, int multval, float ktval, bool isiden)
   {
     int multbinval;
     int absmultval = multval;
 
-    if ((absmultval > CentMultBins[0]) && (absmultval <= CentMultBins[1])) {
+    if ((absmultval >= CentMultBins[0]) && (absmultval < CentMultBins[1])) {
       multbinval = 0;
-    } else if (absmultval <= CentMultBins[2]) {
+    } else if (absmultval < CentMultBins[2]) {
       multbinval = 1;
-    } else if (absmultval <= CentMultBins[3]) {
+    } else if (absmultval < CentMultBins[3]) {
       multbinval = 2;
-    } else if (ktval <= CentMultBins[4]) {
+    } else if (ktval < CentMultBins[4]) {
       multbinval = 3;
     } else {
       return;
     }
     // std::cout<<"multbinval "<<multbinval<<std::endl;
-    fill_kT_NumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval);
+    fill_kT_NumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval, isiden);
   }
 
   /// Templated function to access different kT directory and call AddEventPair
@@ -213,21 +213,21 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fill_kT_NumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                      int maxl, int multval, float ktval)
+                      int maxl, int multval, float ktval, bool isiden)
   {
     int ktbinval = -1;
-    if ((ktval > KtBins[0]) && (ktval <= KtBins[1])) {
+    if ((ktval >= KtBins[0]) && (ktval < KtBins[1])) {
       ktbinval = 0;
-    } else if (ktval <= KtBins[2]) {
+    } else if (ktval < KtBins[2]) {
       ktbinval = 1;
-    } else if (ktval <= KtBins[3]) {
+    } else if (ktval < KtBins[3]) {
       ktbinval = 2;
-    } else if (ktval <= KtBins[4]) {
+    } else if (ktval < KtBins[4]) {
       ktbinval = 3;
     } else {
       return;
     }
-    AddEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval);
+    AddEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval, isiden);
   }
 
   /// Set the PDG codes of the two particles involved
@@ -262,14 +262,14 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void AddEventPair(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int /*maxl*/, int multval, int ktval)
+                    int /*maxl*/, int multval, int ktval, bool isiden)
   {
     int fMultBin = multval;
     int fKtBin = ktval;
     std::vector<std::complex<double>> fYlmBuffer(fMaxJM);
     std::vector<double> f3d;
-    f3d = FemtoUniverseMath::getpairmom3d(part1, mMassOne, part2, mMassTwo,
-                                          true, true);
+    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo,
+                                         isiden);
 
     const float qout = f3d[1];
     const float qside = f3d[2];

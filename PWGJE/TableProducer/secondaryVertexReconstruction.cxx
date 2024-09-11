@@ -163,7 +163,12 @@ struct SecondaryVertexReconstruction {
 
       // Reconstruct the secondary vertex
       int processResult = 0;
-      std::apply([&df, &processResult](const auto&... elems) { processResult = df.process(elems...); }, trackParVars);
+      try {
+        std::apply([&df, &processResult](const auto&... elems) { processResult = df.process(elems...); }, trackParVars);
+      } catch (const std::runtime_error& error) {
+        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
+        return;
+      }
       if (processResult == 0) {
         return;
       }

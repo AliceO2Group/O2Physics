@@ -1050,15 +1050,8 @@ struct QaEfficiency {
       }
       if (doPtRadius) {
         hPtRadiusItsTpc[histogramIndex]->Fill(mcParticle.pt(), radius);
-        hPtRadiusItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
-        hPtRadiusItsTpcStr[histogramIndex]->Fill(mcParticle.pt(), radius);
-        hPtRadiusItsTpcTer[histogramIndex]->Fill(mcParticle.pt(), radius);
-
         if (passedTOF) {
           hPtRadiusItsTpcTof[histogramIndex]->Fill(mcParticle.pt(), radius);
-          hPtRadiusItsTpcTofPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
-          hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
-          hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
         }
       }
     }
@@ -1098,6 +1091,12 @@ struct QaEfficiency {
           hEtaItsTpcTofPrm[histogramIndex]->Fill(mcParticle.eta());
           hPhiItsTpcTofPrm[histogramIndex]->Fill(mcParticle.phi());
         }
+        if (doPtRadius) {
+          hPtRadiusItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
+          if (passedTOF) {
+            hPtRadiusItsTpcTofPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
+          }
+        }
       }
     } else if (mcParticle.getProcess() == 4) { // Particle decay
       // Checking mothers
@@ -1123,6 +1122,12 @@ struct QaEfficiency {
         if (passedTOF) {
           hPtItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt());
         }
+        if (doPtRadius) {
+          hPtRadiusItsTpcStr[histogramIndex]->Fill(mcParticle.pt(), radius);
+          if (passedTOF) {
+            hPtRadiusItsTpcTofStr[histogramIndex]->Fill(mcParticle.pt(), radius);
+          }
+        }
       }
       if (isFinal(mcParticle)) {
         if (passedITS && passedTPC && motherIsAccepted) {
@@ -1130,6 +1135,12 @@ struct QaEfficiency {
           hPtTrkItsTpcTer[histogramIndex]->Fill(track.pt());
           if (passedTOF) {
             hPtItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt());
+          }
+          if (doPtRadius) {
+            hPtRadiusItsTpcTer[histogramIndex]->Fill(mcParticle.pt(), radius);
+            if (passedTOF) {
+              hPtRadiusItsTpcTofTer[histogramIndex]->Fill(mcParticle.pt(), radius);
+            }
           }
         }
       }
@@ -1184,6 +1195,9 @@ struct QaEfficiency {
       hPtGeneratedPrm[histogramIndex]->Fill(mcParticle.pt());
       hEtaGeneratedPrm[histogramIndex]->Fill(mcParticle.eta());
       hPhiGeneratedPrm[histogramIndex]->Fill(mcParticle.phi());
+      if (doPtRadius) {
+        hPtRadiusGeneratedPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
+      }
     } else {
       if (mcParticle.getProcess() == 4) { // Particle decay
         // Checking mothers
@@ -1205,8 +1219,14 @@ struct QaEfficiency {
         }
         if (motherIsAccepted) {
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
+          if (doPtRadius) {
+            hPtRadiusGeneratedStr[histogramIndex]->Fill(mcParticle.pt(), radius);
+          }
           if (isFinal(mcParticle)) {
             hPtGeneratedTer[histogramIndex]->Fill(mcParticle.pt());
+            if (doPtRadius) {
+              hPtRadiusGeneratedTer[histogramIndex]->Fill(mcParticle.pt(), radius);
+            }
           }
         }
       } else { // Material
@@ -1221,9 +1241,6 @@ struct QaEfficiency {
     }
     if (doPtRadius) {
       hPtRadiusGenerated[histogramIndex]->Fill(mcParticle.pt(), radius);
-      hPtRadiusGeneratedPrm[histogramIndex]->Fill(mcParticle.pt(), radius);
-      hPtRadiusGeneratedStr[histogramIndex]->Fill(mcParticle.pt(), radius);
-      hPtRadiusGeneratedTer[histogramIndex]->Fill(mcParticle.pt(), radius);
     }
   }
 

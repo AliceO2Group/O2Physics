@@ -341,7 +341,7 @@ struct EMEventPropertyTask {
   } spherocity_cuts;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     if (fillQAHistogram) {
       fRegistry.add("Spherocity/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{200, 0.0f, 10}}, false);
