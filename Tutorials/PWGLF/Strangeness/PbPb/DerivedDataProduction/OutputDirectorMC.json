@@ -1,0 +1,136 @@
+{ "OutputDirector": {
+  "debug_mode": true,
+  "resfile": "AO2D",
+  "OutputDescriptors": [
+    {
+      "table": "AOD/DAUTRACKTPCPID/0"
+    },
+    {
+      "table": "AOD/V0COLLREF/0"
+    },
+    {
+      "table": "AOD/STRACENTS/0"
+    },
+    {
+      "table": "AOD/CASCCOLLREF/0"
+    },
+    {
+      "table": "AOD/CASCEXTRA/0"
+    },
+    {
+      "table": "AOD/STRACOLLISION/0"
+    },
+    {
+      "table": "AOD/V0EXTRA/0"
+    },
+    {
+      "table": "AOD/CASCMCMOTHER/0"
+    },
+    {
+      "table": "AOD/V0MCMOTHER/0"
+    },
+    {
+      "table": "AOD/GeXiMinus/0"
+    },
+    {
+      "table": "AOD/GeXiPlus/0"
+    },
+    {
+      "table": "AOD/STRAEVSELS/1"
+    },
+    {
+      "table": "AOD/MOTHERMCPARTS/0"
+    },
+    {
+      "table": "AOD/CASCTOTRAREFS/0"
+    },
+    {
+      "table": "AOD/TRATOCASCREFS/0"
+    },
+    {
+      "table": "AOD/STRATRACKEXTRAS/0"
+    },
+    {
+      "table": "AOD/CascTOF/0"
+    },
+    {
+      "table": "AOD/TRACASCCOLLREF/0"
+    },
+    {
+      "table": "AOD/STRASTAMPS/0"
+    },
+    {
+      "table": "AOD/V0TOF/0"
+    },
+    {
+      "table": "AOD/GeAntiLambda/0"
+    },
+    {
+      "table": "AOD/STRAEVSELS/0"
+    },
+    {
+      "table": "AOD/MOTHERMCPART/0"
+    },
+    {
+      "table": "AOD/GeK0Short/0"
+    },
+    {
+      "table": "AOD/GeLambda/0"
+    },
+    {
+      "table": "AOD/GeOmegaMinus/0"
+    },
+    {
+      "table": "AOD/GeOmegaPlus/0"
+    },
+    {
+      "table": "AOD/STRACOLLLABELS/0"
+    },
+    {
+      "table": "AOD/STRAMCCOLLISION/0"
+    },
+    {
+      "table": "AOD/STRAMCCOLLMULTS/0"
+    },
+    {
+      "table": "AOD/DAUTRACKTOFPID/0"
+    },
+    {
+      "table": "AOD/DAUTRACKEXTRA/1"
+    },
+    {
+      "table": "AOD/DAUTRACKMCID/0"
+    },
+    {
+      "table": "AOD/V0CORE/0"
+    },
+    {
+      "table": "AOD/CASCBB/0"
+    },
+    {
+      "table": "AOD/CASCCORE/0"
+    },
+    {
+      "table": "AOD/TRACASCCORE/0"
+    },
+    {
+      "table": "AOD/CASCMCCORE/0"
+    },
+    {
+      "table": "AOD/CASCCOREMCLABEL/0"
+    },
+    {
+      "table": "AOD/CASCMCCOLLREF/0"
+    },
+    {
+      "table": "AOD/V0COREMCLABEL/0"
+    },
+    {
+      "table": "AOD/V0MCCOLLREF/0"
+    },
+    {
+      "table": "AOD/V0MCCORE/2"
+    }
+  ],
+  "ntfmerge": 1
+} }
