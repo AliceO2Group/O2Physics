@@ -487,7 +487,7 @@ struct ebyeMaker {
     if (doprocessRun3) {
       histos.add<TH2>("QA/PvMultVsCent", ";Centrality T0C (%);#it{N}_{PV contributors};", HistType::kTH2F, {centAxis, multAxis});
       histos.add<TH2>("QA/MultVsCent", ";Centrality T0C (%);Multiplicity T0C;", HistType::kTH2F, {centAxis, multFt0Axis});
-    } else if (doprocessRun2 || doprocessMiniRun2) {
+    } else if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
       histos.add<TH2>("QA/V0MvsCL0", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, centAxis});
       histos.add<TH2>("QA/trackletsVsV0M", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, multAxis});
       histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| > 0.6; Tracklets |#eta| < 0.6", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
@@ -611,8 +611,10 @@ struct ebyeMaker {
         }
       }
     }
-    histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
-    nTrackletsColl = nTracklets[1];
+    if (doprocessRun2 || doprocessMcRun2 || doprocessMiniRun2 || doprocessMiniMcRun2) {
+      histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
+      nTrackletsColl = nTracklets[1];
+    }
 
     if (lambdaPtMax > lambdaPtMin) {
       std::vector<int64_t> trkId;
@@ -1230,12 +1232,15 @@ struct ebyeMaker {
       miniCollTable(std::abs(collision.posZ()), 0x0, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
-        auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-        float outerPID = getOuterPID(tk);
-        candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-        int selMask = getTrackSelMask(candidateTrack);
-        if (candidateTrack.outerPID < -4)
-          continue;
+        int selMask = -1;
+        if (candidateTrack.isreco) {
+          auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
+          float outerPID = getOuterPID(tk);
+          candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
+          selMask = getTrackSelMask(candidateTrack);
+          // if (candidateTrack.outerPID < -4)
+          //   continue;
+        }
         mcMiniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,

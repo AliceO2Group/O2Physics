@@ -68,6 +68,8 @@ struct strangeness_tutorial {
   Configurable<bool> correlation2Dhist{"correlation2Dhist", true, "Lamda K0 mass correlation"};
   Configurable<bool> DCAv0topv{"DCAv0topv", false, "DCA V0 to PV"};
   Configurable<bool> armcut{"armcut", true, "arm cut"};
+  Configurable<bool> globalTracks{"globalTracks", false, "Global tracks"};
+  Configurable<bool> hasTPC{"hasTPC", false, "TPC"};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -285,26 +287,27 @@ struct strangeness_tutorial {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 2.5);
+
     if (!collision.sel8()) {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 3.5);
+
     if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 4.5);
+
     if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 5.5);
+
     if (itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 6.5);
-    // if (collision.alias_bit(kTVXinTRD)) {
-    //   // TRD triggered
-    //   // return 0;
-    // }
+
     auto multNTracksPV = collision.multNTracksPV();
     if (additionalEvsel && multNTracksPV < fMultPVCutLow->Eval(multiplicity)) {
       return false;
@@ -314,12 +317,7 @@ struct strangeness_tutorial {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 8.5);
-    // if (multTrk < fMultCutLow->Eval(multiplicity))
-    //  return 0;
-    // if (multTrk > fMultCutHigh->Eval(multiplicity))
-    //  return 0;
-    // if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-    //  return 0;
+
     return true;
   }
 
@@ -368,7 +366,6 @@ struct strangeness_tutorial {
     if (DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
-
     hglue.fill(HIST("htrackscheck_v0"), 1.5);
     if (correlation2Dhist)
       rKzeroShort.fill(HIST("mass_lambda_kshort_after1"), candidate.mK0Short(), candidate.mLambda());
@@ -376,13 +373,9 @@ struct strangeness_tutorial {
     if (rapidityks && TMath::Abs(candidate.yK0Short()) >= ConfKsrapidity) {
       return false;
     }
-
     hglue.fill(HIST("htrackscheck_v0"), 2.5);
-    rKzeroShort.fill(HIST("mass_lambda_kshort_after2"), candidate.mK0Short(), candidate.mLambda());
-
-    // if (isStandarv0 && candidate.isStandardV0 == 0) {
-    //   return false;
-    // }
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after2"), candidate.mK0Short(), candidate.mLambda());
 
     if (pT < ConfV0PtMin) {
       return false;
@@ -454,64 +447,59 @@ struct strangeness_tutorial {
   template <typename T, typename V0s>
   bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0Daughter, V0s const& /*candidate*/)
   {
-    //  if (QAv0_daughters) {
-    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_pt"), track.pt()) : rKzeroShort.fill(HIST("positive_pt"), track.pt());
-    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_eta"), track.eta()) : rKzeroShort.fill(HIST("positive_eta"), track.eta());
-    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_phi"), track.phi()) : rKzeroShort.fill(HIST("positive_phi"), track.phi());
-    //   }
     if (QAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
-      // tpcInnerParam is the momentum at the inner wall of TPC. So momentum of tpc vs nsigma of tpc is plotted.
-      // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
-      // }
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
       rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.p(), track.tpcSignal());
     }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
-    // const auto dcaXY = track.dcaXY(); // for this we need TrackDCA table
     const auto sign = track.sign();
+
     hglue.fill(HIST("htrackscheck_v0_daughters"), 0.5);
-    if (!track.hasTPC())
+
+    if (hasTPC && !track.hasTPC())
       return false;
     hglue.fill(HIST("htrackscheck_v0_daughters"), 1.5);
-    if (track.tpcNClsCrossedRows() < tpcCrossedrows)
-      return false;
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 2.5);
-    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedrowsOverfcls)
-      return false;
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 3.5);
+
+    if (!globalTracks) {
+      if (track.tpcNClsCrossedRows() < tpcCrossedrows)
+        return false;
+      hglue.fill(HIST("htrackscheck_v0_daughters"), 2.5);
+
+      if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedrowsOverfcls)
+        return false;
+      hglue.fill(HIST("htrackscheck_v0_daughters"), 3.5);
+
+      if (tpcNClsF < ConfDaughTPCnclsMin) {
+        return false;
+      }
+      hglue.fill(HIST("htrackscheck_v0_daughters"), 4.5);
+    } else {
+      if (!track.isGlobalTrack())
+        return false;
+      hglue.fill(HIST("htrackscheck_v0_daughters"), 4.5);
+    }
 
     if (charge < 0 && sign > 0) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 4.5);
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 5.5);
+
     if (charge > 0 && sign < 0) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 5.5);
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 6.5);
+
     if (std::abs(eta) > ConfDaughEta) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 6.5);
-    if (tpcNClsF < ConfDaughTPCnclsMin) {
-      return false;
-    }
     hglue.fill(HIST("htrackscheck_v0_daughters"), 7.5);
-    // if (std::abs(dcaXY) < ConfDaughDCAMin) {
-    //   return false;
-    // }
-    // v0 PID selection
+
     if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0_daughters"), 8.5);
-
-    // if (QAPID) {
-    //   // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
-    //   (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
-    //   // }
-    // }
 
     return true;
   }

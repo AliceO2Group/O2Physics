@@ -151,7 +151,7 @@ namespace mult
 DECLARE_SOA_INDEX_COLUMN(MultMCExtra, multMCExtra);
 }
 
-DECLARE_SOA_TABLE(MC2Mults, "AOD", "MC2MULTS", //! Relate BC -> mult
+DECLARE_SOA_TABLE(Mult2MCExtras, "AOD", "Mult2MCEXTRA", //! Relate reco mult entry to MC extras entry
                   o2::soa::Index<>, mult::MultMCExtraId);
 
 namespace multZeq
