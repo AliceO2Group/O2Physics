@@ -66,7 +66,8 @@ struct TOFCalibConfig {
     mUrl = opt.cfgUrl.value;
     mPathGrpLhcIf = opt.cfgPathGrpLhcIf.value;
     mTimestamp = opt.cfgTimestamp.value;
-    mTimeShiftCCDBPath = opt.cfgTimeShiftCCDBPath.value;
+    mTimeShiftCCDBPathPos = opt.cfgTimeShiftCCDBPathPos.value;
+    mTimeShiftCCDBPathNeg = opt.cfgTimeShiftCCDBPathNeg.value;
     mParamFileName = opt.cfgParamFileName.value;
     mParametrizationPath = opt.cfgParametrizationPath.value;
     mReconstructionPass = opt.cfgReconstructionPass.value;
@@ -91,7 +92,8 @@ struct TOFCalibConfig {
     getCfg(initContext, "ccdb-url", mUrl, task);
     getCfg(initContext, "ccdb-path-grplhcif", mPathGrpLhcIf, task);
     getCfg(initContext, "ccdb-timestamp", mTimestamp, task);
-    getCfg(initContext, "timeShiftCCDBPath", mTimeShiftCCDBPath, task);
+    getCfg(initContext, "timeShiftCCDBPathPos", mTimeShiftCCDBPathPos, task);
+    getCfg(initContext, "timeShiftCCDBPathNeg", mTimeShiftCCDBPathPos, task);
     getCfg(initContext, "paramFileName", mParamFileName, task);
     getCfg(initContext, "parametrizationPath", mParametrizationPath, task);
     getCfg(initContext, "reconstructionPass", mReconstructionPass, task);
@@ -166,19 +168,29 @@ struct TOFCalibConfig {
     mRespParamsV3.print();
 
     // Loading additional calibration objects
-    if (mTimeShiftCCDBPath != "") {
-      if (mTimeShiftCCDBPath.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPath, "ccdb_object", true);
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPath, "ccdb_object", false);
+    if (mTimeShiftCCDBPathPos != "") {
+      if (mTimeShiftCCDBPathPos.find(".root") != std::string::npos) {
+        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathPos, "ccdb_object", true);
       } else {
         if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(Form("%s/pos", mTimeShiftCCDBPath.c_str()), mTimestamp), true);
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(Form("%s/neg", mTimeShiftCCDBPath.c_str()), mTimestamp), false);
+          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathPos, mTimestamp), true);
         } else {
           std::map<std::string, std::string> metadata;
           metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(Form("%s/pos", mTimeShiftCCDBPath.c_str()), mTimestamp, metadata), true);
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(Form("%s/neg", mTimeShiftCCDBPath.c_str()), mTimestamp, metadata), false);
+          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathPos, mTimestamp, metadata), true);
+        }
+      }
+    }
+    if (mTimeShiftCCDBPathNeg != "") {
+      if (mTimeShiftCCDBPathNeg.find(".root") != std::string::npos) {
+        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathNeg, "ccdb_object", false);
+      } else {
+        if (mReconstructionPass == "") {
+          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp), false);
+        } else {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = mReconstructionPass;
+          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp, metadata), false);
         }
       }
     }
@@ -231,7 +243,8 @@ struct TOFCalibConfig {
   std::string mUrl;
   std::string mPathGrpLhcIf;
   int64_t mTimestamp;
-  std::string mTimeShiftCCDBPath;
+  std::string mTimeShiftCCDBPathPos;
+  std::string mTimeShiftCCDBPathNeg;
   std::string mParamFileName;
   std::string mParametrizationPath;
   std::string mReconstructionPass;
@@ -271,7 +284,8 @@ struct tofSignal {
     Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
     Configurable<int64_t> cfgTimestamp{"ccdb-timestamp", -1, "timestamp of the object"};
-    Configurable<std::string> cfgTimeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+    Configurable<std::string> cfgTimeShiftCCDBPathPos{"timeShiftCCDBPathPos", "", "Path of the TOF time shift vs eta for pos. tracks. If empty none is taken"};
+    Configurable<std::string> cfgTimeShiftCCDBPathNeg{"timeShiftCCDBPathNeg", "", "Path of the TOF time shift vs eta for neg. tracks. If empty none is taken"};
     Configurable<std::string> cfgParamFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
     Configurable<std::string> cfgParametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
     Configurable<std::string> cfgReconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
