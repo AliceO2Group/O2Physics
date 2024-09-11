@@ -45,7 +45,10 @@ struct JetTaggerHFTask {
   Configurable<float> trackDcaZMax{"trackDcaZMax", 2, "minimum DCA z acceptance for tracks [cm]"};
   Configurable<float> prongsigmaLxyMax{"prongsigmaLxyMax", 100, "maximum sigma of decay length of prongs on xy plane"};
   Configurable<float> prongsigmaLxyzMax{"prongsigmaLxyzMax", 100, "maximum sigma of decay length of prongs on xyz plane"};
-  Configurable<float> prongChi2PCAMax{"prongChi2PCAMax", 10, "maximum Chi2 PCA of decay length of prongs"};
+  Configurable<float> prongIPxyMin{"prongIPxyMin", 0.008, "maximum impact paramter of prongs on xy plane [cm]"};
+  Configurable<float> prongIPxyMax{"prongIpxyMax", 1, "minimum impact parmeter of prongs on xy plane [cm]"};
+  Configurable<float> prongChi2PCAMin{"prongChi2PCAMin", 4, "minimum Chi2 PCA of decay length of prongs"};
+  Configurable<float> prongChi2PCAMax{"prongChi2PCAMax", 100, "maximum Chi2 PCA of decay length of prongs"};
 
   // jet flavour definition
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
@@ -267,9 +270,9 @@ struct JetTaggerHFTask {
       if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
         flagtaggedjetIP = true;
       if (!useXYZForTagging) {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMax, prongsigmaLxyMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, useXYZForTagging, tagPointForSV);
       } else {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMax, prongsigmaLxyzMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, useXYZForTagging, tagPointForSV);
       }
       taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
@@ -320,9 +323,9 @@ struct JetTaggerHFTask {
       if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
         flagtaggedjetIP = true;
       if (!useXYZForTagging) {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMax, prongsigmaLxyMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, useXYZForTagging, tagPointForSV);
       } else {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMax, prongsigmaLxyzMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, useXYZForTagging, tagPointForSV);
       }
       taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
