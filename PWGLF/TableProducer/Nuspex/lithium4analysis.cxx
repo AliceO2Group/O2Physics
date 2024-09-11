@@ -46,6 +46,9 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
 
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
@@ -158,6 +161,15 @@ struct lithium4analysis {
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> setting_enableBkgUS{"setting_enableBkgUS", false, "Enable US background"};
   Configurable<bool> setting_isMC{"setting_isMC", false, "Run MC"};
+  Configurable<bool> setting_skimmedProcessing{"setting_skimmedProcessing", false, "Skimmed dataset processing"};
+
+  // CCDB options
+  Configurable<std::string> setting_ccdburl{"setting_ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> setting_grpPath{"setting_grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> setting_grpmagPath{"setting_grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> setting_lutPath{"setting_lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> setting_geoPath{"setting_geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> setting_pidPath{"setting_pidPath", "", "Path to the PID response object"};
 
   Configurable<LabeledArray<double>> setting_BetheBlochParams{"setting_BetheBlochParams", {betheBlochDefault[0], 1, 6, {"He3"}, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   Configurable<bool> setting_compensatePIDinTracking{"setting_compensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
@@ -190,27 +202,41 @@ struct lithium4analysis {
   std::vector<bool> m_goodCollisions;
   std::vector<SVCand> m_trackPairs;
 
-  HistogramRegistry m_hAnalysis{
-    "histos",
-    {{"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
-     {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
-     {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-     {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-     {"hLitInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
-     {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
-     {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
-     {"h2dEdxHe3candidates", "dEdx distribution; Signed #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-     {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}({}^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
-     {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}}},
+  int m_runNumber;
+  Service<o2::ccdb::BasicCCDBManager> m_ccdb;
+  Zorro m_zorro;
+  OutputObj<ZorroSummary> m_zorroSummary{"zorroSummary"};
+
+  HistogramRegistry m_qaRegistry{
+    "QA",
+    {
+      {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
+      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
+      {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
+      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}} {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}} {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"hLitInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
+      {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
+      {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
+      {"h2dEdxHe3candidates", "dEdx distribution; Signed #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+      {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}({}^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+    },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
     true};
 
   void init(o2::framework::InitContext&)
   {
+    m_zorroSummary.setObject(m_zorro.getZorroSummary());
+    m_runNumber = 0;
+
+    m_ccdb->setURL(setting_ccdburl);
+    m_ccdb->setCaching(true);
+    m_ccdb->setLocalObjectValidityChecking();
+    m_ccdb->setFatalWhenNull(false);
+
     for (int i = 0; i < 5; i++) {
       m_BBparamsHe[i] = setting_BetheBlochParams->get("He3", Form("p%i", i));
     }
@@ -218,7 +244,23 @@ struct lithium4analysis {
 
     std::vector<std::string> selection_labels = {"All", "Track selection", "PID {}^{3}He"};
     for (int i = 0; i < Selections::kAll; i++) {
-      m_hAnalysis.get<TH1>(HIST("hTrackSel"))->GetXaxis()->SetBinLabel(i + 1, selection_labels[i].c_str());
+      m_qaRegistry.get<TH1>(HIST("hTrackSel"))->GetXaxis()->SetBinLabel(i + 1, selection_labels[i].c_str());
+    }
+
+    std::vector<std::string> events_labels = {"All", "Selected", "Zorro He events"};
+    for (int i = 0; i < Selections::kAll; i++) {
+      m_qaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(i + 1, events_labels[i].c_str());
+    }
+  }
+
+  void initCCDB(const aod::BCsWithTimestamps& bc)
+  {
+    if (m_runNumber == bc.runNumber()) {
+      return;
+    }
+    if (setting_skimmedProcessing) {
+      m_zorro.initCCDB(m_ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
+      m_zorro.populateHistRegistry(m_qaRegistry, bc.runNumber());
     }
   }
 
@@ -239,8 +281,16 @@ struct lithium4analysis {
           continue;
         }
       }
-      m_hAnalysis.fill(HIST("hVtxZ"), collision.posZ());
-      m_hAnalysis.fill(HIST("hNcontributor"), collision.numContrib());
+
+      if (setting_skimmedProcessing) {
+        bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
+        if (zorroSelected) {
+          m_qaRegistry.fill(HIST("hEvents"), 2);
+        }
+      }
+
+      m_qaRegistry.fill(HIST("hVtxZ"), collision.posZ());
+      m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
       m_goodCollisions[collision.globalIndex()] = true;
     }
   }
@@ -266,12 +316,12 @@ struct lithium4analysis {
   {
     if (candidate.hasTOF()) {
       if (std::abs(candidate.tofNSigmaPr()) < setting_nsigmaCutTOF && std::abs(candidate.tpcNSigmaPr()) < setting_nsigmaCutTPC) {
-        m_hAnalysis.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
-        m_hAnalysis.fill(HIST("h2NsigmaProtonTOF"), candidate.p(), candidate.tofNSigmaPr());
+        m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
+        m_qaRegistry.fill(HIST("h2NsigmaProtonTOF"), candidate.p(), candidate.tofNSigmaPr());
         return true;
       }
     } else if (std::abs(candidate.tpcNSigmaPr()) < setting_nsigmaCutTPC) {
-      m_hAnalysis.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
+      m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
       return true;
     }
     return false;
@@ -295,7 +345,7 @@ struct lithium4analysis {
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
     if (std::abs(nSigmaHe3) < setting_nsigmaCutTPC) {
-      m_hAnalysis.fill(HIST("h2NsigmaHe3TPC"), candidate.sign() * correctedTPCinnerParam, nSigmaHe3);
+      m_qaRegistry.fill(HIST("h2NsigmaHe3TPC"), candidate.sign() * correctedTPCinnerParam, nSigmaHe3);
       return true;
     }
     return false;
@@ -397,21 +447,21 @@ struct lithium4analysis {
   {
     for (auto track0 : tracks) {
 
-      m_hAnalysis.fill(HIST("hTrackSel"), Selections::kNoCuts);
+      m_qaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
       bool heliumPID = track0.pidForTracking() == o2::track::PID::Helium3 || track0.pidForTracking() == o2::track::PID::Alpha;
 
       float correctedTPCinnerParam = (heliumPID && setting_compensatePIDinTracking) ? track0.tpcInnerParam() / 2.f : track0.tpcInnerParam();
-      m_hAnalysis.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, track0.tpcSignal());
+      m_qaRegistry.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, track0.tpcSignal());
 
       if (!selectionTrack(track0)) {
         continue;
       }
-      m_hAnalysis.fill(HIST("hTrackSel"), Selections::kTrackCuts);
+      m_qaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
 
       if (!selectionPIDHe3(track0)) {
         continue;
       }
-      m_hAnalysis.fill(HIST("hTrackSel"), Selections::kPID);
+      m_qaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
 
       for (auto track1 : tracks) {
 
@@ -443,8 +493,8 @@ struct lithium4analysis {
       if (!c1.sel8() || !c2.sel8()) {
         continue;
       }
-      m_hAnalysis.fill(HIST("hNcontributor"), c1.numContrib());
-      m_hAnalysis.fill(HIST("hVtxZ"), c1.posZ());
+      m_qaRegistry.fill(HIST("hNcontributor"), c1.numContrib());
+      m_qaRegistry.fill(HIST("hVtxZ"), c1.posZ());
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
@@ -463,7 +513,7 @@ struct lithium4analysis {
 
         bool heliumPID = he3Cand.pidForTracking() == o2::track::PID::Helium3 || he3Cand.pidForTracking() == o2::track::PID::Alpha;
         float correctedTPCinnerParam = (heliumPID && setting_compensatePIDinTracking) ? he3Cand.tpcInnerParam() / 2.f : he3Cand.tpcInnerParam();
-        m_hAnalysis.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, he3Cand.tpcSignal());
+        m_qaRegistry.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, he3Cand.tpcSignal());
 
         SVCand trackPair;
         trackPair.tr0Idx = he3Cand.globalIndex();
@@ -551,11 +601,11 @@ struct lithium4analysis {
   void fillHistograms(const Lithium4Candidate& li4cand)
   {
     int candSign = li4cand.sign;
-    m_hAnalysis.fill(HIST("hHe3Pt"), li4cand.recoPtHe3());
-    m_hAnalysis.fill(HIST("hProtonPt"), li4cand.recoPtPr());
-    m_hAnalysis.fill(HIST("hLitInvMass"), li4cand.invMass);
-    m_hAnalysis.fill(HIST("hDCAxyHe3"), li4cand.DCAxyHe3);
-    m_hAnalysis.fill(HIST("hDCAzHe3"), li4cand.DCAzHe3);
+    m_qaRegistry.fill(HIST("hHe3Pt"), li4cand.recoPtHe3());
+    m_qaRegistry.fill(HIST("hProtonPt"), li4cand.recoPtPr());
+    m_qaRegistry.fill(HIST("hLitInvMass"), li4cand.invMass);
+    m_qaRegistry.fill(HIST("hDCAxyHe3"), li4cand.DCAxyHe3);
+    m_qaRegistry.fill(HIST("hDCAzHe3"), li4cand.DCAzHe3);
   }
 
   // ==================================================================================================================
@@ -569,8 +619,14 @@ struct lithium4analysis {
       if (!collision.sel8() || std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
       }
-      m_hAnalysis.fill(HIST("hNcontributor"), collision.numContrib());
-      m_hAnalysis.fill(HIST("hVtxZ"), collision.posZ());
+      if (setting_skimmedProcessing) {
+        bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
+        if (zorroSelected) {
+          m_qaRegistry.fill(HIST("hEvents"), 2);
+        }
+      }
+      m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
+      m_qaRegistry.fill(HIST("hVtxZ"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
       auto TrackTable_thisCollision = tracks.sliceBy(m_perCol, collIdx);
@@ -625,9 +681,15 @@ struct lithium4analysis {
       if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
       }
+      if (setting_skimmedProcessing) {
+        bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
+        if (zorroSelected) {
+          m_qaRegistry.fill(HIST("hEvents"), 2);
+        }
+      }
 
-      m_hAnalysis.fill(HIST("hNcontributor"), collision.numContrib());
-      m_hAnalysis.fill(HIST("hVtxZ"), collision.posZ());
+      m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
+      m_qaRegistry.fill(HIST("hVtxZ"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
       auto TrackTable_thisCollision = tracks.sliceBy(m_perColMC, collIdx);
