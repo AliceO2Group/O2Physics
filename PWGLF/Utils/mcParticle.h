@@ -250,9 +250,9 @@ class PIDExtended
       case -o2::constants::physics::Pdg::kHyperHelium4:
         return AntiHyperHelium4;
       case o2::constants::physics::Pdg::kHyperHelium5:
-        return HyperHelium4;
+        return HyperHelium5;
       case -o2::constants::physics::Pdg::kHyperHelium5:
-        return AntiHyperHelium4;
+        return AntiHyperHelium5;
       case 111:
         return PI0;
       case 22:
