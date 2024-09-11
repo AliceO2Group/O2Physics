@@ -33,9 +33,6 @@
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-
-
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
@@ -327,7 +324,7 @@ struct lnnRecoTask {
       if (std::abs(LorentzV_AntiTriton.Rapidity()) > yMax) {
         continue;
       }
-      
+
       float posRigidity = posTrack.tpcInnerParam();
       float negRigidity = negTrack.tpcInnerParam();
 
