@@ -32,7 +32,6 @@ std::string CollisionSystemType::getCollisionSystemName(collType collSys)
     case kCollSyspPb:
       return "pPb";
     default:
-      LOG(fatal) << "Undefined collision system";
       return "Undefined";
   }
 }
@@ -41,6 +40,7 @@ int CollisionSystemType::getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* g
 {
   const int ZBeamA = grplhcif->getBeamZ(o2::constants::lhc::BeamDirection::BeamA);
   const int ZBeamC = grplhcif->getBeamZ(o2::constants::lhc::BeamDirection::BeamC);
+  LOG(debug) << "Collision system: " << ZBeamA << " * " << ZBeamC << " detected";
   switch (ZBeamA * ZBeamC) {
     case 1: // pp 1*1
       return kCollSyspp;
@@ -51,7 +51,7 @@ int CollisionSystemType::getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* g
     case 82: // p-Pb 82*1
       return kCollSyspPb;
     default:
-      LOG(fatal) << "Undefined collision system";
+      LOG(fatal) << "Undefined collision system in getCollisionTypeFromGrp with BeamA = " << ZBeamA << " and BeamC = " << ZBeamC;
       return kCollSysUndef;
   }
   return kCollSysUndef;
