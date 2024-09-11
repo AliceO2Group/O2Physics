@@ -1299,7 +1299,7 @@ struct AnalysisSameEventPairing {
 
       bool isFirst = true;
       for (auto& [a1, a2] : o2::soa::combinations(groupedAssocs, groupedAssocs)) {
-        if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
+        if constexpr (TPairType == VarManager::kDecayToEE) {
           twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
 
           if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
