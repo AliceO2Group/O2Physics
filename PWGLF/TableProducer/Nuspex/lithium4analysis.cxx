@@ -230,14 +230,17 @@ struct lithium4analysis {
 
   void init(o2::framework::InitContext&)
   {
+    LOG(info) << "Initializing lithium4 analysis";
     m_zorroSummary.setObject(m_zorro.getZorroSummary());
     m_runNumber = 0;
 
+    LOG(info) << "Initializing CCDB";
     m_ccdb->setURL(setting_ccdburl);
     m_ccdb->setCaching(true);
     m_ccdb->setLocalObjectValidityChecking();
     m_ccdb->setFatalWhenNull(false);
 
+    LOG(info) << "Initializing PID response";
     for (int i = 0; i < 5; i++) {
       m_BBparamsHe[i] = setting_BetheBlochParams->get("He3", Form("p%i", i));
     }
@@ -265,7 +268,6 @@ struct lithium4analysis {
       m_zorro.initCCDB(m_ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
       m_zorro.populateHistRegistry(m_qaRegistry, bc.runNumber());
     }
-
     m_runNumber = bc.runNumber();
   }
 
@@ -588,7 +590,7 @@ struct lithium4analysis {
   void processSameEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     for (auto& collision : collisions) {
-
+      LOG(info) << "Processing collision " << collision.globalIndex();
       m_trackPairs.clear();
       m_qaRegistry.fill(HIST("hEvents"), 0);
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -597,6 +599,7 @@ struct lithium4analysis {
       if (!collision.sel8() || std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
       }
+      LOG(info) << "Collision " << collision.globalIndex() << " passed";
       if (setting_skimmedProcessing) {
         bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
         if (zorroSelected) {
@@ -613,6 +616,7 @@ struct lithium4analysis {
 
       pairTracksSameEvent(TrackTable_thisCollision);
 
+      LOG(info) << "Collision " << collision.globalIndex() << " passed - after pairTracksSameEvent";
       for (auto& trackPair : m_trackPairs) {
 
         auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
@@ -626,6 +630,7 @@ struct lithium4analysis {
         fillTable(li4cand, false);
       }
     }
+    LOG(info) << "End of collision loop";
   }
   PROCESS_SWITCH(lithium4analysis, processSameEvent, "Process Same event", false);
 
@@ -665,7 +670,6 @@ struct lithium4analysis {
           m_qaRegistry.fill(HIST("hEvents"), 2);
         }
       }
-
       m_qaRegistry.fill(HIST("hEvents"), 1);
       m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
       m_qaRegistry.fill(HIST("hVtxZ"), collision.posZ());
