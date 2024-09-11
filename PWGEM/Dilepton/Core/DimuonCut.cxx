@@ -59,6 +59,12 @@ void DimuonCut::SetTrackEtaRange(float minEta, float maxEta)
   mMaxTrackEta = maxEta;
   LOG(info) << "Dimuon Cut, set track eta range: " << mMinTrackEta << " - " << mMaxTrackEta;
 }
+void DimuonCut::SetTrackPhiRange(float minPhi, float maxPhi)
+{
+  mMinTrackPhi = minPhi;
+  mMaxTrackPhi = maxPhi;
+  LOG(info) << "Dimuon Cut, set track phi range (rad.): " << mMinTrackPhi << " - " << mMaxTrackPhi;
+}
 void DimuonCut::SetChi2(float min, float max)
 {
   mMinChi2 = min;
