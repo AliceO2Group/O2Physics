@@ -214,10 +214,10 @@ struct MultiplicityExtraTable {
 
       bc2mult(bc2multArray[bc.globalIndex()]);
       multBC(
-        multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A, 
-        multFDDA, multFDDC, multZNA, multZNC, multZEM1, 
-        multZEM2, multZPA, multZPC, Tvx, isFV0OrA, 
-        multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC, 
+        multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A,
+        multFDDA, multFDDC, multZNA, multZNC, multZEM1,
+        multZEM2, multZPA, multZPC, Tvx, isFV0OrA,
+        multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC,
         bc.flags());
     }
   }

@@ -115,7 +115,7 @@ DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
-                  evsel::NumTracksInTimeRange, 
+                  evsel::NumTracksInTimeRange,
                   collision::Flags);
 
 DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
@@ -222,8 +222,8 @@ DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   multBC::MultBCT0triggerBits,
                   multBC::MultBCFDDtriggerBits,
                   multBC::MultBCTriggerMask,
-                  multBC::MultBCColliding, 
-                  bc::Flags); 
+                  multBC::MultBCColliding,
+                  bc::Flags);
 using MultBC = MultBCs::iterator;
 
 // crosslinks
