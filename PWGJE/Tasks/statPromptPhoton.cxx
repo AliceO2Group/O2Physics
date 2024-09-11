@@ -154,19 +154,19 @@ struct statPromptPhoton {
       double pt_track = track.pt();
 
       if (!IsParticle) {
-	if constexpr (requires { track.trackId(); }) {
-	  auto originaltrack = track.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
-	  if (!trackSelection(originaltrack)) {
-	    continue;	    
-	  } //reject track
-	}  else if constexpr (requires { track.sign(); }) { //checking for JTrack
-	  //done checking for JTrack, now default to normal tracks
-	  if (!trackSelection(track)) {
-	    continue;
-	  } //reject track
-	}// done checking for JTrack 
+        if constexpr (requires { track.trackId(); }) {
+          auto originaltrack = track.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
+          if (!trackSelection(originaltrack)) {
+            continue;
+          } // reject track
+        } else if constexpr (requires { track.sign(); }) { // checking for JTrack
+          // done checking for JTrack, now default to normal tracks
+          if (!trackSelection(track)) {
+            continue;
+          } // reject track
+        } // done checking for JTrack
       } else {
-	if constexpr (requires { track.isPhysicalPrimary(); }) {
+        if constexpr (requires { track.isPhysicalPrimary(); }) {
           if (track.pt() < 0.15) {
             continue;
           }
@@ -182,8 +182,8 @@ struct statPromptPhoton {
           int pdg = std::abs(track.pdgCode());
           if (pdg != 211 && pdg != 321 && pdg != 2212) {
             continue;
-	  }
-	}
+          }
+        }
       }
       if (IsStern || IsParticle) {
         if constexpr (requires { trigger.globalIndex(); }) {
@@ -335,7 +335,7 @@ struct statPromptPhoton {
       bool sterntrigger = false;
       double sternPt = 0.0;
       if (!trackSelection(track)) {
-	continue;
+        continue;
       }
       if (track.pt() > cfgMinTrig && track.pt() < cfgMaxTrig) {
         if (fabs(track.eta()) <= cfgtrkMaxEta) {
@@ -470,9 +470,10 @@ struct statPromptPhoton {
   using jfilteredCollisions = soa::Filtered<jselectedCollisions>;
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
 
-  int nEventsRecMC_JE   = 0;
+  int nEventsRecMC_JE = 0;
 
-  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, aod::JMcParticles const&, o2::aod::EMCALClusterCells const& /*emccluscells*/, o2::aod::EMCALMatchedTracks const& matchedtracks, jTrackCandidates const& tracks, TrackCandidates const&){
+  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, aod::JMcParticles const&, o2::aod::EMCALClusterCells const& /*emccluscells*/, o2::aod::EMCALMatchedTracks const& matchedtracks, jTrackCandidates const& tracks, TrackCandidates const&)
+  {
     nEventsRecMC_JE++;
     if ((nEventsRecMC_JE + 1) % 10000 == 0) {
       std::cout << "Processed JE Rec MC Events: " << nEventsRecMC_JE << std::endl;
@@ -494,76 +495,72 @@ struct statPromptPhoton {
 
       // first, we do the data-level analysis
       if (tracksofcluster.size() < 1) {
-	if (mccluster.energy() > cfgMinTrig && mccluster.energy() < cfgMaxTrig) {
-	  if (fabs(mccluster.eta()) <= cfgtrkMaxEta) {
-	    photontrigger = true;
-	    photonPt = mccluster.energy();
-	  }
-	}
+        if (mccluster.energy() > cfgMinTrig && mccluster.energy() < cfgMaxTrig) {
+          if (fabs(mccluster.eta()) <= cfgtrkMaxEta) {
+            photontrigger = true;
+            photonPt = mccluster.energy();
+          }
+        }
       }
-      if(photontrigger) {
-	double pthadsum = GetPtHadSum(tracks, mccluster, cfgMinR, cfgMaxR, false, false, true);
-	histos.fill(HIST("REC_Trigger_V_PtHadSum_Photon"), photonPt, pthadsum);
-	histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum);
-	histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy());
+      if (photontrigger) {
+        double pthadsum = GetPtHadSum(tracks, mccluster, cfgMinR, cfgMaxR, false, false, true);
+        histos.fill(HIST("REC_Trigger_V_PtHadSum_Photon"), photonPt, pthadsum);
+        histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum);
+        histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy());
 
-	//now we check the realness of our prompt photons
-	auto ClusterParticles = mccluster.mcParticle_as<aod::JMcParticles>();
-	for (auto& clusterparticle : ClusterParticles) {
-	  if (clusterparticle.pdgCode() == 22) {
-	    histos.fill(HIST("REC_True_Trigger_Energy"), clusterparticle.e());
-	    if(std::abs(clusterparticle.getGenStatusCode()) > 19 && std::abs(clusterparticle.getGenStatusCode())<70) {
-	      histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e());
-	       TLorentzVector lRealPhoton;
-	       lRealPhoton.SetPxPyPzE(clusterparticle.px(), clusterparticle.py(), clusterparticle.pz(), clusterparticle.e());
-	       double truepthadsum = GetPtHadSum(tracks, lRealPhoton, cfgMinR, cfgMaxR, false, false, false);
-	       truephotonPt = clusterparticle.e();
-	       histos.fill(HIST("REC_TrueTrigger_V_PtHadSum_Photon"), truephotonPt, truepthadsum);
-	    }
-	  } //photon check
-	}// photon trigger loop
-      }// clusterparticle loop      
-    }// cluster loop
+        // now we check the realness of our prompt photons
+        auto ClusterParticles = mccluster.mcParticle_as<aod::JMcParticles>();
+        for (auto& clusterparticle : ClusterParticles) {
+          if (clusterparticle.pdgCode() == 22) {
+            histos.fill(HIST("REC_True_Trigger_Energy"), clusterparticle.e());
+            if (std::abs(clusterparticle.getGenStatusCode()) > 19 && std::abs(clusterparticle.getGenStatusCode()) < 70) {
+              histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e());
+              TLorentzVector lRealPhoton;
+              lRealPhoton.SetPxPyPzE(clusterparticle.px(), clusterparticle.py(), clusterparticle.pz(), clusterparticle.e());
+              double truepthadsum = GetPtHadSum(tracks, lRealPhoton, cfgMinR, cfgMaxR, false, false, false);
+              truephotonPt = clusterparticle.e();
+              histos.fill(HIST("REC_TrueTrigger_V_PtHadSum_Photon"), truephotonPt, truepthadsum);
+            }
+          } // photon check
+        } // photon trigger loop
+      } // clusterparticle loop
+    } // cluster loop
 
-
-    //clusters done, now we do the sternheimer tracks    
-    for ( auto& track : tracks) {
+    // clusters done, now we do the sternheimer tracks
+    for (auto& track : tracks) {
       bool sterntrigger = false;
       double sternPt = 0.0;
       auto ogtrack = track.track_as<TrackCandidates>();
       if (!trackSelection(ogtrack)) {
-	continue;
+        continue;
       }
-      if(track.pt() > cfgMinTrig && track.pt() < cfgMaxTrig) {
-	if(fabs(track.eta()) <= cfgtrkMaxEta) {	    
-	  sterntrigger=true;
-	  sternPt=track.pt();
-	}
+      if (track.pt() > cfgMinTrig && track.pt() < cfgMaxTrig) {
+        if (fabs(track.eta()) <= cfgtrkMaxEta) {
+          sterntrigger = true;
+          sternPt = track.pt();
+        }
       }
 
-      if(sterntrigger) {
-	bool doStern = true;
-	double sterncount = 1.0;
-	while(doStern) {
-	   double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
-	   histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0/sternPt);
-	  if(sterncount<sternPt) {
-	    sterncount++;
-	  } else {
-	    doStern=false;
-	  }
-	}// While sternin'
-      }// stern trigger loop      
-    }// track loop
-    
-     
+      if (sterntrigger) {
+        bool doStern = true;
+        double sterncount = 1.0;
+        while (doStern) {
+          double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
+          histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0 / sternPt);
+          if (sterncount < sternPt) {
+            sterncount++;
+          } else {
+            doStern = false;
+          }
+        } // While sternin'
+      } // stern trigger loop
+    } // track loop
+
     histos.fill(HIST("REC_nEvents"), 1.5);
-    
-  }// end of process
+
+  } // end of process
 
   PROCESS_SWITCH(statPromptPhoton, processMCRec_JE, "processJE  MC data", false);
-
-
 
 }; // end of main struct
 
