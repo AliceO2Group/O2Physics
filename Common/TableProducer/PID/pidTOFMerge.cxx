@@ -221,11 +221,7 @@ struct TOFCalibConfig {
   }
 
   bool autoSetProcessFunctions() const { return mAutoSetProcessFunctions; }
-  int collisionSystem() const
-  {
-    LOG(info) << mInitMode;
-    return mCollisionSystem;
-  }
+  int collisionSystem() const { return mCollisionSystem; }
 
  private:
   int mLastRunNumber = -1; // Last run number for which the calibration was loaded
@@ -337,30 +333,17 @@ struct tofSignal {
   /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
   void process(aod::BCs const&) {}
 
-  void processRun3(Run3Trks const& tracks,
-                   EvTimeCollisions const&,
-                   aod::BCsWithTimestamps const&)
+  void processRun3(Run3Trks const& tracks)
   {
     if (!enableTableTOFSignal) {
       return;
-    }
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Skipping tracks without collisions
-        continue;
-      }
-      const auto& coll = track.collision_as<EvTimeCollisions>();
-      if (!coll.has_bc()) {
-        continue;
-      }
-      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      break;
     }
     table.reserve(tracks.size());
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
     for (auto& trk : tracks) {
-      const auto& sig = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(trk) + mRespParamsV3.getTimeShift(trk.eta(), trk.sign());
+      const float& sig = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(trk);
       if (enableQaHistograms) {
         histos.fill(HIST("tofSignal"), sig);
       }
@@ -559,7 +542,7 @@ struct tofEventTime {
     if (!enableTableTOFEvTime) {
       return;
     }
-    LOG(info) << "Processing Run3 data for TOF event time";
+    LOG(debug) << "Processing Run3 data for TOF event time";
 
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
@@ -581,19 +564,21 @@ struct tofEventTime {
     }
 
     // Autoset the processing mode for the event time computation
-    if (calibUpdated && (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1)) {
-      switch (mTOFCalibConfig.collisionSystem()) {
-        case CollisionSystemType::kCollSyspp: // pp
-          mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
-          mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
-          break;
-        case CollisionSystemType::kCollSysPbPb: // PbPb
-          mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
-          mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
-          break;
-        default:
-          LOG(fatal) << "Collision system " << mTOFCalibConfig.collisionSystem() << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " not supported for TOF event time computation";
-          break;
+    if (calibUpdated) {
+      if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
+        switch (mTOFCalibConfig.collisionSystem()) {
+          case CollisionSystemType::kCollSyspp: // pp
+            mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
+            mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
+            break;
+          case CollisionSystemType::kCollSysPbPb: // PbPb
+            mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
+            mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
+            break;
+          default:
+            LOG(fatal) << "Collision system " << mTOFCalibConfig.collisionSystem() << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " not supported for TOF event time computation";
+            break;
+        }
       }
     } else {
       LOG(warning) << "Calibration not updated on " << tracks.size() << " tracks !!";
