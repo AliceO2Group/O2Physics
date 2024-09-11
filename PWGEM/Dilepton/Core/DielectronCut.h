@@ -52,6 +52,7 @@ class DielectronCut : public TNamed
     // track cut
     kTrackPtRange,
     kTrackEtaRange,
+    kTrackPhiRange,
     kTPCNCls,
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
@@ -75,7 +76,6 @@ class DielectronCut : public TNamed
     kPrefilter,
     kNCuts
   };
-  static const char* mCutNames[static_cast<int>(DielectronCuts::kNCuts)];
 
   enum class PIDSchemes : int {
     kUnDef = -1,
@@ -145,6 +145,9 @@ class DielectronCut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DielectronCuts::kTrackEtaRange)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kTrackPhiRange)) {
       return false;
     }
     if (!IsSelectedTrack(track, DielectronCuts::kDCA3Dsigma)) {
@@ -314,6 +317,9 @@ class DielectronCut : public TNamed
       case DielectronCuts::kTrackEtaRange:
         return track.eta() >= mMinTrackEta && track.eta() <= mMaxTrackEta;
 
+      case DielectronCuts::kTrackPhiRange:
+        return track.phi() >= mMinTrackPhi && track.phi() <= mMaxTrackPhi;
+
       case DielectronCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
 
@@ -362,6 +368,7 @@ class DielectronCut : public TNamed
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
+  void SetTrackPhiRange(float minPhi = 0.f, float maxPhi = 2.f * M_PI);
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
@@ -404,9 +411,6 @@ class DielectronCut : public TNamed
   // Getters
   bool IsPhotonConversionSelected() const { return mSelectPC; }
 
-  /// @brief Print the track selection
-  void print() const;
-
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_any_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_1st_Requirement;
@@ -420,8 +424,9 @@ class DielectronCut : public TNamed
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
 
   // kinematic cuts
-  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT
-  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f}; // range in eta
+  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT
+  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f};   // range in eta
+  float mMinTrackPhi{0.f}, mMaxTrackPhi{2.f * M_PI}; // range in phi
 
   // track quality cuts
   int mMinNClustersTPC{0};                                           // min number of TPC clusters
