@@ -15,7 +15,6 @@
 /// \author Nepeivoda Roman (roman.nepeivoda@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
@@ -47,8 +46,8 @@ struct strangeness_pbpb_tutorial {
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
 
   // Configurable parameters for cascade selection
-  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.98, "Casc CosPA"}; 
-  Configurable<double> cascadesetting_v0cospa{"cascadesetting_v0cospa", 0.97, "V0 CosPA"}; 
+  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.98, "Casc CosPA"};
+  Configurable<double> cascadesetting_v0cospa{"cascadesetting_v0cospa", 0.97, "V0 CosPA"};
   Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "DCA cascade daughters"};
   Configurable<float> cascadesetting_dcav0dau{"cascadesetting_dcav0dau", 1.0, "DCA v0 daughters"};
   Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.06, "DCA bachelor to PV"};
@@ -161,14 +160,14 @@ struct strangeness_pbpb_tutorial {
       if (TMath::Abs(bachDaughterTrackCasc.tpcNSigmaPi()) < NSigmaTPCPion) { // Xi case
         rXi.fill(HIST("hMassXiSelected"), casc.mXi());
 
-        rXi.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters());    
+        rXi.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters());
         rXi.fill(HIST("hCascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       }
-      if (TMath::Abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) { // Omega case
+      if (TMath::Abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) {                // Omega case
         if (TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) > cascadesetting_competingmassrej) { // competing mass rejection, only in case of Omega
           rOmega.fill(HIST("hMassOmegaSelected"), casc.mOmega());
 
-          rOmega.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters());    
+          rOmega.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters());
           rOmega.fill(HIST("hCascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
         }
       }
