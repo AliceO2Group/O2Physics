@@ -62,6 +62,8 @@ struct SecondaryVertexReconstruction {
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> maxRsv{"maxRsv", 999., "max. radius of the reconstruced SV"};
+  Configurable<double> maxZsv{"maxZsv", 999., "max. Z coordinates of the reconstruced SV"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<float> ptMinTrack{"ptMinTrack", -1., "min. track pT"};
@@ -174,6 +176,10 @@ struct SecondaryVertexReconstruction {
       }
 
       const auto& secondaryVertex = df.getPCACandidate();
+      if (std::sqrt(secondaryVertex[0] * secondaryVertex[0] + secondaryVertex[1] * secondaryVertex[1]) > maxRsv || std::abs(secondaryVertex[2]) > maxZsv) {
+        return;
+      }
+
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
 
