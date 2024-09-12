@@ -587,7 +587,7 @@ struct ebyeMaker {
       if (dca > cfgDcaSels->get("dca")) { // dca
         continue;
       }
-      if (std::abs(dcaInfo[0]) > cfgDcaSels->get("dcaxy") || std::abs(dcaInfo[1]) > cfgDcaSels->get("dcaz")) { //dcaxy and dcaz
+      if (std::abs(dcaInfo[0]) > cfgDcaSels->get("dcaxy") || std::abs(dcaInfo[1]) > cfgDcaSels->get("dcaz")) { // dcaxy and dcaz
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
