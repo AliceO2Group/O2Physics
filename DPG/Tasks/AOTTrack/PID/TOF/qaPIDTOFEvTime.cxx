@@ -455,13 +455,12 @@ struct tofPidCollisionTimeQa {
         continue;
       }
       const auto& collisionMC = collision.mcCollision_as<aod::McCollisions>();
-      const int64_t bcMCtime = static_cast<int64_t>((collisionMC.t() + 2.f) / o2::constants::lhc::LHCBunchSpacingNS);
-      const float eventtimeMC = (collisionMC.t() - bcMCtime * o2::constants::lhc::LHCBunchSpacingNS) * 1000.f;
+      const float eventtimeMC = collisionMC.t() * 1000.f;
 
       if (trk.has_mcParticle()) {
         const auto& particle = trk.mcParticle();
         const auto& mcCollTimeMinusFormationTime = particle.vt() - collisionMC.t();
-        const auto& mcTOFvalue = trk.tofSignal() - eventtimeMC - trk.tofExpTime(2);
+        const auto& mcTOFvalue = trk.tofSignal() - eventtimeMC - trk.tofExpTimePi();
         LOG(debug) << "Track " << particle.vt() << " vs " << eventtimeMC;
         switch (particle.pdgCode()) {
           case 211:
