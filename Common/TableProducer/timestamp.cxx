@@ -120,7 +120,7 @@ struct TimestampTask {
       if (fatalOnInvalidTimestamp.value) {
         LOGF(fatal, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);
       } else {
-        LOGF(warn, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);
+        LOGF(debug, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);
       }
     }
     timestampTable(timestamp);
