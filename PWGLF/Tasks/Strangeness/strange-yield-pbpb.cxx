@@ -209,7 +209,7 @@ struct strangeYieldPbPb {
                                                axisOmegaMass,
                                                axisOmegaMass};
 
-  ConfigurableAxis axisNch{"axisNch", {1000, -0.5f, 999.5f}, "Number of charged particles"};
+  ConfigurableAxis axisNch{"axisNch", {2000, -0.5f, 1999.5f}, "Number of charged particles"};
   ConfigurableAxis axisFT0C{"FT0C",
                             {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
                             "FT0C (%)"};
@@ -340,11 +340,11 @@ struct strangeYieldPbPb {
   void addKinematicQAHistograms(HistogramRegistry& histos)
   {
     const bool isCascade = (partID > 2.5) ? true : false;
-    histos.add(Form("%s/h2dPosEtaPt", particlenames[partID].data()), "h2dPosEtaPt", kTH2F, {axisPtCoarse, axisEta});
-    histos.add(Form("%s/h2dNegEtaPt", particlenames[partID].data()), "h2dNegEtaPt", kTH2F, {axisPtCoarse, axisEta});
-    histos.add(Form("%s/h2dRapPt", particlenames[partID].data()), "h2dRapPt", kTH2F, {axisPtCoarse, axisRap});
+    histos.add(Form("%s/h2dPosEtaPt", particlenames[partID].data()), "h2dPosEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
+    histos.add(Form("%s/h2dNegEtaPt", particlenames[partID].data()), "h2dNegEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
+    histos.add(Form("%s/h2dRapPt", particlenames[partID].data()), "h2dRapPt", kTH3F, {axisPtCoarse, axisRap, axisSelGap});
     if (isCascade) {
-      histos.add(Form("%s/h2dBachEtaPt", particlenames[partID].data()), "h2dBachEtaPt", kTH2F, {axisPtCoarse, axisEta});
+      histos.add(Form("%s/h2dBachEtaPt", particlenames[partID].data()), "h2dBachEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
     }
   }
 
@@ -466,9 +466,9 @@ struct strangeYieldPbPb {
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
     histos.fill(HIST(particlenames[partID]) + HIST("/h4dMass"), centrality, pT, invMass, gap);
     if (doKienmaticQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dRapPt"), pT, rapidity);
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta(), gap);
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta(), gap);
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dRapPt"), pT, rapidity, gap);
     }
     if (doPlainTopoQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/hPosDCAToPV"), cand.dcapostopv());
@@ -554,7 +554,7 @@ struct strangeYieldPbPb {
       invMass = cand.mXi();
       ctau = totalMom != 0 ? pdgDB->Mass(3312) * decayPos / (totalMom * ctauxiPDG) : 1e6;
       rapidity = cand.yXi();
-      
+
       if (PIDConfigurations.doTPCQA) {
         tpcNsigmaPos = posTrackExtra.tpcNSigmaPr();
         tpcNsigmaNeg = negTrackExtra.tpcNSigmaPi();
@@ -616,10 +616,10 @@ struct strangeYieldPbPb {
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
     histos.fill(HIST(particlenames[partID]) + HIST("/h4dMass"), centrality, pT, invMass, gap);
     if (doKienmaticQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dBachEtaPt"), pT, cand.bacheloreta());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dRapPt"), pT, rapidity);
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta(), gap);
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta(), gap);
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dBachEtaPt"), pT, cand.bacheloreta(), gap);
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dRapPt"), pT, rapidity, gap);
     }
     if (doPlainTopoQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/hCascCosPA"), pT, cand.casccosPA(coll.posX(), coll.posY(), coll.posZ()));
@@ -835,6 +835,8 @@ struct strangeYieldPbPb {
     histos.add("eventQA/hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisFT0C, axisNch});
     histos.add("eventQA/hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
     histos.add("eventQA/hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2F, {axisFT0C, axisOccupancy});
+    histos.add("eventQA/hEventNchCorrelationAfCuts", "hEventNchCorrelationAfCuts", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
+    histos.add("eventQA/hEventGlobalTracksVsCentrality", "hEventGlobalTracksVsCentrality", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
     histos.add("eventQA/hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
     histos.add("eventQA/hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
     histos.add("eventQA/hPosX", "Vertex position in x", kTH1F, {{100, -0.1, 0.1}});
@@ -1021,6 +1023,8 @@ struct strangeYieldPbPb {
     histos.fill(HIST("eventQA/hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
     histos.fill(HIST("eventQA/hEventOccupancy"), collision.trackOccupancyInTimeRange());
     histos.fill(HIST("eventQA/hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("eventQA/hEventNchCorrelationAfCuts"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+    histos.fill(HIST("eventQA/hEventGlobalTracksVsCentrality"), centrality, collision.multNTracksGlobal());
     histos.fill(HIST("eventQA/hPosX"), collision.posX());
     histos.fill(HIST("eventQA/hPosY"), collision.posY());
     histos.fill(HIST("eventQA/hPosZ"), collision.posZ());
