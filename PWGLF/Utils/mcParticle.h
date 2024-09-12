@@ -146,8 +146,8 @@ class PIDExtended
     o2::track::pid_constants::sNames[Hyperhydrog4], // Hyperhydrog4
     o2::track::pid_constants::sNames[XiMinus],      // XiMinus
     o2::track::pid_constants::sNames[OmegaMinus],   // OmegaMinus
-    o2::track::pid_constants::sNames[HyperHelium4], // HyperHelium4
-    o2::track::pid_constants::sNames[HyperHelium5], // HyperHelium5
+    "HyperHelium4",                                 // HyperHelium4
+    "HyperHelium5",                                 // HyperHelium5
     "Positron",                                     // Positron
     "MuonPlus",                                     // MuonPlus
     "PionMinus",                                    // PionMinus
