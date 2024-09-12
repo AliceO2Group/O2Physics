@@ -106,7 +106,6 @@ struct strangeness_pbpb_tutorial {
     rOmega.add("hMassOmegaTrueRecWithTOF", "hMassOmegaTrueRecWithTOF", {HistType::kTH1F, {OmegaMassAxis}});
     rOmega.add("hPtOmegaTrueRecWithTOF", "hPtOmegaTrueRecWithTOF", {HistType::kTH1F, {ptAxis}});
 
-
     // Xi/Omega topological cuts
     rXi.add("hCascDCAV0Daughters", "hCascDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
     rXi.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
@@ -261,7 +260,7 @@ struct strangeness_pbpb_tutorial {
       }
 
       // MC truth info
-      if(!casc.has_cascMCCore()) {
+      if (!casc.has_cascMCCore()) {
         continue;
       }
       auto cascmccore = casc.cascMCCore_as<aod::CascMCCores>();

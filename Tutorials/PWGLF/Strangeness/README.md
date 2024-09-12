@@ -13,8 +13,8 @@ This repository contains the codes to analyse V0 and cascade particles in proton
 * `strangeness_step3.cxx` Check the MC information of the V0s and verify with the PID information of daughter tracks
 
 ## PbPb
-This repository contains the code to analyse cascade particles in Pb-Pb collisions. 
-The tutorial revolves around two aspects: 
+This repository contains the code to analyse cascade particles in Pb-Pb collisions.
+The tutorial revolves around two aspects:
 i) the derived data production in the directory DerivedDataProduction,
 ii) the analysis of the derived data in the directory Analysis, containing:
 * `CMakeLists.txt` here are defined the source files to compile
