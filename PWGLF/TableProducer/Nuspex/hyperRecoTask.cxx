@@ -387,7 +387,7 @@ struct hyperRecoTask {
     hypCand.clusterSizeITSPi = piTrack.itsClusterSizes();
     bool heliumPID = heTrack.pidForTracking() == o2::track::PID::Helium3 || heTrack.pidForTracking() == o2::track::PID::Alpha;
     hypCand.momHe3TPC = (heliumPID && cfgCompensatePIDinTracking) ? heTrack.tpcInnerParam() / 2 : heTrack.tpcInnerParam();
-    if(hypCand.momHe3TPC < TPCRigidityMinHe)
+    if (hypCand.momHe3TPC < TPCRigidityMinHe)
       return;
     hypCand.momPiTPC = piTrack.tpcInnerParam();
     hDeDxTot->Fill(hypCand.momHe3TPC * heTrack.sign(), heTrack.tpcSignal());
