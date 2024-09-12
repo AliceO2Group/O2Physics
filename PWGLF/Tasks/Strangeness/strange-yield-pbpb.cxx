@@ -160,17 +160,16 @@ struct strangeYieldPbPb {
 
     Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
     Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
-    Configurable<int> doDetectPropQA{"doDetectPropQA", 0, "do Detector/ITS map QA: 0: no, 1: 4D, 2: 5D with mass"};
-
-    Configurable<bool> doPlainTopoQA{"doPlainTopoQA", true, "do simple 1D QA of candidates"};
-    Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
-    Configurable<float> qaMaxPt{"qaMaxPt", 1000.0f, "maximum pT for QA plots"};
 
     // PID (TOF)
     Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
     Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
     Configurable<float> maxDeltaTimeKaon{"maxDeltaTimeKaon", 1e+9, "check maximum allowed time"};
   } PIDConfigurations;
+
+  Configurable<bool> doKienmaticQA{"doKienmaticQA", true, "do Kinematic QA histograms"};
+  Configurable<int> doDetectPropQA{"doDetectPropQA", 0, "do Detector/ITS map QA: 0: no, 1: 4D, 2: 5D with mass"};
+  Configurable<bool> doPlainTopoQA{"doPlainTopoQA", true, "do simple 1D QA of candidates"};
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisFT0Aampl{"FT0Aamplitude", {100, 0.0f, 2000.0f}, "FT0Aamplitude"};
@@ -183,17 +182,21 @@ struct strangeYieldPbPb {
   } axisDetectors;
 
   // for MC
-  Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
-  Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
+  Configurable<bool> doMCAssociation{"doMCAssociation", false, "if MC, do MC association"};
+  Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", false, "check collision association"};
 
   // fast check on occupancy
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
   Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
 
+  // Kinematic axes
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for v0 analysis"};
   ConfigurableAxis axisPtXi{"axisPtCasc", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for cascade analysis"};
   ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
+  ConfigurableAxis axisEta{"axisEta", {40, -2.0f, 2.0f}, "#eta"};
+  ConfigurableAxis axisRap{"axisRap", {100, -2.0f, 2.0f}, "y"};
 
+  // Invariant mass axes
   ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.28f, 1.36f}, ""};
@@ -220,6 +223,9 @@ struct strangeYieldPbPb {
   ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
   ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
 
+  // MC coll assoc QA axis
+  ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
+
   // Track quality axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, -0.5f, 159.5f}, "N TPC rows"};
   ConfigurableAxis axisITSclus{"axisITSclus", {7, -0.5f, 6.5f}, "N ITS Clusters"};
@@ -228,8 +234,6 @@ struct strangeYieldPbPb {
   ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {16, -3.5f, 12.5f}, "ITS Coarse cluster map"};
   ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
 
-  // MC coll assoc QA axis
-  ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
   // Topological variable QA axes
   ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {80, -4.0f, 4.0f}, "DCA (cm)"};
   ConfigurableAxis axisDCAdau{"axisDCAdau", {24, 0.0f, 1.2f}, "DCA (cm)"};
@@ -333,10 +337,22 @@ struct strangeYieldPbPb {
   }
 
   template <int partID>
+  void addKinematicQAHistograms(HistogramRegistry& histos)
+  {
+    const bool isCascade = (partID > 2.5) ? true : false;
+    histos.add(Form("%s/h2dPosEtaPt", particlenames[partID].data()), "h2dPosEtaPt", kTH2F, {axisPtCoarse, axisEta});
+    histos.add(Form("%s/h2dNegEtaPt", particlenames[partID].data()), "h2dNegEtaPt", kTH2F, {axisPtCoarse, axisEta});
+    histos.add(Form("%s/h2dRapPt", particlenames[partID].data()), "h2dRapPt", kTH2F, {axisPtCoarse, axisRap});
+    if (isCascade) {
+      histos.add(Form("%s/h2dBachEtaPt", particlenames[partID].data()), "h2dBachEtaPt", kTH2F, {axisPtCoarse, axisEta});
+    }
+  }
+
+  template <int partID>
   void addDetectorPropHistograms(HistogramRegistry& histos)
   {
     const bool isCascade = (partID > 2.5) ? true : false;
-    if (PIDConfigurations.doDetectPropQA == 1) {
+    if (doDetectPropQA == 1) {
       if (isCascade) {
         histos.add(Form("%s/h8dDetectPropVsCentrality", particlenames[partID].data()), "h8dDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
       } else {
@@ -346,7 +362,7 @@ struct strangeYieldPbPb {
       histos.add(Form("%s/h4dNegDetectPropVsCentrality", particlenames[partID].data()), "h4dNegDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
       histos.add(Form("%s/h4dBachDetectPropVsCentrality", particlenames[partID].data()), "h4dBachDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
     }
-    if (PIDConfigurations.doDetectPropQA == 2) {
+    if (doDetectPropQA == 2) {
       if (isCascade) {
         histos.add(Form("%s/h9dDetectPropVsCentrality", particlenames[partID].data()), "h9dDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
       } else {
@@ -363,7 +379,7 @@ struct strangeYieldPbPb {
   {
     histos.add(Form("%s/h4dMass", particlenames[partID].data()), "h4dMass", kTHnF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap});
     histos.add(Form("%s/h2dMass", particlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
-    if (PIDConfigurations.doPlainTopoQA) {
+    if (doPlainTopoQA) {
       addTopoHistograms<partID>(histos);
     }
     if (PIDConfigurations.doTPCQA) {
@@ -371,6 +387,9 @@ struct strangeYieldPbPb {
     }
     if (PIDConfigurations.doTOFQA) {
       addTOFQAHistograms<partID>(histos);
+    }
+    if (doKienmaticQA) {
+      addKinematicQAHistograms<partID>(histos);
     }
     addDetectorPropHistograms<partID>(histos);
   }
@@ -388,6 +407,7 @@ struct strangeYieldPbPb {
     float invMass = 0;
     float centrality = coll.centFT0C();
     float pT = cand.pt();
+    float rapidity = 1e6;
 
     float tpcNsigmaPos = 0;
     float tpcNsigmaNeg = 0;
@@ -404,9 +424,11 @@ struct strangeYieldPbPb {
     int posITSclusMap = computeITSclusBitmap(posTrackExtra.itsClusterMap(), posIsFromAfterburner);
     uint negDetMap = computeDetBitmap(negTrackExtra.detectorMap());
     int negITSclusMap = computeITSclusBitmap(negTrackExtra.itsClusterMap(), negIsFromAfterburner);
+
     if (partID == 0) {
       histos.fill(HIST("generalQA/h2dArmenterosSelected"), cand.alpha(), cand.qtarm());
       invMass = cand.mK0Short();
+      rapidity = cand.yK0Short();
       if (PIDConfigurations.doTOFQA) {
         tofDeltaTPos = cand.posTOFDeltaTK0Pi();
         tofDeltaTNeg = cand.negTOFDeltaTK0Pi();
@@ -417,6 +439,7 @@ struct strangeYieldPbPb {
       }
     } else if (partID == 1) {
       invMass = cand.mLambda();
+      rapidity = cand.yLambda();
       if (PIDConfigurations.doTOFQA) {
         tofDeltaTPos = cand.posTOFDeltaTLaPr();
         tofDeltaTNeg = cand.negTOFDeltaTLaPi();
@@ -427,6 +450,7 @@ struct strangeYieldPbPb {
       }
     } else if (partID == 2) {
       invMass = cand.mAntiLambda();
+      rapidity = cand.yLambda();
       if (PIDConfigurations.doTOFQA) {
         tofDeltaTPos = cand.posTOFDeltaTLaPi();
         tofDeltaTNeg = cand.negTOFDeltaTLaPr();
@@ -441,7 +465,12 @@ struct strangeYieldPbPb {
 
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
     histos.fill(HIST(particlenames[partID]) + HIST("/h4dMass"), centrality, pT, invMass, gap);
-    if (PIDConfigurations.doPlainTopoQA) {
+    if (doKienmaticQA) {
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta());
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta());
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dRapPt"), pT, rapidity);
+    }
+    if (doPlainTopoQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/hPosDCAToPV"), cand.dcapostopv());
       histos.fill(HIST(particlenames[partID]) + HIST("/hNegDCAToPV"), cand.dcanegtopv());
       histos.fill(HIST(particlenames[partID]) + HIST("/hDCADaughters"), cand.dcaV0daughters());
@@ -450,12 +479,12 @@ struct strangeYieldPbPb {
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
     }
-    if (PIDConfigurations.doDetectPropQA == 1) {
+    if (doDetectPropQA == 1) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pT);
       histos.fill(HIST(particlenames[partID]) + HIST("/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT);
       histos.fill(HIST(particlenames[partID]) + HIST("/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT);
     }
-    if (PIDConfigurations.doDetectPropQA == 2) {
+    if (doDetectPropQA == 2) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h7dPosDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pT, invMass);
       histos.fill(HIST(particlenames[partID]) + HIST("/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT, invMass);
       histos.fill(HIST(particlenames[partID]) + HIST("/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT, invMass);
@@ -490,6 +519,7 @@ struct strangeYieldPbPb {
     float invMass = 0;
     float centrality = coll.centFT0C();
     float pT = cand.pt();
+    float rapidity = 1e6;
 
     // Access daughter tracks
     auto posTrackExtra = cand.template posTrackExtra_as<dauTracks>();
@@ -523,49 +553,75 @@ struct strangeYieldPbPb {
     if (partID == 3) {
       invMass = cand.mXi();
       ctau = totalMom != 0 ? pdgDB->Mass(3312) * decayPos / (totalMom * ctauxiPDG) : 1e6;
-      tpcNsigmaPos = posTrackExtra.tpcNSigmaPr();
-      tpcNsigmaNeg = negTrackExtra.tpcNSigmaPi();
-      tpcNsigmaBach = bachTrackExtra.tpcNSigmaPi();
-
-      tofDeltaTPos = cand.posTOFDeltaTXiPr();
-      tofDeltaTNeg = cand.negTOFDeltaTXiPi();
-      tofDeltaTBach = cand.bachTOFDeltaTXiPi();
+      rapidity = cand.yXi();
+      
+      if (PIDConfigurations.doTPCQA) {
+        tpcNsigmaPos = posTrackExtra.tpcNSigmaPr();
+        tpcNsigmaNeg = negTrackExtra.tpcNSigmaPi();
+        tpcNsigmaBach = bachTrackExtra.tpcNSigmaPi();
+      }
+      if (PIDConfigurations.doTOFQA) {
+        tofDeltaTPos = cand.posTOFDeltaTXiPr();
+        tofDeltaTNeg = cand.negTOFDeltaTXiPi();
+        tofDeltaTBach = cand.bachTOFDeltaTXiPi();
+      }
     } else if (partID == 4) {
       invMass = cand.mXi();
       ctau = totalMom != 0 ? pdgDB->Mass(3312) * decayPos / (totalMom * ctauxiPDG) : 1e6;
-      tpcNsigmaPos = posTrackExtra.tpcNSigmaPi();
-      tpcNsigmaNeg = negTrackExtra.tpcNSigmaPr();
-      tpcNsigmaBach = bachTrackExtra.tpcNSigmaPi();
+      rapidity = cand.yXi();
 
-      tofDeltaTPos = cand.posTOFDeltaTXiPi();
-      tofDeltaTNeg = cand.negTOFDeltaTXiPr();
-      tofDeltaTBach = cand.bachTOFDeltaTXiPi();
+      if (PIDConfigurations.doTPCQA) {
+        tpcNsigmaPos = posTrackExtra.tpcNSigmaPi();
+        tpcNsigmaNeg = negTrackExtra.tpcNSigmaPr();
+        tpcNsigmaBach = bachTrackExtra.tpcNSigmaPi();
+      }
+      if (PIDConfigurations.doTOFQA) {
+        tofDeltaTPos = cand.posTOFDeltaTXiPi();
+        tofDeltaTNeg = cand.negTOFDeltaTXiPr();
+        tofDeltaTBach = cand.bachTOFDeltaTXiPi();
+      }
 
     } else if (partID == 5) {
       invMass = cand.mOmega();
       ctau = totalMom != 0 ? pdgDB->Mass(3334) * decayPos / (totalMom * ctauomegaPDG) : 1e6;
-      tpcNsigmaPos = posTrackExtra.tpcNSigmaPr();
-      tpcNsigmaNeg = negTrackExtra.tpcNSigmaPi();
-      tpcNsigmaBach = bachTrackExtra.tpcNSigmaKa();
+      rapidity = cand.yOmega();
 
-      tofDeltaTPos = cand.posTOFDeltaTOmPi();
-      tofDeltaTNeg = cand.posTOFDeltaTOmPr();
-      tofDeltaTBach = cand.bachTOFDeltaTOmKa();
+      if (PIDConfigurations.doTPCQA) {
+        tpcNsigmaPos = posTrackExtra.tpcNSigmaPr();
+        tpcNsigmaNeg = negTrackExtra.tpcNSigmaPi();
+        tpcNsigmaBach = bachTrackExtra.tpcNSigmaKa();
+      }
+      if (PIDConfigurations.doTOFQA) {
+        tofDeltaTPos = cand.posTOFDeltaTOmPi();
+        tofDeltaTNeg = cand.posTOFDeltaTOmPr();
+        tofDeltaTBach = cand.bachTOFDeltaTOmKa();
+      }
 
     } else if (partID == 6) {
       invMass = cand.mOmega();
       ctau = totalMom != 0 ? pdgDB->Mass(3334) * decayPos / (totalMom * ctauomegaPDG) : 1e6;
-      tpcNsigmaPos = posTrackExtra.tpcNSigmaPi();
-      tpcNsigmaNeg = negTrackExtra.tpcNSigmaPr();
-      tpcNsigmaBach = bachTrackExtra.tpcNSigmaKa();
+      rapidity = cand.yOmega();
 
-      tofDeltaTPos = cand.posTOFDeltaTOmPr();
-      tofDeltaTNeg = cand.posTOFDeltaTOmPi();
-      tofDeltaTBach = cand.bachTOFDeltaTOmKa();
+      if (PIDConfigurations.doTPCQA) {
+        tpcNsigmaPos = posTrackExtra.tpcNSigmaPi();
+        tpcNsigmaNeg = negTrackExtra.tpcNSigmaPr();
+        tpcNsigmaBach = bachTrackExtra.tpcNSigmaKa();
+      }
+      if (PIDConfigurations.doTOFQA) {
+        tofDeltaTPos = cand.posTOFDeltaTOmPr();
+        tofDeltaTNeg = cand.posTOFDeltaTOmPi();
+        tofDeltaTBach = cand.bachTOFDeltaTOmKa();
+      }
     }
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
     histos.fill(HIST(particlenames[partID]) + HIST("/h4dMass"), centrality, pT, invMass, gap);
-    if (PIDConfigurations.doPlainTopoQA) {
+    if (doKienmaticQA) {
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta());
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta());
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dBachEtaPt"), pT, cand.bacheloreta());
+      histos.fill(HIST(particlenames[partID]) + HIST("/h2dRapPt"), pT, rapidity);
+    }
+    if (doPlainTopoQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/hCascCosPA"), pT, cand.casccosPA(coll.posX(), coll.posY(), coll.posZ()));
       histos.fill(HIST(particlenames[partID]) + HIST("/hDCACascDaughters"), pT, cand.dcacascdaughters());
       histos.fill(HIST(particlenames[partID]) + HIST("/hCascRadius"), pT, cand.cascradius());
@@ -610,13 +666,13 @@ struct strangeYieldPbPb {
       histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPt"), centrality, cand.negativept(), tofDeltaTNeg);
       histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachTOFdeltaTvsTrackPt"), centrality, cand.bachelorpt(), tofDeltaTBach);
     }
-    if (PIDConfigurations.doDetectPropQA == 1) {
+    if (doDetectPropQA == 1) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h8dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, bachDetMap, bachITSclusMap, pT);
       histos.fill(HIST(particlenames[partID]) + HIST("/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT);
       histos.fill(HIST(particlenames[partID]) + HIST("/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT);
       histos.fill(HIST(particlenames[partID]) + HIST("/h4dBachDetectPropVsCentrality"), centrality, bachTrackExtra.detectorMap(), bachTrackExtra.itsClusterMap(), pT);
     }
-    if (PIDConfigurations.doDetectPropQA == 2) {
+    if (doDetectPropQA == 2) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h9dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, bachDetMap, bachITSclusMap, pT, invMass);
       histos.fill(HIST(particlenames[partID]) + HIST("/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT, invMass);
       histos.fill(HIST(particlenames[partID]) + HIST("/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT, invMass);
@@ -790,7 +846,7 @@ struct strangeYieldPbPb {
 
     if (doprocessV0s) {
       // For all candidates
-      if (PIDConfigurations.doPlainTopoQA) {
+      if (doPlainTopoQA) {
         histos.add("generalQA/hPt", "hPt", kTH1F, {axisPtCoarse});
         histos.add("generalQA/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
         histos.add("generalQA/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
@@ -827,7 +883,7 @@ struct strangeYieldPbPb {
 
     if (doprocessCascades) {
       // For all candidates
-      if (PIDConfigurations.doPlainTopoQA) {
+      if (doPlainTopoQA) {
         histos.add("generalQA/hPt", "hPt", kTH1F, {axisPtCoarse});
         histos.add("generalQA/hCascCosPA", "hCascCosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
         histos.add("generalQA/hDCACascDaughters", "hDCACascDaughters", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
@@ -1355,7 +1411,7 @@ struct strangeYieldPbPb {
     auto negTrackExtra = casc.template negTrackExtra_as<dauTracks>();
     auto bachTrackExtra = casc.template bachTrackExtra_as<dauTracks>();
 
-    if (PIDConfigurations.doPlainTopoQA) {
+    if (doPlainTopoQA) {
       histos.fill(HIST("generalQA/hPt"), casc.pt());
       histos.fill(HIST("generalQA/hCascCosPA"), casc.pt(), casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()));
       histos.fill(HIST("generalQA/hDCACascDaughters"), casc.pt(), casc.dcacascdaughters());
@@ -1401,7 +1457,7 @@ struct strangeYieldPbPb {
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
     // QA plots
-    if (PIDConfigurations.doPlainTopoQA) {
+    if (doPlainTopoQA) {
       histos.fill(HIST("generalQA/hPt"), v0.pt());
       histos.fill(HIST("generalQA/hPosDCAToPV"), v0.dcapostopv());
       histos.fill(HIST("generalQA/hNegDCAToPV"), v0.dcanegtopv());
