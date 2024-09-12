@@ -134,17 +134,12 @@ struct lnnRecoTask {
   Configurable<float> Chi2nClusITS{"Chi2NClusITS", 36., "Chi2 / nClusITS for triton track"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
   Configurable<float> etaMax{"eta", 0.8, "eta daughter"};
-  Configurable<float> yMax{"rapidityPos", 0.5, "track rapidity pos"};
-  Configurable<float> yMin{"rapidityNeg", -0.5, "track rapidity neg"};
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.5, "Minimum rigidity of the triton candidate"};
   Configurable<float> nSigmaCutTPC{"nSigmaCutTPC", 4., "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<float> nTPCClusMinPi{"nTPCClusMinPi", -1., "pion NTPC clusters cut"};
   Configurable<float> nClusITS{"nClusITSMin3H", 5.0, "triton NITS clusters cut"};
-  Configurable<float> nClusTPCRows{"nClusTPCRows", 70., "Number of crossed TPC Rows"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  Configurable<bool> isTPCRefit{"TPCRefit", true, "if true, select the tracks"};
-  Configurable<bool> isITSRefit{"ITSRefit", true, "if true, select the tracks"};
   // Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -302,26 +297,13 @@ struct lnnRecoTask {
       LOG(fatal) << "Bethe-Bloch parameters for 3H not set, please check your CCDB and configuration";
     }
 
-    TLorentzVector LorentzV_Triton{};
-    TLorentzVector LorentzV_AntiTriton{};
-
     for (auto& v0 : V0s) {
 
       auto posTrack = v0.posTrack_as<TracksFull>();
       auto negTrack = v0.negTrack_as<TracksFull>();
 
-      LorentzV_Triton.SetPtEtaPhiM(posTrack.pt(), posTrack.eta(), posTrack.phi(), constants::physics::MassTriton);
-      LorentzV_AntiTriton.SetPtEtaPhiM(negTrack.pt(), negTrack.eta(), negTrack.phi(), constants::physics::MassTriton);
 
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax) {
-        continue;
-      }
-
-      if (std::abs(LorentzV_Triton.Rapidity()) > yMax) {
-        continue;
-      }
-
-      if (std::abs(LorentzV_AntiTriton.Rapidity()) > yMax) {
         continue;
       }
 
@@ -356,11 +338,7 @@ struct lnnRecoTask {
           h3track.tpcNClsFound() < nTPCClusMin3H ||
           h3track.tpcChi2NCl() > Chi2nClusTPC ||
           h3track.itsChi2NCl() > Chi2nClusITS ||
-          h3track.itsNCls() < nClusITS ||
-          h3track.tpcNClsCrossedRows() < nClusTPCRows ||
-          h3track.tpcNClsCrossedRows() < 0.8 * h3track.tpcNClsFindable() ||
-          !h3track.passedTPCRefit() ||
-          !h3track.passedITSRefit()) {
+          h3track.itsNCls() < nClusITS) {
         continue;
       }
 
