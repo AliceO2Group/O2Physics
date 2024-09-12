@@ -162,7 +162,7 @@ struct HfCandidateSelectorD0 {
       return false;
     }
     // candidate DCA
-    if (candidate.impactParameterXY() > cuts->get(pTBin, "DCA")) {
+    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "DCA")) {
       return false;
     }
 
