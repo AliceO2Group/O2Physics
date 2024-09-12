@@ -590,7 +590,7 @@ struct lithium4analysis {
   void processSameEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     for (auto& collision : collisions) {
-      LOG(info) << "Processing collision " << collision.globalIndex();
+
       m_trackPairs.clear();
       m_qaRegistry.fill(HIST("hEvents"), 0);
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -599,7 +599,6 @@ struct lithium4analysis {
       if (!collision.sel8() || std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
       }
-      LOG(info) << "Collision " << collision.globalIndex() << " passed";
       if (setting_skimmedProcessing) {
         bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
         if (zorroSelected) {
@@ -616,7 +615,6 @@ struct lithium4analysis {
 
       pairTracksSameEvent(TrackTable_thisCollision);
 
-      LOG(info) << "Collision " << collision.globalIndex() << " passed - after pairTracksSameEvent";
       for (auto& trackPair : m_trackPairs) {
 
         auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
@@ -630,7 +628,6 @@ struct lithium4analysis {
         fillTable(li4cand, false);
       }
     }
-    LOG(info) << "End of collision loop";
   }
   PROCESS_SWITCH(lithium4analysis, processSameEvent, "Process Same event", false);
 
@@ -664,12 +661,7 @@ struct lithium4analysis {
       if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
       }
-      if (setting_skimmedProcessing) {
-        bool zorroSelected = m_zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
-        if (zorroSelected) {
-          m_qaRegistry.fill(HIST("hEvents"), 2);
-        }
-      }
+
       m_qaRegistry.fill(HIST("hEvents"), 1);
       m_qaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
       m_qaRegistry.fill(HIST("hVtxZ"), collision.posZ());
