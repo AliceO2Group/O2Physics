@@ -1534,8 +1534,8 @@ struct strangeYieldPbPb {
     } // end casc loop
   }
 
-  PROCESS_SWITCH(strangeYieldPbPb, processV0s, "Process V0s in UPC", true);
-  PROCESS_SWITCH(strangeYieldPbPb, processCascades, "Process Cascades in UPC", false);
+  PROCESS_SWITCH(strangeYieldPbPb, processV0s, "Process V0s", true);
+  PROCESS_SWITCH(strangeYieldPbPb, processCascades, "Process Cascades", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
