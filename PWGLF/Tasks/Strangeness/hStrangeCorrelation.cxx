@@ -1498,15 +1498,17 @@ struct correlateStrangeness {
             Double_t getaassoc = assocParticle.eta();
             Double_t gphiassoc = assocParticle.phi();
             Double_t ptassoc = assocParticle.pt();
+            Double_t deltaphi = ComputeDeltaPhi(gphitrigger, gphiassoc);
+            Double_t deltaeta = getatrigger - getaassoc;
 
             // skip if basic ranges not met
-            if (gphiassoc < axisRanges[0][0] || gphiassoc > axisRanges[0][1])
+            if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
               continue;
-            if (getaassoc < axisRanges[1][0] || getaassoc > axisRanges[1][1])
+            if (deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1])
               continue;
             if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
               continue;
-            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger, gphiassoc), getatrigger - getaassoc, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionFT0Mpercentile);
+            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionFT0Mpercentile);
           }
         }
       });
