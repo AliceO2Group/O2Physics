@@ -569,7 +569,7 @@ struct MultiplicityTable {
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                        mRunNumber, collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
-                       nAllTracksTPCOnly, nAllTracksITSTPC, collision.trackOccupancyInTimeRange());
+                       nAllTracksTPCOnly, nAllTracksITSTPC, collision.trackOccupancyInTimeRange(), collision.flags());
           } break;
           case kMultSelections: // Multiplicity selections
           {
