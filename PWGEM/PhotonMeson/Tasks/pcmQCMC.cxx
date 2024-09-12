@@ -164,7 +164,7 @@ struct PCMQCMC {
 
     // v0 info
     fRegistry.add("V0/primary/hPt", "pT;p_{T,#gamma} (GeV/c)", kTH1F, {{2000, 0.0f, 20}}, false);
-    fRegistry.add("V0/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{36, 0, 2 * M_PI}, {20, -1.0f, 1.0f}}, false);
+    fRegistry.add("V0/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
     fRegistry.add("V0/primary/hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
     fRegistry.add("V0/primary/hCosPA", "V0CosPA;cosine pointing angle", kTH1F, {{100, 0.9f, 1.0f}}, false);
     fRegistry.add("V0/primary/hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", kTH2F, {{200, 0.f, 100.f}, {100, 0.9f, 1.0f}}, false);
@@ -195,7 +195,7 @@ struct PCMQCMC {
     // v0leg info
     fRegistry.add("V0Leg/primary/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("V0Leg/primary/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -50, 50}}, false);
-    fRegistry.add("V0Leg/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
+    fRegistry.add("V0Leg/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -3.0f, 1.0f}}, false);
     fRegistry.add("V0Leg/primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -50.0f, 50.0f}, {200, -50.0f, 50.0f}}, false);
     fRegistry.add("V0Leg/primary/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
     fRegistry.add("V0Leg/primary/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -208,10 +208,10 @@ struct PCMQCMC {
     fRegistry.add("V0Leg/primary/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("V0Leg/primary/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("V0Leg/primary/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("V0Leg/primary/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
-    fRegistry.add("V0Leg/primary/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {100, -50, 50}}, false);
+    fRegistry.add("V0Leg/primary/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {160, 0, 16}}, false);
+    fRegistry.add("V0Leg/primary/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {40, -20, 20}}, false);
     fRegistry.add("V0Leg/primary/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
-    fRegistry.add("V0Leg/primary/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {100, -50, 50}}, false);
+    fRegistry.add("V0Leg/primary/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {40, -20, 20}}, false);
     fRegistry.add("V0Leg/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.add("V0Leg/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.add("V0Leg/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
@@ -374,7 +374,9 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hChi2TPC"), leg.tpcChi2NCl());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hChi2ITS"), leg.itsChi2NCl());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hITSClusterMap"), leg.itsClusterMap());
-    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hMeanClusterSizeITS"), leg.meanClusterSizeITS() * std::cos(std::atan(leg.tgl())));
+    if (leg.hasITS()) {
+      fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hMeanClusterSizeITS"), leg.p(), leg.meanClusterSizeITS() * std::cos(std::atan(leg.tgl())));
+    }
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCdEdx"), leg.tpcInnerParam(), leg.tpcSignal());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCNsigmaPi"), leg.tpcInnerParam(), leg.tpcNSigmaPi());
@@ -452,7 +454,7 @@ struct PCMQCMC {
       fRegistry.fill(HIST("V0/fromWD/hNgamma"), ng_wd);
       fRegistry.fill(HIST("V0/fromHS/hNgamma"), ng_hs);
     } // end of collision loop
-  }   // end of process
+  } // end of process
 
   template <typename TBinnedData>
   void fillBinnedData(TBinnedData const& binned_data, const float weight = 1.f)
@@ -516,7 +518,7 @@ struct PCMQCMC {
           fRegistry.fill(HIST("Generated/hPhotonPhivsRxy"), daughter.phi(), rxy_gen_e);
         }
       } // end of mctrack loop per collision
-    }   // end of collision loop
+    } // end of collision loop
   }
 
   void processDummy(MyCollisions const&) {}

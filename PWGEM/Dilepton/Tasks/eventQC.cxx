@@ -464,7 +464,7 @@ struct eventQC {
   {
     bool is_good = true;
     for (auto& qvec : qvectors) {
-      if (fabs(qvec[0]) > 10.f || fabs(qvec[1]) > 10.f) {
+      if (fabs(qvec[0]) > 20.f || fabs(qvec[1]) > 20.f) {
         is_good = false;
         break;
       }

@@ -30,7 +30,7 @@ using BCPattern = std::bitset<o2::constants::lhc::LHCMaxBunches>;
 const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct MultiplicityExtraTable {
-  Produces<aod::MultsBC> multBC;
+  Produces<aod::MultBCs> multBC;
   Produces<aod::MultNeighs> multNeigh;
 
   Produces<aod::Mults2BC> mult2bc;
@@ -62,7 +62,7 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void processBCs(BCsWithRun3Matchings const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, aod::Collisions const& collisions)
+  void processBCs(soa::Join<BCsWithRun3Matchings, aod::BCFlags> const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     // determine saved BCs and corresponding new BC table index
@@ -98,8 +98,8 @@ struct MultiplicityExtraTable {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     // interlink: collision -> valid BC, BC -> collision
     for (const auto& collision : collisions) {
-      mult2bc(newBCindex[collision.bcId()]);
-      bc2multArray[collision.bcId()] = collision.globalIndex();
+      mult2bc(newBCindex[collision.foundBCId()]);
+      bc2multArray[collision.foundBCId()] = collision.globalIndex();
     }
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
 
@@ -213,7 +213,12 @@ struct MultiplicityExtraTable {
       }
 
       bc2mult(bc2multArray[bc.globalIndex()]);
-      multBC(multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
+      multBC(
+        multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A,
+        multFDDA, multFDDC, multZNA, multZNC, multZEM1,
+        multZEM2, multZPA, multZPC, Tvx, isFV0OrA,
+        multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC,
+        bc.flags());
     }
   }
 

@@ -109,14 +109,14 @@ float GetKstarFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& secon
 {
   if (isIdentical) {
     TLorentzVector fourmomentadiff = first4momentum - second4momentum;
-    return 0.5 * abs(fourmomentadiff.Mag());
+    return 0.5 * std::fabs(fourmomentadiff.Mag());
   } else {
     TLorentzVector fourmomentasum = first4momentum + second4momentum;
     TLorentzVector fourmomentadif = first4momentum - second4momentum;
 
     fourmomentadif.Boost((-1) * fourmomentasum.BoostVector());
 
-    return 0.5 * abs(fourmomentadif.Vect().Mag());
+    return 0.5 * std::fabs(fourmomentadif.Vect().Mag());
   }
 }
 
@@ -252,9 +252,9 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, con
     return true;
   if (_magfield1 * _magfield2 == 0)
     return true;
-  if (std::pow(abs(GetEtaDiff()) / deta, 2) + std::pow(abs(GetPhiStarDiff(radius)) / dphi, 2) < 1.0f)
+  if (std::pow(std::fabs(GetEtaDiff()) / deta, 2) + std::pow(std::fabs(GetPhiStarDiff(radius)) / dphi, 2) < 1.0f)
     return true;
-  // if (abs(GetEtaDiff()) < deta && abs(GetPhiStarDiff(radius)) < dphi)
+  // if (std::fabs(GetEtaDiff()) < deta && std::fabs(GetPhiStarDiff(radius)) < dphi)
   //   return true;
 
   return false;

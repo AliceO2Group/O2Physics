@@ -73,6 +73,7 @@ struct hJetAnalysis {
 
   HistogramRegistry registry{"registry",
                              {{"hNtrig", "number of triggers;trigger type;entries", {HistType::kTH1F, {{2, 0, 2}}}},
+                              {"hZvtxSelected", "Z vertex position;Z_{vtx};entries", {HistType::kTH1F, {{80, -20, 20}}}},
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{160, -1.0, 7.0}}}},
@@ -429,6 +430,7 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
     fillHistograms(jets, jetsWTA, tracks);
   }
   PROCESS_SWITCH(hJetAnalysis, processData, "process data", true);
@@ -441,11 +443,13 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
     fillHistograms(jets, jetsWTA, tracks);
   }
   PROCESS_SWITCH(hJetAnalysis, processMCD, "process MC detector level", false);
 
-  void processMCDWeighted(soa::Join<soa::Filtered<JetCollisions>, aod::JMcCollisionLbs>::iterator const& collision,
+  void processMCDWeighted(soa::Filtered<soa::Join<JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
+                          aod::JMcCollisions const&,
                           soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
                           soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
                           soa::Filtered<JetTracks> const& tracks)
@@ -453,6 +457,7 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.mcCollision().weight());
     fillHistograms(jets, jetsWTA, tracks, collision.mcCollision().weight());
   }
   PROCESS_SWITCH(hJetAnalysis, processMCDWeighted, "process MC detector level with event weights", false);
@@ -462,9 +467,10 @@ struct hJetAnalysis {
                   soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                   JetParticles const& particles)
   {
-    if (collision.posZ() < vertexZCut) { // For some reason declaring a filter doesnt work
+    if (std::abs(collision.posZ()) > vertexZCut) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
     fillMCPHistograms(jets, jetsWTA, particles);
   }
   PROCESS_SWITCH(hJetAnalysis, processMCP, "process MC particle level", false);
@@ -474,9 +480,10 @@ struct hJetAnalysis {
                           soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                           JetParticles const& particles)
   {
-    if (collision.posZ() < vertexZCut) {
+    if (std::abs(collision.posZ()) > vertexZCut) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.weight());
     fillMCPHistograms(jets, jetsWTA, particles, collision.weight());
   }
   PROCESS_SWITCH(hJetAnalysis, processMCPWeighted, "process MC particle level with event weights", false);
@@ -493,6 +500,7 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
     const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
     for (const auto& mcdjet : mcdjets) {
       fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets);
@@ -512,6 +520,7 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
     const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
     for (const auto& mcdjet : mcdjets) {
       fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets, mcdjet.eventWeight());
@@ -531,6 +540,7 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
     const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
     bool ishJetEvent = false;
     for (auto& track : tracks) {
@@ -559,6 +569,7 @@ struct hJetAnalysis {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
     const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
     bool ishJetEvent = false;
     for (auto& track : tracks) {
