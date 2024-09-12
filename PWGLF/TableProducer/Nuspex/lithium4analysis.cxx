@@ -590,7 +590,7 @@ struct lithium4analysis {
 
   // ==================================================================================================================
 
-  void processSameEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCs&)
+  void processSameEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     for (auto& collision : collisions) {
       LOG(info) << "Processing collision " << collision.globalIndex();
@@ -656,7 +656,7 @@ struct lithium4analysis {
   }
   PROCESS_SWITCH(lithium4analysis, processMixedEvent, "Process Mixed event", false);
 
-  void processMC(const CollisionsFullMC& collisions, const aod::BCs&, const TrackCandidatesMC& tracks, const aod::McParticles& mcParticles)
+  void processMC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps&, const TrackCandidatesMC& tracks, const aod::McParticles& mcParticles)
   {
     std::vector<unsigned int> filledMothers;
 
