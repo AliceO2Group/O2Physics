@@ -611,7 +611,7 @@ struct TableMaker {
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
           trackBarrelPID(track.tpcSignal(), track.tpcNSigmaEl(), -1, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                               -1, -1, -1, -1, -1, -1, -1);
+                         -1, -1, -1, -1, -1, -1, -1);
         }
       }
     } // end if constexpr (TTrackFillMap)
@@ -1048,7 +1048,7 @@ struct TableMaker {
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
           trackBarrelPID(track.tpcSignal(), track.tpcNSigmaEl(), -1, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                               -1, -1, -1, -1, -1, -1, -1);
+                         -1, -1, -1, -1, -1, -1, -1);
         }
       }
     } // end if constexpr (TTrackFillMap)
