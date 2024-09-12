@@ -554,7 +554,7 @@ struct strangeYieldPbPb {
       invMass = cand.mXi();
       ctau = totalMom != 0 ? pdgDB->Mass(3312) * decayPos / (totalMom * ctauxiPDG) : 1e6;
       rapidity = cand.yXi();
-      
+
       if (PIDConfigurations.doTPCQA) {
         tpcNsigmaPos = posTrackExtra.tpcNSigmaPr();
         tpcNsigmaNeg = negTrackExtra.tpcNSigmaPi();
