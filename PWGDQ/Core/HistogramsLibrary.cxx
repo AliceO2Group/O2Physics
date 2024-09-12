@@ -815,9 +815,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 40, 0.0, 20.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_VtxZ", "", true, 30, -15.0, 15.0, VarManager::kVtxZ, 500, 0.0, 5.0, VarManager::kMass);
       if (subGroupStr.Contains("pbpb")) {
-        hm->AddHistogram(histClass, "Mass_CentFT0C", "", false, 500, 0.0, 5.0, VarManager::kMass, 20, 0.0, 100.0, VarManager::kCentFT0C);
-        hm->AddHistogram(histClass, "Pt_CentFT0C", "", false, 500, 0.0, 1.5, VarManager::kPt, 20, 0.0, 100.0, VarManager::kCentFT0C);
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C", "", false, 500, 0.0, 5.0, VarManager::kMass, 250, 0.0, 10.0, VarManager::kPt, 10, 0.0, 100.0, VarManager::kCentFT0C);
+        hm->AddHistogram(histClass, "Mass_CentFT0C", "", false, 125, 0.0, 5.0, VarManager::kMass, 20, 0.0, 100.0, VarManager::kCentFT0C);
+        hm->AddHistogram(histClass, "Pt_CentFT0C", "", false, 100, 0.0, 10.0, VarManager::kPt, 20, 0.0, 100.0, VarManager::kCentFT0C);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C", "", false, 125, 0.0, 5.0, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 10, 0.0, 100.0, VarManager::kCentFT0C);
       }
       if (subGroupStr.Contains("mult")) {
         hm->AddHistogram(histClass, "Mass_Pt_MultFV0A", "", false, 200, 0.0, 5.0, VarManager::kMass, 40, 0.0, 40.0, VarManager::kPt, 100, 0.0, 25000.0, VarManager::kMultFV0A);
