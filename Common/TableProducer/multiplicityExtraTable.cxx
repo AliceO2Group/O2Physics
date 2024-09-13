@@ -39,6 +39,7 @@ struct MultiplicityExtraTable {
   // Allow for downscaling of BC table for less space use in derived data
   Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
   Configurable<float> minFT0CforBCTable{"minFT0CforBCTable", 25.0f, "Minimum FT0C amplitude to fill BC table to reduce data"};
+  Configurable<bool> saveOnlyBCsWithCollisions{"saveOnlyBCsWithCollisions", true, "save only BCs with collisions in them"};
 
   // needed for downscale
   unsigned int randomSeed = 0;
@@ -66,13 +67,24 @@ struct MultiplicityExtraTable {
   {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     // determine saved BCs and corresponding new BC table index
+    std::vector<int> bcHasCollision(bcs.size());
     std::vector<int> newBCindex(bcs.size());
     std::vector<int> bc2multArray(bcs.size());
     int atIndex = 0;
     for (const auto& bc : bcs) {
+      bcHasCollision[bc.globalIndex()] = false;
       newBCindex[bc.globalIndex()] = -1;
       bc2multArray[bc.globalIndex()] = -1;
+    }
 
+    //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
+    // tag BCs that have a collision
+    for (const auto& collision : collisions) {
+      bcHasCollision[collision.foundBCId()] = true;
+    }
+    //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
+
+    for (const auto& bc : bcs) {
       // downscale if requested to do so
       if (bcDownscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > bcDownscaleFactor) {
         continue;
@@ -91,6 +103,11 @@ struct MultiplicityExtraTable {
       if (multFT0C < minFT0CforBCTable) {
         continue; // skip this event
       }
+
+      if (saveOnlyBCsWithCollisions && !bcHasCollision[bc.globalIndex()]){
+        continue; // skip if no collision is assigned to this BC (from evSel assignment)
+      }
+
       newBCindex[bc.globalIndex()] = atIndex++;
     }
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
