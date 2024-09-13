@@ -813,15 +813,15 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Pt", "", false, 2000, 0.0, 20., VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_Pt", "", false, 125, 0.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt);
       double massBins[76];
-      for (int i=0; i<76; i++) {
-        massBins[i] = 1.5+i*0.04;
+      for (int i = 0; i < 76; i++) {
+        massBins[i] = 1.5 + i * 0.04;
       }
       double ptBins[70];
-      for (int i=0; i<=50; i++) {
-        ptBins[i] = i*0.01;
+      for (int i = 0; i <= 50; i++) {
+        ptBins[i] = i * 0.01;
       }
-      for (int i=1; i<=19; i++) {
-        ptBins[50+i] = 0.5 + i*0.5;
+      for (int i = 1; i <= 19; i++) {
+        ptBins[50 + i] = 0.5 + i * 0.5;
       }
       hm->AddHistogram(histClass, "Mass_PtFine", "", false, 75, massBins, VarManager::kMass, 69, ptBins, VarManager::kPt);
       hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 40, 0.0, 20.0, VarManager::kPt);
