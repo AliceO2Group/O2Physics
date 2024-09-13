@@ -104,7 +104,7 @@ struct MultiplicityExtraTable {
         continue; // skip this event
       }
 
-      if (saveOnlyBCsWithCollisions && !bcHasCollision[bc.globalIndex()]){
+      if (saveOnlyBCsWithCollisions && !bcHasCollision[bc.globalIndex()]) {
         continue; // skip if no collision is assigned to this BC (from evSel assignment)
       }
 
