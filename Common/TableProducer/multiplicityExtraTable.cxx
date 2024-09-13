@@ -78,7 +78,7 @@ struct MultiplicityExtraTable {
     }
 
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
-    // tag BCs that have a collision
+    // tag BCs that have a collision (from evsel foundBC)
     for (const auto& collision : collisions) {
       bcHasCollision[collision.foundBCId()] = true;
     }
