@@ -366,7 +366,8 @@ struct JetFinderQATask {
   }
 
   template <typename T, typename U>
-  bool trackIsInJet(T const& track, U const& jet) {
+  bool trackIsInJet(T const& track, U const& jet)
+  {
     for (auto const& constituentId : jet.tracksIds()) {
       if (constituentId == track.globalIndex()) {
         return true;
@@ -661,7 +662,6 @@ struct JetFinderQATask {
 
     registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
-
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
     double randomConePtWithoutOneLeadJet = 0;
     double randomConePtWithoutTwoLeadJet = 0;
@@ -672,7 +672,7 @@ struct JetFinderQATask {
         if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
           if (!trackIsInJet(track, jets.iteratorAt(0))) {
             randomConePtWithoutOneLeadJet += track.pt();
-            if(!trackIsInJet(track, jets.iteratorAt(1))) {
+            if (!trackIsInJet(track, jets.iteratorAt(1))) {
               randomConePtWithoutTwoLeadJet += track.pt();
             }
           }
