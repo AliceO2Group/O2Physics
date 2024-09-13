@@ -31,13 +31,10 @@
 #include "GFWWeights.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
