@@ -101,6 +101,7 @@ struct spvector {
 
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", false, "use Recentering"};
+  Configurable<bool> recwitherror{"recwitherror", false, "use Recentering with error"};
   Configurable<bool> useShift{"useShift", false, "use Shift"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentere"};
@@ -313,21 +314,21 @@ struct spvector {
       }
 
       if (useRecentere && hrecentere) {
-        /*
-              qxZDCA = (qxZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 0.5));
-              qyZDCA = (qyZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 1.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 1.5));
-              qxZDCC = (qxZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 2.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 2.5));
-              qyZDCC = (qyZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 3.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 3.5));
-        */
+        if (recwitherror) {
+          qxZDCA = (qxZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 0.5));
+          qyZDCA = (qyZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 1.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 1.5));
+          qxZDCC = (qxZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 2.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 2.5));
+          qyZDCC = (qyZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 3.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 3.5));
+        } else {
 
-        qxZDCA = (qxZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5)));
-        qyZDCA = (qyZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 1.5)));
-        qxZDCC = (qxZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 2.5)));
-        qyZDCC = (qyZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 3.5)));
-        /*
-        if (vz>0.0)
-          LOG(info) <<"###################Accesed#####################"<<" "<<currentRunNumber<<" "<<vz<<" "<<centrality<<" "<<hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5));
-        */
+          qxZDCA = (qxZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5)));
+          qyZDCA = (qyZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 1.5)));
+          qxZDCC = (qxZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 2.5)));
+          qyZDCC = (qyZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 3.5)));
+        }
+
+        // if (vz>0.0)
+        // LOG(info) <<"###################Accesed#####################"<<" "<<currentRunNumber<<" "<<vz<<" "<<centrality<<" "<<hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5));
       }
 
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
