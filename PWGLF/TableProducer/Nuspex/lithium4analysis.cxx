@@ -113,7 +113,6 @@ struct Lithium4Candidate {
   float nSigmaPr = -10.f;
   float chi2TPCHe3 = -10.f;
   float chi2TPCPr = -10.f;
-
   float massTOFHe3 = -10;
   float massTOFPr = -10;
 
@@ -122,7 +121,6 @@ struct Lithium4Candidate {
 
   uint32_t itsClSizeHe3 = 0u;
   uint32_t itsClSizePr = 0u;
-
   uint8_t sharedClustersHe3 = 0u;
   uint8_t sharedClustersPr = 0u;
 
@@ -232,17 +230,14 @@ struct lithium4analysis {
 
   void init(o2::framework::InitContext&)
   {
-    LOG(info) << "Initializing lithium4 analysis";
     m_zorroSummary.setObject(m_zorro.getZorroSummary());
     m_runNumber = 0;
 
-    LOG(info) << "Initializing CCDB";
     m_ccdb->setURL(setting_ccdburl);
     m_ccdb->setCaching(true);
     m_ccdb->setLocalObjectValidityChecking();
     m_ccdb->setFatalWhenNull(false);
 
-    LOG(info) << "Initializing PID response";
     for (int i = 0; i < 5; i++) {
       m_BBparamsHe[i] = setting_BetheBlochParams->get("He3", Form("p%i", i));
     }
@@ -261,16 +256,16 @@ struct lithium4analysis {
 
   void initCCDB(const aod::BCsWithTimestamps::iterator& bc)
   {
-    LOG(info) << "Initializing CCDB for run " << bc.runNumber();
+
     if (m_runNumber == bc.runNumber()) {
       return;
     }
-    LOG(info) << "Initializing zorro for run " << bc.runNumber();
+
     if (setting_skimmedProcessing) {
       m_zorro.initCCDB(m_ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
       m_zorro.populateHistRegistry(m_qaRegistry, bc.runNumber());
     }
-    LOG(info) << "Initializing CCDB for run " << bc.runNumber() << " done";
+
     m_runNumber = bc.runNumber();
   }
 
@@ -596,6 +591,8 @@ struct lithium4analysis {
 
       m_trackPairs.clear();
       m_qaRegistry.fill(HIST("hEvents"), 0);
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
 
       if (!collision.sel8() || std::abs(collision.posZ()) > setting_cutVertex) {
         continue;
@@ -638,7 +635,6 @@ struct lithium4analysis {
     pairTracksEventMixing();
 
     for (auto& trackPair : m_trackPairs) {
-
       auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
       auto prTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
 
