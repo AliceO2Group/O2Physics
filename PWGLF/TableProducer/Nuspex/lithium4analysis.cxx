@@ -67,8 +67,8 @@ using std::array;
 
 namespace
 {
-  constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
-  static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
 constexpr float he3Mass = o2::constants::physics::MassHelium3;
 constexpr float protonMass = o2::constants::physics::MassProton;
@@ -123,7 +123,7 @@ struct Lithium4Candidate {
   uint32_t itsClSizePr = 0u;
   uint8_t sharedClustersHe3 = 0u;
   uint8_t sharedClustersPr = 0u;
-  
+
   bool isBkgUS = false;
   bool isBkgEM = false;
 
@@ -736,7 +736,6 @@ struct lithium4analysis {
     }
   }
   PROCESS_SWITCH(lithium4analysis, processMC, "Process MC", false);
-
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
