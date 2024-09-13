@@ -38,6 +38,8 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DCAFitter/DCAFitterN.h"
 
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
@@ -47,8 +49,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::Tracks, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::StoredTracksExtra_001, aod::pidTPCFullTr, aod::pidTOFFullTr, aod::TOFSignal, aod::TOFEvTime>;
-using TracksFullMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::Tracks, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::StoredTracksExtra_001, aod::pidTPCFullTr, aod::pidTOFFullTr, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::StoredTracksExtra_001, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::pidTPCFullTr, aod::pidTOFFullTr, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFullMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::StoredTracksExtra_001, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::pidTPCFullTr, aod::pidTOFFullTr, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 
@@ -128,8 +130,6 @@ struct lnnRecoTask {
   Configurable<double> v0cospa{"lnncospa", 0.95, "V0 CosPA"};
   Configurable<float> masswidth{"lnnmasswidth", 0.006, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"lnndcaDau", 1.0, "DCA V0 Daughters"};
-  Configurable<float> dcaToPvPion{"dcapvPi", 0., "DCA to PV pion"};
-  Configurable<float> dcaXY{"cutDCAXY", 2.0, "DCAxy range for tracks"};
   Configurable<float> Chi2nClusTPC{"Chi2NClusTPC", 4., "Chi2 / nClusTPC for triton track"};
   Configurable<float> Chi2nClusITS{"Chi2NClusITS", 36., "Chi2 / nClusITS for triton track"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
@@ -137,10 +137,8 @@ struct lnnRecoTask {
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.5, "Minimum rigidity of the triton candidate"};
   Configurable<float> nSigmaCutTPC{"nSigmaCutTPC", 4., "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
-  Configurable<float> nTPCClusMinPi{"nTPCClusMinPi", -1., "pion NTPC clusters cut"};
   Configurable<float> nClusITS{"nClusITSMin3H", 5.0, "triton NITS clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  // Configurable<bool> RMSMean{"RMSMean", 0.07, "RMS Mean"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -310,9 +308,6 @@ struct lnnRecoTask {
       float posRigidity = posTrack.tpcInnerParam();
       float negRigidity = negTrack.tpcInnerParam();
 
-      hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
-      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
-
       // Bethe-Bloch calcution for 3H & nSigma calculation
       double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
       double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
@@ -444,6 +439,8 @@ struct lnnRecoTask {
       lnnCand.posTrackID = posTrack.globalIndex();
       lnnCand.negTrackID = negTrack.globalIndex();
 
+      hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
+      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
