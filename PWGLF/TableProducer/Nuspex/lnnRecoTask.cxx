@@ -300,7 +300,6 @@ struct lnnRecoTask {
       auto posTrack = v0.posTrack_as<TracksFull>();
       auto negTrack = v0.negTrack_as<TracksFull>();
 
-
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax) {
         continue;
       }
