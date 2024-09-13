@@ -230,17 +230,14 @@ struct lithium4analysis {
 
   void init(o2::framework::InitContext&)
   {
-    LOG(info) << "Initializing lithium4 analysis";
     m_zorroSummary.setObject(m_zorro.getZorroSummary());
     m_runNumber = 0;
 
-    LOG(info) << "Initializing CCDB";
     m_ccdb->setURL(setting_ccdburl);
     m_ccdb->setCaching(true);
     m_ccdb->setLocalObjectValidityChecking();
     m_ccdb->setFatalWhenNull(false);
 
-    LOG(info) << "Initializing PID response";
     for (int i = 0; i < 5; i++) {
       m_BBparamsHe[i] = setting_BetheBlochParams->get("He3", Form("p%i", i));
     }
@@ -259,7 +256,6 @@ struct lithium4analysis {
 
   void initCCDB(const aod::BCsWithTimestamps::iterator& bc)
   {
-
     if (m_runNumber == bc.runNumber()) {
       return;
     }
