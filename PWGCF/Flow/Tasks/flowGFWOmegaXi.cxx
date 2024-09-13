@@ -38,7 +38,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
