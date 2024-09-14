@@ -246,7 +246,7 @@ struct vpPairQC {
     fRegistry.addClone("Track/positive/", "Track/negative/");
 
     const AxisSpec axis_mass{50, 0, 0.05, "m_{ee} (GeV/c^{2})"};
-    const AxisSpec axis_pair_pt{500, 0, 5, "p_{T,ee} (GeV/c)"};
+    const AxisSpec axis_pair_pt{200, 0, 2, "p_{T,ee} (GeV/c)"};
     const AxisSpec axis_pair_dca_3d{100, 0, 10, "DCA_{ee}^{3D} (#sigma)"};
     const AxisSpec axis_pair_dca_xy{100, 0, 10, "DCA_{ee}^{XY} (#sigma)"};
     const AxisSpec axis_phiv{90, 0, M_PI, "#varphi_{V} (rad.)"};

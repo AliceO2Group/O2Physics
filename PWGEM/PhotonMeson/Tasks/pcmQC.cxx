@@ -159,6 +159,7 @@ struct PCMQC {
     fRegistry.add("V0Leg/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("V0Leg/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
     fRegistry.add("V0Leg/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("V0Leg/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
     fRegistry.add("V0Leg/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("V0Leg/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("V0Leg/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
@@ -317,6 +318,7 @@ struct PCMQC {
     fRegistry.fill(HIST("V0Leg/hNcrTPC"), leg.tpcNClsCrossedRows());
     fRegistry.fill(HIST("V0Leg/hTPCNcr2Nf"), leg.tpcCrossedRowsOverFindableCls());
     fRegistry.fill(HIST("V0Leg/hTPCNcls2Nf"), leg.tpcFoundOverFindableCls());
+    fRegistry.fill(HIST("V0Leg/hTPCNclsShared"), leg.pt(), leg.tpcFractionSharedCls());
     fRegistry.fill(HIST("V0Leg/hChi2TPC"), leg.tpcChi2NCl());
     fRegistry.fill(HIST("V0Leg/hChi2ITS"), leg.itsChi2NCl());
     fRegistry.fill(HIST("V0Leg/hITSClusterMap"), leg.itsClusterMap());
