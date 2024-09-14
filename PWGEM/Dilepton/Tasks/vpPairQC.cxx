@@ -216,6 +216,7 @@ struct vpPairQC {
     fRegistry.add("Track/positive/hPResolution", "p resolution;p (GeV/c);#Deltap/p", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.1f}}, false);
     fRegistry.add("Track/positive/hPtResolution", "p_{T} resolution;p (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.1f}}, false);
     fRegistry.add("Track/positive/hThetaResolution", "#theta resolution;p (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.01f}}, false);
+    fRegistry.add("Track/positive/hEtaResolution", "#eta resolution;p (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.01f}}, false);
     fRegistry.add("Track/positive/hPhiResolution", "#varphi resolution;p (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.01f}}, false);
     fRegistry.add("Track/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
@@ -384,7 +385,8 @@ struct vpPairQC {
       fRegistry.fill(HIST("Track/positive/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/positive/hPResolution"), track.p(), sigmaP(track) / track.p());
       fRegistry.fill(HIST("Track/positive/hPtResolution"), track.p(), sigmaPt(track) / track.pt());
-      fRegistry.fill(HIST("Track/positive/hThetaResolution"), track.p(), sigmaLambda(track));
+      fRegistry.fill(HIST("Track/positive/hThetaResolution"), track.p(), sigmaTheta(track));
+      fRegistry.fill(HIST("Track/positive/hEtaResolution"), track.p(), sigmaEta(track));
       fRegistry.fill(HIST("Track/positive/hPhiResolution"), track.p(), sigmaPhi(track));
       fRegistry.fill(HIST("Track/positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/positive/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
@@ -417,7 +419,8 @@ struct vpPairQC {
       fRegistry.fill(HIST("Track/negative/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/negative/hPResolution"), track.p(), sigmaP(track) / track.p());
       fRegistry.fill(HIST("Track/negative/hPtResolution"), track.p(), sigmaPt(track) / track.pt());
-      fRegistry.fill(HIST("Track/negative/hThetaResolution"), track.p(), sigmaLambda(track));
+      fRegistry.fill(HIST("Track/negative/hThetaResolution"), track.p(), sigmaTheta(track));
+      fRegistry.fill(HIST("Track/negative/hEtaResolution"), track.p(), sigmaEta(track));
       fRegistry.fill(HIST("Track/negative/hPhiResolution"), track.p(), sigmaPhi(track));
       fRegistry.fill(HIST("Track/negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/negative/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));

@@ -201,7 +201,6 @@ struct eventQC {
     const AxisSpec axis_sign{3, -1.5, +1.5, "sign"};
     fRegistry.add("Track/hs", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_sign}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
-    fRegistry.add("Track/hSigma1Pt", "#sigma_{1/p_{T}} vs. q/p_{T};q/p_{T} (GeV/c)^{-1};#sigma_{1/p_{T}} (GeV/c)^{-1}", kTH2F, {{400, -20, 20}, {200, 0, 0.2}}, false);
     fRegistry.add("Track/hRelSigma1Pt", "relative p_{T} resolution;p_{T} (GeV/c);#sigma_{1/p_{T}} #times p_{T}", kTH2F, {axis_pt_tmp, {100, 0, 0.1}}, false);
     fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
@@ -212,6 +211,7 @@ struct eventQC {
     fRegistry.add("Track/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
     fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
     fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
@@ -238,7 +238,6 @@ struct eventQC {
   {
     fRegistry.fill(HIST("Track/hs"), track.pt(), track.eta(), track.phi(), track.sign());
     fRegistry.fill(HIST("Track/hQoverPt"), track.signed1Pt());
-    fRegistry.fill(HIST("Track/hSigma1Pt"), track.signed1Pt(), track.sigma1Pt());
     fRegistry.fill(HIST("Track/hRelSigma1Pt"), track.pt(), track.sigma1Pt() * track.pt());
     fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
     fRegistry.fill(HIST("Track/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
@@ -249,6 +248,7 @@ struct eventQC {
     fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
     fRegistry.fill(HIST("Track/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
     fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+    fRegistry.fill(HIST("Track/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
     fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
     fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
     fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());

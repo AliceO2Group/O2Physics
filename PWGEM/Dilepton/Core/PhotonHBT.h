@@ -217,7 +217,8 @@ struct PhotonHBT {
 
   struct : ConfigurableGroup {
     std::string prefix = "ggpaircut_group";
-    Configurable<bool> applydR{"applydR", false, "apply deta-dphi cut to avoid track splitting/merging"};
+    Configurable<bool> applydRdZ{"applydRdZ", false, "apply dr-dz cut to avoid track splitting/merging only for kPCMPCM"};
+    Configurable<bool> applydEtadPhi{"applydEtadPhi", false, "apply deta-dphi cut to avoid track splitting/merging"};
     Configurable<float> cfgMinDeltaEta{"cfgMinDeltaEta", 0.f, "min. delta-eta between 2 photons"};
     Configurable<float> cfgMinDeltaPhi{"cfgMinDeltaPhi", 0.f, "min. delta-phi between 2 photons"};
     Configurable<float> cfgMinDeltaR{"cfgMinDeltaR", 0.f, "min. delta-r between 2 photons"};
@@ -707,9 +708,9 @@ struct PhotonHBT {
 
           float dz = g1.vz() - g2.vz();
           float dr = std::sqrt(std::pow(g1.vx() - g2.vx(), 2) + std::pow(g1.vy() - g2.vy(), 2));
-          // if (ggpaircuts.applydR && std::pow(dz / ggpaircuts.cfgMinDeltaZ, 2) + std::pow(dr / ggpaircuts.cfgMinDeltaR, 2) < 1.f) {
-          //   continue;
-          // }
+          if (ggpaircuts.applydRdZ && std::pow(dz / ggpaircuts.cfgMinDeltaZ, 2) + std::pow(dr / ggpaircuts.cfgMinDeltaR, 2) < 1.f) {
+            continue;
+          }
 
           float deta_pos = pos1.eta() - pos2.eta();
           float dphi_pos = pos1.phi() - pos2.phi();
@@ -717,10 +718,10 @@ struct PhotonHBT {
           float deta_ele = ele1.eta() - ele2.eta();
           float dphi_ele = ele1.phi() - ele2.phi();
           o2::math_utils::bringToPMPi(dphi_ele);
-          if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+          if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
             continue;
           }
-          if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+          if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
             continue;
           }
 
@@ -826,10 +827,10 @@ struct PhotonHBT {
               float deta_ele = ele1.eta() - ele2.eta();
               float dphi_ele = ele1.phi() - ele2.phi();
               o2::math_utils::bringToPMPi(dphi_ele);
-              if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
 
@@ -935,10 +936,10 @@ struct PhotonHBT {
             float deta_ele = ele1.eta() - ele2.eta();
             float dphi_ele = ele1.phi() - ele2.phi();
             o2::math_utils::bringToPMPi(dphi_ele);
-            if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+            if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
               continue;
             }
-            if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+            if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
               continue;
             }
 
@@ -1012,9 +1013,9 @@ struct PhotonHBT {
 
               float dz = g1.vz() - g2.vz();
               float dr = std::sqrt(std::pow(g1.vx() - g2.vx(), 2) + std::pow(g1.vy() - g2.vy(), 2));
-              // if (ggpaircuts.applydR && std::pow(dz / ggpaircuts.cfgMinDeltaZ, 2) + std::pow(dr / ggpaircuts.cfgMinDeltaR, 2) < 1.f) {
-              //   continue;
-              // }
+              if (ggpaircuts.applydRdZ && std::pow(dz / ggpaircuts.cfgMinDeltaZ, 2) + std::pow(dr / ggpaircuts.cfgMinDeltaR, 2) < 1.f) {
+                continue;
+              }
 
               float deta_pos = pos1.Eta() - pos2.Eta();
               float dphi_pos = pos1.Phi() - pos2.Phi();
@@ -1022,10 +1023,10 @@ struct PhotonHBT {
               float deta_ele = ele1.Eta() - ele2.Eta();
               float dphi_ele = ele1.Phi() - ele2.Phi();
               o2::math_utils::bringToPMPi(dphi_ele);
-              if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
 
@@ -1086,10 +1087,10 @@ struct PhotonHBT {
               float deta_ele = ele1.Eta() - ele2.Eta();
               float dphi_ele = ele1.Phi() - ele2.Phi();
               o2::math_utils::bringToPMPi(dphi_ele);
-              if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
               fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_pos, deta_pos, 1.f); // distance between 2 LS tracks
@@ -1132,10 +1133,10 @@ struct PhotonHBT {
               float deta_ele = ele1.Eta() - ele2.Eta();
               float dphi_ele = ele1.Phi() - ele2.Phi();
               o2::math_utils::bringToPMPi(dphi_ele);
-              if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
 
@@ -1179,10 +1180,10 @@ struct PhotonHBT {
               float deta_ele = ele1.Eta() - ele2.Eta();
               float dphi_ele = ele1.Phi() - ele2.Phi();
               o2::math_utils::bringToPMPi(dphi_ele);
-              if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
 
