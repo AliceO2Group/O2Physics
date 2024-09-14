@@ -409,7 +409,8 @@ struct lambdaCorrTableProducer {
 
   void shift_nsigma(float& nsigma, float pt, std::vector<float> v_pt_bins, std::vector<float> v_corr_factor)
   {
-    for (int i = 0; i < (int)v_corr_factor.size(); ++i) {
+    int n = v_corr_factor.size();
+    for (int i = 0; i < n; ++i) {
       if (pt > v_pt_bins[i] && pt <= v_pt_bins[i + 1]) {
         nsigma = nsigma - v_corr_factor[i];
       }
