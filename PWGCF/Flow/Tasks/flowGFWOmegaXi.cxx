@@ -260,8 +260,8 @@ struct FlowGFWOmegaXi {
     correctionsLoaded = true;
   }
 
-  template <typename aodTracks>
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, aodTracks track, float vtxz)
+  template <typename Track_weight>
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, Track_weight track, float vtxz)
   {
     float eff = 1.;
     if (mEfficiency)
