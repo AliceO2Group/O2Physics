@@ -215,8 +215,8 @@ struct vpPairQC {
     fRegistry.add("Track/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
     fRegistry.add("Track/positive/hPResolution", "p resolution;p (GeV/c);#Deltap/p", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.1f}}, false);
     fRegistry.add("Track/positive/hPtResolution", "p_{T} resolution;p (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.1f}}, false);
-    fRegistry.add("Track/positive/hThetaResolution", "#theta resolution;p (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {200, 0.0f, 0.02f}}, false);
-    fRegistry.add("Track/positive/hPhiResolution", "#varphi resolution;p (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {200, 0.0f, 0.02f}}, false);
+    fRegistry.add("Track/positive/hThetaResolution", "#theta resolution;p (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.01f}}, false);
+    fRegistry.add("Track/positive/hPhiResolution", "#varphi resolution;p (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.01f}}, false);
     fRegistry.add("Track/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
     fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
