@@ -13,10 +13,10 @@
 /// \author chiara.oppedisano@cern.ch
 // Minimal example to run this task:
 // export OPTIONS="-b --configuration json://config.json --aod-file AO2D.root"
-//  o2-analysis-timestamp ${OPTIONS} | 
-//  o2-analysis-event-selection ${OPTIONS} |  
-//  o2-analysis-track-propagation ${OPTIONS} |  
-//  o2-analysis-mm-zdc-task-intercalib ${OPTIONS} 
+//  o2-analysis-timestamp ${OPTIONS} |
+//  o2-analysis-event-selection ${OPTIONS} |
+//  o2-analysis-track-propagation ${OPTIONS} |
+//  o2-analysis-mm-zdc-task-intercalib ${OPTIONS}
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -48,7 +48,7 @@ using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3Match
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct zdcInterCalib {
-  
+
   Produces<aod::ZDCInterCalib> zTab;
 
   // Configurable parameters
@@ -88,8 +88,8 @@ struct zdcInterCalib {
         double pmcZNC = zdc.energyCommonZNC();
         double pmcZNA = zdc.energyCommonZNA();
         //
-        //double tdcZNC = zdc.zdc.timeZNC();
-        //double tdcZNA = zdc.zdc.timeZNA();
+        // double tdcZNC = zdc.zdc.timeZNC();
+        // double tdcZNA = zdc.zdc.timeZNA();
         //
         bool isZNChit = true, isZNAhit = true;
         if (pmcZNC < kVeryNegative) {
@@ -103,11 +103,21 @@ struct zdcInterCalib {
         //
         double sumZNC = 0;
         double sumZNA = 0;
-        double pmqZNC[4] = {0, 0, 0, 0,};
-        double pmqZNA[4] = {0, 0, 0, 0,};
+        double pmqZNC[4] = {
+          0,
+          0,
+          0,
+          0,
+        };
+        double pmqZNA[4] = {
+          0,
+          0,
+          0,
+          0,
+        };
         //
-        if(isZNChit) {
-          for(int it=0; it<4; it++) {
+        if (isZNChit) {
+          for (int it = 0; it < 4; it++) {
             pmqZNC[it] = (zdc.energySectorZNC())[it];
             sumZNC += pmqZNC[it];
           }
@@ -118,8 +128,8 @@ struct zdcInterCalib {
           registry.get<TH1>(HIST("ZNCpm4"))->Fill(pmqZNC[3]);
           registry.get<TH1>(HIST("ZNCsumq"))->Fill(sumZNC);
         }
-        if(isZNAhit) {
-          for(int it=0; it<4; it++) {
+        if (isZNAhit) {
+          for (int it = 0; it < 4; it++) {
             pmqZNA[it] = (zdc.energySectorZNA())[it];
             sumZNA += pmqZNA[it];
           }
@@ -131,18 +141,15 @@ struct zdcInterCalib {
           registry.get<TH1>(HIST("ZNApm4"))->Fill(pmqZNA[3]);
           registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
         }
-        if (isZNAhit || isZNChit) 
+        if (isZNAhit || isZNChit)
           zTab(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3]);
       }
     }
   }
-  
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<zdcInterCalib>(cfgc) 
-  };
+    adaptAnalysisTask<zdcInterCalib>(cfgc)};
 }
