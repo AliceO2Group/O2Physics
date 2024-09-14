@@ -220,7 +220,7 @@ struct FlowGFWOmegaXi {
       fMass = fXiMass;
     } else if (partical == 2) {
       nMassBins = nOmegaMassBins;
-        fMass = fOmegaMass;
+      fMass = fOmegaMass;
     } else {
       LOGF(error, "Error, partical = 1 for Xi and 2 for Omega");
       return;
