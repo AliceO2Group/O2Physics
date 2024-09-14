@@ -218,13 +218,11 @@ struct FlowGFWOmegaXi {
     if (partical == 1) {
       nMassBins = nXiMassBins;
       fMass = fXiMass;
-    }
-    else if (partical == 2) {
+    } else if (partical == 2) {
       nMassBins = nOmegaMassBins;
         fMass = fOmegaMass;
-    }
-    else {
-      LOGF(error, "Error, partical = 1 for Xi and 2 for Omega" );
+    } else {
+      LOGF(error, "Error, partical = 1 for Xi and 2 for Omega");
       return;
     }
     for (int massbin = 1; massbin <= nMassBins; massbin++) {
