@@ -169,6 +169,8 @@ struct spvector {
     histos.add("QyZDCA", "QyZDCA", kTH3F, {centAxis, vzAxis, qyZDCAxis});
     histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centAxis, phiAxis});
     histos.add("PsiZDCA", "PsiZDCA", kTH2F, {centAxis, phiAxis});
+    histos.add("hpCosPsiAPsiC", "hpCosPsiAPsiC", kTProfile, {centAxis});
+    histos.add("hpSinPsiAPsiC", "hpSinPsiAPsiC", kTProfile, {centAxis});
     histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, vzAxis});
     histos.add("hZDCAmp", "hZDCAmp", kTH3F, {channelZDCAxis, vzAxis, amplitudeZDC});
 
@@ -338,6 +340,8 @@ struct spvector {
       histos.fill(HIST("hpQyZDCAC"), centrality, (qyZDCA * qyZDCC));
       histos.fill(HIST("hpQxZDCAQyZDCC"), centrality, (qxZDCA * qyZDCC));
       histos.fill(HIST("hpQxZDCCQyZDCA"), centrality, (qxZDCC * qyZDCA));
+      histos.fill(HIST("hpCosPsiAPsiC"), centrality, (TMath::Cos(psiZDCA - psiZDCC)));
+      histos.fill(HIST("hpSinPsiAPsiC"), centrality, (TMath::Sin(psiZDCA - psiZDCC)));
       histos.fill(HIST("QxZDCC"), centrality, vz, qxZDCC);
       histos.fill(HIST("QyZDCC"), centrality, vz, qyZDCC);
       histos.fill(HIST("QxZDCA"), centrality, vz, qxZDCA);
