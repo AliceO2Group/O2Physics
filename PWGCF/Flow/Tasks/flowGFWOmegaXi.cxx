@@ -218,11 +218,13 @@ struct FlowGFWOmegaXi {
     if (partical == 1) {
       nMassBins = nXiMassBins;
       fMass = fXiMass;
-    } else if (partical == 2) {
+    }
+    else if (partical == 2) {
       nMassBins = nOmegaMassBins;
-      fMass = fOmegaMass;
-    } else {
-      std::cout << "Error, partical = 1 for Xi and 2 for Omega" << std::endl;
+        fMass = fOmegaMass;
+    }
+    else {
+      LOGF(error, "Error, partical = 1 for Xi and 2 for Omega" );
       return;
     }
     for (int massbin = 1; massbin <= nMassBins; massbin++) {
@@ -260,18 +262,19 @@ struct FlowGFWOmegaXi {
     correctionsLoaded = true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
+  template <typename aodTracks>
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, aodTracks track, float vtxz)
   {
     float eff = 1.;
     if (mEfficiency)
-      eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
+      eff = mEfficiency->GetBinContent(mEfficiency->FindBin(track.pt()));
     else
       eff = 1.0;
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
     if (mAcceptance)
-      weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
+      weight_nua = mAcceptance->GetNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
     return true;
@@ -352,7 +355,7 @@ struct FlowGFWOmegaXi {
     float wacc = 1;
     // fill GFW ref flow
     for (auto& track : tracks) {
-      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
+      if (!setCurrentParticleWeights(weff, wacc, track, vtxz))
         continue;
       int phibin = fPhiAxis->FindBin(track.phi()) - 1;
       wacc = 1 / vecwa[phibin];
