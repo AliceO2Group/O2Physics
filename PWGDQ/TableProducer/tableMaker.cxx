@@ -56,6 +56,7 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "EventFiltering/Zorro.h"
+#include "Framework/HistogramRegistry.h"
 
 using std::cout;
 using std::endl;
@@ -172,13 +173,18 @@ struct TableMaker {
   Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
-  Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
-  Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
+
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
+    Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
+  } useZorro;
+
   struct : ConfigurableGroup {
     Configurable<string> fConfigCcdbUrl{"useCCDBConfigurations.ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<string> fConfigCcdbPathTPC{"useCCDBConfigurations.ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
     Configurable<string> fConfigCcdbPathZorro{"useCCDBConfigurations.ccdb-path-zorro", "Users/r/rlietava/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
   } useCCDBConfigurations;
+
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
@@ -211,6 +217,8 @@ struct TableMaker {
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
+
+  HistogramRegistry registry{"registry"};
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
   Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= fConfigBarrelTrackMaxAbsEta && o2::aod::track::tpcSignal >= fConfigMinTpcSignal && o2::aod::track::tpcSignal <= fConfigMaxTpcSignal && o2::aod::track::tpcChi2NCl < 4.0f && o2::aod::track::itsChi2NCl < 36.0f;
@@ -406,7 +414,7 @@ struct TableMaker {
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
-      if (!fConfigRunZorro) {
+      if (!useZorro.fConfigRunZorro) {
         tag |= (collision.eventFilter() << 56);
       }
     }
@@ -432,9 +440,12 @@ struct TableMaker {
     }
     (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
-    if (fConfigRunZorro) {
+    if (useZorro.fConfigRunZorro) {
       zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
-      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
+      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), useZorro.fConfigZorroTrigMask.value);
+
+      zorro.populateHistRegistry(registry, fCurrentRun);
+
       if (zorro.isSelected(bc.globalBC())) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
@@ -861,7 +872,7 @@ struct TableMaker {
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
-      if (!fConfigRunZorro) {
+      if (!useZorro.fConfigRunZorro) {
         tag |= (collision.eventFilter() << 56);
       }
     }
@@ -886,9 +897,12 @@ struct TableMaker {
     }
     (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
-    if (fConfigRunZorro) {
+    if (useZorro.fConfigRunZorro) {
       zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
-      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
+      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), useZorro.fConfigZorroTrigMask.value);
+
+      zorro.populateHistRegistry(registry, fCurrentRun);
+
       if (zorro.isSelected(bc.globalBC())) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
