@@ -101,10 +101,12 @@ struct spvector {
 
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", false, "use Recentering"};
+  Configurable<bool> useRecentereVxy{"useRecentereVxy", false, "use Recentering for Vxy"};
   Configurable<bool> recwitherror{"recwitherror", false, "use Recentering with error"};
   Configurable<bool> useShift{"useShift", false, "use Shift"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentere"};
+  Configurable<std::string> ConfRecentereVxy{"ConfRecentereVxy", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxy"};
   Configurable<std::string> ConfShift{"ConfShift", "Users/p/prottay/My/Object/Finaltest2/recenereall", "Path for Shift"};
 
   ConfigurableAxis configAxisCentrality{"configAxisCentrality", {80, 0.0, 80}, "centrality bining"};
@@ -155,6 +157,8 @@ struct spvector {
     AxisSpec qyZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qy"};
     AxisSpec phiAxis = {100, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {20, -10, 10, "vz"};
+    AxisSpec vxAxis = {100, -0.05, 0.0, "vx"};
+    AxisSpec vyAxis = {100, -0.02, 0.02, "vy"};
 
     histos.add("hCentrality", "hCentrality", kTH1F, {{8, 0, 80.0}});
     histos.add("Vz", "Vz", kTH1F, {vzAxis});
@@ -167,12 +171,16 @@ struct spvector {
     histos.add("QyZDCC", "QyZDCC", kTH3F, {centAxis, vzAxis, qyZDCAxis});
     histos.add("QxZDCA", "QxZDCA", kTH3F, {centAxis, vzAxis, qxZDCAxis});
     histos.add("QyZDCA", "QyZDCA", kTH3F, {centAxis, vzAxis, qyZDCAxis});
+    histos.add("hpQxVZDCC", "hpQxVZDCC", kTProfile2D, {vxAxis, vyAxis});
+    histos.add("hpQyVZDCC", "hpQyVZDCC", kTProfile2D, {vxAxis, vyAxis});
+    histos.add("hpQxVZDCA", "hpQxVZDCA", kTProfile2D, {vxAxis, vyAxis});
+    histos.add("hpQyVZDCA", "hpQyVZDCA", kTProfile2D, {vxAxis, vyAxis});
     histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centAxis, phiAxis});
     histos.add("PsiZDCA", "PsiZDCA", kTH2F, {centAxis, phiAxis});
     histos.add("hpCosPsiAPsiC", "hpCosPsiAPsiC", kTProfile, {centAxis});
     histos.add("hpSinPsiAPsiC", "hpSinPsiAPsiC", kTProfile, {centAxis});
     histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, vzAxis});
-    histos.add("hZDCAmp", "hZDCAmp", kTH3F, {channelZDCAxis, vzAxis, amplitudeZDC});
+    // histos.add("hZDCAmp", "hZDCAmp", kTH3F, {channelZDCAxis, vzAxis, amplitudeZDC});
 
     // Event selection cut additional - Alex
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -197,6 +205,7 @@ struct spvector {
   int lastRunNumber = -999;
   TH2D* gainprofile;
   TH3D* hrecentere;
+  TH3D* hrecentereVxy;
 
   // Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
@@ -223,6 +232,8 @@ struct spvector {
 
     currentRunNumber = collision.foundBC_as<BCsRun3>().runNumber();
     auto vz = collision.posZ();
+    auto vx = collision.posX();
+    auto vy = collision.posY();
     bool triggerevent = false;
 
     float psiZDCC = -99;
@@ -277,7 +288,7 @@ struct spvector {
             qyZDCA = qyZDCA + ampl * y[iChA];
             sumA = sumA + ampl;
             histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
-            histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, ampl);
+            // histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, ampl);
           }
         } else {
 
@@ -289,7 +300,7 @@ struct spvector {
             qyZDCC = qyZDCC + ampl * y[iChA - 4];
             sumC = sumC + ampl;
             histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
-            histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, ampl);
+            // histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, ampl);
           }
         }
       }
@@ -328,9 +339,25 @@ struct spvector {
           qxZDCC = (qxZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 2.5)));
           qyZDCC = (qyZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 3.5)));
         }
+      }
 
-        // if (vz>0.0)
-        // LOG(info) <<"###################Accesed#####################"<<" "<<currentRunNumber<<" "<<vz<<" "<<centrality<<" "<<hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5));
+      if (useRecentereVxy && (currentRunNumber != lastRunNumber)) {
+        hrecentereVxy = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxy.value, bc.timestamp());
+      }
+
+      if (useRecentereVxy && hrecentereVxy) {
+        if (recwitherror) {
+          qxZDCA = (qxZDCA - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 0.5))) / hrecentereVxy->GetBinError(hrecentereVxy->FindBin(vx, vy, 0.5));
+          qyZDCA = (qyZDCA - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 1.5))) / hrecentereVxy->GetBinError(hrecentereVxy->FindBin(vx, vy, 1.5));
+          qxZDCC = (qxZDCC - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 2.5))) / hrecentereVxy->GetBinError(hrecentereVxy->FindBin(vx, vy, 2.5));
+          qyZDCC = (qyZDCC - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 3.5))) / hrecentereVxy->GetBinError(hrecentereVxy->FindBin(vx, vy, 3.5));
+        } else {
+
+          qxZDCA = (qxZDCA - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 0.5)));
+          qyZDCA = (qyZDCA - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 1.5)));
+          qxZDCC = (qxZDCC - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 2.5)));
+          qyZDCC = (qyZDCC - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 3.5)));
+        }
       }
 
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
@@ -346,6 +373,10 @@ struct spvector {
       histos.fill(HIST("QyZDCC"), centrality, vz, qyZDCC);
       histos.fill(HIST("QxZDCA"), centrality, vz, qxZDCA);
       histos.fill(HIST("QyZDCA"), centrality, vz, qyZDCA);
+      histos.fill(HIST("hpQxVZDCC"), vx, vy, qxZDCC);
+      histos.fill(HIST("hpQyVZDCC"), vx, vy, qyZDCC);
+      histos.fill(HIST("hpQxVZDCA"), vx, vy, qxZDCA);
+      histos.fill(HIST("hpQyVZDCA"), vx, vy, qyZDCA);
       histos.fill(HIST("PsiZDCA"), centrality, psiZDCA);
       histos.fill(HIST("PsiZDCC"), centrality, psiZDCC);
 
