@@ -8,14 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef ZDC_INTERCALIB_H_
-#define ZDC_INTERCALIB_H_
+#ifndef COMMON_DATAMODEL_ZDCINTERCALIB_H_
+#define COMMON_DATAMODEL_ZDCINTERCALIB_H_
 
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
-namespace vars
+namespace znoutput
 {
 DECLARE_SOA_COLUMN(pmcZNA, ZNAcommonPM, float); //! PMC ZNA
 DECLARE_SOA_COLUMN(pm1ZNA, ZNAPM1, float);      //! PM1 ZNA
@@ -28,19 +28,19 @@ DECLARE_SOA_COLUMN(pm2ZNC, ZNCPM2, float);      //! PM2 ZNC
 DECLARE_SOA_COLUMN(pm3ZNC, ZNCPM3, float);      //! PM3 ZNC
 DECLARE_SOA_COLUMN(pm4ZNC, ZNCPM4, float);      //! PM4 ZNC
 
-} // namespace vars
+} // namespace znoutput
 
 DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCIC", o2::soa::Index<>,
-                  vars::pmcZNA,
-                  vars::pm1ZNA,
-                  vars::pm2ZNA,
-                  vars::pm3ZNA,
-                  vars::pm4ZNA,
-                  vars::pmcZNC,
-                  vars::pm1ZNC,
-                  vars::pm2ZNC,
-                  vars::pm3ZNC,
-                  vars::pm4ZNC);
+                  znoutput::pmcZNA,
+                  znoutput::pm1ZNA,
+                  znoutput::pm2ZNA,
+                  znoutput::pm3ZNA,
+                  znoutput::pm4ZNA,
+                  znoutput::pmcZNC,
+                  znoutput::pm1ZNC,
+                  znoutput::pm2ZNC,
+                  znoutput::pm3ZNC,
+                  znoutput::pm4ZNC);
 } // namespace o2::aod
 
-#endif
+#endif // COMMON_DATAMODEL_ZDCINTERCALIB_H_

@@ -31,7 +31,6 @@
 
 #include "TH1F.h"
 #include "TH2F.h"
-#include "TMinuit.h"
 
 using namespace o2;
 using namespace o2::framework;
