@@ -387,15 +387,26 @@ bool trackAcceptanceWithDca(T const& track, float trackDcaXYMax, float trackDcaZ
  * retrun acceptance of prong about chi2 and error of decay length due to cut for high quality secondary vertex
  */
 template <typename T>
-bool prongAcceptance(T const& prong, float prongChi2PCAMax, float prongsigmaLxyMax, bool doXYZ)
+bool prongAcceptance(T const& prong, float prongChi2PCAMin, float prongChi2PCAMax, float prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, bool doXYZ)
 {
+  if (prong.chi2PCA() < prongChi2PCAMin)
+    return false;
   if (prong.chi2PCA() > prongChi2PCAMax)
     return false;
   if (!doXYZ) {
     if (prong.errorDecayLengthXY() > prongsigmaLxyMax)
       return false;
+    if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
+      return false;
+    if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
+      return false;
   } else {
     if (prong.errorDecayLength() > prongsigmaLxyMax)
+      return false;
+    // TODO
+    if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
+      return false;
+    if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
       return false;
   }
   return true;
@@ -622,7 +633,7 @@ class bjetCandSV
 };
 
 template <typename ProngType, typename JetType>
-bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, const bool& doXYZ = false)
+bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, const bool& doXYZ = false)
 {
   float xPVertex = 0.0f;
   float yPVertex = 0.0f;
@@ -662,8 +673,6 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2
     } else {
       Sxy = prong.decayLength() / prong.errorDecayLength();
     }
-    if (!prongAcceptance(prong, prongChi2PCAMax, prongsigmaLxyMax, doXYZ))
-      continue;
 
     if (maxSxy < Sxy) {
       maxSxy = Sxy;
@@ -711,9 +720,11 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2
 }
 
 template <typename T, typename U>
-bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
+bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
 {
-  auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMax, prongsigmaLxyMax, doXYZ);
+  auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ);
+  if (!prongAcceptance(bjetCand, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ))
+    return false;
   if (!doXYZ) {
     auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
     if (maxSxy < tagPointForSV)

@@ -51,6 +51,7 @@ DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                       //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta10, multMCNParticlesEta10, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
+DECLARE_SOA_COLUMN(MultMCPVz, multMCPVz, float);                       //!
 
 // complementary / MultsExtra table
 DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int); //!
@@ -72,8 +73,9 @@ DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);       //!
 DECLARE_SOA_COLUMN(MultAllTracksTPCOnly, multAllTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultAllTracksITSTPC, multAllTracksITSTPC, int);   //!
 DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);       //!
-
-DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
+DECLARE_SOA_COLUMN(MultNGlobalTracksPV, multNGlobalTracksPV, int);
+DECLARE_SOA_COLUMN(MultNGlobalTracksPVeta1, multNGlobalTracksPVeta1, int);
+DECLARE_SOA_COLUMN(MultNGlobalTracksPVetaHalf, multNGlobalTracksPVetaHalf, int);
 
 // even further QA: timing information for neighboring events
 DECLARE_SOA_COLUMN(TimeToPrePrevious, timeToPrePrevious, float); //!
@@ -105,15 +107,16 @@ DECLARE_SOA_TABLE(PVMults, "AOD", "PVMULT", //! Multiplicity from the PV contrib
                   mult::IsInelGt1<mult::MultNTracksPVeta1>);
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
 using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
+using FT0Mult = FT0Mults::iterator;
 using Mult = Mults::iterator;
 
-// for QA purposes
 DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
-                  mult::BCNumber, evsel::NumTracksInTimeRange);
+                  evsel::NumTracksInTimeRange,
+                  collision::Flags);
 
 DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
                   mult::TimeToPrePrevious, mult::TimeToPrevious,
@@ -121,20 +124,36 @@ DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
 
 // for QA purposes
 DECLARE_SOA_TABLE(MultsGlobal, "AOD", "MULTGLOBAL", //! counters that use Track Selection (optional)
-                  mult::MultNTracksGlobal);
+                  mult::MultNTracksGlobal,
+                  mult::MultNGlobalTracksPV,
+                  mult::MultNGlobalTracksPVeta1,
+                  mult::MultNGlobalTracksPVetaHalf);
 DECLARE_SOA_TABLE(MultSelections, "AOD", "MULTSELECTIONS", //!
                   evsel::Selection);                       // for derived data / QA studies
 using MultExtra = MultsExtra::iterator;
-DECLARE_SOA_TABLE(MultsExtraMC, "AOD", "MULTEXTRAMC", //! Table for the MC information
+
+// mc collisions table - indexed to Mult
+DECLARE_SOA_TABLE(MultMCExtras, "AOD", "MULTMCEXTRA", //! Table for the MC information
                   mult::MultMCFT0A,
                   mult::MultMCFT0C,
                   mult::MultMCNParticlesEta05,
                   mult::MultMCNParticlesEta08,
                   mult::MultMCNParticlesEta10,
+                  mult::MultMCPVz,
                   mult::IsInelGt0<mult::MultMCNParticlesEta10>,
                   mult::IsInelGt1<mult::MultMCNParticlesEta10>,
                   o2::soa::Marker<1>);
-using MultExtraMC = MultsExtraMC::iterator;
+using MultMCExtra = MultMCExtras::iterator;
+using MultsExtraMC = MultMCExtras; // for backwards compatibility with previous naming scheme
+
+// crosslinks
+namespace mult
+{
+DECLARE_SOA_INDEX_COLUMN(MultMCExtra, multMCExtra);
+}
+
+DECLARE_SOA_TABLE(Mult2MCExtras, "AOD", "Mult2MCEXTRA", //! Relate reco mult entry to MC extras entry
+                  o2::soa::Index<>, mult::MultMCExtraId);
 
 namespace multZeq
 {
@@ -164,12 +183,12 @@ DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float); //!
 DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float); //!
 DECLARE_SOA_COLUMN(MultBCFDDC, multBCFDDC, float); //!
 
-DECLARE_SOA_COLUMN(MultBCFZNA, multBCFZNA, float);   //!
-DECLARE_SOA_COLUMN(MultBCFZNC, multBCFZNC, float);   //!
-DECLARE_SOA_COLUMN(MultBCFZEM1, multBCFZEM1, float); //!
-DECLARE_SOA_COLUMN(MultBCFZEM2, multBCFZEM2, float); //!
-DECLARE_SOA_COLUMN(MultBCFZPA, multBCFZPA, float);   //!
-DECLARE_SOA_COLUMN(MultBCFZPC, multBCFZPC, float);   //!
+DECLARE_SOA_COLUMN(MultBCZNA, multBCZNA, float);   //!
+DECLARE_SOA_COLUMN(MultBCZNC, multBCZNC, float);   //!
+DECLARE_SOA_COLUMN(MultBCZEM1, multBCZEM1, float); //!
+DECLARE_SOA_COLUMN(MultBCZEM2, multBCZEM2, float); //!
+DECLARE_SOA_COLUMN(MultBCZPA, multBCZPA, float);   //!
+DECLARE_SOA_COLUMN(MultBCZPC, multBCZPC, float);   //!
 
 DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);                          //!
 DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool);                    //!
@@ -178,27 +197,50 @@ DECLARE_SOA_COLUMN(MultBCT0triggerBits, multBCT0triggerBits, uint8_t);   //!
 DECLARE_SOA_COLUMN(MultBCFDDtriggerBits, multBCFDDtriggerBits, uint8_t); //!
 DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);      //! CTP trigger mask
 DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);              //! CTP trigger mask
+
+DECLARE_SOA_COLUMN(MultBCFT0PosZ, multBCFT0PosZ, float);          //! Position along Z computed with the FT0 information within the BC
+DECLARE_SOA_COLUMN(MultBCFT0PosZValid, multBCFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information within the BC
+
 } // namespace multBC
-DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
+DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
                   multBC::MultBCFT0C,
+                  multBC::MultBCFT0PosZ,
+                  multBC::MultBCFT0PosZValid,
                   multBC::MultBCFV0A,
                   multBC::MultBCFDDA,
                   multBC::MultBCFDDC,
-                  multBC::MultBCFZNA,
-                  multBC::MultBCFZNC,
-                  multBC::MultBCFZEM1,
-                  multBC::MultBCFZEM2,
-                  multBC::MultBCFZPA,
-                  multBC::MultBCFZPC,
+                  multBC::MultBCZNA,
+                  multBC::MultBCZNC,
+                  multBC::MultBCZEM1,
+                  multBC::MultBCZEM2,
+                  multBC::MultBCZPA,
+                  multBC::MultBCZPC,
                   multBC::MultBCTVX,
                   multBC::MultBCFV0OrA,
                   multBC::MultBCV0triggerBits,
                   multBC::MultBCT0triggerBits,
                   multBC::MultBCFDDtriggerBits,
                   multBC::MultBCTriggerMask,
-                  multBC::MultBCColliding);
-using MultBC = MultsBC::iterator;
+                  multBC::MultBCColliding,
+                  bc::Flags);
+using MultBC = MultBCs::iterator;
+
+// crosslinks
+namespace mult
+{
+DECLARE_SOA_INDEX_COLUMN(MultBC, multBC);
+}
+namespace multBC
+{
+DECLARE_SOA_INDEX_COLUMN(FT0Mult, ft0Mult);
+}
+
+// for QA purposes
+DECLARE_SOA_TABLE(Mults2BC, "AOD", "MULTS2BC", //! Relate mult -> BC
+                  o2::soa::Index<>, mult::MultBCId);
+DECLARE_SOA_TABLE(BC2Mults, "AOD", "BC2MULTS", //! Relate BC -> mult
+                  o2::soa::Index<>, multBC::FT0MultId);
 
 } // namespace o2::aod
 
