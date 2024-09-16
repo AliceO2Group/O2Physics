@@ -232,9 +232,9 @@ struct DGFilterRun3 {
     // collisions
     registry.fill(HIST("collisions/tracksAll"), tracks.size());
     registry.fill(HIST("collisions/PVTracksAll"), collision.numContrib());
-    //Partition<TCs> goodTracks = requireGlobalTrackInFilter();
-    //goodTracks.bindTable(tracks);
-    //LOGF(info, "# good tracks %d", goodTracks.size());
+    // Partition<TCs> goodTracks = requireGlobalTrackInFilter();
+    // goodTracks.bindTable(tracks);
+    // LOGF(info, "# good tracks %d", goodTracks.size());
     registry.get<TH1>(HIST("collisions/globalTracksAll"))->Fill(goodTracks.size());
     auto netCharge = udhelpers::netCharge<true>(tracks);
     registry.fill(HIST("collisions/netChargeAll"), collision.numContrib(), netCharge);
