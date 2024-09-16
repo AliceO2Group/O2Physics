@@ -83,6 +83,8 @@ struct nuclei_in_jets {
   Configurable<double> Rjet{"Rjet", 0.3, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
   Configurable<int> min_nPartInJet{"min_nPartInJet", 2, "Minimum number of particles inside jet"};
+  Configurable<int> n_jets_per_event_max{"n_jets_per_event_max", 1000, "Maximum number of jets per event"};
+  Configurable<bool> requireNoOverlap{"requireNoOverlap", false, "require no overlap between jets and UE cones"};
 
   // Track Parameters
   Configurable<int> min_ITS_nClusters{"min_ITS_nClusters", 5, "minimum number of ITS clusters"};
@@ -117,6 +119,7 @@ struct nuclei_in_jets {
     registryQC.add("nJets_selected", "nJets_selected", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
     registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
     registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
+    registryQC.add("jet_ue_overlaps", "jet_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
 
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
@@ -356,6 +359,16 @@ struct nuclei_in_jets {
     return distance_jet;
   }
 
+  bool overlap(TVector3 v1, TVector3 v2, double R)
+  {
+    double dx = v1.Eta() - v2.Eta();
+    double dy = GetDeltaPhi(v1.Phi(), v2.Phi());
+    double d = sqrt(dx * dx + dy * dy);
+    if (d < 2.0 * R)
+      return true;
+    return false;
+  }
+
   // Process Data
   void processData(SelectedCollisions::iterator const& collision, FullTracks const& tracks)
   {
@@ -512,6 +525,30 @@ struct nuclei_in_jets {
     if (n_jets_selected == 0)
       return;
     registryData.fill(HIST("number_of_events_data"), 3.5);
+    //************************************************************************************************************************************
+
+    // Overlaps
+    int nOverlaps(0);
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+      if (isSelected[i] == 0)
+        continue;
+
+      for (int j = 0; j < static_cast<int>(jet.size()); j++) {
+        if (isSelected[j] == 0 || i == j)
+          continue;
+        if (overlap(jet[i], ue1[j], Rjet) || overlap(jet[i], ue2[j], Rjet))
+          nOverlaps++;
+      }
+    }
+    registryQC.fill(HIST("jet_ue_overlaps"), n_jets_selected, nOverlaps);
+
+    if (n_jets_selected > n_jets_per_event_max)
+      return;
+    registryData.fill(HIST("number_of_events_data"), 4.5);
+
+    if (requireNoOverlap && nOverlaps > 0)
+      return;
+    registryData.fill(HIST("number_of_events_data"), 5.5);
 
     //************************************************************************************************************************************
 
