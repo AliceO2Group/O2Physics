@@ -106,7 +106,10 @@ struct spvector {
   Configurable<bool> useShift{"useShift", false, "use Shift"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentere"};
-  Configurable<std::string> ConfRecentereVxy{"ConfRecentereVxy", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxy"};
+  Configurable<std::string> ConfRecentereVxyQxA{"ConfRecentereVxyQxA", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQxA"};
+  Configurable<std::string> ConfRecentereVxyQyA{"ConfRecentereVxyQyA", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQyA"};
+  Configurable<std::string> ConfRecentereVxyQxC{"ConfRecentereVxyQxC", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQxC"};
+  Configurable<std::string> ConfRecentereVxyQyC{"ConfRecentereVxyQyC", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQyC"};
   Configurable<std::string> ConfShift{"ConfShift", "Users/p/prottay/My/Object/Finaltest2/recenereall", "Path for Shift"};
 
   ConfigurableAxis configAxisCentrality{"configAxisCentrality", {80, 0.0, 80}, "centrality bining"};
@@ -157,8 +160,8 @@ struct spvector {
     AxisSpec qyZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qy"};
     AxisSpec phiAxis = {100, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {20, -10, 10, "vz"};
-    AxisSpec vxAxis = {100, -0.05, 0.0, "vx"};
-    AxisSpec vyAxis = {100, -0.02, 0.02, "vy"};
+    AxisSpec vxAxis = {50, -0.05, 0.0, "vx"};
+    AxisSpec vyAxis = {50, -0.02, 0.02, "vy"};
 
     histos.add("hCentrality", "hCentrality", kTH1F, {{8, 0, 80.0}});
     histos.add("Vz", "Vz", kTH1F, {vzAxis});
@@ -171,10 +174,10 @@ struct spvector {
     histos.add("QyZDCC", "QyZDCC", kTH3F, {centAxis, vzAxis, qyZDCAxis});
     histos.add("QxZDCA", "QxZDCA", kTH3F, {centAxis, vzAxis, qxZDCAxis});
     histos.add("QyZDCA", "QyZDCA", kTH3F, {centAxis, vzAxis, qyZDCAxis});
-    histos.add("hpQxVZDCC", "hpQxVZDCC", kTProfile2D, {vxAxis, vyAxis});
-    histos.add("hpQyVZDCC", "hpQyVZDCC", kTProfile2D, {vxAxis, vyAxis});
-    histos.add("hpQxVZDCA", "hpQxVZDCA", kTProfile2D, {vxAxis, vyAxis});
-    histos.add("hpQyVZDCA", "hpQyVZDCA", kTProfile2D, {vxAxis, vyAxis});
+    histos.add("hpQxVZDCC", "hpQxVZDCC", kTProfile3D, {centAxis, vxAxis, vyAxis});
+    histos.add("hpQyVZDCC", "hpQyVZDCC", kTProfile3D, {centAxis, vxAxis, vyAxis});
+    histos.add("hpQxVZDCA", "hpQxVZDCA", kTProfile3D, {centAxis, vxAxis, vyAxis});
+    histos.add("hpQyVZDCA", "hpQyVZDCA", kTProfile3D, {centAxis, vxAxis, vyAxis});
     histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centAxis, phiAxis});
     histos.add("PsiZDCA", "PsiZDCA", kTH2F, {centAxis, phiAxis});
     histos.add("hpCosPsiAPsiC", "hpCosPsiAPsiC", kTProfile, {centAxis});
@@ -205,7 +208,10 @@ struct spvector {
   int lastRunNumber = -999;
   TH2D* gainprofile;
   TH3D* hrecentere;
-  TH3D* hrecentereVxy;
+  TH3D* hrecentereVxyQxA;
+  TH3D* hrecentereVxyQyA;
+  TH3D* hrecentereVxyQxC;
+  TH3D* hrecentereVxyQyC;
 
   // Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
@@ -342,21 +348,24 @@ struct spvector {
       }
 
       if (useRecentereVxy && (currentRunNumber != lastRunNumber)) {
-        hrecentereVxy = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxy.value, bc.timestamp());
+        hrecentereVxyQxA = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxyQxA.value, bc.timestamp());
+        hrecentereVxyQyA = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxyQyA.value, bc.timestamp());
+        hrecentereVxyQxC = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxyQxC.value, bc.timestamp());
+        hrecentereVxyQyC = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxyQyC.value, bc.timestamp());
       }
 
-      if (useRecentereVxy && hrecentereVxy) {
+      if (useRecentereVxy && hrecentereVxyQxA && hrecentereVxyQyA && hrecentereVxyQxC && hrecentereVxyQyC) {
         if (recwitherror) {
-          qxZDCA = (qxZDCA - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 0.5))) / hrecentereVxy->GetBinError(hrecentereVxy->FindBin(vx, vy, 0.5));
-          qyZDCA = (qyZDCA - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 1.5))) / hrecentereVxy->GetBinError(hrecentereVxy->FindBin(vx, vy, 1.5));
-          qxZDCC = (qxZDCC - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 2.5))) / hrecentereVxy->GetBinError(hrecentereVxy->FindBin(vx, vy, 2.5));
-          qyZDCC = (qyZDCC - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 3.5))) / hrecentereVxy->GetBinError(hrecentereVxy->FindBin(vx, vy, 3.5));
+          qxZDCA = (qxZDCA - hrecentereVxyQxA->GetBinContent(hrecentereVxyQxA->FindBin(centrality, vx, vy))) / hrecentereVxyQxA->GetBinError(hrecentereVxyQxA->FindBin(centrality, vx, vy));
+          qyZDCA = (qyZDCA - hrecentereVxyQyA->GetBinContent(hrecentereVxyQyA->FindBin(centrality, vx, vy))) / hrecentereVxyQyA->GetBinError(hrecentereVxyQyA->FindBin(centrality, vx, vy));
+          qxZDCC = (qxZDCC - hrecentereVxyQxC->GetBinContent(hrecentereVxyQxC->FindBin(centrality, vx, vy))) / hrecentereVxyQxC->GetBinError(hrecentereVxyQxC->FindBin(centrality, vx, vy));
+          qyZDCC = (qyZDCC - hrecentereVxyQyC->GetBinContent(hrecentereVxyQyC->FindBin(centrality, vx, vy))) / hrecentereVxyQyC->GetBinError(hrecentereVxyQyC->FindBin(centrality, vx, vy));
         } else {
 
-          qxZDCA = (qxZDCA - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 0.5)));
-          qyZDCA = (qyZDCA - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 1.5)));
-          qxZDCC = (qxZDCC - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 2.5)));
-          qyZDCC = (qyZDCC - hrecentereVxy->GetBinContent(hrecentereVxy->FindBin(vx, vy, 3.5)));
+          qxZDCA = (qxZDCA - hrecentereVxyQxA->GetBinContent(hrecentereVxyQxA->FindBin(centrality, vx, vy)));
+          qyZDCA = (qyZDCA - hrecentereVxyQyA->GetBinContent(hrecentereVxyQyA->FindBin(centrality, vx, vy)));
+          qxZDCC = (qxZDCC - hrecentereVxyQxC->GetBinContent(hrecentereVxyQxC->FindBin(centrality, vx, vy)));
+          qyZDCC = (qyZDCC - hrecentereVxyQyC->GetBinContent(hrecentereVxyQyC->FindBin(centrality, vx, vy)));
         }
       }
 
@@ -373,10 +382,10 @@ struct spvector {
       histos.fill(HIST("QyZDCC"), centrality, vz, qyZDCC);
       histos.fill(HIST("QxZDCA"), centrality, vz, qxZDCA);
       histos.fill(HIST("QyZDCA"), centrality, vz, qyZDCA);
-      histos.fill(HIST("hpQxVZDCC"), vx, vy, qxZDCC);
-      histos.fill(HIST("hpQyVZDCC"), vx, vy, qyZDCC);
-      histos.fill(HIST("hpQxVZDCA"), vx, vy, qxZDCA);
-      histos.fill(HIST("hpQyVZDCA"), vx, vy, qyZDCA);
+      histos.fill(HIST("hpQxVZDCC"), centrality, vx, vy, qxZDCC);
+      histos.fill(HIST("hpQyVZDCC"), centrality, vx, vy, qyZDCC);
+      histos.fill(HIST("hpQxVZDCA"), centrality, vx, vy, qxZDCA);
+      histos.fill(HIST("hpQyVZDCA"), centrality, vx, vy, qyZDCA);
       histos.fill(HIST("PsiZDCA"), centrality, psiZDCA);
       histos.fill(HIST("PsiZDCC"), centrality, psiZDCC);
 
